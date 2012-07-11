@@ -20,9 +20,9 @@ trait AlmValidationImplicits {
     def successAlm(): AlmValidation[T] = any.success[Problem]  
   }
 
-  def multipleBadDataFromValidationNel[T](validationNel: ValidationNEL[String, T]): AlmValidation[T] =
+  def multipleBadDataFromValidationNel[T](validationNel: ValidationNEL[String, T]): Validation[MultipleBadDataProblem, T] =
     validationNel match {
-      case Success(r) => r.success[Problem]
+      case Success(r) => r.success[MultipleBadDataProblem]
       case Failure(nel) => 
         val keysAndMessages = nel.list.zipWithIndex.map{case (msg, i) => i.toString -> msg}
         MultipleBadDataProblem(
@@ -31,12 +31,12 @@ trait AlmValidationImplicits {
       }
 
   
-  implicit def validation2AlmValidationW[T](validation: Validation[String, T]) = new AlmValidationW[T](validation)
+  implicit def validationNel2AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) = new AlmValidationNelW[T](validationNel)
   final class AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) {
-    def failureIsMultipleBadData(): AlmValidation[T] = multipleBadDataFromValidationNel[T](validationNel)
+    def toMultipleBadData(): Validation[MultipleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
   }
 
-  implicit def validationNel2AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) = new AlmValidationNelW[T](validationNel)
+  implicit def validation2AlmValidationW[T](validation: Validation[String, T]) = new AlmValidationW[T](validation)
   final class AlmValidationW[T](validation: Validation[String, T]) {
     def toAlmValidation(problemOnFail: Problem = defaultProblem): AlmValidation[T] = {
       validation match {

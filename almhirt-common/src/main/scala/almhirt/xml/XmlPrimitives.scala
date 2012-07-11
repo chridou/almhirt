@@ -1,7 +1,6 @@
 package almhirt.xml
 
-import scala.xml
-import scala.xml.Node
+import scala.xml._
 import scalaz.syntax.validation._
 import scalaz.{Validation, Success, Failure}
 import almhirt.validation.Problem._
@@ -9,6 +8,14 @@ import almhirt.validation.AlmValidation
 import almhirt.validation.AlmValidation._
 
 object XmlPrimitives extends XmlPrimitivesImplicits {
+  def xmlFromString(xmlString: String, key: String = "XML"): Validation[BadDataProblem,Node] = {
+    try {
+      XML.loadString(xmlString).success[BadDataProblem]
+    } catch {
+      case err => BadDataProblem("Could not parse xml: %s".format(err.getMessage), key = key, exception = Some(err)).fail[Node]
+    }
+  }
+  
   def intFromXmlNode(node: Node): Validation[BadDataProblem,Int] = {
     for{
       ne <- failIfEmptyOrWhitespace(node.text, node.label)
