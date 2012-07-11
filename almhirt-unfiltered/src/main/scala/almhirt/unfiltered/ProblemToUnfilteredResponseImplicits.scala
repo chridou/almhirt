@@ -20,7 +20,9 @@ trait ProblemToUnfilteredResponseImplicits {
     }
   }
   final class AkkaFutureW[T](akkaFuture: Future[AlmValidation[T]]) {
-    def respond(responder: unfiltered.Async.Responder[HttpResponse], createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): Future[AlmValidation[T]] = {
+    def respond(
+        responder: unfiltered.Async.Responder[HttpResponse], 
+        createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): Future[AlmValidation[T]] = {
       new AlmFuture[T](akkaFuture).respond(responder, createSuccessResponse)		
     }
   }

@@ -19,12 +19,13 @@ trait Problem{
 trait SystemProblem extends Problem
 trait ApplicationProblem extends Problem
 trait SecurityProblem extends ApplicationProblem
+trait BadDataProblem extends ApplicationProblem
 sealed trait ProblemCategory
 
 object Problem extends ProblemImplicits {
 
   def badData(key: String, message: String) =
-    BadDataProblem(message, key)
+    SingleBadDataProblem(message, key)
   
   val defaultSystemProblem = UnspecifiedSystemProblem("unspecified system problem")
   val defaultApplicationProblem = UnspecifiedApplicationProblem("unspecified application problem")
@@ -95,19 +96,19 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class BadDataProblem(message: String, key: String = "unknown", severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map()) extends ApplicationProblem {
-	type T = BadDataProblem
+  case class SingleBadDataProblem(message: String, key: String = "unknown", severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map()) extends BadDataProblem {
+	type T = SingleBadDataProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
 	def withSeverity(severity: Severity) = copy(severity = severity)
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-	def addTo(multipleBadData: MultipleBadDataProblem) = multipleBadData.add(this)
-	def add(other: BadDataProblem) = toMultipleBadData().add(other)
-	def toMultipleBadData() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+	def addTo(multipleBadData: MultipleSingleBadDataProblem) = multipleBadData.add(this)
+	def add(other: SingleBadDataProblem) = toMultipleBadData().add(other)
+	def toMultipleBadData() = MultipleSingleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
   }
-  case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map()) extends ApplicationProblem {
-	type T = MultipleBadDataProblem
+  case class MultipleSingleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map()) extends BadDataProblem {
+	type T = MultipleSingleBadDataProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
 	def withSeverity(severity: Severity) = copy(severity = severity)
@@ -118,8 +119,8 @@ object Problem extends ProblemImplicits {
 	  case None => copy(keysAndMessages = keysAndMessages + (key -> messageForKey))
 	}
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-	def add(badData: BadDataProblem) = withBadData(badData.key, badData.message).withSeverity(severity and badData.severity)
-	def combineWith(other: MultipleBadDataProblem) =
+	def add(badData: SingleBadDataProblem) = withBadData(badData.key, badData.message).withSeverity(severity and badData.severity)
+	def combineWith(other: MultipleSingleBadDataProblem) =
 	  other.keysAndMessages.toSeq
 	  .foldLeft(this){case (state,(k, msg)) => state.withBadData(k, msg)}
 	  .withSeverity(severity and other.severity)

@@ -8,11 +8,11 @@ import scalaz.Semigroup
 trait AlmValidationImplicits {
   implicit def stringToStringW(str: String): StringW = new StringW(str)
   final class StringW(str: String) {
-    def toIntAlm(key: String = "some value"): Validation[BadDataProblem, Int] = AlmValidation.parseIntAlm(str, key)
-    def toLongAlm(key: String = "some value"): Validation[BadDataProblem, Long] =  AlmValidation.parseLongAlm(str, key)
-    def toDoubleAlm(key: String = "some value"): Validation[BadDataProblem, Double] =  AlmValidation.parseDoubleAlm(str, key)
-    def notEmptyAlm(key: String = "some value"): Validation[BadDataProblem, String] =  AlmValidation.failIfEmpty(str, key)
-    def notEmptyOrWhitespaceAlm(key: String = "some value"): Validation[BadDataProblem, String] =  AlmValidation.failIfEmptyOrWhitespace(str, key)
+    def toIntAlm(key: String = "some value"): Validation[SingleBadDataProblem, Int] = AlmValidation.parseIntAlm(str, key)
+    def toLongAlm(key: String = "some value"): Validation[SingleBadDataProblem, Long] =  AlmValidation.parseLongAlm(str, key)
+    def toDoubleAlm(key: String = "some value"): Validation[SingleBadDataProblem, Double] =  AlmValidation.parseDoubleAlm(str, key)
+    def notEmptyAlm(key: String = "some value"): Validation[SingleBadDataProblem, String] =  AlmValidation.failIfEmpty(str, key)
+    def notEmptyOrWhitespaceAlm(key: String = "some value"): Validation[SingleBadDataProblem, String] =  AlmValidation.failIfEmptyOrWhitespace(str, key)
   }
 
   implicit def any2AnyAlmW[T](x: T): AnyAlmW[T] = new AnyAlmW(x)
@@ -20,12 +20,12 @@ trait AlmValidationImplicits {
     def successAlm(): AlmValidation[T] = any.success[Problem]  
   }
 
-  def multipleBadDataFromValidationNel[T](validationNel: ValidationNEL[String, T]): Validation[MultipleBadDataProblem, T] =
+  def multipleBadDataFromValidationNel[T](validationNel: ValidationNEL[String, T]): Validation[MultipleSingleBadDataProblem, T] =
     validationNel match {
-      case Success(r) => r.success[MultipleBadDataProblem]
+      case Success(r) => r.success[MultipleSingleBadDataProblem]
       case Failure(nel) => 
         val keysAndMessages = nel.list.zipWithIndex.map{case (msg, i) => i.toString -> msg}
-        MultipleBadDataProblem(
+        MultipleSingleBadDataProblem(
           "One or more errors found", 
           Map(keysAndMessages : _*)).fail[T]
       }
@@ -33,7 +33,7 @@ trait AlmValidationImplicits {
   
   implicit def validationNel2AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) = new AlmValidationNelW[T](validationNel)
   final class AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) {
-    def toMultipleBadData(): Validation[MultipleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
+    def toMultipleBadData(): Validation[MultipleSingleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
   }
 
   implicit def validation2AlmValidationW[T](validation: Validation[String, T]) = new AlmValidationW[T](validation)
@@ -46,12 +46,12 @@ trait AlmValidationImplicits {
     }
   }
 
-  implicit def badDataProblemValidationToBadDataProblemValidationW[T](badDataProblemValidation: Validation[BadDataProblem, T]) = 
-    new BadDataProblemValidationW[T](badDataProblemValidation)
-  final class BadDataProblemValidationW[T](badDataProblemValidation: Validation[BadDataProblem, T]) {
-    def toMultipleBadData(): Validation[MultipleBadDataProblem, T] =
+  implicit def badDataProblemValidationToSingleBadDataProblemValidationW[T](badDataProblemValidation: Validation[SingleBadDataProblem, T]) = 
+    new SingleBadDataProblemValidationW[T](badDataProblemValidation)
+  final class SingleBadDataProblemValidationW[T](badDataProblemValidation: Validation[SingleBadDataProblem, T]) {
+    def toMultipleBadData(): Validation[MultipleSingleBadDataProblem, T] =
       badDataProblemValidation match {
-      case Success(r) => r.success[MultipleBadDataProblem]
+      case Success(r) => r.success[MultipleSingleBadDataProblem]
       case Failure(f) => f.toMultipleBadData().fail[T]
     }
   }

@@ -27,35 +27,35 @@ object AlmValidation extends AlmValidationImplicits {
     }
   }
 
-  def parseIntAlm(toParse: String, key: String = "some value"): Validation[BadDataProblem, Int] =
+  def parseIntAlm(toParse: String, key: String = "some value"): Validation[SingleBadDataProblem, Int] =
     try {
-      toParse.toInt.success[BadDataProblem]
+      toParse.toInt.success[SingleBadDataProblem]
     } catch {
       case err => badData("Not a valid number(Int):%s".format(toParse), key).fail[Int]
     }
   
-  def parseLongAlm(toParse: String, key: String = "some value"): Validation[BadDataProblem, Long] =
+  def parseLongAlm(toParse: String, key: String = "some value"): Validation[SingleBadDataProblem, Long] =
     try {
-      toParse.toLong.success[BadDataProblem]
+      toParse.toLong.success[SingleBadDataProblem]
     } catch {
       case err => badData("Not a valid number(Long)".format(toParse), key).fail[Long]
     }
   
-  def parseDoubleAlm(toParse: String, key: String = "some value"): Validation[BadDataProblem, Double] =
+  def parseDoubleAlm(toParse: String, key: String = "some value"): Validation[SingleBadDataProblem, Double] =
     try {
-      toParse.toDouble.success[BadDataProblem]
+      toParse.toDouble.success[SingleBadDataProblem]
     } catch {
       case err => badData("Not a valid number(Double)".format(toParse), key).fail[Double]
     }
   
-  def failIfEmpty(toTest: String, key: String = "some value"): Validation[BadDataProblem, String] =
-    if(toTest.isEmpty) badData("must not be empty", key).fail[String] else toTest.success[BadDataProblem]
+  def failIfEmpty(toTest: String, key: String = "some value"): Validation[SingleBadDataProblem, String] =
+    if(toTest.isEmpty) badData("must not be empty", key).fail[String] else toTest.success[SingleBadDataProblem]
 
-  def failIfEmptyOrWhitespace(toTest: String, key: String = "some value"): Validation[BadDataProblem, String] =
+  def failIfEmptyOrWhitespace(toTest: String, key: String = "some value"): Validation[SingleBadDataProblem, String] =
     if(toTest.trim.isEmpty) 
       badData("must not be empty or whitespaces", key).fail[String] 
     else 
-      toTest.success[BadDataProblem]
+      toTest.success[SingleBadDataProblem]
   
   def failIfFalse(cond: => Boolean, problem: Problem): AlmValidation[Unit] =
     if(cond) ().successAlm else problem.fail[Unit]

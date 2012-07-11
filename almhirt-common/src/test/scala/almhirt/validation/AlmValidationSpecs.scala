@@ -14,7 +14,7 @@ class AlmValidationSpecs extends Specification {
   
   "AlmValidation.parseIntAlm" should {
     "return a success of 1 when supplied with '1'" in {
-      (parseIntAlm("1")) must beEqualTo(1.success[BadDataProblem])
+      (parseIntAlm("1")) must beEqualTo(1.success[SingleBadDataProblem])
     }
     "return a failure when supplied with ' 1'" in {
       (parseIntAlm(" 1")).isFailure
@@ -26,7 +26,7 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.parseLongAlm" should {
     "return a success of 1 when supplied with '1'" in {
-      (parseIntAlm("1")) must beEqualTo(1L.success[BadDataProblem])
+      (parseIntAlm("1")) must beEqualTo(1L.success[SingleBadDataProblem])
     }
     "return a failure when supplied with ' 1'" in {
       (parseIntAlm(" 1")).isFailure
@@ -38,28 +38,28 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.parseDoubleAlm" should {
     "return a success of 1 when supplied with '1'" in {
-      (parseDoubleAlm("1")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm("1")) must beEqualTo(1d.success[SingleBadDataProblem])
     }
     "return a success of 1.1 when supplied with '1.1'" in {
-      (parseDoubleAlm("1.1")) must beEqualTo(1.1d.success[BadDataProblem])
+      (parseDoubleAlm("1.1")) must beEqualTo(1.1d.success[SingleBadDataProblem])
     }
     "return a success of 0.1 when supplied with '.1'" in {
-      (parseDoubleAlm("1.1")) must beEqualTo(1.1d.success[BadDataProblem])
+      (parseDoubleAlm("1.1")) must beEqualTo(1.1d.success[SingleBadDataProblem])
     }
     "return a success of 1 when supplied with '1 '" in {
-      (parseDoubleAlm("1 ")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm("1 ")) must beEqualTo(1d.success[SingleBadDataProblem])
     }
     "return a success of 1 when supplied with ' 1'" in {
-      (parseDoubleAlm(" 1")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm(" 1")) must beEqualTo(1d.success[SingleBadDataProblem])
     }
     "return a success of 1 when supplied with '1'" in {
-      (parseDoubleAlm("1 ")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm("1 ")) must beEqualTo(1d.success[SingleBadDataProblem])
     }
     "return a success of 1 when supplied with ' 1.0'" in {
-      (parseDoubleAlm(" 1.0")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm(" 1.0")) must beEqualTo(1d.success[SingleBadDataProblem])
     }
     "return a success of 1 when supplied with '1.0 '" in {
-      (parseDoubleAlm("1.0 ")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm("1.0 ")) must beEqualTo(1d.success[SingleBadDataProblem])
     }
     "return a failure when supplied with ''" in {
       (parseIntAlm("")).isFailure
@@ -80,10 +80,10 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.failIfEmpty" should {
     """return a success of "x" when supplied with "x"""" in {
-      (failIfEmpty("x")) must beEqualTo("x".success[BadDataProblem])
+      (failIfEmpty("x")) must beEqualTo("x".success[SingleBadDataProblem])
     }
     """return a success of " " when supplied with " """" in {
-      (failIfEmpty(" ")) must beEqualTo(" ".success[BadDataProblem])
+      (failIfEmpty(" ")) must beEqualTo(" ".success[SingleBadDataProblem])
     }
     """return a failure when supplied with "" """ in {
       (parseIntAlm("")).isFailure
@@ -92,7 +92,7 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.failIfEmptyOrWhitespace" should {
     """return a success of "x" when supplied with "x"""" in {
-      (failIfEmptyOrWhitespace("x")) must beEqualTo("x".success[BadDataProblem])
+      (failIfEmptyOrWhitespace("x")) must beEqualTo("x".success[SingleBadDataProblem])
     }
     """return a failure when supplied with """"" in {
       (failIfEmptyOrWhitespace(" ")).isFailure
@@ -103,9 +103,9 @@ class AlmValidationSpecs extends Specification {
   }
   
  
-  """A BadDataProblem lifted to a MultipleBadDataProblem""" should {
+  """A SingleBadDataProblem lifted to a MultipleSingleBadDataProblem""" should {
     """contain the origins message in keysAndMessages with the origins key""" in {
-	  val a = (BadDataProblem("XXX", "A").fail[Int]).toMultipleBadData
+	  val a = (SingleBadDataProblem("XXX", "A").fail[Int]).toMultipleBadData
 	  a match {
 	    case Failure(mbdp) => mbdp.keysAndMessages must beEqualTo(Map(("A" -> "XXX")))
 	    case _ => sys.error("")
@@ -120,7 +120,7 @@ class AlmValidationSpecs extends Specification {
 	        a <- parseIntAlm("2").toMultipleBadData
 	        b <- parseIntAlm("3").toMultipleBadData
 	      } yield a + b
-      res must beEqualTo(5.success[MultipleBadDataProblem])
+      res must beEqualTo(5.success[MultipleSingleBadDataProblem])
     }
     """be a Failure when A="x" and B="3"""" in {
       val res =
@@ -137,7 +137,7 @@ class AlmValidationSpecs extends Specification {
       val a = "2".toIntAlm().toMultipleBadData
       val b = "3".toIntAlm().toMultipleBadData
 	  val res = (a |@| b)((a, b) => a + b)
-      res must beEqualTo(5.success[MultipleBadDataProblem])
+      res must beEqualTo(5.success[MultipleSingleBadDataProblem])
     }
     """be a Failue when A="x" and B="3"""" in {
       val a = "x".toIntAlm().toMultipleBadData
