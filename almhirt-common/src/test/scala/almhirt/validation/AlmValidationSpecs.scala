@@ -103,7 +103,7 @@ class AlmValidationSpecs extends Specification {
   }
   
  
-  """A SingleBadDataProblem lifted to a MultipleSingleBadDataProblem""" should {
+  """A SingleBadDataProblem lifted to a MultipleBadDataProblem""" should {
     """contain the origins message in keysAndMessages with the origins key""" in {
 	  val a = (SingleBadDataProblem("XXX", "A").fail[Int]).toMultipleBadData
 	  a match {
@@ -120,7 +120,7 @@ class AlmValidationSpecs extends Specification {
 	        a <- parseIntAlm("2").toMultipleBadData
 	        b <- parseIntAlm("3").toMultipleBadData
 	      } yield a + b
-      res must beEqualTo(5.success[MultipleSingleBadDataProblem])
+      res must beEqualTo(5.success[MultipleBadDataProblem])
     }
     """be a Failure when A="x" and B="3"""" in {
       val res =
@@ -137,7 +137,7 @@ class AlmValidationSpecs extends Specification {
       val a = "2".toIntAlm().toMultipleBadData
       val b = "3".toIntAlm().toMultipleBadData
 	  val res = (a |@| b)((a, b) => a + b)
-      res must beEqualTo(5.success[MultipleSingleBadDataProblem])
+      res must beEqualTo(5.success[MultipleBadDataProblem])
     }
     """be a Failue when A="x" and B="3"""" in {
       val a = "x".toIntAlm().toMultipleBadData

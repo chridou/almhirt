@@ -59,6 +59,19 @@ object AlmValidation extends AlmValidationImplicits {
   
   def failIfFalse(cond: => Boolean, problem: Problem): AlmValidation[Unit] =
     if(cond) ().successAlm else problem.fail[Unit]
+  
+  def noneIsBadData[T](v: Option[T], message: String = "No value supplied", key: String = "unknown"): Validation[SingleBadDataProblem, T] =
+    v match {
+      case Some(v) => v.success[SingleBadDataProblem]
+      case None => SingleBadDataProblem(message, key = key).fail[T]
+    }
+  
+  def noneIsNotFound[T](v: Option[T], message: String = "Not found"): AlmValidation[T] =
+    v match {
+      case Some(v) => v.success[NotFoundProblem]
+      case None => NotFoundProblem(message).fail[T]
+    }
+  
 }
 
 }

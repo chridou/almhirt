@@ -103,12 +103,12 @@ object Problem extends ProblemImplicits {
 	def withSeverity(severity: Severity) = copy(severity = severity)
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-	def addTo(multipleBadData: MultipleSingleBadDataProblem) = multipleBadData.add(this)
+	def addTo(multipleBadData: MultipleBadDataProblem) = multipleBadData.add(this)
 	def add(other: SingleBadDataProblem) = toMultipleBadData().add(other)
-	def toMultipleBadData() = MultipleSingleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+	def toMultipleBadData() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
   }
-  case class MultipleSingleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map()) extends BadDataProblem {
-	type T = MultipleSingleBadDataProblem
+  case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map()) extends BadDataProblem {
+	type T = MultipleBadDataProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
 	def withSeverity(severity: Severity) = copy(severity = severity)
@@ -120,7 +120,7 @@ object Problem extends ProblemImplicits {
 	}
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 	def add(badData: SingleBadDataProblem) = withBadData(badData.key, badData.message).withSeverity(severity and badData.severity)
-	def combineWith(other: MultipleSingleBadDataProblem) =
+	def combineWith(other: MultipleBadDataProblem) =
 	  other.keysAndMessages.toSeq
 	  .foldLeft(this){case (state,(k, msg)) => state.withBadData(k, msg)}
 	  .withSeverity(severity and other.severity)

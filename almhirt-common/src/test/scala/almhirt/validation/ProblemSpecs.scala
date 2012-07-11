@@ -8,7 +8,7 @@ class ProblemSpecs extends Specification {
   val bdpA = SingleBadDataProblem("Message A", "A", Minor)
   val bdpB = SingleBadDataProblem("Message B", "B", Major)
   
-  "A SingleBadDataProblem with key = 'A' and message = 'Message A' when transformed to a MultipleSingleBadDataProblem" should {
+  "A SingleBadDataProblem with key = 'A' and message = 'Message A' when transformed to a MultipleBadDataProblem" should {
     "have keysAndValues = 'A->Message A' when received 'toMultipleBadData()'" in {
       bdpA.toMultipleBadData.keysAndMessages must beEqualTo(Map("A" -> "Message A"))
     }
@@ -17,7 +17,7 @@ class ProblemSpecs extends Specification {
     }
   }
   
-  "A MultipleSingleBadDataProblem created by SingleBadDataProblems A and B with different severities and different keys" should {
+  "A MultipleBadDataProblem created by SingleBadDataProblems A and B with different severities and different keys" should {
     "have a severity of 'Critical' when added" in {
       (bdpA add bdpB).severity must beEqualTo(Major)
     }
