@@ -10,18 +10,18 @@ import almhirt.validation.{Problem, AlmValidation}
 import almhirt.validation.Problem._
 import akka.util.Duration
 
-class AlmFuture[+R](val akkaFuture: Future[AlmValidation[R]]) extends AlmAkka {
+class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
   def map[T](compute: R => T): AlmFuture[T] =
-    new AlmFuture[T](akkaFuture map { hdrVal => hdrVal map compute })
+    new AlmFuture[T](underlying map { hdrVal => hdrVal map compute })
     
   def flatMap[T](compute: R => AlmFuture[T]): AlmFuture[T] =
-    new AlmFuture(akkaFuture flatMap { hdrVal => 
+    new AlmFuture(underlying flatMap { hdrVal => 
       hdrVal fold (
         failure = f => Promise.successful(f.fail[T]),
-        success = r => compute(r).akkaFuture) } )
+        success = r => compute(r).underlying) } )
   
-  def onCompletion(handler: AlmValidation[R] => Unit): Future[AlmValidation[R]] = {
-    akkaFuture onComplete({
+  def onComplete(handler: AlmValidation[R] => Unit): Future[AlmValidation[R]] = {
+    underlying onComplete({
       case Right(validation) => handler(validation)
       case Left(err) => {
         val prob = err match {
@@ -33,29 +33,29 @@ class AlmFuture[+R](val akkaFuture: Future[AlmValidation[R]]) extends AlmAkka {
     })
   }
   
-  def onResult(onRes: R => Unit): Future[AlmValidation[R]] = {
-    akkaFuture onSuccess({
+  def onSuccess(onRes: R => Unit): Future[AlmValidation[R]] = {
+    underlying onSuccess({
       case Success(r) => onRes(r)
       case _ => ()})
   }
 
-  def onProblem(onProb: Problem => Unit): Future[AlmValidation[R]] = {
-    onCompletion({
+  def onFailure(onProb: Problem => Unit): Future[AlmValidation[R]] = {
+    onComplete({
       case Failure(prob) => onProb(prob)
       case _ => ()
     })
   }
  
   def andThen(effect: AlmValidation[R] => Unit) = {
-    new AlmFuture(akkaFuture andThen{
+    new AlmFuture(underlying andThen{
       case Right(r) => effect(r)
       case Left(err) => effect(UnspecifiedSystemProblem(err.getMessage, exception = Some(err)).fail[R])
     })
   }
   
-  def isCompleted = akkaFuture.isCompleted
+  def isCompleted = underlying.isCompleted
   
-  def await(implicit atMost: Duration): AlmValidation[R] = Await.result(akkaFuture, atMost)
+  def await(implicit atMost: Duration): AlmValidation[R] = Await.result(underlying, atMost)
 }
 
 object AlmFuture extends AlmFutureImplicits {

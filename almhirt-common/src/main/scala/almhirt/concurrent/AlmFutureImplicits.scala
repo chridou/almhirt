@@ -9,8 +9,8 @@ import almhirt.almakka.AlmAkka
 trait AlmFutureImplicits extends AlmAkka {
   implicit def akkaFutureToalmhirtFuture[T](akkaFuture: Future[AlmValidation[T]]): AlmFuture[T] =
     new AlmFuture(akkaFuture)
-  implicit def almhirtFutureToAkkaFuture[T](hdrFuture: AlmFuture[T]): Future[AlmValidation[T]] =
-    hdrFuture.akkaFuture
+  implicit def almhirtFutureToAkkaFuture[T](akkaFuture: AlmFuture[T]): Future[AlmValidation[T]] =
+    akkaFuture.underlying
   implicit def akkaFutureToAkkaFutureW[T](akkaFuture: Future[Any]) =
     new AkkaFutureAnyW(akkaFuture)
   implicit def AlmValidationToalmhirtValidatenW[T](validation: AlmValidation[T]) =
