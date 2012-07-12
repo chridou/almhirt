@@ -18,7 +18,7 @@ trait AlmFutureImplicits extends AlmAkka {
     
   import scala.reflect._
   class AkkaFutureAnyW(akkaFuture: Future[Any]) {
-    def mapToAlm[T](implicit m: Manifest[T]): AlmFuture[T] = 
+    def toAlmFuture[T](implicit m: Manifest[T]): AlmFuture[T] = 
       new AlmFuture[T](akkaFuture.mapTo[AlmValidation[T]])
   }
   

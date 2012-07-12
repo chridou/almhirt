@@ -125,7 +125,7 @@ object Channel extends AlmAkka {
 	implicit val timeout = Timeout(defaultTimeout)
 	
     def subscribeAny(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[ChannelSubscription] = {
-	  ask(dispatcher, SubscribeToChannel(handler, classifier)).mapToAlm[ChannelSubscription]
+	  ask(dispatcher, SubscribeToChannel(handler, classifier)).toAlmFuture[ChannelSubscription]
     }
 	
 	def publish(message: Message[AnyRef]){ dispatcher ! Publish(message) }

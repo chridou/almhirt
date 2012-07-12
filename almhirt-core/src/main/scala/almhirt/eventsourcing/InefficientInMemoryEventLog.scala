@@ -31,11 +31,11 @@ class InefficientInMemoryEventLog() extends HasEntityEvents with CanLogEntityEve
     }
   }
 
-  def logEvents(events: NonEmptyList[EntityEvent]) = (coordinator ? LogEvents(events)).mapToAlm[CommittedEntityEvents]
+  def logEvents(events: NonEmptyList[EntityEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedEntityEvents]
   
-  def getAllEvents() = (coordinator ? GetAllEvents).mapToAlm[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID) = (coordinator ? GetAllEvents).mapToAlm[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID, fromVersion: Long) = (coordinator ? GetAllEvents).mapToAlm[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID, fromVersion: Long, toVersion: Long) = (coordinator ? GetAllEvents).mapToAlm[Iterable[EntityEvent]]
+  def getAllEvents() = (coordinator ? GetAllEvents).toAlmFuture[Iterable[EntityEvent]]
+  def getEvents(entityId: UUID) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[EntityEvent]]
+  def getEvents(entityId: UUID, fromVersion: Long) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[EntityEvent]]
+  def getEvents(entityId: UUID, fromVersion: Long, toVersion: Long) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[EntityEvent]]
   
 }

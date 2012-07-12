@@ -53,10 +53,10 @@ trait AlmValidationImplicits {
 
   implicit def option2AlmOptionW[T](opt: Option[T]) = new AlmOptionW(opt)
   final class AlmOptionW[T](opt: Option[T]) {
-    def noneIsBadData[T](v: Option[T], message: String = "No value supplied", key: String = "unknown"): Validation[SingleBadDataProblem, T] =
-      AlmValidation.noneIsBadData(v, message, key)
-    def noneIsNotFound[T](v: Option[T], message: String = "Not found"): AlmValidation[T] =
-      AlmValidation.noneIsNotFound(v, message)
+    def noneIsBadData(message: String = "No value supplied", key: String = "unknown"): Validation[SingleBadDataProblem, T] =
+      AlmValidation.noneIsBadData(opt, message, key)
+    def noneIsNotFound(message: String = "Not found"): AlmValidation[T] =
+      AlmValidation.noneIsNotFound(opt, message)
   }
   
   implicit def badDataProblemValidationToSingleBadDataProblemValidationW[T](badDataProblemValidation: Validation[SingleBadDataProblem, T]) = 
