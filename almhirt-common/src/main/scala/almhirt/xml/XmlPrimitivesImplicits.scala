@@ -13,5 +13,6 @@ trait XmlPrimitivesImplicits {
     def extractOptionalInt(): Validation[SingleBadDataProblem,Option[Int]] = XmlPrimitives.optionalIntXmlNode(node)
     def extractOptionalLong(): Validation[SingleBadDataProblem,Option[Long]] = XmlPrimitives.optionalLongXmlNode(node)
     def extractOptionalDouble(): Validation[SingleBadDataProblem,Option[Double]] = XmlPrimitives.optionalDoubleXmlNode(node)
+    def firstChildNode(label: String): Validation[SingleBadDataProblem,Node] = XmlPrimitives.firstChildNodeMandatory(node, label)
   }
 }
