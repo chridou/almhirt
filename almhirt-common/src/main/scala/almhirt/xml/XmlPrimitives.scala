@@ -125,7 +125,7 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
   def longOptionFromChild(node: XmlNode, label: String): AlmValidationSingleBadData[Option[Long]] =
     flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseLongAlm(s, label)))
   
-  def mapChildrenWithAttribute[T](node: XmlNode, label: String, attName: String, map: XmlNode => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[(String,T)]] = {
+  def mapChildrenWithAttribute[T](node: XmlNode, label: String, attName: String, map: XmlNode => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[(Option[String], T)]] = {
     val validations: List[AlmValidationMultipleBadData[(Option[String], T)]] =
       (node \ label).toList map {node =>
         val attValue = node.attribute(attName).headOption.map(_.text)
@@ -133,7 +133,6 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
           case Success(r) => Success((attValue, r))
           case Failure(f) => Failure(f.prefixWithPath(List(label))) 
         }}
-    val sequenced = validations.sequence[({type l[a]=AlmValidationMultipleBadData[a]})#l, T]
-    sequenced
+    validations.sequence
   }
 }
