@@ -20,8 +20,6 @@ trait XmlPrimitivesImplicits {
       XmlPrimitives.optionalLongXmlNode(node)
     def extractOptionalDouble(): AlmValidationSingleBadData[Option[Double]] = 
       XmlPrimitives.optionalDoubleXmlNode(node)
-    def firstChildNode(label: String): AlmValidationSingleBadData[Node] = 
-      XmlPrimitives.firstChildNodeMandatory(node, label)
     def extractStringFromChild(label: String): AlmValidationSingleBadData[String] = 
       XmlPrimitives.stringFromChild(node, label)
     def extractIntFromChild(label: String): AlmValidationSingleBadData[Int] = 
@@ -38,6 +36,12 @@ trait XmlPrimitivesImplicits {
       XmlPrimitives.longOptionFromChild(node, label)
     def extractOptionalDoubleFromChild(label: String): AlmValidationSingleBadData[Option[Double]] =
       XmlPrimitives.doubleOptionFromChild(node, label)
+    def firstChildNode(label: String): AlmValidationSingleBadData[Node] = 
+      XmlPrimitives.firstChildNodeMandatory(node, label)
+    def mapOptionalFirstChild[T](label: String, compute: Node => AlmValidationSingleBadData[T]): AlmValidationSingleBadData[Option[T]] =
+      XmlPrimitives.mapOptionalFirstChild(node, label, compute)
+    def flatMapOptionalFirstChild[T](label: String, compute: Node => AlmValidationSingleBadData[Option[T]]): AlmValidationSingleBadData[Option[T]] =
+      XmlPrimitives.flatMapOptionalFirstChild(node, label, compute)
     def mapChildrenWithAttribute[T](label: String, attName: String, map: Node => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[(Option[String], T)]] =
       XmlPrimitives.mapChildrenWithAttribute(node, label, attName, map)
   }
