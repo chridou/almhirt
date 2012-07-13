@@ -131,6 +131,17 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
       case None => Success(None)
     }
 
+  def mapChildren[T](node: XmlNode, label: String, map: XmlNode => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[T]] = {
+    val validations: List[AlmValidationMultipleBadData[T]] =
+      (node \ label).toList map {node =>
+        map(node) match {
+          case Success(r) => Success(r)
+          case Failure(f) => Failure(f.prefixWithPath(List(label))) 
+        }
+      }
+    validations.sequence
+  }
+  
   def mapChildrenWithAttribute[T](node: XmlNode, label: String, attName: String, map: XmlNode => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[(Option[String], T)]] = {
     val validations: List[AlmValidationMultipleBadData[(Option[String], T)]] =
       (node \ label).toList map {node =>
