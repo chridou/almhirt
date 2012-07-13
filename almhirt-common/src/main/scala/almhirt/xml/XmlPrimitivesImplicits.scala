@@ -42,6 +42,8 @@ trait XmlPrimitivesImplicits {
       XmlPrimitives.mapOptionalFirstChild(node, label, compute)
     def flatMapOptionalFirstChild[T](label: String, compute: Node => AlmValidationSingleBadData[Option[T]]): AlmValidationSingleBadData[Option[T]] =
       XmlPrimitives.flatMapOptionalFirstChild(node, label, compute)
+    def mapOptionalFirstChildM[T](label: String, compute: Node => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[Option[T]] =
+      XmlPrimitives.mapOptionalFirstChildM(node, label, compute)
     def mapChildrenWithAttribute[T](label: String, attName: String, map: Node => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[(Option[String], T)]] =
       XmlPrimitives.mapChildrenWithAttribute(node, label, attName, map)
   }
