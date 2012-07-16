@@ -80,10 +80,10 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.failIfEmpty" should {
     """return a success of "x" when supplied with "x"""" in {
-      (failIfEmpty("x")) must beEqualTo("x".success[SingleBadDataProblem])
+      (notEmpty("x")) must beEqualTo("x".success[SingleBadDataProblem])
     }
     """return a success of " " when supplied with " """" in {
-      (failIfEmpty(" ")) must beEqualTo(" ".success[SingleBadDataProblem])
+      (notEmpty(" ")) must beEqualTo(" ".success[SingleBadDataProblem])
     }
     """return a failure when supplied with "" """ in {
       (parseIntAlm("")).isFailure
@@ -92,13 +92,13 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.failIfEmptyOrWhitespace" should {
     """return a success of "x" when supplied with "x"""" in {
-      (failIfEmptyOrWhitespace("x")) must beEqualTo("x".success[SingleBadDataProblem])
+      (notEmptyOrWhitespace("x")) must beEqualTo("x".success[SingleBadDataProblem])
     }
     """return a failure when supplied with """"" in {
-      (failIfEmptyOrWhitespace(" ")).isFailure
+      (notEmptyOrWhitespace(" ")).isFailure
     }
     """return a failure when supplied with "" """ in {
-      (failIfEmptyOrWhitespace("")).isFailure
+      (notEmptyOrWhitespace("")).isFailure
     }
   }
   
