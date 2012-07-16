@@ -59,6 +59,6 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
 }
 
 object AlmFuture extends AlmFutureImplicits {
-  def promise[T](compute: => AlmValidation[T]) = new AlmFuture[T](Promise.successful{compute})
-  def future[T](compute: => AlmValidation[T]) = new AlmFuture[T](Future{compute})
+  def promise[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Promise.successful{compute})
+  def future[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Future{compute})
 }

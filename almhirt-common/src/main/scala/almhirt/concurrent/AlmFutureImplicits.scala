@@ -6,7 +6,7 @@ import almhirt.validation._
 import almhirt.validation.AlmValidation
 import almhirt.almakka.AlmAkka
 
-trait AlmFutureImplicits extends AlmAkka {
+trait AlmFutureImplicits {
   implicit def akkaFutureToalmhirtFuture[T](akkaFuture: Future[AlmValidation[T]]): AlmFuture[T] =
     new AlmFuture(akkaFuture)
   implicit def almhirtFutureToAkkaFuture[T](akkaFuture: AlmFuture[T]): Future[AlmValidation[T]] =
@@ -23,17 +23,17 @@ trait AlmFutureImplicits extends AlmAkka {
   }
   
   class AlmhirtValidatenW[T](validation: AlmValidation[T]) {
-    def beginAsyncWorkflow[U](compute: T => AlmValidation[U]): AlmFuture[U] =
+    def beginAsyncWorkflow[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       validation match {
         case Success(r) => new AlmFuture(Future[AlmValidation[U]]{compute(r)})
         case Failure(problem) => new AlmFuture(Promise.successful(Failure(problem)))
       }
-    def beginWorkflowPromising[U](compute: T => AlmValidation[U]): AlmFuture[U] =
+    def beginWorkflowPromising[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       validation match {
         case Success(r) => new AlmFuture(Promise.successful(compute(r)))
         case Failure(problem) => new AlmFuture(Promise.successful(Failure(problem)))
       }
-    def continueWithFuture[U](futureComputation: T => AlmFuture[U]): AlmFuture[U] =
+    def continueWithFuture[U](futureComputation: T => AlmFuture[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       validation match {
         case Success(r) => futureComputation(r)
         case Failure(problem) => new AlmFuture(Promise.successful(Failure(problem)))
