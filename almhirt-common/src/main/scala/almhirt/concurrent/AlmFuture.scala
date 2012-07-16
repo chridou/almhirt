@@ -15,8 +15,8 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
     new AlmFuture[T](underlying map { hdrVal => hdrVal map compute })
     
   def flatMap[T](compute: R => AlmFuture[T]): AlmFuture[T] =
-    new AlmFuture(underlying flatMap { hdrVal => 
-      hdrVal fold (
+    new AlmFuture(underlying flatMap { validation => 
+      validation fold (
         failure = f => Promise.successful(f.fail[T]),
         success = r => compute(r).underlying) } )
   
