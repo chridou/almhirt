@@ -8,10 +8,10 @@ import almhirt.validation.AlmValidation
 import almhirt.concurrent.AlmFuture
 
 trait ProblemToUnfilteredResponseImplicits {
-  implicit def hdrFuture2AlmFutureW[T](hdrFuture: AlmFuture[T]) = new almhirtFutureW[T](hdrFuture)
+  implicit def hdrFuture2AlmFutureW[T](hdrFuture: AlmFuture[T]) = new AlmhirtFutureW[T](hdrFuture)
   implicit def akkaFuture2AlmAkkaFutureW[T](akkaFuture: Future[AlmValidation[T]]) = new AkkaFutureW[T](akkaFuture)
 
-  final class almhirtFutureW[T](almFuture: AlmFuture[T]) {
+  final class AlmhirtFutureW[T](almFuture: AlmFuture[T]) {
     def respond(responder: unfiltered.Async.Responder[HttpResponse], createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): Future[AlmValidation[T]] = {
       almFuture.onComplete({
         case Success(r) => responder.respond(createSuccessResponse(r))
