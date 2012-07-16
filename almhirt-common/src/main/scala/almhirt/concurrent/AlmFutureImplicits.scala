@@ -7,21 +7,21 @@ import almhirt.validation.AlmValidation
 import almhirt.almakka.AlmAkka
 
 trait AlmFutureImplicits {
-  implicit def akkaFutureToalmhirtFuture[T](akkaFuture: Future[AlmValidation[T]]): AlmFuture[T] =
+  implicit def akkaFutureToAlmhirtFuture[T](akkaFuture: Future[AlmValidation[T]]): AlmFuture[T] =
     new AlmFuture(akkaFuture)
-  implicit def almhirtFutureToAkkaFuture[T](akkaFuture: AlmFuture[T]): Future[AlmValidation[T]] =
-    akkaFuture.underlying
+//  implicit def almhirtFutureToAkkaFuture[T](akkaFuture: AlmFuture[T]): Future[AlmValidation[T]] =
+//    akkaFuture.underlying
   implicit def akkaFutureToAkkaFutureW[T](akkaFuture: Future[Any]) =
     new AkkaFutureAnyW(akkaFuture)
-  implicit def AlmValidationToalmhirtValidatenW[T](validation: AlmValidation[T]) =
-    new AlmhirtValidatenW(validation)
-    
   import scala.reflect._
   class AkkaFutureAnyW(akkaFuture: Future[Any]) {
     def toAlmFuture[T](implicit m: Manifest[T]): AlmFuture[T] = 
       new AlmFuture[T](akkaFuture.mapTo[AlmValidation[T]])
   }
-  
+
+
+  implicit def AlmValidationToalmhirtValidatenW[T](validation: AlmValidation[T]) =
+    new AlmhirtValidatenW(validation)
   class AlmhirtValidatenW[T](validation: AlmValidation[T]) {
     def beginAsyncWorkflow[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       validation match {
