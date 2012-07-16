@@ -21,7 +21,7 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  val future = channel.subscribeAny({case _ => ()}, _ => true)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  system.shutdown()
 	  subscription must not beNull
 	}
@@ -30,7 +30,7 @@ class ChannelSpecs extends Specification {
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel.subscribeAny({case _ => hit = true}, _ => true)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  subscription.unsubscribe()
 	  channel.publish(Message("a"))
 	  system.shutdown()
@@ -42,8 +42,8 @@ class ChannelSpecs extends Specification {
 	  var hitCount = 0
 	  val future1 = channel.subscribeAny({case _ => hitCount += 1}, _ => true)
 	  val future2 = channel.subscribeAny({case _ => hitCount += 2}, _ => true)
-	  val subscription1 = Await.result(future1, Duration.Inf) match { case Success(s) => s }
-	  val subscription2 = Await.result(future2, Duration.Inf) match { case Success(s) => s }
+	  val subscription1 = Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  subscription1.unsubscribe()
 	  channel.publish(Message("a"))
 	  system.shutdown()
@@ -54,7 +54,7 @@ class ChannelSpecs extends Specification {
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel.subscribeAny({case _ => hit = true}, _ => true)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  hit
@@ -65,8 +65,8 @@ class ChannelSpecs extends Specification {
 	  var hitCount = 0
 	  val future1 = channel.subscribeAny({case _ => hitCount += 1}, _ => true)
 	  val future2 = channel.subscribeAny({case _ => hitCount += 2}, _ => true)
-	  val subscription1= Await.result(future1, Duration.Inf) match { case Success(s) => s }
-	  val subscription2 = Await.result(future2, Duration.Inf) match { case Success(s) => s }
+	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  hitCount must beEqualTo(3)
@@ -77,8 +77,8 @@ class ChannelSpecs extends Specification {
 	  var hitCount = 0
 	  val future1 = channel.subscribeAny({case _ => hitCount += 1}, _ => false)
 	  val future2 = channel.subscribeAny({case _ => hitCount += 2}, _ => true)
-	  val subscription1= Await.result(future1, Duration.Inf) match { case Success(s) => s }
-	  val subscription2 = Await.result(future2, Duration.Inf) match { case Success(s) => s }
+	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  hitCount must beEqualTo(2)
@@ -88,7 +88,7 @@ class ChannelSpecs extends Specification {
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel.subscribeAny({case _ => hit = true}, _ => false)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  !hit
@@ -98,7 +98,7 @@ class ChannelSpecs extends Specification {
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel.subscribeAny({case _ => hit = true}, x => x.payload match {case "a" => true } )
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  hit
@@ -108,7 +108,7 @@ class ChannelSpecs extends Specification {
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel.subscribeAny({case _ => hit = true}, x => x.payload match {case "a" => true; case _ => false } )
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("b"))
 	  system.shutdown()
 	  !hit
@@ -118,7 +118,7 @@ class ChannelSpecs extends Specification {
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel.subscribeAny({case _ => hit = true}, x => x.payload match { case "1" => true; case _ => false } )
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  !hit

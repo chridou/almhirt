@@ -12,13 +12,16 @@ import akka.util.Duration
 
 class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
   def map[T](compute: R => T): AlmFuture[T] =
-    new AlmFuture[T](underlying map { hdrVal => hdrVal map compute })
+    new AlmFuture[T](underlying map { validation => validation map compute })
     
   def flatMap[T](compute: R => AlmFuture[T]): AlmFuture[T] =
     new AlmFuture(underlying flatMap { validation => 
       validation fold (
         failure = f => Promise.successful(f.fail[T]),
         success = r => compute(r).underlying) } )
+  
+  def filter(pred: R => Boolean): AlmFuture[R] =
+    this
   
   def onComplete(handler: AlmValidation[R] => Unit): Future[AlmValidation[R]] = {
     underlying onComplete({

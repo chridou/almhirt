@@ -21,7 +21,7 @@ class ChannelMessageSpecs extends Specification {
 	  val channel = getChannel
 	  var triggered = false
 	  val future = channel.subscribe[String]((m: Message[String]) => triggered = true)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message[String](""))
 	  subscription.unsubscribe()
 	  system.shutdown()
@@ -32,7 +32,7 @@ class ChannelMessageSpecs extends Specification {
 	  val channel = getChannel
 	  var triggered = false
 	  val future = channel.subscribe[String]((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message[String]("a"))
 	  subscription.unsubscribe()
 	  system.shutdown()
@@ -43,7 +43,7 @@ class ChannelMessageSpecs extends Specification {
 	  val channel = getChannel
 	  var triggered = false
 	  val future = channel.subscribe[String]((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("b"))
 	  subscription.unsubscribe()
 	  system.shutdown()
@@ -78,7 +78,7 @@ class ChannelMessageSpecs extends Specification {
 	  val channel = getChannel
 	  var triggered = false
 	  val future = channel.subscribe[A]((m: Message[A]) => triggered = true)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new A(1)))
 	  subscription.unsubscribe()
 	  system.shutdown()
@@ -90,7 +90,7 @@ class ChannelMessageSpecs extends Specification {
 	  val channel = getChannel
 	  var triggered = false
 	  val future = channel.subscribe[A]((m: Message[A]) => triggered = true)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new B(1)))
 	  subscription.unsubscribe()
 	  system.shutdown()
@@ -104,7 +104,7 @@ class ChannelMessageSpecs extends Specification {
 	  val channel = getChannel
 	  var triggered = false
 	  val future = channel.subscribe[B]((m: Message[B]) => triggered = true)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new A(1)))
 	  subscription.unsubscribe()
 	  system.shutdown()
@@ -116,7 +116,7 @@ class ChannelMessageSpecs extends Specification {
 	  val channel = getChannel
 	  var triggered = false
 	  val future = channel.subscribe[B]((m: Message[B]) => triggered = true)
-	  val subscription = Await.result(future, Duration.Inf) match { case Success(s) => s }
+	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new B(1)))
 	  subscription.unsubscribe()
 	  system.shutdown()
