@@ -14,7 +14,7 @@ trait AlmFutureImplicits extends AlmAkka {
   implicit def akkaFutureToAkkaFutureW[T](akkaFuture: Future[Any]) =
     new AkkaFutureAnyW(akkaFuture)
   implicit def AlmValidationToalmhirtValidatenW[T](validation: AlmValidation[T]) =
-    new almhirtValidatenW(validation)
+    new AlmhirtValidatenW(validation)
     
   import scala.reflect._
   class AkkaFutureAnyW(akkaFuture: Future[Any]) {
@@ -22,7 +22,7 @@ trait AlmFutureImplicits extends AlmAkka {
       new AlmFuture[T](akkaFuture.mapTo[AlmValidation[T]])
   }
   
-  class almhirtValidatenW[T](validation: AlmValidation[T]) {
+  class AlmhirtValidatenW[T](validation: AlmValidation[T]) {
     def beginAsyncWorkflow[U](compute: T => AlmValidation[U]): AlmFuture[U] =
       validation match {
         case Success(r) => new AlmFuture(Future[AlmValidation[U]]{compute(r)})
