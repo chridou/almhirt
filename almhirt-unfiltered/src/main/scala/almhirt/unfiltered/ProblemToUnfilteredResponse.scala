@@ -27,7 +27,6 @@ object ProblemToUnfilteredResponse extends ProblemToUnfilteredResponseImplicits 
   		}
       }
     }
-    Created
   }
   
   def respondOnValidation[T](validation: AlmValidation[T], onSuccess: T => ResponseFunction[HttpResponse]) = {
