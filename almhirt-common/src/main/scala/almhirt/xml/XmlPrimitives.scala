@@ -20,21 +20,21 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
   
   def intFromXmlNode(node: XmlNode): AlmValidationSingleBadData[Int] = {
     for{
-      ne <- failIfEmptyOrWhitespace(node.text, node.label)
+      ne <- notEmptyOrWhitespace(node.text, node.label)
       res <- parseIntAlm(ne, node.label)
     } yield res
   }
     
   def longFromXmlNode(node: XmlNode): AlmValidationSingleBadData[Long] = {
     for{
-      ne <- failIfEmptyOrWhitespace(node.text, node.label)
+      ne <- notEmptyOrWhitespace(node.text, node.label)
       res <- parseLongAlm(ne, node.label)
     } yield res
   }
   
   def doubleFromXmlNode(node: XmlNode): AlmValidationSingleBadData[Double] = {
     for{
-      ne <- failIfEmptyOrWhitespace(node.text, node.label)
+      ne <- notEmptyOrWhitespace(node.text, node.label)
       res <- parseDoubleAlm(ne, node.label)
     } yield res
   }
@@ -90,7 +90,7 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
 
   def stringFromChild(node: XmlNode, label: String): AlmValidationSingleBadData[String] =
     firstChildNodeMandatory(node, label)
-    .flatMap {node => failIfEmptyOrWhitespace(node.text, label)}
+    .flatMap {node => notEmptyOrWhitespace(node.text, label)}
 
   def doubleFromChild(node: XmlNode, label: String): AlmValidationSingleBadData[Double] =
     firstChildNodeMandatory(node, label)

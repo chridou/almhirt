@@ -54,16 +54,16 @@ object AlmValidation extends AlmValidationImplicits {
       case err => badData("Not a valid number(Double)".format(toParse), key).fail[Double]
     }
   
-  def failIfEmpty(toTest: String, key: String = "some value"): AlmValidationSingleBadData[String] =
+  def notEmpty(toTest: String, key: String = "some value"): AlmValidationSingleBadData[String] =
     if(toTest.isEmpty) badData("must not be empty", key).fail[String] else toTest.success[SingleBadDataProblem]
 
-  def failIfEmptyOrWhitespace(toTest: String, key: String = "some value"): AlmValidationSingleBadData[String] =
+  def notEmptyOrWhitespace(toTest: String, key: String = "some value"): AlmValidationSingleBadData[String] =
     if(toTest.trim.isEmpty) 
       badData("must not be empty or whitespaces", key).fail[String] 
     else 
       toTest.success[SingleBadDataProblem]
   
-  def failIfFalse(cond: => Boolean, problem: Problem): AlmValidation[Unit] =
+  def mustBeTrue(cond: => Boolean, problem: Problem): AlmValidation[Unit] =
     if(cond) ().successAlm else problem.fail[Unit]
   
   def noneIsBadData[T](v: Option[T], message: String = "No value supplied", key: String = "unknown"): AlmValidationSingleBadData[T] =

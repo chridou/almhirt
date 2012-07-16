@@ -15,9 +15,9 @@ trait AlmValidationImplicits {
     def toDoubleAlm(key: String = "some value"): AlmValidationSingleBadData[Double] =  
       AlmValidation.parseDoubleAlm(str, key)
     def notEmptyAlm(key: String = "some value"): AlmValidationSingleBadData[String] =  
-      AlmValidation.failIfEmpty(str, key)
+      AlmValidation.notEmpty(str, key)
     def notEmptyOrWhitespaceAlm(key: String = "some value"): AlmValidationSingleBadData[String] =  
-      AlmValidation.failIfEmptyOrWhitespace(str, key)
+      AlmValidation.notEmptyOrWhitespace(str, key)
   }
 
   implicit def any2AnyAlmW[T](x: T): AnyAlmW[T] = new AnyAlmW(x)
