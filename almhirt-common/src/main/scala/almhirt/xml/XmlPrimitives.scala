@@ -11,14 +11,14 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
   import scala.xml.{XML, Node, Elem, NodeSeq}
   import scala.xml.XML
   
-  def elems(ns: NodeSeq): Seq[Elem] = 
-    ns flatMap { (n: Node) => 
+  def elems(elem: Elem): Seq[Elem] = 
+    elem.child flatMap { (n: Node) => 
       n match {
         case e:Elem => Some(e)                                   
         case _ => None
       } }
 
-  def elems(ns: NodeSeq, label: String): Seq[Elem] = elems(ns) filter (_.label == label)
+  def elems(elem: Elem, label: String): Seq[Elem] = elems(elem) filter (_.label == label)
   
   def xmlFromString(xmlString: String, key: String = "XML"): AlmValidationSingleBadData[Elem] = {
     try {
