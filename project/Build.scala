@@ -28,6 +28,7 @@ object Dependencies {
 
 	lazy val unfiltered = "net.databinder" %% "unfiltered-netty" % "0.6.3"
 
+	lazy val casbah  = "com.mongodb.casbah" % "casbah_2.9.0-1" % "2.1.5.0"
 	
 	lazy val specs2 = "org.specs2" %% "specs2" % "1.11" % "test"
 	lazy val akka_testkit = "com.typesafe.akka" % "akka-testkit" % "2.0.2"
@@ -66,6 +67,20 @@ trait CoreBuild {
   
 }
 
+trait CommonMongoBuild {
+  import Dependencies._
+  import Resolvers._
+  def commonMongoProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeSnapshot,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += casbah,
+	  libraryDependencies += specs2
+  )
+}
+
 trait UnfilteredBuild {
   import Dependencies._
   import Resolvers._
@@ -76,7 +91,7 @@ trait UnfilteredBuild {
   
 }
 
-object HighDriveBuild extends Build with CommonBuild with CoreBuild with UnfilteredBuild {
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with UnfilteredBuild with CommonMongoBuild {
   lazy val root = Project(	id = "almhirt",
 	                        base = file(".")) aggregate(common, core, unfiltered)
 	
@@ -86,7 +101,11 @@ object HighDriveBuild extends Build with CommonBuild with CoreBuild with Unfilte
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common)
 
+  lazy val commonMongo = commonMongoProject(	name = "almhirt-common-mongo",
+                       			baseFile = file("almhirt-common-mongo")) dependsOn(common)
+
   lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
 	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)
 
+										
 }
