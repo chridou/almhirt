@@ -54,5 +54,6 @@ trait XmlPrimitivesImplicits {
   final class NodeSeqW(ns: NodeSeq) {
     def \* = XmlPrimitives.elems(ns)
     def \#(label: String) = XmlPrimitives.elems(ns, label)
+    def elems = XmlPrimitives.elems(ns)
   }
 }
