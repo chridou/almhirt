@@ -38,15 +38,15 @@ trait XmlPrimitivesImplicits {
       XmlPrimitives.doubleOptionFromChild(node, label)
     def firstChildNode(label: String): AlmValidationSingleBadData[Elem] = 
       XmlPrimitives.firstChildNodeMandatory(node, label)
-    def mapOptionalFirstChild[T](label: String, compute: Node => AlmValidationSingleBadData[T]): AlmValidationSingleBadData[Option[T]] =
+    def mapOptionalFirstChild[T](label: String, compute: Elem => AlmValidationSingleBadData[T]): AlmValidationSingleBadData[Option[T]] =
       XmlPrimitives.mapOptionalFirstChild(node, label, compute)
-    def flatMapOptionalFirstChild[T](label: String, compute: Node => AlmValidationSingleBadData[Option[T]]): AlmValidationSingleBadData[Option[T]] =
+    def flatMapOptionalFirstChild[T](label: String, compute: Elem => AlmValidationSingleBadData[Option[T]]): AlmValidationSingleBadData[Option[T]] =
       XmlPrimitives.flatMapOptionalFirstChild(node, label, compute)
-    def mapOptionalFirstChildM[T](label: String, compute: Node => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[Option[T]] =
+    def mapOptionalFirstChildM[T](label: String, compute: Elem => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[Option[T]] =
       XmlPrimitives.mapOptionalFirstChildM(node, label, compute)
-    def mapChildren[T](label: String, map: Node => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[T]] =
+    def mapChildren[T](label: String, map: Elem => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[T]] =
       XmlPrimitives.mapChildren(node, label, map)
-    def mapChildrenWithAttribute[T](label: String, attName: String, map: Node => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[(Option[String], T)]] =
+    def mapChildrenWithAttribute[T](label: String, attName: String, map: Elem => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[(Option[String], T)]] =
       XmlPrimitives.mapChildrenWithAttribute(node, label, attName, map)
   }
   
