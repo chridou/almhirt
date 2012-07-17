@@ -50,10 +50,10 @@ trait XmlPrimitivesImplicits {
       XmlPrimitives.mapChildrenWithAttribute(node, label, attName, map)
   }
   
-  implicit def nodeSeq2NodeSeqW(xml: NodeSeq) = new NodeSeqW(xml)
-  final class NodeSeqW(ns: NodeSeq) {
-    def \* = XmlPrimitives.elems(ns)
-    def \#(label: String) = XmlPrimitives.elems(ns, label)
-    def elems = XmlPrimitives.elems(ns)
+  implicit def nodeSeq2NodeSeqW(elem: Elem) = new AlmElemW(elem)
+  final class AlmElemW(elem: Elem) {
+    def \* = XmlPrimitives.elems(elem)
+    def \#(label: String) = XmlPrimitives.elems(elem, label)
+    def elems = XmlPrimitives.elems(elem)
   }
 }
