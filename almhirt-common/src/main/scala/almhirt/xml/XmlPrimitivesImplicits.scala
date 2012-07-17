@@ -1,13 +1,13 @@
 package almhirt.xml
 
-import scala.xml.Node
+import scala.xml.{Node, NodeSeq, Elem}
 import scalaz.Validation
 import almhirt.validation._
 import almhirt.validation.Problem._
 
 trait XmlPrimitivesImplicits {
-  implicit def nodeToXmlNodeW(node: Node) = new XmlNodeW(node)
-  final class XmlNodeW(node: Node) {
+  implicit def nodeToXmlNodeW(node: Elem) = new XmlNodeW(node)
+  final class XmlNodeW(node: Elem) {
     def extractInt(): AlmValidationSingleBadData[Int] = 
       XmlPrimitives.intFromXmlNode(node)
     def extractLong(): AlmValidationSingleBadData[Long] = 
@@ -36,7 +36,7 @@ trait XmlPrimitivesImplicits {
       XmlPrimitives.longOptionFromChild(node, label)
     def extractOptionalDoubleFromChild(label: String): AlmValidationSingleBadData[Option[Double]] =
       XmlPrimitives.doubleOptionFromChild(node, label)
-    def firstChildNode(label: String): AlmValidationSingleBadData[Node] = 
+    def firstChildNode(label: String): AlmValidationSingleBadData[Elem] = 
       XmlPrimitives.firstChildNodeMandatory(node, label)
     def mapOptionalFirstChild[T](label: String, compute: Node => AlmValidationSingleBadData[T]): AlmValidationSingleBadData[Option[T]] =
       XmlPrimitives.mapOptionalFirstChild(node, label, compute)
@@ -48,5 +48,11 @@ trait XmlPrimitivesImplicits {
       XmlPrimitives.mapChildren(node, label, map)
     def mapChildrenWithAttribute[T](label: String, attName: String, map: Node => AlmValidationMultipleBadData[T]): AlmValidationMultipleBadData[List[(Option[String], T)]] =
       XmlPrimitives.mapChildrenWithAttribute(node, label, attName, map)
+  }
+  
+  implicit def nodeSeq2NodeSeqW(xml: NodeSeq) = new NodeSeqW(xml)
+  final class NodeSeqW(ns: NodeSeq) {
+    def \* = XmlPrimitives.elems(ns)
+    def \#(label: String) = XmlPrimitives.elems(ns, label)
   }
 }
