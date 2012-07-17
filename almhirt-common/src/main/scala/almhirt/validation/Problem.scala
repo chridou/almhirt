@@ -18,6 +18,7 @@ trait Problem{
 }
 
 trait SystemProblem extends Problem
+trait MappingProblem extends SystemProblem
 trait ApplicationProblem extends Problem
 trait SecurityProblem extends ApplicationProblem
 trait BadDataProblem extends ApplicationProblem
@@ -80,6 +81,44 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
+  case class SingleMappingProblem(message: String, key: String = "unknown", severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends MappingProblem {
+	type T = SingleMappingProblem
+    def withMessage(newMessage: String) = copy(message = newMessage)
+    def withException(err: Throwable) = copy(exception = Some(err))
+	def withSeverity(severity: Severity) = copy(severity = severity)
+	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+	def addTo(multipleMappingProblem: MultipleMappingProblem) = multipleMappingProblem.add(this)
+	def add(other: SingleMappingProblem) = toMultipleMappingProblem().add(other)
+	def toMultipleMappingProblem() = MultipleMappingProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+  }
+  case class MultipleMappingProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends BadDataProblem {
+	type T = MultipleMappingProblem
+    def withMessage(newMessage: String) = copy(message = newMessage)
+    def withException(err: Throwable) = copy(exception = Some(err))
+	def withSeverity(severity: Severity) = copy(severity = severity)
+	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+	def withBadMapping(key: String, messageForKey: String): T =
+	  keysAndMessages.get(key) match {
+	  case Some(_) => withBadMapping(key + "_", messageForKey)
+	  case None => copy(keysAndMessages = keysAndMessages + (key -> messageForKey))
+	}
+	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+	def add(badMapping: SingleMappingProblem) = withBadMapping(badMapping.key, badMapping.message).withSeverity(severity and badMapping.severity)
+	def combineWith(other: MultipleMappingProblem) =
+	  other.keysAndMessages.toSeq
+	  .foldLeft(this){case (state,(k, msg)) => state.withBadMapping(k, msg)}
+	  .withSeverity(severity and other.severity)
+	def prefixWithPath(pathParts: List[String], sep: String = ".") = {
+	  pathParts match {
+	    case Nil => this
+	    case _ =>
+	      val path = pathParts.mkString(sep)+sep
+	      copy(keysAndMessages = keysAndMessages.toSeq.map{case (k, m) => (path + k) -> m}.toMap)  
+	  }
+	}
+  }
+
   
   case class UnspecifiedApplicationProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
 	type T = UnspecifiedApplicationProblem
@@ -107,6 +146,7 @@ object Problem extends ProblemImplicits {
 	def addTo(multipleBadData: MultipleBadDataProblem) = multipleBadData.add(this)
 	def add(other: SingleBadDataProblem) = toMultipleBadData().add(other)
 	def toMultipleBadData() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+	def toSystemProblem() = SingleMappingProblem(message, key = key, severity = severity, args = args, exception = exception, cause = Some(this))
   }
   case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends BadDataProblem {
 	type T = MultipleBadDataProblem
@@ -133,6 +173,7 @@ object Problem extends ProblemImplicits {
 	      copy(keysAndMessages = keysAndMessages.toSeq.map{case (k, m) => (path + k) -> m}.toMap)  
 	  }
 	}
+	def toSystemProblem() = MultipleMappingProblem(message, keysAndMessages = keysAndMessages, severity = severity, args = args, exception = exception, cause = Some(this))
   }
   case class CollisionProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
 	type T = CollisionProblem
