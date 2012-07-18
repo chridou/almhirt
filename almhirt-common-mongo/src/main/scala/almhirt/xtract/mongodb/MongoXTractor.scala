@@ -11,13 +11,12 @@ import com.mongodb.casbah.Imports._
 trait MongoXTractorKeyMapper extends Function[String, String] {
 }
 
-class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: MongoXTractorKeyMapper) extends XTractor {
+class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit mapKey: MongoXTractorKeyMapper) extends XTractor {
   type T = MongoDBObject
-  def underlying() = mongoObj
   
   def tryGetString(aKey: String) = 
     try {
-       mongoObj.getAs[String](mapKey(aKey)) match {
+       underlying.getAs[String](mapKey(aKey)) match {
         case Some(str) => if(str.trim.isEmpty) None.successSingleBadData  else Some(str).successSingleBadData
         case None => None.successSingleBadData
       }
@@ -27,7 +26,7 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: M
   
   def tryGetInt(aKey: String) = 
     try {
-      mongoObj.getAs[Int](mapKey(aKey)).map(identity) match {
+      underlying.getAs[Int](mapKey(aKey)).map(identity) match {
         case Some(v) => Some(v).successSingleBadData
         case None => None.successSingleBadData
       }
@@ -37,7 +36,7 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: M
   
   def tryGetLong(aKey: String) =
     try {
-      mongoObj.getAs[Long](mapKey(aKey)).map{identity} match {
+      underlying.getAs[Long](mapKey(aKey)).map{identity} match {
         case Some(v) => Some(v).successSingleBadData
         case None => None.successSingleBadData
       }
@@ -47,7 +46,7 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: M
   
   def tryGetDouble(aKey: String) = 
     try {
-      mongoObj.getAs[Double](mapKey(aKey)).map{identity} match {
+      underlying.getAs[Double](mapKey(aKey)).map{identity} match {
         case Some(v) => Some(v).successSingleBadData
         case None => None.successSingleBadData
       }
@@ -57,10 +56,9 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: M
   
   def tryGetAsString(aKey: String) = 
     SingleBadDataProblem("not supported", key = aKey).fail[Option[String]]
-  
 
   def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]] =
-    mongoObj.get(mapKey(aKey)) match {
+    underlying.get(mapKey(aKey)) match {
       case Some(obj) => 
         obj.asInstanceOf[MongoDBList]
           .map(x => new MongoXTractor(x.asInstanceOf[MongoDBObject], aKey))
@@ -70,9 +68,14 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: M
     }
   
   def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]] =
-    mongoObj.get(mapKey(aKey)) match {
-      case Some(obj) => Some(new MongoXTractor(obj.asInstanceOf[MongoDBObject], aKey)).successSingleBadData
-      case None => Success(None)
+    try {
+      val theKey = mapKey(aKey)
+      underlying.get(theKey) match {
+        case Some(obj) => Some(new MongoXTractor(obj.asInstanceOf[MongoDBObject], aKey)).successSingleBadData
+        case None => Success(None)
+      }
+    } catch {
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).fail[Option[XTractor]]
     }
 }
 

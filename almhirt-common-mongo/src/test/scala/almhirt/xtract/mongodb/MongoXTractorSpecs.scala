@@ -190,5 +190,72 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").tryGetString("spaces") must beEqualTo(None.successSingleBadData)
     }
   }
+
+  """A MongoXTractor for Bob using the default KeyMapper when queried for the non-existing key "doesNotExist""""" should {
+    """return a failure when queried with getLong""" in {
+      bob.xtractor("Bob").getLong("doesNotExist").isFailure
+    }
+    """return a failure when queried with getInt""" in {
+      bob.xtractor("Bob").getInt("doesNotExist").isFailure
+    }
+    """return a failure when queried with getDouble""" in {
+      bob.xtractor("Bob").getDouble("doesNotExist").isFailure
+    }
+    """return a failure when queried with getString""" in {
+      bob.xtractor("Bob").getString("doesNotExist").isFailure
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("doesNotExist").isFailure
+    }
+    """return a success of None when queried with tryGetInt""" in {
+      bob.xtractor("Bob").tryGetInt("doesNotExist") must beEqualTo(None.successSingleBadData)
+    }
+    """return a success of None when queried with tryGetLong""" in {
+      bob.xtractor("Bob").tryGetLong("doesNotExist") must beEqualTo(None.successSingleBadData)
+    }
+    """return a success of None when queried with tryGetDouble""" in {
+      bob.xtractor("Bob").tryGetDouble("doesNotExist") must beEqualTo(None.successSingleBadData)
+    }
+    """return a success of None when queried with tryGetString""" in {
+      bob.xtractor("Bob").tryGetString("doesNotExist") must beEqualTo(None.successSingleBadData)
+    }
+    """return a success of None when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("doesNotExist") must beEqualTo(None.successSingleBadData)
+    }
+    """return a success of [] when queried with getElements""" in {
+      bob.xtractor("Bob").getElements("doesNotExist") must beEqualTo(Nil.successSingleBadData)
+    }
+  }
+
+  """A MongoXTractor for Bob using the default KeyMapper when queried for "gameTimes" which is a Collection of MongoDBObjects"""" should {
+    """return a failure when queried with getLong""" in {
+      bob.xtractor("Bob").getLong("gameTimes").isFailure
+    }
+    """return a failure when queried with getInt""" in {
+      bob.xtractor("Bob").getInt("gameTimes").isFailure
+    }
+    """return a failure when queried with getDouble""" in {
+      bob.xtractor("Bob").getDouble("gameTimes").isFailure
+    }
+    """return a failure when queried with getString""" in {
+      bob.xtractor("Bob").getString("gameTimes").isFailure
+    }
+    """return a failure when queried with tryGetLong""" in {
+      bob.xtractor("Bob").tryGetLong("gameTimes").isFailure
+    }
+    """return a failure when queried with tryGetInt""" in {
+      bob.xtractor("Bob").tryGetInt("gameTimes").isFailure
+    }
+    """return a failure when queried with tryGetDouble""" in {
+      bob.xtractor("Bob").tryGetDouble("gameTimes").isFailure
+    }
+    """return a failure when queried with tryGetString""" in {
+      bob.xtractor("Bob").tryGetString("gameTimes").isFailure
+    }
+    """return a success of an extractor when queried with getElement""" in {
+      println(bob.xtractor("Bob").getElement("gameTimes"))
+      bob.xtractor("Bob").getElement("gameTimes").isSuccess
+    }
+  }
   
 }
