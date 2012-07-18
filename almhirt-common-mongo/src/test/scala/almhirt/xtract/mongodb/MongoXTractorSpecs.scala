@@ -1,10 +1,12 @@
 package almhirt.xtract.mongodb
 
 import org.specs2.mutable._
+import almhirt.validation.AlmValidation._
 import com.mongodb.casbah.Imports._
 
 class MongoXTractorSpecs extends Specification {
-  val bob = {
+  import MongoXTractor._
+  val bob: MongoDBObject = {
     val builder = MongoDBObject.newBuilder
     builder += "_id" -> 0L
     builder += "name" -> "Bob"
@@ -17,7 +19,7 @@ class MongoXTractorSpecs extends Specification {
 
   """A MongoXTractor for Bob""" should {
     """return success 0L when queried for "id" with getLong""" in {
-      bob.xtractor("Bob")
+      bob.xtractor("Bob") must beEqualTo(0L.successMultipleBadData)
     }
   }
 }
