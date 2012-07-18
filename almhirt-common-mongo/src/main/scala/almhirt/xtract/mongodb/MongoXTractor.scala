@@ -16,27 +16,43 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: M
   def underlying() = mongoObj
   
   def tryGetString(aKey: String) = 
-    mongoObj.getAs[String](mapKey(aKey)) match {
-      case Some(str) => if(str.trim.isEmpty) None.successSingleBadData  else Some(str).successSingleBadData
-      case None => None.successSingleBadData
+    try {
+       mongoObj.getAs[String](mapKey(aKey)) match {
+        case Some(str) => if(str.trim.isEmpty) None.successSingleBadData  else Some(str).successSingleBadData
+        case None => None.successSingleBadData
+      }
+    } catch {
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).fail[Option[String]]  
     }
   
   def tryGetInt(aKey: String) = 
-    mongoObj.getAs[Int](mapKey(aKey)) match {
-      case Some(v) => Some(v).successSingleBadData
-      case None => None.successSingleBadData
+    try {
+      mongoObj.getAs[Int](mapKey(aKey)).map(identity) match {
+        case Some(v) => Some(v).successSingleBadData
+        case None => None.successSingleBadData
+      }
+    } catch {
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).fail[Option[Int]]  
     }
   
-  def tryGetLong(aKey: String) = 
-    mongoObj.getAs[Long](mapKey(aKey)) match {
-      case Some(v) => Some(v).successSingleBadData
-      case None => None.successSingleBadData
+  def tryGetLong(aKey: String) =
+    try {
+      mongoObj.getAs[Long](mapKey(aKey)).map{identity} match {
+        case Some(v) => Some(v).successSingleBadData
+        case None => None.successSingleBadData
+      }
+    } catch {
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).fail[Option[Long]]  
     }
   
   def tryGetDouble(aKey: String) = 
-    mongoObj.getAs[Double](mapKey(aKey)) match {
-      case Some(v) => Some(v).successSingleBadData
-      case None => None.successSingleBadData
+    try {
+      mongoObj.getAs[Double](mapKey(aKey)).map{identity} match {
+        case Some(v) => Some(v).successSingleBadData
+        case None => None.successSingleBadData
+      }
+    } catch {
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).fail[Option[Double]]  
     }
   
   def tryGetAsString(aKey: String) = 
@@ -61,8 +77,12 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: M
 }
 
 object MongoXTractor {
-  implicit val defaultMongoKeyMapper = 
-    new MongoXTractorKeyMapper{ def apply(key: String) = if(key == "id") "_id" else key }
+  def createKeyMapper(map: String => String): MongoXTractorKeyMapper =
+    new MongoXTractorKeyMapper{ def apply(key: String) = map(key) }
+  def createKeyMapper(idKey: String): MongoXTractorKeyMapper =
+    createKeyMapper(key => if(key == idKey) "_id" else key)
+  
+  implicit val defaultMongoKeyMapper = createKeyMapper("id")
   implicit def mongoDBObject2MongoXTractorW(elem: MongoDBObject): MongoDBObjectMongoXTractorW = new MongoDBObjectMongoXTractorW(elem)
   final class MongoDBObjectMongoXTractorW(mongoObj: MongoDBObject) {
     def xtractor(aKey: String): MongoXTractor = new MongoXTractor(mongoObj, aKey)

@@ -35,14 +35,16 @@ trait XTractor {
           case Some(v) => v.successSingleBadData
           case None => Failure(SingleBadDataProblem("Value not found: %s".format(key), key = aKey))
         }
+      case Failure(f) => Failure(f)
   }
   def getInt(aKey: String): AlmValidationSingleBadData[Int] = 
     tryGetInt(aKey) match {
       case Success(opt) => 
         opt match {
-          case Some(v) => v.successSingleBadData
+          case Some(v) => Success(v)
           case None => Failure(SingleBadDataProblem("Value not found: %s".format(key), key = aKey))
         }
+      case Failure(f) => Failure(f)
   }
   def getLong(aKey: String): AlmValidationSingleBadData[Long] = 
     tryGetLong(aKey) match {
@@ -51,7 +53,9 @@ trait XTractor {
           case Some(v) => v.successSingleBadData
           case None => Failure(SingleBadDataProblem("Value not found: %s".format(aKey), key = aKey))
         }
+      case Failure(f) => Failure(f)
   }
+  
   def getDouble(aKey: String): AlmValidationSingleBadData[Double] = 
     tryGetDouble(aKey) match {
       case Success(opt) => 
@@ -59,6 +63,7 @@ trait XTractor {
           case Some(v) => v.successSingleBadData
           case None => Failure(SingleBadDataProblem("Value not found: %s".format(key), key = aKey))
         }
+      case Failure(f) => Failure(f)
   }
   
   def getAsString(aKey: String): AlmValidationSingleBadData[String] = 
@@ -68,6 +73,7 @@ trait XTractor {
           case Some(v) => v.successSingleBadData
           case None => Failure(SingleBadDataProblem("Value not found: %s".format(key), key = aKey))
         }
+      case Failure(f) => Failure(f)
   }
   
   def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]]
