@@ -8,30 +8,33 @@ import almhirt.validation.Problem._
 import almhirt.xtract.XTractor
 import com.mongodb.casbah.Imports._
 
-class MongoXTractor(mongoObj: MongoDBObject, val key: String) extends XTractor {
+trait MongoXTractorKeyMapper extends Function[String, String] {
+}
+
+class MongoXTractor(mongoObj: MongoDBObject, val key: String)(implicit mapKey: MongoXTractorKeyMapper) extends XTractor {
   type T = MongoDBObject
   def underlying() = mongoObj
   
   def tryGetString(aKey: String) = 
-    mongoObj.getAs[String](aKey) match {
+    mongoObj.getAs[String](mapKey(aKey)) match {
       case Some(str) => if(str.trim.isEmpty) None.successSingleBadData  else Some(str).successSingleBadData
       case None => None.successSingleBadData
     }
   
   def tryGetInt(aKey: String) = 
-    mongoObj.getAs[Int](aKey) match {
+    mongoObj.getAs[Int](mapKey(aKey)) match {
       case Some(v) => Some(v).successSingleBadData
       case None => None.successSingleBadData
     }
   
   def tryGetLong(aKey: String) = 
-    mongoObj.getAs[Long](aKey) match {
+    mongoObj.getAs[Long](mapKey(aKey)) match {
       case Some(v) => Some(v).successSingleBadData
       case None => None.successSingleBadData
     }
   
   def tryGetDouble(aKey: String) = 
-    mongoObj.getAs[Double](aKey) match {
+    mongoObj.getAs[Double](mapKey(aKey)) match {
       case Some(v) => Some(v).successSingleBadData
       case None => None.successSingleBadData
     }
@@ -41,7 +44,7 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String) extends XTractor {
   
 
   def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]] =
-    mongoObj.get(aKey) match {
+    mongoObj.get(mapKey(aKey)) match {
       case Some(obj) => 
         obj.asInstanceOf[MongoDBList]
           .map(x => new MongoXTractor(x.asInstanceOf[MongoDBObject], aKey))
@@ -51,13 +54,15 @@ class MongoXTractor(mongoObj: MongoDBObject, val key: String) extends XTractor {
     }
   
   def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]] =
-    mongoObj.get(aKey) match {
+    mongoObj.get(mapKey(aKey)) match {
       case Some(obj) => Some(new MongoXTractor(obj.asInstanceOf[MongoDBObject], aKey)).successSingleBadData
       case None => Success(None)
     }
 }
 
 object MongoXTractor {
+  implicit val defaultMongoKeyMapper = 
+    new MongoXTractorKeyMapper{ def apply(key: String) = if(key == "id") "_id" else key }
   implicit def mongoDBObject2MongoXTractorW(elem: MongoDBObject): MongoDBObjectMongoXTractorW = new MongoDBObjectMongoXTractorW(elem)
   final class MongoDBObjectMongoXTractorW(mongoObj: MongoDBObject) {
     def xtractor(aKey: String): MongoXTractor = new MongoXTractor(mongoObj, aKey)

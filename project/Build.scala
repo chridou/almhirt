@@ -105,7 +105,7 @@ trait UnfilteredBuild {
 
 object AlmHirtBuild extends Build with CommonBuild with CoreBuild with UnfilteredBuild with CommonMongoBuild with ConcurrentBuild{
   lazy val root = Project(	id = "almhirt",
-	                        base = file(".")) aggregate(common, concurrent, core, unfiltered)
+	                        base = file(".")) aggregate(common, concurrent, core, commonMongo, unfiltered)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
