@@ -1,7 +1,8 @@
 package almhirt.xtract.xml
 
 import scala.xml.Elem
-import scalaz.syntax.validation._
+import scalaz._
+import Scalaz._
 import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
@@ -12,19 +13,22 @@ import almhirt.xtract.XTractor
 class XmlXTractor(elem: Elem) extends XTractor {
   type T = Elem
   def underlying() = elem
-  def extractString(key: String) = XmlPrimitives.stringFromChild(elem, key)
-  def extractInt(key: String) = XmlPrimitives.intFromChild(elem, key)
-  def extractLong(key: String) = XmlPrimitives.longFromChild(elem, key)
-  def extractDouble(key: String) = XmlPrimitives.doubleFromChild(elem, key)
-  def extractOptString(key: String) = XmlPrimitives.stringOptionFromChild(elem, key)
-  def extractOptInt(key: String) = XmlPrimitives.intOptionFromChild(elem, key)
-  def extractOptLong(key: String) = XmlPrimitives.longOptionFromChild(elem, key)
-  def extractOptDouble(key: String) = XmlPrimitives.doubleOptionFromChild(elem, key)
-  def extractElement(key: String): AlmValidationSingleBadData[XTractor]
-  def extractOptElement(key: String): AlmValidationSingleBadData[Option[XTractor]]
-  def mapOpt[U](key: String, mapXtractor: XTractor => AlmValidationMultipleBadData[U]): AlmValidationMultipleBadData[Option[U]]
-  def flatMapOpt[U](key: String, mapXtractor: XTractor => AlmValidationMultipleBadData[Option[U]]): AlmValidationMultipleBadData[Option[U]]
-  def mapAll[U](mapXtractor: XTractor => AlmValidationMultipleBadData[U]): AlmValidationMultipleBadData[List[U]]
+  val key = elem.label
+  
+  def tryGetString(aKey: String) = XmlPrimitives.stringOptionFromChild(elem, aKey)
+  def tryGetInt(aKey: String) = XmlPrimitives.intOptionFromChild(elem, aKey)
+  def tryGetLong(aKey: String) = XmlPrimitives.longOptionFromChild(elem, aKey)
+  def tryGetDouble(aKey: String) = XmlPrimitives.doubleOptionFromChild(elem, aKey)
+  def tryGetAsString(aKey: String) = SingleBadDataProblem("not supported", key = aKey).fail[Option[String]]
+
+  def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]] =
+    XmlPrimitives.elems(elem, aKey)
+      .map(elem => (new XmlXTractor(elem)).successMultipleBadData)
+      .toList
+      .sequence
+  
+  def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]] =
+    XmlPrimitives.elems(elem, aKey).headOption.map(new XmlXTractor(_)).successSingleBadData
 }
 
 object XmlXTractor {

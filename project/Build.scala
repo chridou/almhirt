@@ -44,11 +44,23 @@ trait CommonBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += specs2
+  )
+}
+
+trait ConcurrentBuild {
+  import Dependencies._
+  import Resolvers._
+  def concurrentProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeSnapshot,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += specs2,
 	  libraryDependencies += akka_testkit
   )
-  
 }
 
 trait CoreBuild {
@@ -91,21 +103,24 @@ trait UnfilteredBuild {
   
 }
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with UnfilteredBuild with CommonMongoBuild {
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with UnfilteredBuild with CommonMongoBuild with ConcurrentBuild{
   lazy val root = Project(	id = "almhirt",
-	                        base = file(".")) aggregate(common, core, unfiltered)
+	                        base = file(".")) aggregate(common, concurrent, core, unfiltered)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
+  lazy val concurrent = concurrentProject(	name = "almhirt-concurrent",
+                       			baseFile = file("almhirt-concurrent")) dependsOn(common)
+
   lazy val core = coreProject(	name = "almhirt-core",
-	                       		baseFile = file("almhirt-core")) dependsOn(common)
+	                       		baseFile = file("almhirt-core")) dependsOn(common, concurrent)
 
   lazy val commonMongo = commonMongoProject(	name = "almhirt-common-mongo",
                        			baseFile = file("almhirt-common-mongo")) dependsOn(common)
 
   lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
-	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)
+	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common, concurrent)
 
 										
 }
