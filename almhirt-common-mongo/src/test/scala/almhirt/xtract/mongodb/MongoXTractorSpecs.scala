@@ -252,12 +252,6 @@ class MongoXTractorSpecs extends Specification {
     """return a failure when queried with getString""" in {
       bob.xtractor("Bob").getString("address").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("address").isSuccess
-    }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor("Bob").getElements("address").isFailure
-    }
     """return a failure when queried with tryGetLong""" in {
       bob.xtractor("Bob").tryGetLong("address").isFailure
     }
@@ -269,6 +263,12 @@ class MongoXTractorSpecs extends Specification {
     }
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("address").isFailure
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("address").isSuccess
+    }
+    """return a failure when queried with getElements""" in {
+      bob.xtractor("Bob").getElements("address").isFailure
     }
     """return a failure when queried with tryGetElement""" in {
       bob.xtractor("Bob").tryGetElement("address").isSuccess
@@ -293,12 +293,6 @@ class MongoXTractorSpecs extends Specification {
     """return a failure when queried with getString""" in {
       bob.xtractor("Bob").getString("scores").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("scores").isFailure
-    }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor("Bob").getElements("scores").isFailure
-    }
     """return a failure when queried with tryGetLong""" in {
       bob.xtractor("Bob").tryGetLong("scores").isFailure
     }
@@ -310,6 +304,12 @@ class MongoXTractorSpecs extends Specification {
     }
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("scores").isFailure
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("scores").isFailure
+    }
+    """return a failure when queried with getElements""" in {
+      bob.xtractor("Bob").getElements("scores").isFailure
     }
     """return a failure when queried with tryGetElement""" in {
       bob.xtractor("Bob").tryGetElement("scores").isFailure
@@ -337,12 +337,6 @@ class MongoXTractorSpecs extends Specification {
     """return a failure when queried with getString""" in {
       bob.xtractor("Bob").getString("gameTimes").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("gameTimes").isFailure
-    }
-    """return a success when queried with getElements""" in {
-      bob.xtractor("Bob").getElements("gameTimes").isSuccess
-    }
     """return a failure when queried with tryGetLong""" in {
       bob.xtractor("Bob").tryGetLong("gameTimes").isFailure
     }
@@ -354,6 +348,12 @@ class MongoXTractorSpecs extends Specification {
     }
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("gameTimes").isFailure
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("gameTimes").isFailure
+    }
+    """return a success when queried with getElements""" in {
+      bob.xtractor("Bob").getElements("gameTimes").isSuccess
     }
     """return a failure when queried with tryGetElement""" in {
       bob.xtractor("Bob").tryGetElement("gameTimes").isFailure
@@ -376,10 +376,7 @@ class MongoXTractorSpecs extends Specification {
     """return a failure when queried with getString""" in {
       bob.xtractor("Bob").getString("doesNotExist").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("doesNotExist").isFailure
-    }
-    """return a success of None when queried with tryGetInt""" in {
+   """return a success of None when queried with tryGetInt""" in {
       bob.xtractor("Bob").tryGetInt("doesNotExist") must beEqualTo(None.successSingleBadData)
     }
     """return a success of None when queried with tryGetLong""" in {
@@ -391,7 +388,10 @@ class MongoXTractorSpecs extends Specification {
     """return a success of None when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("doesNotExist") must beEqualTo(None.successSingleBadData)
     }
-    """return a success of None when queried with tryGetElement""" in {
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("doesNotExist").isFailure
+    }
+     """return a success of None when queried with tryGetElement""" in {
       bob.xtractor("Bob").tryGetElement("doesNotExist") must beEqualTo(None.successSingleBadData)
     }
     """return a success of [] when queried with getElements""" in {

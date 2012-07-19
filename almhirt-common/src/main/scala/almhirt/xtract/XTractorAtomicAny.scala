@@ -6,8 +6,8 @@ import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
 
-class XTractorAtomicAny(value: AnyRef, val key: String) extends XTractorAtomic {
-  type T = AnyRef
+class XTractorAtomicAny(value: Any, val key: String) extends XTractorAtomic {
+  type T = Any
   val underlying = value
   def getString(): AlmValidationSingleBadData[String] =
 	try {

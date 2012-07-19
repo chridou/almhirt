@@ -1,6 +1,6 @@
 package almhirt.xtract.xml
 
-import scala.xml.Elem
+import scala.xml.{Elem, Text}
 import scalaz._
 import Scalaz._
 import almhirt.validation._
@@ -8,17 +8,33 @@ import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
 import almhirt.xml.XmlPrimitives
 import almhirt.xtract.{XTractor, XTractorAtomic, XTractorAtomicString}
+import almhirt.xml.XmlPrimitives
 
 class XmlXTractor(elem: Elem) extends XTractor {
   type T = Elem
   def underlying() = elem
   val key = elem.label
   
-  def tryGetString(aKey: String) = XmlPrimitives.stringOptionFromChild(elem, aKey)
-  def tryGetInt(aKey: String) = XmlPrimitives.intOptionFromChild(elem, aKey)
-  def tryGetLong(aKey: String) = XmlPrimitives.longOptionFromChild(elem, aKey)
-  def tryGetDouble(aKey: String) = XmlPrimitives.doubleOptionFromChild(elem, aKey)
-  def tryGetAsString(aKey: String) = SingleBadDataProblem("not supported", key = aKey).fail[Option[String]]
+  def tryGetString(aKey: String) = 
+    onSingleTextOnlyElem(
+        aKey, 
+        (text, theKey) => {
+          if(text.trim.isEmpty) 
+            None.success[SingleBadDataProblem]
+          else
+            Some(text).success[SingleBadDataProblem] })
+  
+  def tryGetInt(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseIntAlm)
+  
+  def tryGetLong(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseLongAlm)
+  
+  def tryGetDouble(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseDoubleAlm)
+  
+  def tryGetAsString(aKey: String) = 
+    SingleBadDataProblem("not supported", key = aKey).fail[Option[String]]
 
   def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]] =
     XmlPrimitives.elems(elem, aKey)
@@ -26,11 +42,27 @@ class XmlXTractor(elem: Elem) extends XTractor {
       .toList
       .sequence
   
-  def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]] =
-    XmlPrimitives.elems(elem, aKey)
-      .filterNot(elem => XmlPrimitives.elems(elem).isEmpty)
-      .headOption
-      .map(new XmlXTractor(_)).successSingleBadData
+  def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]] = {
+    val propertyContainers = XmlPrimitives.elems(elem, aKey)
+    propertyContainers match {
+      case Seq(untrimmedPropertyContainer) => 
+        val propertyContainer = scala.xml.Utility.trim(untrimmedPropertyContainer)
+        scala.xml.Utility.trim(propertyContainer) match {
+          case Elem(_, _, _, _, typeContainer @ Elem(_,_,_,_,_)) => 
+            new XmlXTractor(typeContainer.asInstanceOf[Elem]).successSingleBadData.map(Some(_))
+          case Elem(_, _, _, _, x) => 
+            SingleBadDataProblem("The only child is not an Element: %s".format(x), key = aKey).fail[Option[XTractor]] 
+          case Elem(_, _, _, _) => 
+            None.successSingleBadData
+          case Elem(_, _, _, _, _*) =>
+            SingleBadDataProblem("Element containes more than one child.", key = aKey).fail[Option[XTractor]] 
+        }
+      case Seq() =>
+        None.success
+      case _ =>
+        SingleBadDataProblem("Element contained more than once: %d".format(propertyContainers.length), key = aKey).fail[Option[XTractor]] 
+    }
+  }
     
   def getAtomics(aKey: String): AlmValidationMultipleBadData[List[XTractorAtomic]] =
     XmlPrimitives.elems(elem, aKey).headOption match {
@@ -42,6 +74,25 @@ class XmlXTractor(elem: Elem) extends XTractor {
         .toList
   	    .sequence
       case None => Nil.successMultipleBadData
+  }
+  
+  private def onSingleTextOnlyElem[U](aKey: String, f: (String, String) => AlmValidationSingleBadData[Option[U]]): AlmValidationSingleBadData[Option[U]] = {
+    val elems = XmlPrimitives.elems(elem, aKey)
+    elems match {
+      case Seq() => 
+        None.successSingleBadData
+      case Seq(elem) => 
+        scala.xml.Utility.trim(elem) match {
+          case Elem(_, _, _, _, Text(text)) => 
+            f(text, aKey)
+          case Elem(_, _, _, _, Seq()) =>
+            None.successSingleBadData
+          case _ =>
+            SingleBadDataProblem("Is not a text only node", key = elem.label).fail[Option[U]] 
+        }
+      case _ => 
+        SingleBadDataProblem("More than one child: %d".format(elems.length), key = aKey).fail[Option[U]]
+    }
   }
 }
 

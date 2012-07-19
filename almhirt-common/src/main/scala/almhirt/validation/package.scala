@@ -39,7 +39,7 @@ object AlmValidation extends AlmValidationImplicits {
     } catch {
       case err => badData("Not a valid number(Int):%s".format(toParse), key).fail[Int]
     }
-  
+
   def parseLongAlm(toParse: String, key: String = "some value"): AlmValidationSingleBadData[Long] =
     try {
       toParse.toLong.success[SingleBadDataProblem]
@@ -53,6 +53,18 @@ object AlmValidation extends AlmValidationImplicits {
     } catch {
       case err => badData("Not a valid number(Double)".format(toParse), key).fail[Double]
     }
+
+  def tryParseIntAlm(toParse: String, key: String = "some value"): AlmValidationSingleBadData[Option[Int]] =
+    emptyStringIsNone(toParse, x => parseIntAlm(x, key))
+ 
+  
+  def tryParseLongAlm(toParse: String, key: String = "some value"): AlmValidationSingleBadData[Option[Long]] =
+    emptyStringIsNone(toParse, x => parseLongAlm(x, key))
+ 
+  
+  def tryParseDoubleAlm(toParse: String, key: String = "some value"): AlmValidationSingleBadData[Option[Double]] =
+    emptyStringIsNone(toParse, x => parseDoubleAlm(x, key))
+ 
   
   def notEmpty(toTest: String, key: String = "some value"): AlmValidationSingleBadData[String] =
     if(toTest.isEmpty) badData("must not be empty", key).fail[String] else toTest.success[SingleBadDataProblem]
@@ -78,6 +90,11 @@ object AlmValidation extends AlmValidationImplicits {
       case None => NotFoundProblem(message).fail[T]
     }
   
+  private def emptyStringIsNone[T](str: String, f: String => AlmValidationSingleBadData[T]) =
+    if(str.trim.isEmpty)
+      Success(None)
+    else
+      f(str).map(Some(_))
 }
 
 }
