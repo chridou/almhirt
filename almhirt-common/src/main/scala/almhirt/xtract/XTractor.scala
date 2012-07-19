@@ -8,14 +8,16 @@ import almhirt.validation.Problem._
 
 trait XTractorAtomic {
   type T
+  def key: String
   def underlying: T
-  def extractString(): AlmValidationSingleBadData[String]
-  def extractInt(): AlmValidationSingleBadData[Int]
-  def extractLong(): AlmValidationSingleBadData[Long]
-  def extractDouble(): AlmValidationSingleBadData[Double]
-  def extractOptionalInt(): AlmValidationSingleBadData[Option[Int]]
-  def extractOptionalLong(): AlmValidationSingleBadData[Option[Long]]
-  def extractOptionalDouble(): AlmValidationSingleBadData[Option[Double]]
+  def getString(): AlmValidationSingleBadData[String]
+  def getInt(): AlmValidationSingleBadData[Int]
+  def getLong(): AlmValidationSingleBadData[Long]
+  def getDouble(): AlmValidationSingleBadData[Double]
+  def tryGetString(): AlmValidationSingleBadData[Option[String]]
+  def tryGetInt(): AlmValidationSingleBadData[Option[Int]]
+  def tryGetLong(): AlmValidationSingleBadData[Option[Long]]
+  def tryGetDouble(): AlmValidationSingleBadData[Option[Double]]
 }
 
 trait XTractor {
@@ -79,7 +81,7 @@ trait XTractor {
   def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]]
   def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]]
   def getElement(aKey: String): AlmValidationSingleBadData[XTractor] =
-    tryGetElement(key) match {
+    tryGetElement(aKey) match {
       case Success(opt) =>
         opt
 	      .map(Success(_))
@@ -88,7 +90,7 @@ trait XTractor {
     }
     
   def tryMapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMultipleBadData[U]): AlmValidationMultipleBadData[Option[U]] =
-    tryGetElement(key) match {
+    tryGetElement(aKey) match {
       case Success(opt) =>
         opt match {
           case Some(xtractor) => 
@@ -111,7 +113,7 @@ trait XTractor {
     }
   
   def tryFlatMapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMultipleBadData[Option[U]]): AlmValidationMultipleBadData[Option[U]] =
-    tryGetElement(key) match {
+    tryGetElement(aKey) match {
       case Success(opt) =>
         opt match {
           case Some(xtractor) => 
@@ -129,4 +131,14 @@ trait XTractor {
       case Success(seq) => seq.map(mapXtractor).sequence
       case Failure(f) => f.fail[List[U]]
   }
+  
+  def getAtomics(aKey: String): AlmValidationMultipleBadData[List[XTractorAtomic]]
+  
+  def getAtomicsEvaluated[T](aKey: String, eval: XTractorAtomic => AlmValidationSingleBadData[T]): AlmValidationMultipleBadData[List[T]] = {
+    for {
+      atomicXTractors <- getAtomics(aKey)
+      results <- atomicXTractors.map {eval(_).toMultipleBadData} sequence
+    } yield results
+  }
+  
 }

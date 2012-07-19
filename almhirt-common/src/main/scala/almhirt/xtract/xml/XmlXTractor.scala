@@ -7,8 +7,7 @@ import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
 import almhirt.xml.XmlPrimitives
-
-import almhirt.xtract.XTractor
+import almhirt.xtract.{XTractor, XTractorAtomic, XTractorAtomicString}
 
 class XmlXTractor(elem: Elem) extends XTractor {
   type T = Elem
@@ -28,10 +27,36 @@ class XmlXTractor(elem: Elem) extends XTractor {
       .sequence
   
   def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]] =
-    XmlPrimitives.elems(elem, aKey).headOption.map(new XmlXTractor(_)).successSingleBadData
+    XmlPrimitives.elems(elem, aKey)
+      .filterNot(elem => XmlPrimitives.elems(elem).isEmpty)
+      .headOption
+      .map(new XmlXTractor(_)).successSingleBadData
+    
+  def getAtomics(aKey: String): AlmValidationMultipleBadData[List[XTractorAtomic]] =
+    XmlPrimitives.elems(elem, aKey).headOption match {
+      case Some(head) => 
+        XmlPrimitives.elems(head)
+        .zipWithIndex
+        .map{case (elem, i) => 
+          new XTractorAtomicString(elem.text, "[i]".format(i)).successMultipleBadData}
+        .toList
+  	    .sequence
+      case None => Nil.successMultipleBadData
+  }
 }
 
 object XmlXTractor {
+  def apply(elem: Elem): AlmValidationSingleBadData[XTractor] =
+    new XmlXTractor(elem).successSingleBadData
+  def apply(xml: String): AlmValidationSingleBadData[XTractor] = 
+    try {
+      new XmlXTractor(scala.xml.XML.loadString(xml)).successSingleBadData
+    } catch {
+      case exn => 
+        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = "xml", exception= Some(exn)).fail[XTractor] 
+    }
+    
+  
   implicit def elem2XmlXTracor(elem: Elem): ElemXtractorW = new ElemXtractorW(elem)
   final class ElemXtractorW(elem: Elem) {
     def xtractor(): XmlXTractor = new XmlXTractor(elem)

@@ -31,7 +31,7 @@ trait AlmValidationImplicits {
     validationNel match {
       case Success(r) => r.successMultipleBadData
       case Failure(nel) => 
-        val keysAndMessages = nel.list.zipWithIndex.map{case (msg, i) => i.toString -> msg}
+        val keysAndMessages = nel.list.zipWithIndex.map{case (msg, i) => "[i]".format(i) -> msg}
         MultipleBadDataProblem(
           "One or more errors found", 
           Map(keysAndMessages : _*)).fail[T]

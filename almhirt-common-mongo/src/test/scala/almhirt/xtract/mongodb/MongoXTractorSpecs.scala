@@ -1,8 +1,10 @@
 package almhirt.xtract.mongodb
 
 import org.specs2.mutable._
+import scalaz.Success
 import almhirt.validation.AlmValidation._
 import com.mongodb.casbah.Imports._
+import com.mongodb.casbah.commons.MongoDBObject
 
 object MongoXTractorSpecsSamples {
   val bob: MongoDBObject = {
@@ -13,7 +15,8 @@ object MongoXTractorSpecsSamples {
     builder += "dps" -> 1.37
     builder += "ageAsText" -> "33"
     builder += "spaces" -> "  "
-    builder += "scores" -> MongoDBList(1 to 10)
+    builder += "address" -> MongoDBObject("street" -> "Downing Street", "city" -> "London")
+    builder += "scores" -> MongoDBList(1 to 10: _*)
     builder += "gameTimes" -> MongoDBList(MongoDBObject("aoe" -> 12.3), MongoDBObject("eve" -> 29.1), MongoDBObject("pacman" -> 1229.1))
     builder.result
   }
@@ -81,6 +84,15 @@ class MongoXTractorSpecs extends Specification {
     """return a success of Some("Bob") when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("name") must beEqualTo(Some("Bob").successSingleBadData)
     }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("name").isFailure
+    }
+    """return a failure when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("name").isFailure
+    }
+    """return a failure when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("name").isFailure
+    }
   }
 
   """A MongoXTractor for Bob using the default KeyMapper when queried for "age" which is an Int""" should {
@@ -107,6 +119,15 @@ class MongoXTractorSpecs extends Specification {
     }
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("age").isFailure
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("age").isFailure
+    }
+    """return a failure when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("age").isFailure
+    }
+    """return a failure when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("age").isFailure
     }
   }
 
@@ -135,6 +156,15 @@ class MongoXTractorSpecs extends Specification {
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("dps").isFailure
     }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("dps").isFailure
+    }
+    """return a failure when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("dps").isFailure
+    }
+    """return a failure when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("dps").isFailure
+    }
   }
   
   """A MongoXTractor for Bob using the default KeyMapper when queried for "ageAsText" which is a String""" should {
@@ -162,6 +192,15 @@ class MongoXTractorSpecs extends Specification {
     """return a success of Some("Bob") when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("ageAsText") must beEqualTo(Some("33").successSingleBadData)
     }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("ageAsText").isFailure
+    }
+    """return a failure when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("ageAsText").isFailure
+    }
+    """return a failure when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("ageAsText").isFailure
+    }
   }
 
   """A MongoXTractor for Bob using the default KeyMapper when queried for "spaces" which is a String of spaces:"  """" should {
@@ -188,6 +227,139 @@ class MongoXTractorSpecs extends Specification {
     }
     """return a success of None when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("spaces") must beEqualTo(None.successSingleBadData)
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("spaces").isFailure
+    }
+    """return a failure when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("spaces").isFailure
+    }
+    """return a failure when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("spaces").isFailure
+    }
+  }
+  
+  """A MongoXTractor for Bob using the default KeyMapper when queried for "address" which is a MongoDBObject"""" should {
+    """return a failure when queried with getLong""" in {
+      bob.xtractor("Bob").getLong("address").isFailure
+    }
+    """return a failure when queried with getInt""" in {
+      bob.xtractor("Bob").getInt("address").isFailure
+    }
+    """return a failure when queried with getDouble""" in {
+      bob.xtractor("Bob").getDouble("address").isFailure
+    }
+    """return a failure when queried with getString""" in {
+      bob.xtractor("Bob").getString("address").isFailure
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("address").isSuccess
+    }
+    """return a failure when queried with getElements""" in {
+      bob.xtractor("Bob").getElements("address").isFailure
+    }
+    """return a failure when queried with tryGetLong""" in {
+      bob.xtractor("Bob").tryGetLong("address").isFailure
+    }
+    """return a failure when queried with tryGetInt""" in {
+      bob.xtractor("Bob").tryGetInt("address").isFailure
+    }
+    """return a failure when queried with tryGetDouble""" in {
+      bob.xtractor("Bob").tryGetDouble("address").isFailure
+    }
+    """return a failure when queried with tryGetString""" in {
+      bob.xtractor("Bob").tryGetString("address").isFailure
+    }
+    """return a failure when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("address").isSuccess
+    }
+    """return a success when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("address").isFailure
+    }
+    
+  }
+  
+
+  """A MongoXTractor for Bob using the default KeyMapper when queried for "scores" which is a Collection of Ints"""" should {
+    """return a failure when queried with getLong""" in {
+      bob.xtractor("Bob").getLong("scores").isFailure
+    }
+    """return a failure when queried with getInt""" in {
+      bob.xtractor("Bob").getInt("scores").isFailure
+    }
+    """return a failure when queried with getDouble""" in {
+      bob.xtractor("Bob").getDouble("scores").isFailure
+    }
+    """return a failure when queried with getString""" in {
+      bob.xtractor("Bob").getString("scores").isFailure
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("scores").isFailure
+    }
+    """return a failure when queried with getElements""" in {
+      bob.xtractor("Bob").getElements("scores").isFailure
+    }
+    """return a failure when queried with tryGetLong""" in {
+      bob.xtractor("Bob").tryGetLong("scores").isFailure
+    }
+    """return a failure when queried with tryGetInt""" in {
+      bob.xtractor("Bob").tryGetInt("scores").isFailure
+    }
+    """return a failure when queried with tryGetDouble""" in {
+      bob.xtractor("Bob").tryGetDouble("scores").isFailure
+    }
+    """return a failure when queried with tryGetString""" in {
+      bob.xtractor("Bob").tryGetString("scores").isFailure
+    }
+    """return a failure when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("scores").isFailure
+    }
+    """return a success when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("scores").isSuccess
+    }
+    """return a success with a list of 1 to 10 when queried with getAtomicsEvaluated""" in {
+      val res = bob.xtractor("Bob").getAtomicsEvaluated("scores", x => x.getInt())
+      res must beEqualTo(Success(List(1 to 10: _*)))
+    }
+  }
+  
+  
+  """A MongoXTractor for Bob using the default KeyMapper when queried for "gameTimes" which is a Collection of MongoDBObjects"""" should {
+    """return a failure when queried with getLong""" in {
+      bob.xtractor("Bob").getLong("gameTimes").isFailure
+    }
+    """return a failure when queried with getInt""" in {
+      bob.xtractor("Bob").getInt("gameTimes").isFailure
+    }
+    """return a failure when queried with getDouble""" in {
+      bob.xtractor("Bob").getDouble("gameTimes").isFailure
+    }
+    """return a failure when queried with getString""" in {
+      bob.xtractor("Bob").getString("gameTimes").isFailure
+    }
+    """return a failure when queried with getElement""" in {
+      bob.xtractor("Bob").getElement("gameTimes").isFailure
+    }
+    """return a success when queried with getElements""" in {
+      bob.xtractor("Bob").getElements("gameTimes").isSuccess
+    }
+    """return a failure when queried with tryGetLong""" in {
+      bob.xtractor("Bob").tryGetLong("gameTimes").isFailure
+    }
+    """return a failure when queried with tryGetInt""" in {
+      bob.xtractor("Bob").tryGetInt("gameTimes").isFailure
+    }
+    """return a failure when queried with tryGetDouble""" in {
+      bob.xtractor("Bob").tryGetDouble("gameTimes").isFailure
+    }
+    """return a failure when queried with tryGetString""" in {
+      bob.xtractor("Bob").tryGetString("gameTimes").isFailure
+    }
+    """return a failure when queried with tryGetElement""" in {
+      bob.xtractor("Bob").tryGetElement("gameTimes").isFailure
+    }
+    """return a failure when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("gameTimes").isFailure
     }
   }
 
@@ -225,37 +397,24 @@ class MongoXTractorSpecs extends Specification {
     """return a success of [] when queried with getElements""" in {
       bob.xtractor("Bob").getElements("doesNotExist") must beEqualTo(Nil.successSingleBadData)
     }
+    """return a success of [] when queried with getAtomics""" in {
+      bob.xtractor("Bob").getAtomics("doesNotExist") must beEqualTo(Nil.successSingleBadData)
+    }
   }
 
-  """A MongoXTractor for Bob using the default KeyMapper when queried for "gameTimes" which is a Collection of MongoDBObjects"""" should {
-    """return a failure when queried with getLong""" in {
-      bob.xtractor("Bob").getLong("gameTimes").isFailure
-    }
-    """return a failure when queried with getInt""" in {
-      bob.xtractor("Bob").getInt("gameTimes").isFailure
-    }
-    """return a failure when queried with getDouble""" in {
-      bob.xtractor("Bob").getDouble("gameTimes").isFailure
-    }
-    """return a failure when queried with getString""" in {
-      bob.xtractor("Bob").getString("gameTimes").isFailure
-    }
-    """return a failure when queried with tryGetLong""" in {
-      bob.xtractor("Bob").tryGetLong("gameTimes").isFailure
-    }
-    """return a failure when queried with tryGetInt""" in {
-      bob.xtractor("Bob").tryGetInt("gameTimes").isFailure
-    }
-    """return a failure when queried with tryGetDouble""" in {
-      bob.xtractor("Bob").tryGetDouble("gameTimes").isFailure
-    }
-    """return a failure when queried with tryGetString""" in {
-      bob.xtractor("Bob").tryGetString("gameTimes").isFailure
-    }
-    """return a success of an extractor when queried with getElement""" in {
-      println(bob.xtractor("Bob").getElement("gameTimes"))
-      bob.xtractor("Bob").getElement("gameTimes").isSuccess
-    }
+  """The address of Bob""" should {
+    """contain a street "Downing Street"""" in {
+      val xtractor = bob.xtractor("Bob")
+      val address = xtractor.getElement("address")
+      val street = address.flatMap{_.getString("street")}
+      street must beEqualTo(Success("Downing Street"))
+    } 
+    """contain a city "London"""" in {
+      val xtractor = bob.xtractor("Bob")
+      val address = xtractor.getElement("address")
+      val city = address.flatMap{_.getString("city")}
+      city must beEqualTo(Success("London"))
+    } 
   }
   
 }

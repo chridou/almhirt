@@ -1,15 +1,17 @@
 package almhirt.xtract.mongodb
 
-import scalaz.{Success}
-import scalaz.syntax.validation._
+import scalaz._
+import Scalaz._
 import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
-import almhirt.xtract.XTractor
+import almhirt.xtract.{XTractor, XTractorAtomic, XTractorAtomicAny}
 import com.mongodb.casbah.Imports._
+import com.mongodb.casbah.commons.MongoDBList
+import com.mongodb.BasicDBList
+import com.mongodb.BasicDBObject
 
-trait MongoXTractorKeyMapper extends Function[String, String] {
-}
+trait MongoXTractorKeyMapper extends Function[String, String]
 
 class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit mapKey: MongoXTractorKeyMapper) extends XTractor {
   type T = MongoDBObject
@@ -58,24 +60,67 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
     SingleBadDataProblem("not supported", key = aKey).fail[Option[String]]
 
   def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]] =
-    underlying.get(mapKey(aKey)) match {
-      case Some(obj) => 
-        obj.asInstanceOf[MongoDBList]
-          .map(x => new MongoXTractor(x.asInstanceOf[MongoDBObject], aKey))
-          .toList
-          .successMultipleBadData  
-      case None => Nil.successMultipleBadData  
+    try {
+      val theKey = mapKey(aKey)
+      underlying.getAs[BasicDBList](theKey).map{identity} match {
+        case Some(obj) => 
+          obj
+            .toList
+            .map(x => new MongoXTractor(x.asInstanceOf[BasicDBObject], aKey))
+            .successMultipleBadData  
+        case None => Nil.successMultipleBadData  
+      }
+    } catch {
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).toMultipleBadData.fail[List[XTractor]]
     }
   
   def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]] =
     try {
       val theKey = mapKey(aKey)
-      underlying.get(theKey) match {
-        case Some(obj) => Some(new MongoXTractor(obj.asInstanceOf[MongoDBObject], aKey)).successSingleBadData
-        case None => Success(None)
+      underlying.getAs[BasicDBObject](theKey).map{identity} match {
+        case Some(obj) => 
+          val mongoExtr = new MongoXTractor(obj, aKey)
+          Some(mongoExtr).successSingleBadData
+        case None => 
+          Success(None)
       }
     } catch {
       case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).fail[Option[XTractor]]
+    }
+    
+  def getAtomics(aKey: String): AlmValidationMultipleBadData[List[XTractorAtomic]] =
+    try {
+      val theKey = mapKey(aKey)
+      underlying.getAs[BasicDBList](theKey).map{identity} match {
+        case Some(dbList) => 
+          dbList.toList
+            .zipWithIndex
+            .map{ case(o, i) => 
+              o match {
+                case null => 
+                  Failure(
+                    SingleBadDataProblem("Null is not allowed!", key = aKey)
+                      .toMultipleBadData)
+                case _ : BasicDBObject => 
+                  Failure(
+                    SingleBadDataProblem("Not allowed as an atomic: MongoDBObject", key = aKey)
+                      .toMultipleBadData)
+                case _ : BasicDBList => 
+                  Failure(
+                    SingleBadDataProblem("Not allowed as an atomic: BasicDBList", key = aKey)
+                      .toMultipleBadData)
+                case x => (new XTractorAtomicAny(x, "[%d]".format(i))).successMultipleBadData
+              } }
+            .toList
+            .sequence
+        case None => 
+          Success(Nil)
+      }
+    } catch {
+      case exn => 
+        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn))
+          .toMultipleBadData
+          .fail[List[XTractorAtomicAny]]
     }
 }
 
