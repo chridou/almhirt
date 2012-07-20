@@ -2,6 +2,7 @@ package almhirt.xtract
 
 import scalaz.{Success}
 import scalaz.syntax.validation._
+import org.joda.time.DateTime
 import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
@@ -21,6 +22,15 @@ class XTractorAtomicString(value: String, val key: String) extends XTractorAtomi
   def getDouble(): AlmValidationSingleBadData[Double] =
 	value.toDoubleAlm(key)
 	
+  def getFloat(): AlmValidationSingleBadData[Float] =
+	value.toFloatAlm(key)
+	
+  def getDecimal(): AlmValidationSingleBadData[BigDecimal] =
+	value.toDecimalAlm(key)
+	
+  def getDateTime(): AlmValidationSingleBadData[DateTime] =
+	value.toDateTimeAlm(key)
+	
   def tryGetString(): AlmValidationSingleBadData[Option[String]] =
 	  if(value.trim.isEmpty)
 	    Success(None)
@@ -28,20 +38,34 @@ class XTractorAtomicString(value: String, val key: String) extends XTractorAtomi
 	    Success(Some(value))
   
   def tryGetInt(): AlmValidationSingleBadData[Option[Int]] =
-	  if(value.trim.isEmpty)
-	    Success(None)
-	  else
-	    value.toIntAlm(key).map(Some(_))
+	  onEmptyNoneElse(() => value.toIntAlm(key))
   
   def tryGetLong(): AlmValidationSingleBadData[Option[Long]] =
-	  if(value.trim.isEmpty)
-	    Success(None)
-	  else
-	    value.toLongAlm(key).map(Some(_))
+	  onEmptyNoneElse(() => value.toLongAlm(key))
   
   def tryGetDouble(): AlmValidationSingleBadData[Option[Double]] =
-	  if(value.trim.isEmpty)
-	    Success(None)
-	  else
-	    value.toDoubleAlm(key).map(Some(_))
+	  onEmptyNoneElse(() => value.toDoubleAlm(key))
+
+  def tryGetFloat(): AlmValidationSingleBadData[Option[Float]] =
+	  onEmptyNoneElse(() => value.toFloatAlm(key))
+
+  def tryGetDecimal(): AlmValidationSingleBadData[Option[BigDecimal]] =
+	  onEmptyNoneElse(() => value.toDecimalAlm(key))
+
+  def tryGetDateTime(): AlmValidationSingleBadData[Option[DateTime]] =
+	  onEmptyNoneElse(() => value.toDateTimeAlm(key))
+
+  def isBooleanSet(): AlmValidationSingleBadData[Boolean] = 
+    if(value.trim.isEmpty) 
+      false.success[SingleBadDataProblem] 
+    else 
+      parseBooleanAlm(value, key)
+  
+  private def onEmptyNoneElse[U](f: () => AlmValidationSingleBadData[U]): AlmValidationSingleBadData[Option[U]] = {
+    if(value.trim.isEmpty)
+	  Success(None)
+	else
+	  f().map(Some(_))
+  }
+
 }

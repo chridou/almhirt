@@ -2,6 +2,7 @@ package almhirt.xml
 
 import scalaz._
 import Scalaz._
+import org.joda.time.DateTime
 import almhirt.validation.Problem._
 import almhirt.validation._
 import almhirt.validation.AlmValidation._
@@ -48,7 +49,28 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
       res <- parseDoubleAlm(ne, node.label)
     } yield res
   }
-  
+
+  def floatFromXmlNode(node: Elem): AlmValidationSingleBadData[Float] = {
+    for{
+      ne <- notEmptyOrWhitespace(node.text, node.label)
+      res <- parseFloatAlm(ne, node.label)
+    } yield res
+  }
+
+  def decimalFromXmlNode(node: Elem): AlmValidationSingleBadData[BigDecimal] = {
+    for{
+      ne <- notEmptyOrWhitespace(node.text, node.label)
+      res <- parseDecimalAlm(ne, node.label)
+    } yield res
+  }
+
+  def dateTimeFromXmlNode(node: Elem): AlmValidationSingleBadData[DateTime] = {
+    for{
+      ne <- notEmptyOrWhitespace(node.text, node.label)
+      res <- parseDateTimeAlm(ne, node.label)
+    } yield res
+  }
+
   def optionalIntXmlNode(node: Elem): AlmValidationSingleBadData[Option[Int]] = {
     if(node.text.trim.isEmpty) 
       None.success[SingleBadDataProblem]
@@ -79,20 +101,41 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
     }
   }
   
-  def isBooleanSetTrue(elem: Elem): AlmValidationSingleBadData[Boolean] = {
-    elem.text.trim.toLowerCase match {
-      case "" => false.successSingleBadData
-      case "0" => false.successSingleBadData
-      case "f" => false.successSingleBadData
-      case "false" => false.successSingleBadData
-      case "no" => false.successSingleBadData
-      case "1" => true.successSingleBadData
-      case "true" => true.successSingleBadData
-      case "t" => true.successSingleBadData
-      case "yes" => true.successSingleBadData
-      case x => SingleBadDataProblem("Could not parse value to Boolean: %s".format(x), key = elem.label).fail[Boolean]
+  def optionalFloatXmlNode(node: Elem): AlmValidationSingleBadData[Option[Float]] = {
+    if(node.text.trim.isEmpty) 
+      None.success[SingleBadDataProblem] 
+    else 
+      floatFromXmlNode(node) match {
+        case Success(v) => Some(v).successSingleBadData
+        case Failure(f) => f.fail[Option[Float]]
     }
   }
+  
+  def optionalDecimalXmlNode(node: Elem): AlmValidationSingleBadData[Option[BigDecimal]] = {
+    if(node.text.trim.isEmpty) 
+      None.success[SingleBadDataProblem] 
+    else 
+      decimalFromXmlNode(node) match {
+        case Success(v) => Some(v).successSingleBadData
+        case Failure(f) => f.fail[Option[BigDecimal]]
+    }
+  }
+
+  def optionalDateTimeXmlNode(node: Elem): AlmValidationSingleBadData[Option[DateTime]] = {
+    if(node.text.trim.isEmpty) 
+      None.success[SingleBadDataProblem] 
+    else 
+      dateTimeFromXmlNode(node) match {
+        case Success(v) => Some(v).successSingleBadData
+        case Failure(f) => f.fail[Option[DateTime]]
+    }
+  }
+  
+  def isBooleanSetTrue(elem: Elem): AlmValidationSingleBadData[Boolean] = 
+    if(elem.text.trim.isEmpty) 
+      false.success[SingleBadDataProblem] 
+    else 
+      parseBooleanAlm(elem.text, elem.label)
   
   def firstChildNodeMandatory(node: Elem, label: String): AlmValidationSingleBadData[Elem] = {
     elems(node, label).toList match {

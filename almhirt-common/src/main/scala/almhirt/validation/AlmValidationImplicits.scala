@@ -2,8 +2,8 @@ package almhirt.validation
 
 import scalaz.syntax.validation._
 import scalaz.{Validation, ValidationNEL, Success, Failure, Semigroup}
+import org.joda.time.DateTime
 import Problem._
-import scalaz.Semigroup
 
 trait AlmValidationImplicits {
   implicit def stringToStringW(str: String): StringW = new StringW(str)
@@ -14,10 +14,18 @@ trait AlmValidationImplicits {
       AlmValidation.parseLongAlm(str, key)
     def toDoubleAlm(key: String = "some value"): AlmValidationSingleBadData[Double] =  
       AlmValidation.parseDoubleAlm(str, key)
+    def toFloatAlm(key: String = "some value"): AlmValidationSingleBadData[Float] =  
+      AlmValidation.parseFloatAlm(str, key)
+    def toDecimalAlm(key: String = "some value"): AlmValidationSingleBadData[BigDecimal] =  
+      AlmValidation.parseDecimalAlm(str, key)
+    def toDateTimeAlm(key: String = "some value"): AlmValidationSingleBadData[DateTime] =  
+      AlmValidation.parseDateTimeAlm(str, key)
     def notEmptyAlm(key: String = "some value"): AlmValidationSingleBadData[String] =  
       AlmValidation.notEmpty(str, key)
     def notEmptyOrWhitespaceAlm(key: String = "some value"): AlmValidationSingleBadData[String] =  
       AlmValidation.notEmptyOrWhitespace(str, key)
+    def toBooleanAlm(key: String = "some value"): AlmValidationSingleBadData[Boolean] =  
+      AlmValidation.parseBooleanAlm(str, key)
   }
 
   implicit def any2AnyAlmW[T](x: T): AnyAlmW[T] = new AnyAlmW(x)

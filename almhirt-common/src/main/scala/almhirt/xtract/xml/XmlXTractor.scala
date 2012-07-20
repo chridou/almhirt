@@ -33,10 +33,30 @@ class XmlXTractor(elem: Elem) extends XTractor {
   
   def tryGetDouble(aKey: String) = 
     onSingleTextOnlyElem(aKey, tryParseDoubleAlm)
-  
+
+  def tryGetFloat(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseFloatAlm)
+
+  def tryGetDecimal(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseDecimalAlm)
+    
+  def tryGetDateTime(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseDateTimeAlm)
+    
   def tryGetAsString(aKey: String) = 
     SingleBadDataProblem("not supported", key = aKey).fail[Option[String]]
 
+  def isBooleanSetTrue(aKey: String) =
+   	getUniquePropertyElement(aKey).flatMap { x =>
+   	  x match {
+   	    case Some(e) =>
+          if(e.text.trim.isEmpty) 
+            false.success[SingleBadDataProblem] 
+          else 
+            parseBooleanAlm(e.text, aKey)
+   	    case None =>
+   	      false.success[SingleBadDataProblem] } }
+  
   def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]] =
     for {
       propertyElement <-
