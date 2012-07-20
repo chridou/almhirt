@@ -79,6 +79,21 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
     }
   }
   
+  def isBooleanSetTrue(elem: Elem): AlmValidationSingleBadData[Boolean] = {
+    elem.text.trim.toLowerCase match {
+      case "" => false.successSingleBadData
+      case "0" => false.successSingleBadData
+      case "f" => false.successSingleBadData
+      case "false" => false.successSingleBadData
+      case "no" => false.successSingleBadData
+      case "1" => true.successSingleBadData
+      case "true" => true.successSingleBadData
+      case "t" => true.successSingleBadData
+      case "yes" => true.successSingleBadData
+      case x => SingleBadDataProblem("Could not parse value to Boolean: %s".format(x), key = elem.label).fail[Boolean]
+    }
+  }
+  
   def firstChildNodeMandatory(node: Elem, label: String): AlmValidationSingleBadData[Elem] = {
     elems(node, label).toList match {
       case Nil => SingleBadDataProblem("Element '%s' not found.".format(label), node.label).fail[Elem]
