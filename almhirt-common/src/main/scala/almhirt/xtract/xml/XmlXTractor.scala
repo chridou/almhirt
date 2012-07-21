@@ -10,6 +10,7 @@ import almhirt.xml.XmlPrimitives
 import almhirt.xtract.{XTractor, XTractorAtomic, XTractorAtomicString}
 import almhirt.xml.XmlPrimitives
 import almhirt.xtract.XTractor
+import almhirt.xtract.XTractorAtomic
 
 class XmlXTractor(elem: Elem) extends XTractor {
   type T = Elem
@@ -37,11 +38,17 @@ class XmlXTractor(elem: Elem) extends XTractor {
   def tryGetFloat(aKey: String) = 
     onSingleTextOnlyElem(aKey, tryParseFloatAlm)
 
+  def tryGetBoolean(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseBooleanAlm)
+    
   def tryGetDecimal(aKey: String) = 
     onSingleTextOnlyElem(aKey, tryParseDecimalAlm)
     
   def tryGetDateTime(aKey: String) = 
     onSingleTextOnlyElem(aKey, tryParseDateTimeAlm)
+
+  def tryGetBytes(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseBase64Alm)
     
   def tryGetAsString(aKey: String) = 
     SingleBadDataProblem("not supported", key = aKey).fail[Option[String]]
@@ -57,46 +64,59 @@ class XmlXTractor(elem: Elem) extends XTractor {
    	    case None =>
    	      false.success[SingleBadDataProblem] } }
   
-  def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]] =
+  def getElements(aKey: String): AlmValidationMBD[List[XTractor]] =
     for {
       propertyElement <-
       	getUniquePropertyElement(aKey).toMultipleBadData
       elems <- 
-      	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSingleBadData)).toMultipleBadData
+      	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSBD)).toMultipleBadData
       xtractors <- 
       	elems.map{x => onValidTypeContainerXTractor(x).toMultipleBadData}.toList.sequence
     } yield xtractors
   
-  def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]] = {
+  def tryGetElement(aKey: String): AlmValidationSBD[Option[XTractor]] = {
     for {
       propertyElement <- getUniquePropertyElement(aKey)
       xtractor <- xtractorOnPropertyElem(propertyElement)
     } yield xtractor
   }
     
-  def getAtomics(aKey: String): AlmValidationMultipleBadData[List[XTractorAtomic]] =
+  def tryGetAtomic(aKey: String): AlmValidationSBD[Option[XTractorAtomic]] =
+    for {
+      propertyElement <- 
+        getUniquePropertyElement(aKey)
+      text <- 
+        propertyElement
+          .flatMap{e => onSingleTextOnlyTypeContainerGetText(e).insideOut }
+          .insideOut
+      xtractor <- 
+        (text map {txt => new XTractorAtomicString(txt, aKey)})
+        .successSBD
+    } yield xtractor
+    
+  def getAtomics(aKey: String): AlmValidationMBD[List[XTractorAtomic]] =
     for {
       propertyElement <-
       	getUniquePropertyElement(aKey).toMultipleBadData
       elems <- 
-      	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSingleBadData)).toMultipleBadData
+      	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSBD)).toMultipleBadData
       xtractors <- { 
       	val items =
       	  elems.zipWithIndex.map {case(x, i) => 
       	    onSingleTextOnlyTypeContainerGetText(x).flatMap { y =>
       	      val txt = y.getOrElse("")
-      	      new XTractorAtomicString(txt, "[%d]".format(i)).successSingleBadData}}
+      	      new XTractorAtomicString(txt, "[%d]".format(i)).successSBD}}
       	  .map{x => x.toMultipleBadData}
           .toList
         items.sequence 
       }
     } yield xtractors
   
-  private def getUniquePropertyElement(aKey: String): AlmValidationSingleBadData[Option[Elem]] = {
+  private def getUniquePropertyElement(aKey: String): AlmValidationSBD[Option[Elem]] = {
     val propertyContainers = XmlPrimitives.elems(elem, aKey)
     propertyContainers match {
       case Seq(untrimmedPropertyContainer) => 
-         scala.xml.Utility.trim(untrimmedPropertyContainer).asInstanceOf[Elem].successSingleBadData.map(Some(_))
+         scala.xml.Utility.trim(untrimmedPropertyContainer).asInstanceOf[Elem].successSBD.map(Some(_))
       case Seq() =>
         None.success
       case _ =>
@@ -104,7 +124,7 @@ class XmlXTractor(elem: Elem) extends XTractor {
     }
   }
   
-  private def xtractorOnPropertyElem(mayBeAnElem: Option[Elem]): AlmValidationSingleBadData[Option[XTractor]] = {
+  private def xtractorOnPropertyElem(mayBeAnElem: Option[Elem]): AlmValidationSBD[Option[XTractor]] = {
     mayBeAnElem match {
       case Some(elem) =>
         val aKey = elem.label
@@ -112,34 +132,34 @@ class XmlXTractor(elem: Elem) extends XTractor {
           case Elem(_, _, _, _, typeContainer @ Elem(_,_,_,_,_*)) => 
            onValidTypeContainerXTractor(typeContainer.asInstanceOf[Elem]).map(Some(_))
           case Elem(_, _, _, _) => 
-            None.successSingleBadData
+            None.successSBD
           case Elem(_, _, _, _, x) => 
             SingleBadDataProblem("The only child is not an Element: %s".format(x), key = aKey).fail[Option[XTractor]] 
           case Elem(_, _, _, _, _*) =>
             SingleBadDataProblem("Element containes more than one child.", key = aKey).fail[Option[XTractor]] 
         }
-      case None => None.successSingleBadData
+      case None => None.successSBD
     }
   }
   
-  private def onAllChildrenAreElems(elem: Elem): AlmValidationSingleBadData[Seq[Elem]] =
+  private def onAllChildrenAreElems(elem: Elem): AlmValidationSBD[Seq[Elem]] =
     if(elem.child.forall(n => n.isInstanceOf[Elem]))
-      XmlPrimitives.elems(elem).successSingleBadData
+      XmlPrimitives.elems(elem).successSBD
     else
       SingleBadDataProblem("Not all children are Elems", key = elem.label).fail[Seq[Elem]] 
     
   
-  private def onSingleTextOnlyElem[U](aKey: String, f: (String, String) => AlmValidationSingleBadData[Option[U]]): AlmValidationSingleBadData[Option[U]] = {
+  private def onSingleTextOnlyElem[U](aKey: String, f: (String, String) => AlmValidationSBD[Option[U]]): AlmValidationSBD[Option[U]] = {
     val elems = XmlPrimitives.elems(elem, aKey)
     elems match {
       case Seq() => 
-        None.successSingleBadData
+        None.successSBD
       case Seq(elem) => 
         scala.xml.Utility.trim(elem) match {
           case Elem(_, _, _, _, Text(text)) => 
             f(text, aKey)
           case Elem(_, _, _, _) =>
-            None.successSingleBadData
+            None.successSBD
           case _ =>
             SingleBadDataProblem("Is not a text only node", key = elem.label).fail[Option[U]] 
         }
@@ -148,26 +168,26 @@ class XmlXTractor(elem: Elem) extends XTractor {
     }
   }
 
-  private def onSingleTextOnlyTypeContainerGetText[U](elem: Elem): AlmValidationSingleBadData[Option[String]] =
+  private def onSingleTextOnlyTypeContainerGetText[U](elem: Elem): AlmValidationSBD[Option[String]] =
     scala.xml.Utility.trim(elem) match {
       case Elem(_, _, _, _, Text(text)) => 
-        (if(text.trim.isEmpty) None else Some(text)).successSingleBadData
+        (if(text.trim.isEmpty) None else Some(text)).successSBD
       case Elem(_, _, _, _) =>
-        None.successSingleBadData
+        None.successSBD
       case _ =>
         SingleBadDataProblem("Is not a text only node", key = elem.label).fail[Option[String]] 
     }
   
-  private def onValidTypeContainerXTractor(typeContainer: Elem): AlmValidationSingleBadData[XTractor] =
+  private def onValidTypeContainerXTractor(typeContainer: Elem): AlmValidationSBD[XTractor] =
     onAllChildrenAreElems(typeContainer).map {_ => new XmlXTractor(typeContainer)}
 }
 
 object XmlXTractor {
-  def apply(elem: Elem): AlmValidationSingleBadData[XTractor] =
-    new XmlXTractor(elem).successSingleBadData
-  def apply(xml: String): AlmValidationSingleBadData[XTractor] = 
+  def apply(elem: Elem): AlmValidationSBD[XTractor] =
+    new XmlXTractor(elem).successSBD
+  def apply(xml: String): AlmValidationSBD[XTractor] = 
     try {
-      new XmlXTractor(scala.xml.XML.loadString(xml)).successSingleBadData
+      new XmlXTractor(scala.xml.XML.loadString(xml)).successSBD
     } catch {
       case exn => 
         SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = "xml", exception= Some(exn)).fail[XTractor] 

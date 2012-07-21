@@ -11,50 +11,58 @@ trait XTractorAtomic {
   type T
   def key: String
   def underlying: T
-  def getString(): AlmValidationSingleBadData[String]
-  def getInt(): AlmValidationSingleBadData[Int]
-  def getLong(): AlmValidationSingleBadData[Long]
-  def getDouble(): AlmValidationSingleBadData[Double]
-  def getFloat(): AlmValidationSingleBadData[Float]
-  def getDecimal(): AlmValidationSingleBadData[BigDecimal]
-  def getDateTime(): AlmValidationSingleBadData[DateTime]
-  def tryGetString(): AlmValidationSingleBadData[Option[String]]
-  def tryGetInt(): AlmValidationSingleBadData[Option[Int]]
-  def tryGetLong(): AlmValidationSingleBadData[Option[Long]]
-  def tryGetDouble(): AlmValidationSingleBadData[Option[Double]]
-  def tryGetFloat(): AlmValidationSingleBadData[Option[Float]]
-  def tryGetDecimal(): AlmValidationSingleBadData[Option[BigDecimal]]
-  def tryGetDateTime(): AlmValidationSingleBadData[Option[DateTime]]
-  def isBooleanSet(): AlmValidationSingleBadData[Boolean]
+  def getString(): AlmValidationSBD[String]
+  def getInt(): AlmValidationSBD[Int]
+  def getLong(): AlmValidationSBD[Long]
+  def getDouble(): AlmValidationSBD[Double]
+  def getFloat(): AlmValidationSBD[Float]
+  def getBoolean(): AlmValidationSBD[Boolean]
+  def getDecimal(): AlmValidationSBD[BigDecimal]
+  def getDateTime(): AlmValidationSBD[DateTime]
+  def getBytes(): AlmValidationSBD[Array[Byte]]
+  def tryGetString(): AlmValidationSBD[Option[String]]
+  def tryGetInt(): AlmValidationSBD[Option[Int]]
+  def tryGetLong(): AlmValidationSBD[Option[Long]]
+  def tryGetDouble(): AlmValidationSBD[Option[Double]]
+  def tryGetBoolean(): AlmValidationSBD[Option[Boolean]]
+  def tryGetFloat(): AlmValidationSBD[Option[Float]]
+  def tryGetDecimal(): AlmValidationSBD[Option[BigDecimal]]
+  def tryGetDateTime(): AlmValidationSBD[Option[DateTime]]
+  def tryGetBytes(): AlmValidationSBD[Option[Array[Byte]]]
+  def isBooleanSet(): AlmValidationSBD[Boolean]
 }
 
 trait XTractor {
   type T
   def key: String
   def underlying: T
-  def tryGetString(key: String): AlmValidationSingleBadData[Option[String]]
-  def tryGetInt(key: String): AlmValidationSingleBadData[Option[Int]]
-  def tryGetLong(key: String): AlmValidationSingleBadData[Option[Long]]
-  def tryGetDouble(key: String): AlmValidationSingleBadData[Option[Double]]
-  def tryGetFloat(key: String): AlmValidationSingleBadData[Option[Float]]
-  def tryGetDecimal(key: String): AlmValidationSingleBadData[Option[BigDecimal]]
-  def tryGetDateTime(key: String): AlmValidationSingleBadData[Option[DateTime]]
-  def tryGetAsString(key: String): AlmValidationSingleBadData[Option[String]]
+  def tryGetString(aKey: String): AlmValidationSBD[Option[String]]
+  def tryGetInt(aKey: String): AlmValidationSBD[Option[Int]]
+  def tryGetLong(aKey: String): AlmValidationSBD[Option[Long]]
+  def tryGetDouble(aKey: String): AlmValidationSBD[Option[Double]]
+  def tryGetFloat(aKey: String): AlmValidationSBD[Option[Float]]
+  def tryGetBoolean(aKey: String): AlmValidationSBD[Option[Boolean]]
+  def tryGetDecimal(aKey: String): AlmValidationSBD[Option[BigDecimal]]
+  def tryGetDateTime(aKey: String): AlmValidationSBD[Option[DateTime]]
+  def tryGetAsString(aKey: String): AlmValidationSBD[Option[String]]
+  def tryGetBytes(aKey: String): AlmValidationSBD[Option[Array[Byte]]]
 
-  def getString(aKey: String): AlmValidationSingleBadData[String] = get(aKey, tryGetString)
-  def getInt(aKey: String): AlmValidationSingleBadData[Int] = get(aKey, tryGetInt)
-  def getLong(aKey: String): AlmValidationSingleBadData[Long] = get(aKey, tryGetLong)
-  def getDouble(aKey: String): AlmValidationSingleBadData[Double] = get(aKey, tryGetDouble)
-  def getFloat(aKey: String): AlmValidationSingleBadData[Float] = get(aKey, tryGetFloat)
-  def getDecimal(aKey: String): AlmValidationSingleBadData[BigDecimal] = get(aKey, tryGetDecimal)
-  def getDateTime(aKey: String): AlmValidationSingleBadData[DateTime] = get(aKey, tryGetDateTime)
-  def getAsString(aKey: String): AlmValidationSingleBadData[String] = get(aKey, tryGetAsString)
+  def getString(aKey: String): AlmValidationSBD[String] = get(aKey, tryGetString)
+  def getInt(aKey: String): AlmValidationSBD[Int] = get(aKey, tryGetInt)
+  def getLong(aKey: String): AlmValidationSBD[Long] = get(aKey, tryGetLong)
+  def getDouble(aKey: String): AlmValidationSBD[Double] = get(aKey, tryGetDouble)
+  def getFloat(aKey: String): AlmValidationSBD[Float] = get(aKey, tryGetFloat)
+  def getBoolean(aKey: String): AlmValidationSBD[Boolean] = get(aKey, tryGetBoolean)
+  def getDecimal(aKey: String): AlmValidationSBD[BigDecimal] = get(aKey, tryGetDecimal)
+  def getDateTime(aKey: String): AlmValidationSBD[DateTime] = get(aKey, tryGetDateTime)
+  def getBytes(aKey: String): AlmValidationSBD[Array[Byte]] = get(aKey, tryGetBytes)
+  def getAsString(aKey: String): AlmValidationSBD[String] = get(aKey, tryGetAsString)
 
-  def isBooleanSetTrue(aKey: String): AlmValidationSingleBadData[Boolean]
+  def isBooleanSetTrue(aKey: String): AlmValidationSBD[Boolean]
   
-  def getElements(aKey: String): AlmValidationMultipleBadData[List[XTractor]]
-  def tryGetElement(aKey: String): AlmValidationSingleBadData[Option[XTractor]]
-  def getElement(aKey: String): AlmValidationSingleBadData[XTractor] =
+  def getElements(aKey: String): AlmValidationMBD[List[XTractor]]
+  def tryGetElement(aKey: String): AlmValidationSBD[Option[XTractor]]
+  def getElement(aKey: String): AlmValidationSBD[XTractor] =
     tryGetElement(aKey) match {
       case Success(opt) =>
         opt
@@ -63,7 +71,7 @@ trait XTractor {
       case Failure(f) => f.fail[XTractor]
     }
     
-  def tryMapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMultipleBadData[U]): AlmValidationMultipleBadData[Option[U]] =
+  def tryMapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[Option[U]] =
     tryGetElement(aKey) match {
       case Success(opt) =>
         opt match {
@@ -77,7 +85,7 @@ trait XTractor {
       case Failure(f) => f.toMultipleBadData.fail[Option[U]]
     }
   
-  def mapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMultipleBadData[U]): AlmValidationMultipleBadData[U] =
+  def mapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[U] =
     tryMapElem(aKey, mapXtractor) match {
       case Success(opt) =>
         opt
@@ -86,7 +94,7 @@ trait XTractor {
       case Failure(f) => (f.prefixWithPath(List(key))).fail[U]
     }
   
-  def tryFlatMapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMultipleBadData[Option[U]]): AlmValidationMultipleBadData[Option[U]] =
+  def tryFlatMapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[Option[U]]): AlmValidationMBD[Option[U]] =
     tryGetElement(aKey) match {
       case Success(opt) =>
         opt match {
@@ -100,26 +108,35 @@ trait XTractor {
       case Failure(f) => f.toMultipleBadData.fail[Option[U]]
     }
 
-  def mapToList[U](aKey: String, mapXtractor: XTractor => AlmValidationMultipleBadData[U]): AlmValidationMultipleBadData[List[U]] =
+  def mapToList[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[List[U]] =
     getElements(aKey) match {
       case Success(seq) => seq.map(mapXtractor).sequence
       case Failure(f) => f.fail[List[U]]
   }
   
-  def getAtomics(aKey: String): AlmValidationMultipleBadData[List[XTractorAtomic]]
+  def tryGetAtomic(aKey: String): AlmValidationSBD[Option[XTractorAtomic]]
+
+  def getAtomic(aKey: String): AlmValidationSBD[XTractorAtomic] = 
+    tryGetAtomic(aKey) match {
+      case Success(Some(v)) => v.successSBD 
+      case Success(None) => Failure(SingleBadDataProblem("Value not found: %s".format(key), key = aKey)) 
+      case Failure(f) => Failure(f) 
+    }
   
-  def getAtomicsEvaluated[T](aKey: String, eval: XTractorAtomic => AlmValidationSingleBadData[T]): AlmValidationMultipleBadData[List[T]] = {
+  def getAtomics(aKey: String): AlmValidationMBD[List[XTractorAtomic]]
+  
+  def getAtomicsEvaluated[T](aKey: String, eval: XTractorAtomic => AlmValidationSBD[T]): AlmValidationMBD[List[T]] = {
     for {
       atomicXTractors <- getAtomics(aKey)
       results <- atomicXTractors.map {eval(_).toMultipleBadData} sequence
     } yield results
   }
   
-  private def get[U](aKey: String, f: String => AlmValidationSingleBadData[Option[U]]): AlmValidationSingleBadData[U] = 
+  private def get[U](aKey: String, f: String => AlmValidationSBD[Option[U]]): AlmValidationSBD[U] = 
     f(aKey) match {
       case Success(opt) => 
         opt match {
-          case Some(v) => v.successSingleBadData
+          case Some(v) => v.successSBD
           case None => Failure(SingleBadDataProblem("Value not found: %s".format(key), key = aKey))
         }
       case Failure(f) => Failure(f)

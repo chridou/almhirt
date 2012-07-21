@@ -29,6 +29,8 @@ object Dependencies {
 	lazy val unfiltered = "net.databinder" %% "unfiltered-netty" % "0.6.3"
 
 	lazy val casbah  = "org.mongodb" %% "casbah" % "2.3.0"
+
+	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 	
 	lazy val specs2 = "org.specs2" %% "specs2" % "1.11" % "test"
 	lazy val akka_testkit = "com.typesafe.akka" % "akka-testkit" % "2.0.2"
@@ -43,6 +45,7 @@ trait CommonBuild {
   	  resolvers += typesafeSnapshot,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += specs2
   )

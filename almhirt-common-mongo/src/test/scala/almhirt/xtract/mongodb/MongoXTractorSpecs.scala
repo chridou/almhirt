@@ -28,10 +28,10 @@ class MongoXTractorSpecs extends Specification {
 
   """A MongoXTractor for Bob using the default KeyMapper when queried for "id"(PK!) which is a Long""" should {
     """return success 0L when queried with getLong""" in {
-      bob.xtractor("Bob").getLong("id") must beEqualTo(0L.successSingleBadData)
+      bob.xtractor("Bob").getLong("id") must beEqualTo(0L.successSBD)
     }
     """return a failure when when queried with getLong""" in {
-      bob.xtractor("Bob").getLong("_id") must beEqualTo(0L.successSingleBadData)
+      bob.xtractor("Bob").getLong("_id") must beEqualTo(0L.successSBD)
     }
     """return a failure when when queried with getInt""" in {
       bob.xtractor("Bob").getInt("id").isFailure
@@ -43,10 +43,10 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").getString("id").isFailure
     }
     """return success Some(0L) when queried with tryGetLong""" in {
-      bob.xtractor("Bob").tryGetLong("id") must beEqualTo(Some(0L).successSingleBadData)
+      bob.xtractor("Bob").tryGetLong("id") must beEqualTo(Some(0L).successSBD)
     }
     """return success Some(0L) when queried with tryGetLong""" in {
-      bob.xtractor("Bob").tryGetLong("_id") must beEqualTo(Some(0L).successSingleBadData)
+      bob.xtractor("Bob").tryGetLong("_id") must beEqualTo(Some(0L).successSBD)
     }
     """return a failure when when queried with tryGetInt""" in {
       bob.xtractor("Bob").tryGetInt("id").isFailure
@@ -70,7 +70,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").getDouble("name").isFailure
     }
     """return a success of "Bob" when queried with getString""" in {
-      bob.xtractor("Bob").getString("name") must beEqualTo("Bob".successSingleBadData)
+      bob.xtractor("Bob").getString("name") must beEqualTo("Bob".successSBD)
     }
     """return a failure when queried with tryGetLong""" in {
       bob.xtractor("Bob").tryGetLong("name").isFailure
@@ -82,7 +82,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").tryGetDouble("name").isFailure
     }
     """return a success of Some("Bob") when queried with tryGetString""" in {
-      bob.xtractor("Bob").tryGetString("name") must beEqualTo(Some("Bob").successSingleBadData)
+      bob.xtractor("Bob").tryGetString("name") must beEqualTo(Some("Bob").successSBD)
     }
     """return a failure when queried with getElement""" in {
       bob.xtractor("Bob").getElement("name").isFailure
@@ -100,7 +100,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").getLong("age").isFailure
     }
     """return a success of 33 when queried with getInt""" in {
-      bob.xtractor("Bob").getInt("age") must beEqualTo(33.successSingleBadData)
+      bob.xtractor("Bob").getInt("age") must beEqualTo(33.successSBD)
     }
     """return a failure when queried with getDouble""" in {
       bob.xtractor("Bob").getDouble("age").isFailure
@@ -112,7 +112,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").tryGetLong("age").isFailure
     }
     """return a success of Some(33) when queried with tryGetInt""" in {
-      bob.xtractor("Bob").tryGetInt("age") must beEqualTo(Some(33).successSingleBadData)
+      bob.xtractor("Bob").tryGetInt("age") must beEqualTo(Some(33).successSBD)
     }
     """return a failure when queried with tryGetDouble""" in {
       bob.xtractor("Bob").tryGetDouble("age").isFailure
@@ -139,7 +139,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").getInt("dps").isFailure
     }
     """return a success of 1.37 when queried with getDouble""" in {
-      bob.xtractor("Bob").getDouble("dps") must beEqualTo(1.37.successSingleBadData)
+      bob.xtractor("Bob").getDouble("dps") must beEqualTo(1.37.successSBD)
     }
     """return a failure when queried with getString""" in {
       bob.xtractor("Bob").getString("dps").isFailure
@@ -151,7 +151,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").tryGetInt("dps").isFailure
     }
     """return a success of Some(1.37) when queried with tryGetDouble""" in {
-      bob.xtractor("Bob").tryGetDouble("dps") must beEqualTo(Some(1.37).successSingleBadData)
+      bob.xtractor("Bob").tryGetDouble("dps") must beEqualTo(Some(1.37).successSBD)
     }
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("dps").isFailure
@@ -178,7 +178,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").getDouble("ageAsText").isFailure
     }
     """return a success of "Bob" when queried with getString""" in {
-      bob.xtractor("Bob").getString("ageAsText") must beEqualTo("33".successSingleBadData)
+      bob.xtractor("Bob").getString("ageAsText") must beEqualTo("33".successSBD)
     }
     """return a failure when queried with tryGetLong""" in {
       bob.xtractor("Bob").tryGetLong("ageAsText").isFailure
@@ -190,7 +190,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").tryGetDouble("ageAsText").isFailure
     }
     """return a success of Some("Bob") when queried with tryGetString""" in {
-      bob.xtractor("Bob").tryGetString("ageAsText") must beEqualTo(Some("33").successSingleBadData)
+      bob.xtractor("Bob").tryGetString("ageAsText") must beEqualTo(Some("33").successSBD)
     }
     """return a failure when queried with getElement""" in {
       bob.xtractor("Bob").getElement("ageAsText").isFailure
@@ -226,7 +226,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").tryGetDouble("spaces").isFailure
     }
     """return a success of None when queried with tryGetString""" in {
-      bob.xtractor("Bob").tryGetString("spaces") must beEqualTo(None.successSingleBadData)
+      bob.xtractor("Bob").tryGetString("spaces") must beEqualTo(None.successSBD)
     }
     """return a failure when queried with getElement""" in {
       bob.xtractor("Bob").getElement("spaces").isFailure
@@ -353,6 +353,7 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").getElement("gameTimes").isFailure
     }
     """return a success when queried with getElements""" in {
+      println(bob.xtractor("Bob").getElements("gameTimes"))
       bob.xtractor("Bob").getElements("gameTimes").isSuccess
     }
     """return a failure when queried with tryGetElement""" in {
@@ -377,28 +378,28 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").getString("doesNotExist").isFailure
     }
    """return a success of None when queried with tryGetInt""" in {
-      bob.xtractor("Bob").tryGetInt("doesNotExist") must beEqualTo(None.successSingleBadData)
+      bob.xtractor("Bob").tryGetInt("doesNotExist") must beEqualTo(None.successSBD)
     }
     """return a success of None when queried with tryGetLong""" in {
-      bob.xtractor("Bob").tryGetLong("doesNotExist") must beEqualTo(None.successSingleBadData)
+      bob.xtractor("Bob").tryGetLong("doesNotExist") must beEqualTo(None.successSBD)
     }
     """return a success of None when queried with tryGetDouble""" in {
-      bob.xtractor("Bob").tryGetDouble("doesNotExist") must beEqualTo(None.successSingleBadData)
+      bob.xtractor("Bob").tryGetDouble("doesNotExist") must beEqualTo(None.successSBD)
     }
     """return a success of None when queried with tryGetString""" in {
-      bob.xtractor("Bob").tryGetString("doesNotExist") must beEqualTo(None.successSingleBadData)
+      bob.xtractor("Bob").tryGetString("doesNotExist") must beEqualTo(None.successSBD)
     }
     """return a failure when queried with getElement""" in {
       bob.xtractor("Bob").getElement("doesNotExist").isFailure
     }
      """return a success of None when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("doesNotExist") must beEqualTo(None.successSingleBadData)
+      bob.xtractor("Bob").tryGetElement("doesNotExist") must beEqualTo(None.successSBD)
     }
     """return a success of [] when queried with getElements""" in {
-      bob.xtractor("Bob").getElements("doesNotExist") must beEqualTo(Nil.successSingleBadData)
+      bob.xtractor("Bob").getElements("doesNotExist") must beEqualTo(Nil.successSBD)
     }
     """return a success of [] when queried with getAtomics""" in {
-      bob.xtractor("Bob").getAtomics("doesNotExist") must beEqualTo(Nil.successSingleBadData)
+      bob.xtractor("Bob").getAtomics("doesNotExist") must beEqualTo(Nil.successSBD)
     }
   }
 

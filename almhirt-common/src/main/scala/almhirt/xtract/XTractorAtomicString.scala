@@ -10,58 +10,70 @@ import almhirt.validation.Problem._
 class XTractorAtomicString(value: String, val key: String) extends XTractorAtomic {
   type T = String
   val underlying = value
-  def getString(): AlmValidationSingleBadData[String] =
+  def getString(): AlmValidationSBD[String] =
 	value.notEmptyOrWhitespaceAlm(key)
 	
-  def getInt(): AlmValidationSingleBadData[Int] =
+  def getInt(): AlmValidationSBD[Int] =
 	value.toIntAlm(key)
 	
-  def getLong(): AlmValidationSingleBadData[Long] =
+  def getLong(): AlmValidationSBD[Long] =
 	value.toLongAlm(key)
 	
-  def getDouble(): AlmValidationSingleBadData[Double] =
+  def getDouble(): AlmValidationSBD[Double] =
 	value.toDoubleAlm(key)
 	
-  def getFloat(): AlmValidationSingleBadData[Float] =
+  def getFloat(): AlmValidationSBD[Float] =
 	value.toFloatAlm(key)
 	
-  def getDecimal(): AlmValidationSingleBadData[BigDecimal] =
+  def getBoolean(): AlmValidationSBD[Boolean] =
+	value.toBooleanAlm(key)
+	
+  def getDecimal(): AlmValidationSBD[BigDecimal] =
 	value.toDecimalAlm(key)
 	
-  def getDateTime(): AlmValidationSingleBadData[DateTime] =
+  def getDateTime(): AlmValidationSBD[DateTime] =
 	value.toDateTimeAlm(key)
 	
-  def tryGetString(): AlmValidationSingleBadData[Option[String]] =
+  def getBytes(): AlmValidationSBD[Array[Byte]] =
+	value.toBytesFromBase64Alm(key)
+
+  def tryGetString(): AlmValidationSBD[Option[String]] =
 	  if(value.trim.isEmpty)
 	    Success(None)
 	  else
 	    Success(Some(value))
   
-  def tryGetInt(): AlmValidationSingleBadData[Option[Int]] =
-	  onEmptyNoneElse(() => value.toIntAlm(key))
+  def tryGetInt(): AlmValidationSBD[Option[Int]] =
+	onEmptyNoneElse(() => value.toIntAlm(key))
   
-  def tryGetLong(): AlmValidationSingleBadData[Option[Long]] =
-	  onEmptyNoneElse(() => value.toLongAlm(key))
+  def tryGetLong(): AlmValidationSBD[Option[Long]] =
+	onEmptyNoneElse(() => value.toLongAlm(key))
   
-  def tryGetDouble(): AlmValidationSingleBadData[Option[Double]] =
-	  onEmptyNoneElse(() => value.toDoubleAlm(key))
+  def tryGetDouble(): AlmValidationSBD[Option[Double]] =
+	onEmptyNoneElse(() => value.toDoubleAlm(key))
 
-  def tryGetFloat(): AlmValidationSingleBadData[Option[Float]] =
-	  onEmptyNoneElse(() => value.toFloatAlm(key))
+  def tryGetFloat(): AlmValidationSBD[Option[Float]] =
+	onEmptyNoneElse(() => value.toFloatAlm(key))
 
-  def tryGetDecimal(): AlmValidationSingleBadData[Option[BigDecimal]] =
-	  onEmptyNoneElse(() => value.toDecimalAlm(key))
+  def tryGetBoolean(): AlmValidationSBD[Option[Boolean]] = 
+    onEmptyNoneElse(() => value.toBooleanAlm(key))
 
-  def tryGetDateTime(): AlmValidationSingleBadData[Option[DateTime]] =
-	  onEmptyNoneElse(() => value.toDateTimeAlm(key))
+  def tryGetDecimal(): AlmValidationSBD[Option[BigDecimal]] =
+	onEmptyNoneElse(() => value.toDecimalAlm(key))
 
-  def isBooleanSet(): AlmValidationSingleBadData[Boolean] = 
+  def tryGetDateTime(): AlmValidationSBD[Option[DateTime]] =
+	onEmptyNoneElse(() => value.toDateTimeAlm(key))
+
+  def tryGetBytes(): AlmValidationSBD[Option[Array[Byte]]] =
+	onEmptyNoneElse(() => value.toBytesFromBase64Alm(key))
+
+  def isBooleanSet(): AlmValidationSBD[Boolean] = 
     if(value.trim.isEmpty) 
       false.success[SingleBadDataProblem] 
     else 
       parseBooleanAlm(value, key)
   
-  private def onEmptyNoneElse[U](f: () => AlmValidationSingleBadData[U]): AlmValidationSingleBadData[Option[U]] = {
+  private def onEmptyNoneElse[U](f: () => AlmValidationSBD[U]): AlmValidationSBD[Option[U]] = {
     if(value.trim.isEmpty)
 	  Success(None)
 	else
