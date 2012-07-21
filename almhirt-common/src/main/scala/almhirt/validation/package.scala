@@ -10,6 +10,8 @@ package object validation {
   type AlmValidation[+α] = Validation[Problem, α]
   type AlmValidationSBD[+α] = Validation[SingleBadDataProblem, α]
   type AlmValidationMBD[+α] = Validation[MultipleBadDataProblem, α]
+  type AlmValidationSM[+α] = Validation[SingleMappingProblem, α]
+  type AlmValidationMM[+α] = Validation[MultipleMappingProblem, α]
 
 object AlmValidation extends AlmValidationOps with AlmValidationParseOps with AlmValidationImplicits
 

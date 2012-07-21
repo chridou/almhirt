@@ -35,6 +35,8 @@ trait AlmValidationImplicits {
     def successAlm(): AlmValidation[T] = any.success[Problem]  
     def successSBD(): AlmValidationSBD[T] = any.success[SingleBadDataProblem]  
     def successMBD(): AlmValidationMBD[T] = any.success[MultipleBadDataProblem]  
+    def successSM(): AlmValidationSM[T] = any.success[SingleMappingProblem]  
+    def successMM(): AlmValidationMM[T] = any.success[MultipleMappingProblem]  
   }
 
   implicit def optionValidation2ValidationOption[P, V](value: Option[Validation[P,V]]): OptionValidationW[P, V] =
