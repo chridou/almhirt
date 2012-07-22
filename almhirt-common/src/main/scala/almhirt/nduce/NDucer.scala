@@ -30,7 +30,6 @@ case class SetBoolean(key: String, value: Boolean) extends NDuceScript
 case class SetDecimal(key: String, value: BigDecimal) extends NDuceScript
 case class SetDateTime(key: String, value: DateTime) extends NDuceScript
 case class SetBytes(key: String, value: Array[Byte]) extends NDuceScript
-case class SetElement(key: String, element: NDuceElem) extends NDuceScript
 case class SetElements(key: String, elements: Seq[NDuceElem]) extends NDuceScript
 case class SetPrimitives(key: String, primitives: Seq[Any]) extends NDuceScript
 case class NDuceElem(key: String, values: Seq[NDuceScript]) extends NDuceScript with NDuceScribe {
@@ -44,7 +43,7 @@ case class NDuceElem(key: String, values: Seq[NDuceScript]) extends NDuceScript 
   def setDateTime(key: String, value: DateTime) = copy(values = values :+ SetDateTime(key, value))
   def setBytes(key: String, value: Array[Byte]) = copy(values = values :+ SetBytes(key, value))
   
-  def setElement(key: String, element: NDuceElem) = copy(values = values :+ SetElement(key, element))
+  def setElement(key: String, element: NDuceElem) = copy(values = values :+ element)
   def setElements(key: String, elements: Seq[NDuceElem]) = copy(values = values :+ SetElements(key, elements))
   def setPrimitives(key: String, primitives: Seq[Any]) = copy(values = values :+ SetPrimitives(key, primitives))
 }

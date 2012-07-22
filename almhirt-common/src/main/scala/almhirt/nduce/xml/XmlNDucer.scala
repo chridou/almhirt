@@ -5,7 +5,7 @@ import org.joda.time.DateTime
 import almhirt.nduce._
 
 object XmlNDucer {
-  def fromScript(elem: NDuceElem): Elem = {
+  def inducefromScript(elem: NDuceElem): Elem = {
     val children = elem.values map {toXmlElement(_)}
     Elem("", elem.key, null, null, children: _*)
   }
@@ -30,8 +30,6 @@ object XmlNDucer {
         Elem("", key, null, null, Text(""))
       case SetBytes(key, value) =>
         Elem("", key, null, null, Text(org.apache.commons.codec.binary.Base64.encodeBase64String(value)))
-      case SetElement(key, element) =>
-        Elem("", key, null, null, toXmlElement(element))
       case SetElements(key, elements) =>
         val children = elements map {toXmlElement(_)}
         Elem("", key, null, null, children: _*)

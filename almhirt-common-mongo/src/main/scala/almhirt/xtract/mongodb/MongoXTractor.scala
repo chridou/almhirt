@@ -7,14 +7,12 @@ import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
 import almhirt.xtract.{XTractor, XTractorAtomic, XTractorAtomicAny}
+import almhirt.mongo.MongoKeyMapper
 import com.mongodb.casbah.Imports._
-import com.mongodb.casbah.commons.MongoDBList
-import com.mongodb.BasicDBList
-import com.mongodb.BasicDBObject
 
 trait MongoXTractorKeyMapper extends Function[String, String]
 
-class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit mapKey: MongoXTractorKeyMapper) extends XTractor {
+class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit mapKey: MongoKeyMapper) extends XTractor {
   type T = MongoDBObject
   
   def tryGetString(aKey: String) = 
@@ -202,7 +200,6 @@ object MongoXTractor {
   def createKeyMapper(idKey: String): MongoXTractorKeyMapper =
     createKeyMapper(key => if(key == idKey) "_id" else key)
   
-  implicit val defaultMongoKeyMapper = createKeyMapper("id")
   implicit def mongoDBObject2MongoXTractorW(elem: MongoDBObject): MongoDBObjectMongoXTractorW = new MongoDBObjectMongoXTractorW(elem)
   final class MongoDBObjectMongoXTractorW(mongoObj: MongoDBObject) {
     def xtractor(aKey: String): MongoXTractor = new MongoXTractor(mongoObj, aKey)
