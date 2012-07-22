@@ -1,47 +1,12 @@
-package almhirt.xtract.xml
+package almhirt.xtractnduce.xml
 
 import org.specs2.mutable._
 import scalaz.Success
 import almhirt.validation.AlmValidation._
 
-object XmlXTractorSpecsSamples {
-  val bob = 
-    <Bob>
-	  <id>0</id>
-	  <name>Bob</name>
-	  <age>33</age>
-	  <dps>1.37</dps>
-	  <ageAsText>33</ageAsText>
-	  <spaces>  </spaces>
-	  <address>
-		<containerTypeName>
-	      <street>Downing Street</street>
-	      <city>London</city>
- 		</containerTypeName>
-     </address>
-	  <scores>
-        <anyNameYouWant>1</anyNameYouWant>
-        <huh>2</huh>
-        <value>3</value>
-        <value>4</value>
-        <blah>5</blah>
-        <value>6</value>
-        <value>7</value>
-        <value>8</value>
-        <grmpfl>9</grmpfl>
-        <value>10</value>
-	  </scores>
-	  <gameTimes>
-          <containerTypeName><aoe>12.3</aoe></containerTypeName>
-          <anyNameYouWant><eve>29.1</eve></anyNameYouWant>
-          <value><pacman>1229.1</pacman></value>
-	  </gameTimes>
-    </Bob>
-}
-
 class XmlXTractorSpecs extends Specification {
   import XmlXTractor._
-  import XmlXTractorSpecsSamples._
+  import XTractNDuceSamples._
 
   """A XmlXTractor for Bob when queried for "id"(PK!) which is a Long""" should {
     """return success 0L when queried with getLong""" in {

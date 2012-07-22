@@ -1,11 +1,11 @@
-package almhirt.xtract
+package almhirt.xtractnduce
 
+import almhirt.validation._
+import almhirt.validation.AlmValidation._
+import almhirt.validation.Problem._
+import org.joda.time.DateTime
 import scalaz._
 import Scalaz._
-import org.joda.time.DateTime
-import almhirt.validation._
-import AlmValidation._
-import almhirt.validation.Problem._
 
 trait XTractorAtomic {
   type T

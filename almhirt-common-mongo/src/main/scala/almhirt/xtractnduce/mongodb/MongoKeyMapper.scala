@@ -1,4 +1,4 @@
-package almhirt.mongo
+package almhirt.xtractnduce.mongodb
 
 trait MongoKeyMapper extends Function[String, String]
 

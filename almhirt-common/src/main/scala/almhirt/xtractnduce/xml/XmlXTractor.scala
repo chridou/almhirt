@@ -1,4 +1,4 @@
-package almhirt.xtract.xml
+package almhirt.xtractnduce.xml
 
 import scala.xml.{Elem, Text}
 import scalaz._
@@ -7,10 +7,7 @@ import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
 import almhirt.xml.XmlPrimitives
-import almhirt.xtract.{XTractor, XTractorAtomic, XTractorAtomicString}
-import almhirt.xml.XmlPrimitives
-import almhirt.xtract.XTractor
-import almhirt.xtract.XTractorAtomic
+import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
 class XmlXTractor(elem: Elem) extends XTractor {
   type T = Elem

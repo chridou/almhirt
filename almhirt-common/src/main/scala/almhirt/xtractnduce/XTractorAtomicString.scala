@@ -1,11 +1,11 @@
-package almhirt.xtract
+package almhirt.xtractnduce
 
-import scalaz.{Success}
-import scalaz.syntax.validation._
-import org.joda.time.DateTime
-import almhirt.validation._
-import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
+import almhirt.validation.AlmValidation._
+import almhirt.validation.AlmValidationSBD
+import org.joda.time.DateTime
+import scalaz.syntax.validation.ToValidationV
+import scalaz.Success
 
 class XTractorAtomicString(value: String, val key: String) extends XTractorAtomic {
   type T = String

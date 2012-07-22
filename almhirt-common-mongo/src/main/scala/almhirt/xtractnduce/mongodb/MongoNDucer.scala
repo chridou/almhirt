@@ -1,15 +1,13 @@
-package almhirt.nduce.mongodb
+package almhirt.xtractnduce.mongodb
 
-import scala.xml.{Elem, Text}
-import org.joda.time.DateTime
-import almhirt.nduce._
-import almhirt.mongo.MongoKeyMapper
+import scala.xml.Elem
+import almhirt.xtractnduce._
 import com.mongodb.casbah.Imports._
-
+import scala.collection.mutable.Builder
 
 object MongoNDucer {
   import scala.collection.mutable.Builder
-  def inducefromScript(elem: NDuceElem): MongoDBObject = {
+  def induceFromScript(elem: NDuceElem): MongoDBObject = {
     val builder = MongoDBObject.newBuilder
     addToBuilder(elem, builder)
     builder.result
@@ -36,12 +34,12 @@ object MongoNDucer {
       case SetBytes(key, value) =>
         builder += key -> value
       case SetElements(key, elements) =>
-        val children = elements map {inducefromScript(_)}
+        val children = elements map {induceFromScript(_)}
         builder += key -> MongoDBList(children: _*)
       case SetPrimitives(key, primitives) =>
         val children = primitives map {v => <value>{v.toString}</value>}
         Elem("", key, null, null, children: _*)
       case element @ NDuceElem(key, values) =>
-        builder += key -> inducefromScript(element)
+        builder += key -> induceFromScript(element)
   }
 }

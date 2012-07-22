@@ -1,16 +1,14 @@
-package almhirt.xtract.mongodb
+package almhirt.xtractnduce.mongodb
 
+import org.joda.time.DateTime
 import scalaz._
 import Scalaz._
-import org.joda.time.DateTime
 import almhirt.validation._
-import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
-import almhirt.xtract.{XTractor, XTractorAtomic, XTractorAtomicAny}
-import almhirt.mongo.MongoKeyMapper
-import com.mongodb.casbah.Imports._
+import almhirt.validation.AlmValidation._
+import almhirt.xtractnduce._
 
-trait MongoXTractorKeyMapper extends Function[String, String]
+import com.mongodb.casbah.Imports._
 
 class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit mapKey: MongoKeyMapper) extends XTractor {
   type T = MongoDBObject
@@ -195,11 +193,6 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
 }
 
 object MongoXTractor {
-  def createKeyMapper(map: String => String): MongoXTractorKeyMapper =
-    new MongoXTractorKeyMapper{ def apply(key: String) = map(key) }
-  def createKeyMapper(idKey: String): MongoXTractorKeyMapper =
-    createKeyMapper(key => if(key == idKey) "_id" else key)
-  
   implicit def mongoDBObject2MongoXTractorW(elem: MongoDBObject): MongoDBObjectMongoXTractorW = new MongoDBObjectMongoXTractorW(elem)
   final class MongoDBObjectMongoXTractorW(mongoObj: MongoDBObject) {
     def xtractor(aKey: String): MongoXTractor = new MongoXTractor(mongoObj, aKey)

@@ -1,10 +1,10 @@
-package almhirt.xtract.mongodb
+package almhirt.xtractnduce.mongodb
 
 import org.specs2.mutable._
 import scalaz.Success
 import almhirt.validation.AlmValidation._
+
 import com.mongodb.casbah.Imports._
-import com.mongodb.casbah.commons.MongoDBObject
 
 object MongoXTractorSpecsSamples {
   val bob: MongoDBObject = {
@@ -24,7 +24,7 @@ object MongoXTractorSpecsSamples {
 
 class MongoXTractorSpecs extends Specification {
   import MongoXTractor._
-  import MongoXTractorSpecsSamples._
+import MongoXTractorSpecsSamples._
 
   """A MongoXTractor for Bob using the default KeyMapper when queried for "id"(PK!) which is a Long""" should {
     """return success 0L when queried with getLong""" in {
@@ -353,7 +353,6 @@ class MongoXTractorSpecs extends Specification {
       bob.xtractor("Bob").getElement("gameTimes").isFailure
     }
     """return a success when queried with getElements""" in {
-      println(bob.xtractor("Bob").getElements("gameTimes"))
       bob.xtractor("Bob").getElements("gameTimes").isSuccess
     }
     """return a failure when queried with tryGetElement""" in {
