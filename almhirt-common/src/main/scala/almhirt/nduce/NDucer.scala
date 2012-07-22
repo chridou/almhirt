@@ -16,8 +16,8 @@ trait NDuceScribe {
   def setBytes(key: String, value: Array[Byte]): NDuceScript
   
   def setElement(key: String, element: NDuceElem): NDuceScript
-  def setElements(key: String, elements: TraversableOnce[NDuceElem]): NDuceScript
-  def setPrimitives(key: String, primitives: TraversableOnce[Any]): NDuceScript
+  def setElements(key: String, elements: Seq[NDuceElem]): NDuceScript
+  def setPrimitives(key: String, primitives: Seq[Any]): NDuceScript
 }
 
 sealed trait NDuceScript
@@ -31,8 +31,8 @@ case class SetDecimal(key: String, value: BigDecimal) extends NDuceScript
 case class SetDateTime(key: String, value: DateTime) extends NDuceScript
 case class SetBytes(key: String, value: Array[Byte]) extends NDuceScript
 case class SetElement(key: String, element: NDuceElem) extends NDuceScript
-case class SetElements(key: String, elements: TraversableOnce[NDuceElem]) extends NDuceScript
-case class SetPrimitives(key: String, primitives: TraversableOnce[Any]) extends NDuceScript
+case class SetElements(key: String, elements: Seq[NDuceElem]) extends NDuceScript
+case class SetPrimitives(key: String, primitives: Seq[Any]) extends NDuceScript
 case class NDuceElem(key: String, values: Seq[NDuceScript]) extends NDuceScript with NDuceScribe {
   def setString(key: String, value: String) = copy(values = values :+ SetString(key, value))
   def setInt(key: String, value: Int) = copy(values = values :+ SetInt(key, value))
@@ -45,8 +45,8 @@ case class NDuceElem(key: String, values: Seq[NDuceScript]) extends NDuceScript 
   def setBytes(key: String, value: Array[Byte]) = copy(values = values :+ SetBytes(key, value))
   
   def setElement(key: String, element: NDuceElem) = copy(values = values :+ SetElement(key, element))
-  def setElements(key: String, elements: TraversableOnce[NDuceElem]) = copy(values = values :+ SetElements(key, elements))
-  def setPrimitives(key: String, primitives: TraversableOnce[Any]) = copy(values = values :+ SetPrimitives(key, primitives))
+  def setElements(key: String, elements: Seq[NDuceElem]) = copy(values = values :+ SetElements(key, elements))
+  def setPrimitives(key: String, primitives: Seq[Any]) = copy(values = values :+ SetPrimitives(key, primitives))
 }
 
 object NDuceScribe {
