@@ -9,7 +9,8 @@ class XmlNDucerSpecs extends Specification {
   """A NDucerScript of Bob""" should {
     """generate the same XML as the original whan induced to an XmlInducer""" in {
       val generated = trim(induceFromScript(bobScript))
-      generated must beEqualTo(trim(bob))
+      val trimmedBob = trim(bob)
+      generated.toString must beEqualTo(trimmedBob.toString)
     }
   }
 }

@@ -1,42 +1,64 @@
 package almhirt.xtractnduce.xml
 
-import scala.xml.{Elem, Text}
+import scala.xml.{Elem, Text, TopScope}
 import almhirt.xtractnduce._
 
 object XmlNDucer {
   def induceFromScript(elem: NDuceElem): Elem = {
     val children = elem.values map {toXmlElement(_)}
-    Elem(null, elem.key, null, null, children: _*)
+    Elem(null, elem.key, null, TopScope, children: _*)
   }
 
   private def toXmlElement(script: NDuceScript): Elem =
     script match {
       case SetString(key, value) =>
-        Elem(null, key, null, null, Text(value))
+        Elem(null, key, null, TopScope, Text(value))
+      case SetStringOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(Text(_)).toSeq: _*)
       case SetInt(key, value) =>
-        Elem(null, key, null, null, Text(value.toString))
+        Elem(null, key, null, TopScope, Text(value.toString))
+      case SetIntOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
       case SetLong(key, value) =>
-        Elem(null, key, null, null, Text(value.toString))
+        Elem(null, key, null, TopScope, Text(value.toString))
+      case SetLongOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
       case SetDouble(key, value) =>
-        Elem(null, key, null, null, Text(value.toString))
+        Elem(null, key, null, TopScope, Text(value.toString))
+      case SetDoubleOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
       case SetFloat(key, value) =>
-        Elem(null, key, null, null, Text(value.toString))
+        Elem(null, key, null, TopScope, Text(value.toString))
+      case SetFloatOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
       case SetBoolean(key, value) =>
-        Elem(null, key, null, null, Text(value.toString))
+        Elem(null, key, null, TopScope, Text(value.toString))
+      case SetBooleanOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
       case SetDecimal(key, value) =>
-        Elem(null, key, null, null, Text(value.toString))
+        Elem(null, key, null, TopScope, Text(value.toString))
+      case SetDecimalOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
       case SetDateTime(key, value) =>
-        Elem(null, key, null, null, Text(""))
+        Elem(null, key, null, TopScope, Text(""))
+      case SetDateTimeOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
       case SetBytes(key, value) =>
-        Elem(null, key, null, null, Text(org.apache.commons.codec.binary.Base64.encodeBase64String(value)))
+        Elem(null, key, null, TopScope, Text(org.apache.commons.codec.binary.Base64.encodeBase64String(value)))
+      case SetBytesOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map{x => Text(org.apache.commons.codec.binary.Base64.encodeBase64String(x))}.toSeq: _*)
+      case SetElement(key, value) =>
+        Elem(null, key, null, TopScope, toXmlElement(value))
+      case SetElementOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map{x => toXmlElement(x)}.toSeq: _*)
       case SetElements(key, elements) =>
         val children = elements map {toXmlElement(_)}
-        Elem(null, key, null, null, children: _*)
+        Elem(null, key, null, TopScope, children: _*)
       case SetPrimitives(key, primitives) =>
         val children = primitives map {v => <value>{v.toString}</value>}
-        Elem(null, key, null, null, children: _*)
+        Elem(null, key, null, TopScope, children: _*)
       case NDuceElem(key, values) =>
         val children = values map {toXmlElement(_)}
-        Elem(null, key, null, null, children: _*)
+        Elem(null, key, null, TopScope, children: _*)
   }
 }

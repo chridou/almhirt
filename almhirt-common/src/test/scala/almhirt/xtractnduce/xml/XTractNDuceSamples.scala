@@ -42,12 +42,13 @@ object XTractNDuceSamples {
       .setString("name", "Bob")
       .setInt("age", 33)
       .setDouble("dps", 1.37)
+      .setString("ageAsText", "33")
       .setString("spaces", "  ")
       .setElement("address", 
           scribble("containerTypeName")
             .setString("street", "Downing Street")
             .setString("city", "London"))
-      .setPrimitives("scores", 1 to 10)
+      .setPrimitives("scores", (1 to 10): _*)
       .setElements("gameTimes",
           scribble("containerTypeName").setDouble("aoe", 12.3),
           scribble("anyNameYouWant").setDouble("eve", 29.1),
