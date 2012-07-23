@@ -7,11 +7,12 @@ import scala.collection.mutable.Builder
 
 object MongoNDucer {
   import scala.collection.mutable.Builder
-  def induceFromScript(script: NDuceScript)(implicit mapKey: MongoKeyMapper): MongoDBObject = {
+  
+  def apply(script: NDuceScript)(implicit mapKey: MongoKeyMapper): MongoDBObject = {
     mongoObjectFromScript(script, mapKey)
   }
-
-  def induceFromScript(script: NDuceScript, idKey: String): MongoDBObject = {
+  
+  def apply(script: NDuceScript, idKey: String): MongoDBObject = {
     mongoObjectFromScript(script, MongoKeyMapper.createKeyMapper(idKey))
   }
   
@@ -61,7 +62,7 @@ object MongoNDucer {
       case SetBytesOpt(key, value) =>
         value foreach {v => builder += key -> v}
       case SetElement(key, value) =>
-        builder += key -> induceFromScript(value)
+        builder += key -> apply(value)
       case SetElementOpt(key, value) =>
         value foreach {v => builder += key -> mongoObjectFromScript(v, identity)}
       case SetElements(key, elements) =>

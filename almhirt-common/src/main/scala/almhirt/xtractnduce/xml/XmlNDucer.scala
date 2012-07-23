@@ -4,11 +4,11 @@ import scala.xml.{Elem, Text, TopScope}
 import almhirt.xtractnduce._
 
 object XmlNDucer {
-  def induceFromScript(script: NDuceScript): Elem = {
+  def apply(script: NDuceScript): Elem = {
     val children = script.ops map {toXmlElement(_)}
     Elem(null, script.name, null, TopScope, children: _*)
   }
-
+  
   private def toXmlElement(script: NDuceScriptOp): Elem =
     script match {
       case SetString(key, value) =>
@@ -48,11 +48,11 @@ object XmlNDucer {
       case SetBytesOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map{x => Text(org.apache.commons.codec.binary.Base64.encodeBase64String(x))}.toSeq: _*)
       case SetElement(key, scriptElement) =>
-        Elem(null, key, null, TopScope, induceFromScript(scriptElement))
+        Elem(null, key, null, TopScope, apply(scriptElement))
       case SetElementOpt(key, scriptElement) =>
-        Elem(null, key, null, TopScope, scriptElement.map{x => induceFromScript(x)}.toSeq: _*)
+        Elem(null, key, null, TopScope, scriptElement.map{x => apply(x)}.toSeq: _*)
       case SetElements(key, scriptElements) =>
-        val children = scriptElements map {induceFromScript(_)}
+        val children = scriptElements map {apply(_)}
         Elem(null, key, null, TopScope, children: _*)
       case SetPrimitives(key, primitives) =>
         val children = primitives map {v => <value>{v.toString}</value>}
