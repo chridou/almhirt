@@ -26,9 +26,9 @@ case class SetDateTime(key: String, value: DateTime) extends NDuceScriptOp
 case class SetDateTimeOpt(key: String, value: Option[DateTime]) extends NDuceScriptOp
 case class SetBytes(key: String, value: Array[Byte]) extends NDuceScriptOp
 case class SetBytesOpt(key: String, value: Option[Array[Byte]]) extends NDuceScriptOp
-case class SetElement(key: String, value: NDuceElem) extends NDuceScriptOp
-case class SetElementOpt(key: String, value: Option[NDuceElem]) extends NDuceScriptOp
-case class SetElements(key: String, elements: Seq[NDuceElem]) extends NDuceScriptOp
+case class SetElement(key: String, scriptElement: NDuceScript) extends NDuceScriptOp
+case class SetElementOpt(key: String, scriptElement: Option[NDuceScript]) extends NDuceScriptOp
+case class SetElements(key: String, scriptElements: Seq[NDuceScript]) extends NDuceScriptOp
 case class SetPrimitives(key: String, primitives: Seq[Any]) extends NDuceScriptOp
 case class NDuceElem(val name: String, val ops: Seq[NDuceScriptOp]) extends NDuceScriptOp with NDuceScript with NDuceScribe {
   def setString(key: String, value: String) = copy(ops = ops :+ SetString(key, value))
@@ -50,9 +50,9 @@ case class NDuceElem(val name: String, val ops: Seq[NDuceScriptOp]) extends NDuc
   def setBytes(key: String, value: Array[Byte]) = copy(ops = ops :+ SetBytes(key, value))
   def setBytes(key: String, value: Option[Array[Byte]]) = copy(ops = ops :+ SetBytesOpt(key, value))
   
-  def setElement(key: String, element: NDuceElem) = copy(ops = ops :+ SetElement(key, element))
-  def setElement(key: String, element: Option[NDuceElem]) = copy(ops = ops :+ SetElementOpt(key, element))
-  def setElements(key: String, elements: NDuceElem*) = copy(ops = ops :+ SetElements(key, elements))
+  def setElement(key: String, scriptElement: NDuceScript) = copy(ops = ops :+ SetElement(key, scriptElement))
+  def setElement(key: String, scriptElement: Option[NDuceScript]) = copy(ops = ops :+ SetElementOpt(key, scriptElement))
+  def setElements(key: String, scriptElements: NDuceScript*) = copy(ops = ops :+ SetElements(key, scriptElements))
   def setPrimitives(key: String, primitives: Any*) = copy(ops = ops :+ SetPrimitives(key, primitives))
 }
 

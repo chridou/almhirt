@@ -47,12 +47,12 @@ object XmlNDucer {
         Elem(null, key, null, TopScope, Text(org.apache.commons.codec.binary.Base64.encodeBase64String(value)))
       case SetBytesOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map{x => Text(org.apache.commons.codec.binary.Base64.encodeBase64String(x))}.toSeq: _*)
-      case SetElement(key, value) =>
-        Elem(null, key, null, TopScope, toXmlElement(value))
-      case SetElementOpt(key, value) =>
-        Elem(null, key, null, TopScope, value.map{x => toXmlElement(x)}.toSeq: _*)
-      case SetElements(key, elements) =>
-        val children = elements map {toXmlElement(_)}
+      case SetElement(key, scriptElement) =>
+        Elem(null, key, null, TopScope, induceFromScript(scriptElement))
+      case SetElementOpt(key, scriptElement) =>
+        Elem(null, key, null, TopScope, scriptElement.map{x => induceFromScript(x)}.toSeq: _*)
+      case SetElements(key, scriptElements) =>
+        val children = scriptElements map {induceFromScript(_)}
         Elem(null, key, null, TopScope, children: _*)
       case SetPrimitives(key, primitives) =>
         val children = primitives map {v => <value>{v.toString}</value>}

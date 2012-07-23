@@ -22,9 +22,9 @@ trait NDuceScribe {
   def setBytes(key: String, value: Array[Byte]): NDuceScript
   def setBytes(key: String, value: Option[Array[Byte]]): NDuceScript
   
-  def setElement(key: String, element: NDuceElem): NDuceScript
-  def setElement(key: String, element: Option[NDuceElem]): NDuceScript
-  def setElements(key: String, elements: NDuceElem*): NDuceScript
+  def setElement(key: String, scriptElement: NDuceScript): NDuceScript
+  def setElement(key: String, scriptElement: Option[NDuceScript]): NDuceScript
+  def setElements(key: String, scriptElements: NDuceScript*): NDuceScript
   def setPrimitives(key: String, primitives: Any*): NDuceScript
 }
 
