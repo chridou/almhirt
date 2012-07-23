@@ -14,6 +14,7 @@ object MongoNDucer {
   private def mongoObjectFromScript(script: NDuceScript): MongoDBObject = {
     val builder = MongoDBObject.newBuilder
     script.ops foreach {op => addToBuilder(op, builder)}
+    script.typeInfo foreach {ti => builder += "typeInfo" -> ti}
     builder.result
   }
   
@@ -64,7 +65,7 @@ object MongoNDucer {
         builder += key -> MongoDBList(children: _*)
       case SetPrimitives(key, primitives) =>
         builder += key -> MongoDBList(primitives: _*)
-      case element @ NDuceElem(key, values) =>
-        builder += key -> mongoObjectFromScript(element)
+      case element @ NDuceElem(name, _, _) =>
+        builder += name -> mongoObjectFromScript(element)
   }
 }

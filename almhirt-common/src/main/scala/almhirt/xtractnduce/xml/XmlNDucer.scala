@@ -57,7 +57,7 @@ object XmlNDucer {
       case SetPrimitives(key, primitives) =>
         val children = primitives map {v => <value>{v.toString}</value>}
         Elem(null, key, null, TopScope, children: _*)
-      case NDuceElem(key, values) =>
+      case NDuceElem(key, values, _) =>
         val children = values map {toXmlElement(_)}
         Elem(null, key, null, TopScope, children: _*)
   }

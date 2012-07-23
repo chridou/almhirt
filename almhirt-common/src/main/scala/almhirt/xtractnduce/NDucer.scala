@@ -5,6 +5,7 @@ import org.joda.time.DateTime
 sealed trait NDuceScript {
   def name: String
   def ops: Seq[NDuceScriptOp]
+  def typeInfo: Option[String]
 }
 
 sealed trait NDuceScriptOp
@@ -30,7 +31,7 @@ case class SetElement(key: String, scriptElement: NDuceScript) extends NDuceScri
 case class SetElementOpt(key: String, scriptElement: Option[NDuceScript]) extends NDuceScriptOp
 case class SetElements(key: String, scriptElements: Seq[NDuceScript]) extends NDuceScriptOp
 case class SetPrimitives(key: String, primitives: Seq[Any]) extends NDuceScriptOp
-case class NDuceElem(val name: String, val ops: Seq[NDuceScriptOp]) extends NDuceScriptOp with NDuceScript with NDuceScribe {
+case class NDuceElem(val name: String, val ops: Seq[NDuceScriptOp], val typeInfo: Option[String] = None) extends NDuceScriptOp with NDuceScript with NDuceScribe {
   def setString(key: String, value: String) = copy(ops = ops :+ SetString(key, value))
   def setString(key: String, value: Option[String]) = copy(ops = ops :+ SetStringOpt(key, value))
   def setInt(key: String, value: Int) = copy(ops = ops :+ SetInt(key, value))
@@ -54,6 +55,8 @@ case class NDuceElem(val name: String, val ops: Seq[NDuceScriptOp]) extends NDuc
   def setElement(key: String, scriptElement: Option[NDuceScript]) = copy(ops = ops :+ SetElementOpt(key, scriptElement))
   def setElements(key: String, scriptElements: NDuceScript*) = copy(ops = ops :+ SetElements(key, scriptElements))
   def setPrimitives(key: String, primitives: Any*) = copy(ops = ops :+ SetPrimitives(key, primitives))
+  
+  def nameIsTypeInfo() = copy(typeInfo = Some(name))
 }
 
 
