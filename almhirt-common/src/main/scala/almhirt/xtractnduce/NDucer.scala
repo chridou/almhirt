@@ -2,31 +2,32 @@ package almhirt.xtractnduce
 
 import org.joda.time.DateTime
 
-
 sealed trait NDuceScript
-case class SetString(key: String, value: String) extends NDuceScript
-case class SetStringOpt(key: String, value: Option[String]) extends NDuceScript
-case class SetInt(key: String, value: Int) extends NDuceScript
-case class SetIntOpt(key: String, value: Option[Int]) extends NDuceScript
-case class SetLong(key: String, value: Long) extends NDuceScript
-case class SetLongOpt(key: String, value: Option[Long]) extends NDuceScript
-case class SetDouble(key: String, value: Double) extends NDuceScript
-case class SetDoubleOpt(key: String, value: Option[Double]) extends NDuceScript
-case class SetFloat(key: String, value: Float) extends NDuceScript
-case class SetFloatOpt(key: String, value: Option[Float]) extends NDuceScript
-case class SetBoolean(key: String, value: Boolean) extends NDuceScript
-case class SetBooleanOpt(key: String, value: Option[Boolean]) extends NDuceScript
-case class SetDecimal(key: String, value: BigDecimal) extends NDuceScript
-case class SetDecimalOpt(key: String, value: Option[BigDecimal]) extends NDuceScript
-case class SetDateTime(key: String, value: DateTime) extends NDuceScript
-case class SetDateTimeOpt(key: String, value: Option[DateTime]) extends NDuceScript
-case class SetBytes(key: String, value: Array[Byte]) extends NDuceScript
-case class SetBytesOpt(key: String, value: Option[Array[Byte]]) extends NDuceScript
-case class SetElement(key: String, value: NDuceElem) extends NDuceScript
-case class SetElementOpt(key: String, value: Option[NDuceElem]) extends NDuceScript
-case class SetElements(key: String, elements: Seq[NDuceElem]) extends NDuceScript
-case class SetPrimitives(key: String, primitives: Seq[Any]) extends NDuceScript
-case class NDuceElem(key: String, values: Seq[NDuceScript]) extends NDuceScript with NDuceScribe {
+
+sealed trait NDuceScriptOp
+case class SetString(key: String, value: String) extends NDuceScriptOp
+case class SetStringOpt(key: String, value: Option[String]) extends NDuceScriptOp
+case class SetInt(key: String, value: Int) extends NDuceScriptOp
+case class SetIntOpt(key: String, value: Option[Int]) extends NDuceScriptOp
+case class SetLong(key: String, value: Long) extends NDuceScriptOp
+case class SetLongOpt(key: String, value: Option[Long]) extends NDuceScriptOp
+case class SetDouble(key: String, value: Double) extends NDuceScriptOp
+case class SetDoubleOpt(key: String, value: Option[Double]) extends NDuceScriptOp
+case class SetFloat(key: String, value: Float) extends NDuceScriptOp
+case class SetFloatOpt(key: String, value: Option[Float]) extends NDuceScriptOp
+case class SetBoolean(key: String, value: Boolean) extends NDuceScriptOp
+case class SetBooleanOpt(key: String, value: Option[Boolean]) extends NDuceScriptOp
+case class SetDecimal(key: String, value: BigDecimal) extends NDuceScriptOp
+case class SetDecimalOpt(key: String, value: Option[BigDecimal]) extends NDuceScriptOp
+case class SetDateTime(key: String, value: DateTime) extends NDuceScriptOp
+case class SetDateTimeOpt(key: String, value: Option[DateTime]) extends NDuceScriptOp
+case class SetBytes(key: String, value: Array[Byte]) extends NDuceScriptOp
+case class SetBytesOpt(key: String, value: Option[Array[Byte]]) extends NDuceScriptOp
+case class SetElement(key: String, value: NDuceElem) extends NDuceScriptOp
+case class SetElementOpt(key: String, value: Option[NDuceElem]) extends NDuceScriptOp
+case class SetElements(key: String, elements: Seq[NDuceElem]) extends NDuceScriptOp
+case class SetPrimitives(key: String, primitives: Seq[Any]) extends NDuceScriptOp
+case class NDuceElem(key: String, values: Seq[NDuceScriptOp]) extends NDuceScriptOp with NDuceScript with NDuceScribe {
   def setString(key: String, value: String) = copy(values = values :+ SetString(key, value))
   def setString(key: String, value: Option[String]) = copy(values = values :+ SetStringOpt(key, value))
   def setInt(key: String, value: Int) = copy(values = values :+ SetInt(key, value))

@@ -13,7 +13,7 @@ object MongoNDucer {
     builder.result
   }
 
-  private def addToBuilder(script: NDuceScript, builder: Builder[(String, Any), DBObject]): Unit =
+  private def addToBuilder(script: NDuceScriptOp, builder: Builder[(String, Any), DBObject]): Unit =
     script match {
       case SetString(key, value) =>
         builder += key -> value

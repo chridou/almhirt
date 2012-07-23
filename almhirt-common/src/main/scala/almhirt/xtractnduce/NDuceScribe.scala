@@ -30,5 +30,5 @@ trait NDuceScribe {
 
 object NDuceScribe {
   def scribble(name: String) = NDuceElem(name, Seq.empty)
-  def scribble(name: String, children: NDuceScript*) = NDuceElem(name, children)
+  def scribble(name: String, children: NDuceScriptOp*) = NDuceElem(name, children)
 }

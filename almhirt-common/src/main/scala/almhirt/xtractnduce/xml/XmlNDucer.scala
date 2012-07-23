@@ -9,7 +9,7 @@ object XmlNDucer {
     Elem(null, elem.key, null, TopScope, children: _*)
   }
 
-  private def toXmlElement(script: NDuceScript): Elem =
+  private def toXmlElement(script: NDuceScriptOp): Elem =
     script match {
       case SetString(key, value) =>
         Elem(null, key, null, TopScope, Text(value))
