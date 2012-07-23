@@ -83,8 +83,8 @@ trait AlmValidationImplicits {
     def toMultipleBadData(): Validation[MultipleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
   }
 
-  implicit def validation2AlmValidationW[T](validation: Validation[String, T]) = new AlmValidationW[T](validation)
-  final class AlmValidationW[T](validation: Validation[String, T]) {
+  implicit def validation2StringValidationW[T](validation: Validation[String, T]) = new StringValidationW[T](validation)
+  final class StringValidationW[T](validation: Validation[String, T]) {
     def toAlmValidation(problemOnFail: Problem = defaultProblem): AlmValidation[T] = {
       validation match {
         case Success(r) => r.success[Problem]
@@ -93,6 +93,30 @@ trait AlmValidationImplicits {
     }
   }
 
+  implicit def validation2AlmValidationW[T](validation: AlmValidation[T]) = new AlmValidationW[T](validation)
+  final class AlmValidationW[T](validation: AlmValidation[T]) {
+    def onFailure(sideEffect: Problem => Unit): AlmValidation[T] = {
+      validation match {
+        case Success(_) => 
+          validation
+        case Failure(f) =>
+          sideEffect(f)
+          validation
+      }
+    }
+    def onSuccess(sideEffect: T => Unit): AlmValidation[T] = {
+      validation match {
+        case Success(r) => 
+          sideEffect(r)
+          validation
+        case Failure(f) =>
+          validation
+      }
+    }
+
+  }
+  
+  
   implicit def option2AlmOptionW[T](opt: Option[T]) = new AlmOptionW(opt)
   final class AlmOptionW[T](opt: Option[T]) {
     def noneIsBadData(message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
