@@ -7,14 +7,18 @@ import scala.collection.mutable.Builder
 
 object MongoNDucer {
   import scala.collection.mutable.Builder
-  def induceFromScript(elem: NDuceElem): MongoDBObject = {
+  def induceFromScript(script: NDuceScript): MongoDBObject = {
+    mongoObjectFromScript(script)
+  }
+  
+  private def mongoObjectFromScript(script: NDuceScript): MongoDBObject = {
     val builder = MongoDBObject.newBuilder
-    addToBuilder(elem, builder)
+    script.ops foreach {op => addToBuilder(op, builder)}
     builder.result
   }
-
-  private def addToBuilder(script: NDuceScriptOp, builder: Builder[(String, Any), DBObject]): Unit =
-    script match {
+  
+  private def addToBuilder(scriptOp: NDuceScriptOp, builder: Builder[(String, Any), DBObject]): Unit =
+    scriptOp match {
       case SetString(key, value) =>
         builder += key -> value
       case SetStringOpt(key, value) =>
@@ -54,14 +58,13 @@ object MongoNDucer {
       case SetElement(key, value) =>
         builder += key -> induceFromScript(value)
       case SetElementOpt(key, value) =>
-        value foreach {v => builder += key -> induceFromScript(v)}
+        value foreach {v => builder += key -> mongoObjectFromScript(v)}
       case SetElements(key, elements) =>
-        val children = elements map {induceFromScript(_)}
+        val children = elements map {mongoObjectFromScript(_)}
         builder += key -> MongoDBList(children: _*)
       case SetPrimitives(key, primitives) =>
-        val children = primitives map {v => <value>{v.toString}</value>}
-        Elem("", key, null, null, children: _*)
+        builder += key -> MongoDBList(primitives: _*)
       case element @ NDuceElem(key, values) =>
-        builder += key -> induceFromScript(element)
+        builder += key -> mongoObjectFromScript(element)
   }
 }

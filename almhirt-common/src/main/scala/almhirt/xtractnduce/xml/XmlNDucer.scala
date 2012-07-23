@@ -4,9 +4,9 @@ import scala.xml.{Elem, Text, TopScope}
 import almhirt.xtractnduce._
 
 object XmlNDucer {
-  def induceFromScript(elem: NDuceElem): Elem = {
-    val children = elem.values map {toXmlElement(_)}
-    Elem(null, elem.key, null, TopScope, children: _*)
+  def induceFromScript(script: NDuceScript): Elem = {
+    val children = script.ops map {toXmlElement(_)}
+    Elem(null, script.name, null, TopScope, children: _*)
   }
 
   private def toXmlElement(script: NDuceScriptOp): Elem =

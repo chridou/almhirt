@@ -2,7 +2,10 @@ package almhirt.xtractnduce
 
 import org.joda.time.DateTime
 
-sealed trait NDuceScript
+sealed trait NDuceScript {
+  def name: String
+  def ops: Seq[NDuceScriptOp]
+}
 
 sealed trait NDuceScriptOp
 case class SetString(key: String, value: String) extends NDuceScriptOp
@@ -27,30 +30,30 @@ case class SetElement(key: String, value: NDuceElem) extends NDuceScriptOp
 case class SetElementOpt(key: String, value: Option[NDuceElem]) extends NDuceScriptOp
 case class SetElements(key: String, elements: Seq[NDuceElem]) extends NDuceScriptOp
 case class SetPrimitives(key: String, primitives: Seq[Any]) extends NDuceScriptOp
-case class NDuceElem(key: String, values: Seq[NDuceScriptOp]) extends NDuceScriptOp with NDuceScript with NDuceScribe {
-  def setString(key: String, value: String) = copy(values = values :+ SetString(key, value))
-  def setString(key: String, value: Option[String]) = copy(values = values :+ SetStringOpt(key, value))
-  def setInt(key: String, value: Int) = copy(values = values :+ SetInt(key, value))
-  def setInt(key: String, value: Option[Int]) = copy(values = values :+ SetIntOpt(key, value))
-  def setLong(key: String, value: Long) = copy(values = values :+ SetLong(key, value))
-  def setLong(key: String, value: Option[Long]) = copy(values = values :+ SetLongOpt(key, value))
-  def setDouble(key: String, value: Double) = copy(values = values :+ SetDouble(key, value))
-  def setDouble(key: String, value: Option[Double]) = copy(values = values :+ SetDoubleOpt(key, value))
-  def setFloat(key: String, value: Float) = copy(values = values :+ SetFloat(key, value))
-  def setFloat(key: String, value: Option[Float]) = copy(values = values :+ SetFloatOpt(key, value))
-  def setBoolean(key: String, value: Boolean) = copy(values = values :+ SetBoolean(key, value))
-  def setBoolean(key: String, value: Option[Boolean]) = copy(values = values :+ SetBooleanOpt(key, value))
-  def setDecimal(key: String, value: BigDecimal) = copy(values = values :+ SetDecimal(key, value))
-  def setDecimal(key: String, value: Option[BigDecimal]) = copy(values = values :+ SetDecimalOpt(key, value))
-  def setDateTime(key: String, value: DateTime) = copy(values = values :+ SetDateTime(key, value))
-  def setDateTime(key: String, value: Option[DateTime]) = copy(values = values :+ SetDateTimeOpt(key, value))
-  def setBytes(key: String, value: Array[Byte]) = copy(values = values :+ SetBytes(key, value))
-  def setBytes(key: String, value: Option[Array[Byte]]) = copy(values = values :+ SetBytesOpt(key, value))
+case class NDuceElem(val name: String, val ops: Seq[NDuceScriptOp]) extends NDuceScriptOp with NDuceScript with NDuceScribe {
+  def setString(key: String, value: String) = copy(ops = ops :+ SetString(key, value))
+  def setString(key: String, value: Option[String]) = copy(ops = ops :+ SetStringOpt(key, value))
+  def setInt(key: String, value: Int) = copy(ops = ops :+ SetInt(key, value))
+  def setInt(key: String, value: Option[Int]) = copy(ops = ops :+ SetIntOpt(key, value))
+  def setLong(key: String, value: Long) = copy(ops = ops :+ SetLong(key, value))
+  def setLong(key: String, value: Option[Long]) = copy(ops = ops :+ SetLongOpt(key, value))
+  def setDouble(key: String, value: Double) = copy(ops = ops :+ SetDouble(key, value))
+  def setDouble(key: String, value: Option[Double]) = copy(ops = ops :+ SetDoubleOpt(key, value))
+  def setFloat(key: String, value: Float) = copy(ops = ops :+ SetFloat(key, value))
+  def setFloat(key: String, value: Option[Float]) = copy(ops = ops :+ SetFloatOpt(key, value))
+  def setBoolean(key: String, value: Boolean) = copy(ops = ops :+ SetBoolean(key, value))
+  def setBoolean(key: String, value: Option[Boolean]) = copy(ops = ops :+ SetBooleanOpt(key, value))
+  def setDecimal(key: String, value: BigDecimal) = copy(ops = ops :+ SetDecimal(key, value))
+  def setDecimal(key: String, value: Option[BigDecimal]) = copy(ops = ops :+ SetDecimalOpt(key, value))
+  def setDateTime(key: String, value: DateTime) = copy(ops = ops :+ SetDateTime(key, value))
+  def setDateTime(key: String, value: Option[DateTime]) = copy(ops = ops :+ SetDateTimeOpt(key, value))
+  def setBytes(key: String, value: Array[Byte]) = copy(ops = ops :+ SetBytes(key, value))
+  def setBytes(key: String, value: Option[Array[Byte]]) = copy(ops = ops :+ SetBytesOpt(key, value))
   
-  def setElement(key: String, element: NDuceElem) = copy(values = values :+ SetElement(key, element))
-  def setElement(key: String, element: Option[NDuceElem]) = copy(values = values :+ SetElementOpt(key, element))
-  def setElements(key: String, elements: NDuceElem*) = copy(values = values :+ SetElements(key, elements))
-  def setPrimitives(key: String, primitives: Any*) = copy(values = values :+ SetPrimitives(key, primitives))
+  def setElement(key: String, element: NDuceElem) = copy(ops = ops :+ SetElement(key, element))
+  def setElement(key: String, element: Option[NDuceElem]) = copy(ops = ops :+ SetElementOpt(key, element))
+  def setElements(key: String, elements: NDuceElem*) = copy(ops = ops :+ SetElements(key, elements))
+  def setPrimitives(key: String, primitives: Any*) = copy(ops = ops :+ SetPrimitives(key, primitives))
 }
 
 
