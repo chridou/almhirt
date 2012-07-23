@@ -2,7 +2,7 @@ package almhirt.xtractnduce
 
 import org.joda.time.DateTime
 
-sealed trait NDuceScript {
+sealed trait NDuceScript extends NDuceScribe {
   def name: String
   def ops: Seq[NDuceScriptOp]
   def typeInfo: Option[String]
@@ -31,7 +31,7 @@ case class SetElement(key: String, scriptElement: NDuceScript) extends NDuceScri
 case class SetElementOpt(key: String, scriptElement: Option[NDuceScript]) extends NDuceScriptOp
 case class SetElements(key: String, scriptElements: Seq[NDuceScript]) extends NDuceScriptOp
 case class SetPrimitives(key: String, primitives: Seq[Any]) extends NDuceScriptOp
-case class NDuceElem(val name: String, val ops: Seq[NDuceScriptOp], val typeInfo: Option[String] = None) extends NDuceScriptOp with NDuceScript with NDuceScribe {
+case class NDuceElem(val name: String, val ops: Seq[NDuceScriptOp], val typeInfo: Option[String] = None) extends NDuceScriptOp with NDuceScript {
   def setString(key: String, value: String) = copy(ops = ops :+ SetString(key, value))
   def setString(key: String, value: Option[String]) = copy(ops = ops :+ SetStringOpt(key, value))
   def setInt(key: String, value: Int) = copy(ops = ops :+ SetInt(key, value))
