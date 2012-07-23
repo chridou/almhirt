@@ -10,6 +10,10 @@ object MongoNDucer {
   def induceFromScript(script: NDuceScript)(implicit mapKey: MongoKeyMapper): MongoDBObject = {
     mongoObjectFromScript(script, mapKey)
   }
+
+  def induceFromScript(script: NDuceScript, idKey: String): MongoDBObject = {
+    mongoObjectFromScript(script, MongoKeyMapper.createKeyMapper(idKey))
+  }
   
   private def mongoObjectFromScript(script: NDuceScript, mapKey: String => String): MongoDBObject = {
     val builder = MongoDBObject.newBuilder
