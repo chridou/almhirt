@@ -108,6 +108,8 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
 
   def isBooleanSetTrue(aKey: String) =
    	tryGetBoolean(aKey).map{_.getOrElse(false)}
+
+  def tryGetTypeInfo() = tryGetString("typeInfo")
   
   def getElements(aKey: String): AlmValidationMBD[List[XTractor]] =
     try {

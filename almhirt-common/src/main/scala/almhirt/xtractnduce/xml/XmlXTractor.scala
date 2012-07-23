@@ -60,6 +60,8 @@ class XmlXTractor(elem: Elem) extends XTractor {
             parseBooleanAlm(e.text, aKey)
    	    case None =>
    	      false.success[SingleBadDataProblem] } }
+
+  def tryGetTypeInfo() = Success(Some(elem.label))
   
   def getElements(aKey: String): AlmValidationMBD[List[XTractor]] =
     for {

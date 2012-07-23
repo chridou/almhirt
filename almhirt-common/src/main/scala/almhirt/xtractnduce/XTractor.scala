@@ -59,6 +59,14 @@ trait XTractor {
   def getAsString(aKey: String): AlmValidationSBD[String] = get(aKey, tryGetAsString)
 
   def isBooleanSetTrue(aKey: String): AlmValidationSBD[Boolean]
+
+  def tryGetTypeInfo(): AlmValidationSBD[Option[String]]
+  def getTypeInfo(): AlmValidationSBD[String] = 
+    tryGetTypeInfo() match {
+      case Success(Some(ti)) => Success(ti)
+      case Success(None) => Failure(SingleBadDataProblem("No type Info!", key = "typeInfo"))
+      case Failure(f) => Failure(f)
+    }
   
   def getElements(aKey: String): AlmValidationMBD[List[XTractor]]
   def tryGetElement(aKey: String): AlmValidationSBD[Option[XTractor]]
