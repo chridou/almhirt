@@ -68,10 +68,10 @@ trait XTractor {
       case Failure(f) => Failure(f)
     }
   
-  def getElements(aKey: String): AlmValidationMBD[List[XTractor]]
-  def tryGetElement(aKey: String): AlmValidationSBD[Option[XTractor]]
-  def getElement(aKey: String): AlmValidationSBD[XTractor] =
-    tryGetElement(aKey) match {
+  def getXTractors(aKey: String): AlmValidationMBD[List[XTractor]]
+  def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]]
+  def getXTractor(aKey: String): AlmValidationSBD[XTractor] =
+    tryGetXTractor(aKey) match {
       case Success(opt) =>
         opt
 	      .map(Success(_))
@@ -79,8 +79,8 @@ trait XTractor {
       case Failure(f) => f.fail[XTractor]
     }
     
-  def tryMapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[Option[U]] =
-    tryGetElement(aKey) match {
+  def tryMapXTractor[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[Option[U]] =
+    tryGetXTractor(aKey) match {
       case Success(opt) =>
         opt match {
           case Some(xtractor) => 
@@ -93,8 +93,8 @@ trait XTractor {
       case Failure(f) => f.toMultipleBadData.fail[Option[U]]
     }
   
-  def mapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[U] =
-    tryMapElem(aKey, mapXtractor) match {
+  def mapXTractor[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[U] =
+    tryMapXTractor(aKey, mapXtractor) match {
       case Success(opt) =>
         opt
           .map {Success(_)} 
@@ -102,8 +102,8 @@ trait XTractor {
       case Failure(f) => (f.prefixWithPath(List(key))).fail[U]
     }
   
-  def tryFlatMapElem[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[Option[U]]): AlmValidationMBD[Option[U]] =
-    tryGetElement(aKey) match {
+  def tryFlatMapXTractor[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[Option[U]]): AlmValidationMBD[Option[U]] =
+    tryGetXTractor(aKey) match {
       case Success(opt) =>
         opt match {
           case Some(xtractor) => 
@@ -116,8 +116,8 @@ trait XTractor {
       case Failure(f) => f.toMultipleBadData.fail[Option[U]]
     }
 
-  def mapToList[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[List[U]] =
-    getElements(aKey) match {
+  def mapXTractorsToList[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[List[U]] =
+    getXTractors(aKey) match {
       case Success(seq) => seq.map(mapXtractor).sequence
       case Failure(f) => f.fail[List[U]]
   }

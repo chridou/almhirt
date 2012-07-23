@@ -111,7 +111,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
 
   def tryGetTypeInfo() = tryGetString("typeInfo")
   
-  def getElements(aKey: String): AlmValidationMBD[List[XTractor]] =
+  def getXTractors(aKey: String): AlmValidationMBD[List[XTractor]] =
     try {
       val theKey = mapKey(aKey)
       underlying.getAs[MongoDBList](theKey).map{identity} match {
@@ -126,7 +126,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
       case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).toMultipleBadData.fail[List[XTractor]]
     }
   
-  def tryGetElement(aKey: String): AlmValidationSBD[Option[XTractor]] =
+  def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]] =
     try {
       val theKey = mapKey(aKey)
       underlying.getAs[BasicDBObject](theKey).map{identity} match {

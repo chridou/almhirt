@@ -84,11 +84,11 @@ import MongoXTractorSpecsSamples._
     """return a success of Some("Bob") when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("name") must beEqualTo(Some("Bob").successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("name").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("name").isFailure
     }
-    """return a failure when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("name").isFailure
+    """return a failure when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("name").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("name").isFailure
@@ -120,11 +120,11 @@ import MongoXTractorSpecsSamples._
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("age").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("age").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("age").isFailure
     }
-    """return a failure when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("age").isFailure
+    """return a failure when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("age").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("age").isFailure
@@ -156,11 +156,11 @@ import MongoXTractorSpecsSamples._
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("dps").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("dps").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("dps").isFailure
     }
-    """return a failure when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("dps").isFailure
+    """return a failure when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("dps").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("dps").isFailure
@@ -192,11 +192,11 @@ import MongoXTractorSpecsSamples._
     """return a success of Some("Bob") when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("ageAsText") must beEqualTo(Some("33").successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("ageAsText").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("ageAsText").isFailure
     }
-    """return a failure when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("ageAsText").isFailure
+    """return a failure when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("ageAsText").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("ageAsText").isFailure
@@ -228,11 +228,11 @@ import MongoXTractorSpecsSamples._
     """return a success of None when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("spaces") must beEqualTo(None.successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("spaces").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("spaces").isFailure
     }
-    """return a failure when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("spaces").isFailure
+    """return a failure when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("spaces").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("spaces").isFailure
@@ -264,14 +264,14 @@ import MongoXTractorSpecsSamples._
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("address").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("address").isSuccess
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("address").isSuccess
     }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor("Bob").getElements("address").isFailure
+    """return a failure when queried with getXTractors""" in {
+      bob.xtractor("Bob").getXTractors("address").isFailure
     }
-    """return a failure when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("address").isSuccess
+    """return a failure when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("address").isSuccess
     }
     """return a success when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("address").isFailure
@@ -305,14 +305,14 @@ import MongoXTractorSpecsSamples._
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("scores").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("scores").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("scores").isFailure
     }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor("Bob").getElements("scores").isFailure
+    """return a failure when queried with getXTractors""" in {
+      bob.xtractor("Bob").getXTractors("scores").isFailure
     }
-    """return a failure when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("scores").isFailure
+    """return a failure when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("scores").isFailure
     }
     """return a success when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("scores").isSuccess
@@ -349,14 +349,14 @@ import MongoXTractorSpecsSamples._
     """return a failure when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("gameTimes").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("gameTimes").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("gameTimes").isFailure
     }
-    """return a success when queried with getElements""" in {
-      bob.xtractor("Bob").getElements("gameTimes").isSuccess
+    """return a success when queried with getXTractors""" in {
+      bob.xtractor("Bob").getXTractors("gameTimes").isSuccess
     }
-    """return a failure when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("gameTimes").isFailure
+    """return a failure when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("gameTimes").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("gameTimes").isFailure
@@ -388,14 +388,14 @@ import MongoXTractorSpecsSamples._
     """return a success of None when queried with tryGetString""" in {
       bob.xtractor("Bob").tryGetString("doesNotExist") must beEqualTo(None.successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor("Bob").getElement("doesNotExist").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor("Bob").getXTractor("doesNotExist").isFailure
     }
-     """return a success of None when queried with tryGetElement""" in {
-      bob.xtractor("Bob").tryGetElement("doesNotExist") must beEqualTo(None.successSBD)
+     """return a success of None when queried with tryGetXTractor""" in {
+      bob.xtractor("Bob").tryGetXTractor("doesNotExist") must beEqualTo(None.successSBD)
     }
-    """return a success of [] when queried with getElements""" in {
-      bob.xtractor("Bob").getElements("doesNotExist") must beEqualTo(Nil.successSBD)
+    """return a success of [] when queried with getXTractors""" in {
+      bob.xtractor("Bob").getXTractors("doesNotExist") must beEqualTo(Nil.successSBD)
     }
     """return a success of [] when queried with getAtomics""" in {
       bob.xtractor("Bob").getAtomics("doesNotExist") must beEqualTo(Nil.successSBD)
@@ -405,13 +405,13 @@ import MongoXTractorSpecsSamples._
   """The address of Bob""" should {
     """contain a street "Downing Street"""" in {
       val xtractor = bob.xtractor("Bob")
-      val address = xtractor.getElement("address")
+      val address = xtractor.getXTractor("address")
       val street = address.flatMap{_.getString("street")}
       street must beEqualTo(Success("Downing Street"))
     } 
     """contain a city "London"""" in {
       val xtractor = bob.xtractor("Bob")
-      val address = xtractor.getElement("address")
+      val address = xtractor.getXTractor("address")
       val city = address.flatMap{_.getString("city")}
       city must beEqualTo(Success("London"))
     } 

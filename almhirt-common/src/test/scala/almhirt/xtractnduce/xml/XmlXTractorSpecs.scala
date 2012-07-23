@@ -60,14 +60,14 @@ class XmlXTractorSpecs extends Specification {
     """return a success of Some("Bob") when queried with tryGetString""" in {
       bob.xtractor.tryGetString("name") must beEqualTo(Some("Bob").successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor.getElement("name").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor.getXTractor("name").isFailure
     }
     """return a failure when queried with tryGetElement""" in {
-      bob.xtractor.tryGetElement("name").isFailure
+      bob.xtractor.tryGetXTractor("name").isFailure
     }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor.getElements("name").isFailure
+    """return a failure when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("name").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor.getAtomics("name").isFailure
@@ -99,14 +99,14 @@ class XmlXTractorSpecs extends Specification {
     """return success Option "33" when queried with tryGetString""" in {
       bob.xtractor.tryGetString("age") must beEqualTo(Some("33").successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor.getElement("age").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor.getXTractor("age").isFailure
     }
     """return a failure when queried with tryGetElement""" in {
-      bob.xtractor.tryGetElement("age").isFailure
+      bob.xtractor.tryGetXTractor("age").isFailure
     }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor.getElements("age").isFailure
+    """return a failure when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("age").isFailure
     }
     """return a failue when queried with getAtomics""" in {
       bob.xtractor.getAtomics("age").isFailure
@@ -138,14 +138,14 @@ class XmlXTractorSpecs extends Specification {
     """return success Option "1.37" when queried with tryGetString""" in {
       bob.xtractor.tryGetString("dps") must beEqualTo(Some("1.37").successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor.getElement("dps").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor.getXTractor("dps").isFailure
     }
     """return a failure when queried with tryGetElement""" in {
-      bob.xtractor.tryGetElement("dps").isFailure
+      bob.xtractor.tryGetXTractor("dps").isFailure
     }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor.getElements("dps").isFailure
+    """return a failure when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("dps").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor.getAtomics("dps").isFailure
@@ -177,14 +177,14 @@ class XmlXTractorSpecs extends Specification {
     """return success Option "33" when queried with tryGetString""" in {
       bob.xtractor.tryGetString("ageAsText") must beEqualTo(Some("33").successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor.getElement("ageAsText").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor.getXTractor("ageAsText").isFailure
     }
     """return a failure when queried with tryGetElement""" in {
-      bob.xtractor.tryGetElement("ageAsText").isFailure
+      bob.xtractor.tryGetXTractor("ageAsText").isFailure
     }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor.getElements("ageAsText").isFailure
+    """return a failure when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("ageAsText").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor.getAtomics("ageAsText").isFailure
@@ -216,14 +216,14 @@ class XmlXTractorSpecs extends Specification {
     """return a success of None when queried with tryGetString""" in {
       bob.xtractor.tryGetString("spaces") must beEqualTo(None.successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor.getElement("spaces").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor.getXTractor("spaces").isFailure
     }
     """return a success of None when queried with tryGetElement""" in {
-      bob.xtractor.tryGetElement("spaces") must beEqualTo(Success(None))
+      bob.xtractor.tryGetXTractor("spaces") must beEqualTo(Success(None))
     }
-    """return a success of [] when queried with getElements""" in {
-      bob.xtractor.getElements("spaces") must beEqualTo(Success(Nil))
+    """return a success of [] when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("spaces") must beEqualTo(Success(Nil))
     }
     """return a success of [] when queried with getAtomics""" in {
       bob.xtractor.getAtomics("spaces") must beEqualTo(Success(Nil))
@@ -255,14 +255,14 @@ class XmlXTractorSpecs extends Specification {
     """return a failure when queried with tryGetString""" in {
       bob.xtractor.tryGetString("address").isFailure
     }
-    """return a success when queried with getElement""" in {
-      bob.xtractor.getElement("address").isSuccess
+    """return a success when queried with getXTractor""" in {
+      bob.xtractor.getXTractor("address").isSuccess
     }
-    """return a success when queried with getElements""" in {
-      bob.xtractor.getElements("address").isSuccess
+    """return a success when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("address").isSuccess
     }
     """return a success when queried with tryGetElement""" in {
-      bob.xtractor.tryGetElement("address").isSuccess
+      bob.xtractor.tryGetXTractor("address").isSuccess
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor.getAtomics("address").isFailure
@@ -296,14 +296,14 @@ class XmlXTractorSpecs extends Specification {
     """return a failure when queried with tryGetString""" in {
       bob.xtractor.tryGetString("scores").isFailure
     }
-    """return a failure when queried with getElement because the collection has more than one element""" in {
-      bob.xtractor.getElement("scores").isFailure
+    """return a failure when queried with getXTractor because the collection has more than one element""" in {
+      bob.xtractor.getXTractor("scores").isFailure
     }
-    """return a failure when queried with getElements""" in {
-      bob.xtractor.getElements("scores").isFailure
+    """return a failure when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("scores").isFailure
     }
     """return a failure when queried with tryGetElement because the collection has more than one element""" in {
-      bob.xtractor.tryGetElement("scores").isFailure
+      bob.xtractor.tryGetXTractor("scores").isFailure
     }
     """return a success when queried with getAtomics""" in {
       bob.xtractor.getAtomics("scores").isSuccess
@@ -339,14 +339,14 @@ class XmlXTractorSpecs extends Specification {
     """return a failure when queried with tryGetString""" in {
       bob.xtractor.tryGetString("gameTimes").isFailure
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor.getElement("gameTimes").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor.getXTractor("gameTimes").isFailure
     }
-    """return a success when queried with getElements""" in {
-      bob.xtractor.getElements("gameTimes").isSuccess
+    """return a success when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("gameTimes").isSuccess
     }
     """return a failure when queried with tryGetElement""" in {
-      bob.xtractor.tryGetElement("gameTimes").isFailure
+      bob.xtractor.tryGetXTractor("gameTimes").isFailure
     }
     """return a failure when queried with getAtomics""" in {
       bob.xtractor.getAtomics("gameTimes").isFailure
@@ -378,14 +378,14 @@ class XmlXTractorSpecs extends Specification {
     """return a success of None when queried with tryGetString""" in {
       bob.xtractor.tryGetString("doesNotExist") must beEqualTo(None.successSBD)
     }
-    """return a failure when queried with getElement""" in {
-      bob.xtractor.getElement("doesNotExist").isFailure
+    """return a failure when queried with getXTractor""" in {
+      bob.xtractor.getXTractor("doesNotExist").isFailure
     }
     """return a success of None when queried with tryGetElement""" in {
-      bob.xtractor.tryGetElement("doesNotExist") must beEqualTo(None.successSBD)
+      bob.xtractor.tryGetXTractor("doesNotExist") must beEqualTo(None.successSBD)
     }
-    """return a success of [] when queried with getElements""" in {
-      bob.xtractor.getElements("doesNotExist") must beEqualTo(Nil.successSBD)
+    """return a success of [] when queried with getXTractors""" in {
+      bob.xtractor.getXTractors("doesNotExist") must beEqualTo(Nil.successSBD)
     }
     """return a success of [] when queried with getAtomics""" in {
       bob.xtractor.getAtomics("doesNotExist") must beEqualTo(Nil.successSBD)
@@ -395,13 +395,13 @@ class XmlXTractorSpecs extends Specification {
   """The address of Bob""" should {
     """contain a street "Downing Street"""" in {
       val xtractor = bob.xtractor
-      val address = xtractor.getElement("address")
+      val address = xtractor.getXTractor("address")
       val street = address.flatMap{_.getString("street")}
       street must beEqualTo(Success("Downing Street"))
     } 
     """contain a city "London"""" in {
       val xtractor = bob.xtractor
-      val address = xtractor.getElement("address")
+      val address = xtractor.getXTractor("address")
       val city = address.flatMap{_.getString("city")}
       city must beEqualTo(Success("London"))
     } 

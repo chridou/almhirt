@@ -63,7 +63,7 @@ class XmlXTractor(elem: Elem) extends XTractor {
 
   def tryGetTypeInfo() = Success(Some(elem.label))
   
-  def getElements(aKey: String): AlmValidationMBD[List[XTractor]] =
+  def getXTractors(aKey: String): AlmValidationMBD[List[XTractor]] =
     for {
       propertyElement <-
       	getUniquePropertyElement(aKey).toMultipleBadData
@@ -73,7 +73,7 @@ class XmlXTractor(elem: Elem) extends XTractor {
       	elems.map{x => onValidTypeContainerXTractor(x).toMultipleBadData}.toList.sequence
     } yield xtractors
   
-  def tryGetElement(aKey: String): AlmValidationSBD[Option[XTractor]] = {
+  def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]] = {
     for {
       propertyElement <- getUniquePropertyElement(aKey)
       xtractor <- xtractorOnPropertyElem(propertyElement)
