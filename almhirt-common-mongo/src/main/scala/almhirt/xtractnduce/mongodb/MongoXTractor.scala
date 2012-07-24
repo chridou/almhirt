@@ -113,7 +113,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
   def getXTractors(aKey: String): AlmValidationMBD[List[XTractor]] =
     try {
       val theKey = mapKey(aKey)
-      underlying.getAs[MongoDBList](theKey).map{identity} match {
+      underlying.getAs[BasicDBList](theKey).map{identity} match {
         case Some(obj) => 
           obj
             .toList
@@ -160,7 +160,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
   def getAtomics(aKey: String): AlmValidationMBD[List[XTractorAtomic]] =
     try {
       val theKey = mapKey(aKey)
-      underlying.getAs[MongoDBList](theKey).map{identity} match {
+      underlying.getAs[BasicDBList](theKey).map{identity} match {
         case Some(dbList) => 
           dbList.toList
             .zipWithIndex
@@ -172,7 +172,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
                       .toMBD)
                 case _ : BasicDBObject => 
                   Failure(
-                    SingleBadDataProblem("Not allowed as an atomic: MongoDBObject", key = aKey)
+                    SingleBadDataProblem("Not allowed as an atomic: BasicDBObject", key = aKey)
                       .toMBD)
                 case _ : BasicDBList => 
                   Failure(
