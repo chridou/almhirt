@@ -120,7 +120,7 @@ object Problem extends ProblemImplicits {
   }
 
   
-  case class UnspecifiedApplicationProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
+  case class UnspecifiedApplicationProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
 	type T = UnspecifiedApplicationProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -128,7 +128,7 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class NotFoundProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
+  case class NotFoundProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
 	type T = NotFoundProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -175,7 +175,7 @@ object Problem extends ProblemImplicits {
 	}
 	def toSystemProblem() = MultipleMappingProblem(message, keysAndMessages = keysAndMessages, severity = severity, args = args, exception = exception, cause = Some(this))
   }
-  case class CollisionProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
+  case class CollisionProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
 	type T = CollisionProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -183,7 +183,7 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class NotAuthorizedProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends SecurityProblem {
+  case class NotAuthorizedProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends SecurityProblem {
 	type T = NotAuthorizedProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -191,7 +191,7 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class NotAuthenticatedProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends SecurityProblem {
+  case class NotAuthenticatedProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends SecurityProblem {
 	type T = NotAuthenticatedProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -199,7 +199,7 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class AlreadyExistsProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
+  case class AlreadyExistsProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
 	type T = AlreadyExistsProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -207,7 +207,7 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class OperationCancelledProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
+  case class OperationCancelledProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
 	type T = OperationCancelledProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -215,7 +215,7 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class BusinessRuleViolatedProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
+  case class BusinessRuleViolatedProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends ApplicationProblem {
 	type T = BusinessRuleViolatedProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))

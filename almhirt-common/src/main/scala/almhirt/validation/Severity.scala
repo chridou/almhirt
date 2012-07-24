@@ -7,9 +7,13 @@ sealed trait Severity {
     case(_,Critical) => Critical
     case(Major,_) => Major
     case(_,Major) => Major
-    case _ => Minor
+    case(Minor,_) => Major
+    case(_,Minor) => Minor
+    case _ => NoProblem
   }
 }
 final case object Critical extends Severity 
 final case object Major extends Severity 
 final case object Minor extends Severity 
+final case object NoProblem extends Severity
+

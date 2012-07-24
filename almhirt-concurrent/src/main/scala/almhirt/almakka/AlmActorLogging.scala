@@ -15,6 +15,8 @@ trait AlmActorLogging { self: akka.actor.Actor =>
           validation
         case Failure(f) =>
           f.severity match {
+            case NoProblem =>
+              ()
             case Minor =>
               log.warning(f.toString)
             case Major =>
