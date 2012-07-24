@@ -42,7 +42,7 @@ trait AlmValidationImplicits {
   implicit def optionValidation2ValidationOption[P, V](value: Option[Validation[P,V]]): OptionValidationW[P, V] =
     new OptionValidationW(value)
   final class OptionValidationW[P, V](value: Option[Validation[P,V]]) {
-    def insideOut(): Validation[P, Option[V]] =
+    def validationOut(): Validation[P, Option[V]] =
       value match {
         case Some(validation) =>
           validation match {
@@ -56,7 +56,7 @@ trait AlmValidationImplicits {
   implicit def validationOption2OptionValidation[P, V](value: Validation[P,Option[V]]): ValidationOptionW[P, V] =
     new ValidationOptionW(value)
   final class ValidationOptionW[P, V](value: Validation[P,Option[V]]) {
-    def insideOut(): Option[Validation[P,V]] =
+    def optionOut(): Option[Validation[P,V]] =
       value match {
         case Success(opt) =>
           opt match {

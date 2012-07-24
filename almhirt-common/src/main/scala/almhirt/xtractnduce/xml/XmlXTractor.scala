@@ -86,8 +86,8 @@ class XmlXTractor(elem: Elem) extends XTractor {
         getUniquePropertyElement(aKey)
       text <- 
         propertyElement
-          .flatMap{e => onSingleTextOnlyTypeContainerGetText(e).insideOut }
-          .insideOut
+          .flatMap{e => onSingleTextOnlyTypeContainerGetText(e).optionOut }
+          .validationOut
       xtractor <- 
         (text map {txt => new XTractorAtomicString(txt, aKey)})
         .successSBD
