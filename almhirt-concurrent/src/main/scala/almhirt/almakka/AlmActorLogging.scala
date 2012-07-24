@@ -27,3 +27,7 @@ trait AlmActorLogging { self: akka.actor.Actor =>
     }
   }
 }
+
+trait AlmSystemLogging { 
+//  val log = Logging(AlmAkka.actorSystem, this)
+}
