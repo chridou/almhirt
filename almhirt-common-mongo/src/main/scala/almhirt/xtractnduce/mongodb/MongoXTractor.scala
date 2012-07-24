@@ -7,7 +7,6 @@ import almhirt.validation._
 import almhirt.validation.Problem._
 import almhirt.validation.AlmValidation._
 import almhirt.xtractnduce._
-
 import com.mongodb.casbah.Imports._
 
 class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit mapKey: MongoKeyMapper) extends XTractor {
@@ -195,8 +194,13 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
 }
 
 object MongoXTractor {
-  implicit def mongoDBObject2MongoXTractorW(elem: MongoDBObject): MongoDBObjectMongoXTractorW = new MongoDBObjectMongoXTractorW(elem)
+  def apply(mo: MongoDBObject, aKey: String)(implicit mapKey: MongoKeyMapper) =
+	new MongoXTractor(mo, aKey)(mapKey)
+  def apply(mo: MongoDBObject, aKey: String, idKey: String)(implicit mapKey: MongoKeyMapper) =
+	new MongoXTractor(mo, aKey)(MongoKeyMapper.createKeyMapper(idKey))
+  implicit def mongoDBObject2MongoXTractorW(elem: MongoDBObject): MongoDBObjectMongoXTractorW = 
+    new MongoDBObjectMongoXTractorW(elem)
   final class MongoDBObjectMongoXTractorW(mongoObj: MongoDBObject) {
-    def xtractor(aKey: String): MongoXTractor = new MongoXTractor(mongoObj, aKey)
+    def xtractor(aKey: String)(implicit mapKey: MongoKeyMapper): MongoXTractor = new MongoXTractor(mongoObj, aKey)(mapKey)
   }
 }
