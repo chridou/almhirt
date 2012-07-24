@@ -123,7 +123,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
         case None => Nil.successMBD  
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).toMultipleBadData.fail[List[XTractor]]
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).toMBD.fail[List[XTractor]]
     }
   
   def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]] =
@@ -170,15 +170,15 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
                 case null => 
                   Failure(
                     SingleBadDataProblem("Null is not allowed!", key = aKey)
-                      .toMultipleBadData)
+                      .toMBD)
                 case _ : BasicDBObject => 
                   Failure(
                     SingleBadDataProblem("Not allowed as an atomic: MongoDBObject", key = aKey)
-                      .toMultipleBadData)
+                      .toMBD)
                 case _ : BasicDBList => 
                   Failure(
                     SingleBadDataProblem("Not allowed as an atomic: BasicDBList", key = aKey)
-                      .toMultipleBadData)
+                      .toMBD)
                 case x => (new XTractorAtomicAny(x, "[%d]".format(i))).successMBD
               } }
             .toList
@@ -189,7 +189,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
     } catch {
       case exn => 
         SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn))
-          .toMultipleBadData
+          .toMBD
           .fail[List[XTractorAtomicAny]]
     }
 }

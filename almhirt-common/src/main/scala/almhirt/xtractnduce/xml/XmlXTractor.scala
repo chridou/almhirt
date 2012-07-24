@@ -66,11 +66,11 @@ class XmlXTractor(elem: Elem) extends XTractor {
   def getXTractors(aKey: String): AlmValidationMBD[List[XTractor]] =
     for {
       propertyElement <-
-      	getUniquePropertyElement(aKey).toMultipleBadData
+      	getUniquePropertyElement(aKey).toMBD
       elems <- 
-      	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSBD)).toMultipleBadData
+      	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSBD)).toMBD
       xtractors <- 
-      	elems.map{x => onValidTypeContainerXTractor(x).toMultipleBadData}.toList.sequence
+      	elems.map{x => onValidTypeContainerXTractor(x).toMBD}.toList.sequence
     } yield xtractors
   
   def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]] = {
@@ -96,16 +96,16 @@ class XmlXTractor(elem: Elem) extends XTractor {
   def getAtomics(aKey: String): AlmValidationMBD[List[XTractorAtomic]] =
     for {
       propertyElement <-
-      	getUniquePropertyElement(aKey).toMultipleBadData
+      	getUniquePropertyElement(aKey).toMBD
       elems <- 
-      	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSBD)).toMultipleBadData
+      	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSBD)).toMBD
       xtractors <- { 
       	val items =
       	  elems.zipWithIndex.map {case(x, i) => 
       	    onSingleTextOnlyTypeContainerGetText(x).flatMap { y =>
       	      val txt = y.getOrElse("")
       	      new XTractorAtomicString(txt, "[%d]".format(i)).successSBD}}
-      	  .map{x => x.toMultipleBadData}
+      	  .map{x => x.toMBD}
           .toList
         items.sequence 
       }

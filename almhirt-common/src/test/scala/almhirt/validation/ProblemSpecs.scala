@@ -9,11 +9,11 @@ class ProblemSpecs extends Specification {
   val bdpB = SingleBadDataProblem("Message B", "B", Major)
   
   "A SingleBadDataProblem with key = 'A' and message = 'Message A' when transformed to a MultipleBadDataProblem" should {
-    "have keysAndValues = 'A->Message A' when received 'toMultipleBadData()'" in {
-      bdpA.toMultipleBadData.keysAndMessages must beEqualTo(Map("A" -> "Message A"))
+    "have keysAndValues = 'A->Message A' when received 'toMBD()'" in {
+      bdpA.toMBD.keysAndMessages must beEqualTo(Map("A" -> "Message A"))
     }
     "have the same severity as the original SingleBadDataProblem" in {
-      bdpA.toMultipleBadData.severity must beEqualTo(bdpA.severity)
+      bdpA.toMBD.severity must beEqualTo(bdpA.severity)
     }
   }
   
@@ -39,7 +39,7 @@ class ProblemSpecs extends Specification {
       .keysAndMessages must beEqualTo(Map("A" -> "Message A", "B" -> "Message B", "A_" -> "Message C"))
     }
     "have the second key appended with '_' when added(combineWith)gi as a MultipleBadDataObject" in {
-      (bdpA add bdpB).combineWith(SingleBadDataProblem("Message C", "A").toMultipleBadData)
+      (bdpA add bdpB).combineWith(SingleBadDataProblem("Message C", "A").toMBD)
       .keysAndMessages must beEqualTo(Map("A" -> "Message A", "B" -> "Message B", "A_" -> "Message C"))
     }
     "keep the severity when a BadDataObject with lower severity is added" in {
@@ -55,15 +55,15 @@ class ProblemSpecs extends Specification {
       .severity must beEqualTo(Critical)
     }
     "keep the severity when a MultipleBadDataObject with lower severity is added(combineWith)" in {
-      (bdpA add bdpB).combineWith(SingleBadDataProblem("Message C", "A", Minor).toMultipleBadData)
+      (bdpA add bdpB).combineWith(SingleBadDataProblem("Message C", "A", Minor).toMBD)
       .severity must beEqualTo((bdpA add bdpB).severity)
     }
     "keep the severity when a MultipleBadDataObject with same severity is added(combineWith)" in {
-      (bdpA add bdpB).combineWith(SingleBadDataProblem("Message C", "A", Major).toMultipleBadData)
+      (bdpA add bdpB).combineWith(SingleBadDataProblem("Message C", "A", Major).toMBD)
       .severity must beEqualTo((bdpA add bdpB).severity)
     }
     "take the severity of the MultipleBadDataObject with higher severity is added(combineWith)" in {
-      (bdpA add bdpB).combineWith(SingleBadDataProblem("Message C", "A", Critical).toMultipleBadData)
+      (bdpA add bdpB).combineWith(SingleBadDataProblem("Message C", "A", Critical).toMBD)
       .severity must beEqualTo(Critical)
     }
     "maintain its severity when added by 'withBadData'" in {

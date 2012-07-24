@@ -144,8 +144,8 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 	def addTo(multipleBadData: MultipleBadDataProblem) = multipleBadData.add(this)
-	def add(other: SingleBadDataProblem) = toMultipleBadData().add(other)
-	def toMultipleBadData() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+	def add(other: SingleBadDataProblem) = toMBD().add(other)
+	def toMBD() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
 	def toSystemProblem() = SingleMappingProblem(message, key = key, severity = severity, args = args, exception = exception, cause = Some(this))
   }
   case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), cause: Option[Problem] = None) extends BadDataProblem {

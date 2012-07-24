@@ -90,7 +90,7 @@ trait XTractor {
             }
           case None => Success(None)
         }
-      case Failure(f) => f.toMultipleBadData.fail[Option[U]]
+      case Failure(f) => f.toMBD.fail[Option[U]]
     }
   
   def mapXTractor[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[U] =
@@ -98,7 +98,7 @@ trait XTractor {
       case Success(opt) =>
         opt
           .map {Success(_)} 
-          .getOrElse (Failure(SingleBadDataProblem("Value not found: %s".format(key), key = aKey).toMultipleBadData))
+          .getOrElse (Failure(SingleBadDataProblem("Value not found: %s".format(key), key = aKey).toMBD))
       case Failure(f) => (f.prefixWithPath(List(key))).fail[U]
     }
   
@@ -113,7 +113,7 @@ trait XTractor {
             }
           case None => Success(None)
         }
-      case Failure(f) => f.toMultipleBadData.fail[Option[U]]
+      case Failure(f) => f.toMBD.fail[Option[U]]
     }
 
   def mapXTractorsToList[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[List[U]] =
@@ -136,7 +136,7 @@ trait XTractor {
   def getAtomicsEvaluated[T](aKey: String, eval: XTractorAtomic => AlmValidationSBD[T]): AlmValidationMBD[List[T]] = {
     for {
       atomicXTractors <- getAtomics(aKey)
-      results <- atomicXTractors.map {eval(_).toMultipleBadData} sequence
+      results <- atomicXTractors.map {eval(_).toMBD} sequence
     } yield results
   }
   

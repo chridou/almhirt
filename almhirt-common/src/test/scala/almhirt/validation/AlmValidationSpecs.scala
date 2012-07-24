@@ -105,7 +105,7 @@ class AlmValidationSpecs extends Specification {
  
   """A SingleBadDataProblem lifted to a MultipleBadDataProblem""" should {
     """contain the origins message in keysAndMessages with the origins key""" in {
-	  val a = (SingleBadDataProblem("XXX", "A").fail[Int]).toMultipleBadData
+	  val a = (SingleBadDataProblem("XXX", "A").fail[Int]).toMBD
 	  a match {
 	    case Failure(mbdp) => mbdp.keysAndMessages must beEqualTo(Map(("A" -> "XXX")))
 	    case _ => sys.error("")
@@ -117,16 +117,16 @@ class AlmValidationSpecs extends Specification {
     """add to 5 when A="2" and B="3"""" in {
       val res =
 	      for {
-	        a <- parseIntAlm("2").toMultipleBadData
-	        b <- parseIntAlm("3").toMultipleBadData
+	        a <- parseIntAlm("2").toMBD
+	        b <- parseIntAlm("3").toMBD
 	      } yield a + b
       res must beEqualTo(5.success[MultipleBadDataProblem])
     }
     """be a Failure when A="x" and B="3"""" in {
       val res =
 	      for {
-	        a <- parseIntAlm("x").toMultipleBadData
-	        b <- parseIntAlm("3").toMultipleBadData
+	        a <- parseIntAlm("x").toMBD
+	        b <- parseIntAlm("3").toMBD
 	      } yield a + b
       res.isFailure
     }
@@ -134,14 +134,14 @@ class AlmValidationSpecs extends Specification {
 
   """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in an applicative functor""" should {
     """add to 5 when A="2" and B="3"""" in {
-      val a = "2".toIntAlm().toMultipleBadData
-      val b = "3".toIntAlm().toMultipleBadData
+      val a = "2".toIntAlm().toMBD
+      val b = "3".toIntAlm().toMBD
 	  val res = (a |@| b)((a, b) => a + b)
       res must beEqualTo(5.success[MultipleBadDataProblem])
     }
     """be a Failue when A="x" and B="3"""" in {
-      val a = "x".toIntAlm().toMultipleBadData
-      val b = "3".toIntAlm().toMultipleBadData
+      val a = "x".toIntAlm().toMBD
+      val b = "3".toIntAlm().toMBD
 	  val res = (a |@| b)((a, b) => a + b)
       res.isFailure
     }

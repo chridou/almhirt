@@ -80,7 +80,7 @@ trait AlmValidationImplicits {
   
   implicit def validationNel2AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) = new AlmValidationNelW[T](validationNel)
   final class AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) {
-    def toMultipleBadData(): Validation[MultipleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
+    def toMBD(): Validation[MultipleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
   }
 
   implicit def validation2StringValidationW[T](validation: Validation[String, T]) = new StringValidationW[T](validation)
@@ -128,10 +128,10 @@ trait AlmValidationImplicits {
   implicit def badDataProblemValidationToSingleBadDataProblemValidationW[T](badDataProblemValidation: AlmValidationSBD[T]) = 
     new SingleBadDataProblemValidationW[T](badDataProblemValidation)
   final class SingleBadDataProblemValidationW[T](badDataProblemValidation: AlmValidationSBD[T]) {
-    def toMultipleBadData(): AlmValidationMBD[T] =
+    def toMBD(): AlmValidationMBD[T] =
       badDataProblemValidation match {
       case Success(r) => r.successMBD
-      case Failure(f) => f.toMultipleBadData().fail[T]
+      case Failure(f) => f.toMBD().fail[T]
     }
   }
   

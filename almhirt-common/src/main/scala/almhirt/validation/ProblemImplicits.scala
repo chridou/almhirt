@@ -18,7 +18,7 @@ trait ProblemImplicits {
         }
     }
   
-  implicit def toMultipleBadDataSemiGroup: Semigroup[MultipleBadDataProblem] =
+  implicit def toMBDSemiGroup: Semigroup[MultipleBadDataProblem] =
     new Semigroup[MultipleBadDataProblem] {
       def append(a: MultipleBadDataProblem, b: => MultipleBadDataProblem): MultipleBadDataProblem = a combineWith b
   }
