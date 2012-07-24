@@ -11,53 +11,53 @@ object XmlNDucer {
   
   private def toXmlElement(script: NDuceScriptOp): Elem =
     script match {
-      case SetString(key, value) =>
+      case NDuceString(key, value) =>
         Elem(null, key, null, TopScope, Text(value))
-      case SetStringOpt(key, value) =>
+      case NDuceStringOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(Text(_)).toSeq: _*)
-      case SetInt(key, value) =>
+      case NDuceInt(key, value) =>
         Elem(null, key, null, TopScope, Text(value.toString))
-      case SetIntOpt(key, value) =>
+      case NDuceIntOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
-      case SetLong(key, value) =>
+      case NDuceLong(key, value) =>
         Elem(null, key, null, TopScope, Text(value.toString))
-      case SetLongOpt(key, value) =>
+      case NDuceLongOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
-      case SetDouble(key, value) =>
+      case NDuceDouble(key, value) =>
         Elem(null, key, null, TopScope, Text(value.toString))
-      case SetDoubleOpt(key, value) =>
+      case NDuceDoubleOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
-      case SetFloat(key, value) =>
+      case NDuceFloat(key, value) =>
         Elem(null, key, null, TopScope, Text(value.toString))
-      case SetFloatOpt(key, value) =>
+      case NDuceFloatOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
-      case SetBoolean(key, value) =>
+      case NDuceBoolean(key, value) =>
         Elem(null, key, null, TopScope, Text(value.toString))
-      case SetBooleanOpt(key, value) =>
+      case NDuceBooleanOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
-      case SetDecimal(key, value) =>
+      case NDuceDecimal(key, value) =>
         Elem(null, key, null, TopScope, Text(value.toString))
-      case SetDecimalOpt(key, value) =>
+      case NDuceDecimalOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
-      case SetDateTime(key, value) =>
+      case NDuceDateTime(key, value) =>
         Elem(null, key, null, TopScope, Text(""))
-      case SetDateTimeOpt(key, value) =>
+      case NDuceDateTimeOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
-      case SetBytes(key, value) =>
+      case NDuceBytes(key, value) =>
         Elem(null, key, null, TopScope, Text(org.apache.commons.codec.binary.Base64.encodeBase64String(value)))
-      case SetBytesOpt(key, value) =>
+      case NDuceBytesOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map{x => Text(org.apache.commons.codec.binary.Base64.encodeBase64String(x))}.toSeq: _*)
-      case SetElement(key, scriptElement) =>
+      case NDuceElement(key, scriptElement) =>
         Elem(null, key, null, TopScope, apply(scriptElement))
-      case SetElementOpt(key, scriptElement) =>
+      case NDuceElementOpt(key, scriptElement) =>
         Elem(null, key, null, TopScope, scriptElement.map{x => apply(x)}.toSeq: _*)
-      case SetElements(key, scriptElements) =>
+      case NDuceElements(key, scriptElements) =>
         val children = scriptElements map {apply(_)}
         Elem(null, key, null, TopScope, children: _*)
-      case SetPrimitives(key, primitives) =>
+      case NDucePrimitives(key, primitives) =>
         val children = primitives map {v => <value>{v.toString}</value>}
         Elem(null, key, null, TopScope, children: _*)
-      case NDuceElem(key, values, _) =>
+      case NDuceAggregate(key, values, _) =>
         val children = values map {toXmlElement(_)}
         Elem(null, key, null, TopScope, children: _*)
   }

@@ -25,52 +25,52 @@ object MongoNDucer {
   
   private def addToBuilder(scriptOp: NDuceScriptOp, builder: Builder[(String, Any), DBObject], mapKey: String => String): Unit =
     scriptOp match {
-      case SetString(key, value) =>
+      case NDuceString(key, value) =>
         builder += mapKey(key) -> value
-      case SetStringOpt(key, value) =>
+      case NDuceStringOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetInt(key, value) =>
+      case NDuceInt(key, value) =>
         builder += mapKey(key) -> value
-      case SetIntOpt(key, value) =>
+      case NDuceIntOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetLong(key, value) =>
+      case NDuceLong(key, value) =>
         builder += mapKey(key) -> value
-      case SetLongOpt(key, value) =>
+      case NDuceLongOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetDouble(key, value) =>
+      case NDuceDouble(key, value) =>
         builder += mapKey(key) -> value
-      case SetDoubleOpt(key, value) =>
+      case NDuceDoubleOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetFloat(key, value) =>
+      case NDuceFloat(key, value) =>
         builder += mapKey(key) -> value
-      case SetFloatOpt(key, value) =>
+      case NDuceFloatOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetBoolean(key, value) =>
+      case NDuceBoolean(key, value) =>
         builder += mapKey(key) -> value
-      case SetBooleanOpt(key, value) =>
+      case NDuceBooleanOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetDecimal(key, value) =>
+      case NDuceDecimal(key, value) =>
         builder += mapKey(key) -> value
-      case SetDecimalOpt(key, value) =>
+      case NDuceDecimalOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetDateTime(key, value) =>
+      case NDuceDateTime(key, value) =>
         builder += mapKey(key) -> value
-      case SetDateTimeOpt(key, value) =>
+      case NDuceDateTimeOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetBytes(key, value) =>
+      case NDuceBytes(key, value) =>
         builder += mapKey(key) -> value
-      case SetBytesOpt(key, value) =>
+      case NDuceBytesOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
-      case SetElement(key, value) =>
+      case NDuceElement(key, value) =>
         builder += mapKey(key) -> apply(value)
-      case SetElementOpt(key, value) =>
+      case NDuceElementOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> mongoObjectFromScript(v, identity)}
-      case SetElements(key, elements) =>
+      case NDuceElements(key, elements) =>
         val children = elements map {mongoObjectFromScript(_, identity)}
         builder += key -> MongoDBList(children: _*)
-      case SetPrimitives(key, primitives) =>
+      case NDucePrimitives(key, primitives) =>
         builder += key -> MongoDBList(primitives: _*)
-      case element @ NDuceElem(name, _, _) =>
-        builder += name -> mongoObjectFromScript(element, identity)
+      case agg @ NDuceAggregate(name, _, _) =>
+        builder += name -> mongoObjectFromScript(agg, identity)
   }
 }

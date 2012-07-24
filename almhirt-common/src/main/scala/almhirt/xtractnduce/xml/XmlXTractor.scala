@@ -9,7 +9,7 @@ import almhirt.validation.Problem._
 import almhirt.xml.XmlPrimitives
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
-class XmlXTractor(elem: Elem) extends XTractor {
+class XmlXTractor(elem: Elem) extends XTractor with ScribbableXmlXTractor {
   type T = Elem
   def underlying() = elem
   val key = elem.label
