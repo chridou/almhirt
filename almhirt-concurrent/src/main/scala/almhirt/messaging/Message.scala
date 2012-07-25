@@ -28,5 +28,8 @@ object Message {
   
   def apply[T <: AnyRef](payload: T)(implicit id: UUID): Message[T] =
   	apply(None, Map.empty, payload)(id)
-  		
+
+ def createWithUuid[T <: AnyRef](payload: T): Message[T] =
+  	apply(None, Map.empty, payload)(UUID.randomUUID)
+	
 }
