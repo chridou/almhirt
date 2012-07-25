@@ -11,7 +11,7 @@ import almhirt.concurrent.AlmFuture._
 import almhirt.domain.EntityEvent
 
 class InefficientInMemoryEventLog() extends HasEntityEvents with CanLogEntityEvents with AlmAkka {
-  implicit val timeout = Timeout(defaultTimeout)
+  implicit val timeout = Timeout(defaultTimeoutDuration)
   var loggedEvents: List[EntityEvent] = Nil
   
   private case class LogEvents(events: NonEmptyList[EntityEvent])

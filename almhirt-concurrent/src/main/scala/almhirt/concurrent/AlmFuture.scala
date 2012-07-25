@@ -58,7 +58,13 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
   
   def isCompleted = underlying.isCompleted
   
-  def await(implicit atMost: Duration): AlmValidation[R] = Await.result(underlying, atMost)
+  def result(implicit atMost: Duration): AlmValidation[R] = 
+    try {
+      Await.result(underlying, atMost)
+    } catch {
+      case tout: TimeoutException => OperationTimedOutProblem("An operation timed out.", exception = Some(tout)).fail[R] 
+      case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)).fail[R] 
+    }
 }
 
 object AlmFuture extends AlmFutureImplicits {

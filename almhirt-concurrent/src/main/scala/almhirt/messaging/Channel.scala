@@ -122,7 +122,7 @@ object Channel extends AlmAkka {
   	))
 
   private class ChannelImpl(dispatcher: ActorRef) extends Channel with AlmAkka{
-	implicit val timeout = Timeout(defaultTimeout)
+	implicit val timeout = Timeout(defaultTimeoutDuration)
 	
     def subscribeAny(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[ChannelSubscription] = {
 	  ask(dispatcher, SubscribeToChannel(handler, classifier)).toAlmFuture[ChannelSubscription]
