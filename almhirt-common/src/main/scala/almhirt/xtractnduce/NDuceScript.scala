@@ -6,6 +6,7 @@ sealed trait NDuceScript extends NDuceScribe {
   def name: String
   def ops: Seq[NDuceScriptOp]
   def typeInfo: Option[String]
+  def xtract(): NDuceXTractor = new NDuceXTractor(this)
 }
 
 sealed trait NDuceScriptOp {
