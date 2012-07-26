@@ -26,7 +26,7 @@ trait AlmValidationOps {
     }
   }
   
-  def mustBeTrue(cond: => Boolean, problem: Problem): AlmValidation[Unit] =
+  def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
     if(cond) Success(()) else problem.fail[Unit]
   
   def noneIsBadData[T](v: Option[T], message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
@@ -34,6 +34,7 @@ trait AlmValidationOps {
       case Some(v) => v.success[SingleBadDataProblem]
       case None => SingleBadDataProblem(message, key = key).fail[T]
     }
+  
   
   def noneIsNotFound[T](v: Option[T], message: String = "Not found"): AlmValidation[T] =
     v match {
