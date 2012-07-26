@@ -1,6 +1,6 @@
 package almhirt.validation
 
-sealed trait Severity {
+sealed trait Severity extends Ordered[Severity]{
   def and(other: Severity): Severity = 
     (this,other) match {
     case(Critical,_) => Critical
@@ -12,6 +12,7 @@ sealed trait Severity {
     case _ => NoProblem
   }
   def level: Int
+  def compare(that: Severity) = this.level compare (that.level)
 }
 final case object Critical extends Severity {
   val level = 4
