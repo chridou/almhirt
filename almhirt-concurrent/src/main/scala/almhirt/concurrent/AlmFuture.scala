@@ -28,7 +28,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
       case Right(validation) => handler(validation)
       case Left(err) => {
         val prob = err match {
-          case tout: TimeoutException => OperationTimedOutProblem("An operation timed out.", exception = Some(tout)) 
+          case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)) 
           case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)) 
         }
         handler(prob.fail[R])
@@ -62,7 +62,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
     try {
       Await.result(underlying, atMost)
     } catch {
-      case tout: TimeoutException => OperationTimedOutProblem("An operation timed out.", exception = Some(tout)).fail[R] 
+      case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)).fail[R] 
       case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)).fail[R] 
     }
 }
