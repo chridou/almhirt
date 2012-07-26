@@ -20,8 +20,11 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
         failure = f => Promise.successful(f.fail[T]),
         success = r => compute(r).underlying) } )
   
-  def filter(pred: R => Boolean): AlmFuture[R] =
-    this
+//  def withFilter(pred: R => Boolean): AlmFuture[R] =
+//    new AlmFuture(underlying.withFilter(p))
+    
+  def fold[T](failure: Problem => T = identity[Problem] _, success: R => T = identity[R] _): Future[T] =
+    underlying map { validation => validation fold (failure = failure, success = success)}
   
   def onComplete(handler: AlmValidation[R] => Unit): AlmFuture[R] = {
     underlying onComplete({

@@ -93,9 +93,9 @@ trait AlmValidationImplicits {
     }
   }
 
-  implicit def validation2AlmValidationW[T](validation: AlmValidation[T]) = new AlmValidationW[T](validation)
-  final class AlmValidationW[T](validation: AlmValidation[T]) {
-    def onFailure(sideEffect: Problem => Unit): AlmValidation[T] = {
+  implicit def validation2ValidationProblemW[P <: Problem, T](validation: Validation[P, T]) = new ValidationProblemW[P, T](validation)
+  final class ValidationProblemW[P <: Problem, T](validation: Validation[P, T]) {
+    def onFailure(sideEffect: Problem => Unit): Validation[P, T] = {
       validation match {
         case Success(_) => 
           validation
@@ -104,7 +104,8 @@ trait AlmValidationImplicits {
           validation
       }
     }
-    def onSuccess(sideEffect: T => Unit): AlmValidation[T] = {
+    
+    def onSuccess(sideEffect: T => Unit): Validation[P, T] = {
       validation match {
         case Success(r) => 
           sideEffect(r)
@@ -113,6 +114,46 @@ trait AlmValidationImplicits {
           validation
       }
     }
+    
+    def noProblem(v: => T): Validation[P, T] = 
+      validation match {
+        case Success(_) => validation
+        case Failure(prob) =>
+          if(prob.severity <= NoProblem)
+            v.success[P]
+          else
+            validation
+      }
+
+    def compensate(v: => T): Validation[P, T] = 
+      validation match {
+        case Success(_) => validation
+        case Failure(prob) =>
+          if(prob.severity <= Minor)
+            v.success[P]
+          else
+            validation
+      }
+
+    def recover(v: => T): Validation[P, T] = 
+      validation match {
+        case Success(_) => validation
+        case Failure(prob) =>
+          if(prob.severity <= Major)
+            v.success[P]
+          else
+            validation
+      }
+
+//    def escalate(severity: => Severity): Validation[P, T] = 
+//      validation match {
+//        case Success(_) => validation
+//        case Failure(prob) =>
+//          if(prob.severity < severity)
+//            prob.withSeverity(severity).fail[T]
+//          else
+//            validation
+//    }
   }
   
   
