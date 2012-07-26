@@ -24,7 +24,7 @@ trait AlmActorLogging { self: akka.actor.Actor =>
   
   implicit def almValidation2AlmValidationLoggingW[T](validation: AlmValidation[T]) = new AlmValidationLoggingW[T](validation)
   final class AlmValidationLoggingW[T](validation: AlmValidation[T]) {
-    def logFailure(minSeverity: Severity = Minor): AlmValidation[T] = {
+    def logFailure(minSeverity: Severity): AlmValidation[T] = {
       validation match {
         case Success(_) => 
           validation
@@ -33,13 +33,15 @@ trait AlmActorLogging { self: akka.actor.Actor =>
           validation
       }
     }
+    def logFailure(): AlmValidation[T] = logFailure(Minor)
   }
   
   implicit def almFuture2AlmValidationLoggingW[T](future: AlmFuture[T]) = new AlmFutureLoggingW[T](future)
   final class AlmFutureLoggingW[T](future: AlmFuture[T]) {
-    def logFailure(minSeverity: Severity = Minor): AlmFuture[T] = {
+    def logFailure(minSeverity: Severity): AlmFuture[T] = {
        future.onFailure(logProblem(_, Minor))
     }
+    def logFailure(): AlmFuture[T] = logFailure(Minor)
   }
   
 }
