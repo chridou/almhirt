@@ -11,9 +11,18 @@ sealed trait Severity {
     case(_,Minor) => Minor
     case _ => NoProblem
   }
+  def level: Int
 }
-final case object Critical extends Severity 
-final case object Major extends Severity 
-final case object Minor extends Severity 
-final case object NoProblem extends Severity
+final case object Critical extends Severity {
+  val level = 4
+}
+final case object Major extends Severity  {
+  val level = 3
+}
+final case object Minor extends Severity {
+  val level = 2
+} 
+final case object NoProblem extends Severity {
+  val level = 1
+}
 
