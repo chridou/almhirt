@@ -23,7 +23,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
   def filter(pred: R => Boolean): AlmFuture[R] =
     this
   
-  def onComplete(handler: AlmValidation[R] => Unit): Future[AlmValidation[R]] = {
+  def onComplete(handler: AlmValidation[R] => Unit): AlmFuture[R] = {
     underlying onComplete({
       case Right(validation) => handler(validation)
       case Left(err) => {
