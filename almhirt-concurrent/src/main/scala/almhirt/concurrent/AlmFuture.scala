@@ -36,20 +36,20 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
     })
   }
   
-  def onSuccess(onRes: R => Unit): Future[AlmValidation[R]] = {
+  def onSuccess(onRes: R => Unit): AlmFuture[R] = {
     underlying onSuccess({
       case Success(r) => onRes(r)
       case _ => ()})
   }
 
-  def onFailure(onProb: Problem => Unit): Future[AlmValidation[R]] = {
+  def onFailure(onProb: Problem => Unit): AlmFuture[R] = {
     onComplete({
       case Failure(prob) => onProb(prob)
       case _ => ()
     })
   }
  
-  def andThen(effect: AlmValidation[R] => Unit) = {
+  def andThen(effect: AlmValidation[R] => Unit): AlmFuture[R] = {
     new AlmFuture(underlying andThen{
       case Right(r) => effect(r)
       case Left(err) => effect(UnspecifiedSystemProblem(err.getMessage, exception = Some(err)).fail[R])
