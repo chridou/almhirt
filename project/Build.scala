@@ -16,7 +16,8 @@ object BuildSettings {
 object Resolvers {
   val typesafeRepo  = "Typesafe Repo"   at "http://repo.typesafe.com/typesafe/releases/"
   val typesafeSnapshot  = "Typesafe Snapshots Repository" at "http://repo.typesafe.com/typesafe/snapshots/"
-  val scalatoolsSnapshots = "Scala Tools Snapshots" at "http://scala-tools.org/repo-snapshots/"
+  val scalatools = "Scala Tools" at "https://oss.sonatype.org/content/groups/scala-tools/"
+  val scalatoolsSnapshots = "Scala Tools Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 }
 
 object Dependencies {
