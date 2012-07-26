@@ -1,13 +1,13 @@
 package almhirt.validation
 
-sealed trait Severity extends Ordered[Severity]{
+sealed trait Severity extends Ordered[Severity] {
   def and(other: Severity): Severity = 
     (this,other) match {
     case(Critical,_) => Critical
     case(_,Critical) => Critical
     case(Major,_) => Major
     case(_,Major) => Major
-    case(Minor,_) => Major
+    case(Minor,_) => Minor
     case(_,Minor) => Minor
     case _ => NoProblem
   }
