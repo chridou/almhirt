@@ -12,7 +12,7 @@ trait AlmActorLogging { self: akka.actor.Actor =>
     if(prob.severity >= minSeverity)
 	  prob.severity match {
 	    case NoProblem =>
-	      ()
+	      log.debug(prob.toString)
 	    case Minor =>
 	      log.warning(prob.toString)
 	    case Major =>
