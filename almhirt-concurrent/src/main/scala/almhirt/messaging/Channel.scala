@@ -98,7 +98,7 @@ class ActorChannelDispatcher() extends Actor with ActorLogging {
 	
     override def preStart() { log.info("Channel '%s' starting".format(self.path)) } 
     override def postRestart(reason: Throwable) { log.info("Channel '%s' restarted".format(self.path)) } 
-    override def postStop() { log.info("Channel '%s'".format(self.path)) } 
+    override def postStop() { log.info("Channel '%s' stopped".format(self.path)) } 
   }
 
 
@@ -118,7 +118,7 @@ object Channel extends AlmAkka {
   def apply(): Channel =
   	new ChannelImpl(
   	    defaultActorSystem.actorOf(
-  	        Props(new ActorChannelDispatcher()).withDispatcher("almhirt.almhirt-channel")
+  	        Props(new ActorChannelDispatcher()).withDispatcher("almhirt.almhirt-channel"), "almhirt-channel"
   	))
 
   private class ChannelImpl(dispatcher: ActorRef) extends Channel with AlmAkka{
