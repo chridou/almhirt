@@ -7,20 +7,20 @@ import akka.dispatch.Await
 import akka.util.Duration
 import scalaz.{Success}
 
-class ChannelSpecs extends Specification {
+class ActorBasedMessageStreamSpecs extends Specification {
 	
   implicit def randUUID = java.util.UUID.randomUUID
   
   private def getChannel(implicit system: ActorSystem) = {
-	Channel("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
+	ActorBasedMessageStream("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
   }
 	
 	
-  "A Channel" should {
+  "An ActorBasedMessageStream" should {
 	"return a subscription when subscribed to" in {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
-	  val future = channel.subscribeAny({case _ => ()}, _ => true)
+	  val future = channel +?= ({case _ => ()}, _ => true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  system.shutdown()
 	  subscription must not beNull
@@ -29,9 +29,9 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hit = false
-	  val future = channel.subscribeAny({case _ => hit = true}, _ => true)
+	  val future = channel +?= ({case _ => hit = true}, _ => true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  subscription.unsubscribe()
+	  subscription.cancel()
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  !hit
@@ -40,11 +40,11 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hitCount = 0
-	  val future1 = channel.subscribeAny({case _ => hitCount += 1}, _ => true)
-	  val future2 = channel.subscribeAny({case _ => hitCount += 2}, _ => true)
+	  val future1 = channel +?= ({case _ => hitCount += 1}, _ => true)
+	  val future2 = channel +?= ({case _ => hitCount += 2}, _ => true)
 	  val subscription1 = Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
-	  subscription1.unsubscribe()
+	  subscription1.cancel()
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  hitCount must beEqualTo(2)
@@ -53,7 +53,7 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hit = false
-	  val future = channel.subscribeAny({case _ => hit = true}, _ => true)
+	  val future = channel +?= ({case _ => hit = true}, _ => true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
@@ -63,8 +63,8 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hitCount = 0
-	  val future1 = channel.subscribeAny({case _ => hitCount += 1}, _ => true)
-	  val future2 = channel.subscribeAny({case _ => hitCount += 2}, _ => true)
+	  val future1 = channel +?= ({case _ => hitCount += 1}, _ => true)
+	  val future2 = channel +?= ({case _ => hitCount += 2}, _ => true)
 	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
@@ -75,8 +75,8 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hitCount = 0
-	  val future1 = channel.subscribeAny({case _ => hitCount += 1}, _ => false)
-	  val future2 = channel.subscribeAny({case _ => hitCount += 2}, _ => true)
+	  val future1 = channel +?= ({case _ => hitCount += 1}, _ => false)
+	  val future2 = channel +?= ({case _ => hitCount += 2}, _ => true)
 	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
@@ -87,7 +87,7 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hit = false
-	  val future = channel.subscribeAny({case _ => hit = true}, _ => false)
+	  val future = channel +?= ({case _ => hit = true}, _ => false)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
@@ -97,7 +97,7 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hit = false
-	  val future = channel.subscribeAny({case _ => hit = true}, x => x.payload match {case "a" => true } )
+	  val future = channel +?= ({case _ => hit = true}, x => x.payload match {case "a" => true } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()
@@ -107,7 +107,7 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hit = false
-	  val future = channel.subscribeAny({case _ => hit = true}, x => x.payload match {case "a" => true; case _ => false } )
+	  val future = channel +?= ({case _ => hit = true}, x => x.payload match {case "a" => true; case _ => false } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("b"))
 	  system.shutdown()
@@ -117,7 +117,7 @@ class ChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hit = false
-	  val future = channel.subscribeAny({case _ => hit = true}, x => x.payload match { case "1" => true; case _ => false } )
+	  val future = channel +?= ({case _ => hit = true}, x => x.payload match { case "1" => true; case _ => false } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("a"))
 	  system.shutdown()

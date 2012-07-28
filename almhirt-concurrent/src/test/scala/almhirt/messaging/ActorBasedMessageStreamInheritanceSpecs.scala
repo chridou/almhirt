@@ -7,12 +7,12 @@ import akka.dispatch.Await
 import akka.util.Duration
 import scalaz.Success
 
-class ChannelMessageSpecs extends Specification {
+class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	
   implicit def randUUID = java.util.UUID.randomUUID
   
   private def getChannel(implicit system: ActorSystem) = {
-	Channel("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
+	ActorBasedMessageStream("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
   }
 		
   "A subscription for a payload of type String" should {
@@ -20,10 +20,10 @@ class ChannelMessageSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel.subscribe[String]((m: Message[String]) => triggered = true)
+	  val future = channel += ((m: Message[String]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message[String](""))
-	  subscription.unsubscribe()
+	  subscription.cancel()
 	  system.shutdown()
 	  triggered
 	}
@@ -31,10 +31,10 @@ class ChannelMessageSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel.subscribe[String]((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
+	  val future = channel += ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message[String]("a"))
-	  subscription.unsubscribe()
+	  subscription.cancel()
 	  system.shutdown()
 	  triggered
 	}
@@ -42,10 +42,10 @@ class ChannelMessageSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel.subscribe[String]((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
+	  val future = channel += ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("b"))
-	  subscription.unsubscribe()
+	  subscription.cancel()
 	  system.shutdown()
 	  !triggered
 	}
@@ -77,10 +77,10 @@ class ChannelMessageSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel.subscribe[A]((m: Message[A]) => triggered = true)
+	  val future = channel += ((m: Message[A]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new A(1)))
-	  subscription.unsubscribe()
+	  subscription.cancel()
 	  system.shutdown()
 	  triggered
 	}
@@ -89,10 +89,10 @@ class ChannelMessageSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel.subscribe[A]((m: Message[A]) => triggered = true)
+	  val future = channel += ((m: Message[A]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new B(1)))
-	  subscription.unsubscribe()
+	  subscription.cancel()
 	  system.shutdown()
 	  triggered
 	}
@@ -103,10 +103,10 @@ class ChannelMessageSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel.subscribe[B]((m: Message[B]) => triggered = true)
+	  val future = channel += ((m: Message[B]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new A(1)))
-	  subscription.unsubscribe()
+	  subscription.cancel()
 	  system.shutdown()
 	  !triggered
 	}
@@ -115,10 +115,10 @@ class ChannelMessageSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel.subscribe[B]((m: Message[B]) => triggered = true)
+	  val future = channel += ((m: Message[B]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new B(1)))
-	  subscription.unsubscribe()
+	  subscription.cancel()
 	  system.shutdown()
 	  triggered
 	}
