@@ -40,8 +40,8 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hitCount = 0
-	  val future1 = channel <* ({case _ => hitCount <# 1}, _ => true)
-	  val future2 = channel <* ({case _ => hitCount <# 2}, _ => true)
+	  val future1 = channel <* ({case _ => hitCount += 1}, _ => true)
+	  val future2 = channel <* ({case _ => hitCount += 2}, _ => true)
 	  val subscription1 = Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  subscription1.dispose()
@@ -63,8 +63,8 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hitCount = 0
-	  val future1 = channel <* ({case _ => hitCount <# 1}, _ => true)
-	  val future2 = channel <* ({case _ => hitCount <# 2}, _ => true)
+	  val future1 = channel <* ({case _ => hitCount += 1}, _ => true)
+	  val future2 = channel <* ({case _ => hitCount += 2}, _ => true)
 	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("a"))
@@ -75,8 +75,8 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var hitCount = 0
-	  val future1 = channel <* ({case _ => hitCount <# 1}, _ => false)
-	  val future2 = channel <* ({case _ => hitCount <# 2}, _ => true)
+	  val future1 = channel <* ({case _ => hitCount += 1}, _ => false)
+	  val future2 = channel <* ({case _ => hitCount += 2}, _ => true)
 	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("a"))
