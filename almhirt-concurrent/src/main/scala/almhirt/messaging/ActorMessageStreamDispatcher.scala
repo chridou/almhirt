@@ -35,8 +35,8 @@ class ActorMessageStreamDispatcher extends Actor with AlmActorLogging {
    	    val subscriptionId = UUID.randomUUID()
  		addSubscription(subscriptionId, handler, classifier)
   	    val subscription = 
-  	      new CallbackSubscription {
-  		    def cancel() = self ! Unsubscribe(subscriptionId)
+  	      new Disposable {
+  		    def dispose() = self ! Unsubscribe(subscriptionId)
   		  }
   		sender ! (subscription.success[RegistrationProblem])
   		}

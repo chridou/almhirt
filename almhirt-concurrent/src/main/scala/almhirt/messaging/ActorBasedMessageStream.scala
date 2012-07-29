@@ -3,7 +3,7 @@ package almhirt.messaging
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
-import almhirt.CallbackSubscription
+import almhirt._
 import almhirt.almakka.AlmAkka
 import almhirt.concurrent.AlmFuture
 import almhirt.concurrent.AlmFuture._
@@ -11,8 +11,8 @@ import almhirt.concurrent.AlmFuture._
 abstract class ActorBasedMessageStream(dispatcher: ActorRef) extends MessageStream with AlmAkka {
 	implicit val timeout = Timeout(defaultTimeoutDuration)
 	
-    def +?=(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[CallbackSubscription] = {
-	  ask(dispatcher, RegisterMessageHandlerCommand(handler, classifier)).toAlmFuture[CallbackSubscription]
+    def +?=(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[Disposable] = {
+	  ask(dispatcher, RegisterMessageHandlerCommand(handler, classifier)).toAlmFuture[Disposable]
     }
 	
 	def publish(message: Message[AnyRef]) = dispatcher ! PublishMessageCommand(message)
@@ -24,7 +24,8 @@ abstract class ActorBasedMessageStream(dispatcher: ActorRef) extends MessageStre
 	  val subscription = this.+?=(msg => dispatcher ! PublishMessageCommand(msg) , classifier)
 	  subscription.map{ s =>
 	  	new ActorBasedMessageStream(dispatcher) {
-	      def close() {s.cancel}
+	      override def close() {s.dispose}
+	      val topicPattern = ActorBasedMessageStream.this.topicPattern
 	    }
 	  }
 	}
@@ -52,5 +53,6 @@ object ActorBasedMessageStream {
   
   private class ActorBasedMessageStreamImpl(dispatcher: ActorRef) extends ActorBasedMessageStream(dispatcher) {
     def close() = ()
+    val topicPattern = None
   }
 }

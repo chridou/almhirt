@@ -31,7 +31,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  var hit = false
 	  val future = channel +?= ({case _ => hit = true}, _ => true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  subscription.cancel()
+	  subscription.dispose()
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  !hit
@@ -44,7 +44,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  val future2 = channel +?= ({case _ => hitCount += 2}, _ => true)
 	  val subscription1 = Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
-	  subscription1.cancel()
+	  subscription1.dispose()
 	  channel.publish(Message("a"))
 	  system.shutdown()
 	  hitCount must beEqualTo(2)

@@ -23,7 +23,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  val future = channel += ((m: Message[String]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message[String](""))
-	  subscription.cancel()
+	  subscription.dispose()
 	  system.shutdown()
 	  triggered
 	}
@@ -34,7 +34,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  val future = channel += ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message[String]("a"))
-	  subscription.cancel()
+	  subscription.dispose()
 	  system.shutdown()
 	  triggered
 	}
@@ -45,7 +45,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  val future = channel += ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message("b"))
-	  subscription.cancel()
+	  subscription.dispose()
 	  system.shutdown()
 	  !triggered
 	}
@@ -80,7 +80,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  val future = channel += ((m: Message[A]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new A(1)))
-	  subscription.cancel()
+	  subscription.dispose()
 	  system.shutdown()
 	  triggered
 	}
@@ -92,7 +92,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  val future = channel += ((m: Message[A]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new B(1)))
-	  subscription.cancel()
+	  subscription.dispose()
 	  system.shutdown()
 	  triggered
 	}
@@ -106,7 +106,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  val future = channel += ((m: Message[B]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new A(1)))
-	  subscription.cancel()
+	  subscription.dispose()
 	  system.shutdown()
 	  !triggered
 	}
@@ -118,7 +118,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  val future = channel += ((m: Message[B]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.publish(Message(new B(1)))
-	  subscription.cancel()
+	  subscription.dispose()
 	  system.shutdown()
 	  triggered
 	}
