@@ -1,38 +1,43 @@
 package almhirt.messaging
 
+import java.util.UUID
 import scalaz.syntax.validation._
 import akka.actor._
+import almhirt.Registration
 import almhirt.validation._
 import almhirt.almakka._
 
 class ActorMessageHubDispatcher extends Actor with AlmActorLogging with AlmAkka {
-  private var streams: List[ActorBasedMessageStream] = List()
+  private var channels: List[ActorBasedMessageChannel] = List()
 
-  private def unregisterStream(stream: ActorBasedMessageStream) {
-    streams = streams.filterNot(x => x == stream)
+  private def unregisterStream(channel: ActorBasedMessageChannel) {
+    channels = channels.filterNot(x => x == channel)
   }
   
-  private def createAndRegisterChannel(pattern: Option[String]): AlmValidation[MessageStream] = {
+  private def createAndRegisterChannel(pattern: Option[String]): AlmValidation[MessageChannel] = {
 	  val dispatcher = 
 	  	    defaultActorSystem.actorOf(
-	  	        Props(new ActorMessageStreamDispatcher()).withDispatcher("almhirt.almhirt-messagestream"))
-      val newStream = 
-        new ActorBasedMessageStream(dispatcher) {
-          def close() { self ! UnregisterStream(this) }
+	  	        Props(new ActorMessageChannelDispatcher()).withDispatcher("almhirt.almhirt-messagestream"))
+      val newChannel = 
+        new ActorBasedMessageChannel(dispatcher) { channel =>
+	      val registration = 
+	        Some( new Registration[UUID] {
+	                val ticket = UUID.randomUUID
+	                def dispose() { self ! UnregisterStream(channel)} })
           val topicPattern = pattern
-      }
-      streams = newStream :: streams
-      newStream.success[Problem]
+        }
+      channels = newChannel :: channels
+      newChannel.success[Problem]
   }
   
   def receive = {
     case PublishMessageCommand(msg) => 
-      streams.foreach(_.publish(msg))
+      channels.foreach(_.deliver(msg))
     case CreateMessageStreamCommand(filter) =>
       sender ! createAndRegisterChannel(filter)
     case UnregisterStream(stream) =>
       unregisterStream(stream)
   }
 
-  private case class UnregisterStream(stream: ActorBasedMessageStream)
+  private case class UnregisterStream(stream: ActorBasedMessageChannel)
 }

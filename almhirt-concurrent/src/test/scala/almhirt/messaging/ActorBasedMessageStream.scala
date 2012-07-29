@@ -12,7 +12,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
   implicit def randUUID = java.util.UUID.randomUUID
   
   private def getChannel(implicit system: ActorSystem) = {
-	ActorBasedMessageStream("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
+	ActorBasedMessageChannel("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
   }
 	
 	
@@ -32,7 +32,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  val future = channel +?= ({case _ => hit = true}, _ => true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  subscription.dispose()
-	  channel.publish(Message("a"))
+	  channel.deliver(Message("a"))
 	  system.shutdown()
 	  !hit
 	}
@@ -45,7 +45,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  val subscription1 = Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  subscription1.dispose()
-	  channel.publish(Message("a"))
+	  channel.deliver(Message("a"))
 	  system.shutdown()
 	  hitCount must beEqualTo(2)
 	}

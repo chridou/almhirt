@@ -12,7 +12,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
   implicit def randUUID = java.util.UUID.randomUUID
   
   private def getChannel(implicit system: ActorSystem) = {
-	ActorBasedMessageStream("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
+	ActorBasedMessageChannel("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
   }
 		
   "A subscription for a payload of type String" should {
@@ -22,7 +22,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  var triggered = false
 	  val future = channel += ((m: Message[String]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message[String](""))
+	  channel.deliver(Message[String](""))
 	  subscription.dispose()
 	  system.shutdown()
 	  triggered
@@ -33,7 +33,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  var triggered = false
 	  val future = channel += ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message[String]("a"))
+	  channel.deliver(Message[String]("a"))
 	  subscription.dispose()
 	  system.shutdown()
 	  triggered
@@ -44,7 +44,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  var triggered = false
 	  val future = channel += ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message("b"))
+	  channel.deliver(Message("b"))
 	  subscription.dispose()
 	  system.shutdown()
 	  !triggered
@@ -79,7 +79,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  var triggered = false
 	  val future = channel += ((m: Message[A]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message(new A(1)))
+	  channel.deliver(Message(new A(1)))
 	  subscription.dispose()
 	  system.shutdown()
 	  triggered
@@ -91,7 +91,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  var triggered = false
 	  val future = channel += ((m: Message[A]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message(new B(1)))
+	  channel.deliver(Message(new B(1)))
 	  subscription.dispose()
 	  system.shutdown()
 	  triggered
@@ -105,7 +105,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  var triggered = false
 	  val future = channel += ((m: Message[B]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message(new A(1)))
+	  channel.deliver(Message(new A(1)))
 	  subscription.dispose()
 	  system.shutdown()
 	  !triggered
@@ -117,7 +117,7 @@ class ActorBasedMessageStreamInheritanceSpecs extends Specification {
 	  var triggered = false
 	  val future = channel += ((m: Message[B]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message(new B(1)))
+	  channel.deliver(Message(new B(1)))
 	  subscription.dispose()
 	  system.shutdown()
 	  triggered

@@ -1,5 +1,6 @@
 package almhirt.messaging
 
+import java.util.UUID
 import almhirt.concurrent.AlmFuture
 
 /** Publishes messages to its subscribers. 
@@ -11,7 +12,7 @@ import almhirt.concurrent.AlmFuture
  * * not guarantee that all handlers will be called on the same thread
  * * not guarantee that handlers won't be called concurrently
  */
-trait MessageStream extends SubscribableForMessages with almhirt.Closeable {
+trait MessageStream extends SubscribableForMessages with almhirt.MightBeRegisteredSomewhere[UUID] with almhirt.Disposable {
   
   def subStream(classifier: Message[AnyRef] => Boolean): AlmFuture[MessageStream]
   
@@ -25,5 +26,8 @@ trait MessageStream extends SubscribableForMessages with almhirt.Closeable {
   }
   
   def topicPattern: Option[String]
+  
+  def dispose() =
+    registration.foreach(_.dispose())
 }
 
