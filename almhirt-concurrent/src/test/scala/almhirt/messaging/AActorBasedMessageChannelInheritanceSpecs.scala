@@ -20,7 +20,7 @@ class ActorBasedMessageChannelInheritanceSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel += ((m: Message[String]) => triggered = true)
+	  val future = channel <# ((m: Message[String]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message[String](""))
 	  subscription.dispose()
@@ -31,7 +31,7 @@ class ActorBasedMessageChannelInheritanceSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel += ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
+	  val future = channel <# ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message[String]("a"))
 	  subscription.dispose()
@@ -42,7 +42,7 @@ class ActorBasedMessageChannelInheritanceSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel += ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
+	  val future = channel <# ((m: Message[String]) => triggered = true, (m: Message[String]) => m.payload == "a")
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("b"))
 	  subscription.dispose()
@@ -77,7 +77,7 @@ class ActorBasedMessageChannelInheritanceSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel += ((m: Message[A]) => triggered = true)
+	  val future = channel <# ((m: Message[A]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message(new A(1)))
 	  subscription.dispose()
@@ -89,7 +89,7 @@ class ActorBasedMessageChannelInheritanceSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel += ((m: Message[A]) => triggered = true)
+	  val future = channel <# ((m: Message[A]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message(new B(1)))
 	  subscription.dispose()
@@ -103,7 +103,7 @@ class ActorBasedMessageChannelInheritanceSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel += ((m: Message[B]) => triggered = true)
+	  val future = channel <# ((m: Message[B]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message(new A(1)))
 	  subscription.dispose()
@@ -115,7 +115,7 @@ class ActorBasedMessageChannelInheritanceSpecs extends Specification {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  var triggered = false
-	  val future = channel += ((m: Message[B]) => triggered = true)
+	  val future = channel <# ((m: Message[B]) => triggered = true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message(new B(1)))
 	  subscription.dispose()

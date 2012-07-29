@@ -12,7 +12,7 @@ import almhirt.concurrent.AlmFuture._
 abstract class ActorBasedMessageChannel(dispatcher: ActorRef) extends MessageChannel with AlmAkka {
 	implicit val timeout = Timeout(defaultTimeoutDuration)
 	
-    def +?=(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[Registration[UUID]] = {
+    def <*(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[Registration[UUID]] = {
 	  ask(dispatcher, RegisterMessageHandlerCommand(handler, classifier)).toAlmFuture[Registration[UUID]]
     }
 	
@@ -22,7 +22,7 @@ abstract class ActorBasedMessageChannel(dispatcher: ActorRef) extends MessageCha
 	  val dispatcher = 
 	  	    defaultActorSystem.actorOf(
 	  	        Props(new ActorMessageChannelDispatcher()).withDispatcher("almhirt.almhirt-messagestream"))
-	  val subscription = this.+?=(msg => dispatcher ! PublishMessageCommand(msg) , classifier)
+	  val subscription = this.<*(msg => dispatcher ! PublishMessageCommand(msg) , classifier)
 	  subscription.map{ s =>
 	  	new ActorBasedMessageChannel(dispatcher) {
 	      val registration = Some(s)

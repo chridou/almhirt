@@ -9,15 +9,15 @@ import com.mongodb.casbah.Imports._
 object MongoXTractorSpecsSamples {
   val bob: MongoDBObject = {
     val builder = MongoDBObject.newBuilder
-    builder += "_id" -> 0L
-    builder += "name" -> "Bob"
-    builder += "age" -> 33
-    builder += "dps" -> 1.37
-    builder += "ageAsText" -> "33"
-    builder += "spaces" -> "  "
-    builder += "address" -> MongoDBObject("street" -> "Downing Street", "city" -> "London").asDBObject.asInstanceOf[BasicDBObject]
-    builder += "scores" -> MongoDBList(1 to 10: _*)
-    builder += "gameTimes" -> MongoDBList(MongoDBObject("aoe" -> 12.3), MongoDBObject("eve" -> 29.1), MongoDBObject("pacman" -> 1229.1))
+    builder <# "_id" -> 0L
+    builder <# "name" -> "Bob"
+    builder <# "age" -> 33
+    builder <# "dps" -> 1.37
+    builder <# "ageAsText" -> "33"
+    builder <# "spaces" -> "  "
+    builder <# "address" -> MongoDBObject("street" -> "Downing Street", "city" -> "London").asDBObject.asInstanceOf[BasicDBObject]
+    builder <# "scores" -> MongoDBList(1 to 10: _*)
+    builder <# "gameTimes" -> MongoDBList(MongoDBObject("aoe" -> 12.3), MongoDBObject("eve" -> 29.1), MongoDBObject("pacman" -> 1229.1))
     builder.result
   }
 }
