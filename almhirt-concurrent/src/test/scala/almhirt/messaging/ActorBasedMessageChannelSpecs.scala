@@ -7,7 +7,7 @@ import akka.dispatch.Await
 import akka.util.Duration
 import scalaz.{Success}
 
-class ActorBasedMessageStreamSpecs extends Specification {
+class ActorBasedMessageChannelSpecs extends Specification {
 	
   implicit def randUUID = java.util.UUID.randomUUID
   
@@ -55,7 +55,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  var hit = false
 	  val future = channel +?= ({case _ => hit = true}, _ => true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message("a"))
+	  channel.deliver(Message("a"))
 	  system.shutdown()
 	  hit
 	}
@@ -67,7 +67,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  val future2 = channel +?= ({case _ => hitCount += 2}, _ => true)
 	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message("a"))
+	  channel.deliver(Message("a"))
 	  system.shutdown()
 	  hitCount must beEqualTo(3)
 	}
@@ -79,7 +79,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  val future2 = channel +?= ({case _ => hitCount += 2}, _ => true)
 	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message("a"))
+	  channel.deliver(Message("a"))
 	  system.shutdown()
 	  hitCount must beEqualTo(2)
 	}
@@ -89,7 +89,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  var hit = false
 	  val future = channel +?= ({case _ => hit = true}, _ => false)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message("a"))
+	  channel.deliver(Message("a"))
 	  system.shutdown()
 	  !hit
 	}
@@ -99,7 +99,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  var hit = false
 	  val future = channel +?= ({case _ => hit = true}, x => x.payload match {case "a" => true } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message("a"))
+	  channel.deliver(Message("a"))
 	  system.shutdown()
 	  hit
 	}
@@ -109,7 +109,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  var hit = false
 	  val future = channel +?= ({case _ => hit = true}, x => x.payload match {case "a" => true; case _ => false } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message("b"))
+	  channel.deliver(Message("b"))
 	  system.shutdown()
 	  !hit
 	}
@@ -119,7 +119,7 @@ class ActorBasedMessageStreamSpecs extends Specification {
 	  var hit = false
 	  val future = channel +?= ({case _ => hit = true}, x => x.payload match { case "1" => true; case _ => false } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  channel.publish(Message("a"))
+	  channel.deliver(Message("a"))
 	  system.shutdown()
 	  !hit
 	}

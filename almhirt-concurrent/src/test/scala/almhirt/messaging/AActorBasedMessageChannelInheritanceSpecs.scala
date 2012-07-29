@@ -7,7 +7,7 @@ import akka.dispatch.Await
 import akka.util.Duration
 import scalaz.Success
 
-class ActorBasedMessageStreamInheritanceSpecs extends Specification {
+class ActorBasedMessageChannelInheritanceSpecs extends Specification {
 	
   implicit def randUUID = java.util.UUID.randomUUID
   
