@@ -14,8 +14,8 @@ class ActorBasedMessageHub(dispatcher: ActorRef) extends MessageHub {
     dispatcher ! PublishMessageCommand(message)
   }
 
-  def createMessageStream(topic: Option[String]): AlmFuture[MessageStream] =
-    (dispatcher ? CreateMessageStreamCommand(topic)).toAlmFuture[MessageStream]
+  def createMessageChannel(topic: Option[String]): AlmFuture[MessageChannel] =
+    (dispatcher ? CreateMessageChannelCommand(topic)).toAlmFuture[MessageChannel]
   
   def close() {}
 }

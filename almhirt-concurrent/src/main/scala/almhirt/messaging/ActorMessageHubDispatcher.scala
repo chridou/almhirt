@@ -33,11 +33,11 @@ class ActorMessageHubDispatcher extends Actor with AlmActorLogging with AlmAkka 
   def receive = {
     case PublishMessageCommand(msg) => 
       channels.foreach(_.deliver(msg))
-    case CreateMessageStreamCommand(filter) =>
+    case CreateMessageChannelCommand(filter) =>
       sender ! createAndRegisterChannel(filter)
     case UnregisterStream(stream) =>
       unregisterStream(stream)
   }
 
-  private case class UnregisterStream(stream: ActorBasedMessageChannel)
+  private case class UnregisterStream(channel: ActorBasedMessageChannel)
 }
