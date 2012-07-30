@@ -42,4 +42,10 @@ trait AlmValidationOps {
       case None => NotFoundProblem(message).fail[T]
     }
   
+  def tryGetFromMap[K,V](key: K, map: Map[K,V], severity: Severity = NoProblem): Validation[NotFoundProblem, V] = {
+    map.get(key) match {
+      case Some(v) => v.success
+      case None => NotFoundProblem("Could not find a value for key '%s'".format(key)).fail
+    }
+  }
 }
