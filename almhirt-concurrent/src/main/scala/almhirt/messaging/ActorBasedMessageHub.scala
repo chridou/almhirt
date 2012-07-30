@@ -19,3 +19,12 @@ class ActorBasedMessageHub(dispatcher: ActorRef) extends MessageHub {
   
   def close() {}
 }
+
+object ActorBasedMessageHub {
+  import AlmAkka._
+  def apply(): ActorBasedMessageHub =
+  	new ActorBasedMessageHub(
+  	    actorSystem.actorOf(
+  	        Props(new ActorMessageHubDispatcher()).withDispatcher("almhirt.almhirt-messagehub"), "almhirt-messagehub"
+  	))
+}
