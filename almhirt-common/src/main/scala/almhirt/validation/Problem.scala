@@ -29,11 +29,6 @@ trait ApplicationProblem extends Problem {
 trait SecurityProblem extends ApplicationProblem
 trait BadDataProblem extends ApplicationProblem
 
-//trait Multiproblem { self: Problem =>
-//  type U <: Problem
-//  def problems: Seq[U]
-//}
-
 object Problem extends ProblemImplicits {
 
   def badData(key: String, message: String) =
@@ -42,18 +37,6 @@ object Problem extends ProblemImplicits {
   val defaultSystemProblem = UnspecifiedSystemProblem("unspecified system problem")
   val defaultApplicationProblem = UnspecifiedApplicationProblem("unspecified application problem")
   val defaultProblem = defaultSystemProblem
-  
-//  case class MultiSystemProblem(message: String, problems: Seq[SystemProblem], severity: Severity = Major, args: Map[String, Any] = Map()) extends SystemProblem with Multiproblem{
-//	type T = MultiSystemProblem
-//	type U = SystemProblem
-//	val cause = None
-//	val exception = None
-//    def withMessage(newMessage: String) = copy(message = newMessage)
-//    def withException(err: Throwable) = this
-//	def withSeverity(severity: Severity) = copy(severity = severity)
-//	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
-//	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-//  }
   
   case class UnspecifiedSystemProblem(message: String, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends SystemProblem {
 	type T = UnspecifiedSystemProblem
