@@ -1,4 +1,4 @@
-package almhirt.xtractnduce.mongodb
+package almhirt.xtractnduce.casbah
 
 import org.joda.time.DateTime
 import scalaz._

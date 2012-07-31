@@ -1,4 +1,4 @@
-package almhirt.xtractnduce.mongodb
+package almhirt.xtractnduce.casbah
 
 trait MongoKeyMapper extends Function[String, String]
 

@@ -1,4 +1,4 @@
-package almhirt.xtractnduce.mongodb
+package almhirt.xtractnduce.casbah
 
 import org.specs2.mutable._
 import scalaz.Success

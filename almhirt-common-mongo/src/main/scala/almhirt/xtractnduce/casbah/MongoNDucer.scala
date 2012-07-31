@@ -1,4 +1,4 @@
-package almhirt.xtractnduce.mongodb
+package almhirt.xtractnduce.casbah
 
 import scala.xml.Elem
 import almhirt.xtractnduce._
