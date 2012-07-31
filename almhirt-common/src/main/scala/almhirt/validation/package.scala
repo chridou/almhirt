@@ -13,6 +13,8 @@ package object validation {
   type AlmValidationSM[+α] = Validation[SingleMappingProblem, α]
   type AlmValidationMM[+α] = Validation[MultipleMappingProblem, α]
 
-object AlmValidation extends AlmValidationOps with AlmValidationParseOps with AlmValidationImplicits
+  case class ValidationException(val problem: Problem) extends Exception("A value has been forced from a failed validation")
+  
+  object AlmValidation extends AlmValidationOps with AlmValidationParseOps with AlmValidationImplicits
 
 }
