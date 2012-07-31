@@ -35,6 +35,7 @@ trait ApplicationProblem extends Problem {
 }
 trait SecurityProblem extends ApplicationProblem
 trait BadDataProblem extends ApplicationProblem
+trait BusinessRuleProblem extends ApplicationProblem
 
 object Problem extends ProblemImplicits {
 
@@ -242,13 +243,42 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class BusinessRuleViolatedProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends ApplicationProblem {
+  case class BusinessRuleViolatedProblem(message: String, key: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BusinessRuleProblem with SingleKeyedProblem{
 	type T = BusinessRuleViolatedProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
 	def withSeverity(severity: Severity) = copy(severity = severity)
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+	def addTo(manyViolations: ManyBusinessRulesViolatedProblem) = manyViolations.add(this)
+	def add(other: BusinessRuleViolatedProblem) = toMBRV().add(other)
+	def toMBRV() = ManyBusinessRulesViolatedProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+  }
+  case class ManyBusinessRulesViolatedProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BusinessRuleProblem with MultiKeyedProblem {
+	type T = ManyBusinessRulesViolatedProblem
+    def withMessage(newMessage: String) = copy(message = newMessage)
+    def withException(err: Throwable) = copy(exception = Some(err))
+	def withSeverity(severity: Severity) = copy(severity = severity)
+	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+	def withViolation(key: String, messageForKey: String): T =
+	  keysAndMessages.get(key) match {
+	  case Some(_) => withViolation(key + "_", messageForKey)
+	  case None => copy(keysAndMessages = keysAndMessages + (key -> messageForKey))
+	}
+	def add(violation: BusinessRuleViolatedProblem) = withViolation(violation.key, violation.message).withSeverity(severity and violation.severity)
+	def combineWith(other: ManyBusinessRulesViolatedProblem) =
+	  other.keysAndMessages.toSeq
+	  .foldLeft(this){case (state,(k, msg)) => state.withViolation(k, msg)}
+	  .withSeverity(severity and other.severity)
+	def prefixWithPath(pathParts: List[String], sep: String = ".") = {
+	  pathParts match {
+	    case Nil => this
+	    case _ =>
+	      val path = pathParts.mkString(sep)+sep
+	      copy(keysAndMessages = keysAndMessages.toSeq.map{case (k, m) => (path + k) -> m}.toMap)  
+	  }
+	}
   }
 }
 

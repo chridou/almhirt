@@ -27,5 +27,10 @@ trait ProblemImplicits {
     new Semigroup[MultipleMappingProblem] {
       def append(a: MultipleMappingProblem, b: => MultipleMappingProblem): MultipleMappingProblem = a combineWith b
   }
+
+  implicit def toManyBusinessRulesViolatedSemiGroup: Semigroup[ManyBusinessRulesViolatedProblem] =
+    new Semigroup[ManyBusinessRulesViolatedProblem] {
+      def append(a: ManyBusinessRulesViolatedProblem, b: => ManyBusinessRulesViolatedProblem): ManyBusinessRulesViolatedProblem = a combineWith b
+  }
   
 }

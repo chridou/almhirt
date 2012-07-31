@@ -12,6 +12,8 @@ package object validation {
   type AlmValidationMBD[+α] = Validation[MultipleBadDataProblem, α]
   type AlmValidationSM[+α] = Validation[SingleMappingProblem, α]
   type AlmValidationMM[+α] = Validation[MultipleMappingProblem, α]
+  type AlmValidationBRV[+α] = Validation[BusinessRuleViolatedProblem, α]
+  type AlmValidationMBRV[+α] = Validation[ManyBusinessRulesViolatedProblem, α]
 
   case class ValidationException(val problem: Problem) extends Exception("A value has been forced from a failed validation")
   
