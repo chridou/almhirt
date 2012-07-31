@@ -17,6 +17,13 @@ trait Problem{
   def mapMessage(mapOp: String => String): T
 }
 
+trait SingleKeyedProblem { self: Problem =>
+  def key: String
+}
+
+trait MultiKeyedProblem { self: Problem =>
+  def keysAndMessages: Map[String, String]
+}
 
 trait SystemProblem extends Problem {
   type T <: SystemProblem
@@ -94,7 +101,7 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class SingleMappingProblem(message: String, key: String = "unknown", severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends MappingProblem {
+  case class SingleMappingProblem(message: String, key: String = "unknown", severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends MappingProblem with SingleKeyedProblem {
 	type T = SingleMappingProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -105,7 +112,7 @@ object Problem extends ProblemImplicits {
 	def add(other: SingleMappingProblem) = toMultipleMappingProblem().add(other)
 	def toMultipleMappingProblem() = MultipleMappingProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
   }
-  case class MultipleMappingProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BadDataProblem {
+  case class MultipleMappingProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends MappingProblem with MultiKeyedProblem  {
 	type T = MultipleMappingProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -131,7 +138,6 @@ object Problem extends ProblemImplicits {
 	  }
 	}
   }
-
   
   case class UnspecifiedApplicationProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends ApplicationProblem {
 	type T = UnspecifiedApplicationProblem
@@ -157,7 +163,7 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class SingleBadDataProblem(message: String, key: String = "unknown", severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BadDataProblem {
+  case class SingleBadDataProblem(message: String, key: String = "unknown", severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BadDataProblem with SingleKeyedProblem {
 	type T = SingleBadDataProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
@@ -169,7 +175,7 @@ object Problem extends ProblemImplicits {
 	def toMBD() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
 	def toSystemProblem() = SingleMappingProblem(message, key = key, severity = severity, args = args, exception = exception, causes = List(this))
   }
-  case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BadDataProblem {
+  case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BadDataProblem with MultiKeyedProblem {
 	type T = MultipleBadDataProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
     def withException(err: Throwable) = copy(exception = Some(err))
