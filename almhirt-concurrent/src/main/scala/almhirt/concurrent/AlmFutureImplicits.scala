@@ -23,12 +23,12 @@ trait AlmFutureImplicits {
   implicit def AlmValidationToalmhirtValidatenW[T](validation: AlmValidation[T]) =
     new AlmhirtValidatenW(validation)
   class AlmhirtValidatenW[T](validation: AlmValidation[T]) {
-    def beginAsyncWorkflow[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
+    def continueAsync[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       validation match {
         case Success(r) => new AlmFuture(Future[AlmValidation[U]]{compute(r)})
         case Failure(problem) => new AlmFuture(Promise.successful(Failure(problem)))
       }
-    def beginWorkflowPromising[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
+    def continueWithPromise[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       validation match {
         case Success(r) => new AlmFuture(Promise.successful(compute(r)))
         case Failure(problem) => new AlmFuture(Promise.successful(Failure(problem)))
