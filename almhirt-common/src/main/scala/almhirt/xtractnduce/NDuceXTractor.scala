@@ -7,7 +7,7 @@ import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
 
-class NDuceXTractor(script: NDuceScript) extends XTractor {
+class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) extends XTractor {
   private val opsByKeys = scala.collection.mutable.Map(script.ops.map(x => x.key -> x): _*)
   type T = NDuceScript
   def underlying() = script
@@ -129,7 +129,7 @@ class NDuceXTractor(script: NDuceScript) extends XTractor {
           .map { case (x, i) =>
             x match {
               case agg @ NDuceAggregate(_,_,_) => 
-                new NDuceXTractor(agg).successMBD
+                new NDuceXTractor(agg, Some(this)).successMBD
               case x => 
                 SingleBadDataProblem("%d cannot be an XTractor: %s".format(i, x.getClass.getName))
                   .toMBD.prefixWithPath(List(aKey))
@@ -142,7 +142,7 @@ class NDuceXTractor(script: NDuceScript) extends XTractor {
   
   def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]] =
     opsByKeys.get(aKey) match {
-      case Some(agg @ NDuceAggregate(_, _, _)) => Some(new NDuceXTractor(agg)).successSBD
+      case Some(agg @ NDuceAggregate(_, _, _)) => Some(new NDuceXTractor(agg, Some(this))).successSBD
 	  case Some(_) => SingleBadDataProblem("Cannot be an XTractor", aKey).fail[Option[XTractor]]
 	  case None => None.successSBD
     }
@@ -151,22 +151,22 @@ class NDuceXTractor(script: NDuceScript) extends XTractor {
     opsByKeys.get(aKey) match {
       case Some(op) =>
         op match {
-          case NDuceString(k,v) =>Some(new XTractorAtomicAny(v, k)).successSBD
-          case NDuceStringOpt(k,v) => v.map(new XTractorAtomicAny(_, k)).successSBD
-          case NDuceInt(k,v) => Some(new XTractorAtomicAny(v, k)).successSBD
-	      case NDuceIntOpt(k,v) => v.map(new XTractorAtomicAny(_, k)).successSBD
-	      case NDuceLong(k,v) => Some(new XTractorAtomicAny(v, k)).successSBD
-	      case NDuceLongOpt(k,v) => v.map(new XTractorAtomicAny(_, k)).successSBD
-	      case NDuceDouble(k,v) => Some(new XTractorAtomicAny(v, k)).successSBD
-	      case NDuceDoubleOpt(k,v) => v.map(new XTractorAtomicAny(_, k)).successSBD
-	      case NDuceFloat(k,v) => Some(new XTractorAtomicAny(v, k)).successSBD
-	      case NDuceFloatOpt(k,v) => v.map(new XTractorAtomicAny(_, k)).successSBD
-	      case NDuceBoolean(k,v) => Some(new XTractorAtomicAny(v, k)).successSBD
-	      case NDuceBooleanOpt(k,v) => v.map(new XTractorAtomicAny(_, k)).successSBD
-	      case NDuceDecimal(k,v) => Some(new XTractorAtomicAny(v, k)).successSBD
-	      case NDuceDecimalOpt(k,v) => v.map(new XTractorAtomicAny(_, k)).successSBD
-	      case NDuceDateTime(k,v) => Some(new XTractorAtomicAny(v, k)).successSBD
-	      case NDuceDateTimeOpt(k,v) => v.map(new XTractorAtomicAny(_, k)).successSBD
+          case NDuceString(k,v) =>Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+          case NDuceStringOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
+          case NDuceInt(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+	      case NDuceIntOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
+	      case NDuceLong(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+	      case NDuceLongOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
+	      case NDuceDouble(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+	      case NDuceDoubleOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
+	      case NDuceFloat(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+	      case NDuceFloatOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
+	      case NDuceBoolean(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+	      case NDuceBooleanOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
+	      case NDuceDecimal(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+	      case NDuceDecimalOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
+	      case NDuceDateTime(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+	      case NDuceDateTimeOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
 	      case _ => SingleBadDataProblem("Does not have an atomic representation", aKey).fail[Option[XTractorAtomic]]
         }
       case None => None.successSBD
@@ -179,7 +179,7 @@ class NDuceXTractor(script: NDuceScript) extends XTractor {
           case NDucePrimitives(k,v) => 
           	v
           	 .zipWithIndex
-          	 .map{case (x, i) => new XTractorAtomicAny(x, "[%d]".format(i)).successMBD}
+          	 .map{case (x, i) => new XTractorAtomicAny(x, "[%d]".format(i), Some(this)).successMBD}
           	 .toList
           	 .sequence
 	      case _ => 

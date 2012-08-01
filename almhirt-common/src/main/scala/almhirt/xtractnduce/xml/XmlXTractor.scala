@@ -10,7 +10,7 @@ import almhirt.xml.XmlPrimitives
 import almhirt.xml.XmlPrimitives._
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
-class XmlXTractor(elem: Elem) extends XTractor with ScribbableXmlXTractor {
+class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTractor with ScribbableXmlXTractor {
   type T = Elem
   def underlying() = elem
   val key = elem.label
@@ -91,7 +91,7 @@ class XmlXTractor(elem: Elem) extends XTractor with ScribbableXmlXTractor {
           .flatMap{e => onSingleTextOnlyTypeContainerGetText(e).optionOut }
           .validationOut
       xtractor <- 
-        (text map {txt => new XTractorAtomicString(txt, aKey)})
+        (text map {txt => new XTractorAtomicString(txt, aKey, Some(this))})
         .successSBD
     } yield xtractor
     
@@ -106,7 +106,7 @@ class XmlXTractor(elem: Elem) extends XTractor with ScribbableXmlXTractor {
       	  elems.zipWithIndex.map {case(x, i) => 
       	    onSingleTextOnlyTypeContainerGetText(x).flatMap { y =>
       	      val txt = y.getOrElse("")
-      	      new XTractorAtomicString(txt, "[%d]".format(i)).successSBD}}
+      	      new XTractorAtomicString(txt, "[%d]".format(i), Some(this)).successSBD}}
       	  .map{x => x.toMBD}
           .toList
         items.sequence 
@@ -180,7 +180,7 @@ class XmlXTractor(elem: Elem) extends XTractor with ScribbableXmlXTractor {
     }
   
   private def onValidTypeContainerXTractor(typeContainer: Elem): AlmValidationSBD[XTractor] =
-    onAllChildrenAreElems(typeContainer).map {_ => new XmlXTractor(typeContainer)}
+    onAllChildrenAreElems(typeContainer).map {_ => new XmlXTractor(typeContainer, Some(this))}
 }
 
 object XmlXTractor {

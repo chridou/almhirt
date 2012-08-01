@@ -9,7 +9,7 @@ import almhirt.validation.AlmValidation._
 import almhirt.xtractnduce._
 import com.mongodb.casbah.Imports._
 
-class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit mapKey: MongoKeyMapper) extends XTractor {
+class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: Option[XTractor] = None)(implicit mapKey: MongoKeyMapper) extends XTractor {
   type T = MongoDBObject
   def keys() = underlying.keys.toSeq
   
@@ -118,7 +118,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
         case Some(obj) => 
           obj
             .toList
-            .map(x => new MongoXTractor(x.asInstanceOf[BasicDBObject], aKey))
+            .map(x => new MongoXTractor(x.asInstanceOf[BasicDBObject], aKey, Some(this)))
             .successMBD  
         case None => Nil.successMBD  
       }
@@ -131,7 +131,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
       val theKey = mapKey(aKey)
       underlying.getAs[BasicDBObject](theKey).map{identity} match {
         case Some(obj) => 
-          val mongoExtr = new MongoXTractor(obj, aKey)
+          val mongoExtr = new MongoXTractor(obj, aKey, Some(this))
           Some(mongoExtr).successSBD
         case None => 
           Success(None)
@@ -147,7 +147,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
         case Some(null) => 
           SingleBadDataProblem("Null is not allowed!", key = aKey).fail[Option[XTractorAtomic]]
         case Some(v) => 
-          new XTractorAtomicAny(v, aKey).successSBD.map(Some(_))
+          new XTractorAtomicAny(v, aKey, Some(this)).successSBD.map(Some(_))
         case None => 
           None.successSBD
       }
@@ -179,7 +179,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String)(implicit map
                   Failure(
                     SingleBadDataProblem("Not allowed as an atomic: BasicDBList", key = aKey)
                       .toMBD)
-                case x => (new XTractorAtomicAny(x, "[%d]".format(i))).successMBD
+                case x => (new XTractorAtomicAny(x, "[%d]".format(i), Some(this))).successMBD
               } }
             .toList
             .sequence

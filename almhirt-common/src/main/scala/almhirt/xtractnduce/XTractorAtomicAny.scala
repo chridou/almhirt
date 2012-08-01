@@ -7,7 +7,7 @@ import org.joda.time.DateTime
 import scalaz.syntax.validation.ToValidationV
 import scalaz.Success
 
-class XTractorAtomicAny(value: Any, val key: String) extends XTractorAtomic {
+class XTractorAtomicAny(value: Any, val key: String, val parent: Option[XTractor] = None) extends XTractorAtomic {
   type T = Any
   val underlying = value
   def getString(): AlmValidationSBD[String] =

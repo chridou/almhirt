@@ -9,6 +9,7 @@ import Scalaz._
 
 trait XTractorAtomic {
   type T
+  def parent: Option[XTractor]
   def key: String
   def underlying: T
   def getString(): AlmValidationSBD[String]
@@ -34,6 +35,7 @@ trait XTractorAtomic {
 
 trait XTractor {
   type T
+  def parent: Option[XTractor]
   def key: String
   def underlying: T
   def keys: Seq[String]
