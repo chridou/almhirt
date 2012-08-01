@@ -12,7 +12,7 @@ class NDuceXTractor(script: NDuceScript) extends XTractor {
   type T = NDuceScript
   def underlying() = script
   val key = script.name
-  
+  def keys() = script.ops.map(_.key)
   def tryGetString(aKey: String) = 
     opsByKeys.get(aKey) match {
       case Some(NDuceString(_,v)) => Some(v).successSBD

@@ -36,6 +36,7 @@ trait XTractor {
   type T
   def key: String
   def underlying: T
+  def keys: Seq[String]
   def tryGetString(aKey: String): AlmValidationSBD[Option[String]]
   def tryGetInt(aKey: String): AlmValidationSBD[Option[Int]]
   def tryGetLong(aKey: String): AlmValidationSBD[Option[Long]]

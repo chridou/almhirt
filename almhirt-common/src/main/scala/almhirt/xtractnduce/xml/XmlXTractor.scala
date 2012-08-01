@@ -7,12 +7,14 @@ import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
 import almhirt.xml.XmlPrimitives
+import almhirt.xml.XmlPrimitives._
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
 class XmlXTractor(elem: Elem) extends XTractor with ScribbableXmlXTractor {
   type T = Elem
   def underlying() = elem
   val key = elem.label
+  def keys() = elem.elems.map(_.label)
   
   def tryGetString(aKey: String) = 
     onSingleTextOnlyElem(
