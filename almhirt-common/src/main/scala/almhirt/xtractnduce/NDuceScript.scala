@@ -5,6 +5,7 @@ import org.joda.time.DateTime
 sealed trait NDuceScript extends NDuceScribe {
   def name: String
   def ops: Seq[NDuceScriptOp]
+  def nameIsTypeInfo(): NDuceScript
   def typeInfo: Option[String]
   def xtract(): NDuceXTractor = new NDuceXTractor(this)
 }
