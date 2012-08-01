@@ -29,6 +29,6 @@ trait NDuceScribe {
 }
 
 object NDuceScribe {
-  def scribble(name: String) = NDuceAggregate(name, Seq.empty)
-  def scribble(name: String, children: NDuceScriptOp*) = NDuceAggregate(name, children)
+  def scribble(name: String): NDuceScript = NDuceAggregate(name, Seq.empty)
+  def scribble(name: String, children: NDuceScriptOp*): NDuceScript = NDuceAggregate(name, children)
 }
