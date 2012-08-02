@@ -19,6 +19,9 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkka {
       validation fold (
         failure = f => Promise.successful(f.fail[T]),
         success = r => compute(r).underlying) } )
+
+  def mapV[T](compute: R => AlmValidation[T]): AlmFuture[T] =
+    new AlmFuture[T](underlying map { validation => validation flatMap compute })
   
 //  def withFilter(pred: R => Boolean): AlmFuture[R] =
 //    new AlmFuture(underlying.withFilter(p))

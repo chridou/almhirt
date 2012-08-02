@@ -28,7 +28,7 @@ trait AlmFutureImplicits {
         case Success(r) => new AlmFuture(Future[AlmValidation[U]]{compute(r)})
         case Failure(problem) => new AlmFuture(Promise.successful(Failure(problem)))
       }
-    
+
     def |~> [U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       continueAsync[U](compute)(executor)
 
