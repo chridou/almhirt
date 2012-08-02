@@ -8,10 +8,10 @@ object MongoKeyMapper {
   def createKeyMapper(map: String => String, mapInverse: String => String): MongoKeyMapper =
     new MongoKeyMapper{ 
       def apply(key: String) = map(key)
-      def inverse(keySubstitute: String) = mapInverse(keySubstitute)
+      def inverse(potentialKey: String) = mapInverse(potentialKey)
       }
   def createKeyMapper(idKey: String): MongoKeyMapper =
-    createKeyMapper(key => if(key == idKey) "_id" else key, keySubstitute => if(keySubstitute == "_id") idKey else keySubstitute)
+    createKeyMapper(key => if(key == idKey) "_id" else key, potentialKey => if(potentialKey == "_id") idKey else potentialKey)
   
   implicit val defaultMongoKeyMapper = createKeyMapper("id")
   val identityKeyMapper = createKeyMapper(identity, identity)

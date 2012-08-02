@@ -185,7 +185,7 @@ object Problem extends ProblemImplicits {
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 	def addTo(multipleBadData: MultipleBadDataProblem) = multipleBadData.add(this)
 	def add(other: SingleBadDataProblem) = toMBD().add(other)
-	def toMBD() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+	def toMBD() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity, causes = List(this))
 	def prefixWithPath(pathParts: List[String], sep: String = ".") = {
 	  pathParts match {
 	    case Nil => this
@@ -213,6 +213,7 @@ object Problem extends ProblemImplicits {
 	  other.keysAndMessages.toSeq
 	  .foldLeft(this){case (state,(k, msg)) => state.withBadData(k, msg)}
 	  .withSeverity(severity and other.severity)
+	  .copy(causes = this.causes ++ other.causes)
 	def prefixWithPath(pathParts: List[String], sep: String = ".") = {
 	  pathParts match {
 	    case Nil => this

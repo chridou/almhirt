@@ -11,31 +11,31 @@ class XTractorAtomicString(value: String, val key: String, val parent: Option[XT
   type T = String
   val underlying = value
   def getString(): AlmValidationSBD[String] =
-	value.notEmptyOrWhitespaceAlm(key).fail.map(_.prefixWithPath(path)).validation
+	value.notEmptyOrWhitespaceAlm(pathAsString())
 	
   def getInt(): AlmValidationSBD[Int] =
-	value.toIntAlm(key).fail.map(_.prefixWithPath(path)).validation
+	value.toIntAlm(pathAsString())
 	
   def getLong(): AlmValidationSBD[Long] =
-	value.toLongAlm(key).fail.map(_.prefixWithPath(path)).validation
+	value.toLongAlm(pathAsString())
 	
   def getDouble(): AlmValidationSBD[Double] =
-	value.toDoubleAlm(key).fail.map(_.prefixWithPath(path)).validation
+	value.toDoubleAlm(pathAsString())
 	
   def getFloat(): AlmValidationSBD[Float] =
-	value.toFloatAlm(key).fail.map(_.prefixWithPath(path)).validation
+	value.toFloatAlm(pathAsString())
 	
   def getBoolean(): AlmValidationSBD[Boolean] =
-	value.toBooleanAlm(key).fail.map(_.prefixWithPath(path)).validation
+	value.toBooleanAlm(pathAsString())
 	
   def getDecimal(): AlmValidationSBD[BigDecimal] =
-	value.toDecimalAlm(key).fail.map(_.prefixWithPath(path)).validation
+	value.toDecimalAlm(pathAsString())
 	
   def getDateTime(): AlmValidationSBD[DateTime] =
-	value.toDateTimeAlm(key).fail.map(_.prefixWithPath(path)).validation
+	value.toDateTimeAlm(pathAsString())
 	
   def getBytes(): AlmValidationSBD[Array[Byte]] =
-	value.toBytesFromBase64Alm(key).fail.map(_.prefixWithPath(path)).validation
+	value.toBytesFromBase64Alm(pathAsString())
 
   def tryGetString(): AlmValidationSBD[Option[String]] =
 	  if(value.trim.isEmpty)
@@ -44,34 +44,34 @@ class XTractorAtomicString(value: String, val key: String, val parent: Option[XT
 	    Success(Some(value))
   
   def tryGetInt(): AlmValidationSBD[Option[Int]] =
-	onEmptyNoneElse(() => value.toIntAlm(key)).fail.map(_.prefixWithPath(path)).validation
+	onEmptyNoneElse(() => value.toIntAlm(pathAsString()))
   
   def tryGetLong(): AlmValidationSBD[Option[Long]] =
-	onEmptyNoneElse(() => value.toLongAlm(key)).fail.map(_.prefixWithPath(path)).validation
+	onEmptyNoneElse(() => value.toLongAlm(pathAsString()))
   
   def tryGetDouble(): AlmValidationSBD[Option[Double]] =
-	onEmptyNoneElse(() => value.toDoubleAlm(key)).fail.map(_.prefixWithPath(path)).validation
+	onEmptyNoneElse(() => value.toDoubleAlm(pathAsString()))
 
   def tryGetFloat(): AlmValidationSBD[Option[Float]] =
-	onEmptyNoneElse(() => value.toFloatAlm(key)).fail.map(_.prefixWithPath(path)).validation
+	onEmptyNoneElse(() => value.toFloatAlm(pathAsString()))
 
   def tryGetBoolean(): AlmValidationSBD[Option[Boolean]] = 
-    onEmptyNoneElse(() => value.toBooleanAlm(key)).fail.map(_.prefixWithPath(path)).validation
+    onEmptyNoneElse(() => value.toBooleanAlm(pathAsString()))
 
   def tryGetDecimal(): AlmValidationSBD[Option[BigDecimal]] =
-	onEmptyNoneElse(() => value.toDecimalAlm(key)).fail.map(_.prefixWithPath(path)).validation
+	onEmptyNoneElse(() => value.toDecimalAlm(pathAsString()))
 
   def tryGetDateTime(): AlmValidationSBD[Option[DateTime]] =
-	onEmptyNoneElse(() => value.toDateTimeAlm(key)).fail.map(_.prefixWithPath(path)).validation
+	onEmptyNoneElse(() => value.toDateTimeAlm(pathAsString()))
 
   def tryGetBytes(): AlmValidationSBD[Option[Array[Byte]]] =
-	onEmptyNoneElse(() => value.toBytesFromBase64Alm(key)).fail.map(_.prefixWithPath(path)).validation
+	onEmptyNoneElse(() => value.toBytesFromBase64Alm(pathAsString()))
 
   def isBooleanSet(): AlmValidationSBD[Boolean] = 
     if(value.trim.isEmpty) 
       false.success[SingleBadDataProblem] 
     else 
-      parseBooleanAlm(value, key).fail.map(_.prefixWithPath(path)).validation
+      parseBooleanAlm(value, pathAsString())
   
   private def onEmptyNoneElse[U](f: () => AlmValidationSBD[U]): AlmValidationSBD[Option[U]] = {
     if(value.trim.isEmpty)

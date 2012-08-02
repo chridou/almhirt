@@ -25,8 +25,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
       }
     } catch {
       case exn => 
-        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn))
-          .prefixWithPath(path)
+        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn))
           .fail[Option[String]]  
     }
   
@@ -37,7 +36,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case None => None.successSBD
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[Int]]  
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[Int]]  
     }
   
   def tryGetLong(aKey: String) =
@@ -47,7 +46,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case None => None.successSBD
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[Long]]  
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[Long]]  
     }
   
   def tryGetDouble(aKey: String) = 
@@ -57,7 +56,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case None => None.successSBD
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[Double]]  
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[Double]]  
     }
 
   def tryGetFloat(aKey: String) = 
@@ -67,7 +66,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case None => None.successSBD
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[Float]]  
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[Float]]  
     }
     
   def tryGetBoolean(aKey: String) = 
@@ -77,7 +76,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case None => None.successSBD
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[Boolean]]  
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[Boolean]]  
     }
     
   def tryGetDecimal(aKey: String) = 
@@ -87,7 +86,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case None => None.successSBD
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[BigDecimal]]  
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[BigDecimal]]  
     }
     
   def tryGetDateTime(aKey: String) = 
@@ -97,7 +96,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case None => None.successSBD
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[DateTime]]  
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[DateTime]]  
     }
 
   def tryGetBytes(aKey: String) = 
@@ -107,7 +106,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case None => None.successSBD
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[Array[Byte]]]  
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[Array[Byte]]]  
     }
     
   def tryGetAsString(aKey: String) = 
@@ -125,12 +124,12 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
         case Some(obj) => 
           obj
             .toList
-            .map(x => new MongoXTractor(x.asInstanceOf[BasicDBObject], aKey, Some(this)))
+            .map(x => new MongoXTractor(x.asInstanceOf[BasicDBObject], aKey, Some(this))(MongoKeyMapper.identityKeyMapper))
             .successMBD  
         case None => Nil.successMBD  
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).toMBD.fail[List[XTractor]]
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).toMBD.fail[List[XTractor]]
     }
   
   def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]] =
@@ -138,13 +137,13 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
       val theKey = mapKey(aKey)
       underlying.getAs[BasicDBObject](theKey).map{identity} match {
         case Some(obj) => 
-          val mongoExtr = new MongoXTractor(obj, aKey, Some(this))
+          val mongoExtr = new MongoXTractor(obj, aKey, Some(this))(MongoKeyMapper.identityKeyMapper)
           Some(mongoExtr).successSBD
         case None => 
           Success(None)
       }
     } catch {
-      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path).fail[Option[XTractor]]
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[XTractor]]
     }
 
   def tryGetAtomic(aKey: String): AlmValidationSBD[Option[XTractorAtomic]] =
@@ -152,7 +151,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
       val theKey = mapKey(aKey)
       underlying.get(theKey) match {
         case Some(null) => 
-          SingleBadDataProblem("Null is not allowed!", key = aKey).prefixWithPath(path).fail[Option[XTractorAtomic]]
+          SingleBadDataProblem("Null is not allowed!", key = pathAsString()).fail[Option[XTractorAtomic]]
         case Some(v) => 
           new XTractorAtomicAny(v, aKey, Some(this)).successSBD.map(Some(_))
         case None => 
@@ -160,7 +159,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
       }
     } catch {
       case exn => 
-        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path)
+        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).prefixWithPath(path)
         .fail[Option[XTractorAtomic]]
     }
     
@@ -176,15 +175,15 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
               o match {
                 case null => 
                   Failure(
-                    SingleBadDataProblem("Null is not allowed!", key = aKey).prefixWithPath(path)
+                    SingleBadDataProblem("Null is not allowed!", key = pathAsString())
                       .toMBD)
                 case _ : BasicDBObject => 
                   Failure(
-                    SingleBadDataProblem("Not allowed as an atomic: BasicDBObject", key = aKey).prefixWithPath(path)
+                    SingleBadDataProblem("Not allowed as an atomic: BasicDBObject", key = pathAsString())
                       .toMBD)
                 case _ : BasicDBList => 
                   Failure(
-                    SingleBadDataProblem("Not allowed as an atomic: BasicDBList", key = aKey).prefixWithPath(path)
+                    SingleBadDataProblem("Not allowed as an atomic: BasicDBList", key = pathAsString())
                       .toMBD)
                 case x => (new XTractorAtomicAny(x, "[%d]".format(i), Some(this))).successMBD
               } }
@@ -195,7 +194,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
       }
     } catch {
       case exn => 
-        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = aKey, exception= Some(exn)).prefixWithPath(path)
+        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn))
           .toMBD
           .fail[List[XTractorAtomicAny]]
     }
