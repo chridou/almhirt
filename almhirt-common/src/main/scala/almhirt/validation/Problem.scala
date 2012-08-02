@@ -21,7 +21,8 @@ trait Problem{
     val builder = new StringBuilder()
     builder.append("Message: %s\n".format(message))
     builder.append("Severity: %s\n".format(severity))
-    exception.foreach(exn => builder.append("Exception:\n%s\n".format(exn.toString)))
+    exception.foreach(exn => builder.append("Exception: %s\n".format(exn.toString)))
+    exception.foreach(exn => builder.append("Stacktrace:\n%s\n".format(exn.getStackTraceString)))
     builder.append("Arguments: %s\n".format(args))
     builder.append("Causes:\n%s\n".format(causes))
     builder.result
