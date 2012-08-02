@@ -11,7 +11,11 @@ import com.mongodb.casbah.Imports._
 
 class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: Option[XTractor] = None)(implicit mapKey: MongoKeyMapper) extends XTractor {
   type T = MongoDBObject
-  def keys() = underlying.keys.toSeq
+  def keys() = 
+    underlying
+      .keys
+      .map(mapKey.inverse)
+      .toSeq
   
   def tryGetString(aKey: String) = 
     try {
