@@ -62,7 +62,7 @@ object MongoNDucer {
       case NDuceBytesOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
       case NDuceElement(key, value) =>
-        builder += mapKey(key) -> apply(value)
+        builder += mapKey(key) -> mongoObjectFromScript(value, identity)
       case NDuceElementOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> mongoObjectFromScript(v, identity)}
       case NDuceElements(key, elements) =>
