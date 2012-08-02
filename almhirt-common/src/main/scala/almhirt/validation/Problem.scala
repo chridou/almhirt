@@ -186,6 +186,14 @@ object Problem extends ProblemImplicits {
 	def addTo(multipleBadData: MultipleBadDataProblem) = multipleBadData.add(this)
 	def add(other: SingleBadDataProblem) = toMBD().add(other)
 	def toMBD() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+	def prefixWithPath(pathParts: List[String], sep: String = ".") = {
+	  pathParts match {
+	    case Nil => this
+	    case _ =>
+	      val path = pathParts.mkString(sep)+sep
+	      copy(key = (path+ sep + key))  
+	  }
+	}
 	def toSystemProblem() = SingleMappingProblem(message, key = key, severity = severity, args = args, exception = exception, causes = List(this))
   }
   case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BadDataProblem with MultiKeyedProblem {

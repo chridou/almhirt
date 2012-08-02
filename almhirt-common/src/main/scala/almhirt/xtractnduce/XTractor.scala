@@ -12,6 +12,12 @@ trait XTractorAtomic {
   def parent: Option[XTractor]
   def key: String
   def underlying: T
+  def pathToRoot(): List[String] =
+    parent match {
+      case Some(p) => this.key :: p.pathToRoot()
+      case None => List(this.key)
+  }
+  def path() = pathToRoot.reverse
   def getString(): AlmValidationSBD[String]
   def getInt(): AlmValidationSBD[Int]
   def getLong(): AlmValidationSBD[Long]
@@ -39,6 +45,12 @@ trait XTractor {
   def key: String
   def underlying: T
   def keys: Seq[String]
+  def pathToRoot(): List[String] =
+    parent match {
+      case Some(p) => this.key :: p.pathToRoot()
+      case None => List(this.key)
+  }
+  def path() = pathToRoot.reverse
   def tryGetString(aKey: String): AlmValidationSBD[Option[String]]
   def tryGetInt(aKey: String): AlmValidationSBD[Option[Int]]
   def tryGetLong(aKey: String): AlmValidationSBD[Option[Long]]
