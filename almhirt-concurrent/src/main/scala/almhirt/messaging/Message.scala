@@ -2,16 +2,8 @@ package almhirt.messaging
 
 import java.util.UUID
 import org.joda.time.DateTime
-import almhirt.Scribbler
-import almhirt.xtractnduce.NDuceScribe
 
 final case class MesssgeGrouping(groupId: UUID, seq: Int, isLast: Boolean)
-
-trait ScribblingMessage[+TPayload <: AnyRef] extends Scribbler { self: Message[TPayload] =>
-  def scribble() =
-    NDuceScribe.scribble("Message")
-      .setUUID("id", id)
-  }
 
 class Message[+TPayload <: AnyRef](
   val id: UUID,
@@ -23,9 +15,9 @@ class Message[+TPayload <: AnyRef](
   override val hashCode = id.hashCode
   override def equals(other: Any) = {
   	other match {
-  		case null => false
-  		case m: Message[_] => m.id == this.id
-  		case _ => false
+  	  case null => false
+  	  case m: Message[_] => m.id == this.id
+  	  case _ => false
   	}
   }
 }
