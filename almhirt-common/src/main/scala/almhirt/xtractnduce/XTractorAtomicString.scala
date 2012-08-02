@@ -1,11 +1,12 @@
 package almhirt.xtractnduce
 
+import java.util.UUID
+import scalaz.syntax.validation.ToValidationV
+import scalaz.Success
+import org.joda.time.DateTime
 import almhirt.validation.Problem._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.AlmValidationSBD
-import org.joda.time.DateTime
-import scalaz.syntax.validation.ToValidationV
-import scalaz.Success
 
 class XTractorAtomicString(value: String, val key: String, val parent: Option[XTractor] = None) extends XTractorAtomic {
   type T = String
@@ -33,7 +34,10 @@ class XTractorAtomicString(value: String, val key: String, val parent: Option[XT
 	
   def getDateTime(): AlmValidationSBD[DateTime] =
 	value.toDateTimeAlm(pathAsString())
-	
+
+  def getUUID(): AlmValidationSBD[UUID] =
+	value.toUUIDAlm(pathAsString())
+
   def getBytes(): AlmValidationSBD[Array[Byte]] =
 	value.toBytesFromBase64Alm(pathAsString())
 
@@ -64,6 +68,9 @@ class XTractorAtomicString(value: String, val key: String, val parent: Option[XT
   def tryGetDateTime(): AlmValidationSBD[Option[DateTime]] =
 	onEmptyNoneElse(() => value.toDateTimeAlm(pathAsString()))
 
+  def tryGetUUID(): AlmValidationSBD[Option[UUID]] =
+	onEmptyNoneElse(() => value.toUUIDAlm(pathAsString()))
+	
   def tryGetBytes(): AlmValidationSBD[Option[Array[Byte]]] =
 	onEmptyNoneElse(() => value.toBytesFromBase64Alm(pathAsString()))
 

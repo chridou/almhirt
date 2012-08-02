@@ -1,8 +1,9 @@
 package almhirt.xtractnduce.casbah
 
-import org.joda.time.DateTime
+import java.util.UUID
 import scalaz._
 import Scalaz._
+import org.joda.time.DateTime
 import almhirt.validation._
 import almhirt.validation.Problem._
 import almhirt.validation.AlmValidation._
@@ -97,6 +98,16 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
       }
     } catch {
       case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsStringWithKey(aKey), exception= Some(exn)).fail[Option[DateTime]]  
+    }
+
+  def tryGetUUID(aKey: String) = 
+    try {
+      underlying.getAs[UUID](mapKey(aKey)).map{identity} match {
+        case Some(v) => Some(v).successSBD
+        case None => None.successSBD
+      }
+    } catch {
+      case exn => SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = pathAsStringWithKey(aKey), exception= Some(exn)).fail[Option[UUID]]  
     }
 
   def tryGetBytes(aKey: String) = 

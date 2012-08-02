@@ -1,5 +1,6 @@
 package almhirt.xtractnduce
 
+import java.util.UUID
 import org.joda.time.DateTime
 import scalaz._
 import Scalaz._
@@ -77,6 +78,14 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case _ => SingleBadDataProblem("Not a String", aKey).fail[Option[DateTime]]
     }
 
+  def tryGetUUID(aKey: String) = 
+    opsByKeys.get(aKey) match {
+      case Some(NDuceUUID(_,v)) => Some(v).successSBD
+      case Some(NDuceUUIDOpt(_,v)) => v.successSBD
+      case None => None.successSBD
+      case _ => SingleBadDataProblem("Not a String", aKey).fail[Option[UUID]]
+    }
+  
   def tryGetBytes(aKey: String) = 
     opsByKeys.get(aKey) match {
       case Some(NDuceBytes(_,v)) => Some(v).successSBD
@@ -105,6 +114,8 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
 	      case NDuceDecimalOpt(k,v) => v.map(_.toString).successSBD
 	      case NDuceDateTime(k,v) => Some(v.toString()).successSBD
 	      case NDuceDateTimeOpt(k,v) => v.map(_.toString()).successSBD
+	      case NDuceUUID(k,v) => Some(v.toString()).successSBD
+	      case NDuceUUIDOpt(k,v) => v.map(_.toString()).successSBD
 	      case _ => SingleBadDataProblem("Does not have a valid string representation", aKey).fail[Option[String]]
         }
       case None => None.successSBD
@@ -167,6 +178,8 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
 	      case NDuceDecimalOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
 	      case NDuceDateTime(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
 	      case NDuceDateTimeOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
+	      case NDuceUUID(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
+	      case NDuceUUIDOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
 	      case _ => SingleBadDataProblem("Does not have an atomic representation", aKey).fail[Option[XTractorAtomic]]
         }
       case None => None.successSBD

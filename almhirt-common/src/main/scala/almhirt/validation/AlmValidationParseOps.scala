@@ -1,5 +1,6 @@
 package almhirt.validation
 
+import java.util.UUID
 import scalaz.{Validation, Success, Failure, ValidationNEL}
 import scalaz.syntax.validation._
 import org.joda.time.DateTime
@@ -48,6 +49,14 @@ trait AlmValidationParseOps {
       case err => badData("Not a valid number(DateTime)".format(toParse), key).fail[DateTime]
     }
 
+  def parseUUIDAlm(toParse: String, key: String = "some value"): AlmValidationSBD[UUID] =
+    try {
+      UUID.fromString(toParse).success[SingleBadDataProblem]
+     } catch {
+      case err => badData("Not a valid number(DateTime)".format(toParse), key).fail[UUID]
+    }
+     
+     
   def parseBooleanAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Boolean] =
     try {
       toParse.toBoolean.success[SingleBadDataProblem]
@@ -79,6 +88,9 @@ trait AlmValidationParseOps {
 
   def tryParseDateTimeAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Option[DateTime]] =
     emptyStringIsNone(toParse, x => parseDateTimeAlm(x, key))
+
+  def tryParseUUIDAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Option[UUID]] =
+    emptyStringIsNone(toParse, x => parseUUIDAlm(x, key))
 
   def tryParseBooleanAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Option[Boolean]] =
     emptyStringIsNone(toParse, x => parseBooleanAlm(x, key))

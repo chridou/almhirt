@@ -46,6 +46,9 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
   def tryGetDateTime(aKey: String) = 
     onSingleTextOnlyElem(aKey, tryParseDateTimeAlm)
 
+  def tryGetUUID(aKey: String) = 
+    onSingleTextOnlyElem(aKey, tryParseUUIDAlm)
+    
   def tryGetBytes(aKey: String) = 
     onSingleTextOnlyElem(aKey, tryParseBase64Alm)
     

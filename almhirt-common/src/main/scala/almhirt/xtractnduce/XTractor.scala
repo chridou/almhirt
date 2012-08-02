@@ -1,11 +1,12 @@
 package almhirt.xtractnduce
 
+import java.util.UUID
+import scalaz._
+import Scalaz._
+import org.joda.time.DateTime
 import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
-import org.joda.time.DateTime
-import scalaz._
-import Scalaz._
 
 trait XTractorWithPathToRoot{  
   def parent: Option[XTractor]
@@ -32,6 +33,7 @@ trait XTractorAtomic extends XTractorWithPathToRoot {
   def getBoolean(): AlmValidationSBD[Boolean]
   def getDecimal(): AlmValidationSBD[BigDecimal]
   def getDateTime(): AlmValidationSBD[DateTime]
+  def getUUID(): AlmValidationSBD[UUID]
   def getBytes(): AlmValidationSBD[Array[Byte]]
   def tryGetString(): AlmValidationSBD[Option[String]]
   def tryGetInt(): AlmValidationSBD[Option[Int]]
@@ -55,6 +57,7 @@ trait XTractor extends XTractorWithPathToRoot  {
   def tryGetBoolean(aKey: String): AlmValidationSBD[Option[Boolean]]
   def tryGetDecimal(aKey: String): AlmValidationSBD[Option[BigDecimal]]
   def tryGetDateTime(aKey: String): AlmValidationSBD[Option[DateTime]]
+  def tryGetUUID(aKey: String): AlmValidationSBD[Option[UUID]]
   def tryGetAsString(aKey: String): AlmValidationSBD[Option[String]]
   def tryGetBytes(aKey: String): AlmValidationSBD[Option[Array[Byte]]]
 
@@ -66,6 +69,7 @@ trait XTractor extends XTractorWithPathToRoot  {
   def getBoolean(aKey: String): AlmValidationSBD[Boolean] = get(aKey, tryGetBoolean)
   def getDecimal(aKey: String): AlmValidationSBD[BigDecimal] = get(aKey, tryGetDecimal)
   def getDateTime(aKey: String): AlmValidationSBD[DateTime] = get(aKey, tryGetDateTime)
+  def getUUID(aKey: String): AlmValidationSBD[UUID] = get(aKey, tryGetUUID)
   def getBytes(aKey: String): AlmValidationSBD[Array[Byte]] = get(aKey, tryGetBytes)
   def getAsString(aKey: String): AlmValidationSBD[String] = get(aKey, tryGetAsString)
 

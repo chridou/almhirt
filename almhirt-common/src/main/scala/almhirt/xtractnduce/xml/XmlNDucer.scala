@@ -43,6 +43,10 @@ object XmlNDucer {
         Elem(null, key, null, TopScope, Text(""))
       case NDuceDateTimeOpt(key, value) =>
         Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
+      case NDuceUUID(key, value) =>
+        Elem(null, key, null, TopScope, Text(value.toString))
+      case NDuceUUIDOpt(key, value) =>
+        Elem(null, key, null, TopScope, value.map(x => Text(x.toString)).toSeq: _*)
       case NDuceBytes(key, value) =>
         Elem(null, key, null, TopScope, Text(org.apache.commons.codec.binary.Base64.encodeBase64String(value)))
       case NDuceBytesOpt(key, value) =>

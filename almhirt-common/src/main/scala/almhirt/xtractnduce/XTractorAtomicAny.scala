@@ -1,11 +1,12 @@
 package almhirt.xtractnduce
 
+import java.util.UUID
+import scalaz.syntax.validation.ToValidationV
+import scalaz.Success
+import org.joda.time.DateTime
 import almhirt.validation._
 import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem._
-import org.joda.time.DateTime
-import scalaz.syntax.validation.ToValidationV
-import scalaz.Success
 
 class XTractorAtomicAny(value: Any, val key: String, val parent: Option[XTractor] = None) extends XTractorAtomic {
   type T = Any
@@ -66,6 +67,13 @@ class XTractorAtomicAny(value: Any, val key: String, val parent: Option[XTractor
 	  case exn => SingleBadDataProblem("Not a DateTime: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[DateTime]
 	}
 
+  def getUUID(): AlmValidationSBD[UUID] =
+	try {
+	  value.asInstanceOf[UUID].successSBD
+	} catch {
+	  case exn => SingleBadDataProblem("Not a UUID: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[UUID]
+	}
+	
   def getBytes(): AlmValidationSBD[Array[Byte]] =
 	try {
 	  value.asInstanceOf[Array[Byte]].successSBD
@@ -105,6 +113,9 @@ class XTractorAtomicAny(value: Any, val key: String, val parent: Option[XTractor
   def tryGetDateTime(): AlmValidationSBD[Option[DateTime]] = 
     SingleBadDataProblem("Not supported: tryGetDateTime", key = pathAsString()).fail[Option[DateTime]]
 
+  def tryGetUUID(): AlmValidationSBD[Option[UUID]] = 
+    SingleBadDataProblem("Not supported: tryGetDateTime", key = pathAsString()).fail[Option[UUID]]
+  
   def tryGetBytes(): AlmValidationSBD[Option[Array[Byte]]] = 
     SingleBadDataProblem("Not supported: tryGetBytes", key = pathAsString()).fail[Option[Array[Byte]]]
 

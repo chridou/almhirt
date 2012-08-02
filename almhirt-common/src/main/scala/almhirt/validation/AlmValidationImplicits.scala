@@ -1,5 +1,6 @@
 package almhirt.validation
 
+import java.util.UUID
 import scalaz.syntax.validation._
 import scalaz.{Validation, ValidationNEL, Success, Failure, Semigroup}
 import org.joda.time.DateTime
@@ -22,6 +23,8 @@ trait AlmValidationImplicits {
       AlmValidation.parseDecimalAlm(str, key)
     def toDateTimeAlm(key: String = "some value"): AlmValidationSBD[DateTime] =  
       AlmValidation.parseDateTimeAlm(str, key)
+    def toUUIDAlm(key: String = "some value"): AlmValidationSBD[UUID] =  
+      AlmValidation.parseUUIDAlm(str, key)
     def toBytesFromBase64Alm(key: String = "some value"): AlmValidationSBD[Array[Byte]] =  
       AlmValidation.parseBase64Alm(str, key)
     def notEmptyAlm(key: String = "some value"): AlmValidationSBD[String] =  

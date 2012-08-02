@@ -57,6 +57,10 @@ object MongoNDucer {
         builder += mapKey(key) -> value
       case NDuceDateTimeOpt(key, value) =>
         value foreach {v => builder += mapKey(key) -> v}
+      case NDuceUUID(key, value) =>
+        builder += mapKey(key) -> value
+      case NDuceUUIDOpt(key, value) =>
+        value foreach {v => builder += mapKey(key) -> v}
       case NDuceBytes(key, value) =>
         builder += mapKey(key) -> value
       case NDuceBytesOpt(key, value) =>

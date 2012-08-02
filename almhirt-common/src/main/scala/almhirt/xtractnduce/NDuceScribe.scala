@@ -19,6 +19,8 @@ trait NDuceScribe {
   def setDecimal(key: String, value: Option[BigDecimal]): NDuceScript
   def setDateTime(key: String, value: DateTime): NDuceScript
   def setDateTime(key: String, value: Option[DateTime]): NDuceScript
+  def setUUID(key: String, value: java.util.UUID): NDuceScript
+  def setUUID(key: String, value: Option[java.util.UUID]): NDuceScript
   def setBytes(key: String, value: Array[Byte]): NDuceScript
   def setBytes(key: String, value: Option[Array[Byte]]): NDuceScript
   

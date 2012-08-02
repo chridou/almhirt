@@ -1,5 +1,6 @@
 package almhirt.xtractnduce
 
+import java.util.UUID
 import org.joda.time.DateTime
 
 sealed trait NDuceScript extends NDuceScribe {
@@ -30,6 +31,8 @@ case class NDuceDecimal(key: String, value: BigDecimal) extends NDuceScriptOp
 case class NDuceDecimalOpt(key: String, value: Option[BigDecimal]) extends NDuceScriptOp
 case class NDuceDateTime(key: String, value: DateTime) extends NDuceScriptOp
 case class NDuceDateTimeOpt(key: String, value: Option[DateTime]) extends NDuceScriptOp
+case class NDuceUUID(key: String, value: UUID) extends NDuceScriptOp
+case class NDuceUUIDOpt(key: String, value: Option[UUID]) extends NDuceScriptOp
 case class NDuceBytes(key: String, value: Array[Byte]) extends NDuceScriptOp
 case class NDuceBytesOpt(key: String, value: Option[Array[Byte]]) extends NDuceScriptOp
 case class NDuceElement(key: String, scriptElement: NDuceScript) extends NDuceScriptOp
@@ -55,6 +58,8 @@ case class NDuceAggregate(val name: String, val ops: Seq[NDuceScriptOp], val typ
   def setDecimal(key: String, value: Option[BigDecimal]) = copy(ops = ops :+ NDuceDecimalOpt(key, value))
   def setDateTime(key: String, value: DateTime) = copy(ops = ops :+ NDuceDateTime(key, value))
   def setDateTime(key: String, value: Option[DateTime]) = copy(ops = ops :+ NDuceDateTimeOpt(key, value))
+  def setUUID(key: String, value: java.util.UUID) = copy(ops = ops :+ NDuceUUID(key, value))
+  def setUUID(key: String, value: Option[java.util.UUID]) = copy(ops = ops :+ NDuceUUIDOpt(key, value))
   def setBytes(key: String, value: Array[Byte]) = copy(ops = ops :+ NDuceBytes(key, value))
   def setBytes(key: String, value: Option[Array[Byte]]) = copy(ops = ops :+ NDuceBytesOpt(key, value))
   

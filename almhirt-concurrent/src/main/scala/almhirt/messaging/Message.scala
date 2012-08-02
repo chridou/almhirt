@@ -2,10 +2,18 @@ package almhirt.messaging
 
 import java.util.UUID
 import org.joda.time.DateTime
+import almhirt.Scribbler
+import almhirt.xtractnduce.NDuceScribe
 
 final case class MesssgeGrouping(groupId: UUID, seq: Int, isLast: Boolean)
 
-class Message[+TPayload <: AnyRef] (
+trait ScribblingMessage[+TPayload <: AnyRef] extends Scribbler { self: Message[TPayload] =>
+  def scribble() =
+    NDuceScribe.scribble("Message")
+      .setUUID("id", id)
+  }
+
+class Message[+TPayload <: AnyRef](
   val id: UUID,
   val grouping: Option[MesssgeGrouping],
   val metaData: Map[String, String],
