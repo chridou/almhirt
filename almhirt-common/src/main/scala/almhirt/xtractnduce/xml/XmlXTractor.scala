@@ -18,7 +18,7 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
   
   def tryGetString(aKey: String) = 
     onSingleTextOnlyElem(
-        pathAsStringWithKey(aKey), 
+        aKey, 
         (text, theKey) => {
           if(text.trim.isEmpty) 
             None.success[SingleBadDataProblem]
@@ -164,7 +164,7 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
           case Elem(_, _, _, _) =>
             None.successSBD
           case _ =>
-            SingleBadDataProblem("Is not a text only node", key = pathAsStringWithKey(elem.label)).fail[Option[U]] 
+            SingleBadDataProblem("Is not a text only node", key = pathAsStringWithKey(aKey)).fail[Option[U]] 
         }
       case _ => 
         SingleBadDataProblem("More than one child: %d".format(elems.length), key = pathAsStringWithKey(aKey)).fail[Option[U]]
