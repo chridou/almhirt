@@ -1,6 +1,7 @@
 package almhirt.validation
 
 import scalaz.NonEmptyList
+import scala.collection.mutable.StringBuilder
 
 trait Problem{
   type T <: Problem
@@ -15,6 +16,16 @@ trait Problem{
   def withArg(key: String, value: Any): T
   def withMessage(newMessage: String): T
   def mapMessage(mapOp: String => String): T
+  
+  def toInfoString(): String =  {
+    val builder = new StringBuilder()
+    builder.append("Message: %s\n".format(message))
+    builder.append("Severity: %s\n".format(severity))
+    exception.foreach(exn => builder.append("Exception:\n%s\n".format(exn.toString)))
+    builder.append("Arguments: %s\n".format(args))
+    builder.append("Causes:\n%s\n".format(causes))
+    builder.result
+  }
 }
 
 trait SingleKeyedProblem { self: Problem =>
