@@ -7,18 +7,23 @@ import org.joda.time.DateTime
 import scalaz._
 import Scalaz._
 
-trait XTractorAtomic {
-  type T
+trait XTractorWithPathToRoot{  
   def parent: Option[XTractor]
   def key: String
-  def underlying: T
-  def pathToRoot(): List[String] =
+  lazy val pathToRoot: List[String] =
     parent match {
-      case Some(p) => this.key :: p.pathToRoot()
+      case Some(p) => this.key :: p.pathToRoot
       case None => List(this.key)
   }
-  def path() = pathToRoot.reverse
+  lazy val path = pathToRoot.reverse
   def pathAsString(sep: String = ".") = path.mkString(sep)
+  protected def pathAsStringWithKey(key: String, sep: String = ".") =
+    (key :: pathToRoot).reverse.mkString(sep)
+}
+
+trait XTractorAtomic extends XTractorWithPathToRoot {
+  type T
+  def underlying: T
   def getString(): AlmValidationSBD[String]
   def getInt(): AlmValidationSBD[Int]
   def getLong(): AlmValidationSBD[Long]
@@ -40,19 +45,8 @@ trait XTractorAtomic {
   def isBooleanSet(): AlmValidationSBD[Boolean]
 }
 
-trait XTractor {
+trait XTractor extends XTractorWithPathToRoot  {
   type T
-  def parent: Option[XTractor]
-  def key: String
-  def underlying: T
-  def keys: Seq[String]
-  def pathToRoot(): List[String] =
-    parent match {
-      case Some(p) => this.key :: p.pathToRoot()
-      case None => List(this.key)
-  }
-  def path() = pathToRoot.reverse
-  def pathAsString(sep: String = ".") = path.mkString(sep)
   def tryGetString(aKey: String): AlmValidationSBD[Option[String]]
   def tryGetInt(aKey: String): AlmValidationSBD[Option[Int]]
   def tryGetLong(aKey: String): AlmValidationSBD[Option[Long]]
@@ -81,7 +75,7 @@ trait XTractor {
   def getTypeInfo(): AlmValidationSBD[String] = 
     tryGetTypeInfo() match {
       case Success(Some(ti)) => Success(ti)
-      case Success(None) => Failure(SingleBadDataProblem("No type Info!", key =  pathAsString()))
+      case Success(None) => Failure(SingleBadDataProblem("No type Info!", key =  pathAsStringWithKey("<typeInfo>")))
       case Failure(f) => Failure(f)
     }
   
@@ -92,7 +86,7 @@ trait XTractor {
       case Success(opt) =>
         opt
 	      .map(Success(_))
-	      .getOrElse(Failure(SingleBadDataProblem("Value not found: %s".format(aKey), key = pathAsString())))
+	      .getOrElse(Failure(SingleBadDataProblem("Structured data not found.", key = pathAsStringWithKey(aKey))))
       case Failure(f) => f.fail[XTractor]
     }
     
@@ -103,7 +97,7 @@ trait XTractor {
           case Some(xtractor) => 
             mapXtractor(xtractor) match {
               case Success(s) => Success(Some(s))
-              case Failure(f) => Failure(f.prefixWithPath(List(key)))
+              case Failure(f) => Failure(f)
             }
           case None => Success(None)
         }
@@ -115,7 +109,7 @@ trait XTractor {
       case Success(opt) =>
         opt
           .map {Success(_)} 
-          .getOrElse (Failure(SingleBadDataProblem("Value not found: %s".format(key).format(aKey), key = pathAsString()).toMBD))
+          .getOrElse (Failure(SingleBadDataProblem("Structured data not found.", key = pathAsStringWithKey(aKey)).toMBD))
       case Failure(f) => (f.prefixWithPath(List(key))).fail[U]
     }
   
@@ -144,7 +138,7 @@ trait XTractor {
   def getAtomic(aKey: String): AlmValidationSBD[XTractorAtomic] = 
     tryGetAtomic(aKey) match {
       case Success(Some(v)) => v.successSBD 
-      case Success(None) => Failure(SingleBadDataProblem("Value not found: %s".format(aKey), key = pathAsString())) 
+      case Success(None) => Failure(SingleBadDataProblem("Atomic not found.", key = pathAsStringWithKey(aKey))) 
       case Failure(f) => Failure(f) 
     }
   
@@ -162,7 +156,7 @@ trait XTractor {
       case Success(opt) => 
         opt match {
           case Some(v) => v.successSBD
-          case None => Failure(SingleBadDataProblem("Value not found: %s".format(aKey), key = pathAsString())) 
+          case None => Failure(SingleBadDataProblem("Key not found.", key = pathAsStringWithKey(aKey))) 
         }
       case Failure(f) => Failure(f)
   }
