@@ -10,15 +10,15 @@ import almhirt.xml.XmlPrimitives
 import almhirt.xml.XmlPrimitives._
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
-class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTractor with ScribbableXmlXTractor {
+class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Option[XTractor] = None) extends XTractor with ScribbableXmlXTractor {
   type T = Elem
   def underlying() = elem
-  val key = elem.label
+  val key = keyOverride getOrElse elem.label
   def keys() = elem.elems.map(_.label)
   
   def tryGetString(aKey: String) = 
     onSingleTextOnlyElem(
-        aKey, 
+        pathAsStringWithKey(aKey), 
         (text, theKey) => {
           if(text.trim.isEmpty) 
             None.success[SingleBadDataProblem]
@@ -50,7 +50,7 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
     onSingleTextOnlyElem(aKey, tryParseBase64Alm)
     
   def tryGetAsString(aKey: String) = 
-    SingleBadDataProblem("not supported", key = aKey).fail[Option[String]]
+    SingleBadDataProblem("not supported", key = pathAsStringWithKey(aKey)).fail[Option[String]]
 
   def isBooleanSetTrue(aKey: String) =
    	getUniquePropertyElement(aKey).flatMap { x =>
@@ -59,7 +59,7 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
           if(e.text.trim.isEmpty) 
             false.success[SingleBadDataProblem] 
           else 
-            parseBooleanAlm(e.text, aKey)
+            parseBooleanAlm(e.text, pathAsStringWithKey(aKey))
    	    case None =>
    	      false.success[SingleBadDataProblem] } }
 
@@ -72,7 +72,9 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
       elems <- 
       	(propertyElement.map(x => onAllChildrenAreElems(x)) getOrElse (Seq.empty.successSBD)).toMBD
       xtractors <- 
-      	elems.map{x => onValidTypeContainerXTractor(x).toMBD}.toList.sequence
+      	elems
+      	  .zipWithIndex
+      	  .map{case(x, i) => onValidTypeContainerXTractor(x, Some("%s[%d]".format(aKey, i))).toMBD}.toList.sequence
     } yield xtractors
   
   def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]] = {
@@ -106,7 +108,7 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
       	  elems.zipWithIndex.map {case(x, i) => 
       	    onSingleTextOnlyTypeContainerGetText(x).flatMap { y =>
       	      val txt = y.getOrElse("")
-      	      new XTractorAtomicString(txt, "[%d]".format(i), Some(this)).successSBD}}
+      	      new XTractorAtomicString(txt, "%s[%d]".format(aKey, i), Some(this)).successSBD}}
       	  .map{x => x.toMBD}
           .toList
         items.sequence 
@@ -121,7 +123,7 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
       case Seq() =>
         None.success
       case _ =>
-        SingleBadDataProblem("Element contained more than once: %d".format(propertyContainers.length), key = aKey).fail[Option[Elem]] 
+        SingleBadDataProblem("Element contained more than once: %d times".format(propertyContainers.length), key = pathAsStringWithKey(aKey)).fail[Option[Elem]] 
     }
   }
   
@@ -135,9 +137,9 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
           case Elem(_, _, _, _) => 
             None.successSBD
           case Elem(_, _, _, _, x) => 
-            SingleBadDataProblem("The only child is not an Element: %s".format(x), key = aKey).fail[Option[XTractor]] 
+            SingleBadDataProblem("The only child is not an Element: %s".format(x), key = pathAsStringWithKey(aKey)).fail[Option[XTractor]] 
           case Elem(_, _, _, _, _*) =>
-            SingleBadDataProblem("Element containes more than one child.", key = aKey).fail[Option[XTractor]] 
+            SingleBadDataProblem("Element containes more than one child.", key = pathAsStringWithKey(aKey)).fail[Option[XTractor]] 
         }
       case None => None.successSBD
     }
@@ -147,7 +149,7 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
     if(elem.child.forall(n => n.isInstanceOf[Elem]))
       XmlPrimitives.elems(elem).successSBD
     else
-      SingleBadDataProblem("Not all children are Elems", key = elem.label).fail[Seq[Elem]] 
+      SingleBadDataProblem("Not all children are Elems", key = pathAsStringWithKey(elem.label)).fail[Seq[Elem]] 
     
   
   private def onSingleTextOnlyElem[U](aKey: String, f: (String, String) => AlmValidationSBD[Option[U]]): AlmValidationSBD[Option[U]] = {
@@ -162,10 +164,10 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
           case Elem(_, _, _, _) =>
             None.successSBD
           case _ =>
-            SingleBadDataProblem("Is not a text only node", key = elem.label).fail[Option[U]] 
+            SingleBadDataProblem("Is not a text only node", key = pathAsStringWithKey(elem.label)).fail[Option[U]] 
         }
       case _ => 
-        SingleBadDataProblem("More than one child: %d".format(elems.length), key = aKey).fail[Option[U]]
+        SingleBadDataProblem("More than one child: %d".format(elems.length), key = pathAsStringWithKey(aKey)).fail[Option[U]]
     }
   }
 
@@ -176,11 +178,11 @@ class XmlXTractor(elem: Elem, val parent: Option[XTractor] = None) extends XTrac
       case Elem(_, _, _, _) =>
         None.successSBD
       case _ =>
-        SingleBadDataProblem("Is not a text only node", key = elem.label).fail[Option[String]] 
+        SingleBadDataProblem("Is not a text only node", key = pathAsStringWithKey(elem.label)).fail[Option[String]] 
     }
   
-  private def onValidTypeContainerXTractor(typeContainer: Elem): AlmValidationSBD[XTractor] =
-    onAllChildrenAreElems(typeContainer).map {_ => new XmlXTractor(typeContainer, Some(this))}
+  private def onValidTypeContainerXTractor(typeContainer: Elem, aKey: Option[String] = None): AlmValidationSBD[XTractor] =
+    onAllChildrenAreElems(typeContainer).map {_ => new XmlXTractor(typeContainer, aKey, Some(this))}
 }
 
 object XmlXTractor {

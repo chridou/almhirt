@@ -186,7 +186,7 @@ class MongoXTractor(val underlying: MongoDBObject, val key: String, val parent: 
                   Failure(
                     SingleBadDataProblem("Not allowed as an atomic: BasicDBList", key = pathAsStringWithKey(aKey))
                       .toMBD)
-                case x => (new XTractorAtomicAny(x, "[%d]".format(i), Some(this))).successMBD
+                case x => (new XTractorAtomicAny(x, "%s[%d]".format(aKey,i), Some(this))).successMBD
               } }
             .toList
             .sequence
