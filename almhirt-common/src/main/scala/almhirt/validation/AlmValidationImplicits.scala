@@ -155,6 +155,13 @@ trait AlmValidationImplicits {
       }
     }
 
+    def forceProblem(): P = {
+      validation match {
+        case Success(v) => throw NotAFailureException()
+        case Failure(prob) => prob 
+      }
+    }
+    
 //    def escalate(severity: => Severity): Validation[P, T] = 
 //      validation match {
 //        case Success(_) => validation
