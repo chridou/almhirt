@@ -163,7 +163,8 @@ trait AlmValidationImplicits {
     }
   }
   
-  final class funOptToAlmValidationW[T, U](f: T => Option[U]) {
+  implicit def funOpt2AlmValidationW[T,U](f: T => Option[U]) = new FunOptAlmValidationW(f)
+  final class FunOptAlmValidationW[T, U](f: T => Option[U]) {
     def >?(x:T): Validation[KeyNotFoundProblem, U] =
       f(x).map(_.success).getOrElse(KeyNotFoundProblem("Key not found: %s".format(x)).fail)
   }
@@ -202,7 +203,7 @@ trait AlmValidationImplicits {
         case (succs, Nil) => succs.flatMap(_.toOption).toList.success
         case (_, probs) => 
           val problems = probs.flatMap(_.toProblemOption)
-          NonEmptyList(problems.head, problems.tail: _*).>>*<<(msg).fail
+          (NonEmptyList(problems.head, problems.tail: _*) >>*<< (msg)).fail
       }
     }
     def >>*<<(): AlmValidation[List[R]] = >>*<<("One or more problems occured. See causes.")

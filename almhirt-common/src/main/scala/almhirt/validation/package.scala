@@ -15,7 +15,6 @@ package object validation {
   type AlmValidationBRV[+α] = Validation[BusinessRuleViolatedProblem, α]
   type AlmValidationMBRV[+α] = Validation[ManyBusinessRulesViolatedProblem, α]
 
-  case class ValidationForceddException(val problem: Problem) extends Exception("A value has been forced from a failed validation")
   
   object AlmValidation extends AlmValidationOps with AlmValidationParseOps with AlmValidationImplicits
 
