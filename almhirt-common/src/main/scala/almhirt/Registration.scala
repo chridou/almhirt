@@ -2,6 +2,8 @@ package almhirt
 
 import java.util.UUID
 
-trait Registration[T] extends Disposable {
+trait RegistrationHolder extends Disposable
+
+trait Registration[T] extends RegistrationHolder {
   def ticket: T
 }
