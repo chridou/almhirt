@@ -197,8 +197,9 @@ trait AlmValidationImplicits {
     }
   }
   
+  implicit def fromListValidation2ListAlmValidationW[R](v: List[AlmValidation[R]]): ListAlmValidationW[R] = new ListAlmValidationW(v)
   final class ListAlmValidationW[R](v: List[AlmValidation[R]]){
-    def >>*<<(msg: String): AlmValidation[List[R]] = {
+    def aggregateProblems(msg: String): AlmValidation[List[R]] = {
       v.partition(_.isSuccess) match {
         case (succs, Nil) => succs.flatMap(_.toOption).toList.success
         case (_, probs) => 
@@ -206,7 +207,7 @@ trait AlmValidationImplicits {
           (NonEmptyList(problems.head, problems.tail: _*) aggregate (msg)).fail
       }
     }
-    def >>*<<(): AlmValidation[List[R]] = >>*<<("One or more problems occured. See causes.")
+    def aggregateProblems(): AlmValidation[List[R]] = aggregateProblems("One or more problems occured. See causes.")
   }
   
 }
