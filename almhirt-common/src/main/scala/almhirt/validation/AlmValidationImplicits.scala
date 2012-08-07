@@ -163,6 +163,10 @@ trait AlmValidationImplicits {
     }
   }
   
+  final class funOptToAlmValidationW[T, U](f: T => Option[U]) {
+    def >?(x:T): Validation[KeyNotFoundProblem, U] =
+      f(x).map(_.success).getOrElse(KeyNotFoundProblem("Key not found: %s".format(x)).fail)
+  }
   
   implicit def option2AlmOptionW[T](opt: Option[T]) = new AlmOptionW(opt)
   final class AlmOptionW[T](opt: Option[T]) {
