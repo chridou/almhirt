@@ -4,7 +4,7 @@ import org.specs2.mutable._
 import org.specs2.matcher._
 
 class SeveritySpec extends Specification {
-	"A Severity has a monoid zero of 'NoProblem' and" should {
+	"A Severity has a zero of 'NoProblem' and" should {
 		"return 'Critical' when 'NoProblem' and 'Critical'" in {
 			NoProblem.and(Critical) must beEqualTo(Critical)
 		}
