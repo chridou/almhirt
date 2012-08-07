@@ -8,7 +8,7 @@ trait ProblemImplicits {
   implicit def toSeverityMonoid: Monoid[Severity] =
     new Monoid[Severity] {
       def append(a: Severity, b: => Severity): Severity = a and b
-      def zero = NoProblem
+      val zero = NoProblem
     }
   
   implicit def toMBDSemiGroup: Semigroup[MultipleBadDataProblem] =
@@ -28,13 +28,13 @@ trait ProblemImplicits {
   
   implicit def nelProblemtoNelProblemW(probs: NonEmptyList[Problem]) = new NelProblemW(probs)
   final class NelProblemW(nel: NonEmptyList[Problem]) {
-    def >>*<<(msg: String): Problem = {
+    def aggregate(msg: String): Problem = {
       val severity = nel.map(_.severity).concatenate
       if(nel.list.exists(p => p.isInstanceOf[SystemProblem]))
         UnspecifiedSystemProblem(msg, severity = severity, causes = nel.list)
       else
         UnspecifiedApplicationProblem(msg, severity = severity, causes = nel.list)
     }
-    def aggregate(): Problem = >>*<<("Multiple problems. See causes.")
+    def aggregate(): Problem = aggregate("One or more problems. See causes.")
   }
 }

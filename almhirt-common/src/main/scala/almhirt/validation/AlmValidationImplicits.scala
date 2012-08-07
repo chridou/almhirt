@@ -203,7 +203,7 @@ trait AlmValidationImplicits {
         case (succs, Nil) => succs.flatMap(_.toOption).toList.success
         case (_, probs) => 
           val problems = probs.flatMap(_.toProblemOption)
-          (NonEmptyList(problems.head, problems.tail: _*) >>*<< (msg)).fail
+          (NonEmptyList(problems.head, problems.tail: _*) aggregate (msg)).fail
       }
     }
     def >>*<<(): AlmValidation[List[R]] = >>*<<("One or more problems occured. See causes.")
