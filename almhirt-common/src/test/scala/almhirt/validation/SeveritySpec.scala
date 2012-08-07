@@ -4,27 +4,27 @@ import org.specs2.mutable._
 import org.specs2.matcher._
 
 class SeveritySpec extends Specification {
-	"A Severity has a monadic zero of 'Critical' and" should {
-		"return 'Critical' when 'Critical' and 'Critical'" in {
-			Critical.and(Critical) must beEqualTo(Critical)
-		}
-		"return 'Critical' when 'Critical' and 'Major'" in {
-			Major.and(Critical) must beEqualTo(Critical)
-		}
-		"return 'Critical' when 'Major' and 'Critical'" in {
-			Critical.and(Major) must beEqualTo(Critical)
-		}
-		"return 'Critical' when 'Critical' and 'Minor'" in {
-			Critical.and(Minor) must beEqualTo(Critical)
-		}
-		"return 'Critical' when 'Minor' and 'Critical'" in {
-			Minor.and(Critical) must beEqualTo(Critical)
-		}
+	"A Severity has a monoid zero of 'NoProblem' and" should {
 		"return 'Critical' when 'NoProblem' and 'Critical'" in {
 			NoProblem.and(Critical) must beEqualTo(Critical)
 		}
 		"return 'Critical' when 'Critical' and 'NoProblem'" in {
 			Critical.and(NoProblem) must beEqualTo(Critical)
+		}
+		"return 'Major' when 'Major' and 'NoProblem'" in {
+			Major.and(NoProblem) must beEqualTo(Major)
+		}
+		"return 'Major' when 'NoProblem' and 'Major'" in {
+			NoProblem.and(Major) must beEqualTo(Major)
+		}
+		"return 'Minor' when 'NoProblem' and 'Minor'" in {
+			NoProblem.and(Minor) must beEqualTo(Minor)
+		}
+		"return 'Minor' when 'Minor' and 'NoProblem'" in {
+			Minor.and(NoProblem) must beEqualTo(Minor)
+		}
+		"return 'NoProblem' when 'NoProblem' and 'NoProblem'" in {
+			NoProblem.and(NoProblem) must beEqualTo(NoProblem)
 		}
 	}
 
