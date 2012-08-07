@@ -49,7 +49,7 @@ object ActorBasedMessageChannel {
   def apply(): ActorBasedMessageChannel =
   	new ActorBasedMessageChannelImpl(
   	    actorSystem.actorOf(
-  	        Props(new ActorMessageChannelDispatcher()).withDispatcher("almhirt.almhirt-messagestream"), "almhirt-messagestream"
+  	        Props(new ActorMessageChannelDispatcher()).withDispatcher("almhirt.messagestream-dispatcher"), "almhirt-messagestream"
   	))
   
   private class ActorBasedMessageChannelImpl(dispatcher: ActorRef) extends ActorBasedMessageChannel(dispatcher) {

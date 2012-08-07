@@ -25,6 +25,6 @@ object ActorBasedMessageHub {
   def apply(): ActorBasedMessageHub =
   	new ActorBasedMessageHub(
   	    actorSystem.actorOf(
-  	        Props(new ActorMessageHubDispatcher()).withDispatcher("almhirt.almhirt-messagehub"), "almhirt-messagehub"
+  	        Props(new ActorMessageHubDispatcher()).withDispatcher("almhirt.messagehub-dispatcher"), "almhirt-messagehub"
   	))
 }

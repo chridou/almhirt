@@ -3,19 +3,24 @@ package almhirt.almakka
 import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
 import akka.util.duration._
+import akka.util.Timeout
 
-trait AlmAkka {
-  def defaultActorSystem = AlmAkka.actorSystem
-  implicit def defaultFutureDispatch = AlmAkka.defaultFutureDispatch
-  implicit def defaultTimeoutDuration = AlmAkka.defaultTimeoutDuration
+trait AlmAkkaDefaults {
+  implicit def defaultActorSystem = AlmAkka.actorSystem
+  implicit def defaultFutureDispatch = AlmAkka.futureDispatcher
+  implicit def defaultDuration = AlmAkka.mediumDuration
+  implicit def defaultTimeout = Timeout(defaultDuration)
 }
 
-object AlmAkka {
-  val actorSystem = ActorSystem("almhirt")
-  val defaultFutureDispatch: MessageDispatcher = actorSystem.dispatchers.lookup("almhirt.almhirt-async")
-
-  val shortTimeoutDuration = 1 seconds
-  val defaultTimeoutDuration = 3 seconds
-  val longTimeoutDuration = 5 seconds
+object AlmAkka extends AlmAkkaContext {
+  private[almakka] var theInstance: AlmAkkaContext = null
+  
+  def actorSystem = theInstance.actorSystem
+  def futureDispatcher = theInstance.futureDispatcher
+  def messageStreamDispatcherName = theInstance.messageStreamDispatcherName
+  def messageHubDispatcherName = theInstance.messageHubDispatcherName
+  def shortDuration = theInstance.shortDuration
+  def mediumDuration = theInstance.mediumDuration
+  def longDuration = theInstance.longDuration
   
 }
