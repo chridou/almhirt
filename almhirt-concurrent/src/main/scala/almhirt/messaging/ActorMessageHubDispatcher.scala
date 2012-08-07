@@ -7,7 +7,7 @@ import almhirt.Registration
 import almhirt.validation._
 import almhirt.almakka._
 
-class ActorMessageHubDispatcher extends Actor with AlmActorLogging with AlmAkka {
+class ActorMessageHubDispatcher extends Actor with AlmActorLogging with AlmAkkaDefaults {
   private var channels: List[ActorBasedMessageChannel] = List()
 
   private def unregisterStream(channel: ActorBasedMessageChannel) {

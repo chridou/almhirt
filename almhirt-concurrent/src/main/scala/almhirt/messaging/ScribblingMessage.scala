@@ -3,7 +3,7 @@ package almhirt.messaging
 import almhirt.Scribbler
 import almhirt.xtractnduce.NDuceScribe
 
-trait ScrdibblingMessage[+TPayload <: AnyRef] extends Scribbler { self: Message[TPayload] =>
+trait ScribblingMessage[+TPayload <: AnyRef] extends Scribbler { self: Message[TPayload] =>
   def scribble() = {
     val envelope =
       NDuceScribe.scribble("Message")

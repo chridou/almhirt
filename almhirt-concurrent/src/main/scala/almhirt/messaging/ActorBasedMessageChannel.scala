@@ -9,7 +9,7 @@ import almhirt.almakka.AlmAkka
 import almhirt.concurrent.AlmFuture
 import almhirt.concurrent.AlmFuture._
 
-abstract class ActorBasedMessageChannel(dispatcher: ActorRef) extends MessageChannel with AlmAkka {
+abstract class ActorBasedMessageChannel(dispatcher: ActorRef) extends MessageChannel with AlmAkkaDefaults {
 	implicit val timeout = Timeout(defaultTimeoutDuration)
 	
     def <*(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[Registration[UUID]] = {

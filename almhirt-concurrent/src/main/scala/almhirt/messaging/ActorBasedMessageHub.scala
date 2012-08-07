@@ -7,9 +7,7 @@ import almhirt.almakka._
 import almhirt.concurrent.AlmFuture
 import almhirt.concurrent.AlmFuture._
 
-class ActorBasedMessageHub(dispatcher: ActorRef) extends MessageHub {
-  implicit val timeout =  Timeout(AlmAkka.defaultTimeoutDuration)
-  
+class ActorBasedMessageHub(dispatcher: ActorRef) extends MessageHub with AlmAkkaDefaults{
   def deliver(message: Message[AnyRef]) {
     dispatcher ! PublishMessageCommand(message)
   }

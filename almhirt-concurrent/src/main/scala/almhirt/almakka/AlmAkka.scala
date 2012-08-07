@@ -13,7 +13,7 @@ trait AlmAkkaDefaults {
 }
 
 object AlmAkka extends AlmAkkaContext {
-  private[almakka] var theInstance: AlmAkkaContext = null
+  var theInstance: AlmAkkaContext = null
   
   def actorSystem = theInstance.actorSystem
   def futureDispatcher = theInstance.futureDispatcher

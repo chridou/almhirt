@@ -12,7 +12,7 @@ trait StandardAlmAkkaComponent extends AlmAkkaComponent {
     lazy val instance: AlmAkkaContext = new AlmAkkaByConfig()
   }
   
-  private final class AlmAkkaByConfig() extends AlmAkkaContext {
+  class AlmAkkaByConfig() extends AlmAkkaContext {
     val conf = ConfigFactory.load
     def actorSystem = ActorSystem("almhirt")
     def futureDispatcher = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
