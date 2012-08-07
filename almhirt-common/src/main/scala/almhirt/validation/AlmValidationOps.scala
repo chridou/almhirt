@@ -47,4 +47,12 @@ trait AlmValidationOps {
       case None => KeyNotFoundProblem("Could not find a value for key '%s'".format(key)).fail
     }
   }
+  
+  def tryApply[K,V](x: K, f: K => Option[V], severity: Severity = NoProblem): Validation[KeyNotFoundProblem, V] = {
+    f(x) match {
+      case Some(v) => v.success
+      case None => KeyNotFoundProblem("Could not find a value for '%s'".format(x)).fail
+    }
+  }
+
 }
