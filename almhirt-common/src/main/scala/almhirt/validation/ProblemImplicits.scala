@@ -28,13 +28,13 @@ trait ProblemImplicits {
   
   implicit def nelProblemtoNelProblemW(probs: NonEmptyList[Problem]) = new NelProblemW(probs)
   final class NelProblemW(nel: NonEmptyList[Problem]) {
-    def aggregate(msg: String): Problem = {
+    def >>*<<(msg: String): Problem = {
       val severity = nel.map(_.severity).concatenate
       if(nel.list.exists(p => p.isInstanceOf[SystemProblem]))
         UnspecifiedSystemProblem(msg, severity = severity, causes = nel.list)
       else
         UnspecifiedApplicationProblem(msg, severity = severity, causes = nel.list)
     }
-    def aggregate(): Problem = aggregate("Multiple problems. See causes.")
+    def aggregate(): Problem = >>*<<("Multiple problems. See causes.")
   }
 }

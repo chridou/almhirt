@@ -2,7 +2,7 @@ package almhirt.validation
 
 import java.util.UUID
 import scalaz.syntax.validation._
-import scalaz.{Validation, ValidationNEL, Success, Failure, Semigroup}
+import scalaz.{Validation, ValidationNEL, Success, Failure, Semigroup, NonEmptyList}
 import org.joda.time.DateTime
 import Problem._
 
@@ -151,26 +151,16 @@ trait AlmValidationImplicits {
     def forceResult(): T = {
       validation match {
         case Success(v) => v
-        case Failure(prob) => throw ValidationException(prob)
+        case Failure(prob) => throw ValidationForcedException(prob)
       }
     }
 
-    def forceProblem(): P = {
+    def toProblemOption(): Option[Problem] = {
       validation match {
-        case Success(v) => throw NotAFailureException()
-        case Failure(prob) => prob 
+        case Success(_) => None
+        case Failure(prob) => Some(prob) 
       }
     }
-    
-//    def escalate(severity: => Severity): Validation[P, T] = 
-//      validation match {
-//        case Success(_) => validation
-//        case Failure(prob) =>
-//          if(prob.severity < severity)
-//            prob.withSeverity(severity).fail[T]
-//          else
-//            validation
-//    }
   }
   
   
@@ -201,4 +191,17 @@ trait AlmValidationImplicits {
       case Failure(exn) => problemOnFail.withMessage(exn.getMessage).withException(exn).fail[T] 
     }
   }
+  
+  final class ListAlmValidationW[R](v: List[AlmValidation[R]]){
+    def >>*<<(msg: String): AlmValidation[List[R]] = {
+      v.partition(_.isSuccess) match {
+        case (succs, Nil) => succs.flatMap(_.toOption).toList.success
+        case (_, probs) => 
+          val problems = probs.flatMap(_.toProblemOption)
+          NonEmptyList(problems.head, problems.tail: _*).>>*<<(msg).fail
+      }
+    }
+    def >>*<<(): AlmValidation[List[R]] = >>*<<("One or more problems occured. See causes.")
+  }
+  
 }
