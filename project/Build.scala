@@ -57,6 +57,7 @@ trait ConcurrentBuild {
   import Resolvers._
   def concurrentProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
   	  resolvers += typesafeSnapshot,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
@@ -72,6 +73,7 @@ trait CoreBuild {
   import Resolvers._
   def coreProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
   	  resolvers += typesafeSnapshot,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
@@ -88,6 +90,7 @@ trait CommonMongoBuild {
   import Resolvers._
   def commonMongoProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
   	  resolvers += typesafeSnapshot,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
@@ -103,6 +106,7 @@ trait UnfilteredBuild {
   def unfilteredProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += unfiltered,
+  	  resolvers += typesafeRepo,
   	  resolvers += typesafeSnapshot)
   
 }
