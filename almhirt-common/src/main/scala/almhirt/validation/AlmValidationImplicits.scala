@@ -1,8 +1,7 @@
 package almhirt.validation
 
 import java.util.UUID
-import scalaz.syntax.validation._
-import scalaz.{Validation, ValidationNEL, Success, Failure, Semigroup, NonEmptyList}
+import scalaz._, std.AllInstances._
 import org.joda.time.DateTime
 import Problem._
 

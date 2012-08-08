@@ -14,6 +14,8 @@ object BuildSettings {
 }
 
 object Resolvers {
+  val sonatypeReleases = "Sonatype" at "http://oss.sonatype.org/content/repositories/releases/" 
+  val sonatypeSnapshots = "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/" 
   val typesafeRepo  = "Typesafe Repo"   at "http://repo.typesafe.com/typesafe/releases/"
   val typesafeSnapshot  = "Typesafe Snapshots Repository" at "http://repo.typesafe.com/typesafe/snapshots/"
   val scalatools = "Scala Tools" at "https://oss.sonatype.org/content/groups/scala-tools/"
@@ -23,7 +25,7 @@ object Resolvers {
 object Dependencies {
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0-SNAPSHOT" % "compile"
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0-M2" % "compile"
 	
 	lazy val akka_actor  = "com.typesafe.akka" % "akka-actor" % "2.0.2"
 
@@ -43,7 +45,7 @@ trait CommonBuild {
   import Resolvers._
   def commonProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeSnapshot,
+  	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
@@ -58,7 +60,7 @@ trait ConcurrentBuild {
   def concurrentProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
-  	  resolvers += typesafeSnapshot,
+  	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
@@ -74,7 +76,7 @@ trait CoreBuild {
   def coreProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
-  	  resolvers += typesafeSnapshot,
+  	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
@@ -91,7 +93,7 @@ trait CommonMongoBuild {
   def commonMongoProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
-  	  resolvers += typesafeSnapshot,
+  	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
@@ -107,7 +109,7 @@ trait UnfilteredBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += unfiltered,
   	  resolvers += typesafeRepo,
-  	  resolvers += typesafeSnapshot)
+  	  resolvers += sonatypeReleases)
   
 }
 
