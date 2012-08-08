@@ -13,12 +13,12 @@ trait AlmAkkaComponentForTesting extends AlmAkkaComponent {
   }
   
   private class AlmAkkaForTesting() extends AlmAkkaContextImpl {
-    def actorSystem = ActorSystem("almhirt")
-    def futureDispatcher = actorSystem.dispatcher
-    def messageStreamDispatcherName = None
-    def messageHubDispatcherName = None
-    def shortDuration = 1 seconds
-    def mediumDuration = 1 seconds
-    def longDuration = 1 seconds
+    val actorSystem = ActorSystem("almhirt")
+    val futureDispatcher = actorSystem.dispatcher
+    val messageStreamDispatcherName = None
+    val messageHubDispatcherName = None
+    val shortDuration = 1 seconds
+    val mediumDuration = 1 seconds
+    val longDuration = 1 seconds
   }
 }

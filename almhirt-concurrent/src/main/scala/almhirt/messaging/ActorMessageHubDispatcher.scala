@@ -15,9 +15,13 @@ class ActorMessageHubDispatcher(implicit almAkkaContext: AlmAkkaContext) extends
   }
   
   private def createAndRegisterChannel(pattern: Option[String]): AlmValidation[MessageChannel] = {
-	  val dispatcher = 
-	  	    almAkkaContext.actorSystem.actorOf(
-	  	        Props(new ActorMessageChannelDispatcher()).withDispatcher("almhirt.almhirt-messagestream"))
+      val dispatcher =
+	  	almAkkaContext.messageStreamDispatcherName match {
+	      case Some(dispatcherName) =>
+	        almAkkaContext.actorSystem.actorOf(Props(new ActorMessageChannelDispatcher()).withDispatcher(dispatcherName))
+	      case None =>
+	        almAkkaContext.actorSystem.actorOf(Props(new ActorMessageChannelDispatcher()))
+	    }
       val newChannel = 
         new ActorBasedMessageChannel(dispatcher) { channel =>
 	      val registration = 
@@ -40,4 +44,9 @@ class ActorMessageHubDispatcher(implicit almAkkaContext: AlmAkkaContext) extends
   }
 
   private case class UnregisterChannel(channel: ActorBasedMessageChannel)
+  
+  override def preStart() { log.info("MessageHubDispatcher '%s' starting".format(self.path)) } 
+  override def postRestart(reason: Throwable) { log.info("MessageHubDispatcher '%s' restarted".format(self.path)) } 
+  override def postStop() { log.info("MessageHubDispatcher '%s' stopped".format(self.path)) } 
+  
 }

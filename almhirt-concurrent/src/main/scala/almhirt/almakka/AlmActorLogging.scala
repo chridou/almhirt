@@ -12,13 +12,13 @@ trait AlmActorLogging { self: akka.actor.Actor =>
     if(prob.severity >= minSeverity)
 	  prob.severity match {
 	    case NoProblem =>
-	      log.debug(prob.toString)
+	      log.debug(prob.toInfoString)
 	    case Minor =>
-	      log.warning(prob.toString)
+	      log.warning(prob.toInfoString)
 	    case Major =>
-	      log.error(prob.toString)
+	      log.error(prob.toInfoString)
 	    case Critical =>
-	      log.error(prob.toString)
+	      log.error(prob.toInfoString)
 	    }
   }
   
