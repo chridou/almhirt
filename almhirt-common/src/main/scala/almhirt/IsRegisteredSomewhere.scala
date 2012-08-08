@@ -1,5 +1,5 @@
 package almhirt
 
-trait IsRegisteredSomewhere[T] {
-  def registration(): Registration[T]
+trait IsRegisteredSomewhere {
+  def registration(): RegistrationHolder
 }

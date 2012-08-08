@@ -4,18 +4,15 @@ import scalaz.{Success, Failure}
 import akka.dispatch.{Future, Promise}
 import almhirt.validation._
 import almhirt.validation.AlmValidation
-import almhirt.almakka.AlmAkka
 
 trait AlmFutureImplicits {
-  implicit def akkaFutureToAlmhirtFuture[T](akkaFuture: Future[AlmValidation[T]]): AlmFuture[T] =
+  implicit def akkaFutureToAlmhirtFuture[T](akkaFuture: Future[AlmValidation[T]])(implicit executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] =
     new AlmFuture(akkaFuture)
-//  implicit def almhirtFutureToAkkaFuture[T](akkaFuture: AlmFuture[T]): Future[AlmValidation[T]] =
-//    akkaFuture.underlying
   implicit def akkaFutureToAkkaFutureW[T](akkaFuture: Future[Any]) =
     new AkkaFutureAnyW(akkaFuture)
   import scala.reflect._
   class AkkaFutureAnyW(akkaFuture: Future[Any]) {
-    def toAlmFuture[T](implicit m: Manifest[T]): AlmFuture[T] = 
+    def toAlmFuture[T](implicit m: Manifest[T], executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] = 
       new AlmFuture[T](akkaFuture.mapTo[AlmValidation[T]])
   }
 

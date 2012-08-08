@@ -5,12 +5,11 @@ import scala.{Left, Right}
 import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
 import akka.dispatch.{Future, Promise, Await}
-import almhirt.almakka.AlmAkkaDefaults
 import almhirt.validation.{Problem, AlmValidation}
 import almhirt.validation.Problem._
 import akka.util.Duration
 
-class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkkaDefaults {
+class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit executionContext: akka.dispatch.ExecutionContext)  {
   def map[T](compute: R => T): AlmFuture[T] =
     new AlmFuture[T](underlying map { validation => validation map compute })
     
@@ -23,9 +22,6 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) extends AlmAkkaDef
   def mapV[T](compute: R => AlmValidation[T]): AlmFuture[T] =
     new AlmFuture[T](underlying map { validation => validation flatMap compute })
   
-//  def withFilter(pred: R => Boolean): AlmFuture[R] =
-//    new AlmFuture(underlying.withFilter(p))
-    
   def fold[T](failure: Problem => T = identity[Problem] _, success: R => T = identity[R] _): Future[T] =
     underlying map { validation => validation fold (failure = failure, success = success)}
   

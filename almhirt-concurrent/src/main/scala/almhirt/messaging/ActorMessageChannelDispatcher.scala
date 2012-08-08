@@ -9,7 +9,6 @@ import almakka._
 import concurrent._
 import AlmFuture._
 
-
 class ActorMessageChannelDispatcher extends Actor with AlmActorLogging {
   
   private var subscriptions: List[(UUID, Message[AnyRef] => Unit, Message[AnyRef] => Boolean)] = Nil
@@ -27,11 +26,11 @@ class ActorMessageChannelDispatcher extends Actor with AlmActorLogging {
   private def unsubscribeHandler(id: UUID) {
 	subscriptions = subscriptions.filterNot(_._1 == id)
   }
-
+  
   def receive = {
     case PublishMessageCommand(message) => 
   	  publishMessage(message)
-  	case RegisterMessageHandlerCommand(handler, classifier) => {
+  	case RegisterWildCardMessageHandlerCommand(handler, classifier) => {
    	  val subscriptionId = UUID.randomUUID()
  	  addSubscription(subscriptionId, handler, classifier)
   	  val subscription = 

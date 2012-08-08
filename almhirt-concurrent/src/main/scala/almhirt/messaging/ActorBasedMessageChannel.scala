@@ -5,26 +5,31 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 import almhirt._
-import almhirt.almakka.AlmAkka
+import almhirt.almakka.{AlmAkkaContext}
 import almhirt.concurrent.AlmFuture
 import almhirt.concurrent.AlmFuture._
 
-abstract class ActorBasedMessageChannel(dispatcher: ActorRef) extends MessageChannel with AlmAkkaDefaults {
-	implicit val timeout = Timeout(defaultTimeoutDuration)
-	
-    def <*(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[Registration[UUID]] = {
-	  ask(dispatcher, RegisterMessageHandlerCommand(handler, classifier)).toAlmFuture[Registration[UUID]]
+abstract class ActorBasedMessageChannel(dispatcher: ActorRef)(implicit almAkkaContext: AlmAkkaContext) extends MessageChannel {
+    implicit def timeout = Timeout(almAkkaContext.mediumDuration)
+    implicit def executionContext = almAkkaContext.futureDispatcher
+    def <*(handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[RegistrationHolder] = {
+	  (dispatcher ? RegisterWildCardMessageHandlerCommand(handler, classifier)).toAlmFuture[RegistrationHolder]
     }
 	
 	def deliver(message: Message[AnyRef]) = dispatcher ! PublishMessageCommand(message)
 
-    def subStream(classifier: Message[AnyRef] => Boolean): AlmFuture[MessageStream] = {
-	  val dispatcher = 
-	  	    defaultActorSystem.actorOf(
-	  	        Props(new ActorMessageChannelDispatcher()).withDispatcher("almhirt.almhirt-messagestream"))
+    def createSubChannel(classifier: Message[AnyRef] => Boolean): AlmFuture[MessageChannel] = {
+	  val newDispatcher = 
+	  	almAkkaContext.messageStreamDispatcherName match {
+	      case Some(dispatcherName) =>
+	        almAkkaContext.actorSystem.actorOf(Props(new ActorMessageChannelDispatcher()).withDispatcher(dispatcherName))
+	      case None =>
+	        almAkkaContext.actorSystem.actorOf(Props(new ActorMessageChannelDispatcher()))
+	    }
+	  	        
 	  val subscription = this.<*(msg => dispatcher ! PublishMessageCommand(msg) , classifier)
 	  subscription.map{ s =>
-	  	new ActorBasedMessageChannel(dispatcher) {
+	  	new ActorBasedMessageChannel(newDispatcher) {
 	      val registration = Some(s)
 	      val topicPattern = ActorBasedMessageChannel.this.topicPattern
 	    }
@@ -33,26 +38,27 @@ abstract class ActorBasedMessageChannel(dispatcher: ActorRef) extends MessageCha
 }	
 
 object ActorBasedMessageChannel {
-  import AlmAkka._
-  def apply(name: String, createActor: (Props, String) => ActorRef): ActorBasedMessageChannel = 
+  def apply(name: String, createActor: (Props, String) => ActorRef)(implicit almAkkaContext: AlmAkkaContext): ActorBasedMessageChannel = 
   	new ActorBasedMessageChannelImpl(createActor(Props(new ActorMessageChannelDispatcher()), name))
 	
-  def apply(name: String)(implicit actorFactory: ActorRefFactory): ActorBasedMessageChannel =
-  	apply(name, (p: Props, n: String) => actorFactory.actorOf(p, n))
+  def apply(name: String)(implicit almAkkaContext: AlmAkkaContext): ActorBasedMessageChannel =
+  	apply(name, (p: Props, n: String) => almAkkaContext.actorSystem.actorOf(p, n))
   	
-  def apply(actorFactory: ActorRefFactory): ActorBasedMessageChannel =
-  	apply(java.util.UUID.randomUUID().toString)(actorFactory)
-
-  def apply(aChannelDispatcher: ActorRef): ActorBasedMessageChannel =
+  def apply(aChannelDispatcher: ActorRef)(implicit almAkkaContext: AlmAkkaContext): ActorBasedMessageChannel =
   	new ActorBasedMessageChannelImpl(aChannelDispatcher)
   
-  def apply(): ActorBasedMessageChannel =
-  	new ActorBasedMessageChannelImpl(
-  	    actorSystem.actorOf(
-  	        Props(new ActorMessageChannelDispatcher()).withDispatcher("almhirt.messagestream-dispatcher"), "almhirt-messagestream"
-  	))
+  def apply(implicit almAkkaContext: AlmAkkaContext): ActorBasedMessageChannel = {
+	  val newDispatcher = 
+	  	almAkkaContext.messageStreamDispatcherName match {
+	      case Some(dispatcherName) =>
+	        almAkkaContext.actorSystem.actorOf(Props(new ActorMessageChannelDispatcher()).withDispatcher(dispatcherName))
+	      case None =>
+	        almAkkaContext.actorSystem.actorOf(Props(new ActorMessageChannelDispatcher()))
+	    }
+  	new ActorBasedMessageChannelImpl(newDispatcher)
+  }
   
-  private class ActorBasedMessageChannelImpl(dispatcher: ActorRef) extends ActorBasedMessageChannel(dispatcher) {
+  private class ActorBasedMessageChannelImpl(dispatcher: ActorRef)(implicit almAkkaContext: AlmAkkaContext) extends ActorBasedMessageChannel(dispatcher) {
     val topicPattern = None
     val registration = None
   }

@@ -7,23 +7,23 @@ import almhirt.Registration
 import almhirt.validation._
 import almhirt.almakka._
 
-class ActorMessageHubDispatcher extends Actor with AlmActorLogging with AlmAkkaDefaults {
+class ActorMessageHubDispatcher(implicit almAkkaContext: AlmAkkaContext) extends Actor with AlmActorLogging {
   private var channels: List[ActorBasedMessageChannel] = List()
 
-  private def unregisterStream(channel: ActorBasedMessageChannel) {
+  private def unregisterChannel(channel: ActorBasedMessageChannel) {
     channels = channels.filterNot(x => x == channel)
   }
   
   private def createAndRegisterChannel(pattern: Option[String]): AlmValidation[MessageChannel] = {
 	  val dispatcher = 
-	  	    defaultActorSystem.actorOf(
+	  	    almAkkaContext.actorSystem.actorOf(
 	  	        Props(new ActorMessageChannelDispatcher()).withDispatcher("almhirt.almhirt-messagestream"))
       val newChannel = 
         new ActorBasedMessageChannel(dispatcher) { channel =>
 	      val registration = 
 	        Some( new Registration[UUID] {
 	                val ticket = UUID.randomUUID
-	                def dispose() { self ! UnregisterStream(channel)} })
+	                def dispose() { self ! UnregisterChannel(channel)} })
           val topicPattern = pattern
         }
       channels = newChannel :: channels
@@ -35,9 +35,9 @@ class ActorMessageHubDispatcher extends Actor with AlmActorLogging with AlmAkkaD
       channels.foreach(_.deliver(msg))
     case CreateMessageChannelCommand(filter) =>
       sender ! createAndRegisterChannel(filter)
-    case UnregisterStream(stream) =>
-      unregisterStream(stream)
+    case UnregisterChannel(channel) =>
+      unregisterChannel(channel)
   }
 
-  private case class UnregisterStream(channel: ActorBasedMessageChannel)
+  private case class UnregisterChannel(channel: ActorBasedMessageChannel)
 }

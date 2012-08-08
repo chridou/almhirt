@@ -12,19 +12,7 @@ import almhirt.concurrent.AlmFuture
  * * not guarantee that all handlers will be called on the same thread
  * * not guarantee that handlers won't be called concurrently
  */
-trait MessageStream extends SubscribableForMessages with almhirt.MightBeRegisteredSomewhere[UUID] with almhirt.Disposable {
-  
-  def subStream(classifier: Message[AnyRef] => Boolean): AlmFuture[MessageStream]
-  
-  def subStream[TPayload <: AnyRef](classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[MessageStream] = {
-    def wrappedClassifier(message: Message[AnyRef]) = 
-      if(m.erasure.isAssignableFrom(message.payload.getClass()))
-      	classifier(message.asInstanceOf[Message[TPayload]])
-      else
-      	false
-    subStream(wrappedClassifier(_))
-  }
-  
+trait MessageStream extends SubscribableForMessages with almhirt.MightBeRegisteredSomewhere with almhirt.Disposable {
   def topicPattern: Option[String]
   
   def dispose() =

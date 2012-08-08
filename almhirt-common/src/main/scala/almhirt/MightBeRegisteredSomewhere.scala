@@ -1,5 +1,6 @@
 package almhirt
 
-trait MightBeRegisteredSomewhere[T] {
-  def registration(): Option[Registration[T]]
+trait MightBeRegisteredSomewhere {
+  def registration: Option[RegistrationHolder]
+  def isRegisteredSome = registration.isDefined 
 }

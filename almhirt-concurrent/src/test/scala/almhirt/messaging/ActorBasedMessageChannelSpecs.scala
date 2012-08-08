@@ -5,26 +5,26 @@ import akka.testkit.TestActorRef
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.Duration
+import almhirt.almakka._
 import scalaz.{Success}
 
-class ActorBasedMessageChannelSpecs extends Specification {
-	
+class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentForTesting {
   implicit def randUUID = java.util.UUID.randomUUID
-  
-  private def getChannel(implicit system: ActorSystem) = {
-	ActorBasedMessageChannel("testChannel", (p: Props, n: String) => TestActorRef(p, n)(system))
+  startAlmAkka
+  implicit val alm = almAkkaContext.actorSystem
+  private def getChannel(implicit context: AlmAkkaContext) = {
+	ActorBasedMessageChannel("testChannel", (p: Props, n: String) => TestActorRef(p, n))
   }
 	
 	
   "An ActorBasedMessageStream" should {
 	"return a subscription when subscribed to" in {
-	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
 	  val future = channel <* ({case _ => ()}, _ => true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
-	  system.shutdown()
 	  subscription must not beNull
 	}
+	
 	"not execute a handler when the subscription is cancelled" in {
 	  implicit def system = ActorSystem("test")
 	  val channel = getChannel
@@ -33,7 +33,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  subscription.dispose()
 	  channel.deliver(Message("a"))
-	  system.shutdown()
 	  !hit
 	}
 	"execute one handler when the subscription for one of two was cancelled" in {
@@ -46,7 +45,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  subscription1.dispose()
 	  channel.deliver(Message("a"))
-	  system.shutdown()
 	  hitCount must beEqualTo(2)
 	}
 	"execute a subscribed handler when classifier always returns true" in {
@@ -56,7 +54,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val future = channel <* ({case _ => hit = true}, _ => true)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("a"))
-	  system.shutdown()
 	  hit
 	}
 	"execute two handlers when classifier always returns true for 2 subscriptions" in {
@@ -68,7 +65,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("a"))
-	  system.shutdown()
 	  hitCount must beEqualTo(3)
 	}
 	"execute only the handler for which the classifier returns true" in {
@@ -80,7 +76,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
 	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("a"))
-	  system.shutdown()
 	  hitCount must beEqualTo(2)
 	}
 	"never execute a subscribed handler when classifier always returns false" in {
@@ -90,7 +85,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val future = channel <* ({case _ => hit = true}, _ => false)
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("a"))
-	  system.shutdown()
 	  !hit
 	}
 	"execute a subscribed handler when classifier is met" in {
@@ -100,7 +94,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val future = channel <* ({case _ => hit = true}, x => x.payload match {case "a" => true } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("a"))
-	  system.shutdown()
 	  hit
 	}
 	"not execute a subscribed handler when classifier is not met but the payload is of the same type" in {
@@ -110,7 +103,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val future = channel <* ({case _ => hit = true}, x => x.payload match {case "a" => true; case _ => false } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("b"))
-	  system.shutdown()
 	  !hit
 	}
 	"not execute a subscribed handler when classifier is not met because the payload is of a different type" in {
@@ -120,7 +112,6 @@ class ActorBasedMessageChannelSpecs extends Specification {
 	  val future = channel <* ({case _ => hit = true}, x => x.payload match { case "1" => true; case _ => false } )
 	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
 	  channel.deliver(Message("a"))
-	  system.shutdown()
 	  !hit
 	}
   }
