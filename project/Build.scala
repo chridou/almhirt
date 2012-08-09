@@ -36,7 +36,7 @@ object Dependencies {
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 	
 	lazy val specs2 = "org.specs2" %% "specs2" % "1.11" % "test"
-	lazy val akka_testkit = "com.typesafe.akka" % "akka-testkit" % "2.0.2"
+	lazy val akka_testkit = "com.typesafe.akka" % "akka-testkit" % "2.0.2" % "test"
 
 }
 
