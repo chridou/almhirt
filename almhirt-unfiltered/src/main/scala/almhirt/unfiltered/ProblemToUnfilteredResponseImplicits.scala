@@ -12,12 +12,10 @@ trait ProblemToUnfilteredResponseImplicits {
   implicit def akkaFuture2AlmAkkaFutureW[T](akkaFuture: Future[AlmValidation[T]]) = new AkkaFutureW[T](akkaFuture)
 
   final class AlmhirtFutureW[T](almFuture: AlmFuture[T]) {
-    def respond(responder: unfiltered.Async.Responder[HttpResponse], createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): AlmFuture[T] = {
-      almFuture.onComplete({
-        case Success(r) => responder.respond(createSuccessResponse(r))
-        case Failure(problem) => responder.respond(ProblemToUnfilteredResponse.problemToResponse(problem))
-      })
-    }
+    def respond(responder: unfiltered.Async.Responder[HttpResponse], createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): AlmFuture[T] = 
+      almFuture.onComplete(
+          prob => responder.respond(ProblemToUnfilteredResponse.problemToResponse(prob)),
+          r => responder.respond(createSuccessResponse(r)))
   }
   final class AkkaFutureW[T](akkaFuture: Future[AlmValidation[T]]) {
     def respond(

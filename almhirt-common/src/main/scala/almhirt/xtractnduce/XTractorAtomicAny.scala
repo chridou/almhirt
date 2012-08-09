@@ -15,115 +15,115 @@ class XTractorAtomicAny(value: Any, val key: String, val parent: Option[XTractor
 	try {
 	  value.asInstanceOf[String].notEmptyOrWhitespaceAlm(key)
 	} catch {
-	  case exn => SingleBadDataProblem("Not a String: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[String]
+	  case exn => SingleBadDataProblem("Not a String: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[String]
 	}
 	
   def getInt(): AlmValidationSBD[Int] =
 	try {
 	  value.asInstanceOf[Int].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not an Int: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Int]
+	  case exn => SingleBadDataProblem("Not an Int: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Int]
 	}
 	
   def getLong(): AlmValidationSBD[Long] =
 	try {
 	  value.asInstanceOf[Long].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not a Long: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Long]
+	  case exn => SingleBadDataProblem("Not a Long: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Long]
 	}
 	
   def getDouble(): AlmValidationSBD[Double] =
 	try {
 	  value.asInstanceOf[Double].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not a Double: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Double]
+	  case exn => SingleBadDataProblem("Not a Double: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Double]
 	}
 
   def getFloat(): AlmValidationSBD[Float] =
 	try {
 	  value.asInstanceOf[Float].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not a Float: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Float]
+	  case exn => SingleBadDataProblem("Not a Float: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Float]
 	}
 
   def getBoolean(): AlmValidationSBD[Boolean] =
 	try {
 	  value.asInstanceOf[Boolean].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not a Float: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Boolean]
+	  case exn => SingleBadDataProblem("Not a Float: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Boolean]
 	}
 
   def getDecimal(): AlmValidationSBD[BigDecimal] =
 	try {
 	  value.asInstanceOf[BigDecimal].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not a BigDecimal: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[BigDecimal]
+	  case exn => SingleBadDataProblem("Not a BigDecimal: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[BigDecimal]
 	}
 
   def getDateTime(): AlmValidationSBD[DateTime] =
 	try {
 	  value.asInstanceOf[DateTime].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not a DateTime: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[DateTime]
+	  case exn => SingleBadDataProblem("Not a DateTime: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[DateTime]
 	}
 
   def getUUID(): AlmValidationSBD[UUID] =
 	try {
 	  value.asInstanceOf[UUID].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not a UUID: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[UUID]
+	  case exn => SingleBadDataProblem("Not a UUID: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[UUID]
 	}
 	
   def getBytes(): AlmValidationSBD[Array[Byte]] =
 	try {
 	  value.asInstanceOf[Array[Byte]].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not an Array[Byte]: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Array[Byte]]
+	  case exn => SingleBadDataProblem("Not an Array[Byte]: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Array[Byte]]
 	}
 	
   def tryGetString(): AlmValidationSBD[Option[String]] =
 	try {
 	  val str = value.asInstanceOf[String]
 	  if(str.trim.isEmpty)
-	    Success(None)
+	    None.success
 	  else
-	    Success(Some(str))
+	    Some(str).success
 	} catch {
-	  case exn => SingleBadDataProblem("Not a String: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Option[String]]
+	  case exn => SingleBadDataProblem("Not a String: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Option[String]]
 	}
   
   def tryGetInt(): AlmValidationSBD[Option[Int]] = 
-    SingleBadDataProblem("Not supported: tryGetInt", key = pathAsString()).fail[Option[Int]]
+    SingleBadDataProblem("Not supported: tryGetInt", key = pathAsString()).failure[Option[Int]]
   
   def tryGetLong(): AlmValidationSBD[Option[Long]] = 
-    SingleBadDataProblem("Not supported: tryGetLong", key = pathAsString()).fail[Option[Long]]
+    SingleBadDataProblem("Not supported: tryGetLong", key = pathAsString()).failure[Option[Long]]
   
   def tryGetDouble(): AlmValidationSBD[Option[Double]] = 
-    SingleBadDataProblem("Not supported: tryGetDouble", key = pathAsString()).fail[Option[Double]]
+    SingleBadDataProblem("Not supported: tryGetDouble", key = pathAsString()).failure[Option[Double]]
 
   def tryGetFloat(): AlmValidationSBD[Option[Float]] = 
-    SingleBadDataProblem("Not supported: tryGetFloat", key = pathAsString()).fail[Option[Float]]
+    SingleBadDataProblem("Not supported: tryGetFloat", key = pathAsString()).failure[Option[Float]]
 
   def tryGetBoolean(): AlmValidationSBD[Option[Boolean]] = 
-    SingleBadDataProblem("Not supported: tryGetBoolean", key = pathAsString()).fail[Option[Boolean]]
+    SingleBadDataProblem("Not supported: tryGetBoolean", key = pathAsString()).failure[Option[Boolean]]
   
   def tryGetDecimal(): AlmValidationSBD[Option[BigDecimal]] = 
-    SingleBadDataProblem("Not supported: tryGetDecimal", key = pathAsString()).fail[Option[BigDecimal]]
+    SingleBadDataProblem("Not supported: tryGetDecimal", key = pathAsString()).failure[Option[BigDecimal]]
 
   def tryGetDateTime(): AlmValidationSBD[Option[DateTime]] = 
-    SingleBadDataProblem("Not supported: tryGetDateTime", key = pathAsString()).fail[Option[DateTime]]
+    SingleBadDataProblem("Not supported: tryGetDateTime", key = pathAsString()).failure[Option[DateTime]]
 
   def tryGetUUID(): AlmValidationSBD[Option[UUID]] = 
-    SingleBadDataProblem("Not supported: tryGetDateTime", key = pathAsString()).fail[Option[UUID]]
+    SingleBadDataProblem("Not supported: tryGetDateTime", key = pathAsString()).failure[Option[UUID]]
   
   def tryGetBytes(): AlmValidationSBD[Option[Array[Byte]]] = 
-    SingleBadDataProblem("Not supported: tryGetBytes", key = pathAsString()).fail[Option[Array[Byte]]]
+    SingleBadDataProblem("Not supported: tryGetBytes", key = pathAsString()).failure[Option[Array[Byte]]]
 
   def isBooleanSet(): AlmValidationSBD[Boolean] = 
 	try {
 	  value.asInstanceOf[Boolean].successSBD
 	} catch {
-	  case exn => SingleBadDataProblem("Not a Boolean: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).fail[Boolean]
+	  case exn => SingleBadDataProblem("Not a Boolean: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Boolean]
 	}
   
 }

@@ -1,7 +1,7 @@
 package almhirt.xtractnduce.casbah
 
 import org.specs2.mutable._
-import scalaz.Success
+import scalaz._, Scalaz._
 import almhirt.validation.AlmValidation._
 
 import com.mongodb.casbah.Imports._
@@ -319,7 +319,7 @@ import MongoXTractorSpecsSamples._
     }
     """return a success with a list of 1 to 10 when queried with getAtomicsEvaluated""" in {
       val res = bob.xtractor("Bob").getAtomicsEvaluated("scores", x => x.getInt())
-      res must beEqualTo(Success(List(1 to 10: _*)))
+      res must beEqualTo(List(1 to 10: _*).success)
     }
   }
   
@@ -406,14 +406,14 @@ import MongoXTractorSpecsSamples._
     """contain a street "Downing Street"""" in {
       val xtractor = bob.xtractor("Bob")
       val address = xtractor.getXTractor("address")
-      val street = address.flatMap{_.getString("street")}
-      street must beEqualTo(Success("Downing Street"))
+      val street = address.bind{_.getString("street")}
+      street must beEqualTo("Downing Street".success)
     } 
     """contain a city "London"""" in {
       val xtractor = bob.xtractor("Bob")
       val address = xtractor.getXTractor("address")
-      val city = address.flatMap{_.getString("city")}
-      city must beEqualTo(Success("London"))
+      val city = address.bind{_.getString("city")}
+      city must beEqualTo("London".success)
     } 
   }
   

@@ -14,7 +14,7 @@ trait AlmValidationOps {
     try {
       a.success[Problem]
     } catch {
-      case err => defaultProblemType.withMessage(err.getMessage).withException(err).fail[T]
+      case err => defaultProblemType.withMessage(err.getMessage).withException(err).failure[T]
     }
   }
   
@@ -22,36 +22,36 @@ trait AlmValidationOps {
     try {
       a
     } catch {
-      case err => defaultProblemType.withMessage(err.getMessage).withException(err).fail[T]
+      case err => defaultProblemType.withMessage(err.getMessage).withException(err).failure[T]
     }
   }
   
   def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
-    if(cond) Success(()) else problem.fail[Unit]
+    if(cond) ().success else problem.failure[Unit]
   
   def noneIsBadData[T](v: Option[T], message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
     v match {
       case Some(v) => v.success[SingleBadDataProblem]
-      case None => SingleBadDataProblem(message, key = key).fail[T]
+      case None => SingleBadDataProblem(message, key = key).failure[T]
     }
   
   def noneIsNotFound[T](v: Option[T], message: String = "Not found"): AlmValidation[T] =
     v match {
       case Some(v) => v.success[NotFoundProblem]
-      case None => NotFoundProblem(message).fail[T]
+      case None => NotFoundProblem(message).failure[T]
     }
   
   def tryGetFromMap[K,V](key: K, map: Map[K,V], severity: Severity = NoProblem): Validation[KeyNotFoundProblem, V] = {
     map.get(key) match {
       case Some(v) => v.success
-      case None => KeyNotFoundProblem("Could not find a value for key '%s'".format(key)).fail
+      case None => KeyNotFoundProblem("Could not find a value for key '%s'".format(key)).failure
     }
   }
   
   def tryApply[K,V](x: K, f: K => Option[V], severity: Severity = NoProblem): Validation[KeyNotFoundProblem, V] = {
     f(x) match {
       case Some(v) => v.success
-      case None => KeyNotFoundProblem("Could not find a value for '%s'".format(x)).fail
+      case None => KeyNotFoundProblem("Could not find a value for '%s'".format(x)).failure
     }
   }
 

@@ -105,29 +105,18 @@ class AlmValidationSpecs extends Specification {
  
   """A SingleBadDataProblem lifted to a MultipleBadDataProblem""" should {
     """contain the origins message in keysAndMessages with the origins key""" in {
-	  val a = (SingleBadDataProblem("XXX", "A").fail[Int]).toMBD
-	  a match {
-	    case Failure(mbdp) => mbdp.keysAndMessages must beEqualTo(Map(("A" -> "XXX")))
-	    case _ => sys.error("")
-	  }
+	  val a = (SingleBadDataProblem("XXX", "A").failure[Int]).toMBD
+	  a fold(_.keysAndMessages must beEqualTo(Map(("A" -> "XXX"))), sys.error(""))
     }
   }
   
   """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in a "for comprehension"""" should {
     """add to 5 when A="2" and B="3"""" in {
-      val res =
-	      for {
-	        a <- parseIntAlm("2").toMBD
-	        b <- parseIntAlm("3").toMBD
-	      } yield a + b
+      val res = parseIntAlm("2").toMBD bind (_ => parseIntAlm("3").toMBD)
       res must beEqualTo(5.success[MultipleBadDataProblem])
     }
     """be a Failure when A="x" and B="3"""" in {
-      val res =
-	      for {
-	        a <- parseIntAlm("x").toMBD
-	        b <- parseIntAlm("3").toMBD
-	      } yield a + b
+      val res = parseIntAlm("2").toMBD bind (_ => parseIntAlm("x").toMBD)
       res.isFailure
     }
   }

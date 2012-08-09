@@ -78,91 +78,70 @@ trait XTractor extends XTractorWithPathToRoot  {
 
   def tryGetTypeInfo(): AlmValidationSBD[Option[String]]
   def getTypeInfo(): AlmValidationSBD[String] = 
-    tryGetTypeInfo() match {
-      case Success(Some(ti)) => Success(ti)
-      case Success(None) => Failure(SingleBadDataProblem("No type Info!", key =  pathAsStringWithKey("<typeInfo>")))
-      case Failure(f) => Failure(f)
-    }
+    tryGetTypeInfo() fold(
+        _.failure,
+        _.map(_.success) getOrElse (SingleBadDataProblem("No type Info!", key = pathAsStringWithKey("<typeInfo>")).failure))
   
   def getXTractors(aKey: String): AlmValidationMBD[List[XTractor]]
+  
   def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]]
+  
   def getXTractor(aKey: String): AlmValidationSBD[XTractor] =
-    tryGetXTractor(aKey) match {
-      case Success(opt) =>
-        opt
-	      .map(Success(_))
-	      .getOrElse(Failure(SingleBadDataProblem("Structured data not found.", key = pathAsStringWithKey(aKey))))
-      case Failure(f) => f.fail[XTractor]
-    }
+    tryGetXTractor(aKey) fold (
+        _.failure,
+        _.map(_.success).getOrElse (SingleBadDataProblem("Structured data not found.", key = pathAsStringWithKey(aKey)).failure))
     
   def tryMapXTractor[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[Option[U]] =
-    tryGetXTractor(aKey) match {
-      case Success(opt) =>
-        opt match {
-          case Some(xtractor) => 
-            mapXtractor(xtractor) match {
-              case Success(s) => Success(Some(s))
-              case Failure(f) => Failure(f)
-            }
-          case None => Success(None)
-        }
-      case Failure(f) => f.toMBD.fail[Option[U]]
-    }
+    tryGetXTractor(aKey) fold (
+        _.toMBD.failure,
+        opt => {
+          opt match {
+            case Some(xtractor) => 
+              mapXtractor(xtractor) fold (
+                _.failure,
+                Some(_).success)
+            case None => None.success
+          }})
   
   def mapXTractor[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[U] =
-    tryMapXTractor(aKey, mapXtractor) match {
-      case Success(opt) =>
-        opt
-          .map {Success(_)} 
-          .getOrElse (Failure(SingleBadDataProblem("Structured data not found.", key = pathAsStringWithKey(aKey)).toMBD))
-      case Failure(f) => (f.prefixWithPath(List(key))).fail[U]
-    }
+    tryMapXTractor(aKey, mapXtractor) fold (
+        _.prefixWithPath(List(key)).failure,
+        _.map {_.success} 
+         .getOrElse (SingleBadDataProblem("Structured data not found.", key = pathAsStringWithKey(aKey)).failure.toMBD))
   
   def tryFlatMapXTractor[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[Option[U]]): AlmValidationMBD[Option[U]] =
-    tryGetXTractor(aKey) match {
-      case Success(opt) =>
-        opt match {
+    tryGetXTractor(aKey) fold(
+        _.toMBD.failure,
+        _ match {
           case Some(xtractor) => 
-            mapXtractor(xtractor) match {
-              case Success(s) => Success(s)
-              case Failure(f) => Failure(f.prefixWithPath(List(key)))
-            }
-          case None => Success(None)
-        }
-      case Failure(f) => f.toMBD.fail[Option[U]]
-    }
+            mapXtractor(xtractor) fold (
+              _.prefixWithPath(List(key)).failure,
+              _.success)
+          case None => None.success
+        })
 
   def mapXTractorsToList[U](aKey: String, mapXtractor: XTractor => AlmValidationMBD[U]): AlmValidationMBD[List[U]] =
-    getXTractors(aKey) match {
-      case Success(seq) => seq.map(mapXtractor).sequence
-      case Failure(f) => f.fail[List[U]]
-  }
+    getXTractors(aKey) fold (_.failure, _.map(mapXtractor).sequence)
   
   def tryGetAtomic(aKey: String): AlmValidationSBD[Option[XTractorAtomic]]
 
   def getAtomic(aKey: String): AlmValidationSBD[XTractorAtomic] = 
-    tryGetAtomic(aKey) match {
-      case Success(Some(v)) => v.successSBD 
-      case Success(None) => Failure(SingleBadDataProblem("Atomic not found.", key = pathAsStringWithKey(aKey))) 
-      case Failure(f) => Failure(f) 
-    }
+    tryGetAtomic(aKey) fold(
+        _.failure,
+        _ match {
+          case Some(v) => v.successSBD 
+          case None => SingleBadDataProblem("Atomic not found.", key = pathAsStringWithKey(aKey)).failure 
+        })
   
   def getAtomics(aKey: String): AlmValidationMBD[List[XTractorAtomic]]
   
-  def getAtomicsEvaluated[T](aKey: String, eval: XTractorAtomic => AlmValidationSBD[T]): AlmValidationMBD[List[T]] = {
-    for {
-      atomicXTractors <- getAtomics(aKey)
-      results <- atomicXTractors.map {eval(_).toMBD} sequence
-    } yield results
-  }
+  def getAtomicsEvaluated[T](aKey: String, eval: XTractorAtomic => AlmValidationSBD[T]): AlmValidationMBD[List[T]] = 
+    getAtomics(aKey) bind (ls => ls.map(xtract => eval(xtract).toMBD).sequence[AlmValidationMBD, T])
   
   private def get[U](aKey: String, f: String => AlmValidationSBD[Option[U]]): AlmValidationSBD[U] = 
-    f(aKey) match {
-      case Success(opt) => 
-        opt match {
-          case Some(v) => v.successSBD
-          case None => Failure(SingleBadDataProblem("Key not found.", key = pathAsStringWithKey(aKey))) 
-        }
-      case Failure(f) => Failure(f)
-  }
-}
+    f(aKey) fold (
+        _.failure,
+        _ match {
+          case Some(v) => v.successSBD 
+          case None => SingleBadDataProblem("Key not found.", key = pathAsStringWithKey(aKey)).failure })
+ }

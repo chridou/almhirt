@@ -19,7 +19,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceString(_,v)) => Some(v).successSBD
       case Some(NDuceStringOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a String", aKey).fail[Option[String]]
+      case _ => SingleBadDataProblem("Not a String", aKey).failure[Option[String]]
     }
   
   def tryGetInt(aKey: String) = 
@@ -27,7 +27,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceInt(_,v)) => Some(v).successSBD
       case Some(NDuceIntOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not an Int", aKey).fail[Option[Int]]
+      case _ => SingleBadDataProblem("Not an Int", aKey).failure[Option[Int]]
     }
   
   def tryGetLong(aKey: String) = 
@@ -35,7 +35,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceLong(_,v)) => Some(v).successSBD
       case Some(NDuceLongOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a Long", aKey).fail[Option[Long]]
+      case _ => SingleBadDataProblem("Not a Long", aKey).failure[Option[Long]]
     }
   
   def tryGetDouble(aKey: String) = 
@@ -43,7 +43,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceDouble(_,v)) => Some(v).successSBD
       case Some(NDuceDoubleOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a Double", aKey).fail[Option[Double]]
+      case _ => SingleBadDataProblem("Not a Double", aKey).failure[Option[Double]]
     }
 
   def tryGetFloat(aKey: String) = 
@@ -51,7 +51,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceFloat(_,v)) => Some(v).successSBD
       case Some(NDuceFloatOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a Float", aKey).fail[Option[Float]]
+      case _ => SingleBadDataProblem("Not a Float", aKey).failure[Option[Float]]
     }
 
   def tryGetBoolean(aKey: String) = 
@@ -59,7 +59,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceBoolean(_,v)) => Some(v).successSBD
       case Some(NDuceBooleanOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a Boolean", aKey).fail[Option[Boolean]]
+      case _ => SingleBadDataProblem("Not a Boolean", aKey).failure[Option[Boolean]]
     }
     
   def tryGetDecimal(aKey: String) = 
@@ -67,7 +67,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceDecimal(_,v)) => Some(v).successSBD
       case Some(NDuceDecimalOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a BigDecimal", aKey).fail[Option[BigDecimal]]
+      case _ => SingleBadDataProblem("Not a BigDecimal", aKey).failure[Option[BigDecimal]]
     }
     
   def tryGetDateTime(aKey: String) = 
@@ -75,7 +75,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceDateTime(_,v)) => Some(v).successSBD
       case Some(NDuceDateTimeOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a String", aKey).fail[Option[DateTime]]
+      case _ => SingleBadDataProblem("Not a String", aKey).failure[Option[DateTime]]
     }
 
   def tryGetUUID(aKey: String) = 
@@ -83,7 +83,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceUUID(_,v)) => Some(v).successSBD
       case Some(NDuceUUIDOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a String", aKey).fail[Option[UUID]]
+      case _ => SingleBadDataProblem("Not a String", aKey).failure[Option[UUID]]
     }
   
   def tryGetBytes(aKey: String) = 
@@ -91,7 +91,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceBytes(_,v)) => Some(v).successSBD
       case Some(NDuceBytesOpt(_,v)) => v.successSBD
       case None => None.successSBD
-      case _ => SingleBadDataProblem("Not a String", aKey).fail[Option[Array[Byte]]]
+      case _ => SingleBadDataProblem("Not a String", aKey).failure[Option[Array[Byte]]]
     }
     
   def tryGetAsString(aKey: String) = 
@@ -116,7 +116,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
 	      case NDuceDateTimeOpt(k,v) => v.map(_.toString()).successSBD
 	      case NDuceUUID(k,v) => Some(v.toString()).successSBD
 	      case NDuceUUIDOpt(k,v) => v.map(_.toString()).successSBD
-	      case _ => SingleBadDataProblem("Does not have a valid string representation", aKey).fail[Option[String]]
+	      case _ => SingleBadDataProblem("Does not have a valid string representation", aKey).failure[Option[String]]
         }
       case None => None.successSBD
     }
@@ -127,7 +127,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
       case Some(NDuceBooleanOpt(_,Some(v))) => v.successSBD
       case Some(NDuceBooleanOpt(_,None)) => false.successSBD
       case None => false.successSBD
-      case _ => SingleBadDataProblem("Not a Boolean", aKey).fail[Boolean]
+      case _ => SingleBadDataProblem("Not a Boolean", aKey).failure[Boolean]
     }
     
   def tryGetTypeInfo() = Some(key).successSBD
@@ -144,7 +144,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
               case x => 
                 SingleBadDataProblem("%d cannot be an XTractor: %s".format(i, x.getClass.getName))
                   .toMBD.prefixWithPath(List(aKey))
-                  .fail[NDuceXTractor]
+                  .failure[NDuceXTractor]
             } }
           .toList
           .sequence
@@ -154,7 +154,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
   def tryGetXTractor(aKey: String): AlmValidationSBD[Option[XTractor]] =
     opsByKeys.get(aKey) match {
       case Some(agg @ NDuceAggregate(_, _, _)) => Some(new NDuceXTractor(agg, Some(this))).successSBD
-	  case Some(_) => SingleBadDataProblem("Cannot be an XTractor", aKey).fail[Option[XTractor]]
+	  case Some(_) => SingleBadDataProblem("Cannot be an XTractor", aKey).failure[Option[XTractor]]
 	  case None => None.successSBD
     }
     
@@ -180,7 +180,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
 	      case NDuceDateTimeOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
 	      case NDuceUUID(k,v) => Some(new XTractorAtomicAny(v, k, Some(this))).successSBD
 	      case NDuceUUIDOpt(k,v) => v.map(new XTractorAtomicAny(_, k, Some(this))).successSBD
-	      case _ => SingleBadDataProblem("Does not have an atomic representation", aKey).fail[Option[XTractorAtomic]]
+	      case _ => SingleBadDataProblem("Does not have an atomic representation", aKey).failure[Option[XTractorAtomic]]
         }
       case None => None.successSBD
     }
@@ -196,7 +196,7 @@ class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) ex
           	 .toList
           	 .sequence
 	      case _ => 
-	        SingleBadDataProblem("Does not have an atomic representation", aKey).toMBD.fail[List[XTractorAtomic]]
+	        SingleBadDataProblem("Does not have an atomic representation", aKey).toMBD.failure[List[XTractorAtomic]]
         }
       case None => Nil.successMBD
     }

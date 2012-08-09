@@ -5,8 +5,9 @@ import akka.testkit.TestActorRef
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.Duration
+import almhirt.validation.AlmValidation._
 import almhirt.almakka._
-import scalaz.{Success}
+import scalaz._, Scalaz._
 
 class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentForTesting {
   implicit def randUUID = java.util.UUID.randomUUID
@@ -21,7 +22,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	"return a subscription when subscribed to" in {
 	  val channel = getChannel
 	  val future = channel <* ({case _ => ()}, _ => true)
-	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription = future.result(Duration.Inf)
 	  subscription must not beNull
 	}
 	
@@ -30,7 +31,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel <* ({case _ => hit = true}, _ => true)
-	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription = future.result(Duration.Inf).forceResult
 	  subscription.dispose()
 	  channel.deliver(Message("a"))
 	  !hit
@@ -41,8 +42,8 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  var hitCount = 0
 	  val future1 = channel <* ({case _ => hitCount += 1}, _ => true)
 	  val future2 = channel <* ({case _ => hitCount += 2}, _ => true)
-	  val subscription1 = Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
-	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription1 = future1.result(Duration.Inf).forceResult
+	  val subscription2 = future2.result(Duration.Inf).forceResult
 	  subscription1.dispose()
 	  channel.deliver(Message("a"))
 	  hitCount must beEqualTo(2)
@@ -52,7 +53,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel <* ({case _ => hit = true}, _ => true)
-	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription = future.result(Duration.Inf).forceResult
 	  channel.deliver(Message("a"))
 	  hit
 	}
@@ -62,8 +63,8 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  var hitCount = 0
 	  val future1 = channel <* ({case _ => hitCount += 1}, _ => true)
 	  val future2 = channel <* ({case _ => hitCount += 2}, _ => true)
-	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
-	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription1= future1.result(Duration.Inf).forceResult
+	  val subscription2 = future2.result(Duration.Inf).forceResult
 	  channel.deliver(Message("a"))
 	  hitCount must beEqualTo(3)
 	}
@@ -73,8 +74,8 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  var hitCount = 0
 	  val future1 = channel <* ({case _ => hitCount += 1}, _ => false)
 	  val future2 = channel <* ({case _ => hitCount += 2}, _ => true)
-	  val subscription1= Await.result(future1.underlying, Duration.Inf) match { case Success(s) => s }
-	  val subscription2 = Await.result(future2.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription1= future1.result(Duration.Inf).forceResult
+	  val subscription2 = future2.result(Duration.Inf).forceResult
 	  channel.deliver(Message("a"))
 	  hitCount must beEqualTo(2)
 	}
@@ -83,7 +84,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel <* ({case _ => hit = true}, _ => false)
-	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription = future.result(Duration.Inf).forceResult
 	  channel.deliver(Message("a"))
 	  !hit
 	}
@@ -92,7 +93,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel <* ({case _ => hit = true}, x => x.payload match {case "a" => true } )
-	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription = future.result(Duration.Inf).forceResult
 	  channel.deliver(Message("a"))
 	  hit
 	}
@@ -101,7 +102,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel <* ({case _ => hit = true}, x => x.payload match {case "a" => true; case _ => false } )
-	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription = future.result(Duration.Inf).forceResult
 	  channel.deliver(Message("b"))
 	  !hit
 	}
@@ -110,7 +111,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaComponentF
 	  val channel = getChannel
 	  var hit = false
 	  val future = channel <* ({case _ => hit = true}, x => x.payload match { case "1" => true; case _ => false } )
-	  val subscription = Await.result(future.underlying, Duration.Inf) match { case Success(s) => s }
+	  val subscription = future.result(Duration.Inf).forceResult
 	  channel.deliver(Message("a"))
 	  !hit
 	}

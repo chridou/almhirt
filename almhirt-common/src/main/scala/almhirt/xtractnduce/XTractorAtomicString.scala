@@ -43,9 +43,9 @@ class XTractorAtomicString(value: String, val key: String, val parent: Option[XT
 
   def tryGetString(): AlmValidationSBD[Option[String]] =
 	  if(value.trim.isEmpty)
-	    Success(None)
+	    None.success
 	  else
-	    Success(Some(value))
+	    Some(value).success
   
   def tryGetInt(): AlmValidationSBD[Option[Int]] =
 	onEmptyNoneElse(() => value.toIntAlm(pathAsString()))
@@ -82,7 +82,7 @@ class XTractorAtomicString(value: String, val key: String, val parent: Option[XT
   
   private def onEmptyNoneElse[U](f: () => AlmValidationSBD[U]): AlmValidationSBD[Option[U]] = {
     if(value.trim.isEmpty)
-	  Success(None)
+	  None.success
 	else
 	  f().map(Some(_))
   }

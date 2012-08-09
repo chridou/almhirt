@@ -1,7 +1,7 @@
 package almhirt.xtractnduce.xml
 
 import org.specs2.mutable._
-import scalaz.Success
+import scalaz._, Scalaz._
 import almhirt.validation.AlmValidation._
 
 class XmlXTractorSpecs extends Specification {
@@ -220,13 +220,13 @@ class XmlXTractorSpecs extends Specification {
       bob.xtractor.getXTractor("spaces").isFailure
     }
     """return a success of None when queried with tryGetElement""" in {
-      bob.xtractor.tryGetXTractor("spaces") must beEqualTo(Success(None))
+      bob.xtractor.tryGetXTractor("spaces") must beEqualTo(None.success)
     }
     """return a success of [] when queried with getXTractors""" in {
-      bob.xtractor.getXTractors("spaces") must beEqualTo(Success(Nil))
+      bob.xtractor.getXTractors("spaces") must beEqualTo(Nil.success)
     }
     """return a success of [] when queried with getAtomics""" in {
-      bob.xtractor.getAtomics("spaces") must beEqualTo(Success(Nil))
+      bob.xtractor.getAtomics("spaces") must beEqualTo(Nil.success)
     }
   }
   
@@ -309,7 +309,7 @@ class XmlXTractorSpecs extends Specification {
       bob.xtractor.getAtomics("scores").isSuccess
     }
     """return a success with a list of 1 to 10 when queried with getAtomicsEvaluated""" in {
-      bob.xtractor.getAtomicsEvaluated("scores", x => x.getInt) must beEqualTo(Success(List(1 to 10: _*)))
+      bob.xtractor.getAtomicsEvaluated("scores", x => x.getInt) must beEqualTo((List(1 to 10: _*)).success)
     }
   }
   
@@ -396,14 +396,14 @@ class XmlXTractorSpecs extends Specification {
     """contain a street "Downing Street"""" in {
       val xtractor = bob.xtractor
       val address = xtractor.getXTractor("address")
-      val street = address.flatMap{_.getString("street")}
-      street must beEqualTo(Success("Downing Street"))
+      val street = address.bind{_.getString("street")}
+      street must beEqualTo(("Downing Street").success)
     } 
     """contain a city "London"""" in {
       val xtractor = bob.xtractor
       val address = xtractor.getXTractor("address")
-      val city = address.flatMap{_.getString("city")}
-      city must beEqualTo(Success("London"))
+      val city = address.bind{_.getString("city")}
+      city must beEqualTo("London".success)
     } 
   }
 }

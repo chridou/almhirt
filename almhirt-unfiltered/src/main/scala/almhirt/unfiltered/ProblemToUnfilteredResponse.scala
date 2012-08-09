@@ -29,11 +29,8 @@ object ProblemToUnfilteredResponse extends ProblemToUnfilteredResponseImplicits 
     }
   }
   
-  def respondOnValidation[T](validation: AlmValidation[T], onSuccess: T => ResponseFunction[HttpResponse]) = {
-    validation match {
-      case Success(r) => onSuccess(r)
-      case Failure(problem) => problemToResponse(problem)
-    }
-  }
+  def respondOnValidation[T](validation: AlmValidation[T], onSuccess: T => ResponseFunction[HttpResponse]) =
+    validation fold (problemToResponse(_), onSuccess(_))
 }
+
 

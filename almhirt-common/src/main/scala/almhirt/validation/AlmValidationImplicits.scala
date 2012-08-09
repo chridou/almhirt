@@ -1,7 +1,7 @@
 package almhirt.validation
 
 import java.util.UUID
-import scalaz._, std.AllInstances._
+import scalaz._, Scalaz._
 import org.joda.time.DateTime
 import Problem._
 
@@ -47,125 +47,79 @@ trait AlmValidationImplicits {
     def validationOut(): Validation[P, Option[V]] =
       value match {
         case Some(validation) =>
-          validation match {
-            case Success(v) => v.success[P].map(Some(_))
-            case Failure(f) => f.fail[Option[V]]
-          }
+          validation.fold(f => f.failure[Option[V]], _.success[P].map(Some(_)))
         case None => None.success[P]
     }
   }
 
-  implicit def validationOption2OptionValidation[P, V](value: Validation[P,Option[V]]): ValidationOptionW[P, V] =
-    new ValidationOptionW(value)
-  final class ValidationOptionW[P, V](value: Validation[P,Option[V]]) {
+  implicit def validationOption2OptionValidation[P, V](validation: Validation[P,Option[V]]): ValidationOptionW[P, V] =
+    new ValidationOptionW(validation)
+  final class ValidationOptionW[P, V](validation: Validation[P,Option[V]]) {
     def optionOut(): Option[Validation[P,V]] =
-      value match {
-        case Success(opt) =>
-          opt match {
-            case Some(v) => Some(v.success[P])
-            case None => None
-          }
-        case Failure(f) => Some(f.fail[V])
-    }
+      validation.fold(
+          f => Some(f.failure[V]),
+          s => s.map(_.success[P]))
   }
   
-  def multipleBadDataFromValidationNel[T](validationNel: ValidationNEL[String, T]): AlmValidationMBD[T] =
-    validationNel match {
-      case Success(r) => r.successMBD
-      case Failure(nel) => 
-        val keysAndMessages = nel.list.zipWithIndex.map{case (msg, i) => "[i]".format(i) -> msg}
-        MultipleBadDataProblem(
-          "One or more errors found", 
-          Map(keysAndMessages : _*)).fail[T]
-      }
-
+//  def multipleBadDataFromValidationNel[T](validationNel: ValidationNEL[String, T]): AlmValidationMBD[T] =
+//    validationNel match {
+//      case Success(r) => r.successMBD
+//      case Failure(nel) => 
+//        val keysAndMessages = nel.list.zipWithIndex.map{case (msg, i) => "[i]".format(i) -> msg}
+//        MultipleBadDataProblem(
+//          "One or more errors found", 
+//          Map(keysAndMessages : _*)).fail[T]
+//      }
+//
   
-  implicit def validationNel2AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) = new AlmValidationNelW[T](validationNel)
-  final class AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) {
-    def toMBD(): Validation[MultipleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
-  }
+//  implicit def validationNel2AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) = new AlmValidationNelW[T](validationNel)
+//  final class AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) {
+//    def toMBD(): Validation[MultipleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
+//  }
 
   implicit def validation2StringValidationW[T](validation: Validation[String, T]) = new StringValidationW[T](validation)
   final class StringValidationW[T](validation: Validation[String, T]) {
-    def toAlmValidation(problemOnFail: Problem = defaultProblem): AlmValidation[T] = {
-      validation match {
-        case Success(r) => r.success[Problem]
-        case Failure(msg) => problemOnFail.withMessage(msg).fail[T]
-      }
-    }
+    def toAlmValidation(problemOnFail: Problem = defaultProblem): AlmValidation[T] =
+      validation fold(problemOnFail.withMessage(_).failure[T], _.success[Problem])
   }
 
   implicit def validation2ValidationProblemW[P <: Problem, T](validation: Validation[P, T]) = new ValidationProblemW[P, T](validation)
   final class ValidationProblemW[P <: Problem, T](validation: Validation[P, T]) {
-    def onFailure(sideEffect: Problem => Unit): Validation[P, T] = {
-      validation match {
-        case Success(_) => 
-          validation
-        case Failure(f) =>
-          sideEffect(f)
-          validation
-      }
-    }
+    def onFailure(sideEffect: Problem => Unit): Validation[P, T] = 
+      validation fold (f => {sideEffect(f); validation}, _ => validation)
     
-    def onSuccess(sideEffect: T => Unit): Validation[P, T] = {
-      validation match {
-        case Success(r) => 
-          sideEffect(r)
-          validation
-        case Failure(f) =>
-          validation
-      }
-    }
+    def onSuccess(sideEffect: T => Unit): Validation[P, T] = 
+      validation fold (_ => validation, r => {sideEffect(r); validation})
     
     def noProblem(v: => T): Validation[P, T] = 
-      validation match {
-        case Success(_) => validation
-        case Failure(prob) =>
-          if(prob.severity <= NoProblem)
-            v.success[P]
-          else
-            validation
-      }
-
+      validation
+        .fold(
+            prob => if(prob.severity <= NoProblem) v.success[P] else validation,
+            _ => validation)
+ 
     def compensate(v: => T): Validation[P, T] = 
-      validation match {
-        case Success(_) => validation
-        case Failure(prob) =>
-          if(prob.severity <= Minor)
-            v.success[P]
-          else
-            validation
-      }
+      validation
+        .fold(
+            prob => if(prob.severity <= Minor) v.success[P] else validation,
+            _ => validation)
 
     def recover(v: => T): Validation[P, T] = 
-      validation match {
-        case Success(_) => validation
-        case Failure(prob) =>
-          if(prob.severity <= Major)
-            v.success[P]
-          else
-            validation
-      }
+      validation
+        .fold(
+            prob => if(prob.severity <= Major) v.success[P] else validation,
+            _ => validation)
     
-    def forceResult(): T = {
-      validation match {
-        case Success(v) => v
-        case Failure(prob) => throw ValidationForcedException(prob)
-      }
-    }
+    def forceResult(): T = 
+      validation fold (prob => throw ValidationForcedException(prob), v => v)
 
-    def toProblemOption(): Option[Problem] = {
-      validation match {
-        case Success(_) => None
-        case Failure(prob) => Some(prob) 
-      }
-    }
-  }
+    def toProblemOption(): Option[Problem] = 
+      validation fold (prob => Some(prob), _ => None)
+   }
   
   implicit def funOpt2AlmValidationW[T,U](f: T => Option[U]) = new FunOptAlmValidationW(f)
   final class FunOptAlmValidationW[T, U](f: T => Option[U]) {
     def >?(x:T): Validation[KeyNotFoundProblem, U] =
-      f(x).map(_.success).getOrElse(KeyNotFoundProblem("Key not found: %s".format(x)).fail)
+      f(x).map(_.success).getOrElse(KeyNotFoundProblem("Key not found: %s".format(x)).failure)
   }
   
   implicit def option2AlmOptionW[T](opt: Option[T]) = new AlmOptionW(opt)
@@ -180,20 +134,14 @@ trait AlmValidationImplicits {
     new SingleBadDataProblemValidationW[T](badDataProblemValidation)
   final class SingleBadDataProblemValidationW[T](badDataProblemValidation: AlmValidationSBD[T]) {
     def toMBD(): AlmValidationMBD[T] =
-      badDataProblemValidation match {
-      case Success(r) => r.successMBD
-      case Failure(f) => f.toMBD().fail[T]
-    }
+      badDataProblemValidation fold (_.toMBD().failure[T], _.successMBD)
   }
   
   implicit def fromValidationToValidationThrowableW[T](validation: Validation[Throwable, T]): ValidationThrowableW[T] =
     new ValidationThrowableW[T](validation)
   final class ValidationThrowableW[T](validation: Validation[Throwable, T]) {
     def fromExceptional(problemOnFail: Problem = defaultProblem): AlmValidation[T] = 
-      validation match {
-      case Success(r) => r.successAlm
-      case Failure(exn) => problemOnFail.withMessage(exn.getMessage).withException(exn).fail[T] 
-    }
+      validation fold (exn => problemOnFail.withMessage(exn.getMessage).withException(exn).failure[T], _.successAlm)
   }
   
   implicit def fromListValidation2ListAlmValidationW[R](v: List[AlmValidation[R]]): ListAlmValidationW[R] = new ListAlmValidationW(v)
@@ -203,7 +151,7 @@ trait AlmValidationImplicits {
         case (succs, Nil) => succs.flatMap(_.toOption).toList.success
         case (_, probs) => 
           val problems = probs.flatMap(_.toProblemOption)
-          (NonEmptyList(problems.head, problems.tail: _*) aggregate (msg)).fail
+          (NonEmptyList(problems.head, problems.tail: _*) aggregate (msg)).failure
       }
     }
     def aggregateProblems(): AlmValidation[List[R]] = aggregateProblems("One or more problems occured. See causes.")

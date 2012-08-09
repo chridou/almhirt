@@ -16,14 +16,14 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
   def flatMap[T](compute: R => AlmFuture[T]): AlmFuture[T] =
     new AlmFuture(underlying flatMap { validation => 
       validation fold (
-        failure = f => Promise.successful(f.fail[T]),
-        success = r => compute(r).underlying) } )
+        f => Promise.successful(f.failure[T]),
+        r => compute(r).underlying) } )
 
   def mapV[T](compute: R => AlmValidation[T]): AlmFuture[T] =
-    new AlmFuture[T](underlying map { validation => validation flatMap compute })
+    new AlmFuture[T](underlying map { validation => validation bind compute })
   
   def fold[T](failure: Problem => T = identity[Problem] _, success: R => T = identity[R] _): Future[T] =
-    underlying map { validation => validation fold (failure = failure, success = success)}
+    underlying map { validation => validation fold (failure, success)}
   
   def onComplete(handler: AlmValidation[R] => Unit): AlmFuture[R] = {
     underlying onComplete({
@@ -33,28 +33,36 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
           case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)) 
           case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)) 
         }
-        handler(prob.fail[R])
+        handler(prob.failure[R])
+      }
+    })
+  }
+
+  def onComplete(fail: Problem => Unit, succ: R => Unit): AlmFuture[R] = {
+    underlying onComplete({
+      case Right(validation) => validation fold(fail, succ)
+      case Left(err) => {
+        val prob = err match {
+          case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)) 
+          case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)) 
+        }
+        fail(prob)
       }
     })
   }
   
-  def onSuccess(onRes: R => Unit): AlmFuture[R] = {
+  def onSuccess(onRes: R => Unit): AlmFuture[R] = 
     underlying onSuccess({
-      case Success(r) => onRes(r)
-      case _ => ()})
-  }
-
-  def onFailure(onProb: Problem => Unit): AlmFuture[R] = {
-    onComplete({
-      case Failure(prob) => onProb(prob)
-      case _ => ()
+      case x => x fold(_ => (), onRes(_))
     })
-  }
+
+  def onFailure(onProb: Problem => Unit): AlmFuture[R] = 
+    onComplete(_ fold(onProb(_), _ => ()))
  
   def andThen(effect: AlmValidation[R] => Unit): AlmFuture[R] = {
     new AlmFuture(underlying andThen{
       case Right(r) => effect(r)
-      case Left(err) => effect(UnspecifiedSystemProblem(err.getMessage, exception = Some(err)).fail[R])
+      case Left(err) => effect(UnspecifiedSystemProblem(err.getMessage, exception = Some(err)).failure[R])
     })
   }
   
@@ -64,8 +72,8 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
     try {
       Await.result(underlying, atMost)
     } catch {
-      case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)).fail[R] 
-      case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)).fail[R] 
+      case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)).failure[R] 
+      case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)).failure[R] 
     }
 }
 

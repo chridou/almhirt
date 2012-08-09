@@ -11,49 +11,49 @@ trait AlmValidationParseOps {
     try {
       toParse.toInt.success[SingleBadDataProblem]
     } catch {
-      case err => badData("Not a valid number(Int):%s".format(toParse), key).fail[Int]
+      case err => badData("Not a valid number(Int):%s".format(toParse), key).failure[Int]
     }
 
   def parseLongAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Long] =
     try {
       toParse.toLong.success[SingleBadDataProblem]
     } catch {
-      case err => badData("Not a valid number(Long)".format(toParse), key).fail[Long]
+      case err => badData("Not a valid number(Long)".format(toParse), key).failure[Long]
     }
   
   def parseDoubleAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Double] =
     try {
       toParse.toDouble.success[SingleBadDataProblem]
     } catch {
-      case err => badData("Not a valid number(Double)".format(toParse), key).fail[Double]
+      case err => badData("Not a valid number(Double)".format(toParse), key).failure[Double]
     }
 
   def parseFloatAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Float] =
     try {
       toParse.toFloat.success[SingleBadDataProblem]
     } catch {
-      case err => badData("Not a valid number(Float)".format(toParse), key).fail[Float]
+      case err => badData("Not a valid number(Float)".format(toParse), key).failure[Float]
     }
 
   def parseDecimalAlm(toParse: String, key: String = "some value"): AlmValidationSBD[BigDecimal] =
     try {
       BigDecimal(toParse).success[SingleBadDataProblem]
      } catch {
-      case err => badData("Not a valid number(BigDecimal)".format(toParse), key).fail[BigDecimal]
+      case err => badData("Not a valid number(BigDecimal)".format(toParse), key).failure[BigDecimal]
     }
 
   def parseDateTimeAlm(toParse: String, key: String = "some value"): AlmValidationSBD[DateTime] =
     try {
       new DateTime(toParse).success[SingleBadDataProblem]
      } catch {
-      case err => badData("Not a valid number(DateTime)".format(toParse), key).fail[DateTime]
+      case err => badData("Not a valid number(DateTime)".format(toParse), key).failure[DateTime]
     }
 
   def parseUUIDAlm(toParse: String, key: String = "some value"): AlmValidationSBD[UUID] =
     try {
       UUID.fromString(toParse).success[SingleBadDataProblem]
      } catch {
-      case err => badData("Not a valid number(DateTime)".format(toParse), key).fail[UUID]
+      case err => badData("Not a valid number(DateTime)".format(toParse), key).failure[UUID]
     }
      
      
@@ -61,14 +61,14 @@ trait AlmValidationParseOps {
     try {
       toParse.toBoolean.success[SingleBadDataProblem]
      } catch {
-      case err => badData("Not a valid Boolean".format(toParse), key).fail[Boolean]
+      case err => badData("Not a valid Boolean".format(toParse), key).failure[Boolean]
     }
 
   def parseBase64Alm(toParse: String, key: String = "some value"): AlmValidationSBD[Array[Byte]] =
     try {
-      Success(org.apache.commons.codec.binary.Base64.decodeBase64(toParse))
+      org.apache.commons.codec.binary.Base64.decodeBase64(toParse).success
      } catch {
-      case err => badData("Not a Base64 encoded String".format(toParse), key).fail[Array[Byte]]
+      case err => badData("Not a Base64 encoded String".format(toParse), key).failure[Array[Byte]]
     }
      
   def tryParseIntAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Option[Int]] =
@@ -99,17 +99,17 @@ trait AlmValidationParseOps {
     emptyStringIsNone(toParse, x => parseBase64Alm(x, key))
     
   def notEmpty(toTest: String, key: String = "some value"): AlmValidationSBD[String] =
-    if(toTest.isEmpty) badData("must not be empty", key).fail[String] else toTest.success[SingleBadDataProblem]
+    if(toTest.isEmpty) badData("must not be empty", key).failure[String] else toTest.success[SingleBadDataProblem]
 
   def notEmptyOrWhitespace(toTest: String, key: String = "some value"): AlmValidationSBD[String] =
     if(toTest.trim.isEmpty) 
-      badData("must not be empty or whitespaces", key).fail[String] 
+      badData("must not be empty or whitespaces", key).failure[String] 
     else 
       toTest.success[SingleBadDataProblem]
   
   private def emptyStringIsNone[T](str: String, f: String => AlmValidationSBD[T]) =
     if(str.trim.isEmpty)
-      Success(None)
+      None.success
     else
       f(str).map(Some(_))
 

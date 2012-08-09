@@ -35,15 +35,8 @@ trait AlmActorLogging { self: akka.actor.Actor =>
   
   implicit def almValidation2AlmValidationLoggingW[T](validation: AlmValidation[T]) = new AlmValidationLoggingW[T](validation)
   final class AlmValidationLoggingW[T](validation: AlmValidation[T]) {
-    def logFailure(minSeverity: Severity): AlmValidation[T] = {
-      validation match {
-        case Success(_) => 
-          validation
-        case Failure(problem) =>
-          logProblem(problem, minSeverity)
-          validation
-      }
-    }
+    def logFailure(minSeverity: Severity): AlmValidation[T] = 
+      validation fold (prob => {logProblem(prob, minSeverity); validation}, _ => validation )
     def logFailure(): AlmValidation[T] = logFailure(NoProblem)
   }
   

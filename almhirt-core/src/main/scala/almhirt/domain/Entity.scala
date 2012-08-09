@@ -1,8 +1,7 @@
 package almhirt.domain
 
 import java.util.UUID
-import scalaz.{NonEmptyList ,Validation, Success, Failure}
-import scalaz.Validation._
+import scalaz._, Scalaz._
 import almhirt.validation.Problem
 import almhirt.validation.Problem._
 
@@ -16,16 +15,13 @@ trait Entity[ES <: Entity[ES, Event], Event <: EntityEvent] extends CanHandleEnt
   def version: Long
 
   def applyEvent = {event: Event =>
-    for {
-      validated <- validateEvent(event)
-      entity <- 
+    validateEvent(event) bind ( validated =>
       	try {
-      	  Success(handlers(validated))
+      	  handlers(validated).success
       	} catch {
-      		case err: MatchError => Failure(UnhandledEntityEventProblem("Unhandled event: %s".format(event.getClass.getName), event))
-      		case err => Failure(defaultSystemProblem.withMessage(err.getMessage()))
-      	}
-    } yield entity
+      		case err: MatchError => UnhandledEntityEventProblem("Unhandled event: %s".format(event.getClass.getName), event).failure
+      		case err => defaultSystemProblem.withMessage(err.getMessage()).failure
+      	})
   }
   
   //private val unhandled: Event => EntityValidation[ES] = {event: Any => Failure(defaultSystemProblem.withMessage("Unhandled event")) }
@@ -45,45 +41,36 @@ trait Entity[ES <: Entity[ES, Event], Event <: EntityEvent] extends CanHandleEnt
   	
   protected def validateEvent(event: Event): Validation[Problem, Event] = {
   	if (event.entityId != this.id)
-  	  Failure(defaultApplicationProblem.withMessage("Ids do not match!"))
+  	  defaultApplicationProblem.withMessage("Ids do not match!").failure
   	else if(event.entityVersion != this.version)
-  	  Failure(CollisionProblem("Conflict: Versions do not match. Targetted version is %d but the entity has version %d. The event was: %s".format(event.entityVersion, this.version, event.getClass().getName)))
+  	  CollisionProblem("Conflict: Versions do not match. Targetted version is %d but the entity has version %d. The event was: %s".format(event.entityVersion, this.version, event.getClass().getName)).failure
   	else
-  	  Success(event)
+  	  event.success
   }
 }
 
 trait CanCreateFromEntityEvents[ES <: Entity[ES, Event], Event <: EntityEvent] extends CanHandleEntityEvent[ES, Event] {
   def applyEvent = { event: Event =>
   	try { 
-  	  Success(creationHandler(event)) 
+  	  creationHandler(event).success 
   	} catch {
-      case err: MatchError => Failure(defaultSystemProblem.withMessage("Unhandled creation event: %s".format(event.getClass.getName)))
-      case err => Failure(defaultSystemProblem.withMessage(err.getMessage()))}
+      case err: MatchError =>defaultSystemProblem.withMessage("Unhandled creation event: %s".format(event.getClass.getName)).failure
+      case err => defaultSystemProblem.withMessage(err.getMessage()).failure}
   }
 
   def rebuildFromHistory(history: NonEmptyList[Event]): EntityValidation[ES] = {
   	def buildEventSourced(es: ES, rest: List[Event]): EntityValidation[ES] = {
   	  rest match {
-  	  	case Nil => Success(es)
+  	  	case Nil => es.success
   	  	case x :: xs =>
-  	  	  es.applyEvent(x) match {
-  	  	  	case Success(agg) => buildEventSourced(agg, xs)
-  	  	  	case Failure(problem) => Failure(problem)
-  	  	  }
+  	  	  es.applyEvent(x) fold(_.failure, buildEventSourced(_, xs))
   	  }
   	}
-  	for {
-  	  freshES <- applyEvent(history.head)
-  	  built <- buildEventSourced(freshES, history.tail) 
-  	} yield built
+    applyEvent(history.head) bind (freshES => buildEventSourced(freshES, history.tail))
   }
   
   def create(event: Event): Update[Event,ES] =
-  	applyEvent(event) match {
-      case Success(es) => Update.accept(event, es) 
-      case Failure(f) => Update.reject(f)
-  }
+  	applyEvent(event) fold (Update.reject(_), Update.accept(event, _))
 
     
   protected def creationHandler: PartialFunction[Event, ES]
