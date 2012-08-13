@@ -28,6 +28,11 @@ trait AlmFutureImplicits {
     def |~> [U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       continueAsync[U](compute)(executor)
 
+    def doAsync(failure: Problem => Unit, sideEffect: T => Unit)(implicit executor: akka.dispatch.ExecutionContext): Unit =
+      validation fold(
+        prob => failure(prob), 
+        r => executor.execute(new Runnable{def run() = sideEffect(r)}))
+      
     def continueWithPromise[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
       validation fold(
         prob => new AlmFuture(Promise.successful(prob.failure)), 
