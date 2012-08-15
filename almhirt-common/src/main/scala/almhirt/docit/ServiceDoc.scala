@@ -7,10 +7,9 @@ case class ServiceDoc(
   
 case class ResourceDoc(
   name: String,
+  description: String,
   parameter: Option[String],
   requiresAuthentication: Boolean,
-  title: String,
-  description: String,
   resources: List[ResourceDoc],
   methods: List[MethodDoc])
   
