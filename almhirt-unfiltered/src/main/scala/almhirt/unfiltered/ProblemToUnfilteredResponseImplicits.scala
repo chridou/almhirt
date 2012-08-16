@@ -5,6 +5,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse
 import akka.dispatch.Future
 import unfiltered.response.ResponseFunction
 import almhirt.validation.AlmValidation
+import almhirt.validation.Problem
 import almhirt.concurrent.AlmFuture
 
 trait ProblemToUnfilteredResponseImplicits {
@@ -23,6 +24,12 @@ trait ProblemToUnfilteredResponseImplicits {
         createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): Future[AlmValidation[T]] = {
       akkaFuture.respond(responder, createSuccessResponse)		
     }
+  }
+  
+  implicit def problem2ProblemW(prob: Problem): ProblemW = new ProblemW(prob)
+  final class ProblemW(prob: Problem){
+    def toResponseFunction(): ResponseFunction[HttpResponse] = 
+      ProblemToUnfilteredResponse.problemToResponse(prob)
   }
 }
 
