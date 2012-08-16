@@ -1,9 +1,18 @@
 package almhirt.docit
 
+import scalaz._, Scalaz._
+
+trait PathPartElement{
+  def name: String
+  def title: String
+}
+
+case class DocTree(payload: PathPartElement, children: List[PathPartElement] = Nil)
+
 case class ServiceDoc(
   name: String,
-  description: String,
-  resources: List[ResourceDoc] = Nil)
+  title: String,
+  description: String) extends PathPartElement
   
 case class ResourceDoc(
   name: String,
@@ -11,8 +20,7 @@ case class ResourceDoc(
   description: String,
   parameter: Option[String],
   requiresAuthentication: Boolean,
-  resources: List[ResourceDoc] = Nil,
-  methods: List[MethodDoc]= Nil)
+  methods: List[MethodDoc]= Nil) extends PathPartElement
   
 sealed trait MethodDoc {
   def description: String
