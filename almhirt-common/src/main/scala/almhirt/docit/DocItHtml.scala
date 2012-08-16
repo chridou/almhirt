@@ -4,12 +4,19 @@ import scalaz._, Scalaz._
 
 case class DocItHtmlSettingss(css: Option[String] = None, styleClassMap: Map[String, String] = Map.empty)
 
-class DocItHtml private(tree: Tree[PathPartElement], settings: DocItHtmlSettingss)
+class DocItHtml private(tree: Tree[PathPartElement], settings: DocItHtmlSettingss) {
+  
+}
 
 object DocItHtml {
-//  def apply(service: DocTree, css: Option[String] = None, styleClassMap: Map[String, String] = Map.empty): DocItHtml =
-//    val tree =
-//      
-//    
-//    new DocItHtml(service, DocItHtmlSettingss(css, styleClassMap))
+  def apply(aDocTree: DocTree, css: Option[String] = None, styleClassMap: Map[String, String] = Map.empty): DocItHtml = {
+    def nodeFromDocTree(docTree: DocTree): Tree[PathPartElement] =
+      if(docTree.children.isEmpty)
+        docTree.payload.leaf
+      else
+        docTree.payload.node(docTree.children.map(nodeFromDocTree(_)): _*)      
+      
+    
+    new DocItHtml(nodeFromDocTree(aDocTree), DocItHtmlSettingss(css, styleClassMap))
+  }
 }

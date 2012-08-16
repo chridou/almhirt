@@ -7,7 +7,7 @@ trait PathPartElement{
   def title: String
 }
 
-case class DocTree(payload: PathPartElement, children: List[PathPartElement] = Nil)
+case class DocTree(payload: PathPartElement, children: List[DocTree] = Nil)
 
 case class ServiceDoc(
   name: String,
