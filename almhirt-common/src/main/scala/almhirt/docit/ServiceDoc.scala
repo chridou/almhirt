@@ -18,14 +18,16 @@ sealed trait MethodDoc {
   def description: String
   def methodParams: List[MethodParamDoc]
   def contentTypes: List[ContentTypeDoc]
+  def headers: List[HeaderDoc]
 }
 
-case class GET(description: String, methodParams: List[MethodParamDoc], contentTypes: List[ContentTypeDoc]) extends MethodDoc
-case class PUT(description: String, methodParams: List[MethodParamDoc], contentTypes: List[ContentTypeDoc]) extends MethodDoc
-case class POST(description: String, methodParams: List[MethodParamDoc], contentTypes: List[ContentTypeDoc]) extends MethodDoc
-case class DELETE(description: String, methodParams: List[MethodParamDoc], contentTypes: List[ContentTypeDoc]) extends MethodDoc
+case class GET(description: String, methodParams: List[MethodParamDoc] = Nil, contentTypes: List[ContentTypeDoc] = Nil, headers: List[HeaderDoc] = Nil) extends MethodDoc
+case class PUT(description: String, methodParams: List[MethodParamDoc] = Nil, contentTypes: List[ContentTypeDoc] = Nil, headers: List[HeaderDoc] = Nil) extends MethodDoc
+case class POST(description: String, methodParams: List[MethodParamDoc] = Nil, contentTypes: List[ContentTypeDoc] = Nil, headers: List[HeaderDoc] = Nil) extends MethodDoc
+case class DELETE(description: String, methodParams: List[MethodParamDoc] = Nil, contentTypes: List[ContentTypeDoc] = Nil, headers: List[HeaderDoc] = Nil) extends MethodDoc
 
 sealed trait MethodParamDoc
+sealed trait HeaderDoc
 
 sealed trait ContentTypeDoc{
   def headerString: String
