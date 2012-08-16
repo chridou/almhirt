@@ -3,15 +3,16 @@ package almhirt.docit
 case class ServiceDoc(
   name: String,
   description: String,
-  resources: List[ResourceDoc])
+  resources: List[ResourceDoc] = Nil)
   
 case class ResourceDoc(
   name: String,
+  title: String,
   description: String,
   parameter: Option[String],
   requiresAuthentication: Boolean,
-  resources: List[ResourceDoc],
-  methods: List[MethodDoc])
+  resources: List[ResourceDoc] = Nil,
+  methods: List[MethodDoc]= Nil)
   
 sealed trait MethodDoc {
   def description: String
