@@ -47,7 +47,6 @@ object DocItHtml {
           else
             NodeSeq.Empty  
         }
-
         
         { if(!pathFromRoot.isEmpty)
             NodeSeq.Empty
