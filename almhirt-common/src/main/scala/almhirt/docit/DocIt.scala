@@ -4,8 +4,8 @@ import scala.xml.Node
 import scalaz._, Scalaz._
 
 object DocIt {
-  def apply(aDocTree: DocTreeNode): Tree[DocItPathPartElement] = {
-    def nodeFromDocTree(docTree: DocTreeNode): Tree[DocItPathPartElement] =
+  def apply(aDocTree: DocTreeNode): Tree[DocItPathNode] = {
+    def nodeFromDocTree(docTree: DocTreeNode): Tree[DocItPathNode] =
       if(docTree.children.isEmpty)
         docTree.payload.leaf
       else {
@@ -15,7 +15,7 @@ object DocIt {
     nodeFromDocTree(aDocTree)
   }
   
-  def findByPath(treeLoc: TreeLoc[DocItPathPartElement], path: List[String]): Option[TreeLoc[DocItPathPartElement]] = {
+  def findByPath(treeLoc: TreeLoc[DocItPathNode], path: List[String]): Option[TreeLoc[DocItPathNode]] = {
     path match {
       case Nil => 
         Some(treeLoc)
