@@ -3,15 +3,24 @@ package almhirt.docit
 import scala.xml.Node
 import scalaz._, Scalaz._
 
-case class DocItHtmlSettingss(css: Option[String] = None, styleClassMap: Map[String, String] = Map.empty)
-
 object DocIt {
-  def apply(aDocTree: DocTree): Tree[PathPartElement] = {
-    def nodeFromDocTree(docTree: DocTree): Tree[PathPartElement] =
+  def apply(aDocTree: DocTreeNode): Tree[DocItPathPartElement] = {
+    def nodeFromDocTree(docTree: DocTreeNode): Tree[DocItPathPartElement] =
       if(docTree.children.isEmpty)
         docTree.payload.leaf
-      else
-        docTree.payload.node(docTree.children.map(nodeFromDocTree(_)): _*)      
+      else {
+        val subForest = docTree.children.map(nodeFromDocTree(_))
+        docTree.payload.node(subForest: _*)     
+      }
     nodeFromDocTree(aDocTree)
+  }
+  
+  def findByPath(treeLoc: TreeLoc[DocItPathPartElement], path: List[String]): Option[TreeLoc[DocItPathPartElement]] = {
+    path match {
+      case Nil => 
+        Some(treeLoc)
+      case h :: t =>
+        treeLoc.findChild(child => child.rootLabel.name == h).flatMap(findByPath(_, t))
+    }
   }
 }
