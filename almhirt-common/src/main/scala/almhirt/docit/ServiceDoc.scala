@@ -5,6 +5,7 @@ import scalaz._, Scalaz._
 trait DocItPathPartElement{
   def name: String
   def title: String
+  def description: String
 }
 
 case class DocTreeNode(payload: DocItPathPartElement, children: List[DocTreeNode] = Nil)

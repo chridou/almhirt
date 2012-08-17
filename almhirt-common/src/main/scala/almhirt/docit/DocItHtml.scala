@@ -34,6 +34,9 @@ object DocItHtml {
         { settings.styleClassMap.get("title")
             .map(style => <h1 class={style}>{tree.getLabel.title}</h1>)
             .getOrElse (<h1>{tree.getLabel.title}</h1>) }
+        { settings.styleClassMap.get("description")
+            .map(style => <p class={style}>{tree.getLabel.description}</p>)
+            .getOrElse (<p>{tree.getLabel.description}</p>) }
       </body>
     </html>
   }
