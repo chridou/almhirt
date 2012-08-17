@@ -25,6 +25,7 @@ object DocItHtml {
     apply(DocIt(aDocTree).loc, settings)
     
   def renderPage(tree: TreeLoc[DocItPathPartElement], settings: DocItHtmlSettingss): Elem = {
+    val docItem = tree.getLabel
     <html xmlns="http://www.w3.org/1999/xhtml">
       <head>
         <title>{tree.getLabel.title}</title>
@@ -32,11 +33,23 @@ object DocItHtml {
       </head>
       <body>
         { settings.styleClassMap.get("title")
-            .map(style => <h1 class={style}>{tree.getLabel.title}</h1>)
-            .getOrElse (<h1>{tree.getLabel.title}</h1>) }
-        { settings.styleClassMap.get("description")
-            .map(style => <p class={style}>{tree.getLabel.description}</p>)
-            .getOrElse (<p>{tree.getLabel.description}</p>) }
+            .map(style => <h1 class={style}>{docItem.title}</h1>)
+            .getOrElse (<h1>{docItem.title}</h1>) }
+
+       { settings.styleClassMap.get("description")
+            .map(style => <p class={style}>{docItem.description}</p>)
+            .getOrElse (<p>{docItem.description}</p>) }
+        
+        { docItem match {
+            case resourceDoc: ResourceDoc =>
+              resourceDoc.parameter.map(p => 
+                settings.styleClassMap.get("description")
+                  .map(style => <p class={style}>{p}</p>)
+                  .getOrElse (<p>{p}</p>)).getOrElse(NodeSeq.Empty)
+            case _ => 
+              NodeSeq.Empty
+          }
+        }
       </body>
     </html>
   }
