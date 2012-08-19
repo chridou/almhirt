@@ -24,11 +24,22 @@ object DocItHtml {
   def apply(aDocTree: DocTreeNode, settings: DocItHtmlSettingss): DocItHtml = 
     apply(DocIt(aDocTree).loc, settings)
     
+//  private def accumulatePathElements(pathFromRoot: List[TreeLoc[DocItPathNode]], acc: List[(List[String], DocItPathNode)]): List[(List[String], DocItPathNode)] = {
+//    pathFromRoot match {
+//      case Nil => 
+//        acc
+//      case h :: t =>
+//        pathFromRoot(t, acc)
+//    }
+//  }
+    
   def renderPage(treeLoc: TreeLoc[DocItPathNode], settings: DocItHtmlSettingss): Elem = {
     val docItem = treeLoc.getLabel
     val pathFromRoot = treeLoc.path.toList.reverse
     val parameters = 
       pathFromRoot.flatMap{case res: ResourceDoc => res.parameter.map((res.name, _)) case _ => None}.toList
+    val methods = 
+      pathFromRoot.flatMap{case res: ResourceDoc => res.methods case _ => Nil}
     val requiresAuthentication = docItem match { case res: ResourceDoc => res.requiresAuthentication case _ => false }
     <html>
       <head>
@@ -79,6 +90,32 @@ object DocItHtml {
         { settings.styleClassMap.get("description")
             .map(style => <p class={style}>{docItem.description}</p>)
             .getOrElse (<p>{docItem.description}</p>) }
+        
+        { if(methods.isEmpty)
+            NodeSeq.Empty
+          else {
+            val nodeHeader =
+              settings.styleClassMap.get("methods-header")
+                .map(style => <h2 class={style}>Methods:</h2>)
+                  .getOrElse (<h2>Methods:</h2>)
+              
+            val tableNode =
+              <table>{
+                methods.map{ method => {
+                  settings.styleClassMap.get("methods-row")
+                    .map(style => 
+                      <tr class={style}>
+                        <td>{method.name}</td>
+                        <td>
+                          <p>{method.description}</p>
+                          <
+                        </td>
+                      </tr>)
+                    .getOrElse (<tr><td>{name}</td><td>{desc}</td></tr>)}}}
+              </table>
+            NodeSeq.fromSeq(Seq(nodeHeader, tableNode))
+          }
+        }
       </body>
     </html>
   }
