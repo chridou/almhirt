@@ -165,7 +165,7 @@ object DocItHtml {
                                    <h4>{p.name}(Flag)</h4>
                           	     else
                           	       <h4>{p.name}</h4> }
-                              <p>p.description</p>
+                              <p>{p.description}</p>
                             </div>)}
                           <h3>ContentTypes:</h3>
                           { method.contentTypes.map(ct => 
@@ -186,7 +186,7 @@ object DocItHtml {
                                    <h4>{p.name}(Flag)</h4>
                           	     else
                           	       <h4>{p.name}</h4> }
-                              <p>p.description</p>
+                              <p>{p.description}</p>
                             </div>)}
                           <h3>ContentTypes:</h3>
                             { method.contentTypes.map(ct => 
