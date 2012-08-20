@@ -64,6 +64,11 @@ case object ImgPng extends ContentTypeDoc {
   val headerString = "image/png"
 }
 
+case object TextPlain extends ContentTypeDoc {
+  val docLink = Some("""http://www.iana.org/assignments/media-types/image/index.html""")
+  val headerString = "text/plain"
+}
+
 case class CustomContentType(headerString: String, docLink: Option[String] = None) extends ContentTypeDoc
 
 sealed trait MethodParamDoc{
