@@ -24,28 +24,62 @@ object DocItHtml {
   def apply(aDocTree: DocTreeNode, settings: DocItHtmlSettingss): DocItHtml = 
     apply(DocIt(aDocTree).loc, settings)
     
-  private def relativeUriToElementsFromRoot(pathFromRoot: List[DocItPathNode], acc: List[(List[String], DocItPathNode)]): List[(List[String], DocItPathNode)] = {
-    pathFromRoot match {
+  private def relativeUriToElementsFromPath(path: List[DocItPathNode], acc: List[(List[String], DocItPathNode)]): List[(List[String], DocItPathNode)] = {
+    path match {
       case Nil => 
         acc.map{case(path, elem) => (path.reverse, elem)}.reverse
       case h :: t =>
         acc match {
           case Nil =>
-            relativeUriToElementsFromRoot(t, (List(h.name), h) :: acc)
+            relativeUriToElementsFromPath(t, (List(h.name), h) :: acc)
           case accHead :: _ =>
-            relativeUriToElementsFromRoot(t, (h.name :: accHead._1, h) :: acc)
+            relativeUriToElementsFromPath(t, (h.name :: accHead._1, h) :: acc)
         }
     }
   }
   
   private def createBreadcrumbNavigation(pathFromRoot: List[DocItPathNode]): NodeSeq = {
     val parts =
-      relativeUriToElementsFromRoot(pathFromRoot, Nil)
+      relativeUriToElementsFromPath(pathFromRoot, Nil)
         .flatMap{case(parts, node) =>
           <a href={"/%s".format(parts.mkString("/"))}>{node.uriPatternPart}</a><span>/</span>}
     NodeSeq.fromSeq(parts)
   }
+  
+  private def getPathToChild(from: TreeLoc[DocItPathNode], to: DocItPathNode): List[DocItPathNode] = {
+    def getPath(from: TreeLoc[DocItPathNode], to: TreeLoc[DocItPathNode], acc: List[DocItPathNode]): List[DocItPathNode] = {
+      if(from.getLabel == to.getLabel)
+        acc
+      else
+        getPath(from, to.parent.get, to.getLabel :: acc)
+    }
+    from.find(tl => tl.getLabel == to)
+      .map(getPath(from, _, Nil))
+      .getOrElse(Nil)
+  }
+  
+  private def getTreeNavigationFromNode(from: TreeLoc[DocItPathNode]) = {
+    val prefix = 
+      from.path.reverse.map(_.name).toList match {
+        case Nil => "/"
+        case x => "/%s/".format(x.mkString("/"))
+      }
+    val entries =
+      from.tree.subForest.flatMap{ subForest =>
+        subForest
+          .flatten
+          .map(to => (to, getPathToChild(from, to)))
+          .map{case(to, path) => (to, relativeUriToElementsFromPath(path, Nil))}
+          .map{case(to, reachableChildPath) => 
+            val link = 
+              reachableChildPath.flatMap{case(parts, node) =>
+                <a href={"%s%s".format(prefix, parts.mkString("/"))}>{node.uriPatternPart}</a><span>/</span>}
+            (to, link)}
+          .map{case (to,linkedPath) => <tr><td>{linkedPath}</td><td>{to.title}</td></tr>}}
     
+    <table>{entries}</table>
+  } 
+  
   def renderPage(treeLoc: TreeLoc[DocItPathNode], settings: DocItHtmlSettingss): Elem = {
     val docItem = treeLoc.getLabel
     val pathFromRoot = treeLoc.path.toList.reverse
@@ -124,8 +158,17 @@ object DocItHtml {
                         <td>
                           <h3>Description:</h3>
                           <p>{method.description}</p>
+                          <h3>Parameters:</h3>
+                          { method.methodParams.map(p => 
+                            <div>
+                          	   { if(p.isFlag)
+                                   <h4>{p.name}(Flag)</h4>
+                          	     else
+                          	       <h4>{p.name}</h4> }
+                              <p>p.description</p>
+                            </div>)}
                           <h3>ContentTypes:</h3>
-                          { method.contentTypes.map(ct => <p>ct.headerString</p>)}
+                          { method.contentTypes.map(ct => <p>{ct.headerString}</p>)}
                         </td>
                       </tr>)
                     .getOrElse {
@@ -134,15 +177,28 @@ object DocItHtml {
                         <td>
                           <h3>Description:</h3>
                           <p>{method.description}</p>
+                          <h3>Parameters:</h3>
+                          { method.methodParams.map(p => 
+                            <div>
+                          	   { if(p.isFlag)
+                                   <h4>{p.name}(Flag)</h4>
+                          	     else
+                          	       <h4>{p.name}</h4> }
+                              <p>p.description</p>
+                            </div>)}
                           <h3>ContentTypes:</h3>
-                          { method.contentTypes.map(ct => <p>ct.headerString</p>)}
+                          { method.contentTypes.map(ct => <p>{ct.headerString}</p>)}
                         </td>
-                      </tr>                    
-                  }}}}
+                      </tr>
+                }}}}
               </table>
             NodeSeq.fromSeq(Seq(nodeHeader, tableNode))
           }
         }
+        
+        <h2>Reachable from here:</h2>
+
+        { getTreeNavigationFromNode(treeLoc) }
       </body>
     </html>
   }

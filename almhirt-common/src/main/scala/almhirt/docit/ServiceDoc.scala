@@ -41,8 +41,6 @@ case class PUT(description: String, methodParams: List[MethodParamDoc] = Nil, co
 case class POST(description: String, methodParams: List[MethodParamDoc] = Nil, contentTypes: List[ContentTypeDoc] = Nil, headers: List[HeaderDoc] = Nil) extends MethodDoc { val name = "POST"}
 case class DELETE(description: String, methodParams: List[MethodParamDoc] = Nil, contentTypes: List[ContentTypeDoc] = Nil, headers: List[HeaderDoc] = Nil) extends MethodDoc { val name = "DELETE"}
 
-sealed trait MethodParamDoc
-sealed trait HeaderDoc
 
 sealed trait ContentTypeDoc{
   def headerString: String
@@ -67,3 +65,20 @@ case class ImgPng() extends ContentTypeDoc {
 }
 
 case class CustomContentType(headerString: String, docLink: Option[String]) extends ContentTypeDoc
+
+sealed trait MethodParamDoc{
+  def name: String
+  def description: String
+  def isFlag: Boolean
+}
+
+case class MethodParamFlag(name: String, description: String) extends MethodParamDoc {
+  val isFlag = true
+}
+
+case class MethodParamValues(name: String, description: String) extends MethodParamDoc {
+  val isFlag = false
+}
+
+sealed trait HeaderDoc
+
