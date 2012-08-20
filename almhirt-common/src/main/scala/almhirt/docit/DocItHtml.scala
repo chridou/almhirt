@@ -168,7 +168,9 @@ object DocItHtml {
                               <p>p.description</p>
                             </div>)}
                           <h3>ContentTypes:</h3>
-                          { method.contentTypes.map(ct => <p>{ct.headerString}</p>)}
+                          { method.contentTypes.map(ct => 
+                              ct.docLink.map(dl => <a href={dl}>{ct.headerString}</a>)
+                                .getOrElse(<p>{ct.headerString}</p>))}
                         </td>
                       </tr>)
                     .getOrElse {
@@ -187,7 +189,9 @@ object DocItHtml {
                               <p>p.description</p>
                             </div>)}
                           <h3>ContentTypes:</h3>
-                          { method.contentTypes.map(ct => <p>{ct.headerString}</p>)}
+                            { method.contentTypes.map(ct => 
+                              ct.docLink.map(dl => <a href={dl}>{ct.headerString}</a>)
+                                .getOrElse(<p>{ct.headerString}</p>))}
                         </td>
                       </tr>
                 }}}}
