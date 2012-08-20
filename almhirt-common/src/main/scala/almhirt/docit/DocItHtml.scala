@@ -86,7 +86,7 @@ object DocItHtml {
     val parameters = 
       pathFromRoot.flatMap{case res: ResourceDoc => res.parameter.map((res.name, _)) case _ => None}.toList
     val methods = 
-      pathFromRoot.flatMap{case res: ResourceDoc => res.methods case _ => Nil}
+      docItem match {case res: ResourceDoc => res.methods case _ => Nil}
     val requiresAuthentication = docItem match { case res: ResourceDoc => res.requiresAuthentication case _ => false }
     <html>
       <head>
