@@ -38,7 +38,7 @@ object DocItHtml {
     }
   }
   
-  private def createFromRootNavigation(pathFromRoot: List[DocItPathNode]): NodeSeq = {
+  private def createBreadcrumbNavigation(pathFromRoot: List[DocItPathNode]): NodeSeq = {
     val parts =
       relativeUriToElementsFromRoot(pathFromRoot, Nil)
         .flatMap{case(parts, node) =>
@@ -64,7 +64,7 @@ object DocItHtml {
             .map(style => <h1 class={style}>{docItem.title}</h1>)
             .getOrElse (<h1>{docItem.title}</h1>) }
         
-        { createFromRootNavigation(pathFromRoot) }
+        { createBreadcrumbNavigation(pathFromRoot) }
 
         { if(requiresAuthentication)
              settings.styleClassMap.get("requiresAuthentication")
