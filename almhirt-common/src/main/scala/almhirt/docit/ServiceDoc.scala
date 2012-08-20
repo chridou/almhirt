@@ -65,7 +65,7 @@ case object ImgPng extends ContentTypeDoc {
 }
 
 case object TextPlain extends ContentTypeDoc {
-  val docLink = Some("""http://www.iana.org/assignments/media-types/image/index.html""")
+  val docLink = Some("""http://www.iana.org/assignments/media-types/text/index.html""")
   val headerString = "text/plain"
 }
 
