@@ -24,14 +24,27 @@ object DocItHtml {
   def apply(aDocTree: DocTreeNode, settings: DocItHtmlSettingss): DocItHtml = 
     apply(DocIt(aDocTree).loc, settings)
     
-//  private def accumulatePathElements(pathFromRoot: List[TreeLoc[DocItPathNode]], acc: List[(List[String], DocItPathNode)]): List[(List[String], DocItPathNode)] = {
-//    pathFromRoot match {
-//      case Nil => 
-//        acc
-//      case h :: t =>
-//        pathFromRoot(t, acc)
-//    }
-//  }
+  private def relativeUriToElementsFromRoot(pathFromRoot: List[DocItPathNode], acc: List[(List[String], DocItPathNode)]): List[(List[String], DocItPathNode)] = {
+    pathFromRoot match {
+      case Nil => 
+        acc.map{case(path, elem) => (path.reverse, elem)}.reverse
+      case h :: t =>
+        acc match {
+          case Nil =>
+            relativeUriToElementsFromRoot(t, (List(h.name), h) :: acc)
+          case accHead :: _ =>
+            relativeUriToElementsFromRoot(t, (h.name :: accHead._1, h) :: acc)
+        }
+    }
+  }
+  
+  private def createFromRootNavigation(pathFromRoot: List[DocItPathNode]): NodeSeq = {
+    val parts =
+      relativeUriToElementsFromRoot(pathFromRoot, Nil)
+        .flatMap{case(parts, node) =>
+          <a href={"/%s".format(parts.mkString("/"))}>{node.uriPatternPart}</a><span>/</span>}
+    NodeSeq.fromSeq(parts)
+  }
     
   def renderPage(treeLoc: TreeLoc[DocItPathNode], settings: DocItHtmlSettingss): Elem = {
     val docItem = treeLoc.getLabel
@@ -50,6 +63,8 @@ object DocItHtml {
         { settings.styleClassMap.get("title")
             .map(style => <h1 class={style}>{docItem.title}</h1>)
             .getOrElse (<h1>{docItem.title}</h1>) }
+        
+        { createFromRootNavigation(pathFromRoot) }
 
         { if(requiresAuthentication)
              settings.styleClassMap.get("requiresAuthentication")
@@ -107,11 +122,23 @@ object DocItHtml {
                       <tr class={style}>
                         <td>{method.name}</td>
                         <td>
+                          <h3>Description:</h3>
                           <p>{method.description}</p>
-                          <
+                          <h3>ContentTypes:</h3>
+                          { method.contentTypes.map(ct => <p>ct.headerString</p>)}
                         </td>
                       </tr>)
-                    .getOrElse (<tr><td>{name}</td><td>{desc}</td></tr>)}}}
+                    .getOrElse {
+                      <tr>
+                        <td>{method.name}</td>
+                        <td>
+                          <h3>Description:</h3>
+                          <p>{method.description}</p>
+                          <h3>ContentTypes:</h3>
+                          { method.contentTypes.map(ct => <p>ct.headerString</p>)}
+                        </td>
+                      </tr>                    
+                  }}}}
               </table>
             NodeSeq.fromSeq(Seq(nodeHeader, tableNode))
           }

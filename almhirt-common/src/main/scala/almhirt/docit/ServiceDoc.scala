@@ -6,6 +6,7 @@ trait DocItPathNode{
   def name: String
   def title: String
   def description: String
+  def uriPatternPart: String
 }
 
 case class DocTreeNode(payload: DocItPathNode, children: List[DocTreeNode] = Nil)
@@ -13,7 +14,9 @@ case class DocTreeNode(payload: DocItPathNode, children: List[DocTreeNode] = Nil
 case class ServiceDoc(
   name: String,
   title: String,
-  description: String) extends DocItPathNode
+  description: String) extends DocItPathNode {
+  def uriPatternPart = name
+}
   
 case class ResourceDoc(
   name: String,
@@ -21,7 +24,9 @@ case class ResourceDoc(
   description: String,
   parameter: Option[String],
   requiresAuthentication: Boolean,
-  methods: List[MethodDoc]= Nil) extends DocItPathNode
+  methods: List[MethodDoc]= Nil) extends DocItPathNode {
+  val uriPatternPart = if(parameter.isEmpty) name else "{%s}".format(name)
+}
   
 sealed trait MethodDoc {
   def name: String
