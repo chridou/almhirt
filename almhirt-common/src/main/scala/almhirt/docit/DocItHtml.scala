@@ -149,7 +149,7 @@ object DocItHtml {
                   .getOrElse (<h2>Methods:</h2>)
               
             val tableNode =
-              <table>{
+              <table border="1">{
                 methods.map{ method => {
                   settings.styleClassMap.get("methods-row")
                     .map(style => 
@@ -169,7 +169,7 @@ object DocItHtml {
                             </div>)}
                           <h3>ContentTypes:</h3>
                           { method.contentTypes.map(ct => 
-                              ct.docLink.map(dl => <a href={dl}>{ct.headerString}</a>)
+                              ct.docLink.map(dl => <p><a href={dl}>{ct.headerString}</a></p>)
                                 .getOrElse(<p>{ct.headerString}</p>))}
                         </td>
                       </tr>)
@@ -190,7 +190,7 @@ object DocItHtml {
                             </div>)}
                           <h3>ContentTypes:</h3>
                             { method.contentTypes.map(ct => 
-                              ct.docLink.map(dl => <a href={dl}>{ct.headerString}</a>)
+                              ct.docLink.map(dl => <p><a href={dl}>{ct.headerString}</a></p>)
                                 .getOrElse(<p>{ct.headerString}</p>))}
                         </td>
                       </tr>
