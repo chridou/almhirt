@@ -1,8 +1,9 @@
 package almhirt.almakka
 
-import scalaz.{Success, Failure}
+import scalaz.syntax.show._
 import akka.event._
 import almhirt.validation._
+import almhirt.validation.Problem._
 import almhirt.concurrent._
 
 trait AlmActorLogging { self: akka.actor.Actor =>
@@ -12,13 +13,13 @@ trait AlmActorLogging { self: akka.actor.Actor =>
     if(prob.severity >= minSeverity)
 	  prob.severity match {
 	    case NoProblem =>
-	      log.debug(prob.toInfoString)
+	      log.debug(prob.shows)
 	    case Minor =>
-	      log.warning(prob.toInfoString)
+	      log.warning(prob.shows)
 	    case Major =>
-	      log.error(prob.toInfoString)
+	      log.error(prob.shows)
 	    case Critical =>
-	      log.error(prob.toInfoString)
+	      log.error(prob.shows)
 	    }
   }
   
@@ -40,7 +41,7 @@ trait AlmActorLogging { self: akka.actor.Actor =>
     def logFailure(): AlmValidation[T] = logFailure(NoProblem)
   }
   
-  implicit def almFuture2AlmValidationLoggingW[T](future: AlmFuture[T]) = new AlmFutureLoggingW[T](future)
+  implicit def almFuture2AlmValidationLoggingW[T](future: AlmFuture[T]): AlmFutureLoggingW[T]  = new AlmFutureLoggingW[T](future)
   final class AlmFutureLoggingW[T](future: AlmFuture[T]) {
     def logFailure(minSeverity: Severity): AlmFuture[T] = {
        future.onFailure(logProblem(_, minSeverity))

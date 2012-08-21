@@ -1,6 +1,5 @@
 package almhirt.unfiltered
 
-import scalaz.{Success, Failure}
 import org.jboss.netty.handler.codec.http.HttpResponse
 import akka.dispatch.Future
 import unfiltered.response.ResponseFunction

@@ -1,6 +1,6 @@
 package almhirt.validation
 
-import scalaz.NonEmptyList
+import scalaz.{NonEmptyList, Show}
 import scala.collection.mutable.StringBuilder
 
 trait Problem{
@@ -17,16 +17,6 @@ trait Problem{
   def withMessage(newMessage: String): T
   def mapMessage(mapOp: String => String): T
   
-  def toInfoString(): String =  {
-    val builder = new StringBuilder()
-    builder.append("Message: %s\n".format(message))
-    builder.append("Severity: %s\n".format(severity))
-    exception.foreach(exn => builder.append("Exception: %s\n".format(exn.toString)))
-    exception.foreach(exn => builder.append("Stacktrace:\n%s\n".format(exn.getStackTraceString)))
-    builder.append("Arguments: %s\n".format(args))
-    builder.append("Causes:\n%s\n".format(causes))
-    builder.result
-  }
 }
 
 trait SingleKeyedProblem { self: Problem =>
