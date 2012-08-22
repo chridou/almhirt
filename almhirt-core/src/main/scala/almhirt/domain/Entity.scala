@@ -27,17 +27,17 @@ trait Entity[ES <: Entity[ES, Event], Event <: EntityEvent] extends CanHandleEnt
   //private val unhandled: Event => EntityValidation[ES] = {event: Any => Failure(defaultSystemProblem.withMessage("Unhandled event")) }
   protected def handlers: PartialFunction[Event,ES] 
  
-  def update(event: Event, handler: Event => ES): Update[Event, ES] = {
+  def update(event: Event, handler: Event => ES): UpdateRecorder[Event, ES] = {
     try {
-      Update.accept(event, handler(event))
+      UpdateRecorder.accept(event, handler(event))
     } catch {
-      case exn => Update.reject(defaultSystemProblem.withMessage("Could not execute an update").withException(exn))
+      case exn => UpdateRecorder.reject(defaultSystemProblem.withMessage("Could not execute an update").withException(exn))
     }
   }
 
-  def update(event: Event): Update[Event, ES]  = update(event, handlers)
+  def update(event: Event): UpdateRecorder[Event, ES]  = update(event, handlers)
   
-  def reject(msg: String) =	Update.reject(defaultApplicationProblem.withMessage(msg))
+  def reject(msg: String) =	UpdateRecorder.reject(defaultApplicationProblem.withMessage(msg))
   	
   protected def validateEvent(event: Event): Validation[Problem, Event] = {
   	if (event.entityId != this.id)
@@ -69,8 +69,8 @@ trait CanCreateFromEntityEvents[ES <: Entity[ES, Event], Event <: EntityEvent] e
     applyEvent(history.head) bind (freshES => buildEventSourced(freshES, history.tail))
   }
   
-  def create(event: Event): Update[Event,ES] =
-  	applyEvent(event) fold (Update.reject(_), Update.accept(event, _))
+  def create(event: Event): UpdateRecorder[Event,ES] =
+  	applyEvent(event) fold (UpdateRecorder.reject(_), UpdateRecorder.accept(event, _))
 
     
   protected def creationHandler: PartialFunction[Event, ES]

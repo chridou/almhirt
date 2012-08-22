@@ -21,14 +21,14 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
   	case TestPersonMoved(_,_, newAddress,_) => copy(address = Some(newAddress), version = this.version+1)
   }
   
-  def changeName(newName: String): Update[TestPersonEvent, TestPerson] = {
+  def changeName(newName: String): UpdateRecorder[TestPersonEvent, TestPerson] = {
   	if(newName.isEmpty) 
   	  reject("Name must not be empty")
   	else 
   	  update(TestPersonNameChanged(id, version, newName))
   }
   
-  def move(newAdress: String): Update[TestPersonEvent, TestPerson] = {
+  def move(newAdress: String): UpdateRecorder[TestPersonEvent, TestPerson] = {
   	if(newAdress.isEmpty) 
   	  reject("NewAdress must not be empty")
   	else if (address.isEmpty)
@@ -37,7 +37,7 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
   	  update(TestPersonMoved(id, version, newAdress))
   }
   
-  def addressAquired(aquiredAddress: String): Update[TestPersonEvent, TestPerson] = {
+  def addressAquired(aquiredAddress: String): UpdateRecorder[TestPersonEvent, TestPerson] = {
   	if(aquiredAddress.isEmpty) 
   	  reject("Aquired adresss must not be empty")
   	else if (address.isDefined)
@@ -46,7 +46,7 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
   	  update(TestPersonAddressAquired(id, version, aquiredAddress), handlers)
   }
   
-  def unhandableAction(): Update[TestPersonEvent, TestPerson] = {
+  def unhandableAction(): UpdateRecorder[TestPersonEvent, TestPerson] = {
   	update(TestPersonUnhandledEvent(id, version), handlers)
   }
 

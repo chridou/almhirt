@@ -10,44 +10,44 @@ class UpdateSpecsWithPerson extends Specification {
   
   "A just created person with a valid name having her name changed" should {
     "return no error when name is replaced with a non empty string" in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")}).isAccepted
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).isAccepted
     }
     "have her name changed to the name given as a parameter" in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")}).result.forceResult.name must beEqualTo("Bob")
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).result.forceResult.name must beEqualTo("Bob")
     }
     "have a version of 2" in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")}).result.forceResult.version must beEqualTo(2)
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).result.forceResult.version must beEqualTo(2)
     }
     "have created a single event " in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")}).events.length must beEqualTo(1)
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).events.length must beEqualTo(1)
     }
     "have created a single event with a targetted version of 1" in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")}).events.head.entityVersion must beEqualTo(1)
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).events.head.entityVersion must beEqualTo(1)
     }
     "have created a single event of type TestPersonNameChanged" in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")}).events.head.isInstanceOf[TestPersonNameChanged]
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).events.head.isInstanceOf[TestPersonNameChanged]
     }
     "have created a TestPersonNameChanged event containing the name Bob" in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")})
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")})
         .events.head.asInstanceOf[TestPersonNameChanged].newName must beEqualTo("Bob")
     }
     "have created a TestPersonNameChanged event containing a version of 1" in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")})
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")})
         .events.head.asInstanceOf[TestPersonNameChanged].entityVersion must beEqualTo(1)
     }
     "have created a TestPersonNameChanged event containing an entityId which is the same as the origins" in {
-      (Update.startWith(person) flatMap {_.changeName("Bob")})
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")})
         .events.head.asInstanceOf[TestPersonNameChanged].entityId must beEqualTo(person.id)
     }
     "reject having her name changed to an empty String" in {
-      (Update.startWith(person) flatMap {_.changeName("")}).isRejected
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("")}).isRejected
     }
     "create no event when having her name changed to an empty String" in {
-      (Update.startWith(person) flatMap {_.changeName("")}).events must beEmpty
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("")}).events must beEmpty
     }
   }
   
-  val updateWithName = Update.startWith(person) flatMap {_.changeName("Bob")}
+  val updateWithName = UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}
   
   "An Update(Person),  containing a succesful update of a name having the address set" should {
     "return no error when address is replaced with a non empty string" in {
@@ -93,7 +93,7 @@ class UpdateSpecsWithPerson extends Specification {
       (updateWithName flatMap {_.addressAquired("Gibraltar")} flatMap{_.addressAquired("Norway")}).isRejected
     }
   }
-  val updateWithNameAndAddress = Update.startWith(person) flatMap {_.changeName("Bob")} flatMap {_.addressAquired("Gibraltar")}
+  val updateWithNameAndAddress = UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")} flatMap {_.addressAquired("Gibraltar")}
   
   "An Update(Person),  containing a succesful update of a name and address being moved" should {
     "return no error when address is replaced with a non empty string" in {
