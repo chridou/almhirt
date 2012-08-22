@@ -10,7 +10,7 @@ import almhirt.validation.{Problem}
 
 class EntitySpecsWithTestPerson extends Specification {
   val shouldBe = TestPerson("Jim") flatMap {_.changeName("Fritz")} flatMap {_.addressAquired("Roma")} flatMap {_.move("New York")}
-  val events = shouldBe.events.reverse
+  val events = shouldBe.events
   
   "A Person created by methods on the entity" should {
     "be the same when created from the history of" in {
