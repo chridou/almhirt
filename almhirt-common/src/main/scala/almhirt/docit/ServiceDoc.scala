@@ -69,6 +69,16 @@ case object TextPlain extends ContentTypeDoc {
   val headerString = "text/plain"
 }
 
+case object TextXml extends ContentTypeDoc {
+  val docLink = Some("""http://www.iana.org/assignments/media-types/text/index.html""")
+  val headerString = "text/xml"
+}
+
+case object TextRichText extends ContentTypeDoc {
+  val docLink = Some("""http://www.iana.org/assignments/media-types/text/index.html""")
+  val headerString = "text/richtext"
+}
+
 case class CustomContentType(headerString: String, docLink: Option[String] = None) extends ContentTypeDoc
 
 sealed trait MethodParamDoc{
