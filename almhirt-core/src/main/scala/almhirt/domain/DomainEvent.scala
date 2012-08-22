@@ -9,7 +9,3 @@ trait DomainEvent {
   def timestamp: DateTime
 }
 
-trait CreatingNewAggregateRootEvent {
-  val aggRootVersion = 1L
-}
-

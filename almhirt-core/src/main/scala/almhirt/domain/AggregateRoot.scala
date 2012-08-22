@@ -2,6 +2,7 @@ package almhirt.domain
 
 import java.util.UUID
 import scalaz._, Scalaz._
+import almhirt.validation._
 import almhirt.validation.Problem
 import almhirt.validation.Problem._
 
@@ -9,7 +10,10 @@ import almhirt.validation.Problem._
 /** An aggregate root is the topmost entity of an aggregate. It aggregates those entities and value objects which cannot exist without the whole.
  * All entities within the aggregate should only be accessible via the aggregate root. Only an aggregate root justifies a repository.*/
 trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event]{
+  /** The unique id that gives the aggregate its identity */
   def id: UUID
+  /** The monotonically growing version which is increased by one with each event generated via mutation. 
+   * The minimum value is 1L */
   def version: Long
 
   def applyEvent = {event: Event =>
@@ -22,9 +26,10 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
       	})
   }
   
+  /** A [[scala.PartialFunction]] that takes an event and returns a modified AR according to the event */ 
   protected def handlers: PartialFunction[Event,AR] 
  
-  def update(event: Event, handler: Event => AR): UpdateRecorder[Event, AR] = {
+  protected def update(event: Event, handler: Event => AR): UpdateRecorder[Event, AR] = {
     try {
       UpdateRecorder.accept(event, handler(event))
     } catch {
@@ -32,11 +37,32 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
     }
   }
 
-  def update(event: Event): UpdateRecorder[Event, AR]  = update(event, handlers)
+  /** Apply the event calling the protected abstract 
+   * 
+   */
+  protected def update(event: Event): UpdateRecorder[Event, AR] = update(event, handlers)
   
-  def reject(msg: String) =	UpdateRecorder.reject(defaultApplicationProblem.withMessage(msg))
-  	
-  protected def validateEvent(event: Event): Validation[Problem, Event] = {
+  
+  /** Abort the update process
+   * 
+   * @param prob The reason for rejection as a problem
+   * @return A failed [[almhirt.domain.UpdateRecorder]]
+   */
+  def reject(prob: ApplicationProblem): UpdateRecorder[Event, AR] = UpdateRecorder.reject(prob)
+
+   /** Abort the update process
+   * 
+   * @param msg The reason for rejection as a message
+   * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem]] being the default application problem
+   */
+  def reject(msg: String): UpdateRecorder[Event, AR] =reject(defaultApplicationProblem.withMessage(msg))
+
+  /** Check if the event targets this AR by comparing the ids and versions of this instance and the event
+   * 
+   * @param event The Event to check against
+   * @return The passed event wrapped in a success if it is valid otherwise a failure
+   */
+  protected def validateEvent(event: Event): AlmValidation[Event] = {
   	if (event.aggRootId != this.id)
   	  defaultApplicationProblem.withMessage("Ids do not match!").failure
   	else if(event.aggRootVersion != this.version)
