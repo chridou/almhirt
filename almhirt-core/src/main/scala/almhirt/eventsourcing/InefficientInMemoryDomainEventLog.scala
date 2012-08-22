@@ -8,14 +8,14 @@ import scalaz.NonEmptyList
 import almhirt.almakka.AlmAkkaContext
 import almhirt.concurrent.AlmFuture
 import almhirt.concurrent.AlmFuture._
-import almhirt.domain.EntityEvent
+import almhirt.domain.DomainEvent
 
-class InefficientInMemoryEventLog(implicit almAkkaContext: AlmAkkaContext) extends HasEntityEvents with CanLogEntityEvents {
+class InefficientInMemoryDomainEventLog(implicit almAkkaContext: AlmAkkaContext) extends HasDomainEvents with CanLogDomainEvents {
   implicit def timeout = Timeout(almAkkaContext.mediumDuration)
   implicit def executionContext = almAkkaContext.futureDispatcher
-  var loggedEvents: List[EntityEvent] = Nil
+  var loggedEvents: List[DomainEvent] = Nil
   
-  private case class LogEvents(events: NonEmptyList[EntityEvent])
+  private case class LogEvents(events: NonEmptyList[DomainEvent])
   private case object GetAllEvents
   private case class GetEvents(entityId: UUID)
   private case class GetEventsFrom(entityId: UUID, from: Long)
@@ -27,16 +27,16 @@ class InefficientInMemoryEventLog(implicit almAkkaContext: AlmAkkaContext) exten
     def receive = {
       case LogEvents(events) => 
         val reversed = events.reverse
-        sender ! new CommittedEntityEvents(NonEmptyList(reversed.head, reversed.tail : _*))
+        sender ! new CommittedDomainEvents(NonEmptyList(reversed.head, reversed.tail : _*))
       case GetAllEvents => sender ! loggedEvents.toIterable
     }
   }
 
-  def logEvents(events: NonEmptyList[EntityEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedEntityEvents]
+  def logEvents(events: NonEmptyList[DomainEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
   
-  def getAllEvents() = (coordinator ? GetAllEvents).toAlmFuture[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID, fromVersion: Long) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID, fromVersion: Long, toVersion: Long) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[EntityEvent]]
+  def getAllEvents() = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
+  def getEvents(entityId: UUID) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
+  def getEvents(entityId: UUID, fromVersion: Long) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
+  def getEvents(entityId: UUID, fromVersion: Long, toVersion: Long) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
   
 }

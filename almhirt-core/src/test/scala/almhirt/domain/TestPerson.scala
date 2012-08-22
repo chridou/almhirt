@@ -6,15 +6,15 @@ import scalaz.{Validation, Failure, Success}
 import scalaz.Validation._
 import almhirt.validation.Problem._
 
-trait TestPersonEvent extends EntityEvent
-case class TestPersonCreated(entityId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewEntityEvent
-case class TestPersonNameChanged(entityId: UUID, entityVersion: Long, newName: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonAddressAquired(entityId: UUID, entityVersion: Long, aquiredAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonMoved(entityId: UUID, entityVersion: Long, newAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonUnhandledEvent(entityId: UUID, entityVersion: Long, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+trait TestPersonEvent extends DomainEvent
+case class TestPersonCreated(aggRootId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent
+case class TestPersonNameChanged(aggRootId: UUID, aggRootVersion: Long, newName: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+case class TestPersonAddressAquired(aggRootId: UUID, aggRootVersion: Long, aquiredAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+case class TestPersonMoved(aggRootId: UUID, aggRootVersion: Long, newAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+case class TestPersonUnhandledEvent(aggRootId: UUID, aggRootVersion: Long, timestamp: DateTime = DateTime.now) extends TestPersonEvent
 
 
-case class TestPerson(id: UUID, version: Long, name: String, address: Option[String], balance: Int) extends Entity[TestPerson, TestPersonEvent]{
+case class TestPerson(id: UUID, version: Long, name: String, address: Option[String], balance: Int) extends AggregateRoot[TestPerson, TestPersonEvent]{
   def handlers = { 
   	case TestPersonNameChanged(_,_, newName,_) => copy(name = newName, version = this.version+1)
   	case TestPersonAddressAquired(_,_, aquiredAddress,_) => copy(address = Some(aquiredAddress), version = this.version+1)
@@ -52,9 +52,9 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
 
 }
 
-object TestPerson extends CanCreateFromEntityEvents[TestPerson, TestPersonEvent] {
+object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
   def creationHandler = {
-  	case e @ TestPersonCreated(entityId, name,_) => TestPerson(entityId, e.entityVersion, name, None, 0)
+  	case e @ TestPersonCreated(entityId, name,_) => TestPerson(entityId, e.aggRootVersion, name, None, 0)
   }
   
   def apply(name: String) = create(TestPersonCreated(UUID.randomUUID, name))

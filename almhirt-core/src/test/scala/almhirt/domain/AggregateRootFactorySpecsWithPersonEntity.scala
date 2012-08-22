@@ -6,25 +6,25 @@ import org.specs2.mutable._
 import almhirt.validation.{Problem}
 import almhirt.validation.AlmValidation._
 
-class EntityFactorySpecsWithPersonEntity extends Specification {
-  "An entityfactory for Persons" should {
+class AggregateRootFactorySpecsWithPersonEntity extends Specification {
+  "An aggregate root factory for Persons" should {
   	"return a new Person(in an accpted Update) when given a TestPersonCreated event to 'create'" in {
   	  val event = TestPersonCreated(UUID.randomUUID(), "Peter")
   	  val entityValidation = TestPerson.create(event)
   	  val entity = entityValidation.result.forceResult
-  	  entity.id must beEqualTo(event.entityId) and (entity.name must beEqualTo(event.name))
+  	  entity.id must beEqualTo(event.aggRootId) and (entity.name must beEqualTo(event.name))
   	}
   	"return a new Person when given a TestPersonCreated event to 'applyEvent'" in {
   	  val event = TestPersonCreated(UUID.randomUUID(), "Peter")
   	  val entityValidation = TestPerson.applyEvent(event)
   	  val entity = entityValidation.forceResult
-  	  entity.id must beEqualTo(event.entityId) and (entity.name must beEqualTo(event.name))
+  	  entity.id must beEqualTo(event.aggRootId) and (entity.name must beEqualTo(event.name))
   	}
   	"return a new Person when given a TestPersonCreated event to 'buildFromHistory'" in {
   	  val event = TestPersonCreated(UUID.randomUUID(), "Peter")
   	  val entityValidation = TestPerson.rebuildFromHistory(NonEmptyList(event))
   	  val entity = entityValidation.forceResult
-  	  entity.id must beEqualTo(event.entityId) and (entity.name must beEqualTo(event.name))
+  	  entity.id must beEqualTo(event.aggRootId) and (entity.name must beEqualTo(event.name))
   	}
   	"return a Failure(in an Update) when given a TestPersonNameChanged event to 'create'" in {
   	  val event = TestPersonNameChanged(UUID.randomUUID(), 1L, "Peter")

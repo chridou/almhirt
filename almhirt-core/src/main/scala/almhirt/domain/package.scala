@@ -5,5 +5,5 @@ import almhirt.validation.Problem
 
 package object domain {
   //type EntityValidation[+α <: Entity[_, _]] = ({type λ[α]=Validation[Problem, α]})#λ[α]
-  type EntityValidation[+α <: Entity[_, _]] = Validation[Problem, α]
+  type DomainValidation[+α <: AggregateRoot[_, _]] = Validation[Problem, α]
 }

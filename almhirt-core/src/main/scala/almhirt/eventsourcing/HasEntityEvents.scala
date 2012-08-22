@@ -4,11 +4,11 @@ import java.util.UUID
 import scalaz.Validation
 import almhirt.validation.Problem
 import almhirt.concurrent.AlmFuture
-import almhirt.domain.EntityEvent
+import almhirt.domain.DomainEvent
 
-trait HasEntityEvents {
-  def getAllEvents: AlmFuture[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID): AlmFuture[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID, fromVersion: Long): AlmFuture[Iterable[EntityEvent]]
-  def getEvents(entityId: UUID, fromVersion: Long, toVersion: Long): AlmFuture[Iterable[EntityEvent]]
+trait HasDomainEvents {
+  def getAllEvents: AlmFuture[Iterable[DomainEvent]]
+  def getEvents(aggRootId: UUID): AlmFuture[Iterable[DomainEvent]]
+  def getEvents(aggRootId: UUID, fromVersion: Long): AlmFuture[Iterable[DomainEvent]]
+  def getEvents(aggRootId: UUID, fromVersion: Long, toVersion: Long): AlmFuture[Iterable[DomainEvent]]
 }
