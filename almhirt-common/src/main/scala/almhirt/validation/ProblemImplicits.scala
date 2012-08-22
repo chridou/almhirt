@@ -62,6 +62,7 @@ trait ProblemImplicits {
   implicit object showsOperationTimedOutProblem extends Show[OperationTimedOutProblem] { override def shows(p: OperationTimedOutProblem) = standardShow(p) }
   implicit object showsOperationAbortedProblem extends Show[OperationAbortedProblem] { override def shows(p: OperationAbortedProblem) = standardShow(p) }
   implicit object showsIllegalOperationProblem extends Show[IllegalOperationProblem] { override def shows(p: IllegalOperationProblem) = standardShow(p) }
+  implicit object showsArgumentProblem extends Show[ArgumentProblem] { override def shows(p: ArgumentProblem) = standardShow(p) }
   implicit object showsPersistenceProblem extends Show[PersistenceProblem] { override def shows(p: PersistenceProblem) = standardShow(p) }
   implicit object showsSingleMappingProblem extends Show[SingleMappingProblem] { override def shows(p: SingleMappingProblem) = standardShow(p) }
   implicit object showsMultipleMappingProblem extends Show[MultipleMappingProblem] { override def shows(p: MultipleMappingProblem) = standardShow(p) }
