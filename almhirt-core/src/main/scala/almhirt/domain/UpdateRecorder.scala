@@ -1,21 +1,28 @@
 package almhirt.domain
 
 import scalaz._, Scalaz._
+import almhirt.validation.AlmValidation._
 import almhirt.validation.Problem
 import almhirt.validation.Problem._
 
 /** Records the events for aggregate root updates.
- * Use flatMap to record events on successfully updated entities
+ * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s
  * Writer monad.
  */
 trait UpdateRecorder[+Event <: DomainEvent, +AR <: AggregateRoot[_, _]] {
-  /** Apply the events to this Update and return a result */
+  /** Apply the events to this Update and return a result
+   * 
+   * @param events The events to process by the application to create the result
+   * @return The current events and the resulting AR 
+   */
   def apply[EE >: Event](events: List[EE]): (List[EE], DomainValidation[AR])
 
   /** Creates a new Update with an aggregate root transformed by f and the same events as written to this instance.
-   * It does not execute f  if the current aggregate root is already a failure 
+   * It does not execute f  if the current aggregate root is already a failure
+   * Usually it makes no sense to call this method manually 
    * 
    * @param f Function that returns a new aggregate root. Usually a mutation of the one stored in this instance.
+   * @return The [[almhirt.domain.UpdateRecorder]] with the old events and a mapped aggregate root
    */
   def map[AAR <: AggregateRoot[_, _]](f: AR => AAR): UpdateRecorder[Event, AAR] =
   	UpdateRecorder[Event, AAR] { events =>
@@ -27,6 +34,7 @@ trait UpdateRecorder[+Event <: DomainEvent, +AR <: AggregateRoot[_, _]] {
    * It does not execute f if the current aggregate root is already a failure 
    * 
    * @param f Function that returns an Update which will be used to create the new Update(Write operation)
+   * @return The [[almhirt.domain.UpdateRecorder]] with eventually updated events and the new AR state
    */
   def flatMap[EEvent >: Event <: DomainEvent , AAR <: AggregateRoot[_, _]](f: AR => UpdateRecorder[EEvent, AAR]): UpdateRecorder[EEvent, AAR] =
   	UpdateRecorder[EEvent, AAR] { events =>
@@ -39,12 +47,27 @@ trait UpdateRecorder[+Event <: DomainEvent, +AR <: AggregateRoot[_, _]] {
   	      (updatedEvents, newAggr)})
   	}
 
-  def onSuccess(onSuccessAction: (List[Event], AR) => Unit = (ar, r) => ()): DomainValidation[AR] = {
+  /** Execute a side effect in case of a success
+   * 
+   * @param onSuccessAction The action that triggers the side effect
+   * @return This 
+   */
+  def onSuccess(onSuccessAction: (List[Event], AR) => Unit): UpdateRecorder[Event, AR] = {
     val (events, validation) = apply(Nil)
-    validation bind (result => { onSuccessAction(events, result); result.success })
+    validation onSuccess (ar => { onSuccessAction(events, ar)})
+    this
   }
 
+  /** Check whether the current AR state is a success
+   * 
+   * @return True in case of a success
+   */
   def isAccepted() = apply(Nil)._2.isSuccess
+
+  /** Check whether the current AR state is a failure
+   * 
+   * @return True in case of a failure
+   */
   def isRejected() = apply(Nil)._2.isFailure
   
   /** The result of previous recordings 
