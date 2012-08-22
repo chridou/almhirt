@@ -5,22 +5,39 @@ import almhirt.validation.Problem
 import almhirt.validation.Problem._
 
 /** Records the events for entity updates.
+ * Use flatMap to record events on successfully updated entities
  * Writer monad.
  */
 trait Update[+Event <: EntityEvent, +ES <: Entity[_, _]] {
   /** Apply the events to this Update and return a result */
   def apply[EE >: Event](events: List[EE]): (List[EE], EntityValidation[ES])
 
+  /** Creates a new Update with an entity transformed by f and the same events as written to this instance.
+   * It does not execute f  if the current entity is already a failure 
+   * 
+   * @param f Function that returns a new entity. Usually a mutation of the one stored in this instance.
+   */
   def map[EES <: Entity[_, _]](f: ES => EES): Update[Event, EES] =
   	Update[Event, EES] { events =>
-  	  val (updatedEvents, validation) = this(events)
-  	  validation fold (problem => (updatedEvents, problem.failure), ar => (updatedEvents, f(ar).success))}
+  	  val (currentEvents, validation) = this(events)
+  	  validation fold (problem => (currentEvents, problem.failure), ar => (currentEvents, f(ar).success))}
 
-  def flatMap[EEvent >: Event <: EntityEvent , EE <: Entity[_, _]](f: ES => Update[EEvent, EE]): Update[EEvent, EE] =
-  	Update[EEvent, EE] { events =>
-  	  val (updatedEvents, validation) = this(events)
-  	  validation fold (problem => (updatedEvents, problem.failure), ar => (updatedEvents, UnspecifiedSystemProblem("not yet implemented").failure))}
-  	  //validation fold (problem => (updatedEvents, problem.failure), ar => (updatedEvents, f(ar)(updatedEvents)))}
+  /** Creates a new Update from the Update returned by f.
+   * The new entity and the new events are determined by calling apply with the current events on the Update returned by f 
+   * It does not execute f if the current entity is already a failure 
+   * 
+   * @param f Function that returns an Update which will be used to create the new Update(Write operation)
+   */
+  def flatMap[EEvent >: Event <: EntityEvent , EES <: Entity[_, _]](f: ES => Update[EEvent, EES]): Update[EEvent, EES] =
+  	Update[EEvent, EES] { events =>
+  	  val (currentEvents, validation) = this(events)
+  	  validation fold (
+  	    problem => 
+  	      (currentEvents, problem.failure), 
+  	    currentEntity => {
+  	      val (updatedEvents, newEntity) = f(currentEntity)(currentEvents)
+  	      (updatedEvents, newEntity)})
+  	}
 
   def onSuccess(onSuccessAction: (List[Event], ES) => Unit = (e, r) => ()): EntityValidation[ES] = {
     val (events, validation) = apply(Nil)
@@ -31,7 +48,7 @@ trait Update[+Event <: EntityEvent, +ES <: Entity[_, _]] {
   def isRejected() = apply(Nil)._2.isFailure
   
   /** The result of previous recordings 
-   * Returns the current entity as a success or a failure */
+   * Returns the current entity in a success or a failure */
   def result(): EntityValidation[ES] = {
     val (_, validation) = apply(Nil)
     validation
@@ -67,8 +84,8 @@ object Update {
    * @param event The event resulting from an entity operation
    * @param result The state of the entity corresponding to the event
    */
-  def accept[Event <: EntityEvent, ES <: Entity[_, _]](event: Event, result: ES) =
-    Update[Event, ES](events => (event :: events, result.success))
+  def accept[Event <: EntityEvent, ES <: Entity[_, _]](event: Event, entity: ES) =
+    Update[Event, ES](events => (event :: events, entity.success))
 
   /** Takes an event and the resulting Entity. Previously written events are still contained
    * 
