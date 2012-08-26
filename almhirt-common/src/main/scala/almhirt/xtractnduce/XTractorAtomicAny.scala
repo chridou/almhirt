@@ -20,63 +20,63 @@ class XTractorAtomicAny(value: Any, val key: String, val parent: Option[XTractor
 	
   def getInt(): AlmValidationSBD[Int] =
 	try {
-	  value.asInstanceOf[Int].successSBD
+	  value.asInstanceOf[Int].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not an Int: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Int]
 	}
 	
   def getLong(): AlmValidationSBD[Long] =
 	try {
-	  value.asInstanceOf[Long].successSBD
+	  value.asInstanceOf[Long].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not a Long: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Long]
 	}
 	
   def getDouble(): AlmValidationSBD[Double] =
 	try {
-	  value.asInstanceOf[Double].successSBD
+	  value.asInstanceOf[Double].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not a Double: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Double]
 	}
 
   def getFloat(): AlmValidationSBD[Float] =
 	try {
-	  value.asInstanceOf[Float].successSBD
+	  value.asInstanceOf[Float].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not a Float: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Float]
 	}
 
   def getBoolean(): AlmValidationSBD[Boolean] =
 	try {
-	  value.asInstanceOf[Boolean].successSBD
+	  value.asInstanceOf[Boolean].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not a Float: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Boolean]
 	}
 
   def getDecimal(): AlmValidationSBD[BigDecimal] =
 	try {
-	  value.asInstanceOf[BigDecimal].successSBD
+	  value.asInstanceOf[BigDecimal].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not a BigDecimal: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[BigDecimal]
 	}
 
   def getDateTime(): AlmValidationSBD[DateTime] =
 	try {
-	  value.asInstanceOf[DateTime].successSBD
+	  value.asInstanceOf[DateTime].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not a DateTime: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[DateTime]
 	}
 
   def getUUID(): AlmValidationSBD[UUID] =
 	try {
-	  value.asInstanceOf[UUID].successSBD
+	  value.asInstanceOf[UUID].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not a UUID: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[UUID]
 	}
 	
   def getBytes(): AlmValidationSBD[Array[Byte]] =
 	try {
-	  value.asInstanceOf[Array[Byte]].successSBD
+	  value.asInstanceOf[Array[Byte]].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not an Array[Byte]: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Array[Byte]]
 	}
@@ -121,7 +121,7 @@ class XTractorAtomicAny(value: Any, val key: String, val parent: Option[XTractor
 
   def isBooleanSet(): AlmValidationSBD[Boolean] = 
 	try {
-	  value.asInstanceOf[Boolean].successSBD
+	  value.asInstanceOf[Boolean].success
 	} catch {
 	  case exn => SingleBadDataProblem("Not a Boolean: %s".format(exn.getMessage), key = pathAsString(), exception= Some(exn)).failure[Boolean]
 	}

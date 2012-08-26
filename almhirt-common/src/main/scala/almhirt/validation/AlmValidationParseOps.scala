@@ -6,6 +6,10 @@ import scalaz.syntax.validation._
 import org.joda.time.DateTime
 import almhirt.validation.Problem._
 
+/** Parsing operations that result in a validation 
+ * 
+ * All functions that start with try... result in Option[T]. None is returned if the String to parse is empty or only contains whitespaces.
+ */
 trait AlmValidationParseOps {
   def parseIntAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Int] =
     try {

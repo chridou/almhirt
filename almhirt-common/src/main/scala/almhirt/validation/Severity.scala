@@ -1,5 +1,9 @@
 package almhirt.validation
 
+/* Severity of a problem. 
+ * 
+ * NoProblem < Minor < Major < Fatal
+ */
 sealed trait Severity extends Ordered[Severity] {
   def and(other: Severity): Severity = 
     (this,other) match {
@@ -11,6 +15,7 @@ sealed trait Severity extends Ordered[Severity] {
     case(_,Minor) => Minor
     case _ => NoProblem
   }
+  /** Used for comparison */
   def level: Int
   def compare(that: Severity) = this.level compare (that.level)
 }

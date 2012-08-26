@@ -2,22 +2,31 @@ package almhirt.docit
 
 import scalaz._, Scalaz._
 
+
+/** Path of a documentation hierarchy for REST services*/
 trait DocItPathNode{
+  /** The name of this item on the path */
   def name: String
+  /** A title for display */
   def title: String
+  /** A detailed description */
   def description: String
+  /** How is this node to be displayed as part of an URI-Pattern? */
   def uriPatternPart: String
 }
 
+/** An unnecessary helper class in case you don't want to build up your hierarchy by scalz's tree */
 case class DocTreeNode(payload: DocItPathNode, children: List[DocTreeNode] = Nil)
 
+/** The node is a service or an URI that doesn't represent a resource */
 case class ServiceDoc(
   name: String,
   title: String,
   description: String) extends DocItPathNode {
   def uriPatternPart = name
 }
-  
+
+/** The node directly represents a resource with the appropriate methods */ 
 case class ResourceDoc(
   name: String,
   title: String,

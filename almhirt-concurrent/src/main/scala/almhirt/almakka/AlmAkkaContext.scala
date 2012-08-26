@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
 import akka.util.Duration
 
+/** Components and values needed to use Akka */
 trait AlmAkkaContext {
   def actorSystem: ActorSystem
   def futureDispatcher: MessageDispatcher

@@ -5,8 +5,19 @@ import scalaz._, Scalaz._
 import org.joda.time.DateTime
 import Problem._
 
+
+/** Implicits regarding [[almhirt.validation.AlmValidaion]] */
 trait AlmValidationImplicits {
+  
   implicit def stringToStringW(str: String): StringW = new StringW(str)
+  /** Implicits for parsing Strings 
+   *
+   * Example:
+   * {{{ 
+   * val i = "5".toIntAlm
+   * assert(i == 5)
+   * }}}
+   */
   final class StringW(str: String) {
     def toIntAlm(key: String = "some value"): AlmValidationSBD[Int] = 
       AlmValidation.parseIntAlm(str, key)
@@ -40,10 +51,13 @@ trait AlmValidationImplicits {
     def successSM(): AlmValidationSM[T] = any.success[SingleMappingProblem]  
     def successMM(): AlmValidationMM[T] = any.success[MultipleMappingProblem]  
   }
-
+  
   implicit def optionValidation2ValidationOption[P, V](value: Option[Validation[P,V]]): OptionValidationW[P, V] =
     new OptionValidationW(value)
+  
+  /** Implicits for an option that contains a validation*/
   final class OptionValidationW[P, V](value: Option[Validation[P,V]]) {
+    /** Option[Validation[P,T]] => Validation[P, Option[T]] */
     def validationOut(): Validation[P, Option[V]] =
       value match {
         case Some(validation) =>
@@ -54,29 +68,15 @@ trait AlmValidationImplicits {
 
   implicit def validationOption2OptionValidation[P, V](validation: Validation[P,Option[V]]): ValidationOptionW[P, V] =
     new ValidationOptionW(validation)
+  /** Implicits for a validation that contains an option*/
   final class ValidationOptionW[P, V](validation: Validation[P,Option[V]]) {
+    /** Validation[P, Option[T]]Option[Validation[P,T]] =>  */
     def optionOut(): Option[Validation[P,V]] =
       validation.fold(
           f => Some(f.failure[V]),
           s => s.map(_.success[P]))
   }
   
-//  def multipleBadDataFromValidationNel[T](validationNel: ValidationNEL[String, T]): AlmValidationMBD[T] =
-//    validationNel match {
-//      case Success(r) => r.successMBD
-//      case Failure(nel) => 
-//        val keysAndMessages = nel.list.zipWithIndex.map{case (msg, i) => "[i]".format(i) -> msg}
-//        MultipleBadDataProblem(
-//          "One or more errors found", 
-//          Map(keysAndMessages : _*)).fail[T]
-//      }
-//
-  
-//  implicit def validationNel2AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) = new AlmValidationNelW[T](validationNel)
-//  final class AlmValidationNelW[T](validationNel: ValidationNEL[String, T]) {
-//    def toMBD(): Validation[MultipleBadDataProblem, T] = multipleBadDataFromValidationNel[T](validationNel)
-//  }
-
   implicit def validation2StringValidationW[T](validation: Validation[String, T]) = new StringValidationW[T](validation)
   final class StringValidationW[T](validation: Validation[String, T]) {
     def toAlmValidation(problemOnFail: Problem = defaultProblem): AlmValidation[T] =
@@ -134,14 +134,14 @@ trait AlmValidationImplicits {
     new SingleBadDataProblemValidationW[T](badDataProblemValidation)
   final class SingleBadDataProblemValidationW[T](badDataProblemValidation: AlmValidationSBD[T]) {
     def toMBD(): AlmValidationMBD[T] =
-      badDataProblemValidation fold (_.toMBD().failure[T], _.successMBD)
+      badDataProblemValidation fold (_.toMBD().failure[T], _.success)
   }
   
   implicit def fromValidationToValidationThrowableW[T](validation: Validation[Throwable, T]): ValidationThrowableW[T] =
     new ValidationThrowableW[T](validation)
   final class ValidationThrowableW[T](validation: Validation[Throwable, T]) {
     def fromExceptional(problemOnFail: Problem = defaultProblem): AlmValidation[T] = 
-      validation fold (exn => problemOnFail.withMessage(exn.getMessage).withException(exn).failure[T], _.successAlm)
+      validation fold (exn => problemOnFail.withMessage(exn.getMessage).withException(exn).failure[T], _.success)
   }
   
   implicit def fromListValidation2ListAlmValidationW[R](v: List[AlmValidation[R]]): ListAlmValidationW[R] = new ListAlmValidationW(v)
