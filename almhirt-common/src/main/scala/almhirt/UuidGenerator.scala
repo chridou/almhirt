@@ -10,7 +10,7 @@ trait UuidGenerator {
   def generate: UUID
 }
 
-/** Generates a new [[java.util.UUID]] by using [[java.util.UUID]].randomUUID */
+/** Generates a new [[java.util.UUID]] by calling [[java.util.UUID]].randomUUID */
 class JavaUtilUuidGenerator extends UuidGenerator {
   def generate = UUID.randomUUID
 }
