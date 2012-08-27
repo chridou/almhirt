@@ -9,6 +9,14 @@ import almhirt.validation.{Problem, AlmValidation}
 import almhirt.validation.Problem._
 import akka.util.Duration
 
+/** A future based on [[akka.dispatch.Future]].
+ * 
+ * The intention is to have a future that doesn't rely on the Either type where Left[Throwable] identifies an error.
+ * Instead a result should always be in a [[almhirt.validation.AlmValidation]] which is in fact a [[scalaz.Validation]] 
+ * based on [[almhirt.validation.Problem]] as the error type
+ * 
+ * Errors which would end in a Throwable end in a SystemProblem whereas a TimeoutException ends in a TimeoutProblem.
+ */
 class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit executionContext: akka.dispatch.ExecutionContext)  {
   def map[T](compute: R => T): AlmFuture[T] =
     new AlmFuture[T](underlying map { validation => validation map compute })
