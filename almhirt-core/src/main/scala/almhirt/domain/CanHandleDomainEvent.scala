@@ -1,6 +1,6 @@
 package almhirt.domain
 
-/* Implementors are supposed to be able to handle domain events
+/** Implementors are supposed to be able to handle domain events
  * 
  * @tparam AR The type of the aggregate root this trait is mixed in
  * @tparam Event The base type of [[almhirt.domain.DomainEvent]]s handled by this trait
