@@ -14,3 +14,13 @@ trait UuidGenerator {
 class JavaUtilUuidGenerator extends UuidGenerator {
   def generate = UUID.randomUUID
 }
+
+/** Generates always the same [[java.util.UUID]]
+ * Use for testing
+ */
+class FixedUuidGenerator(uuid: UUID) extends UuidGenerator{
+  /** The predefined [[java.util.UUID]] 
+   * @return The predefined [[java.util.UUID]]
+   */
+  def generate = uuid
+}
