@@ -71,9 +71,11 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
    /** Abort the update process. Returns a  BusinessRuleViolatedProblem
    * 
    * @param msg The reason for rejection as a message
-   * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem]] being the default application problem
+   * @param key A key for the operation/property mutation that failed
+   * @param severity The severity of the failure. Default is [[almhirt.validation.NoProblem]]
+   * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem.BusinessRuleViolatedProblem]] being the application problem
    */
-  def rejectBusinessRuleViolated(msg: String, key: String): UpdateRecorder[Event, AR] = reject(BusinessRuleViolatedProblem(msg, key, Minor))
+  def rejectBusinessRuleViolated(msg: String, key: String, severity: Severity = NoProblem): UpdateRecorder[Event, AR] = reject(BusinessRuleViolatedProblem(msg, key, severity))
   
   /** Check if the event targets this AR by comparing the ids and versions of this instance and the event
    * As this method is called before applying the event, the versions must have the same value.
