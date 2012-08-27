@@ -18,15 +18,7 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
   def version: Long
 
   /** Applies the event by calling the default handler after validating the event. */
-  def applyEvent = {event: Event =>
-    validateEvent(event) bind ( validated =>
-      	try {
-      	  handlers(validated).success
-      	} catch {
-      		case err: MatchError => UnhandledDomainEventProblem("Unhandled event: %s".format(event.getClass.getName), event).failure
-      		case err => defaultSystemProblem.withMessage(err.getMessage()).failure
-      	})
-  }
+  def applyEvent = {event: Event => applyValidated(event, handlers)}
   
   /** A [[scala.PartialFunction]] that takes an event and returns a modified AR according to the event.
    * This should be the standard handler. You can also create specialized handlers and invoke them via update(event, handler)
@@ -76,6 +68,22 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
    * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem.BusinessRuleViolatedProblem]] being the application problem
    */
   def rejectBusinessRuleViolated(msg: String, key: String, severity: Severity = NoProblem): UpdateRecorder[Event, AR] = reject(BusinessRuleViolatedProblem(msg, key, severity))
+
+  /** Validates the event and then applies the handler
+   * 
+   * @param event The Event to validate and then apply
+   * @param handler the handler to call with the event
+   * @return The modified aggregate root or a failure
+   */
+  protected def applyValidated(event: Event, handler: PartialFunction[Event,AR]): DomainValidation[AR] = {
+    validateEvent(event) bind ( validated =>
+      	try {
+      	  handler(validated).success
+      	} catch {
+      		case err: MatchError => UnhandledDomainEventProblem("Unhandled event: %s".format(event.getClass.getName), event).failure
+      		case err => defaultSystemProblem.withMessage(err.getMessage()).failure
+      	})
+  }
   
   /** Check if the event targets this AR by comparing the ids and versions of this instance and the event
    * As this method is called before applying the event, the versions must have the same value.
