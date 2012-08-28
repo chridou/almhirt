@@ -1,11 +1,11 @@
 package almhirt.domain
 
-import almhirt.validation.{Severity, Major, SystemProblem, Problem}
+import almhirt.validation.{Severity, Major, ProblemCategory, SystemProblem, Problem}
 
 /** Used to indicate that an event couldn't be handled by an aggregate root's handler. 
  * This is a major problem as it indicates a software defect.
  */
-case class UnhandledDomainEventProblem(message: String, unhandledEvent: DomainEvent, severity: Severity = Major, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends SystemProblem {
+case class UnhandledDomainEventProblem(message: String, unhandledEvent: DomainEvent, severity: Severity = Major, category: ProblemCategory = SystemProblem, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends Problem {
   type T = UnhandledDomainEventProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withException(err: Throwable) = copy(exception = Some(err))

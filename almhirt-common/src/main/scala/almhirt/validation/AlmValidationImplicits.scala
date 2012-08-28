@@ -15,7 +15,7 @@ trait AlmValidationImplicits {
    * Example:
    * {{{ 
    * val i = "5".toIntAlm
-   * assert(i == 5)
+   * assert(i == 5.success)
    * }}}
    */
   final class StringW(str: String) {

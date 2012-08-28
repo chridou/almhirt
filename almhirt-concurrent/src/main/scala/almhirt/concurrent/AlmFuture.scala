@@ -5,7 +5,7 @@ import scala.{Left, Right}
 import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
 import akka.dispatch.{Future, Promise, Await}
-import almhirt.validation.{Problem, AlmValidation}
+import almhirt.validation._
 import almhirt.validation.Problem._
 import akka.util.Duration
 
@@ -39,7 +39,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
       case Left(err) => {
         val prob = err match {
           case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)) 
-          case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)) 
+          case exn => UnspecifiedProblem(message = exn.getMessage, severity = Major, category = SystemProblem, exception = Some(exn)) 
         }
         handler(prob.failure[R])
       }
@@ -52,7 +52,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
       case Left(err) => {
         val prob = err match {
           case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)) 
-          case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)) 
+          case exn => UnspecifiedProblem(message = exn.getMessage, severity = Major, category = SystemProblem, exception = Some(exn)) 
         }
         fail(prob)
       }
@@ -70,7 +70,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
   def andThen(effect: AlmValidation[R] => Unit): AlmFuture[R] = {
     new AlmFuture(underlying andThen{
       case Right(r) => effect(r)
-      case Left(err) => effect(UnspecifiedSystemProblem(err.getMessage, exception = Some(err)).failure[R])
+      case Left(err) => effect(UnspecifiedProblem(err.getMessage, severity = Major, category = SystemProblem, exception = Some(err)).failure[R])
     })
   }
   
@@ -81,7 +81,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
       Await.result(underlying, atMost)
     } catch {
       case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)).failure[R] 
-      case exn => UnspecifiedSystemProblem(exn.getMessage, exception = Some(exn)).failure[R] 
+      case exn => UnspecifiedProblem(exn.getMessage, severity = Major, category = SystemProblem, exception = Some(exn)).failure[R] 
     }
 }
 

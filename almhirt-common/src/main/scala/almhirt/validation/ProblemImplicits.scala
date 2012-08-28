@@ -10,6 +10,12 @@ trait ProblemImplicits {
       def append(a: Severity, b: => Severity): Severity = a and b
       val zero = NoProblem
     }
+
+  implicit def toProbelCategoryMonoid: Monoid[ProblemCategory] =
+    new Monoid[ProblemCategory] {
+      def append(a: ProblemCategory, b: => ProblemCategory): ProblemCategory = a and b
+      val zero = ApplicationProblem
+    }
   
   implicit def toMBDSemiGroup: Semigroup[MultipleBadDataProblem] =
     new Semigroup[MultipleBadDataProblem] {
@@ -30,10 +36,10 @@ trait ProblemImplicits {
   final class NelProblemW(nel: NonEmptyList[Problem]) {
     def aggregate(msg: String): Problem = {
       val severity = nel.map(_.severity).concatenate
-      if(nel.list.exists(p => p.isInstanceOf[SystemProblem]))
-        UnspecifiedSystemProblem(msg, severity = severity, causes = nel.list)
+      if(nel.list.exists(p => p.isSystemProblem))
+        UnspecifiedProblem(msg, severity = severity, category = SystemProblem, causes = nel.list)
       else
-        UnspecifiedApplicationProblem(msg, severity = severity, causes = nel.list)
+        UnspecifiedProblem(msg, severity = severity, category = ApplicationProblem, causes = nel.list)
     }
     def aggregate(): Problem = aggregate("One or more problems. See causes.")
   }
@@ -50,13 +56,11 @@ trait ProblemImplicits {
     }
   
   implicit object showsProblem extends Show[Problem] { override def shows(p: Problem) = standardShow(p) }
-  implicit object showsSystemProblem extends Show[SystemProblem] { override def shows(p: SystemProblem) = standardShow(p) }
   implicit object showsMappingProblem extends Show[MappingProblem] { override def shows(p: MappingProblem) = standardShow(p) }
-  implicit object showsApplicationProblem extends Show[ApplicationProblem] { override def shows(p: ApplicationProblem) = standardShow(p) }
   implicit object showsSecurityProblem extends Show[SecurityProblem] { override def shows(p: SecurityProblem) = standardShow(p) }
   implicit object showsBadDataProblem extends Show[BadDataProblem] { override def shows(p: BadDataProblem) = standardShow(p) }
   implicit object showsBusinessRuleProblem extends Show[BusinessRuleProblem] { override def shows(p: BusinessRuleProblem) = standardShow(p) }
-  implicit object showsUnspecifiedSystemProblem extends Show[UnspecifiedSystemProblem] { override def shows(p: UnspecifiedSystemProblem) = standardShow(p) }
+  implicit object showsUnspecifiedProblem extends Show[UnspecifiedProblem] { override def shows(p: UnspecifiedProblem) = standardShow(p) }
   implicit object showsRegistrationProblem extends Show[RegistrationProblem] { override def shows(p: RegistrationProblem) = standardShow(p) }
   implicit object showsNoConnectionProblem extends Show[NoConnectionProblem] { override def shows(p: NoConnectionProblem) = standardShow(p) }
   implicit object showsOperationTimedOutProblem extends Show[OperationTimedOutProblem] { override def shows(p: OperationTimedOutProblem) = standardShow(p) }
@@ -66,7 +70,6 @@ trait ProblemImplicits {
   implicit object showsPersistenceProblem extends Show[PersistenceProblem] { override def shows(p: PersistenceProblem) = standardShow(p) }
   implicit object showsSingleMappingProblem extends Show[SingleMappingProblem] { override def shows(p: SingleMappingProblem) = standardShow(p) }
   implicit object showsMultipleMappingProblem extends Show[MultipleMappingProblem] { override def shows(p: MultipleMappingProblem) = standardShow(p) }
-  implicit object showsUnspecifiedApplicationProblem extends Show[UnspecifiedApplicationProblem] { override def shows(p: UnspecifiedApplicationProblem) = standardShow(p) }
   implicit object showsNotFoundProblem extends Show[NotFoundProblem] { override def shows(p: NotFoundProblem) = standardShow(p) }
   implicit object showsKeyNotFoundProblem extends Show[KeyNotFoundProblem] { override def shows(p: KeyNotFoundProblem) = standardShow(p) }
   implicit object showsConstraintViolatedProblem extends Show[ConstraintViolatedProblem] { override def shows(p: ConstraintViolatedProblem) = standardShow(p) }

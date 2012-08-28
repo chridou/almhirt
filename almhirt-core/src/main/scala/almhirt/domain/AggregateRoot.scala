@@ -51,7 +51,7 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
    * @param prob The reason for rejection as a problem
    * @return A failed [[almhirt.domain.UpdateRecorder]]
    */
-  def reject(prob: ApplicationProblem): UpdateRecorder[Event, AR] = UpdateRecorder.reject(prob)
+  def reject(prob: Problem): UpdateRecorder[Event, AR] = UpdateRecorder.reject(prob)
 
    /** Abort the update process. Returns the default application problem
    * 
