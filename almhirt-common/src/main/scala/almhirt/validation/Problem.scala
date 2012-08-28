@@ -174,6 +174,14 @@ object Problem extends ProblemImplicits {
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
+  case class ConstraintViolatedProblem(message: String, severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends ApplicationProblem {
+	type T = ConstraintViolatedProblem
+    def withMessage(newMessage: String) = copy(message = newMessage)
+    def withException(err: Throwable) = copy(exception = Some(err))
+	def withSeverity(severity: Severity) = copy(severity = severity)
+	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+  }
   case class SingleBadDataProblem(message: String, key: String = "unknown", severity: Severity = Minor, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends BadDataProblem with SingleKeyedProblem {
 	type T = SingleBadDataProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
