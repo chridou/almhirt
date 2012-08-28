@@ -73,6 +73,7 @@ trait ProblemImplicits {
   implicit object showsNotFoundProblem extends Show[NotFoundProblem] { override def shows(p: NotFoundProblem) = standardShow(p) }
   implicit object showsKeyNotFoundProblem extends Show[KeyNotFoundProblem] { override def shows(p: KeyNotFoundProblem) = standardShow(p) }
   implicit object showsConstraintViolatedProblem extends Show[ConstraintViolatedProblem] { override def shows(p: ConstraintViolatedProblem) = standardShow(p) }
+  implicit object showsParsingProblem extends Show[ParsingProblem] { override def shows(p: ParsingProblem) = standardShow(p) }
   implicit object showsSingleBadDataProblem extends Show[SingleBadDataProblem] { override def shows(p: SingleBadDataProblem) = standardShow(p) }
   implicit object showsMultipleBadDataProblem extends Show[MultipleBadDataProblem] { override def shows(p: MultipleBadDataProblem) = standardShow(p) }
   implicit object showsCollisionProblem extends Show[CollisionProblem] { override def shows(p: CollisionProblem) = standardShow(p) }
