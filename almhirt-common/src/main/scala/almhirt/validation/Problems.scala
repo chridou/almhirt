@@ -11,6 +11,16 @@ import scala.collection.mutable.StringBuilder
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
+
+  case class AggregateProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends Problem {
+	type T = AggregateProblem
+    def withMessage(newMessage: String) = copy(message = newMessage)
+    def withException(err: Throwable) = copy(exception = Some(err))
+	def withSeverity(severity: Severity) = copy(severity = severity)
+	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+  }
+
   case class RegistrationProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, exception: Option[Throwable] = None, args: Map[String, Any] = Map(), causes: List[Problem] = Nil) extends Problem {
 	type T = RegistrationProblem
     def withMessage(newMessage: String) = copy(message = newMessage)

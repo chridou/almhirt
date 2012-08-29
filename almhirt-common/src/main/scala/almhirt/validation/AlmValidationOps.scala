@@ -9,7 +9,6 @@ import scalaz.syntax.validation._
 import org.joda.time.DateTime
 import almhirt.validation._
 
-
 /** Implicits for parsing Strings 
  *
  * Example:
@@ -53,7 +52,7 @@ trait AlmValidationOps1[T] extends Ops[T] {
 }
   
   
-  /** Implicits for an option that contains a validation*/
+/** Implicits for an option that contains a validation*/
 trait AlmValidationOps2[P, V]extends Ops[Option[Validation[P,V]]] {
   /** Option[Validation[P,T]] => Validation[P, Option[T]] */
   def validationOut(): Validation[P, Option[V]] =
@@ -64,7 +63,7 @@ trait AlmValidationOps2[P, V]extends Ops[Option[Validation[P,V]]] {
   }
 }
 
-  /** Implicits for a validation that contains an option*/
+/** Implicits for a validation that contains an option*/
 trait AlmValidationOps3[P, V] extends Ops[Validation[P,Option[V]]] {
     /** Validation[P, Option[T]]Option[Validation[P,T]] =>  */
   def optionOut(): Option[Validation[P,V]] =
@@ -74,7 +73,7 @@ trait AlmValidationOps3[P, V] extends Ops[Validation[P,Option[V]]] {
 }
   
 trait AlmValidationOps4[T] extends Ops[Validation[String, T]] {
-  import ProblemFunctions._
+  import ProblemDefaults._
   def toAlmValidation(problemOnFail: Problem = defaultProblem): AlmValidation[T] =
     self fold(problemOnFail.withMessage(_).failure[T], _.success[Problem])
 }
@@ -129,14 +128,15 @@ trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {
 }
   
 trait AlmValidationOps9[T] extends Ops[Validation[Throwable, T]] {
-  import ProblemFunctions._
+  import ProblemDefaults._
   def fromExceptional(problemOnFail: Problem = defaultProblem): AlmValidation[T] = 
     self fold (exn => problemOnFail.withMessage(exn.getMessage).withException(exn).failure[T], _.success)
 }
   
 trait AlmValidationOps10[R] extends Ops[List[AlmValidation[R]]] {
-  
-  def aggregateProblems(msg: String): AlmValidation[List[R]] = {
+  import ProblemOps._
+  def aggregateProblems(msg: String): Validation[AggregateProblem, List[R]] = {
+    import AlmValidationOps._
     self.partition(_.isSuccess) match {
       case (succs, Nil) => succs.flatMap(_.toOption).toList.success
       case (_, probs) => 
@@ -145,10 +145,10 @@ trait AlmValidationOps10[R] extends Ops[List[AlmValidation[R]]] {
     }
   }
   
-  def aggregateProblems(): AlmValidation[List[R]] = aggregateProblems("One or more problems occured. See causes.")
+  def aggregateProblems(): Validation[AggregateProblem, List[R]] = aggregateProblems("One or more problems occured. See causes.")
 }
 
-trait ToAlmvalidationOps {
+trait ToAlmValidationOps {
   implicit def FromStringToAlmValidationOps0(a: String): AlmValidationOps0 = new AlmValidationOps0{ def self = a }
   implicit def FromAnyToAlmValidationOps1[T](a: T): AlmValidationOps1[T] = new AlmValidationOps1[T]{ def self = a }
   implicit def FromOptionValidationToAlmValidationOps2[P, V](a: Option[Validation[P,V]]): AlmValidationOps2[P, V] = new AlmValidationOps2[P,V] { def self = a }
@@ -162,4 +162,4 @@ trait ToAlmvalidationOps {
   implicit def FromListValidationToAlmValidationOps10[R](a: List[AlmValidation[R]]): AlmValidationOps10[R] = new AlmValidationOps10[R]{ def self = a }
 }
 
-object AlmValidationOps extends ToAlmvalidationOps
+object AlmValidationOps extends ToAlmValidationOps

@@ -4,7 +4,7 @@ import java.util.UUID
 import org.joda.time.DateTime
 import scalaz.{Validation, Failure, Success}
 import scalaz.Validation._
-import almhirt.validation.Problem._
+import almhirt.validation._
 
 trait TestPersonEvent extends DomainEvent
 case class TestPersonCreated(aggRootId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent

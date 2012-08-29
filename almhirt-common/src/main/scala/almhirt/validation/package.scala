@@ -1,7 +1,6 @@
 package almhirt
 
 import scalaz.Validation
-import almhirt.validation.Problem._
 
 package object validation {
 //  type AlmValidation[+α] = ({type λ[α] = Validation[Problem, α]})#λ[α]
@@ -16,6 +15,6 @@ package object validation {
   type AlmValidationMBRV[+α] = Validation[ManyBusinessRulesViolatedProblem, α]
 
   
-  object AlmValidation extends AlmValidationOps with AlmValidationParseOps with AlmValidationImplicits
+//  object AlmValidation extends AlmValidationOps with AlmValidationParseOps with AlmValidationImplicits
 
 }

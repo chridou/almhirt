@@ -5,7 +5,7 @@ import akka.testkit.TestActorRef
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.Duration
-import almhirt.validation.AlmValidation._
+import almhirt.validation.syntax.AlmValidationOps._
 import almhirt.almakka._
 import scalaz._, Scalaz._
 

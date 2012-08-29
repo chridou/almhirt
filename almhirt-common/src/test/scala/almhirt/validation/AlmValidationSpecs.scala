@@ -9,8 +9,10 @@ import org.specs2.mutable.Specification
 import almhirt.validation._
 
 class AlmValidationSpecs extends Specification {
-  import AlmValidation._
-  import Problem._
+  import AlmValidationFunctions._
+  import ProblemInstances._
+  import syntax.AlmValidationOps._
+  import syntax.ProblemOps._
   
   "AlmValidation.parseIntAlm" should {
     "return a success of 1 when supplied with '1'" in {

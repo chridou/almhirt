@@ -6,7 +6,7 @@ import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
 import akka.dispatch.{Future, Promise, Await}
 import almhirt.validation._
-import almhirt.validation.Problem._
+import almhirt.validation.AllImports._
 import akka.util.Duration
 
 /** A future based on [[akka.dispatch.Future]].
@@ -18,6 +18,7 @@ import akka.util.Duration
  * Errors which would end in a Throwable end in a SystemProblem whereas a TimeoutException ends in a TimeoutProblem.
  */
 class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit executionContext: akka.dispatch.ExecutionContext)  {
+  import AlmFutureInstances._
   def map[T](compute: R => T): AlmFuture[T] =
     new AlmFuture[T](underlying map { validation => validation map compute })
     
@@ -85,7 +86,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
     }
 }
 
-object AlmFuture extends AlmFutureImplicits {
+object AlmFuture {
   def apply[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Promise.successful{compute})
   @deprecated("Use AlmPromise.apply", "0.0.1")
   def promise[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Promise.successful{compute})

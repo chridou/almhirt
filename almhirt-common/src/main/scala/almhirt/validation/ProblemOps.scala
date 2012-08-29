@@ -9,19 +9,19 @@ import scalaz.syntax.Ops
 trait ProblemOps0 extends Ops[NonEmptyList[Problem]]{
   import SeverityInstances._
   
-  implicit def nelProblemtoNelProblemW(probs: NonEmptyList[Problem]) = new NelProblemW(probs)
-  final class NelProblemW(nel: NonEmptyList[Problem]) {
-    def aggregate(msg: String): Problem = {
-      val severity = nel.map(_.severity).concatenate
-      if(nel.list.exists(p => p.isSystemProblem))
-        UnspecifiedProblem(msg, severity = severity, category = SystemProblem, causes = nel.list)
-      else
-        UnspecifiedProblem(msg, severity = severity, category = ApplicationProblem, causes = nel.list)
-    }
-    def aggregate(): Problem = aggregate("One or more problems. See causes.")
+  def aggregate(msg: String): AggregateProblem = {
+    val severity = self.map(_.severity).concatenate
+    if(self.list.exists(p => p.isSystemProblem))
+      AggregateProblem(msg, severity = severity, category = SystemProblem, causes = self.list)
+    else
+      AggregateProblem(msg, severity = severity, category = ApplicationProblem, causes = self.list)
   }
+
+  def aggregate(): AggregateProblem = aggregate("One or more problems. See causes.")
 }
 
 trait ToProblemOps {
   implicit def ToProblemOps0(a: NonEmptyList[Problem]) = new ProblemOps0{ def self = a }
 }
+
+object ProblemOps extends ToProblemOps

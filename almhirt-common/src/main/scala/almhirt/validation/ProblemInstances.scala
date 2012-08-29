@@ -19,11 +19,12 @@ trait ProblemInstances {
   }
 
   implicit def showsProblem: Show[Problem] = new Show[Problem] { override def shows(p: Problem) = standardShow(p) }
+  implicit def showsUnspecifiedProblem: Show[UnspecifiedProblem] = new Show[UnspecifiedProblem] { override def shows(p: UnspecifiedProblem) = standardShow(p) }
+  implicit def showsAggregateProblem: Show[AggregateProblem] = new Show[AggregateProblem] { override def shows(p: AggregateProblem) = standardShow(p) }
   implicit def showsMappingProblem: Show[MappingProblem] = new Show[MappingProblem] { override def shows(p: MappingProblem) = standardShow(p) }
   implicit def showsSecurityProblem: Show[SecurityProblem] = new Show[SecurityProblem] { override def shows(p: SecurityProblem) = standardShow(p) }
   implicit def showsBadDataProblem: Show[BadDataProblem] = new Show[BadDataProblem] { override def shows(p: BadDataProblem) = standardShow(p) }
   implicit def showsBusinessRuleProblem: Show[BusinessRuleProblem] = new Show[BusinessRuleProblem] { override def shows(p: BusinessRuleProblem) = standardShow(p) }
-  implicit def showsUnspecifiedProblem: Show[UnspecifiedProblem] = new Show[UnspecifiedProblem] { override def shows(p: UnspecifiedProblem) = standardShow(p) }
   implicit def showsRegistrationProblem: Show[RegistrationProblem] = new Show[RegistrationProblem] { override def shows(p: RegistrationProblem) = standardShow(p) }
   implicit def showsNoConnectionProblem: Show[NoConnectionProblem] = new Show[NoConnectionProblem] { override def shows(p: NoConnectionProblem) = standardShow(p) }
   implicit def showsOperationTimedOutProblem: Show[OperationTimedOutProblem] = new Show[OperationTimedOutProblem] { override def shows(p: OperationTimedOutProblem) = standardShow(p) }

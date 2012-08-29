@@ -5,8 +5,10 @@ import scalaz._
 import Scalaz._
 import org.joda.time.DateTime
 import almhirt.validation._
-import almhirt.validation.Problem._
-import almhirt.validation.AlmValidation._
+import almhirt.validation.syntax.ProblemOps._
+import almhirt.validation.syntax.AlmValidationOps._
+import almhirt.validation.AlmValidationFunctions._
+import almhirt.validation.ProblemInstances._
 import almhirt.xtractnduce._
 import com.mongodb.casbah.Imports._
 

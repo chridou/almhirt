@@ -3,14 +3,14 @@ package almhirt.domain
 import java.util.UUID
 import scalaz._, Scalaz._
 import almhirt.validation._
-import almhirt.validation.Problem
-import almhirt.validation.Problem._
+import almhirt.validation.syntax.ProblemOps._
 
 
 /** An aggregate root is the topmost entity of an aggregate. It aggregates those entities and value objects which cannot exist without the whole.
  * All entities within the aggregate should only be accessible via the aggregate root. Only an aggregate root justifies a repository.
  */
 trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event]{
+  import almhirt.validation.ProblemDefaults._
   /** The unique id that gives the aggregate its identity */
   def id: UUID
   /** The monotonically growing version which is increased by one with each event generated via mutation. 

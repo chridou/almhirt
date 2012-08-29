@@ -3,7 +3,7 @@ package almhirt.almakka
 import scalaz.syntax.show._
 import akka.event._
 import almhirt.validation._
-import almhirt.validation.Problem._
+import almhirt.validation.AllImports._
 import almhirt.concurrent._
 
 /** Enables an [[akka.actor.Actor]] to log directly on [[almhirt.validation.Problem]]s 

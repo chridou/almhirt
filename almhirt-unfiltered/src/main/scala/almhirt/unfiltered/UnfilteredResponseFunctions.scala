@@ -4,9 +4,10 @@ import scalaz.syntax.show._
 import org.jboss.netty.handler.codec.http.HttpResponse
 import unfiltered.response._
 import almhirt.validation._
-import almhirt.validation.Problem._
+import almhirt.validation.ProblemInstances._
+import almhirt.validation.syntax.ProblemOps._
 
-object ProblemToUnfilteredResponse extends ProblemToUnfilteredResponseImplicits {
+trait UnfilteredResponseFunctions {
   def problemToResponse(problem: Problem): ResponseFunction[HttpResponse] = {
     if(problem.isSystemProblem)
       InternalServerError ~> PlainTextContent ~> ResponseString(problem.shows)
@@ -31,4 +32,4 @@ object ProblemToUnfilteredResponse extends ProblemToUnfilteredResponseImplicits 
     validation fold (problemToResponse(_), onSuccess(_))
 }
 
-
+object UnfilteredResponseFunctions extends UnfilteredResponseFunctions

@@ -6,7 +6,7 @@ import org.joda.time.DateTime
 import almhirt.validation._
 
 trait AlmValidationFunctions {
-  import ProblemFunctions._
+  import ProblemDefaults._
   
   def successAlm[T](x: T): AlmValidation[T] = x.success[Problem]
   

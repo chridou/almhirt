@@ -1,9 +1,9 @@
 package almhirt.domain
 
 import scalaz._, Scalaz._
-import almhirt.validation.AlmValidation._
-import almhirt.validation.Problem
-import almhirt.validation.Problem._
+import almhirt.validation._
+import almhirt.validation.syntax.ProblemOps._
+import almhirt.validation.syntax.AlmValidationOps._
 
 /** Records the events for aggregate root updates.
  * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s

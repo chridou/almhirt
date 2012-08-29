@@ -2,7 +2,7 @@ package almhirt.validation
 
 import org.specs2.mutable._
 import org.specs2.matcher._
-import almhirt.validation.Problem.SingleBadDataProblem
+import almhirt.validation._
 
 class ProblemSpecs extends Specification {
   val bdpA = SingleBadDataProblem("Message A", "A", Minor)

@@ -4,7 +4,7 @@ import scala.xml._
 import scalaz._, Scalaz._
 import almhirt.validation._
 import almhirt.validation.AlmValidation
-import almhirt.validation.Problem._
+import almhirt.validation.syntax.ProblemOps._
 
 
 case class DocItHtmlSettingss(css: Option[String] = None, styleClassMap: Map[String, String] = Map.empty)

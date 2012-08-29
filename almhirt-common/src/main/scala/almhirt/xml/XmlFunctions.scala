@@ -2,12 +2,12 @@ package almhirt.xml
 
 import scalaz._, Scalaz._
 import org.joda.time.DateTime
-import almhirt.validation.Problem._
 import almhirt.validation._
-import almhirt.validation.AlmValidation._
-import scala.xml.Elem
+import almhirt.validation.AlmValidationFunctions._
+import almhirt.validation.ProblemInstances._
+import almhirt.validation.syntax.AlmValidationOps._
 
-object XmlPrimitives extends XmlPrimitivesImplicits {
+trait XmlFunctions {
   import scala.xml.{XML, Node, Elem, NodeSeq}
   import scala.xml.XML
   
@@ -162,3 +162,5 @@ object XmlPrimitives extends XmlPrimitivesImplicits {
     validations.sequence
   }
 }
+
+object XmlFunctions extends XmlFunctions

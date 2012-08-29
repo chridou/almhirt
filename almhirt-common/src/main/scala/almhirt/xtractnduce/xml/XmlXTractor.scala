@@ -4,10 +4,12 @@ import scala.xml.{Elem, Text}
 import scalaz._
 import Scalaz._
 import almhirt.validation._
-import almhirt.validation.AlmValidation._
-import almhirt.validation.Problem._
-import almhirt.xml.XmlPrimitives
-import almhirt.xml.XmlPrimitives._
+import almhirt.validation.AlmValidationFunctions._
+import almhirt.validation.ProblemInstances._
+import almhirt.validation.syntax.AlmValidationOps._
+import almhirt.validation.syntax.ProblemOps._
+import almhirt.xml.XmlFunctions
+import almhirt.xml.syntax.XmlOps._
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
 class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Option[XTractor] = None) extends XTractor with ScribbableXmlXTractor {
@@ -107,7 +109,7 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
         items.sequence[AlmValidationMBD, XTractorAtomicString] }
   
   private def getUniquePropertyElement(aKey: String): AlmValidationSBD[Option[Elem]] = {
-    val propertyContainers = XmlPrimitives.elems(elem, aKey)
+    val propertyContainers = XmlFunctions.elems(elem, aKey)
     propertyContainers match {
       case Seq(untrimmedPropertyContainer) => 
          scala.xml.Utility.trim(untrimmedPropertyContainer).asInstanceOf[Elem].successSBD.map(Some(_))
@@ -138,13 +140,13 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
   
   private def onAllChildrenAreElems(elem: Elem): AlmValidationSBD[Seq[Elem]] =
     if(elem.child.forall(n => n.isInstanceOf[Elem]))
-      XmlPrimitives.elems(elem).successSBD
+      XmlFunctions.elems(elem).successSBD
     else
       SingleBadDataProblem("Not all children are Elems", key = pathAsStringWithKey(elem.label)).failure[Seq[Elem]] 
     
   
   private def onSingleTextOnlyElem[U](aKey: String, f: (String, String) => AlmValidationSBD[Option[U]]): AlmValidationSBD[Option[U]] = {
-    val elems = XmlPrimitives.elems(elem, aKey)
+    val elems = XmlFunctions.elems(elem, aKey)
     elems match {
       case Seq() => 
         None.successSBD
