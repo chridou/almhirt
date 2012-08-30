@@ -1,3 +1,3 @@
 package almhirt.validation
 
-object AllInstances extends ProblemInstances with ProblemCategoryInstances  with SeverityInstances
+object AllInstances extends ProblemInstances with ProblemCategoryInstances with SeverityInstances with AlmValidationInstances
