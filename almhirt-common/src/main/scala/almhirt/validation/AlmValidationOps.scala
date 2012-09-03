@@ -129,8 +129,11 @@ trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {
 
 trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
   import ProblemDefaults._
-  def toAggregate(problemOnFail: Problem = defaultProblem): AlmValidationAP[T] = 
-    self fold (prob => AggregateProblem("One or more problems occured. See causes.", severity = prob.severity, category = prob.category, causes = List(prob)).failure, _.success)
+  def toAggregate(msg: String): AlmValidationAP[T] = 
+    self fold (prob => AggregateProblem(msg, severity = prob.severity, category = prob.category, causes = List(prob)).failure, _.success)
+
+  def toAggregate(): AlmValidationAP[T] = 
+    toAggregate("One or more problems occured. See causes.")
 }
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
