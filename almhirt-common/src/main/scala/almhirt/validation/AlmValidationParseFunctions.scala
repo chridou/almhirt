@@ -22,42 +22,42 @@ trait AlmValidationParseFunctions{
     try {
       toParse.toLong.success[SingleBadDataProblem]
     } catch {
-      case err => badData("Not a valid number(Long)".format(toParse), key).failure[Long]
+      case err => badData("Not a valid number(Long): %s".format(toParse), key).failure[Long]
     }
   
   def parseDoubleAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Double] =
     try {
       toParse.toDouble.success[SingleBadDataProblem]
     } catch {
-      case err => badData("Not a valid number(Double)".format(toParse), key).failure[Double]
+      case err => badData("Not a valid number(Double): %s".format(toParse), key).failure[Double]
     }
 
   def parseFloatAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Float] =
     try {
       toParse.toFloat.success[SingleBadDataProblem]
     } catch {
-      case err => badData("Not a valid number(Float)".format(toParse), key).failure[Float]
+      case err => badData("Not a valid number(Float): %s".format(toParse), key).failure[Float]
     }
 
   def parseDecimalAlm(toParse: String, key: String = "some value"): AlmValidationSBD[BigDecimal] =
     try {
       BigDecimal(toParse).success[SingleBadDataProblem]
      } catch {
-      case err => badData("Not a valid number(BigDecimal)".format(toParse), key).failure[BigDecimal]
+      case err => badData("Not a valid number(BigDecimal): %s".format(toParse), key).failure[BigDecimal]
     }
 
   def parseDateTimeAlm(toParse: String, key: String = "some value"): AlmValidationSBD[DateTime] =
     try {
       new DateTime(toParse).success[SingleBadDataProblem]
      } catch {
-      case err => badData("Not a valid number(DateTime)".format(toParse), key).failure[DateTime]
+      case err => badData("Not a valid DateTime: %s".format(toParse), key).failure[DateTime]
     }
 
   def parseUUIDAlm(toParse: String, key: String = "some value"): AlmValidationSBD[UUID] =
     try {
       UUID.fromString(toParse).success[SingleBadDataProblem]
      } catch {
-      case err => badData("Not a valid number(DateTime)".format(toParse), key).failure[UUID]
+      case err => badData("Not a valid UUID: %s".format(toParse), key).failure[UUID]
     }
      
      
@@ -65,7 +65,7 @@ trait AlmValidationParseFunctions{
     try {
       toParse.toBoolean.success[SingleBadDataProblem]
      } catch {
-      case err => badData("Not a valid Boolean".format(toParse), key).failure[Boolean]
+      case err => badData("Not a valid Boolean: %s".format(toParse), key).failure[Boolean]
     }
 
   def parseBase64Alm(toParse: String, key: String = "some value"): AlmValidationSBD[Array[Byte]] =
