@@ -126,14 +126,20 @@ trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {
   def toMBD(): AlmValidationMBD[T] =
     self fold (_.toMBD().failure[T], _.success)
 }
-  
-trait AlmValidationOps9[T] extends Ops[Validation[Throwable, T]] {
+
+trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
+  import ProblemDefaults._
+  def toAggregate(problemOnFail: Problem = defaultProblem): AlmValidationAP[T] = 
+    self fold (prob => AggregateProblem("One or more problems occured. See causes.", severity = prob.severity, category = prob.category, causes = List(prob)).failure, _.success)
+}
+
+trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
   import ProblemDefaults._
   def fromExceptional(problemOnFail: Problem = defaultProblem): AlmValidation[T] = 
     self fold (exn => problemOnFail.withMessage(exn.getMessage).withException(exn).failure[T], _.success)
 }
-  
-trait AlmValidationOps10[R] extends Ops[List[AlmValidation[R]]] {
+
+trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
   import ProblemOps._
   def aggregateProblems(msg: String): Validation[AggregateProblem, List[R]] = {
     import AlmValidationOps._
@@ -148,7 +154,7 @@ trait AlmValidationOps10[R] extends Ops[List[AlmValidation[R]]] {
   def aggregateProblems(): Validation[AggregateProblem, List[R]] = aggregateProblems("One or more problems occured. See causes.")
 }
 
-trait AlmValidationOps11[T] extends Ops[AlmValidation[T]] {
+trait AlmValidationOps12[T] extends Ops[AlmValidation[T]] {
   def m(): AlmMatcher[T] = 
     self fold (f => AlmFailure[T](f), s => AlmSuccess[T](s))
 }
@@ -163,9 +169,10 @@ trait ToAlmValidationOps {
   implicit def FromFunOptToAlmValidationOps6[T,U](a: T => Option[U]): AlmValidationOps6[T,U]  = new AlmValidationOps6[T,U] { def self = a }
   implicit def FromOptionTOAlmAlmValidationOps7[T](a: Option[T]): AlmValidationOps7[T]= new AlmValidationOps7[T]{ def self = a }
   implicit def FromBadDataProblemValidationToAlmValidationOps8[T](a: AlmValidationSBD[T]): AlmValidationOps8[T] = new AlmValidationOps8[T] { def self = a }
-  implicit def FromValidationToAlmValidationOps9[T](a: Validation[Throwable, T]): AlmValidationOps9[T] = new AlmValidationOps9[T]{ def self = a }
-  implicit def FromListValidationToAlmValidationOps10[R](a: List[AlmValidation[R]]): AlmValidationOps10[R] = new AlmValidationOps10[R]{ def self = a }
-  implicit def FromListValidationToAlmValidationOps11[T](a: AlmValidation[T]): AlmValidationOps11[T] = new AlmValidationOps11[T]{ def self = a }
+  implicit def FromAlmValidationToAlmValidationOps9[T](a: AlmValidation[T]): AlmValidationOps9[T] = new AlmValidationOps9[T] { def self = a }
+  implicit def FromValidationToAlmValidationOps10[T](a: Validation[Throwable, T]): AlmValidationOps10[T] = new AlmValidationOps10[T]{ def self = a }
+  implicit def FromListValidationToAlmValidationOps11[R](a: List[AlmValidation[R]]): AlmValidationOps11[R] = new AlmValidationOps11[R]{ def self = a }
+  implicit def FromListValidationToAlmValidationOps12[T](a: AlmValidation[T]): AlmValidationOps12[T] = new AlmValidationOps12[T]{ def self = a }
 }
 
 object AlmValidationOps extends ToAlmValidationOps

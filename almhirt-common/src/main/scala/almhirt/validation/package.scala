@@ -13,6 +13,7 @@ package object validation {
   type AlmValidationMM[+α] = Validation[MultipleMappingProblem, α]
   type AlmValidationBRV[+α] = Validation[BusinessRuleViolatedProblem, α]
   type AlmValidationMBRV[+α] = Validation[ManyBusinessRulesViolatedProblem, α]
+  type AlmValidationAP[+α] = Validation[AggregateProblem, α]
 
   
 //  object AlmValidation extends AlmValidationOps with AlmValidationParseOps with AlmValidationImplicits
