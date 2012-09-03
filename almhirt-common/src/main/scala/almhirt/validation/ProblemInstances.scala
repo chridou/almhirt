@@ -3,21 +3,31 @@ package almhirt.validation
 import scalaz.{Semigroup, Show}
 
 trait ProblemInstances {
-  implicit def toMBDSemiGroup: Semigroup[MultipleBadDataProblem] =
+  implicit def ToMBDSemiGroup: Semigroup[MultipleBadDataProblem] =
     new Semigroup[MultipleBadDataProblem] {
       def append(a: MultipleBadDataProblem, b: => MultipleBadDataProblem): MultipleBadDataProblem = a combineWith b
   }
   
-  implicit def toMultipleMappingSemiGroup: Semigroup[MultipleMappingProblem] =
+  implicit def ToMultipleMappingSemiGroup: Semigroup[MultipleMappingProblem] =
     new Semigroup[MultipleMappingProblem] {
       def append(a: MultipleMappingProblem, b: => MultipleMappingProblem): MultipleMappingProblem = a combineWith b
   }
 
-  implicit def toManyBusinessRulesViolatedSemiGroup: Semigroup[ManyBusinessRulesViolatedProblem] =
+  implicit def ToManyBusinessRulesViolatedSemiGroup: Semigroup[ManyBusinessRulesViolatedProblem] =
     new Semigroup[ManyBusinessRulesViolatedProblem] {
       def append(a: ManyBusinessRulesViolatedProblem, b: => ManyBusinessRulesViolatedProblem): ManyBusinessRulesViolatedProblem = a combineWith b
   }
 
+  implicit def ToAggregateProblemSemiGroup: Semigroup[AggregateProblem] =
+    new Semigroup[AggregateProblem] {
+      def append(a: AggregateProblem, b: => AggregateProblem): AggregateProblem = {
+        val severity = a.severity and b.severity
+        val category = a.category and b.category
+        AggregateProblem("Multiple problems", severity = severity, category = category, causes = a.causes ++ b.causes)
+      }
+  }
+  
+  
   implicit def showsProblem: Show[Problem] = new Show[Problem] { override def shows(p: Problem) = standardShow(p) }
   implicit def showsUnspecifiedProblem: Show[UnspecifiedProblem] = new Show[UnspecifiedProblem] { override def shows(p: UnspecifiedProblem) = standardShow(p) }
   implicit def showsAggregateProblem: Show[AggregateProblem] = new Show[AggregateProblem] { override def shows(p: AggregateProblem) = standardShow(p) }
