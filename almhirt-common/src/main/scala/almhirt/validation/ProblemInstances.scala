@@ -20,11 +20,8 @@ trait ProblemInstances {
 
   implicit def ToAggregateProblemSemiGroup: Semigroup[AggregateProblem] =
     new Semigroup[AggregateProblem] {
-      def append(a: AggregateProblem, b: => AggregateProblem): AggregateProblem = {
-        val severity = a.severity and b.severity
-        val category = a.category and b.category
-        AggregateProblem("Multiple problems", severity = severity, category = category, causes = a.causes ++ b.causes)
-      }
+      def append(a: AggregateProblem, b: => AggregateProblem): AggregateProblem =
+        AggregateProblem("Multiple problems", severity = a.severity and b.severity, category = a.category and b.category, causes = a.causes ++ b.causes)
   }
   
   
