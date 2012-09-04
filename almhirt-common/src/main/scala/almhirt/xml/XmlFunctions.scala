@@ -24,7 +24,7 @@ trait XmlFunctions {
     try {
       XML.loadString(xmlString).successSBD
     } catch {
-      case err => SingleBadDataProblem("Could not parse xml: %s".format(err.getMessage), key = key, exception = Some(err)).failure[Elem]
+      case err => SingleBadDataProblem("Could not parse xml: %s".format(err.getMessage), key = key, cause = Some(CauseIsThrowable(err))).failure[Elem]
     }
   }
   

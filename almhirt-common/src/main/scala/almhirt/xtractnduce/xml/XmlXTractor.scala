@@ -186,7 +186,7 @@ object XmlXTractor {
       new XmlXTractor(scala.xml.XML.loadString(xml)).successSBD
     } catch {
       case exn => 
-        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = "xml", exception= Some(exn)).failure[XTractor] 
+        SingleBadDataProblem("An error occured: %s".format(exn.getMessage), key = "xml", cause = Some(CauseIsThrowable(exn))).failure[XTractor] 
     }
     
   

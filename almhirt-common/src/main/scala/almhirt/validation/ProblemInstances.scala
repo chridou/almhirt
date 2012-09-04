@@ -62,10 +62,16 @@ trait ProblemInstances {
       val builder = new StringBuilder()
       builder.append("Message: %s\n".format(p.message))
       builder.append("Severity: %s\n".format(p.severity))
-      p.exception.foreach(exn => builder.append("Exception: %s\n".format(exn.toString)))
-      p.exception.foreach(exn => builder.append("Stacktrace:\n%s\n".format(exn.getStackTraceString)))
       builder.append("Arguments: %s\n".format(p.args))
-      builder.append("Causes:\n%s\n".format(p.causes))
+      p.cause match {
+      	case None => 
+      	  ()
+      	case Some(CauseIsThrowable(exn)) => 
+          builder.append("Exception: %s\n".format(exn.toString))
+          builder.append("Stacktrace:\n%s\n".format(exn.getStackTraceString))
+      	case Some(CauseIsProblem(prob)) => 
+          ()
+      }
       builder.result
     }
   

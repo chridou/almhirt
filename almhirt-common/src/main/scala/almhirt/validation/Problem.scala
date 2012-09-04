@@ -6,14 +6,13 @@ trait Problem{
   def message: String
   def severity: Severity
   def category: ProblemCategory
-  def exception: Option[Throwable]
   def args: Map[String, Any]
-  def causes: List[Problem]
+  def cause: Option[ProblemCause]
  
-  def withException(err: Throwable): T
   def withSeverity(severity: Severity): T
   def withArg(key: String, value: Any): T
   def withMessage(newMessage: String): T
+  def withCause(cause: ProblemCause): T
   def mapMessage(mapOp: String => String): T
   
   def isSystemProblem = category == SystemProblem

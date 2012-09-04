@@ -14,7 +14,7 @@ trait AlmValidationFunctions {
     try {
       a.success[Problem]
     } catch {
-      case err => defaultProblemType.withMessage(err.getMessage).withException(err).failure[T]
+      case err => defaultProblemType.withMessage(err.getMessage).withCause(CauseIsThrowable(err)).failure[T]
     }
   }
   
@@ -22,7 +22,7 @@ trait AlmValidationFunctions {
     try {
       a
     } catch {
-      case err => defaultProblemType.withMessage(err.getMessage).withException(err).failure[T]
+      case err => defaultProblemType.withMessage(err.getMessage).withCause(CauseIsThrowable(err)).failure[T]
     }
   }
   
