@@ -35,7 +35,7 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
     try {
       UpdateRecorder.accept(event, handler(event))
     } catch {
-      case exn => UpdateRecorder.reject(defaultSystemProblem.withMessage("Could not execute an update").withException(exn))
+      case exn => UpdateRecorder.reject(defaultSystemProblem.withMessage("Could not execute an update").withCause(CauseIsThrowable(exn)))
     }
   }
 

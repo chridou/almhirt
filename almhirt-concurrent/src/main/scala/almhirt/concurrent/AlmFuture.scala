@@ -39,8 +39,8 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
       case Right(validation) => handler(validation)
       case Left(err) => {
         val prob = err match {
-          case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)) 
-          case exn => UnspecifiedProblem(message = exn.getMessage, severity = Major, category = SystemProblem, exception = Some(exn)) 
+          case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", cause = Some(CauseIsThrowable(tout))) 
+          case exn => UnspecifiedProblem(message = exn.getMessage, severity = Major, category = SystemProblem, cause = Some(CauseIsThrowable(exn))) 
         }
         handler(prob.failure[R])
       }
@@ -52,8 +52,8 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
       case Right(validation) => validation fold(fail, succ)
       case Left(err) => {
         val prob = err match {
-          case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)) 
-          case exn => UnspecifiedProblem(message = exn.getMessage, severity = Major, category = SystemProblem, exception = Some(exn)) 
+          case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", cause = Some(CauseIsThrowable(tout))) 
+          case exn => UnspecifiedProblem(message = exn.getMessage, severity = Major, category = SystemProblem, cause = Some(CauseIsThrowable(exn))) 
         }
         fail(prob)
       }
@@ -71,7 +71,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
   def andThen(effect: AlmValidation[R] => Unit): AlmFuture[R] = {
     new AlmFuture(underlying andThen{
       case Right(r) => effect(r)
-      case Left(err) => effect(UnspecifiedProblem(err.getMessage, severity = Major, category = SystemProblem, exception = Some(err)).failure[R])
+      case Left(err) => effect(UnspecifiedProblem(err.getMessage, severity = Major, category = SystemProblem, cause = Some(CauseIsThrowable(err))).failure[R])
     })
   }
   
@@ -81,8 +81,8 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
     try {
       Await.result(underlying, atMost)
     } catch {
-      case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", exception = Some(tout)).failure[R] 
-      case exn => UnspecifiedProblem(exn.getMessage, severity = Major, category = SystemProblem, exception = Some(exn)).failure[R] 
+      case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", cause = Some(CauseIsThrowable(tout))).failure[R] 
+      case exn => UnspecifiedProblem(exn.getMessage, severity = Major, category = SystemProblem, cause = Some(CauseIsThrowable(exn))).failure[R] 
     }
 }
 
