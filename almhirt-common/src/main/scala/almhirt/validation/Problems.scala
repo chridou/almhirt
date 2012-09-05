@@ -12,7 +12,7 @@ import scala.collection.mutable.StringBuilder
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
 
-  case class AggregateProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None, causes: List[ProblemCause] = Nil) extends Problem {
+  case class AggregateProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None, problems: List[Problem] = Nil) extends Problem {
 	type T = AggregateProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
 	def withSeverity(severity: Severity) = copy(severity = severity)
