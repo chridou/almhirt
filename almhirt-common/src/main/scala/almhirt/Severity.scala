@@ -1,4 +1,4 @@
-package almhirt.validation
+package almhirt
 
 /* Severity of a problem. 
  * 

@@ -1,4 +1,4 @@
-package almhirt.validation
+package almhirt
 
 sealed trait ProblemCategory{
   def and(other: ProblemCategory): ProblemCategory = 

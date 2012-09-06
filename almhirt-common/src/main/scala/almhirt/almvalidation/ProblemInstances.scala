@@ -1,6 +1,7 @@
-package almhirt.validation
+package almhirt.almvalidation
 
 import scalaz.{Semigroup, Show}
+import almhirt._
 
 trait ProblemInstances {
   implicit def ToMBDSemiGroup: Semigroup[MultipleBadDataProblem] =

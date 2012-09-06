@@ -2,8 +2,8 @@ package almhirt.docit
 
 import scala.xml._
 import scalaz._, Scalaz._
-import almhirt.validation._
-import almhirt.validation.syntax._
+import almhirt._
+import almhirt.syntax.almvalidation._
 
 
 case class DocItHtmlSettingss(css: Option[String] = None, styleClassMap: Map[String, String] = Map.empty)

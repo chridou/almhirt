@@ -1,9 +1,9 @@
-package almhirt.validation
+package almhirt.almvalidation
 
 import scalaz.{Validation, Success, Failure, ValidationNEL}
 import scalaz.syntax.validation._
 import org.joda.time.DateTime
-import almhirt.validation._
+import almhirt._
 
 trait AlmValidationFunctions {
   import ProblemDefaults._
@@ -55,5 +55,3 @@ trait AlmValidationFunctions {
     }
   }
 }
-
-object AlmValidationFunctions extends AlmValidationFunctions with AlmValidationParseFunctions

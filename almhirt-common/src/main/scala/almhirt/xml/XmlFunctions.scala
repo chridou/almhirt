@@ -2,10 +2,10 @@ package almhirt.xml
 
 import scalaz._, Scalaz._
 import org.joda.time.DateTime
-import almhirt.validation._
-import almhirt.validation.almvalidationfunctions._
-import almhirt.validation.probleminstances._
-import almhirt.validation.syntax._
+import almhirt._
+import almvalidationfunctions._
+import almvalidationinstances._
+import almhirt.syntax.almvalidation._
 
 trait XmlFunctions {
   import scala.xml.{XML, Node, Elem, NodeSeq}

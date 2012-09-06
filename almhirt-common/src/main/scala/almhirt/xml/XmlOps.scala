@@ -3,7 +3,8 @@ package almhirt.xml
 import scala.xml.{Node, NodeSeq, Elem}
 import scalaz.Validation
 import scalaz.syntax.Ops
-import almhirt.validation._
+import almhirt._
+import almhirt.almvalidation._
 
 trait XmlOps0 extends Ops[Elem]{
   def extractInt(): AlmValidationSBD[Int] = 

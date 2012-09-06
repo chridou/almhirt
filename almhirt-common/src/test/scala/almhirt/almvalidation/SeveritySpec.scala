@@ -1,7 +1,8 @@
-package almhirt.validation
+package almhirt.almvalidation
 
 import org.specs2.mutable._
 import org.specs2.matcher._
+import almhirt._
 
 class SeveritySpec extends Specification {
 	"A Severity has a zero of 'NoProblem' and" should {

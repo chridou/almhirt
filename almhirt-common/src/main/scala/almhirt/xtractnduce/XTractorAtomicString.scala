@@ -4,9 +4,9 @@ import java.util.UUID
 import scalaz.syntax.validation.ToValidationV
 import scalaz.Success
 import org.joda.time.DateTime
-import almhirt.validation._
-import almhirt.validation.almvalidationfunctions._
-import almhirt.validation.syntax._
+import almhirt._
+import almhirt.syntax.almvalidation._
+import almhirt.almvalidationfunctions._
 
 class XTractorAtomicString(value: String, val key: String, val parent: Option[XTractor] = None) extends XTractorAtomic {
   type T = String

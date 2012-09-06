@@ -2,7 +2,6 @@ package almhirt.messaging
 
 import java.util.UUID
 import almhirt._
-import concurrent.AlmFuture
 
 /** Someone you can subscribe to for any Method. */
 trait SubscribableForMessages {

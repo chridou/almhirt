@@ -1,4 +1,6 @@
-package almhirt.validation
+package almhirt.almvalidation
+
+import almhirt._
 
 trait ProblemFunctions {
   def badData(key: String, message: String) =
@@ -8,5 +10,3 @@ trait ProblemFunctions {
   def applicationProblem(message: String, severity: Severity = Major, cause: Option[ProblemCause] = None, args: Map[String, Any] = Map()) =
     UnspecifiedProblem(message, severity, ApplicationProblem, args, cause)
 }
-
-object ProblemFunctions extends ProblemFunctions

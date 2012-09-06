@@ -1,6 +1,7 @@
-package almhirt.validation
+package almhirt.almvalidation
 
 import scalaz.Monoid
+import almhirt._
 
 trait SeverityInstances {
   implicit def toSeverityMonoid: Monoid[Severity] =
@@ -9,5 +10,3 @@ trait SeverityInstances {
       val zero = NoProblem
     }
 }
-
-object SeverityInstances extends SeverityInstances

@@ -1,6 +1,6 @@
 package almhirt.messaging
 
-import almhirt.concurrent.AlmFuture
+import almhirt._
 
 trait CreatesMessageChannels {
   def createMessageChannel(topic: Option[String]): AlmFuture[MessageChannel]

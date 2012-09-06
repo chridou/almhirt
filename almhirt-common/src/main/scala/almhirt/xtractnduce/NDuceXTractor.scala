@@ -4,9 +4,9 @@ import java.util.UUID
 import org.joda.time.DateTime
 import scalaz._
 import Scalaz._
-import almhirt.validation._
-import almhirt.validation.probleminstances._
-import almhirt.validation.syntax._
+import almhirt._
+import almvalidationinstances._
+import almhirt.syntax.almvalidation._
 
 class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) extends XTractor {
   private val opsByKeys = scala.collection.mutable.Map(script.ops.map(x => x.key -> x): _*)

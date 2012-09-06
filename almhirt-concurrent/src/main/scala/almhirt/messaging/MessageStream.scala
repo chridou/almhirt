@@ -1,7 +1,7 @@
 package almhirt.messaging
 
 import java.util.UUID
-import almhirt.concurrent.AlmFuture
+import almhirt._
 
 /** Publishes messages to its subscribers. 
  * This is the weakest contract a channel must fulfill:

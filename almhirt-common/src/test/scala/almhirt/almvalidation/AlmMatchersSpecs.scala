@@ -1,7 +1,8 @@
-package almhirt.validation
+package almhirt.almvalidation
 
 import org.specs2.mutable.Specification
 import scalaz.syntax.validation.ToValidationV
+import almhirt._
 
 class AlmMatchersSpecs extends Specification with ToAlmValidationOps{
   """A Success 1""" should {
@@ -9,7 +10,7 @@ class AlmMatchersSpecs extends Specification with ToAlmValidationOps{
       val validation = 1.success[UnspecifiedProblem]
       validation.m match {
         case AlmSuccess(_) => true
-//        case _ => false
+        case AlmFailure(_) => false
       }
     }
   }

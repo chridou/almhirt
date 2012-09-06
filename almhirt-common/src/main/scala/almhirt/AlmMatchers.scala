@@ -1,12 +1,9 @@
-package almhirt.validation
+package almhirt
 
-import scalaz.Validation
-import scalaz.syntax.validation._
+sealed trait AlmMatcher
 
-sealed trait AlmMatcher[T]
-
-case class AlmSuccess[T](succ: T) extends AlmMatcher[T]
-case class AlmFailure[T](p: Problem) extends AlmMatcher[T]
+case class AlmSuccess[T](succ: T) extends AlmMatcher
+case class AlmFailure(p: Problem) extends AlmMatcher
 
 object AlmSeverity {
   def unapply[R](validation: AlmValidation[R]): Option[Severity] = 

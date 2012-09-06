@@ -1,6 +1,6 @@
 package almhirt.messaging
 
-import almhirt.concurrent.AlmFuture
+import almhirt._
 
 trait CanCreateSubChannels {
   def createSubChannel(classifier: Message[AnyRef] => Boolean): AlmFuture[MessageStream]

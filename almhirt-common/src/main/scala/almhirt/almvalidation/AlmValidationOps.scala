@@ -1,4 +1,4 @@
-package almhirt.validation
+package almhirt.almvalidation
 /** Implicits regarding [[almhirt.validation.AlmValidaion]] */
 
 import java.util.UUID
@@ -6,7 +6,7 @@ import scalaz.{Validation, NonEmptyList}
 import scalaz.syntax.Ops
 import scalaz.syntax.validation._
 import org.joda.time.DateTime
-import almhirt.validation._
+import almhirt._
 
 /** Implicits for parsing Strings 
  *
@@ -17,7 +17,7 @@ import almhirt.validation._
  * }}}
  */
 trait AlmValidationOps0 extends Ops[String] {
-  import AlmValidationFunctions._
+  import almvalidationfunctions._
   def toIntAlm(key: String = "some value"): AlmValidationSBD[Int] = 
     parseIntAlm(self, key)
   def toLongAlm(key: String = "some value"): AlmValidationSBD[Long] =  
@@ -116,9 +116,9 @@ trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
   
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
   def noneIsBadData(message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
-    AlmValidationFunctions.noneIsBadData(self, message, key)
+    almvalidationfunctions.noneIsBadData(self, message, key)
   def noneIsNotFound(message: String = "Not found"): AlmValidation[T] =
-    AlmValidationFunctions.noneIsNotFound(self, message)
+    almvalidationfunctions.noneIsNotFound(self, message)
 }
   
 trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {
@@ -142,7 +142,7 @@ trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
 }
 
 trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
-  import syntax._
+  import almhirt.syntax.almvalidation._
   def aggregateProblems(msg: String): Validation[AggregateProblem, List[R]] = {
     self.partition(_.isSuccess) match {
       case (succs, Nil) => succs.flatMap(_.toOption).toList.success
@@ -156,8 +156,8 @@ trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
 }
 
 trait AlmValidationOps12[T] extends Ops[AlmValidation[T]] {
-  def m(): AlmMatcher[T] = 
-    self fold (f => AlmFailure[T](f), s => AlmSuccess[T](s))
+  def m(): AlmMatcher = 
+    self fold (f => AlmFailure(f), s => AlmSuccess[T](s))
 }
 
 trait ToAlmValidationOps {

@@ -3,12 +3,10 @@ package almhirt.xtractnduce.xml
 import scala.xml.{Elem, Text}
 import scalaz._
 import Scalaz._
-import almhirt.validation._
-import almhirt.validation.almvalidationfunctions._
-import almhirt.validation.probleminstances._
-import almhirt.validation.syntax._
+import almhirt._
+import almhirt.almvalidationimports._
 import almhirt.xml._
-import almhirt.xml.xmlsyntax._
+import almhirt.syntax.xml._
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
 class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Option[XTractor] = None) extends XTractor with ScribbableXmlXTractor {

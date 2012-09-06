@@ -1,6 +1,7 @@
-package almhirt.validation
+package almhirt.almvalidation
 
 import scalaz.Monoid
+import almhirt._
 
 trait ProblemCategoryInstances {
   implicit def toProbelCategoryMonoid: Monoid[ProblemCategory] =

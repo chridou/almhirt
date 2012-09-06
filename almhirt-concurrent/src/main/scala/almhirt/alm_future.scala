@@ -1,0 +1,4 @@
+package almhirt
+
+object almfutureinstances extends almhirt.concurrent.AlmFutureInstances
+object almfutureimports extends almhirt.concurrent.AlmFutureInstances with almhirt.concurrent.ToAlmFutureOps

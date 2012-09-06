@@ -1,4 +1,4 @@
-package almhirt.validation
+package almhirt.almvalidation
 
 trait AlmValidationInstances {
 }

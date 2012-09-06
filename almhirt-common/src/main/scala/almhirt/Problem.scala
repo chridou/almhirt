@@ -1,5 +1,4 @@
-package almhirt.validation
-
+package almhirt
 
 trait Problem{
   type T <: Problem

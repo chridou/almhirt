@@ -1,12 +1,10 @@
 package almhirt.concurrent
 
-package syntax
-
 import scalaz._, Scalaz._
 import scalaz.syntax.Ops
 import akka.dispatch.{Future, Promise}
-import almhirt.validation._
-import almhirt.validation.AllImports._
+import almhirt._
+import almhirt.almvalidationimports._
 
 /** Implicits on an untyped [[akka.dispatch.Future]] */
 trait AlmFutureOps0 extends Ops[Future[Any]] {
@@ -94,5 +92,3 @@ trait ToAlmFutureOps {
   implicit def FromAkkaFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 {def self = a }
   implicit def FromAlmValidationToAlmFutureOps1[T](a: AlmValidation[T]): AlmFutureOps1[T] = new AlmFutureOps1[T]{def self = a }
 }
-
-object AlmFutureOps extends ToAlmFutureOps

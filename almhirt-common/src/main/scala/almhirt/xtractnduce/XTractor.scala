@@ -4,9 +4,9 @@ import java.util.UUID
 import scalaz._
 import Scalaz._
 import org.joda.time.DateTime
-import almhirt.validation._
-import almhirt.validation.probleminstances._
-import almhirt.validation.syntax._
+import almhirt._
+import probleminstances._
+import almhirt.syntax.almvalidation._
 
 trait XTractorWithPathToRoot{  
   def parent: Option[XTractor]

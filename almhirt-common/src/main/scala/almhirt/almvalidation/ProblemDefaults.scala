@@ -1,4 +1,6 @@
-package almhirt.validation
+package almhirt.almvalidation
+
+import almhirt._
 
 trait ProblemDefaults {
   val defaultSystemProblem = UnspecifiedProblem("unspecified system problem", category = SystemProblem)

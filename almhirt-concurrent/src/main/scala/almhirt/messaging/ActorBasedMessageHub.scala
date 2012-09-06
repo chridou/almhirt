@@ -3,9 +3,9 @@ package almhirt.messaging
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
+import almhirt._
 import almhirt.almakka._
-import almhirt.concurrent._
-import almhirt.concurrent.AllImports._
+import almhirt.almfutureimports._
 
 class ActorBasedMessageHub(dispatcher: ActorRef)(implicit almAkkaContext: AlmAkkaContext) extends MessageHub {
   implicit def timeout = Timeout(almAkkaContext.mediumDuration)

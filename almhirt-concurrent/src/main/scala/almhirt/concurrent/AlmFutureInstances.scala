@@ -1,7 +1,7 @@
 package almhirt.concurrent
 
 import akka.dispatch.{Future, Promise}
-import almhirt.validation._
+import almhirt._
 
 
 trait AlmFutureInstances {
@@ -9,5 +9,3 @@ trait AlmFutureInstances {
   implicit def akkaFutureToAlmhirtFuture[T](akkaFuture: Future[AlmValidation[T]])(implicit executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] =
     new AlmFuture(akkaFuture)
 }
-
-object AlmFutureInstances extends AlmFutureInstances

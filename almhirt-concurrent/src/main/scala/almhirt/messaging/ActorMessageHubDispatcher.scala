@@ -3,8 +3,7 @@ package almhirt.messaging
 import java.util.UUID
 import scalaz.syntax.validation._
 import akka.actor._
-import almhirt.Registration
-import almhirt.validation._
+import almhirt._
 import almhirt.almakka._
 
 class ActorMessageHubDispatcher(implicit almAkkaContext: AlmAkkaContext) extends Actor with AlmActorLogging {

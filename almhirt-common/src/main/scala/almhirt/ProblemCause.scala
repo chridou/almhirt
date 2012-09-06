@@ -1,4 +1,4 @@
-package almhirt.validation
+package almhirt
 
 sealed trait ProblemCause
 case class CauseIsThrowable(exn: Throwable) extends ProblemCause

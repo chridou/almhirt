@@ -1,4 +1,4 @@
-package almhirt.validation
+package almhirt.almvalidation
 
 import scalaz._
 import Scalaz._
@@ -6,12 +6,12 @@ import scalaz.syntax.validation._
 import scalaz.{Failure}
 import org.specs2.mutable._
 import org.specs2.mutable.Specification
-import almhirt.validation._
+import almhirt._
 
 class AlmValidationSpecs extends Specification {
-  import almvalidationfunctions._
-  import probleminstances._
-  import syntax._
+  import almhirt.almvalidationfunctions._
+  import almhirt.probleminstances._
+  import almhirt.syntax.almvalidation._
   
   "AlmValidation.parseIntAlm" should {
     "return a success of 1 when supplied with '1'" in {

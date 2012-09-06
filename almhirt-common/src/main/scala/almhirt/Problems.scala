@@ -1,7 +1,5 @@
-package almhirt.validation
+package almhirt
 
-import scalaz.{NonEmptyList, Show}
-import scala.collection.mutable.StringBuilder
 
   case class UnspecifiedProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
 	type T = UnspecifiedProblem
