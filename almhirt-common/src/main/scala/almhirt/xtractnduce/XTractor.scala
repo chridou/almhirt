@@ -74,6 +74,27 @@ trait XTractor extends XTractorWithPathToRoot  {
   def getBytes(aKey: String): AlmValidationSBD[Array[Byte]] = get(aKey, tryGetBytes)
   def getAsString(aKey: String): AlmValidationSBD[String] = get(aKey, tryGetAsString)
 
+  def getStringOrElse(aKey: String, compensation: => String): AlmValidationSBD[String] = 
+    tryGetString(aKey).map(_.getOrElse(compensation))
+  def getIntOrElse(aKey: String, compensation: => Int): AlmValidationSBD[Int] =
+    tryGetInt(aKey).map(_.getOrElse(compensation))
+  def getLongOrElse(aKey: String, compensation: => Long): AlmValidationSBD[Long] =
+    tryGetLong(aKey).map(_.getOrElse(compensation))
+  def getDoubleOrElse(aKey: String, compensation: => Double): AlmValidationSBD[Double] =
+    tryGetDouble(aKey).map(_.getOrElse(compensation))
+  def getFloatOrElse(aKey: String, compensation: => Float): AlmValidationSBD[Float] =
+    tryGetFloat(aKey).map(_.getOrElse(compensation))
+  def getBooleanOrElse(aKey: String, compensation: => Boolean): AlmValidationSBD[Boolean] =
+    tryGetBoolean(aKey).map(_.getOrElse(compensation))
+  def getDecimalOrElse(aKey: String, compensation: => BigDecimal): AlmValidationSBD[BigDecimal] =
+    tryGetDecimal(aKey).map(_.getOrElse(compensation))
+  def getDateTimeOrElse(aKey: String, compensation: => DateTime): AlmValidationSBD[DateTime] =
+    tryGetDateTime(aKey).map(_.getOrElse(compensation))
+  def getUUIDOrElse(aKey: String, compensation: => UUID): AlmValidationSBD[UUID] =
+    tryGetUUID(aKey).map(_.getOrElse(compensation))
+  def getBytesOrElse(aKey: String, compensation: => Array[Byte]): AlmValidationSBD[Array[Byte]] =
+    tryGetBytes(aKey).map(_.getOrElse(compensation))
+  
   def isBooleanSetTrue(aKey: String): AlmValidationSBD[Boolean]
 
   def tryGetTypeInfo(): AlmValidationSBD[Option[String]]
