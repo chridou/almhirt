@@ -6,8 +6,7 @@ import scalaz.syntax.Ops
 import org.jboss.netty.handler.codec.http.HttpResponse
 import akka.dispatch.Future
 import unfiltered.response.ResponseFunction
-import almhirt.validation.AlmValidation
-import almhirt.validation.Problem
+import almhirt.validation._
 import almhirt.concurrent.AlmFuture
 
 

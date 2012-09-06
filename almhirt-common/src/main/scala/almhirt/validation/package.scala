@@ -16,8 +16,24 @@ package object validation {
   type AlmValidationAP[+α] = Validation[AggregateProblem, α]
 
   
-  object syntax extends ToProblemOps with ToAlmValidationOps {
-    object problem extends ToProblemOps
-    object almvalidation extends ToAlmValidationOps
-  }
+  object syntax extends ToProblemOps with ToAlmValidationOps
+  object problemsyntax extends ToProblemOps
+  object almvalidationsyntax extends ToAlmValidationOps
+  
+  object instances extends ProblemInstances with ProblemCategoryInstances with SeverityInstances with AlmValidationInstances
+  object probleminstances extends ProblemInstances with ProblemCategoryInstances with SeverityInstances
+  object almvalidationinstances extends AlmValidationInstances
+
+  object functions extends ProblemFunctions with AlmValidationFunctions with AlmValidationParseFunctions
+  object problemfunctions extends ProblemFunctions
+  object almvalidationfunctions extends AlmValidationFunctions with AlmValidationParseFunctions
+
+  object imports 
+    extends ProblemFunctions with AlmValidationFunctions with AlmValidationParseFunctions
+    with  ProblemInstances with ProblemCategoryInstances  with SeverityInstances with AlmValidationInstances
+    with ToProblemOps with ToAlmValidationOps
+    
+  object problemimports extends ProblemFunctions with  ProblemInstances with ProblemCategoryInstances  with SeverityInstances with AlmValidationInstances  with ToProblemOps
+  object almvalidationimports extends AlmValidationFunctions with AlmValidationParseFunctions with AlmValidationInstances with ToAlmValidationOps 
+    
 }

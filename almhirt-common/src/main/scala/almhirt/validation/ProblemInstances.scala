@@ -73,5 +73,3 @@ trait ProblemInstances {
     }
   
 }
-
-object ProblemInstances extends ProblemInstances

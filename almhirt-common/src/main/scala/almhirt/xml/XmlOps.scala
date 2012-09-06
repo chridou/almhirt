@@ -7,48 +7,48 @@ import almhirt.validation._
 
 trait XmlOps0 extends Ops[Elem]{
   def extractInt(): AlmValidationSBD[Int] = 
-    XmlFunctions.intFromXmlNode(self)
+    xmlfunctions.intFromXmlNode(self)
   def extractLong(): AlmValidationSBD[Long] = 
-    XmlFunctions.longFromXmlNode(self)
+    xmlfunctions.longFromXmlNode(self)
   def extractDouble(): AlmValidationSBD[Double] = 
-    XmlFunctions.doubleFromXmlNode(self)
+    xmlfunctions.doubleFromXmlNode(self)
   def extractOptionalInt(): AlmValidationSBD[Option[Int]] = 
-    XmlFunctions.optionalIntXmlNode(self)
+    xmlfunctions.optionalIntXmlNode(self)
   def extractOptionalLong(): AlmValidationSBD[Option[Long]] = 
-    XmlFunctions.optionalLongXmlNode(self)
+    xmlfunctions.optionalLongXmlNode(self)
   def extractOptionalDouble(): AlmValidationSBD[Option[Double]] = 
-    XmlFunctions.optionalDoubleXmlNode(self)
+    xmlfunctions.optionalDoubleXmlNode(self)
   def extractStringFromChild(label: String): AlmValidationSBD[String] = 
-    XmlFunctions.stringFromChild(self, label)
+    xmlfunctions.stringFromChild(self, label)
   def extractIntFromChild(label: String): AlmValidationSBD[Int] = 
-    XmlFunctions.intFromChild(self, label)
+    xmlfunctions.intFromChild(self, label)
   def extractLongFromChild(label: String): AlmValidationSBD[Long] = 
-    XmlFunctions.longFromChild(self, label)
+    xmlfunctions.longFromChild(self, label)
   def extractDoubleFromChild(label: String): AlmValidationSBD[Double] = 
-    XmlFunctions.doubleFromChild(self, label)
+    xmlfunctions.doubleFromChild(self, label)
   def extractOptionalStringFromChild(label: String): AlmValidationSBD[Option[String]] = 
-    XmlFunctions.stringOptionFromChild(self, label)
+    xmlfunctions.stringOptionFromChild(self, label)
   def extractOptionalIntFromChild(label: String): AlmValidationSBD[Option[Int]] = 
-    XmlFunctions.intOptionFromChild(self, label)
+    xmlfunctions.intOptionFromChild(self, label)
   def extractOptionalLongFromChild(label: String): AlmValidationSBD[Option[Long]] = 
-    XmlFunctions.longOptionFromChild(self, label)
+    xmlfunctions.longOptionFromChild(self, label)
   def extractOptionalDoubleFromChild(label: String): AlmValidationSBD[Option[Double]] =
-    XmlFunctions.doubleOptionFromChild(self, label)
+    xmlfunctions.doubleOptionFromChild(self, label)
   def firstChildNode(label: String): AlmValidationSBD[Elem] = 
-    XmlFunctions.firstChildNodeMandatory(self, label)
+    xmlfunctions.firstChildNodeMandatory(self, label)
   def mapOptionalFirstChild[T](label: String, compute: Elem => AlmValidationSBD[T]): AlmValidationSBD[Option[T]] =
-    XmlFunctions.mapOptionalFirstChild(self, label, compute)
+    xmlfunctions.mapOptionalFirstChild(self, label, compute)
   def flatMapOptionalFirstChild[T](label: String, compute: Elem => AlmValidationSBD[Option[T]]): AlmValidationSBD[Option[T]] =
-    XmlFunctions.flatMapOptionalFirstChild(self, label, compute)
+    xmlfunctions.flatMapOptionalFirstChild(self, label, compute)
   def mapOptionalFirstChildM[T](label: String, compute: Elem => AlmValidationMBD[T]): AlmValidationMBD[Option[T]] =
-    XmlFunctions.mapOptionalFirstChildM(self, label, compute)
+    xmlfunctions.mapOptionalFirstChildM(self, label, compute)
   def mapChildren[T](label: String, map: Elem => AlmValidationMBD[T]): AlmValidationMBD[List[T]] =
-    XmlFunctions.mapChildren(self, label, map)
+    xmlfunctions.mapChildren(self, label, map)
   def mapChildrenWithAttribute[T](label: String, attName: String, map: Elem => AlmValidationMBD[T]): AlmValidationMBD[List[(Option[String], T)]] =
-    XmlFunctions.mapChildrenWithAttribute(self, label, attName, map)
-  def \* = XmlFunctions.elems(self)
-  def \#(label: String) = XmlFunctions.elems(self, label)
-  def elems = XmlFunctions.elems(self)
+    xmlfunctions.mapChildrenWithAttribute(self, label, attName, map)
+  def \* = xmlfunctions.elems(self)
+  def \#(label: String) = xmlfunctions.elems(self, label)
+  def elems = xmlfunctions.elems(self)
 }
 
 trait ToXmlOps {

@@ -5,7 +5,7 @@ import scalaz.syntax.validation.ToValidationV
 import scalaz.Success
 import org.joda.time.DateTime
 import almhirt.validation._
-import almhirt.validation.AlmValidationFunctions._
+import almhirt.validation.almvalidationfunctions._
 import almhirt.validation.syntax._
 
 class XTractorAtomicString(value: String, val key: String, val parent: Option[XTractor] = None) extends XTractorAtomic {

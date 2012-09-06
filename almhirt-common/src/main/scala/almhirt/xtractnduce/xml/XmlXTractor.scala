@@ -4,11 +4,11 @@ import scala.xml.{Elem, Text}
 import scalaz._
 import Scalaz._
 import almhirt.validation._
-import almhirt.validation.AlmValidationFunctions._
-import almhirt.validation.ProblemInstances._
+import almhirt.validation.almvalidationfunctions._
+import almhirt.validation.probleminstances._
 import almhirt.validation.syntax._
-import almhirt.xml.XmlFunctions
-import almhirt.xml.syntax._
+import almhirt.xml._
+import almhirt.xml.xmlsyntax._
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
 class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Option[XTractor] = None) extends XTractor with ScribbableXmlXTractor {
@@ -108,7 +108,7 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
         items.sequence[AlmValidationMBD, XTractorAtomicString] }
   
   private def getUniquePropertyElement(aKey: String): AlmValidationSBD[Option[Elem]] = {
-    val propertyContainers = XmlFunctions.elems(elem, aKey)
+    val propertyContainers = xmlfunctions.elems(elem, aKey)
     propertyContainers match {
       case Seq(untrimmedPropertyContainer) => 
          scala.xml.Utility.trim(untrimmedPropertyContainer).asInstanceOf[Elem].successSBD.map(Some(_))
@@ -139,13 +139,13 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
   
   private def onAllChildrenAreElems(elem: Elem): AlmValidationSBD[Seq[Elem]] =
     if(elem.child.forall(n => n.isInstanceOf[Elem]))
-      XmlFunctions.elems(elem).successSBD
+      xmlfunctions.elems(elem).successSBD
     else
       SingleBadDataProblem("Not all children are Elems", key = pathAsStringWithKey(elem.label)).failure[Seq[Elem]] 
     
   
   private def onSingleTextOnlyElem[U](aKey: String, f: (String, String) => AlmValidationSBD[Option[U]]): AlmValidationSBD[Option[U]] = {
-    val elems = XmlFunctions.elems(elem, aKey)
+    val elems = xmlfunctions.elems(elem, aKey)
     elems match {
       case Seq() => 
         None.successSBD

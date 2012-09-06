@@ -9,5 +9,3 @@ trait ProblemCategoryInstances {
       val zero = ApplicationProblem
     }
 }
-
-object ProblemCategoryInstances extends ProblemCategoryInstances

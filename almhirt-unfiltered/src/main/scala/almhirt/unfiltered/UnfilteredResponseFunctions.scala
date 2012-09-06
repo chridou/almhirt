@@ -5,7 +5,7 @@ import org.jboss.netty.handler.codec.http.HttpResponse
 import unfiltered.response._
 import almhirt.validation._
 import almhirt.validation.syntax._
-import almhirt.validation.AllInstances._
+import almhirt.validation.instances._
 
 trait UnfilteredResponseFunctions {
   def problemToResponse(problem: Problem): ResponseFunction[HttpResponse] = {
