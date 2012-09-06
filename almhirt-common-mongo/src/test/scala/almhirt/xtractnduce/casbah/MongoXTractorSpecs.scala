@@ -2,7 +2,7 @@ package almhirt.xtractnduce.casbah
 
 import org.specs2.mutable._
 import scalaz._, Scalaz._
-import almhirt.validation.syntax.AlmValidationOps._
+import almhirt.validation.syntax._
 
 import com.mongodb.casbah.Imports._
 
@@ -24,7 +24,7 @@ object MongoXTractorSpecsSamples {
 
 class MongoXTractorSpecs extends Specification {
   import MongoXTractor._
-import MongoXTractorSpecsSamples._
+  import MongoXTractorSpecsSamples._
 
   """A MongoXTractor for Bob using the default KeyMapper when queried for "id"(PK!) which is a Long""" should {
     """return success 0L when queried with getLong""" in {

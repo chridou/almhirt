@@ -2,7 +2,7 @@ package almhirt.xtractnduce
 
 import scalaz.syntax.validation._
 import almhirt.validation._
-import almhirt.validation.syntax.AlmValidationOps._
+import almhirt.validation.syntax._
 
 /** Use as a type class or mix into an object*/
 trait CanXTract[T] {

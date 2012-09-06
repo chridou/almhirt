@@ -2,7 +2,7 @@ package almhirt.xtractnduce.xml
 
 import org.specs2.mutable._
 import scalaz._, Scalaz._
-import almhirt.validation.syntax.AlmValidationOps._
+import almhirt.validation.syntax._
 
 class XmlXTractorSpecs extends Specification {
   import XmlXTractor._

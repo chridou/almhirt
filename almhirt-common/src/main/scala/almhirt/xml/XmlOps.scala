@@ -1,5 +1,4 @@
 package almhirt.xml
-package syntax
 
 import scala.xml.{Node, NodeSeq, Elem}
 import scalaz.Validation
@@ -55,5 +54,3 @@ trait XmlOps0 extends Ops[Elem]{
 trait ToXmlOps {
   implicit def FromElemToXmlOps0(a: Elem) = new XmlOps0{ def self = a }
 }
-
-object XmlOps extends ToXmlOps

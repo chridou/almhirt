@@ -5,8 +5,7 @@ import scalaz.syntax.validation.ToValidationV
 import scalaz.Success
 import org.joda.time.DateTime
 import almhirt.validation._
-import almhirt.validation.syntax.AlmValidationOps._
-import almhirt.validation.syntax.ProblemOps._
+import almhirt.validation.syntax._
 
 class XTractorAtomicAny(value: Any, val key: String, val parent: Option[XTractor] = None) extends XTractorAtomic {
   type T = Any

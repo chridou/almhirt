@@ -1,3 +1,3 @@
 package almhirt.xml
 
-object AllImports extends XmlFunctions with syntax.ToXmlOps
+object AllImports extends XmlFunctions with ToXmlOps

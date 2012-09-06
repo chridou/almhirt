@@ -3,7 +3,7 @@ package almhirt.domain
 import scalaz._, Scalaz._
 import org.specs2.mutable._
 import almhirt.validation._
-import almhirt.validation.syntax.AlmValidationOps._
+import almhirt.validation.syntax._
 
 class UpdateSpecsWithPerson extends Specification {
   val person = TestPerson("Peter").result.forceResult

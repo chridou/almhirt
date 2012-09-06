@@ -6,10 +6,9 @@ import Scalaz._
 import almhirt.validation._
 import almhirt.validation.AlmValidationFunctions._
 import almhirt.validation.ProblemInstances._
-import almhirt.validation.syntax.AlmValidationOps._
-import almhirt.validation.syntax.ProblemOps._
+import almhirt.validation.syntax._
 import almhirt.xml.XmlFunctions
-import almhirt.xml.syntax.XmlOps._
+import almhirt.xml.syntax._
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}
 
 class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Option[XTractor] = None) extends XTractor with ScribbableXmlXTractor {

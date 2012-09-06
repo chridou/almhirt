@@ -3,7 +3,7 @@ package almhirt.domain
 import java.util.UUID
 import scalaz._, Scalaz._
 import almhirt.validation._
-import almhirt.validation.syntax.ProblemOps._
+import almhirt.validation.syntax._
 
 
 /** An aggregate root is the topmost entity of an aggregate. It aggregates those entities and value objects which cannot exist without the whole.

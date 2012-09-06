@@ -1,5 +1,4 @@
 package almhirt.validation
-package syntax
 
 import scalaz.Scalaz._
 import scalaz.NonEmptyList
@@ -24,4 +23,3 @@ trait ToProblemOps {
   implicit def ToProblemOps0(a: NonEmptyList[Problem]) = new ProblemOps0{ def self = a }
 }
 
-object ProblemOps extends ToProblemOps

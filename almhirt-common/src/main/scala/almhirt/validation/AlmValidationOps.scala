@@ -1,6 +1,5 @@
 package almhirt.validation
 /** Implicits regarding [[almhirt.validation.AlmValidaion]] */
-package syntax
 
 import java.util.UUID
 import scalaz.{Validation, NonEmptyList}
@@ -143,9 +142,8 @@ trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
 }
 
 trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
-  import ProblemOps._
+  import syntax._
   def aggregateProblems(msg: String): Validation[AggregateProblem, List[R]] = {
-    import AlmValidationOps._
     self.partition(_.isSuccess) match {
       case (succs, Nil) => succs.flatMap(_.toOption).toList.success
       case (_, probs) => 
@@ -177,5 +175,3 @@ trait ToAlmValidationOps {
   implicit def FromListValidationToAlmValidationOps11[R](a: List[AlmValidation[R]]): AlmValidationOps11[R] = new AlmValidationOps11[R]{ def self = a }
   implicit def FromListValidationToAlmValidationOps12[T](a: AlmValidation[T]): AlmValidationOps12[T] = new AlmValidationOps12[T]{ def self = a }
 }
-
-object AlmValidationOps extends ToAlmValidationOps

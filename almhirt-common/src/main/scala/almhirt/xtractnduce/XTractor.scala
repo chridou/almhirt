@@ -6,7 +6,7 @@ import Scalaz._
 import org.joda.time.DateTime
 import almhirt.validation._
 import almhirt.validation.ProblemInstances._
-import almhirt.validation.syntax.AlmValidationOps._
+import almhirt.validation.syntax._
 
 trait XTractorWithPathToRoot{  
   def parent: Option[XTractor]

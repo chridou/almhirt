@@ -6,7 +6,7 @@ import scalaz._
 import Scalaz._
 import almhirt.validation._
 import almhirt.validation.ProblemInstances._
-import almhirt.validation.syntax.AlmValidationOps._
+import almhirt.validation.syntax._
 
 class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) extends XTractor {
   private val opsByKeys = scala.collection.mutable.Map(script.ops.map(x => x.key -> x): _*)
