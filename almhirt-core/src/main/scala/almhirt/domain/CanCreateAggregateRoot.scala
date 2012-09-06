@@ -2,11 +2,11 @@ package almhirt.domain
 
 import java.util.UUID
 import scalaz._, Scalaz._
-import almhirt.validation._
+import almhirt._
 
 /** Functionality to create a new aggregate root */
 trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {
-  import almhirt.validation.ProblemDefaults._
+  import almhirt.almvalidation.ProblemDefaults._
   /** Applies the event and returns a new aggregate root from the event or a failure */
   def applyEvent = { event: Event =>
   	try { 

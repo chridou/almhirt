@@ -5,7 +5,7 @@ import scalaz.NonEmptyList
 import Scalaz._
 import org.specs2.mutable._
 import scalaz.NonEmptyList
-import almhirt.validation.{Problem}
+import almhirt.Problem
 
 
 class AggregateRootSpecsWithTestPerson extends Specification {

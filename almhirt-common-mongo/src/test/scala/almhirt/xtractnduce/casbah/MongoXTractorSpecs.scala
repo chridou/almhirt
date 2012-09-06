@@ -2,7 +2,7 @@ package almhirt.xtractnduce.casbah
 
 import org.specs2.mutable._
 import scalaz._, Scalaz._
-import almhirt.validation.syntax._
+import almhirt.syntax.almvalidation._
 
 import com.mongodb.casbah.Imports._
 

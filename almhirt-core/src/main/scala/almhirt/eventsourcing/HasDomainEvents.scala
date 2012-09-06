@@ -2,8 +2,7 @@ package almhirt.eventsourcing
 
 import java.util.UUID
 import scalaz.Validation
-import almhirt.validation.Problem
-import almhirt.concurrent.AlmFuture
+import almhirt._
 import almhirt.domain.DomainEvent
 
 trait HasDomainEvents {

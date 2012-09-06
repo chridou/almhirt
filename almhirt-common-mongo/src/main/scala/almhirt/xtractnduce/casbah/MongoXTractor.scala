@@ -4,9 +4,8 @@ import java.util.UUID
 import scalaz._
 import Scalaz._
 import org.joda.time.DateTime
-import almhirt.validation._
-import almhirt.validation.syntax._
-import almhirt.validation.instances._
+import almhirt._
+import almhirt.almvalidationimports._
 import almhirt.xtractnduce._
 import com.mongodb.casbah.Imports._
 

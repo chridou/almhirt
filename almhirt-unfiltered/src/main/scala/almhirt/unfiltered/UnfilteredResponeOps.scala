@@ -1,24 +1,20 @@
-package almhirt.unfiltered
-
-package syntax
+package almhirt.ext.unfiltered
 
 import scalaz.syntax.Ops
 import org.jboss.netty.handler.codec.http.HttpResponse
 import akka.dispatch.Future
 import unfiltered.response.ResponseFunction
-import almhirt.validation._
-import almhirt.concurrent.AlmFuture
+import almhirt._
 
 
-trait UnfilteredResponeOps0[T] extends Ops[AlmFuture[T]] {
+trait UnfilteredResponeOps0[T] extends Ops[AlmFuture[T]] with UnfilteredResponseFunctions {
   def respond(responder: unfiltered.Async.Responder[HttpResponse], createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): AlmFuture[T] = 
     self.onComplete(
-        prob => responder.respond(UnfilteredResponseFunctions.problemToResponse(prob)),
+        prob => responder.respond(problemToResponse(prob)),
         r => responder.respond(createSuccessResponse(r)))
 }
 
-trait UnfilteredResponeOps1[T] extends Ops[Future[AlmValidation[T]]] {
-  import UnfilteredResponeOps._
+trait UnfilteredResponeOps1[T] extends Ops[Future[AlmValidation[T]]] with UnfilteredResponseFunctions with ToUnfilteredResponeOps {
   def respond(
       responder: unfiltered.Async.Responder[HttpResponse], 
       createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): Future[AlmValidation[T]] = {
@@ -26,9 +22,9 @@ trait UnfilteredResponeOps1[T] extends Ops[Future[AlmValidation[T]]] {
   }
 }
   
-trait UnfilteredResponeOps2 extends Ops[Problem]{
+trait UnfilteredResponeOps2 extends Ops[Problem] with UnfilteredResponseFunctions{
   def toResponseFunction(): ResponseFunction[HttpResponse] = 
-    UnfilteredResponseFunctions.problemToResponse(self)
+    problemToResponse(self)
 }
 
 trait ToUnfilteredResponeOps {
@@ -36,5 +32,3 @@ trait ToUnfilteredResponeOps {
   implicit def FromAkkaFutureValidationToUnfilteredResponeOps1[T](a: Future[AlmValidation[T]]): UnfilteredResponeOps1[T] = new UnfilteredResponeOps1[T]{ def self = a }
   implicit def FromProblemToUnfilteredResponeOps2(a: Problem): UnfilteredResponeOps2 = new UnfilteredResponeOps2{ def self = a }
 }
-
-object UnfilteredResponeOps extends ToUnfilteredResponeOps

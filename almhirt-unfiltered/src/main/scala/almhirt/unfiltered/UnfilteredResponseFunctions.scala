@@ -1,11 +1,10 @@
-package almhirt.unfiltered
+package almhirt.ext.unfiltered
 
 import scalaz.syntax.show._
 import org.jboss.netty.handler.codec.http.HttpResponse
 import unfiltered.response._
-import almhirt.validation._
-import almhirt.validation.syntax._
-import almhirt.validation.instances._
+import almhirt._
+import almhirt.almvalidationimports._
 
 trait UnfilteredResponseFunctions {
   def problemToResponse(problem: Problem): ResponseFunction[HttpResponse] = {
@@ -31,5 +30,3 @@ trait UnfilteredResponseFunctions {
   def respondOnValidation[T](validation: AlmValidation[T], onSuccess: T => ResponseFunction[HttpResponse]) =
     validation fold (problemToResponse(_), onSuccess(_))
 }
-
-object UnfilteredResponseFunctions extends UnfilteredResponseFunctions

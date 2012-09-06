@@ -3,8 +3,8 @@ package almhirt.domain
 import java.util.UUID
 import scalaz._, Scalaz._
 import org.specs2.mutable._
-import almhirt.validation._
-import almhirt.validation.syntax._
+import almhirt._
+import almhirt.syntax.almvalidation._
 
 class AggregateRootFactorySpecsWithPersonEntity extends Specification {
   "An aggregate root factory for Persons" should {
