@@ -133,7 +133,7 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
     self fold (prob => AggregateProblem(msg, severity = prob.severity, category = prob.category, problems = List(prob)).failure, _.success)
 
   def toAgg(): AlmValidationAP[T] = 
-    toAgg("One or more problems occured. See causes.")
+    toAgg("One or more problems occured. See problems.")
 }
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
@@ -154,7 +154,7 @@ trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
     }
   }
   
-  def aggregateProblems(): Validation[AggregateProblem, List[R]] = aggregateProblems("One or more problems occured. See causes.")
+  def aggregateProblems(): Validation[AggregateProblem, List[R]] = aggregateProblems("One or more problems occured. See problems.")
 }
 
 trait AlmValidationOps12[T] extends Ops[AlmValidation[T]] {
