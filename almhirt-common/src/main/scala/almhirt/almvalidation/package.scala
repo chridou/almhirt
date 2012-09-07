@@ -17,4 +17,5 @@ package object almvalidation {
     with AlmValidationInstances
     with almvalidation.ToAlmValidationOps
     
+  object flatmap extends ValidationFlatMapEnabler
 }
