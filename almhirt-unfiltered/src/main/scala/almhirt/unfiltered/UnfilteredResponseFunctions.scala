@@ -4,7 +4,7 @@ import scalaz.syntax.show._
 import org.jboss.netty.handler.codec.http.HttpResponse
 import unfiltered.response._
 import almhirt._
-import almhirt.almvalidationall._
+import almhirt.almvalidation.kit._
 
 trait UnfilteredResponseFunctions {
   def problemToResponse(problem: Problem): ResponseFunction[HttpResponse] = {

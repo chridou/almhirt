@@ -6,7 +6,7 @@ import almhirt._
 
 /** Functionality to create a new aggregate root */
 trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {
-  import almhirt.almvalidation.ProblemDefaults._
+  import almhirt.problem.ProblemDefaults._
   /** Applies the event and returns a new aggregate root from the event or a failure */
   def applyEvent = { event: Event =>
   	try { 

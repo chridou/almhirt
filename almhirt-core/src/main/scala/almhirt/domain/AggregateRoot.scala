@@ -10,7 +10,7 @@ import almhirt.syntax.almvalidation._
  * All entities within the aggregate should only be accessible via the aggregate root. Only an aggregate root justifies a repository.
  */
 trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event]{
-  import almhirt.almvalidation.ProblemDefaults._
+  import almhirt.problem.ProblemDefaults._
   /** The unique id that gives the aggregate its identity */
   def id: UUID
   /** The monotonically growing version which is increased by one with each event generated via mutation. 
