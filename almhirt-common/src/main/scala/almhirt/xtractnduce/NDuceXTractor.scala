@@ -5,7 +5,7 @@ import org.joda.time.DateTime
 import scalaz._
 import Scalaz._
 import almhirt._
-import almvalidationinstances._
+import almvalidationinst._
 import almhirt.syntax.almvalidation._
 
 class NDuceXTractor(script: NDuceScript, val parent: Option[XTractor] = None) extends XTractor {

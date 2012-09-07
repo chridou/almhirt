@@ -3,8 +3,8 @@ package almhirt.xml
 import scalaz._, Scalaz._
 import org.joda.time.DateTime
 import almhirt._
-import almvalidationfunctions._
-import almvalidationinstances._
+import almvalidationfuns._
+import almvalidationinst._
 import almhirt.syntax.almvalidation._
 
 trait XmlFunctions {

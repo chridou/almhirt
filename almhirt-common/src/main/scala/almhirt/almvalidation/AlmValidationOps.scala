@@ -17,7 +17,7 @@ import almhirt._
  * }}}
  */
 trait AlmValidationOps0 extends Ops[String] {
-  import almvalidationfunctions._
+  import almvalidationfuns._
   def toIntAlm(key: String = "some value"): AlmValidationSBD[Int] = 
     parseIntAlm(self, key)
   def toLongAlm(key: String = "some value"): AlmValidationSBD[Long] =  
@@ -116,9 +116,9 @@ trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
   
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
   def noneIsBadData(message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
-    almvalidationfunctions.noneIsBadData(self, message, key)
+    almvalidationfuns.noneIsBadData(self, message, key)
   def noneIsNotFound(message: String = "Not found"): AlmValidation[T] =
-    almvalidationfunctions.noneIsNotFound(self, message)
+    almvalidationfuns.noneIsNotFound(self, message)
 }
   
 trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {

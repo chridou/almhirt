@@ -9,8 +9,8 @@ import org.specs2.mutable.Specification
 import almhirt._
 
 class AlmValidationSpecs extends Specification {
-  import almhirt.almvalidationfunctions._
-  import almhirt.probleminstances._
+  import almhirt.almvalidationfuns._
+  import almhirt.probleminst._
   import almhirt.syntax.almvalidation._
   
   "AlmValidation.parseIntAlm" should {

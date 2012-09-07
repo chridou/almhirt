@@ -18,16 +18,22 @@ package object almhirt {
   type AlmValidationMBRV[+α] = Validation[ManyBusinessRulesViolatedProblem, α]
   type AlmValidationAP[+α] = Validation[AggregateProblem, α]    
 
-  object almvalidationinstances extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances 
+  object almvalidationinst extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances 
     with almvalidation.SeverityInstances with almvalidation.AlmValidationInstances
 
-  object almvalidationfunctions extends almvalidation.ProblemFunctions with almvalidation.AlmValidationFunctions with almvalidation.AlmValidationParseFunctions
+  object almvalidationfuns extends almvalidation.ProblemFunctions with almvalidation.AlmValidationFunctions with almvalidation.AlmValidationParseFunctions
 
-  object almvalidationimports 
+  object almvalidationall 
     extends almvalidation.ProblemFunctions with almvalidation.AlmValidationFunctions with almvalidation.AlmValidationParseFunctions
-    with almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances  with almvalidation.SeverityInstances with almvalidation.AlmValidationInstances
+    with almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances with almvalidation.SeverityInstances with almvalidation.AlmValidationInstances
     with almvalidation.ToProblemOps with almvalidation.ToAlmValidationOps
-    
-  object probleminstances extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances with almvalidation.SeverityInstances
-  
+
+  object probleminst extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances  with almvalidation.SeverityInstances
+
+  object problemfuns  extends almvalidation.ProblemFunctions  
+
+  object problemall 
+     extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances with almvalidation.SeverityInstances 
+     with almvalidation.ProblemFunctions with almvalidation.ToProblemOps  
+
 }

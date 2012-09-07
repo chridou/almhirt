@@ -4,7 +4,7 @@ import scala.xml.{Elem, Text}
 import scalaz._
 import Scalaz._
 import almhirt._
-import almhirt.almvalidationimports._
+import almhirt.almvalidationall._
 import almhirt.xml._
 import almhirt.syntax.xml._
 import almhirt.xtractnduce.{XTractor, XTractorAtomic, XTractorAtomicString}

@@ -7,7 +7,7 @@ import almhirt._
 
 
 trait ProblemOps0 extends Ops[NonEmptyList[Problem]]{
-  import almvalidationinstances._
+  import almvalidationinst._
   
   def aggregate(msg: String): AggregateProblem = {
     val severity = self.map(_.severity).concatenate
