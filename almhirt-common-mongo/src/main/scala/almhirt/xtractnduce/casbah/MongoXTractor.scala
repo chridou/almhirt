@@ -5,7 +5,7 @@ import scalaz._
 import Scalaz._
 import org.joda.time.DateTime
 import almhirt._
-import almhirt.almvalidationimports._
+import almhirt.almvalidationall._
 import almhirt.xtractnduce._
 import com.mongodb.casbah.Imports._
 

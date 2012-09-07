@@ -7,7 +7,7 @@ import akka.util.Timeout
 import scalaz.NonEmptyList
 import almhirt.almakka.AlmAkkaContext
 import almhirt._
-import almhirt.almfutureimports._
+import almhirt.almfutureall._
 import almhirt.domain.DomainEvent
 
 class InefficientInMemoryDomainEventLog(implicit almAkkaContext: AlmAkkaContext) extends HasDomainEvents with CanLogDomainEvents {

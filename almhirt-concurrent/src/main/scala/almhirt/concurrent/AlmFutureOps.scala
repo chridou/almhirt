@@ -4,7 +4,7 @@ import scalaz._, Scalaz._
 import scalaz.syntax.Ops
 import akka.dispatch.{Future, Promise}
 import almhirt._
-import almhirt.almvalidationimports._
+import almhirt.almvalidationall._
 
 /** Implicits on an untyped [[akka.dispatch.Future]] */
 trait AlmFutureOps0 extends Ops[Future[Any]] {

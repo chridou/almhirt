@@ -1,3 +1,3 @@
 package almhirt.ext.unfiltered
 
-object unfilteredimports extends UnfilteredResponseFunctions with ToUnfilteredResponeOps
+object unfilteredall extends UnfilteredResponseFunctions with ToUnfilteredResponeOps

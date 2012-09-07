@@ -6,8 +6,8 @@ import akka.pattern._
 import akka.util.Timeout
 import almhirt._
 import almakka.{AlmAkkaContext}
-import almvalidationimports._
-import almfutureimports._
+import almvalidationall._
+import almfutureall._
 
 abstract class ActorBasedMessageChannel(dispatcher: ActorRef)(implicit almAkkaContext: AlmAkkaContext) extends MessageChannel {
     implicit def timeout = Timeout(almAkkaContext.mediumDuration)

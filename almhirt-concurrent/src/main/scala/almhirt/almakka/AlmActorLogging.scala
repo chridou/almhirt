@@ -2,7 +2,7 @@ package almhirt.almakka
 
 import scalaz.syntax.show._
 import akka.event._
-import almhirt._, almvalidationimports._
+import almhirt._, almvalidationall._
 
 /** Enables an [[akka.actor.Actor]] to log directly on [[almhirt.validation.Problem]]s 
  * 

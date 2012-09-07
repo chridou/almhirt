@@ -4,7 +4,7 @@ import java.util.UUID
 import scalaz.syntax.validation._
 import akka.actor.Actor
 import almhirt._
-import almhirt.almvalidationimports._
+import almhirt.almvalidationall._
 import almakka._
 import concurrent._
 
