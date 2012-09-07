@@ -1,18 +1,12 @@
 package almhirt.almfuture
 
-import T => almhirt.compute
-import almhirt.a
 import akka.dispatch.Future
 import akka.dispatch.Promise
-import almhirt.concurrent.AlmFutureOps0
-import almhirt.concurrent.AlmFutureOps1
-import almhirt.AlmValidation
-import almhirt.AlmValidation
-import almhirt.AlmFuture
-import almhirt.Problem
 import scala.reflect.Manifest
 import scalaz.Scalaz.ToValidationV
 import scalaz.syntax.Ops
+import almhirt._
+import almvalidation.kit._
 
 /** Implicits on an untyped [[akka.dispatch.Future]] */
 trait AlmFutureOps0 extends Ops[Future[Any]] {

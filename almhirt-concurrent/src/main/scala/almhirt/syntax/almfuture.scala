@@ -1,3 +1,3 @@
 package almhirt.syntax
 
-object almfuture extends almhirt.concurrent.ToAlmFutureOps
+object almfuture extends almhirt.almfuture.ToAlmFutureOps
