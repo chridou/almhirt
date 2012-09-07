@@ -106,7 +106,7 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
         items.sequence[AlmValidationMBD, XTractorAtomicString] }
   
   private def getUniquePropertyElement(aKey: String): AlmValidationSBD[Option[Elem]] = {
-    val propertyContainers = xmlfunctions.elems(elem, aKey)
+    val propertyContainers = xmlfuns.elems(elem, aKey)
     propertyContainers match {
       case Seq(untrimmedPropertyContainer) => 
          scala.xml.Utility.trim(untrimmedPropertyContainer).asInstanceOf[Elem].successSBD.map(Some(_))
@@ -137,13 +137,13 @@ class XmlXTractor(elem: Elem, keyOverride: Option[String] = None, val parent: Op
   
   private def onAllChildrenAreElems(elem: Elem): AlmValidationSBD[Seq[Elem]] =
     if(elem.child.forall(n => n.isInstanceOf[Elem]))
-      xmlfunctions.elems(elem).successSBD
+      xmlfuns.elems(elem).successSBD
     else
       SingleBadDataProblem("Not all children are Elems", key = pathAsStringWithKey(elem.label)).failure[Seq[Elem]] 
     
   
   private def onSingleTextOnlyElem[U](aKey: String, f: (String, String) => AlmValidationSBD[Option[U]]): AlmValidationSBD[Option[U]] = {
-    val elems = xmlfunctions.elems(elem, aKey)
+    val elems = xmlfuns.elems(elem, aKey)
     elems match {
       case Seq() => 
         None.successSBD

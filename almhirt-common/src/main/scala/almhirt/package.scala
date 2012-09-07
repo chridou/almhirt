@@ -36,4 +36,7 @@ package object almhirt {
      extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances with almvalidation.SeverityInstances 
      with almvalidation.ProblemFunctions with almvalidation.ToProblemOps  
 
+  object xmlfuns extends xml.XmlFunctions
+  object xmlall extends xml.XmlFunctions with xml.ToXmlOps
+     
 }
