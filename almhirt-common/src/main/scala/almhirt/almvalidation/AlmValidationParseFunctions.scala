@@ -11,7 +11,8 @@ import almhirt._
  * All functions that start with try... result in Option[T]. None is returned if the String to parse is empty or only contains whitespaces.
  */
 trait AlmValidationParseFunctions{
-  import almvalidationfuns._
+  import almhirt.almvalidation.funs._
+  import almhirt.problem.funs._
   def parseIntAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Int] =
     try {
       toParse.toInt.success[SingleBadDataProblem]

@@ -6,7 +6,7 @@ import scalaz.Success
 import org.joda.time.DateTime
 import almhirt._
 import almhirt.syntax.almvalidation._
-import almhirt.almvalidationfuns._
+import almhirt.almvalidation.funs._
 
 class XTractorAtomicString(value: String, val key: String, val parent: Option[XTractor] = None) extends XTractorAtomic {
   type T = String

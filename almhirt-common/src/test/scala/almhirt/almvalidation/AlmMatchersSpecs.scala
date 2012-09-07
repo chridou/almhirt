@@ -3,6 +3,7 @@ package almhirt.almvalidation
 import org.specs2.mutable.Specification
 import scalaz.syntax.validation.ToValidationV
 import almhirt._
+import almhirt.almvalidation._
 
 class AlmMatchersSpecs extends Specification with ToAlmValidationOps{
   """A Success 1""" should {

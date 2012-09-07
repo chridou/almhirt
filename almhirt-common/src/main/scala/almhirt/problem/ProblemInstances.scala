@@ -1,7 +1,38 @@
-package almhirt.almvalidation
+package almhirt.problem
 
-import scalaz.{Semigroup, Show}
-import almhirt._
+import almhirt.AggregateProblem
+import almhirt.AlreadyExistsProblem
+import almhirt.ArgumentProblem
+import almhirt.BadDataProblem
+import almhirt.BusinessRuleProblem
+import almhirt.BusinessRuleViolatedProblem
+import almhirt.CauseIsProblem
+import almhirt.CauseIsThrowable
+import almhirt.CollisionProblem
+import almhirt.ConstraintViolatedProblem
+import almhirt.IllegalOperationProblem
+import almhirt.KeyNotFoundProblem
+import almhirt.ManyBusinessRulesViolatedProblem
+import almhirt.MappingProblem
+import almhirt.MultipleBadDataProblem
+import almhirt.MultipleMappingProblem
+import almhirt.NoConnectionProblem
+import almhirt.NotAuthenticatedProblem
+import almhirt.NotAuthorizedProblem
+import almhirt.NotFoundProblem
+import almhirt.OperationAbortedProblem
+import almhirt.OperationCancelledProblem
+import almhirt.OperationTimedOutProblem
+import almhirt.ParsingProblem
+import almhirt.PersistenceProblem
+import almhirt.Problem
+import almhirt.RegistrationProblem
+import almhirt.SecurityProblem
+import almhirt.SingleBadDataProblem
+import almhirt.SingleMappingProblem
+import almhirt.UnspecifiedProblem
+import scalaz.Show
+import scalaz.Semigroup
 
 trait ProblemInstances {
   implicit def ToMBDSemiGroup: Semigroup[MultipleBadDataProblem] =

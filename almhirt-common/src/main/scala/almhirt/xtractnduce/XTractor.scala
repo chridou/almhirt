@@ -5,7 +5,7 @@ import scalaz._
 import Scalaz._
 import org.joda.time.DateTime
 import almhirt._
-import probleminst._
+import problem.inst._
 import almhirt.syntax.almvalidation._
 
 trait XTractorWithPathToRoot{  

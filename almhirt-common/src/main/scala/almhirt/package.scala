@@ -17,26 +17,4 @@ package object almhirt {
   type AlmValidationBRV[+α] = Validation[BusinessRuleViolatedProblem, α]
   type AlmValidationMBRV[+α] = Validation[ManyBusinessRulesViolatedProblem, α]
   type AlmValidationAP[+α] = Validation[AggregateProblem, α]    
-
-  object almvalidationinst extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances 
-    with almvalidation.SeverityInstances with almvalidation.AlmValidationInstances
-
-  object almvalidationfuns extends almvalidation.ProblemFunctions with almvalidation.AlmValidationFunctions with almvalidation.AlmValidationParseFunctions
-
-  object almvalidationall 
-    extends almvalidation.ProblemFunctions with almvalidation.AlmValidationFunctions with almvalidation.AlmValidationParseFunctions
-    with almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances with almvalidation.SeverityInstances with almvalidation.AlmValidationInstances
-    with almvalidation.ToProblemOps with almvalidation.ToAlmValidationOps
-
-  object probleminst extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances  with almvalidation.SeverityInstances
-
-  object problemfuns  extends almvalidation.ProblemFunctions  
-
-  object problemall 
-     extends almvalidation.ProblemInstances with almvalidation.ProblemCategoryInstances with almvalidation.SeverityInstances 
-     with almvalidation.ProblemFunctions with almvalidation.ToProblemOps  
-
-  object xmlfuns extends xml.XmlFunctions
-  object xmlall extends xml.XmlFunctions with xml.ToXmlOps
-     
 }

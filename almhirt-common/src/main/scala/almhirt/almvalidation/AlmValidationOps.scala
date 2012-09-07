@@ -17,7 +17,7 @@ import almhirt._
  * }}}
  */
 trait AlmValidationOps0 extends Ops[String] {
-  import almvalidationfuns._
+  import almvalidation.funs._
   def toIntAlm(key: String = "some value"): AlmValidationSBD[Int] = 
     parseIntAlm(self, key)
   def toLongAlm(key: String = "some value"): AlmValidationSBD[Long] =  
@@ -72,7 +72,7 @@ trait AlmValidationOps3[P, V] extends Ops[Validation[P,Option[V]]] {
 }
   
 trait AlmValidationOps4[T] extends Ops[Validation[String, T]] {
-  import ProblemDefaults._
+  import almhirt.problem.ProblemDefaults._
   def toAlmValidation(problemOnFail: Problem = defaultProblem): AlmValidation[T] =
     self fold(problemOnFail.withMessage(_).failure[T], _.success[Problem])
 }
@@ -116,9 +116,9 @@ trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
   
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
   def noneIsBadData(message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
-    almvalidationfuns.noneIsBadData(self, message, key)
+    almvalidation.funs.noneIsBadData(self, message, key)
   def noneIsNotFound(message: String = "Not found"): AlmValidation[T] =
-    almvalidationfuns.noneIsNotFound(self, message)
+    almvalidation.funs.noneIsNotFound(self, message)
 }
   
 trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {
@@ -127,7 +127,7 @@ trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {
 }
 
 trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
-  import ProblemDefaults._
+  import almhirt.problem.ProblemDefaults._
   def toAgg(msg: String): AlmValidationAP[T] = 
     self fold (prob => AggregateProblem(msg, severity = prob.severity, category = prob.category, problems = List(prob)).failure, _.success)
 
@@ -136,12 +136,13 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
 }
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
-  import ProblemDefaults._
+  import almhirt.problem.ProblemDefaults._
   def fromExceptional(problemOnFail: Problem = defaultProblem): AlmValidation[T] = 
     self fold (exn => problemOnFail.withMessage(exn.getMessage).withCause(CauseIsThrowable(exn)).failure[T], _.success)
 }
 
 trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
+  import almhirt.syntax.problem._
   import almhirt.syntax.almvalidation._
   def aggregateProblems(msg: String): Validation[AggregateProblem, List[R]] = {
     self.partition(_.isSuccess) match {

@@ -1,6 +1,12 @@
-package almhirt.almvalidation
+package almhirt.problem
 
-import almhirt._
+import almhirt.ApplicationProblem
+import almhirt.Major
+import almhirt.ProblemCause
+import almhirt.Severity
+import almhirt.SingleBadDataProblem
+import almhirt.SystemProblem
+import almhirt.UnspecifiedProblem
 
 trait ProblemFunctions {
   def badData(key: String, message: String) =

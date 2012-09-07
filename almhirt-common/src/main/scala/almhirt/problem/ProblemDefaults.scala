@@ -1,4 +1,4 @@
-package almhirt.almvalidation
+package almhirt.problem
 
 import almhirt._
 

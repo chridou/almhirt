@@ -1,4 +1,2 @@
 package almhirt
 
-object almfutureinst extends almhirt.concurrent.AlmFutureInstances
-object almfutureall extends almhirt.concurrent.AlmFutureInstances with almhirt.concurrent.ToAlmFutureOps

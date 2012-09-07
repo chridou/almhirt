@@ -1,13 +1,12 @@
-package almhirt.almvalidation
+package almhirt.problem
 
-import scalaz.Scalaz._
-import scalaz.NonEmptyList
+import scalaz.Scalaz.ToFoldableOps
 import scalaz.syntax.Ops
+import scalaz.NonEmptyList
 import almhirt._
 
-
 trait ProblemOps0 extends Ops[NonEmptyList[Problem]]{
-  import almvalidationinst._
+  import inst._
   
   def aggregate(msg: String): AggregateProblem = {
     val severity = self.map(_.severity).concatenate
