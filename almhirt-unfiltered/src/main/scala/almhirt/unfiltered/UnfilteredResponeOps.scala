@@ -4,11 +4,12 @@ import scalaz.syntax.Ops
 import org.jboss.netty.handler.codec.http.HttpResponse
 import akka.dispatch.Future
 import unfiltered.response.ResponseFunction
+import unfiltered.Async
 import almhirt._
 
 
 trait UnfilteredResponeOps0[T] extends Ops[AlmFuture[T]] with UnfilteredResponseFunctions {
-  def respond(responder: unfiltered.Async.Responder[HttpResponse], createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): AlmFuture[T] = 
+  def respond(responder: Async.Responder[HttpResponse], createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): AlmFuture[T] = 
     self.onComplete(
         prob => responder.respond(problemToResponse(prob)),
         r => responder.respond(createSuccessResponse(r)))
@@ -16,7 +17,7 @@ trait UnfilteredResponeOps0[T] extends Ops[AlmFuture[T]] with UnfilteredResponse
 
 trait UnfilteredResponeOps1[T] extends Ops[Future[AlmValidation[T]]] with UnfilteredResponseFunctions with ToUnfilteredResponeOps {
   def respond(
-      responder: unfiltered.Async.Responder[HttpResponse], 
+      responder: Async.Responder[HttpResponse], 
       createSuccessResponse: Function[T,ResponseFunction[HttpResponse]]): Future[AlmValidation[T]] = {
     self.respond(responder, createSuccessResponse)		
   }
