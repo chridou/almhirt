@@ -17,7 +17,7 @@ import almhirt._
  * }}}
  */
 trait AlmValidationOps0 extends Ops[String] {
-  import almvalidation.funs._
+  import funs._
   def toIntAlm(key: String = "some value"): AlmValidationSBD[Int] = 
     parseIntAlm(self, key)
   def toLongAlm(key: String = "some value"): AlmValidationSBD[Long] =  

@@ -17,7 +17,7 @@ import akka.util.Duration
  * Errors which would end in a Throwable end in a SystemProblem whereas a TimeoutException ends in a TimeoutProblem.
  */
 class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit executionContext: akka.dispatch.ExecutionContext)  {
-  import almfutureall._
+  import concurrent.all._
   def map[T](compute: R => T): AlmFuture[T] =
     new AlmFuture[T](underlying map { validation => validation map compute })
     

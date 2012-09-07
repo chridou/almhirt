@@ -1,7 +1,9 @@
-package almhirt.concurrent
+package almhirt.almfuture
 
-import akka.dispatch.{Future, Promise}
-import almhirt._
+import akka.dispatch.Future
+import almhirt.AlmValidation
+import almhirt.AlmValidation
+import almhirt.AlmFuture
 
 
 trait AlmFutureInstances {
