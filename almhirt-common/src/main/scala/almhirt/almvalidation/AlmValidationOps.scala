@@ -156,8 +156,11 @@ trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
 }
 
 trait AlmValidationOps12[T] extends Ops[AlmValidation[T]] {
+  /** Wrap the validation into an [[almhirt.AlmMatcher]] */
   def m(): AlmMatcher = 
     self fold (f => AlmFailure(f), s => AlmSuccess[T](s))
+  def matchWith[U](pf: PartialFunction[AlmMatcher, U]): U = 
+    pf(self fold (f => AlmFailure(f), s => AlmSuccess[T](s)))
 }
 
 trait ToAlmValidationOps {
