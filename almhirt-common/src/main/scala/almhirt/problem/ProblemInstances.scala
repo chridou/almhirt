@@ -1,36 +1,6 @@
 package almhirt.problem
 
-import almhirt.AggregateProblem
-import almhirt.AlreadyExistsProblem
-import almhirt.ArgumentProblem
-import almhirt.BadDataProblem
-import almhirt.BusinessRuleProblem
-import almhirt.BusinessRuleViolatedProblem
-import almhirt.CauseIsProblem
-import almhirt.CauseIsThrowable
-import almhirt.CollisionProblem
-import almhirt.ConstraintViolatedProblem
-import almhirt.IllegalOperationProblem
-import almhirt.KeyNotFoundProblem
-import almhirt.ManyBusinessRulesViolatedProblem
-import almhirt.MappingProblem
-import almhirt.MultipleBadDataProblem
-import almhirt.MultipleMappingProblem
-import almhirt.NoConnectionProblem
-import almhirt.NotAuthenticatedProblem
-import almhirt.NotAuthorizedProblem
-import almhirt.NotFoundProblem
-import almhirt.OperationAbortedProblem
-import almhirt.OperationCancelledProblem
-import almhirt.OperationTimedOutProblem
-import almhirt.ParsingProblem
-import almhirt.PersistenceProblem
-import almhirt.Problem
-import almhirt.RegistrationProblem
-import almhirt.SecurityProblem
-import almhirt.SingleBadDataProblem
-import almhirt.SingleMappingProblem
-import almhirt.UnspecifiedProblem
+import almhirt._
 import scalaz.Show
 import scalaz.Semigroup
 
@@ -86,6 +56,7 @@ trait ProblemInstances {
   implicit def showsOperationCancelledProblem: Show[OperationCancelledProblem] = new Show[OperationCancelledProblem] { override def shows(p: OperationCancelledProblem) = standardShow(p) }
   implicit def showsBusinessRuleViolatedProblem: Show[BusinessRuleViolatedProblem] = new Show[BusinessRuleViolatedProblem] { override def shows(p: BusinessRuleViolatedProblem) = standardShow(p) }
   implicit def showsManyBusinessRulesViolatedProblem: Show[ManyBusinessRulesViolatedProblem] = new Show[ManyBusinessRulesViolatedProblem] { override def shows(p: ManyBusinessRulesViolatedProblem) = standardShow(p) }
+  implicit def showsLanguageNotSupportedProblem: Show[LanguageNotSupportedProblem] = new Show[LanguageNotSupportedProblem] { override def shows(p: LanguageNotSupportedProblem) = standardShow(p) }
 
   private def standardShow(p: Problem): String = {
       val builder = new StringBuilder()

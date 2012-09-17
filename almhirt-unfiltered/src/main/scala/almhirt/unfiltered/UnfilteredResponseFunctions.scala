@@ -23,6 +23,7 @@ trait UnfilteredResponseFunctions {
         case p: AlreadyExistsProblem => Conflict~> PlainTextContent ~> ResponseString(p.shows)
         case p: OperationCancelledProblem => InternalServerError~> PlainTextContent ~> ResponseString(p.shows)
         case p: BusinessRuleViolatedProblem => InternalServerError ~> PlainTextContent ~> ResponseString(p.shows)
+        case p: LanguageNotSupportedProblem => BadRequest ~> PlainTextContent ~> ResponseString(p.shows)
         case p => InternalServerError ~> ResponseString(p.shows)
       }
   }
