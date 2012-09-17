@@ -56,7 +56,7 @@ trait ProblemInstances {
   implicit def showsOperationCancelledProblem: Show[OperationCancelledProblem] = new Show[OperationCancelledProblem] { override def shows(p: OperationCancelledProblem) = standardShow(p) }
   implicit def showsBusinessRuleViolatedProblem: Show[BusinessRuleViolatedProblem] = new Show[BusinessRuleViolatedProblem] { override def shows(p: BusinessRuleViolatedProblem) = standardShow(p) }
   implicit def showsManyBusinessRulesViolatedProblem: Show[ManyBusinessRulesViolatedProblem] = new Show[ManyBusinessRulesViolatedProblem] { override def shows(p: ManyBusinessRulesViolatedProblem) = standardShow(p) }
-  implicit def showsLanguageNotSupportedProblem: Show[LanguageNotSupportedProblem] = new Show[LanguageNotSupportedProblem] { override def shows(p: LanguageNotSupportedProblem) = standardShow(p) }
+  implicit def showsLocaleNotSupportedProblem: Show[LocaleNotSupportedProblem] = new Show[LocaleNotSupportedProblem] { override def shows(p: LocaleNotSupportedProblem) = standardShow(p) }
 
   private def standardShow(p: Problem): String = {
       val builder = new StringBuilder()
