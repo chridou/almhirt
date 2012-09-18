@@ -268,7 +268,7 @@ package almhirt
 	}
   }
   
-  case class LocaleNotSupportedProblem(message: String, unsupportedLocale: String, severity: Severity = NoProblem, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  case class LocaleNotSupportedProblem(message: String, locale: String, severity: Severity = NoProblem, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
 	type T = LocaleNotSupportedProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
 	def withSeverity(severity: Severity) = copy(severity = severity)
