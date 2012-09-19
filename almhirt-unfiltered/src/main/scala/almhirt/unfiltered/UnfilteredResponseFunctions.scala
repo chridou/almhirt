@@ -12,19 +12,17 @@ trait UnfilteredResponseFunctions {
       InternalServerError ~> PlainTextContent ~> ResponseString(problem.shows)
     else
       problem match {
-        case p: NotFoundProblem => NotFound~> PlainTextContent ~> ResponseString(p.shows)
-        case p: SingleBadDataProblem => BadRequest~> PlainTextContent ~> ResponseString("%s: %s".format(p.key, p.shows))
-        case p: MultipleBadDataProblem => 
-          val items = p.keysAndMessages.toSeq.map{case (key, msg) => "%s -> %s".format(key, msg)}
-          BadRequest~> PlainTextContent ~> ResponseString("%s\n%s".format(p.message, items.mkString("\n")))
-        case p: CollisionProblem => Conflict~> PlainTextContent ~> ResponseString("[%s]: %s".format(p.shows))
-        case p: NotAuthorizedProblem => Unauthorized~> PlainTextContent ~> ResponseString(p.shows)
-        case p: NotAuthenticatedProblem => Forbidden~> PlainTextContent ~> ResponseString(p.shows)
-        case p: AlreadyExistsProblem => Conflict~> PlainTextContent ~> ResponseString(p.shows)
-        case p: OperationCancelledProblem => InternalServerError~> PlainTextContent ~> ResponseString(p.shows)
-        case p: BusinessRuleViolatedProblem => InternalServerError ~> PlainTextContent ~> ResponseString(p.shows)
-        case p: LocaleNotSupportedProblem => BadRequest ~> PlainTextContent ~> ResponseString(p.shows)
-        case p => InternalServerError ~> ResponseString(p.shows)
+        case p: NotFoundProblem => NotFound~> PlainTextContent ~> ResponseString(p.toString)
+        case p: SingleBadDataProblem => BadRequest~> PlainTextContent ~> ResponseString(p.toString)
+        case p: MultipleBadDataProblem => BadRequest~> PlainTextContent ~> ResponseString(p.toString)
+        case p: CollisionProblem => Conflict~> PlainTextContent ~> ResponseString(p.toString)
+        case p: NotAuthorizedProblem => Unauthorized~> PlainTextContent ~> ResponseString(p.toString)
+        case p: NotAuthenticatedProblem => Forbidden~> PlainTextContent ~> ResponseString(p.toString)
+        case p: AlreadyExistsProblem => Conflict~> PlainTextContent ~> ResponseString(p.toString)
+        case p: OperationCancelledProblem => InternalServerError~> PlainTextContent ~> ResponseString(p.toString)
+        case p: BusinessRuleViolatedProblem => InternalServerError ~> PlainTextContent ~> ResponseString(p.toString)
+        case p: LocaleNotSupportedProblem => BadRequest ~> PlainTextContent ~> ResponseString(p.toString)
+        case p => InternalServerError ~> ResponseString(p.toString)
       }
   }
   

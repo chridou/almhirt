@@ -17,6 +17,16 @@ package almhirt
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
     def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+
+	override def toString(): String = {
+      val builder = baseInfo
+      builder.append("Aggregated problems:\n")
+      problems.zipWithIndex.foreach { case (p, i) => {
+        builder.append("Problem %d:\n".format(i))
+        builder.append(p.toString())
+      }}
+      builder.result
+	}
   }
 
   case class RegistrationProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
@@ -27,6 +37,7 @@ package almhirt
     def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
+  
   case class NoConnectionProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
 	type T = NoConnectionProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
@@ -35,6 +46,7 @@ package almhirt
     def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
+  
   case class OperationTimedOutProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
 	type T = OperationTimedOutProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
@@ -85,7 +97,13 @@ package almhirt
 	def addTo(multipleMappingProblem: MultipleMappingProblem) = multipleMappingProblem.add(this)
 	def add(other: SingleMappingProblem) = toMultipleMappingProblem().add(other)
 	def toMultipleMappingProblem() = MultipleMappingProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+	override def toString(): String = {
+      val builder = baseInfo
+      builder.append("Key: %s\n".format(key))
+      builder.result
+	}
   }
+  
   case class MultipleMappingProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends MappingProblem with MultiKeyedProblem  {
 	type T = MultipleMappingProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
@@ -110,6 +128,12 @@ package almhirt
 	      val path = pathParts.mkString(sep)+sep
 	      copy(keysAndMessages = keysAndMessages.toSeq.map{case (k, m) => (path + k) -> m}.toMap)  
 	  }
+	}
+	override def toString(): String = {
+      val builder = baseInfo
+      builder.append("Keys and messages:\n")
+      keysAndMessages.foreach{ case (k,m) => builder.append("%s->%s".format(k,m))}
+      builder.result
 	}
   }
   
@@ -137,13 +161,22 @@ package almhirt
     def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
   }
-  case class ParsingProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  case class ParsingProblem(message: String, input: Option[String], severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
 	type T = ParsingProblem
     def withMessage(newMessage: String) = copy(message = newMessage)
 	def withSeverity(severity: Severity) = copy(severity = severity)
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
     def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+	override def toString(): String = {
+      val builder = baseInfo
+      input.foreach(inp =>{
+        builder.append("Input:\n")
+        builder.append("%s".format(inp))
+        builder.append("\n")
+      })
+      builder.result
+	}
   }
   case class SingleBadDataProblem(message: String, key: String = "unknown", severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BadDataProblem with SingleKeyedProblem {
 	type T = SingleBadDataProblem
@@ -162,6 +195,11 @@ package almhirt
 	      val path = pathParts.mkString(sep)+sep
 	      copy(key = (path+ sep + key))  
 	  }
+	}
+	override def toString(): String = {
+      val builder = baseInfo
+      builder.append("Key: %s\n".format(key))
+      builder.result
 	}
   }
   case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BadDataProblem with MultiKeyedProblem {
@@ -188,6 +226,12 @@ package almhirt
 	      val path = pathParts.mkString(sep)+sep
 	      copy(keysAndMessages = keysAndMessages.toSeq.map{case (k, m) => (path + k) -> m}.toMap)  
 	  }
+	}
+	override def toString(): String = {
+      val builder = baseInfo
+      builder.append("Keys and messages:\n")
+      keysAndMessages.foreach{ case (k,m) => builder.append("%s->%s".format(k,m))}
+      builder.result
 	}
   }
   case class CollisionProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
@@ -240,6 +284,11 @@ package almhirt
 	def addTo(manyViolations: ManyBusinessRulesViolatedProblem) = manyViolations.add(this)
 	def add(other: BusinessRuleViolatedProblem) = toMBRV().add(other)
 	def toMBRV() = ManyBusinessRulesViolatedProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
+	override def toString(): String = {
+      val builder = baseInfo
+      builder.append("Key: %s\n".format(key))
+      builder.result
+	}
   }
   case class ManyBusinessRulesViolatedProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BusinessRuleProblem with MultiKeyedProblem {
 	type T = ManyBusinessRulesViolatedProblem
@@ -266,6 +315,13 @@ package almhirt
 	      copy(keysAndMessages = keysAndMessages.toSeq.map{case (k, m) => (path + k) -> m}.toMap)  
 	  }
 	}
+	  
+	override def toString(): String = {
+      val builder = baseInfo
+      builder.append("Keys and messages:\n")
+      keysAndMessages.foreach{ case (k,m) => builder.append("%s->%s".format(k,m))}
+      builder.result
+	}
   }
   
   case class LocaleNotSupportedProblem(message: String, locale: String, severity: Severity = NoProblem, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
@@ -275,5 +331,10 @@ package almhirt
 	def withArg(key: String, value: Any) = copy(args = args + (key -> value))
     def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
 	def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+	override def toString(): String = {
+      val builder = baseInfo
+      builder.append("Unsupported locale:%s\n".format(locale))
+      builder.result
+	}
   }
   
