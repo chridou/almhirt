@@ -1,6 +1,5 @@
 package almhirt.almakka
 
-import scalaz.syntax.show._
 import akka.event._
 import almhirt._, almvalidation.kit._
 
@@ -15,13 +14,13 @@ trait AlmActorLogging { self: akka.actor.Actor =>
     if(prob.severity >= minSeverity)
 	  prob.severity match {
 	    case NoProblem =>
-	      log.debug(prob.shows)
+	      log.debug(prob.toString)
 	    case Minor =>
-	      log.warning(prob.shows)
+	      log.warning(prob.toString)
 	    case Major =>
-	      log.error(prob.shows)
+	      log.error(prob.toString)
 	    case Critical =>
-	      log.error(prob.shows)
+	      log.error(prob.toString)
 	    }
   }
   
