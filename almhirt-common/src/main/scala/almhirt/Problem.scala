@@ -20,7 +20,7 @@ trait Problem{
       val builder = new StringBuilder()
       builder.append("%s\n".format(this.getClass.getName))
       builder.append("%s\n".format(message))
-      builder.append("Category: %s\n".format(severity))
+      builder.append("Category: %s\n".format(category))
       builder.append("Severity: %s\n".format(severity))
       builder.append("Arguments: %s\n".format(args))
       cause match {
