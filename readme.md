@@ -19,6 +19,10 @@ No. Inspiration was taken from
 * [Building an Event-Sourced Web Application by Martin Krasser](http://krasserm.blogspot.de/2011/11/building-event-sourced-web-application.html)
 * [BlueEyes](http://noelwelsh.com/blueeyes/concurrency.html)
 
+## Why this name?
+
+I'll explain that later.
+
 ## Is help welcome?
 
 Absolutely yes!
