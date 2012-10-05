@@ -204,6 +204,8 @@ case class KeyNotFoundProblem(message: String, severity: Severity = Minor, categ
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/** A constraint on an operation has been violated by a user(or a client).
+ */
 case class ConstraintViolatedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ConstraintViolatedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
@@ -233,6 +235,8 @@ case class ParsingProblem(message: String, input: Option[String], severity: Seve
   }
 }
 
+/** Some data is invalid. The key gives the context
+ */
 case class SingleBadDataProblem(message: String, key: String = "unknown", severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BadDataProblem with SingleKeyedProblem {
   type T = SingleBadDataProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
@@ -258,6 +262,8 @@ case class SingleBadDataProblem(message: String, key: String = "unknown", severi
   }
 }
 
+/** Some data is invalid. The keys give the contexts
+ */
 case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BadDataProblem with MultiKeyedProblem {
   type T = MultipleBadDataProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
@@ -291,6 +297,8 @@ case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, 
   }
 }
 
+/** Something has been changed by someone else. Stale data etc..
+ */
 case class CollisionProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = CollisionProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
@@ -318,6 +326,8 @@ case class NotAuthenticatedProblem(message: String, severity: Severity = Minor, 
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/** Something has already been created. Don't try again...
+ */
 case class AlreadyExistsProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = AlreadyExistsProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
@@ -327,6 +337,8 @@ case class AlreadyExistsProblem(message: String, severity: Severity = Minor, cat
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/** Some external stimulus has cancelled an operation
+ */
 case class OperationCancelledProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = OperationCancelledProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
@@ -336,6 +348,8 @@ case class OperationCancelledProblem(message: String, severity: Severity = Minor
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/** A rule on a process has been violated
+ */
 case class BusinessRuleViolatedProblem(message: String, key: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BusinessRuleProblem with SingleKeyedProblem {
   type T = BusinessRuleViolatedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
@@ -352,6 +366,9 @@ case class BusinessRuleViolatedProblem(message: String, key: String, severity: S
     builder.result
   }
 }
+
+/** Multiple rules on a process have been violated
+ */
 case class ManyBusinessRulesViolatedProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BusinessRuleProblem with MultiKeyedProblem {
   type T = ManyBusinessRulesViolatedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
@@ -386,6 +403,8 @@ case class ManyBusinessRulesViolatedProblem(message: String, keysAndMessages: Ma
   }
 }
 
+/** This locale simply isn't supported. Store the not supported locale code in 'locale'.
+ */
 case class LocaleNotSupportedProblem(message: String, locale: String, severity: Severity = NoProblem, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = LocaleNotSupportedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
