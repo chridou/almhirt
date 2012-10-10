@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.7-SNAPSHOT"
+  val buildVersion      = "0.0.8-SNAPSHOT"
   val buildScalaVersion = "2.9.2"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -49,20 +49,6 @@ trait CommonBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2
-  )
-}
-
-trait ConcurrentBuild {
-  import Dependencies._
-  import Resolvers._
-  def concurrentProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += specs2,
@@ -113,24 +99,21 @@ trait UnfilteredBuild {
   
 }
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with UnfilteredBuild with CommonMongoBuild with ConcurrentBuild{
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with UnfilteredBuild with CommonMongoBuild{
   lazy val root = Project(	id = "almhirt",
-	                        base = file(".")) aggregate(common, concurrent, core, commonMongo, unfiltered)
+	                        base = file(".")) aggregate(common, core, commonMongo, unfiltered)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
-  lazy val concurrent = concurrentProject(	name = "almhirt-concurrent",
-                       			baseFile = file("almhirt-concurrent")) dependsOn(common)
-
   lazy val core = coreProject(	name = "almhirt-core",
-	                       		baseFile = file("almhirt-core")) dependsOn(common, concurrent)
+	                       		baseFile = file("almhirt-core")) dependsOn(common)
 
   lazy val commonMongo = commonMongoProject(	name = "almhirt-common-mongo",
                        			baseFile = file("almhirt-common-mongo")) dependsOn(common)
 
   lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
-	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common, concurrent)
+	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)
 
 										
 }
