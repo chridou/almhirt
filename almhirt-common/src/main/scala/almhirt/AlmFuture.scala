@@ -100,7 +100,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
 }
 
 object AlmFuture {
-  def apply[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Promise.successful{compute})
+  def apply[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Future{compute})
   @deprecated("Use AlmPromise.apply", "0.0.1")
   def promise[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Promise.successful{compute})
   @deprecated("Use apply", "0.0.1")
