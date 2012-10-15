@@ -113,7 +113,7 @@ class AlmValidationSpecs extends Specification {
   
   """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in a "for comprehension"""" should {
     """add to 5 when A="2" and B="3"""" in {
-      val res = parseIntAlm("2").toMBD bind (_ => parseIntAlm("3").toMBD)
+      val res = parseIntAlm("2").toMBD bind (x => parseIntAlm("3").toMBD.map(_ + x))
       res must beEqualTo(5.success[MultipleBadDataProblem])
     }
     """be a Failure when A="x" and B="3"""" in {
