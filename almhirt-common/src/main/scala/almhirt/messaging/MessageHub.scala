@@ -17,9 +17,9 @@ package almhirt.messaging
 import almhirt.Closeable
 import almhirt.almakka.AlmAkkaContext
 
-trait MessageHub extends CreatesMessageChannels with CanDeliverMessages with Closeable {
-}
+trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with Closeable
 
 object MessageHub {
-  def apply(implicit almAkkaContext: AlmAkkaContext) = ActorBasedMessageHub(almAkkaContext)
+  def apply(name: Option[String])(implicit almAkkaContext: AlmAkkaContext): MessageHub = impl.ActorBasedMessageHub(name, almAkkaContext)
+  def apply(implicit almAkkaContext: AlmAkkaContext): MessageHub = apply(None)(almAkkaContext)
 }
