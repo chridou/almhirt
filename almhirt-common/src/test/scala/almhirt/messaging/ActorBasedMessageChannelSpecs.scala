@@ -1,9 +1,6 @@
 package almhirt.messaging
 
 import org.specs2.mutable._
-import akka.testkit.TestActorRef
-import akka.actor._
-import akka.dispatch.Await
 import akka.util.Duration
 import almhirt.syntax.almvalidation._
 import almhirt.almakka._

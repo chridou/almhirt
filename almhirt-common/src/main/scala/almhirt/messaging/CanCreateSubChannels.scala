@@ -17,5 +17,6 @@ package almhirt.messaging
 import almhirt._
 
 trait CanCreateSubChannels[T <: AnyRef] {
-  def createSubChannel[TPayload <: T](classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[MessageStream[TPayload]]
+  def createSubChannel[TPayload <: T](classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]]
+  def createSubChannel[TPayload <: T](implicit m: Manifest[TPayload]): AlmFuture[MessageStream[TPayload]] = createSubChannel(_ => true)
 }
