@@ -8,7 +8,7 @@ import almhirt._
 import almhirt.almakka._
 import almhirt.almfuture.all._
 import almhirt.messaging._
-import almhirt.messaging.commands._
+import almhirt.messaging.impl.commands._
 
 trait ActorBasedMessageHub extends MessageHub {
   implicit def timeout: Timeout
@@ -33,14 +33,14 @@ object ActorBasedMessageHub {
   }
   
   private class ActorBasedMessageHubImpl(actorSystem: ActorRefFactory, val dispatcher: ActorRef, implicit val timeout: Timeout, implicit val futureDispatcher: ExecutionContext, actorDispatcherName: Option[String]) extends ActorBasedMessageHub{
-    def createMessageChannel(topic: Option[String]): AlmFuture[MessageChannel] = {
+    def createMessageChannel[TPayLoad <: AnyRef](topic: Option[String])(implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]] = {
       val newChannelDispatcher = MessageChannelActorHandler(None, actorSystem, timeout, futureDispatcher, actorDispatcherName)
       val handler = (msg: Message[AnyRef]) => newChannelDispatcher ! PublishMessageCommand(msg)
       val registration = (ask(dispatcher, RegisterMessageHandlerOnTopicCommand(handler, topic))).toAlmFuture[RegistrationHolder]
       registration.map(reg => 
         ActorBasedMessageChannel(None, actorSystem, timeout, futureDispatcher, actorDispatcherName, Some(reg), topic, newChannelDispatcher))	  
  	}
-    def createGlobalMessageChannel(): AlmFuture[MessageChannel] = {
+    def createGlobalMessageChannel[TPayLoad <: AnyRef](implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]] = {
       val newChannelDispatcher = MessageChannelActorHandler(None, actorSystem, timeout, futureDispatcher, actorDispatcherName)
       val handler = (msg: Message[AnyRef]) => newChannelDispatcher ! PublishMessageCommand(msg)
       val registration = (ask(dispatcher, RegisterMessageGlobalMessageHandlerCommand(handler))).toAlmFuture[RegistrationHolder]

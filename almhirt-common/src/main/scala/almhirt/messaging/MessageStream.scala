@@ -26,7 +26,7 @@ import almhirt._
  * * not guarantee that all handlers will be called on the same thread
  * * not guarantee that handlers won't be called concurrently
  */
-trait MessageStream extends SubscribableForMessages with almhirt.MightBeRegisteredSomewhere with almhirt.Disposable {
+trait MessageStream[T <: AnyRef] extends SubscribableForMessages[T] with almhirt.MightBeRegisteredSomewhere with almhirt.Disposable {
   /** The message stream might be limited to some topic
    */
   def topicPattern: Option[String]

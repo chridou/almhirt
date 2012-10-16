@@ -8,7 +8,7 @@ import akka.util.Timeout
 import akka.dispatch.ExecutionContext
 import almhirt._
 import almhirt.messaging._
-import almhirt.messaging.commands._
+import almhirt.messaging.impl.commands._
 import almhirt.almakka._
 import almhirt.almfuture.all._
 import akka.dispatch.MessageDispatcher
@@ -36,7 +36,7 @@ trait MessageChannelActorHandler extends AlmActorLogging { actor: Actor =>
   def receive: Receive = {
     case PublishMessageCommand(message) => 
   	  publishMessage(message)
-  	case RegisterWildCardMessageHandlerCommand(handler, classifier) => {
+  	case RegisterMessageHandlerCommand(handler, classifier) => {
    	  val subscriptionId = UUID.randomUUID()
  	  addSubscription(subscriptionId, handler, classifier)
   	  val subscription = 

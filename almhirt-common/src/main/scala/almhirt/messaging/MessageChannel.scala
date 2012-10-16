@@ -14,11 +14,11 @@
 */
 package almhirt.messaging
 
-trait MessageChannel extends MessageStream with CanDeliverMessages with CanCreateSubChannels
+trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T]
 
 object MessageChannel{ 
 import almhirt.almakka.AlmAkkaContext
-  def apply(name: Option[String])(implicit almAkkaContext: AlmAkkaContext): MessageChannel = {
-	impl.ActorBasedMessageChannel(name, almAkkaContext)
+  def apply[T <: AnyRef](name: Option[String])(implicit almAkkaContext: AlmAkkaContext, m: Manifest[T]): MessageChannel[T] = {
+	impl.ActorBasedMessageChannel[T](name, almAkkaContext)
   }
 }

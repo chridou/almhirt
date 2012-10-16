@@ -15,6 +15,6 @@
 package almhirt.messaging
 
 /** Someone who takes a message and delivers it somewhere else. */
-trait CanDeliverMessages {
-  def post(message: Message[AnyRef]): Unit
+trait CanDeliverMessages[T <: AnyRef] {
+  def post[U <: T](message: Message[U]): Unit
 }

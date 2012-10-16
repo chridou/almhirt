@@ -16,16 +16,6 @@ package almhirt.messaging
 
 import almhirt._
 
-trait CanCreateSubChannels {
-  def createSubChannel(classifier: Message[AnyRef] => Boolean): AlmFuture[MessageStream]
-  
-  def createSubChannel[TPayload <: AnyRef](classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[MessageStream] = {
-    def wrappedClassifier(message: Message[AnyRef]) = 
-      if(m.erasure.isAssignableFrom(message.payload.getClass()))
-      	classifier(message.asInstanceOf[Message[TPayload]])
-      else
-      	false
-    createSubChannel(wrappedClassifier(_))
-  }
-  
+trait CanCreateSubChannels[T <: AnyRef] {
+  def createSubChannel[TPayload <: T](classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[MessageStream[TPayload]]
 }

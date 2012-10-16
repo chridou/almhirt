@@ -8,7 +8,7 @@ import akka.util.Timeout
 import akka.dispatch.ExecutionContext
 import almhirt._
 import almhirt.messaging._
-import almhirt.messaging.commands._
+import almhirt.messaging.impl.commands._
 import almhirt.almakka._
 import almhirt.almfuture.all._
 
@@ -17,8 +17,6 @@ trait MessageHubActorHandler extends AlmActorLogging{ actor: Actor =>
   implicit def futureDispatcher: ExecutionContext
 
   private var subscriptions: List[(UUID, Message[AnyRef] => Unit, Option[String])] = Nil
-
-  private var channels: List[MessageChannel] = List()
 
   private def addSubscription(id: UUID, handler: Message[AnyRef] => Unit, topic: Option[String]) {
 	subscriptions = (id, handler, topic) :: subscriptions
@@ -53,7 +51,7 @@ trait MessageHubActorHandler extends AlmActorLogging{ actor: Actor =>
   
   def receive: Receive = {
     case BroadcastMessageCommand(msg, pattern) => 
-      channels.foreach(_.post(msg))
+      broadcastMessage(msg, pattern)
     case RegisterMessageGlobalMessageHandlerCommand(handler) =>
       sender ! registeredGlobalHandler(handler)
     case RegisterMessageHandlerOnTopicCommand(handler, topicfilter) =>

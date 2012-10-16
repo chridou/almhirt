@@ -18,16 +18,16 @@ import java.util.UUID
 import almhirt._
 
 /** Someone you can subscribe to for any Method. */
-trait SubscribableForMessages {
-  def <-* (handler: Message[AnyRef] => Unit, classifier: Message[AnyRef] => Boolean): AlmFuture[RegistrationHolder]
+trait SubscribableForMessages[T <: AnyRef] {
+  def <-* (handler: Message[T] => Unit, classifier: Message[T] => Boolean): AlmFuture[RegistrationHolder]
 
-  def <-* (handler: Message[AnyRef] => Unit): AlmFuture[RegistrationHolder] = 
-  	<-* (handler, (_: Message[AnyRef]) => true)
+  def <-* (handler: Message[T] => Unit): AlmFuture[RegistrationHolder] = 
+  	<-* (handler, (_: Message[T]) => true)
 
-  def <-#[TPayload <: AnyRef](handler: Message[TPayload] => Unit, classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = {
-    def wrappedHandler(message: Message[AnyRef]): Unit =
+  def <-#[TPayload <: T](handler: Message[TPayload] => Unit, classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = {
+    def wrappedHandler(message: Message[T]): Unit =
       handler(message.asInstanceOf[Message[TPayload]])
-    def wrappedClassifier(message: Message[AnyRef]) = 
+    def wrappedClassifier(message: Message[T]) = 
       if(m.erasure.isAssignableFrom(message.payload.getClass()))
       	classifier(message.asInstanceOf[Message[TPayload]])
       else
@@ -35,7 +35,7 @@ trait SubscribableForMessages {
     <-* (wrappedHandler, wrappedClassifier)
   }
 	
-  def <-#[TPayload <: AnyRef](handler: Message[TPayload] => Unit)(implicit m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
+  def <-#[TPayload <: T](handler: Message[TPayload] => Unit)(implicit m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
   	<-# [TPayload](handler, (_: Message[TPayload]) => true)(m)
 
 }
