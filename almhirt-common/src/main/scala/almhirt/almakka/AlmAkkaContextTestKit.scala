@@ -6,7 +6,7 @@ import akka.util.duration._
 import com.typesafe.config._
 
 trait AlmAkkaContextTestKit {
-  val configText =
+  private val configText =
     """  
       akka {
         default-dispatcher {
