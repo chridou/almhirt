@@ -13,5 +13,8 @@ abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event
         if(events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
         else arFactory.rebuildFromHistory(NonEmptyList(events.head, events.tail: _*)))
   def store(ar: AR, uncommitedEvents: List[Event]): AlmFuture[AR] = 
-    eventLog.storeEvents(uncommitedEvents).map(committedEvents => ar)
+    if(uncommitedEvents.isEmpty) AlmPromise(UnspecifiedProblem("no events", category = ApplicationProblem, severity = Minor).failure)
+    else eventLog.storeEvents(uncommitedEvents).map(committedEvents => ar)
+  def store(uncommitedEvents: List[Event]): AlmFuture[AR] =
+    
 }
