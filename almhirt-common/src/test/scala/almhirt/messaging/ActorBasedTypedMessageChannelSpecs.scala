@@ -128,7 +128,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "")).result(Duration.Inf).forceResult
         channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -142,7 +142,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "")).result(Duration.Inf).forceResult
         channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()

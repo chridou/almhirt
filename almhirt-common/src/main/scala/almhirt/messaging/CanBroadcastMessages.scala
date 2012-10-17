@@ -16,4 +16,6 @@ package almhirt.messaging
 
 trait CanBroadcastMessages {
   def broadcast(message: Message[AnyRef], topic: Option[String]): Unit
+  def broadcast(message: Message[AnyRef]): Unit = broadcast(message, None)
+  def broadcast(message: Message[AnyRef], topic: String): Unit = broadcast(message, Some(topic))
 }

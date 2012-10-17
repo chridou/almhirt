@@ -33,19 +33,19 @@ object ActorBasedMessageHub {
   }
   
   private class ActorBasedMessageHubImpl(actorSystem: ActorRefFactory, val dispatcher: ActorRef, implicit val timeout: Timeout, implicit val futureDispatcher: ExecutionContext, actorDispatcherName: Option[String]) extends ActorBasedMessageHub{
-    def createMessageChannel[TPayLoad <: AnyRef](topic: Option[String])(implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]] = {
+    def createMessageChannel[TPayload <: AnyRef](topic: Option[String])(implicit m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       val newChannelDispatcher = MessageChannelActorHandler(None, actorSystem, timeout, futureDispatcher, actorDispatcherName)
-      val handler = (msg: Message[AnyRef]) => newChannelDispatcher ! PublishMessageCommand(msg)
+      val handler = (msg: Message[AnyRef]) => if(m.erasure.isAssignableFrom(msg.payload.getClass())) newChannelDispatcher ! PublishMessageCommand(msg)
       val registration = (ask(dispatcher, RegisterMessageHandlerOnTopicCommand(handler, topic))).toAlmFuture[RegistrationHolder]
       registration.map(reg => 
-        ActorBasedMessageChannel(None, actorSystem, timeout, futureDispatcher, actorDispatcherName, Some(reg), topic, newChannelDispatcher))	  
+        ActorBasedMessageChannel[TPayload](None, actorSystem, timeout, futureDispatcher, actorDispatcherName, Some(reg), topic, newChannelDispatcher))	  
  	}
-    def createGlobalMessageChannel[TPayLoad <: AnyRef](implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]] = {
+    def createGlobalMessageChannel[TPayload <: AnyRef](implicit m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       val newChannelDispatcher = MessageChannelActorHandler(None, actorSystem, timeout, futureDispatcher, actorDispatcherName)
-      val handler = (msg: Message[AnyRef]) => newChannelDispatcher ! PublishMessageCommand(msg)
+      val handler = (msg: Message[AnyRef]) => if(m.erasure.isAssignableFrom(msg.payload.getClass())) newChannelDispatcher ! PublishMessageCommand(msg)
       val registration = (ask(dispatcher, RegisterMessageGlobalMessageHandlerCommand(handler))).toAlmFuture[RegistrationHolder]
       registration.map(reg => 
-        ActorBasedMessageChannel(None, actorSystem, timeout, futureDispatcher, actorDispatcherName, Some(reg), None, newChannelDispatcher))	  
+        ActorBasedMessageChannel[TPayload](None, actorSystem, timeout, futureDispatcher, actorDispatcherName, Some(reg), None, newChannelDispatcher))	  
  	}
     def close() {}
   }
