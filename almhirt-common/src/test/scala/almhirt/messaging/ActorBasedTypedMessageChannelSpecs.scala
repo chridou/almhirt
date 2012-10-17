@@ -50,7 +50,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
   }
   
   """A MessageChannel[B] where B <: A""" should {
-    """take a handler for B that will be triggered when an B is posted""" in {
+    """take a handler for B that will be triggered when a B is posted""" in {
       inOwnContext { ctx =>
         val channel = getChannel[B](ctx)
         var hitB = false
@@ -64,7 +64,37 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
   }
   
   """A MessageChannel[A] with a subchannel of MessageChannel[B] where B <: A""" should {
-    """trigger only the handler on the parent for A posted on the parent""" in {
+    """trigger the handler on the parent for an A posted on the parent and not the handler on the subchannel""" in {
+      inOwnContext { ctx =>
+        val channel = getChannel[A](ctx)
+        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        var hitA = false
+        var hitB = false
+        val subscriptionA = (channel <-* (x => hitA = true)).result(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
+        channel.post(Message(new A(1)))
+        subscriptionA.dispose()
+        subscriptionB.dispose()
+        hitA === true && hitB === false
+      }
+    }
+    """trigger only the handler on the subchannel for a B posted on the subchannel""" in {
+      inOwnContext { ctx =>
+        val channel = getChannel[A](ctx)
+        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        var hitA = false
+        var hitB = false
+        val subscriptionA = (channel <-* (x => hitA = true)).result(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
+        subChannel.post("")//Message(new B(1, "B")))
+        subscriptionA.dispose()
+        subscriptionB.dispose()
+        hitA === false && hitB === true
+      }
+    }
+  }
+  """A MessageChannel[A] with a subchannel of MessageChannel[B] where B <: A""" should {
+    """trigger the handler on the subchannel for an A posted on the parent""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
