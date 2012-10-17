@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.eventsourcing
+package almhirt.eventsourcing.impl
 
 import java.util.UUID
 import akka.actor.{ActorRefFactory, Actor, Props}
@@ -23,6 +23,7 @@ import almhirt.almakka.AlmAkkaContext
 import almhirt._
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
+import almhirt.eventsourcing._
 
 class InefficientInMemoryDomainEventLog(implicit almAkkaContext: AlmAkkaContext) extends HasDomainEvents with CanLogDomainEvents {
   implicit def timeout = Timeout(almAkkaContext.mediumDuration)

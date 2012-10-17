@@ -18,7 +18,7 @@ import scalaz.syntax.validation._
 import almhirt._
 import almhirt.syntax.almvalidation._
 
-/** Use as a type class or mix into an object*/
+/** Use as a type class or mix it into something*/
 trait CanXTract[T] {
   def xtract(xtractor: XTractor): AlmValidationMBD[T]
   def tryXtractFrom(xtractor: XTractor, key: String): AlmValidationMBD[Option[T]] =
