@@ -14,8 +14,24 @@
 */
 package almhirt.messaging
 
+/** Broadcasts [[almhirt.messaging.Message]] to its subscribers in a fire and forget manner.
+ */
 trait CanBroadcastMessages {
+  /** Broadcast a message optionally published under a topic
+   * 
+   * @param message The [[almhirt.messaging.Message]] to broadcast
+   * @param topic The optional topic under which the [[almhirt.messaging.Message]] will be published
+   */
   def broadcast(message: Message[AnyRef], topic: Option[String]): Unit
+  /** Broadcast a [[almhirt.messaging.Message]] not published under any topic
+   * 
+   * @param message The [[almhirt.messaging.Message]] to broadcast
+   */
   def broadcast(message: Message[AnyRef]): Unit = broadcast(message, None)
+  /** Broadcast a [[almhirt.messaging.Message]] under a topic
+   * 
+   * @param message The [[almhirt.messaging.Message]] to broadcast
+   * @param topic The  topic under which the [[almhirt.messaging.Message]] will be published
+   */
   def broadcast(message: Message[AnyRef], topic: String): Unit = broadcast(message, Some(topic))
 }

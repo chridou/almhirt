@@ -17,7 +17,12 @@ package almhirt.messaging
 import java.util.UUID
 import almhirt._
 
-/** Someone you can subscribe to for any Method. */
+/** Someone you can subscribe to to receive [[almhirt.messaging.Message]]s. 
+ *
+ * By subscribing you receive a registration for the subscription which can be disposed to unsubscribe a handler.
+ *
+ * ''Messages must be delivered to the handlers in the same order they are received''
+ */
 trait SubscribableForMessages[T <: AnyRef] {
   def <-* (handler: Message[T] => Unit, classifier: Message[T] => Boolean): AlmFuture[RegistrationHolder]
 
