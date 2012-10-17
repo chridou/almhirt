@@ -5,6 +5,8 @@ import org.joda.time.DateTime
 import scalaz.{Validation, Failure, Success}
 import scalaz.Validation._
 import almhirt._
+import almhirt.eventsourcing.DomainEventLog
+import almhirt.domain.impl.BasicAggregateRootRepository
 
 trait TestPersonEvent extends DomainEvent
 case class TestPersonCreated(aggRootId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent
@@ -59,3 +61,5 @@ object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
   
   def apply(name: String) = create(TestPersonCreated(UUID.randomUUID, name))
 }
+
+class PersonRepository(eventLog: DomainEventLog) extends BasicAggregateRootRepository[TestPerson, TestPersonEvent](eventLog, TestPerson)

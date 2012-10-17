@@ -1,7 +1,7 @@
 package almhirt.commanding
 
-import almhirt.domain.AggregateRootRepository
+//import almhirt.domain.AggregateRootRepository
 
-trait CommandHandler[T <: DomainCommand] {
-  def execute(command: T, repository: AggregateRootRepository, unitOfWork: UnitOfWork): Unit
-}
+//trait CommandHandler[T <: DomainCommand] {
+//  def execute(command: T, repository: AggregateRootRepository, unitOfWork: UnitOfWork): Unit
+//}
