@@ -86,15 +86,13 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true)).result(Duration.Inf).forceResult
         val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
-        subChannel.post("")//Message(new B(1, "B")))
+        subChannel.post(Message(new B(1, "B")))
         subscriptionA.dispose()
         subscriptionB.dispose()
         hitA === false && hitB === true
       }
     }
-  }
-  """A MessageChannel[A] with a subchannel of MessageChannel[B] where B <: A""" should {
-    """trigger the handler on the subchannel for an A posted on the parent""" in {
+    """trigger the handler on the parent for an A posted on the parent""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
@@ -105,10 +103,10 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
         channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()
-        hitA === true && hitB === false
+        hitA === true
       }
     }
-    """trigger handlers on both channels for B posted on the parent""" in {
+    """not trigger the handler on the subchannel for an A posted on the parent""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
@@ -116,10 +114,10 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true)).result(Duration.Inf).forceResult
         val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
-        channel.post(Message(new B(1, "A")))
+        channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()
-        hitA === true && hitB === true
+        hitB === false
       }
     }
   }
