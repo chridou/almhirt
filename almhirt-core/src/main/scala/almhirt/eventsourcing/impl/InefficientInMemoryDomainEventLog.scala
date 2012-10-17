@@ -15,10 +15,10 @@
 package almhirt.eventsourcing.impl
 
 import java.util.UUID
-import akka.actor.{ActorRefFactory, Actor, Props}
+import scalaz.syntax.validation._
+import akka.actor.{ ActorRefFactory, Actor, Props }
 import akka.pattern._
 import akka.util.Timeout
-import scalaz.NonEmptyList
 import almhirt.almakka.AlmAkkaContext
 import almhirt._
 import almhirt.almfuture.all._
@@ -29,29 +29,39 @@ class InefficientInMemoryDomainEventLog(implicit almAkkaContext: AlmAkkaContext)
   implicit def timeout = Timeout(almAkkaContext.mediumDuration)
   implicit def executionContext = almAkkaContext.futureDispatcher
   var loggedEvents: List[DomainEvent] = Nil
-  
-  private case class LogEvents(events: NonEmptyList[DomainEvent])
+
+  private case class LogEvents(events: List[DomainEvent])
   private case object GetAllEvents
   private case class GetEvents(entityId: UUID)
   private case class GetEventsFrom(entityId: UUID, from: Long)
   private case class GetEventsFromTo(entityId: UUID, from: Long, to: Long)
-  
+
   private val coordinator = almAkkaContext.actorSystem.actorOf(Props[Coordinator], "InefficientInMemoryEventLog")
-  
-  private class Coordinator extends Actor {
+
+  private class Coordinator extends Actor with almakka.AlmActorLogging {
     def receive = {
-      case LogEvents(events) => 
-        val reversed = events.reverse
-        sender ! new CommittedDomainEvents(NonEmptyList(reversed.head, reversed.tail : _*))
-      case GetAllEvents => sender ! loggedEvents.toIterable
+      case LogEvents(events) =>
+        loggedEvents = loggedEvents ++ events
+        sender ! new CommittedDomainEvents(events)
+      case GetAllEvents =>
+        sender ! loggedEvents.toIterable
+      case GetEvents(entityId) =>
+        val pinnedSender = sender
+        AlmFuture { loggedEvents.view.filter(_.aggRootId == entityId).toIterable.success }.onComplete(pinnedSender ! _)
+      case GetEventsFrom(entityId, from) =>
+        val pinnedSender = sender
+        AlmFuture { loggedEvents.view.filter(x =>x.aggRootId == entityId && x.aggRootVersion >= from).toIterable.success }.onComplete(pinnedSender ! _)
+      case GetEventsFromTo(entityId, from, to) =>
+        val pinnedSender = sender
+        AlmFuture { loggedEvents.view.filter(x =>x.aggRootId == entityId && x.aggRootVersion >= from && x.aggRootVersion <= to).toIterable.success }.onComplete(pinnedSender ! _)
     }
   }
 
-  def logEvents(events: NonEmptyList[DomainEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
-  
+  def logEvents(events: List[DomainEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
+
   def getAllEvents() = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
   def getEvents(entityId: UUID) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
   def getEvents(entityId: UUID, fromVersion: Long) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
   def getEvents(entityId: UUID, fromVersion: Long, toVersion: Long) = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
-  
+
 }

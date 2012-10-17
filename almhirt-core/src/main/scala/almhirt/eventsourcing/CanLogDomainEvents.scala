@@ -14,15 +14,15 @@
 */
 package almhirt.eventsourcing
 
-import scalaz.{NonEmptyList, Validation}
+import scalaz.{Validation}
 import almhirt._
 import almhirt.domain.DomainEvent
 
-class CommittedDomainEvents(val events: NonEmptyList[DomainEvent])
+class CommittedDomainEvents(val events: List[DomainEvent])
 
 /** Logs domain events. It doesn't validate them or check for consistency in any way. 
  */
 trait CanLogDomainEvents {
-  /** Log the domain events and in a case of success return them */
-  def logEvents(events: NonEmptyList[DomainEvent]): AlmFuture[CommittedDomainEvents]
+  /** Log the domain events and in a case of success return them. Events must contain the events in order of occurence */
+  def logEvents(events: List[DomainEvent]): AlmFuture[CommittedDomainEvents]
 }
