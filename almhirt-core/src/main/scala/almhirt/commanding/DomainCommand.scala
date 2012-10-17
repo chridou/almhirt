@@ -14,5 +14,11 @@
 */
 package almhirt.commanding
 
-// aaa
-abstract class Command
+import java.util.UUID
+
+trait DomainCommand {
+  /** The affected aggregate root */
+  def aggRootId: UUID 
+  /** The version of the aggregate root the command is applied to */
+  def aggRootVersion: Long
+}
