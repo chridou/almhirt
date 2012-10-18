@@ -12,13 +12,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt
+package almhirt.context
 
-import almhirt._
-import almhirt.domain.DomainEvent
-import almhirt.messaging.{MessageHub, MessageChannel}
 import almhirt.almakka.AlmAkkaContext
+import almhirt._
 import almhirt.commanding.DomainCommand
+import almhirt.domain.DomainEvent
+import almhirt.messaging.MessageChannel
+import almhirt.messaging.MessageHub
+import almhirt.OperationState
+import almhirt.Problem
 
 trait AlmhirtContext extends AlmAkkaContext {
   def reportProblem(problem: Problem): Unit

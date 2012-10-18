@@ -22,6 +22,7 @@ import akka.util.Timeout
 import almhirt.almakka.AlmAkkaContext
 import almhirt.messaging.Message
 import almhirt._
+import almhirt.context.AlmhirtContext
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventsourcing._
