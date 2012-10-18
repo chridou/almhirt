@@ -25,4 +25,6 @@ case class CommittedDomainEvents(val events: List[DomainEvent])
 trait CanStoreDomainEvents {
   /** Log the domain events and in a case of success return them. Events must contain the events in order of occurence */
   def storeEvents(events: List[DomainEvent]): AlmFuture[CommittedDomainEvents]
+  /** Log the domain events and in a case of success return them. Events must contain the events in order of occurence */
+  def storeEvents(events: List[DomainEvent], ticket: Option[java.util.UUID]): Unit
 }
