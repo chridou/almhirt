@@ -27,8 +27,8 @@ import almhirt.domain.DomainEvent
 import almhirt.eventsourcing._
 
 class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
-  implicit def timeout = Timeout(almhirtContext.mediumDuration)
-  implicit def executionContext = almhirtContext.futureDispatcher
+  private implicit def timeout = Timeout(almhirtContext.mediumDuration)
+  private implicit def executionContext = almhirtContext.futureDispatcher
   private var loggedEvents: List[DomainEvent] = Nil
 
   private case class LogEvents(events: List[DomainEvent])
