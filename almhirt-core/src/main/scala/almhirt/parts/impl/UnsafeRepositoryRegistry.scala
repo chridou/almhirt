@@ -12,13 +12,13 @@ import almhirt.domain.DomainEvent
 class UnsafeRepositoryRegistry extends HasRepositories {
   private val repos = scala.collection.mutable.Map[String, AnyRef]()
   
-  def get[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, Event]] = {
+  def get[T <: AggregateRootRepository[_,_]](implicit m: Manifest[T]): AlmValidation[T] = {
     repos.get(m.erasure.getName) match {
-      case Some(r) => r.asInstanceOf[AggregateRootRepository[AR, Event]].success
+      case Some(r) => r.asInstanceOf[T].success
       case None => NotFoundProblem("Repository of type '%s' not found".format(m.erasure.getName)).failure
     }
   }
-  def register[AR <: AggregateRoot[AR,Event], Event <: DomainEvent, T <: AggregateRootRepository[AR,Event]](repo: T)(implicit m: Manifest[T]) {
-    repos += ((m.erasure.getName, repo))
+  def register[T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[T]) {
+    repos.put(m.erasure.getName, repo)
   }
 }
