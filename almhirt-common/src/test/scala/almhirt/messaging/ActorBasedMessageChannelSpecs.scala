@@ -17,7 +17,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
       inOwnContext { ctx =>
         val channel = getChannel[AnyRef](ctx)
         val future = channel <-* ({ case _ => () }, _ => true)
-        val subscription = future.result(Duration.Inf)
+        val subscription = future.awaitResult(Duration.Inf)
         subscription must not beNull
       }
     }
@@ -27,7 +27,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, _ => true)
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         subscription.dispose()
         channel.post(Message("a"))
         !hit
@@ -39,8 +39,8 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         var hitCount = 0
         val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => true)
         val future2 = channel <-* ({ case _ => hitCount += 2 }, _ => true)
-        val subscription1 = future1.result(Duration.Inf).forceResult
-        val subscription2 = future2.result(Duration.Inf).forceResult
+        val subscription1 = future1.awaitResult(Duration.Inf).forceResult
+        val subscription2 = future2.awaitResult(Duration.Inf).forceResult
         subscription1.dispose()
         channel.post(Message("a"))
         hitCount must beEqualTo(2)
@@ -51,7 +51,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, _ => true)
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         channel.post(Message("a"))
         hit
       }
@@ -62,8 +62,8 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         var hitCount = 0
         val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => true)
         val future2 = channel <-* ({ case _ => hitCount += 2 }, _ => true)
-        val subscription1 = future1.result(Duration.Inf).forceResult
-        val subscription2 = future2.result(Duration.Inf).forceResult
+        val subscription1 = future1.awaitResult(Duration.Inf).forceResult
+        val subscription2 = future2.awaitResult(Duration.Inf).forceResult
         channel.post(Message("a"))
         hitCount must beEqualTo(3)
       }
@@ -74,8 +74,8 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         var hitCount = 0
         val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => false)
         val future2 = channel <-* ({ case _ => hitCount += 2 }, _ => true)
-        val subscription1 = future1.result(Duration.Inf).forceResult
-        val subscription2 = future2.result(Duration.Inf).forceResult
+        val subscription1 = future1.awaitResult(Duration.Inf).forceResult
+        val subscription2 = future2.awaitResult(Duration.Inf).forceResult
         channel.post(Message("a"))
         hitCount must beEqualTo(2)
       }
@@ -85,7 +85,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, _ => false)
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         channel.post(Message("a"))
         !hit
       }
@@ -95,7 +95,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "a" => true })
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         channel.post(Message("a"))
         hit
       }
@@ -105,7 +105,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "a" => true; case _ => false })
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         channel.post(Message("b"))
         !hit
       }
@@ -115,7 +115,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmAkkaContextTes
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "1" => true; case _ => false })
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         channel.post(Message("a"))
         !hit
       }

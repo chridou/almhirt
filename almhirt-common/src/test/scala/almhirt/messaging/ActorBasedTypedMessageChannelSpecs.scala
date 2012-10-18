@@ -30,7 +30,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
         val channel = getChannel[A](ctx)
         var hitA = false
         val future = channel <-* (x => hitA = true)
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         channel.post(Message(new A(1)))
         subscription.dispose()
         hitA === true
@@ -41,7 +41,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
         val channel = getChannel[A](ctx)
         var hitA = false
         val future = channel <-* (x => hitA = true)
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         channel.post(Message(new B(1, "A")))
         subscription.dispose()
         hitA === true
@@ -55,7 +55,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
         val channel = getChannel[B](ctx)
         var hitB = false
         val future = channel <-* (x => hitB = true)
-        val subscription = future.result(Duration.Inf).forceResult
+        val subscription = future.awaitResult(Duration.Inf).forceResult
         channel.post(Message(new B(1, "A")))
         subscription.dispose()
         hitB === true
@@ -67,11 +67,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """trigger the handler on the parent for an A posted on the parent and not the handler on the subchannel""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true)).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -81,11 +81,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """trigger only the handler on the subchannel for a B posted on the subchannel""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true)).awaitResult(Duration.Inf).forceResult
         subChannel.post(Message(new B(1, "B")))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -95,11 +95,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """trigger the handler on the parent for an A posted on the parent""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true)).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -109,11 +109,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """not trigger the handler on the subchannel for an A posted on the parent""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true)).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true)).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -124,11 +124,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """not trigger the handler on the parent for an A posted on the parent when the classifier is not met""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "")).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "")).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -138,11 +138,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """trigger the handler on the parent for an A posted on the parent when the classifier is met""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "")).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "")).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new A(1)))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -152,11 +152,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """not trigger the handler on the parent or the subchannelfor an B posted on the parent when the classifier is not met""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "A")).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "A")).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new B(1, "B")))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -166,11 +166,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """trigger the handler on the parent and the subchannel for an B posted on the parent when the classifier is met""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "B")).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "B")).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new B(1, "B")))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -180,11 +180,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """trigger the handler on the parent and not on the subchannel for an B posted on the parent when the classifier is met only in the parent""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "A")).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "A")).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new B(1, "B")))
         subscriptionA.dispose()
         subscriptionB.dispose()
@@ -194,11 +194,11 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     """not trigger the handler on the parent but on the subchannel for an B posted on the subchannel when the classifier is met only in the subchannel""" in {
       inOwnContext { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].result(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
-        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).result(Duration.Inf).forceResult
-        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "B")).result(Duration.Inf).forceResult
+        val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).awaitResult(Duration.Inf).forceResult
+        val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "B")).awaitResult(Duration.Inf).forceResult
         channel.post(Message(new B(1, "B")))
         subscriptionA.dispose()
         subscriptionB.dispose()
