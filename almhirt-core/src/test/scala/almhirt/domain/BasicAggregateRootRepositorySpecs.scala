@@ -7,10 +7,10 @@ import almhirt._
 import almhirt.almvalidation.kit._
 import almhirt.eventsourcing.DomainEventLog
 import almhirt.domain.impl.BasicAggregateRootRepository
-import almhirt.almakka.AlmAkkaContextTestKit
+import almhirt.context.AlmhirtContextTestKit
 import almhirt.eventsourcing.impl._
 
-class BasicAggregateRootRepositorySpecs extends Specification with AlmAkkaContextTestKit {
+class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContextTestKit {
   val shouldBe1 = TestPerson("Jim") flatMap {_.changeName("Fritz")} flatMap {_.addressAquired("Roma")} flatMap {_.move("New York")}
   val events1 = shouldBe1.events
   val person1 = shouldBe1.result.forceResult

@@ -27,11 +27,11 @@ import almhirt._
  * * not guarantee that handlers won't be called concurrently
  */
 trait MessageStream[T <: AnyRef] extends SubscribableForMessages[T] with almhirt.MightBeRegisteredSomewhere with almhirt.Disposable {
-  /** The message stream might be limited to some topic
+  /** The message stream might be limited to some topic. If some, its the topic pattern its listening to, if None, its uncertain. So don't rely on None.
    */
   def topicPattern: Option[String]
   
-  /** Ceases activity of this message stream and unregisteres it if it was registered somewhere
+  /** Ceases activity of this message stream and unregisters it if it was registered somewhere
    */
   def dispose() =
     registration.foreach(_.dispose())

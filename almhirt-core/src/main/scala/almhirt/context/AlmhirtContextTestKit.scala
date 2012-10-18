@@ -3,6 +3,10 @@ package almhirt.context
 import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
 import akka.util.duration._
+import almhirt._
+import almhirt.messaging._
+import almhirt.domain.DomainEvent
+import almhirt.commanding.DomainCommand
 import com.typesafe.config._
 
 trait AlmhirtContextTestKit {
@@ -38,6 +42,11 @@ trait AlmhirtContextTestKit {
         val shortDuration = conf.getDouble("almhirt.durations.short") seconds
         val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
         val longDuration = conf.getDouble("almhirt.durations.long") seconds
+        val messageHub = MessageHub(Some("messageHub"), actorSystem, mediumDuration, futureDispatcher, Some("almhirt.test-dispatcher"))
+        val commandChannel = MessageChannel[DomainCommand](Some("commandChannel"), actorSystem, mediumDuration, futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
+        val domainEventsChannel = MessageChannel[DomainEvent](Some("domainEventsChannel"), actorSystem, mediumDuration, futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
+        val problemChannel = MessageChannel[Problem](Some("problemChannel"), actorSystem, mediumDuration, futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
+        val operationStateChannel = MessageChannel[OperationState](Some("operationStateChannel"), actorSystem, mediumDuration, futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
       }
     context
   }

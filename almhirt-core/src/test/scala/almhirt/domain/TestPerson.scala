@@ -7,7 +7,7 @@ import scalaz.Validation._
 import almhirt._
 import almhirt.eventsourcing.DomainEventLog
 import almhirt.domain.impl.BasicAggregateRootRepository
-import almhirt.almakka.AlmAkkaContext
+import almhirt.context.AlmhirtContext
 
 trait TestPersonEvent extends DomainEvent
 case class TestPersonCreated(aggRootId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent
@@ -63,4 +63,4 @@ object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
   def apply(name: String) = create(TestPersonCreated(UUID.randomUUID, name))
 }
 
-class PersonRepository(eventLog: DomainEventLog)(implicit almAkkaContext: AlmAkkaContext) extends BasicAggregateRootRepository[TestPerson, TestPersonEvent](eventLog, TestPerson, almAkkaContext)
+class PersonRepository(eventLog: DomainEventLog)(implicit almhirtContext: AlmhirtContext) extends BasicAggregateRootRepository[TestPerson, TestPersonEvent](eventLog, TestPerson, almhirtContext)

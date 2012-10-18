@@ -14,12 +14,19 @@
 */
 package almhirt.messaging
 
+import akka.actor._
+import akka.pattern._
+import akka.util.Timeout
+import akka.dispatch.ExecutionContext
 import almhirt.Closeable
 import almhirt.almakka.AlmAkkaContext
+import almhirt.messaging.impl.ActorBasedMessageHub
 
 trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with Closeable
 
 object MessageHub {
   def apply(name: Option[String])(implicit almAkkaContext: AlmAkkaContext): MessageHub = impl.ActorBasedMessageHub(name, almAkkaContext)
   def apply(implicit almAkkaContext: AlmAkkaContext): MessageHub = apply(None)(almAkkaContext)
+  def apply(name: Option[String], actorSystem: ActorRefFactory, timeout: Timeout, futureDispatcher: ExecutionContext, actorDispatcherName: Option[String]): MessageHub =
+    ActorBasedMessageHub(name, actorSystem, timeout, futureDispatcher, actorDispatcherName)
 }

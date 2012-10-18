@@ -24,21 +24,9 @@ import almhirt.OperationState
 import almhirt.Problem
 
 trait AlmhirtContext extends AlmAkkaContext {
-  def reportProblem(problem: Problem): Unit
-  def findService[T]: AlmValidation[T]
   def messageHub: MessageHub
   def commandChannel: MessageChannel[DomainCommand]
   def domainEventsChannel: MessageChannel[DomainEvent]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
 }
-
-//import almhirt.almakka.AlmAkka
-//
-//object Almhirt {
-//  private var eventChannel = 1
-//  private var commandChannel = 1
-//  private var messagingChannel = 1
-//  
-//  val actorSystem = AlmAkka.actorSystem
-//}
