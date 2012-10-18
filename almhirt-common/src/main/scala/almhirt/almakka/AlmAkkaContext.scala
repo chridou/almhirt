@@ -17,9 +17,11 @@ package almhirt.almakka
 import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
 import akka.util.Duration
+import com.typesafe.config._
 
 /** Components and values needed to use Akka */
 trait AlmAkkaContext {
+  def config: Config
   def actorSystem: ActorSystem
   def futureDispatcher: MessageDispatcher
   def messageStreamDispatcherName: Option[String]

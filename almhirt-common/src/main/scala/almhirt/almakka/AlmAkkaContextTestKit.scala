@@ -30,6 +30,7 @@ trait AlmAkkaContextTestKit {
 
   def createTestContext(): AlmAkkaContext =
     new AlmAkkaContext {
+      val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
       val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
       val messageStreamDispatcherName = Some("almhirt.test-dispatcher")
