@@ -8,6 +8,8 @@ import almhirt.messaging._
 import almhirt.domain.DomainEvent
 import almhirt.commanding.DomainCommand
 import com.typesafe.config._
+import almhirt.messaging.impl.NullMessageHub
+import almhirt.messaging.impl.NullMessageChannel
 
 trait AlmhirtContextTestKit {
   private val configText =
@@ -52,7 +54,34 @@ trait AlmhirtContextTestKit {
     context
   }
 
-  def inOwnContext[T](compute: AlmhirtContext => T): T = {
+  def createFakeContext: AlmhirtContext = {
+    val context =
+      new AlmhirtContext {
+        def config = conf
+        def actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
+        def futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
+        def messageStreamDispatcherName = None
+        def messageHubDispatcherName = None
+        val shortDuration = conf.getDouble("almhirt.durations.short") seconds
+        val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
+        val longDuration = conf.getDouble("almhirt.durations.long") seconds
+        def messageHub = new NullMessageHub()(futureDispatcher)
+        def commandChannel = new NullMessageChannel()(futureDispatcher)
+        def domainEventsChannel = new NullMessageChannel()(futureDispatcher)
+        def problemChannel = new NullMessageChannel()(futureDispatcher)
+        def operationStateChannel = new NullMessageChannel()(futureDispatcher)
+      }
+    context
+  }
+
+  def inFakeContext[T](compute: AlmhirtContext => T): T = {
+    val context = createFakeContext
+    val res = compute(context)
+    context.actorSystem.shutdown()
+    res
+  }
+
+  def inContext[T](compute: AlmhirtContext => T): T = {
     val context = createTestContext
     val res = compute(context)
     context.actorSystem.shutdown()
