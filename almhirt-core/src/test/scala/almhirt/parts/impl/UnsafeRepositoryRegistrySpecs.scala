@@ -13,7 +13,7 @@ class UnsafeRepositoryRegistrySpecs extends Specification with AlmhirtContextTes
       inFakeContext(ctx => {
         val repo = new PersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new UnsafeRepositoryRegistry()
-        registry.register(repo)
+        registry.register[TestPerson, TestPersonEvent,_](repo)
         true
       })
     }

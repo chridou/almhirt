@@ -1,11 +1,19 @@
 package almhirt.parts
 
 import almhirt.AlmValidation
-import almhirt.domain.AggregateRootRepository
+import almhirt.domain._
+
+//trait HasRepositories {
+//  def get[T <: AggregateRootRepository[_,_]](implicit m: Manifest[T]): AlmValidation[T]
+//  /** Registers a new repository. Has replace semantics. 
+//   */
+//  def register[T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[T]): Unit
+//}
 
 trait HasRepositories {
-  def get[T <: AggregateRootRepository[_,_]](implicit m: Manifest[T]): AlmValidation[T]
+  def get[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, Event]]
   /** Registers a new repository. Has replace semantics. 
    */
-  def register[T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[T]): Unit
+  def register[AR <: AggregateRoot[AR,Event], Event <: DomainEvent, T <: AggregateRootRepository[AR,Event]](repo: T)(implicit m: Manifest[T]): Unit
 }
+
