@@ -1,6 +1,7 @@
-package almhirt.domain
+package almhirt.parts
 
-import almhirt._
+import almhirt.AlmValidation
+import almhirt.domain.AggregateRootRepository
 
 trait HasRepositories {
   def get[T <: AggregateRootRepository[_,_]](implicit m: Manifest[T]): AlmValidation[T]
