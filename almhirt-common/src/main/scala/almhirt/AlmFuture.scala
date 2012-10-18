@@ -90,13 +90,17 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
   
   def isCompleted = underlying.isCompleted
   
-  def result(implicit atMost: Duration): AlmValidation[R] = 
+  @deprecated("Use awaitResult", "0.0.1")
+  def result(implicit atMost: Duration): AlmValidation[R] = awaitResult
+
+  def awaitResult(implicit atMost: Duration): AlmValidation[R] = 
     try {
       Await.result(underlying, atMost)
     } catch {
       case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", cause = Some(CauseIsThrowable(tout))).failure[R] 
       case exn => UnspecifiedProblem(exn.getMessage, severity = Major, category = SystemProblem, cause = Some(CauseIsThrowable(exn))).failure[R] 
     }
+
 }
 
 object AlmFuture {
