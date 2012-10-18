@@ -6,11 +6,11 @@ import akka.dispatch._
 import almhirt._
 import almhirt.messaging._
 
-class NullMessageHub(implicit executionContext: ExecutionContext) extends MessageHub {
+class DevNullMessageHub(implicit executionContext: ExecutionContext) extends MessageHub {
   def createMessageChannel[TPayload <: AnyRef](topic: Option[String])(implicit m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = 
-     AlmPromise{ new NullMessageChannel[TPayload].success }
+     AlmPromise{ new DevNullMessageChannel[TPayload].success }
   def createGlobalMessageChannel[TPayload <: AnyRef](implicit m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] =
-     AlmPromise{ new NullMessageChannel[TPayload].success }
+     AlmPromise{ new DevNullMessageChannel[TPayload].success }
   def broadcast(message: Message[AnyRef], topic: Option[String]){}
   def close(){}
 }

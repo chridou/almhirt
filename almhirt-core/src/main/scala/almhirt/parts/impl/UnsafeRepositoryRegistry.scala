@@ -17,6 +17,6 @@ class UnsafeRepositoryRegistry extends HasRepositories {
     }
   }
   def register[T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[T]) {
-    repos + ((m.erasure.getName, repo))
+    repos += ((m.erasure.getName, repo))
   }
 }

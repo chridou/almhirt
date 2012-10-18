@@ -7,12 +7,12 @@ import almhirt.domain._
 import almhirt.context.AlmhirtContextTestKit
 import almhirt.eventsourcing.impl.DevNullEventLog
 
-class UnsafeRepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
-  """The unsafe repository registry""" should {
+class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
+  """The concurrent repository registry""" should {
     """be able to register a repository""" in {
       inFakeContext(ctx => {
         val repo = new PersonRepository(new DevNullEventLog()(ctx))(ctx)
-        val registry = new UnsafeRepositoryRegistry()
+        val registry = new ConcurrentRepositoryRegistry()
         registry.register(repo)
         true
       })
@@ -20,7 +20,7 @@ class UnsafeRepositoryRegistrySpecs extends Specification with AlmhirtContextTes
     """be able to register a repository and retrieve it""" in {
       inFakeContext(ctx => {
         val repo = new PersonRepository(new DevNullEventLog()(ctx))(ctx)
-        val registry = new UnsafeRepositoryRegistry()
+        val registry = new ConcurrentRepositoryRegistry()
         registry.register(repo)
         registry.get[PersonRepository].forceResult === repo
       })

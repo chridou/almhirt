@@ -8,8 +8,8 @@ import almhirt.messaging._
 import almhirt.domain.DomainEvent
 import almhirt.commanding.DomainCommand
 import com.typesafe.config._
-import almhirt.messaging.impl.NullMessageHub
-import almhirt.messaging.impl.NullMessageChannel
+import almhirt.messaging.impl.DevNullMessageHub
+import almhirt.messaging.impl.DevNullMessageChannel
 
 trait AlmhirtContextTestKit {
   private val configText =
@@ -65,11 +65,11 @@ trait AlmhirtContextTestKit {
         val shortDuration = conf.getDouble("almhirt.durations.short") seconds
         val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
         val longDuration = conf.getDouble("almhirt.durations.long") seconds
-        def messageHub = new NullMessageHub()(futureDispatcher)
-        def commandChannel = new NullMessageChannel()(futureDispatcher)
-        def domainEventsChannel = new NullMessageChannel()(futureDispatcher)
-        def problemChannel = new NullMessageChannel()(futureDispatcher)
-        def operationStateChannel = new NullMessageChannel()(futureDispatcher)
+        def messageHub = new DevNullMessageHub()(futureDispatcher)
+        def commandChannel = new DevNullMessageChannel()(futureDispatcher)
+        def domainEventsChannel = new DevNullMessageChannel()(futureDispatcher)
+        def problemChannel = new DevNullMessageChannel()(futureDispatcher)
+        def operationStateChannel = new DevNullMessageChannel()(futureDispatcher)
       }
     context
   }
