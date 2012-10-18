@@ -6,7 +6,7 @@ import almhirt.domain._
 import almhirt.eventsourcing.DomainEventLog
 import almhirt.context.AlmhirtContext
 
-abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends HasAggregateRoots[AR, Event] with StoresAggregateRoots[AR, Event] {
+abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends AggregateRootRepository[AR, Event] {
   implicit private def timeout = almhirtContext.mediumDuration 
   implicit private def futureContext = almhirtContext.futureDispatcher 
   
