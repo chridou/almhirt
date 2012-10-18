@@ -14,12 +14,20 @@
 */
 package almhirt
 
-import scalaz.NonEmptyList
+import almhirt._
+import almhirt.domain.DomainEvent
 import almhirt.messaging.{MessageHub, MessageChannel}
+import almhirt.almakka.AlmAkkaContext
+import almhirt.commanding.DomainCommand
 
-trait AlmhirtContext {
-  def reportProblem(problem: Problem)
-//  def publishDomainEvents(events: NonEmptyList[DomainEvent])
+trait AlmhirtContext extends AlmAkkaContext {
+  def reportProblem(problem: Problem): Unit
+  def findService[T]: AlmValidation[T]
+  def messageHub: MessageHub
+  def commandChannel: MessageChannel[DomainCommand]
+  def domainEventsChannel: MessageChannel[DomainEvent]
+  def problemChannel: MessageChannel[Problem]
+  def operationStateChannel: MessageChannel[OperationState]
 }
 
 //import almhirt.almakka.AlmAkka

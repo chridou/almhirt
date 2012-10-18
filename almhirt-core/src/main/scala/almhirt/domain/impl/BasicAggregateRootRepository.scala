@@ -4,8 +4,12 @@ import scalaz._, Scalaz._
 import almhirt._
 import almhirt.domain._
 import almhirt.eventsourcing.DomainEventLog
+import almhirt.almakka.AlmAkkaContext
 
-abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event]) extends HasAggregateRoots[AR, Event] with StoresAggregateRoots[AR, Event] {
+abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almAkka: AlmAkkaContext) extends HasAggregateRoots[AR, Event] with StoresAggregateRoots[AR, Event] {
+  implicit private def timeout = almAkka.mediumDuration 
+  implicit private def futureContext = almAkka.futureDispatcher 
+  
   def get(id: java.util.UUID): AlmFuture[AR] =
     eventLog.getEvents(id)
       .map(e => e.map(_.asInstanceOf[Event]).toList)
@@ -15,6 +19,5 @@ abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event
   def store(ar: AR, uncommitedEvents: List[Event]): AlmFuture[AR] = 
     if(uncommitedEvents.isEmpty) AlmPromise(UnspecifiedProblem("no events", category = ApplicationProblem, severity = Minor).failure)
     else eventLog.storeEvents(uncommitedEvents).map(committedEvents => ar)
-  def store(uncommitedEvents: List[Event]): AlmFuture[AR] =
     
 }

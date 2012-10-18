@@ -17,8 +17,13 @@ package almhirt.commanding
 import java.util.UUID
 
 trait DomainCommand {
-  /** The affected aggregate root */
+  /** The affected aggregate root 
+   */
   def aggRootId: UUID 
-  /** The version of the aggregate root the command is applied to */
+  /** The version of the aggregate root the command is applied to
+   */
   def aggRootVersion: Long
+  /** A ticket for result tracking
+   */
+  def ticket: Option[java.util.UUID]
 }

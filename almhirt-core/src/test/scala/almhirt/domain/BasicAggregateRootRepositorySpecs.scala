@@ -25,7 +25,7 @@ class BasicAggregateRootRepositorySpecs extends Specification with AlmAkkaContex
   
   private def withNewRepository[T](withRepo: PersonRepository => T): T = {
     inOwnContext(ctx => {
-      val repo = new PersonRepository(new InefficientSerialziedInMemoryDomainEventLog()(ctx))
+      val repo = new PersonRepository(new InefficientSerialziedInMemoryDomainEventLog()(ctx))(ctx)
       withRepo(repo)
     })
   }
