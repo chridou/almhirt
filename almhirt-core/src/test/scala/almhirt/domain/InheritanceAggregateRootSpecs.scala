@@ -3,11 +3,11 @@ package almhirt.domain
 import java.util.UUID
 
 trait InvoiceEvent extends DomainEvent
-case class InvoiceCreated(aggRootId: UUID) extends InvoiceEvent with CreatingNewAggregateRootEvent
-case class AmountAdded(aggRootId: UUID, aggRootVersion: Long, amount: BigDecimal, total: BigDecimal) extends InvoiceEvent
-case class InvoiceSent(aggRootId: UUID, aggRootVersion: Long) extends InvoiceEvent
-case class InvoicePaid(aggRootId: UUID, aggRootVersion: Long) extends InvoiceEvent
-case class InvoiceReopened(aggRootId: UUID, aggRootVersion: Long) extends InvoiceEvent
+case class InvoiceCreated(id: UUID) extends InvoiceEvent with CreatingNewAggregateRootEvent
+case class AmountAdded(id: UUID, version: Long, amount: BigDecimal, total: BigDecimal) extends InvoiceEvent
+case class InvoiceSent(id: UUID, version: Long) extends InvoiceEvent
+case class InvoicePaid(id: UUID, version: Long) extends InvoiceEvent
+case class InvoiceReopened(id: UUID, version: Long) extends InvoiceEvent
 
 
 sealed abstract class Invoice extends AggregateRoot[Invoice, InvoiceEvent] {

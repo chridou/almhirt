@@ -7,11 +7,11 @@ trait TestPersonCommand extends DomainCommand
 trait TestPersonMutatorCommand extends TestPersonCommand with MutatorCommandStyle
 trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyle
 
-case class ChangeTestPersonName(aggRootId: UUID, aggRootVersion: Long, ticket: Option[String], newName: String) extends TestPersonMutatorCommand
-case class SetTestPersonAddress(aggRootId: UUID, aggRootVersion: Long, ticket: Option[String], aquiredAddress: String) extends TestPersonMutatorCommand
-case class MoveTestPerson(aggRootId: UUID, aggRootVersion: Long, ticket: Option[String], newAddress: String) extends TestPersonMutatorCommand
+case class ChangeTestPersonName(id: UUID, version: Long, ticket: Option[String], newName: String) extends TestPersonMutatorCommand
+case class SetTestPersonAddress(id: UUID, version: Long, ticket: Option[String], aquiredAddress: String) extends TestPersonMutatorCommand
+case class MoveTestPerson(id: UUID, version: Long, ticket: Option[String], newAddress: String) extends TestPersonMutatorCommand
 
-trait TestPersonMutatorUnitOfWork[TCom <: DomainCommand] extends MutatorUnitOfWork[TestPerson, TestPersonEvent, TCom]{
+trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends MutatorUnitOfWork[TestPerson, TestPersonEvent, TCom]{
   val repositoryType = classOf[TestPersonRepository]
 }
 

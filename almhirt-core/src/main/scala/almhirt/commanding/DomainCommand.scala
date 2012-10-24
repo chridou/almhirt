@@ -27,9 +27,9 @@ trait DomainCommand {
 }
 
 trait MutatorCommandStyle{ self: DomainCommand => 
-  def aggRootId: java.util.UUID
-  def aggRootVersion: Long
-  def aggRootRef = Some(almhirt.domain.AggregateRootRef(aggRootId, aggRootVersion))
+  def id: java.util.UUID
+  def version: Long
+  def aggRootRef = Some(almhirt.domain.AggregateRootRef(id, version))
 }
 
 trait CreatorCommandStyle{ self: DomainCommand => 

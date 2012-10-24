@@ -56,13 +56,13 @@ class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: Almhi
         sender ! loggedEvents.toIterable.success
       case GetEvents(entityId) =>
         val pinnedSender = sender
-        AlmFuture { loggedEvents.view.filter(_.aggRootId == entityId).toIterable.success }.onComplete(pinnedSender ! _)
+        AlmFuture { loggedEvents.view.filter(_.id == entityId).toIterable.success }.onComplete(pinnedSender ! _)
       case GetEventsFrom(entityId, from) =>
         val pinnedSender = sender
-        AlmFuture { loggedEvents.view.filter(x =>x.aggRootId == entityId && x.aggRootVersion >= from).toIterable.success }.onComplete(pinnedSender ! _)
+        AlmFuture { loggedEvents.view.filter(x =>x.id == entityId && x.version >= from).toIterable.success }.onComplete(pinnedSender ! _)
       case GetEventsFromTo(entityId, from, to) =>
         val pinnedSender = sender
-        AlmFuture { loggedEvents.view.filter(x =>x.aggRootId == entityId && x.aggRootVersion >= from && x.aggRootVersion <= to).toIterable.success }.onComplete(pinnedSender ! _)
+        AlmFuture { loggedEvents.view.filter(x =>x.id == entityId && x.version >= from && x.version <= to).toIterable.success }.onComplete(pinnedSender ! _)
     }
   }
 
