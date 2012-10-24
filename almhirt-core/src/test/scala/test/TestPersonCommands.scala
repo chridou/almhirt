@@ -19,3 +19,13 @@ object ChangeTestPersonNameUnitOfWork extends TestPersonMutatorUnitOfWork[Change
   val commandType = classOf[ChangeTestPersonName]
   val handler = (cmd: ChangeTestPersonName, person: TestPerson) => person.changeName(cmd.newName).recordings
 }
+
+object SetTestPersonAdressUnitOfWork extends TestPersonMutatorUnitOfWork[SetTestPersonAddress] {
+  val commandType = classOf[SetTestPersonAddress]
+  val handler = (cmd: SetTestPersonAddress, person: TestPerson) => person.move(cmd.aquiredAddress).recordings
+}
+
+object MoveTestPersonNameUnitOfWork extends TestPersonMutatorUnitOfWork[MoveTestPerson] {
+  val commandType = classOf[MoveTestPerson]
+  val handler = (cmd: MoveTestPerson, person: TestPerson) => person.move(cmd.newAddress).recordings
+}
