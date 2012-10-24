@@ -9,6 +9,7 @@ import almhirt.eventsourcing.DomainEventLog
 import almhirt.domain.impl.BasicAggregateRootRepository
 import almhirt.environment.AlmhirtContextTestKit
 import almhirt.eventsourcing.impl._
+import test._
 
 class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContextTestKit {
   val shouldBe1 = TestPerson("Jim") flatMap {_.changeName("Fritz")} flatMap {_.addressAquired("Roma")} flatMap {_.move("New York")}
@@ -23,9 +24,9 @@ class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContex
   val events3 = shouldBe3.events
   val person3 = shouldBe2.result.forceResult
   
-  private def withNewRepository[T](withRepo: PersonRepository => T): T = {
+  private def withNewRepository[T](withRepo: TestPersonRepository => T): T = {
     inContext(ctx => {
-      val repo = new PersonRepository(new InefficientSerialziedInMemoryDomainEventLog()(ctx))(ctx)
+      val repo = new TestPersonRepository(new InefficientSerialziedInMemoryDomainEventLog()(ctx))(ctx)
       withRepo(repo)
     })
   }

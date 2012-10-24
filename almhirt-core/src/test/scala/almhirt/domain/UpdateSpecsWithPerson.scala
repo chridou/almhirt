@@ -4,6 +4,7 @@ import scalaz._, Scalaz._
 import org.specs2.mutable._
 import almhirt._
 import almhirt.syntax.almvalidation._
+import test._
 
 class UpdateSpecsWithPerson extends Specification {
   val person = TestPerson("Peter").result.forceResult

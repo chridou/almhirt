@@ -25,3 +25,13 @@ trait DomainCommand {
   def isMutator = aggRootRef.isDefined
   def isCreator = aggRootRef.isEmpty
 }
+
+trait MutatorCommandStyle{ self: DomainCommand => 
+  def aggRootId: java.util.UUID
+  def aggRootVersion: Long
+  def aggRootRef = Some(almhirt.domain.AggregateRootRef(aggRootId, aggRootVersion))
+}
+
+trait CreatorCommandStyle{ self: DomainCommand => 
+  def aggRootRef = None
+}

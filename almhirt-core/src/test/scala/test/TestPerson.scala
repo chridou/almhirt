@@ -1,20 +1,15 @@
-package almhirt.domain
+package test
 
+import almhirt.domain.impl.BasicAggregateRootRepository
+import almhirt.domain.AggregateRoot
+import almhirt.domain.CanCreateAggragateRoot
+import almhirt.domain.CreatingNewAggregateRootEvent
+import almhirt.domain.DomainEvent
+import almhirt.domain.UpdateRecorder
+import almhirt.environment.AlmhirtContext
+import almhirt.eventsourcing.DomainEventLog
 import java.util.UUID
 import org.joda.time.DateTime
-import scalaz.{Validation, Failure, Success}
-import scalaz.Validation._
-import almhirt._
-import almhirt.eventsourcing.DomainEventLog
-import almhirt.domain.impl.BasicAggregateRootRepository
-import almhirt.environment.AlmhirtContext
-
-trait TestPersonEvent extends DomainEvent
-case class TestPersonCreated(aggRootId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent
-case class TestPersonNameChanged(aggRootId: UUID, aggRootVersion: Long, newName: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonAddressAquired(aggRootId: UUID, aggRootVersion: Long, aquiredAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonMoved(aggRootId: UUID, aggRootVersion: Long, newAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonUnhandledEvent(aggRootId: UUID, aggRootVersion: Long, timestamp: DateTime = DateTime.now) extends TestPersonEvent
 
 
 case class TestPerson(id: UUID, version: Long, name: String, address: Option[String], balance: Int) extends AggregateRoot[TestPerson, TestPersonEvent]{
@@ -62,5 +57,3 @@ object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
   
   def apply(name: String) = create(TestPersonCreated(UUID.randomUUID, name))
 }
-
-class PersonRepository(eventLog: DomainEventLog)(implicit almhirtContext: AlmhirtContext) extends BasicAggregateRootRepository[TestPerson, TestPersonEvent](eventLog, TestPerson, almhirtContext)

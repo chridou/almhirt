@@ -6,12 +6,13 @@ import almhirt.syntax.almvalidation._
 import almhirt.domain._
 import almhirt.environment.AlmhirtContextTestKit
 import almhirt.eventsourcing.impl.DevNullEventLog
+import test._
 
 class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
   """The concurrent repository registry""" should {
     """be able to register a repository""" in {
       inFakeContext(ctx => {
-        val repo = new PersonRepository(new DevNullEventLog()(ctx))(ctx)
+        val repo = new TestPersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new ConcurrentRepositoryRegistry()
         registry.register(repo)
         true
@@ -19,10 +20,10 @@ class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContex
     }
     """be able to register a repository and retrieve it""" in {
       inFakeContext(ctx => {
-        val repo = new PersonRepository(new DevNullEventLog()(ctx))(ctx)
+        val repo = new TestPersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new ConcurrentRepositoryRegistry()
         registry.register(repo)
-        registry.get[PersonRepository].forceResult === repo
+        registry.get[TestPersonRepository].forceResult === repo
       })
     }
   }
