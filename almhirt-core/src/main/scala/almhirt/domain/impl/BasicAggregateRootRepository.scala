@@ -4,11 +4,11 @@ import scalaz._, Scalaz._
 import almhirt._
 import almhirt.domain._
 import almhirt.eventsourcing.DomainEventLog
-import almhirt.context.AlmhirtContext
+import almhirt.environment.AlmhirtContext
 
 abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends AggregateRootRepository[AR, Event] {
-  implicit private def timeout = almhirtContext.mediumDuration 
-  implicit private def futureContext = almhirtContext.futureDispatcher 
+  implicit private def timeout = almhirtContext.akkaContext.mediumDuration 
+  implicit private def futureContext = almhirtContext.akkaContext.futureDispatcher 
   
   def get(id: java.util.UUID): AlmFuture[AR] =
     eventLog.getEvents(id)

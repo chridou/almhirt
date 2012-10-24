@@ -8,13 +8,13 @@ import akka.util.Timeout
 import almhirt.almakka.AlmAkkaContext
 import almhirt.messaging.Message
 import almhirt._
-import almhirt.context.AlmhirtContext
+import almhirt.environment.AlmhirtContext
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventsourcing._
 
 class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
-  implicit private def futureContext = almhirtContext.futureDispatcher 
+  implicit private def futureContext = almhirtContext.akkaContext.futureDispatcher 
   def storeEvents(events: List[DomainEvent]) = AlmPromise{ CommittedDomainEvents(Nil).success }
   def storeEvents(events: List[DomainEvent], ticket: Option[String]) = AlmPromise{ CommittedDomainEvents(Nil).success }
 

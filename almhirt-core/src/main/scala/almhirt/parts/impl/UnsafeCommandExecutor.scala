@@ -3,18 +3,19 @@ package almhirt.parts.impl
 import scalaz.syntax.validation._
 import almhirt._
 import almhirt.messaging._
-import almhirt.parts.HasCommandHandlers
+import almhirt.parts._
+import almhirt.environment._
 import almhirt.commanding.HandlesCommand
 import almhirt.NotFoundProblem
 import almhirt.commanding.DomainCommand
 import almhirt.commanding.ExecutesCommands
-import almhirt.context.AlmhirtContext
+import almhirt.environment.AlmhirtEnvironment
 import almhirt.parts.CommandExecutor
 
 /**
  * Handles incoming commands. __NOT__ thread safe. Do not mutate, once almhirt is running!
  */
-class UnsafeCommandExecutor(env: AlmhirtEnvironment, context: AlmhirtContext) extends CommandExecutor {
+class UnsafeCommandExecutor(repositories: HasRepositories, context: AlmhirtContext) extends CommandExecutor {
   private val handlers: collection.mutable.Map[String, HandlesCommand] = collection.mutable.HashMap.empty
 
   def addHandler(handler: HandlesCommand) { handlers.put(handler.commandType.getName, handler)}
@@ -34,6 +35,6 @@ class UnsafeCommandExecutor(env: AlmhirtEnvironment, context: AlmhirtContext) ex
           case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, fail)))
           case None => ()
         },
-      handler => handler.handle(command, env, context))
+      handler => handler.handle(command, repositories, context))
   }
 }

@@ -3,7 +3,8 @@ package almhirt.commanding
 import almhirt._
 import almhirt.messaging._
 import almhirt.domain._
-import almhirt.context.AlmhirtContext
+import almhirt.parts.HasRepositories
+import almhirt.environment.AlmhirtContext
 
 trait UnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent] extends HandlesCommand {
   def repositoryType: Class[_ <: AggregateRootRepository[AR, TEvent]]
@@ -11,16 +12,16 @@ trait UnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent] extends
 
 trait MutatorUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends UnitOfWork[AR, TEvent] {
   def handler: MutatorCommandHandler[AR, TEvent, TCom]
-  def handle(com: DomainCommand, env: AlmhirtEnvironment, context: AlmhirtContext) {
+  def handle(com: DomainCommand, repositories: HasRepositories, context: AlmhirtContext) {
     if (com.isMutator) {
       val command = com.asInstanceOf[TCom]
       val arRef = command.aggRootRef.get
-      context.repositories.getByType(repositoryType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
+      repositories.getByType(repositoryType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
         fail =>
           (),
         repo => {
           repo.get(arRef.id).map { aggRoot =>
-            handler(command, aggRoot, env).fold(
+            handler(command, aggRoot).fold(
               fail => {
                 context.problemChannel.post(Message.createWithUuid(fail))
                 command.ticket match {
@@ -45,14 +46,14 @@ trait MutatorUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, 
 
 trait CreatorUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends UnitOfWork[AR, TEvent] {
   def handler: CreatorCommandHandler[AR, TEvent, TCom]
-  def handle(com: DomainCommand, env: AlmhirtEnvironment, context: AlmhirtContext) {
+  def handle(com: DomainCommand, repositories: HasRepositories, context: AlmhirtContext) {
     if (com.isCreator) {
       val command = com.asInstanceOf[TCom]
-      context.repositories.getByType(repositoryType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
+      repositories.getByType(repositoryType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
         fail =>
           (),
         repo => {
-          handler(command, env).fold(
+          handler(command).fold(
             fail => {
               context.problemChannel.post(Message.createWithUuid(fail))
               command.ticket match {

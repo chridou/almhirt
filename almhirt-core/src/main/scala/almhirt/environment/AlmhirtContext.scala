@@ -12,22 +12,23 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.context
+package almhirt.environment
 
 import almhirt.almakka.AlmAkkaContext
-import almhirt._
 import almhirt.commanding.DomainCommand
 import almhirt.domain.DomainEvent
 import almhirt.messaging.MessageChannel
 import almhirt.messaging.MessageHub
 import almhirt.OperationState
 import almhirt.Problem
+import com.typesafe.config.Config
 
-trait AlmhirtContext extends AlmAkkaContext {
+trait AlmhirtContext {
+  def config: Config
+  def akkaContext: AlmAkkaContext
   def messageHub: MessageHub
   def commandChannel: MessageChannel[DomainCommand]
   def domainEventsChannel: MessageChannel[DomainEvent]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
-  def repositories: almhirt.parts.HasRepositories
 }

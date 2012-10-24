@@ -22,14 +22,14 @@ import akka.util.Timeout
 import almhirt.almakka.AlmAkkaContext
 import almhirt.messaging.Message
 import almhirt._
-import almhirt.context.AlmhirtContext
+import almhirt.environment.AlmhirtContext
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventsourcing._
 
 class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
-  private implicit def timeout = Timeout(almhirtContext.mediumDuration)
-  private implicit def executionContext = almhirtContext.futureDispatcher
+  private implicit def timeout = Timeout(almhirtContext.akkaContext.mediumDuration)
+  private implicit def executionContext = almhirtContext.akkaContext.futureDispatcher
   private var loggedEvents: List[DomainEvent] = Nil
 
   private case class LogEvents(events: List[DomainEvent])
@@ -39,7 +39,7 @@ class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: Almhi
   private case class GetEventsFrom(entityId: UUID, from: Long)
   private case class GetEventsFromTo(entityId: UUID, from: Long, to: Long)
 
-  private val coordinator = almhirtContext.actorSystem.actorOf(Props(new Coordinator()), "InefficientInMemoryEventLog")
+  private val coordinator = almhirtContext.akkaContext.actorSystem.actorOf(Props(new Coordinator()), "InefficientInMemoryEventLog")
 
   private class Coordinator() extends Actor with almakka.AlmActorLogging {
     def receive = {

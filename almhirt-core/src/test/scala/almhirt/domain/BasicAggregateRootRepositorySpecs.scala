@@ -7,7 +7,7 @@ import almhirt._
 import almhirt.almvalidation.kit._
 import almhirt.eventsourcing.DomainEventLog
 import almhirt.domain.impl.BasicAggregateRootRepository
-import almhirt.context.AlmhirtContextTestKit
+import almhirt.environment.AlmhirtContextTestKit
 import almhirt.eventsourcing.impl._
 
 class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContextTestKit {

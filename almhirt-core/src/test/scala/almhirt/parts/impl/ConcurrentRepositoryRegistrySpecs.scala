@@ -4,7 +4,7 @@ import org.specs2.mutable._
 import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.domain._
-import almhirt.context.AlmhirtContextTestKit
+import almhirt.environment.AlmhirtContextTestKit
 import almhirt.eventsourcing.impl.DevNullEventLog
 
 class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {

@@ -46,4 +46,23 @@ trait AlmAkkaContextTestKit {
     context.actorSystem.shutdown()
     res
   }
+
+  def createFakeContext(): AlmAkkaContext =
+    new AlmAkkaContext {
+      val config = conf
+      val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
+      val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
+      val messageStreamDispatcherName = None
+      val messageHubDispatcherName = None
+      val shortDuration = conf.getDouble("almhirt.durations.short") seconds
+      val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
+      val longDuration = conf.getDouble("almhirt.durations.long") seconds
+    }
+
+  def inFakeContext[T](compute: AlmAkkaContext => T): T = {
+    val context = createFakeContext
+    val res = compute(context)
+    context.actorSystem.shutdown()
+    res
+  }
 }

@@ -7,7 +7,7 @@ import scalaz.Validation._
 import almhirt._
 import almhirt.eventsourcing.DomainEventLog
 import almhirt.domain.impl.BasicAggregateRootRepository
-import almhirt.context.AlmhirtContext
+import almhirt.environment.AlmhirtContext
 
 trait TestPersonEvent extends DomainEvent
 case class TestPersonCreated(aggRootId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent

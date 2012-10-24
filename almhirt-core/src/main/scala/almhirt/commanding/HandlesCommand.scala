@@ -2,10 +2,11 @@ package almhirt.commanding
 
 import almhirt._
 import almhirt.domain._
-import almhirt.context._
+import almhirt.environment._
+import almhirt.parts.HasRepositories
 
 trait HandlesCommand {
   def commandType: Class[_ <: DomainCommand]
-  def handle(com: DomainCommand, env: AlmhirtEnvironment, context: AlmhirtContext): Unit
+  def handle(com: DomainCommand, repositories: HasRepositories, context: AlmhirtContext): Unit
 }
 

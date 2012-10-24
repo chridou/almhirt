@@ -14,9 +14,12 @@
 */
 package almhirt.almakka
 
+import scalaz.syntax.validation._
+import almhirt._
 import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
 import akka.util.Duration
+import akka.util.duration._
 import com.typesafe.config._
 
 /** Components and values needed to use Akka */
@@ -29,5 +32,21 @@ trait AlmAkkaContext {
   def shortDuration: Duration
   def mediumDuration: Duration
   def longDuration: Duration
+}
+
+object AlmAkkaContext {
+  def apply(config: Config): AlmAkkaContext = {
+    val ctx =
+	  new AlmAkkaContext {
+	    val config = ConfigFactory.load
+	    val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
+	    val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
+	    val messageStreamDispatcherName = Some("almhirt.messagestream-dispatcher")
+	    val messageHubDispatcherName = Some("almhirt.messagehub-dispatcher")
+	    val shortDuration = config.getDouble("almhirt.durations.short") seconds
+	    val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
+	    val longDuration = config.getDouble("almhirt.durations.long") seconds }
+    ctx
+  }
 }
 
