@@ -13,5 +13,5 @@ class DevNullCommandExecutor() extends CommandExecutor {
   def addHandler(handler: HandlesCommand) {}
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]) {}
   def getHandlerByType(commandType: Class[_ <: DomainCommand]): AlmValidation[HandlesCommand] = NotFoundProblem("DevNullCommandHandlerRegistry has no commands").failure 
-  def executeCommand(com: DomainCommand) {}	  
+  def executeCommand(com: DomainCommand, ticket: Option[String]) {}	  
 }

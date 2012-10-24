@@ -28,13 +28,13 @@ class UnsafeCommandExecutor(repositories: HasRepositories, context: AlmhirtConte
       case None => NotFoundProblem("No handler found for command %s".format(commandType.getName)).failure
   }
     
-  def executeCommand(command: DomainCommand) {
+  def executeCommand(command: DomainCommand, ticket: Option[String]) {
     getHandlerForCommand(command).fold(
       fail =>
-        command.ticket match {
+        ticket match {
           case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, fail)))
           case None => ()
         },
-      handler => handler.handle(command, repositories, context))
+      handler => handler.handle(command, repositories, context, ticket))
   }
 }
