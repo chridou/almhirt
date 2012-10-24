@@ -12,6 +12,7 @@ import almhirt.messaging.MessageChannel
 import almhirt.messaging.MessageHub
 import almhirt.OperationState
 import almhirt.Problem
+import almhirt.syntax.almvalidation._
 import com.typesafe.config.ConfigFactory
 
 trait AlmhirtContextTestKit {
@@ -48,14 +49,18 @@ trait AlmhirtContextTestKit {
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
     }
+    implicit val dur = akkaCtx.shortDuration
+    val hub = MessageHub(Some("messageHub"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"))
+    val cmddChannel = hub.createMessageChannel[DomainCommand](Some("commands")).awaitResult.forceResult
+
     val context =
       new AlmhirtContext {
         val config = conf
         val akkaContext = akkaCtx
-        val messageHub = MessageHub(Some("messageHub"), akkaContext.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"))
-        val commandChannel = MessageChannel[DomainCommand](Some("commandChannel"), akkaContext.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
+        val messageHub = hub
+        val commandChannel = cmddChannel
         val domainEventsChannel = MessageChannel[DomainEvent](Some("domainEventsChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
-        val problemChannel = MessageChannel[Problem](Some("problemChannel"), akkaContext.actorSystem, akkaContext.mediumDuration, akkaContext.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
+        val problemChannel =  MessageChannel[Problem](Some("problemChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
         val operationStateChannel = MessageChannel[OperationState](Some("operationStateChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
       }
     context
