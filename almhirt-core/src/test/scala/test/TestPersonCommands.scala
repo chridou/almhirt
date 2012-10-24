@@ -4,15 +4,25 @@ import java.util.UUID
 import almhirt.commanding._
 
 trait TestPersonCommand extends DomainCommand
-trait TestPersonMutatorCommand extends TestPersonCommand with MutatorCommandStyle
 trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyle
+trait TestPersonMutatorCommand extends TestPersonCommand with MutatorCommandStyle
 
+case class NewTestPerson(ticket: Option[String], name: String) extends TestPersonCreatorCommand
 case class ChangeTestPersonName(id: UUID, version: Long, ticket: Option[String], newName: String) extends TestPersonMutatorCommand
 case class SetTestPersonAddress(id: UUID, version: Long, ticket: Option[String], aquiredAddress: String) extends TestPersonMutatorCommand
 case class MoveTestPerson(id: UUID, version: Long, ticket: Option[String], newAddress: String) extends TestPersonMutatorCommand
 
+trait TestPersonCreatorUnitOfWork[TCom <: TestPersonCommand] extends CreatorUnitOfWork[TestPerson, TestPersonEvent, TCom]{
+  val repositoryType = classOf[TestPersonRepository]
+}
+
 trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends MutatorUnitOfWork[TestPerson, TestPersonEvent, TCom]{
   val repositoryType = classOf[TestPersonRepository]
+}
+
+object NewTestPersonUnitOfWork extends TestPersonCreatorUnitOfWork[NewTestPerson] {
+  val commandType = classOf[NewTestPerson]
+  val handler = (cmd: NewTestPerson) => TestPerson(cmd.name).recordings
 }
 
 object ChangeTestPersonNameUnitOfWork extends TestPersonMutatorUnitOfWork[ChangeTestPersonName] {
