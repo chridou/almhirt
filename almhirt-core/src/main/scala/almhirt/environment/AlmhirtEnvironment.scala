@@ -8,5 +8,5 @@ trait AlmhirtEnvironment {
   def context: AlmhirtContext
   def repositories: HasRepositories
   def commandExecutor: CommandExecutor
-  def reportProblem(prob: Problem){context.problemChannel.post(Message.createWithUuid(prob))}
+  def reportProblem(prob: Problem) { context.problemChannel.post(Message.createWithUuid(prob)) }
 }
