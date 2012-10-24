@@ -12,13 +12,13 @@ case class ChangeTestPersonName(id: UUID, version: Long, ticket: Option[String],
 case class SetTestPersonAddress(id: UUID, version: Long, ticket: Option[String], aquiredAddress: String) extends TestPersonMutatorCommand
 case class MoveTestPerson(id: UUID, version: Long, ticket: Option[String], newAddress: String) extends TestPersonMutatorCommand
 
-trait TestPersonCreatorUnitOfWork[TCom <: TestPersonCommand] extends CreatorUnitOfWork[TestPerson, TestPersonEvent, TCom]{
+trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends UnitOfWork[TestPerson, TestPersonEvent]{
   val repositoryType = classOf[TestPersonRepository]
 }
 
-trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends MutatorUnitOfWork[TestPerson, TestPersonEvent, TCom]{
-  val repositoryType = classOf[TestPersonRepository]
-}
+trait TestPersonCreatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with CreatorUnitOfWorkStyle[TestPerson, TestPersonEvent, TCom]
+
+trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with MutatorUnitOfWorkStyle[TestPerson, TestPersonEvent, TCom]
 
 object NewTestPersonUnitOfWork extends TestPersonCreatorUnitOfWork[NewTestPerson] {
   val commandType = classOf[NewTestPerson]
