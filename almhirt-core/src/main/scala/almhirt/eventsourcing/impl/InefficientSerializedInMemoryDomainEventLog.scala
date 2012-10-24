@@ -33,7 +33,7 @@ class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: Almhi
   private var loggedEvents: List[DomainEvent] = Nil
 
   private case class LogEvents(events: List[DomainEvent])
-  private case class LogEventsAsync(events: List[DomainEvent], ticket: Option[java.util.UUID])
+  private case class LogEventsAsync(events: List[DomainEvent], ticket: Option[String])
   private case object GetAllEvents
   private case class GetEvents(entityId: UUID)
   private case class GetEventsFrom(entityId: UUID, from: Long)
@@ -49,7 +49,7 @@ class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: Almhi
       case LogEventsAsync(events, ticket) =>
         loggedEvents = loggedEvents ++ events
         ticket match {
-          case Some(t) => almhirtContext.operationStateChannel.post(Message.createWithUuid(Ok(t)))
+          case Some(t) => almhirtContext.operationStateChannel.post(Message.createWithUuid(Executed(t)))
           case None => ()
         }
       case GetAllEvents =>
@@ -67,7 +67,7 @@ class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: Almhi
   }
 
   def storeEvents(events: List[DomainEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
-  def storeEvents(events: List[DomainEvent], ticket: Option[java.util.UUID]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
+  def storeEvents(events: List[DomainEvent], ticket: Option[String]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
 
   def getAllEvents() = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
   def getEvents(id: UUID) = (coordinator ? GetEvents(id)).toAlmFuture[Iterable[DomainEvent]]

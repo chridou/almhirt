@@ -10,6 +10,7 @@ import almhirt.commanding.DomainCommand
 import com.typesafe.config._
 import almhirt.messaging.impl.DevNullMessageHub
 import almhirt.messaging.impl.DevNullMessageChannel
+import almhirt.parts.impl.UnsafeRepositoryRegistry
 
 trait AlmhirtContextTestKit {
   private val configText =
@@ -50,6 +51,7 @@ trait AlmhirtContextTestKit {
         val domainEventsChannel = MessageChannel[DomainEvent](Some("domainEventsChannel"), actorSystem, mediumDuration, futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
         val problemChannel = MessageChannel[Problem](Some("problemChannel"), actorSystem, mediumDuration, futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
         val operationStateChannel = MessageChannel[OperationState](Some("operationStateChannel"), actorSystem, mediumDuration, futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
+        val repositories = new UnsafeRepositoryRegistry()
       }
     context
   }
@@ -57,19 +59,20 @@ trait AlmhirtContextTestKit {
   def createFakeContext: AlmhirtContext = {
     val context =
       new AlmhirtContext {
-        def config = conf
-        def actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
-        def futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
-        def messageStreamDispatcherName = None
-        def messageHubDispatcherName = None
+        val config = conf
+        val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
+        val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
+        val messageStreamDispatcherName = None
+        val messageHubDispatcherName = None
         val shortDuration = conf.getDouble("almhirt.durations.short") seconds
         val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
         val longDuration = conf.getDouble("almhirt.durations.long") seconds
-        def messageHub = new DevNullMessageHub()(futureDispatcher)
-        def commandChannel = new DevNullMessageChannel()(futureDispatcher)
-        def domainEventsChannel = new DevNullMessageChannel()(futureDispatcher)
-        def problemChannel = new DevNullMessageChannel()(futureDispatcher)
-        def operationStateChannel = new DevNullMessageChannel()(futureDispatcher)
+        val messageHub = new DevNullMessageHub()(futureDispatcher)
+        val commandChannel = new DevNullMessageChannel[DomainCommand]()(futureDispatcher)
+        val domainEventsChannel = new DevNullMessageChannel[DomainEvent]()(futureDispatcher)
+        val problemChannel = new DevNullMessageChannel[Problem]()(futureDispatcher)
+        val operationStateChannel = new DevNullMessageChannel[OperationState]()(futureDispatcher)
+        val repositories = new UnsafeRepositoryRegistry()
       }
     context
   }

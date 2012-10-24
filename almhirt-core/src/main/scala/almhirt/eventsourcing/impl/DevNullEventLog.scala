@@ -16,7 +16,7 @@ import almhirt.eventsourcing._
 class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
   implicit private def futureContext = almhirtContext.futureDispatcher 
   def storeEvents(events: List[DomainEvent]) = AlmPromise{ CommittedDomainEvents(Nil).success }
-  def storeEvents(events: List[DomainEvent], ticket: Option[java.util.UUID]) = AlmPromise{ CommittedDomainEvents(Nil).success }
+  def storeEvents(events: List[DomainEvent], ticket: Option[String]) = AlmPromise{ CommittedDomainEvents(Nil).success }
 
   def getAllEvents() = AlmPromise{ Iterable.empty.success }
   def getEvents(id: UUID) = AlmPromise{ Iterable.empty.success }

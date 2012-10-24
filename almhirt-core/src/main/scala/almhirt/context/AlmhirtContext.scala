@@ -29,4 +29,5 @@ trait AlmhirtContext extends AlmAkkaContext {
   def domainEventsChannel: MessageChannel[DomainEvent]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
+  def repositories: almhirt.parts.HasRepositories
 }

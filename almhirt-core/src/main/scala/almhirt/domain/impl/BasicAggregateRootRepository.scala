@@ -19,6 +19,6 @@ abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event
   def store(ar: AR, uncommitedEvents: List[Event]): AlmFuture[AR] = 
     if(uncommitedEvents.isEmpty) AlmPromise(UnspecifiedProblem("no events", category = ApplicationProblem, severity = Minor).failure)
     else eventLog.storeEvents(uncommitedEvents).map(committedEvents => ar)
-  def store(ar: AR, uncommitedEvents: List[Event], ticket: Option[java.util.UUID]): Unit = sys.error("not supprted")
+  def store(ar: AR, uncommitedEvents: List[Event], ticket: Option[String]): Unit = sys.error("not supprted")
     
 }

@@ -1,19 +1,75 @@
-/* Copyright 2012 Christian Douven
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
 package almhirt.commanding
 
-trait UnitOfWork {
+import almhirt._
+import almhirt.messaging._
+import almhirt.domain._
+import almhirt.context.AlmhirtContext
 
+trait UnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent] extends HandlesCommand {
+  def repositoryType: Class[_ <: AggregateRootRepository[AR, TEvent]]
+}
+
+trait MutatorUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends UnitOfWork[AR, TEvent] {
+  def handler: MutatorCommandHandler[AR, TEvent, TCom]
+  def handle(com: DomainCommand, env: AlmhirtEnvironment, context: AlmhirtContext) {
+    if (com.isMutator) {
+      val command = com.asInstanceOf[TCom]
+      val arRef = command.aggRootRef.get
+      context.repositories.getByType(repositoryType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
+        fail =>
+          (),
+        repo => {
+          repo.get(arRef.id).map { aggRoot =>
+            handler(command, aggRoot, env).fold(
+              fail => {
+                context.problemChannel.post(Message.createWithUuid(fail))
+                command.ticket match {
+                  case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, fail)))
+                  case None => ()
+                }
+              },
+              succ =>
+                repo.store(succ._1, succ._2, command.ticket))
+          }
+        })
+    } else {
+      val p = ArgumentProblem("Not a mutator command: %s".format(com.getClass.getName), severity = Major)
+      context.problemChannel.post(Message.createWithUuid(p))
+      com.ticket match {
+        case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, p)))
+        case None => ()
+      }
+    }
+  }
+}
+
+trait CreatorUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends UnitOfWork[AR, TEvent] {
+  def handler: CreatorCommandHandler[AR, TEvent, TCom]
+  def handle(com: DomainCommand, env: AlmhirtEnvironment, context: AlmhirtContext) {
+    if (com.isCreator) {
+      val command = com.asInstanceOf[TCom]
+      context.repositories.getByType(repositoryType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
+        fail =>
+          (),
+        repo => {
+          handler(command, env).fold(
+            fail => {
+              context.problemChannel.post(Message.createWithUuid(fail))
+              command.ticket match {
+                case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, fail)))
+                case None => ()
+              }
+            },
+            succ =>
+              repo.store(succ._1, succ._2, command.ticket))
+        })
+    } else {
+      val p = ArgumentProblem("Not a creator command: %s".format(com.getClass.getName), severity = Major)
+      context.problemChannel.post(Message.createWithUuid(p))
+      com.ticket match {
+        case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, p)))
+        case None => ()
+      }
+    }
+  }
 }
