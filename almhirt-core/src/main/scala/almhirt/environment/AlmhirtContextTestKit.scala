@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.util.Timeout.durationToTimeout
 import akka.util.duration.doubleToDurationDouble
 import almhirt.almakka.AlmAkkaContext
-import almhirt.commanding.DomainCommand
+import almhirt.commanding._
 import almhirt.domain.DomainEvent
 import almhirt.messaging.impl.DevNullMessageChannel
 import almhirt.messaging.impl.DevNullMessageHub
@@ -51,7 +51,7 @@ trait AlmhirtContextTestKit {
     }
     implicit val dur = akkaCtx.shortDuration
     val hub = MessageHub(Some("messageHub"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"))
-    val cmddChannel = hub.createMessageChannel[DomainCommand](Some("commands")).awaitResult.forceResult
+    val cmddChannel = hub.createUnnamedMessageChannel[CommandEnvelope](Some("commands")).awaitResult.forceResult
 
     val context =
       new AlmhirtContext {
@@ -82,7 +82,7 @@ trait AlmhirtContextTestKit {
         val config = conf
         val akkaContext = akkaCtx
         val messageHub = new DevNullMessageHub()(akkaCtx.futureDispatcher)
-        val commandChannel = new DevNullMessageChannel[DomainCommand]()(akkaCtx.futureDispatcher)
+        val commandChannel = new DevNullMessageChannel[CommandEnvelope]()(akkaCtx.futureDispatcher)
         val domainEventsChannel = new DevNullMessageChannel[DomainEvent]()(akkaCtx.futureDispatcher)
         val problemChannel = new DevNullMessageChannel[Problem]()(akkaCtx.futureDispatcher)
         val operationStateChannel = new DevNullMessageChannel[OperationState]()(akkaCtx.futureDispatcher)

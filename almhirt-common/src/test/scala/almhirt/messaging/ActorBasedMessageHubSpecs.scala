@@ -26,14 +26,14 @@ class ActorBasedMessageHubSpecs extends Specification with AlmAkkaContextTestKit
     """be able to create a global channel""" in {
       inOwnContext { ctx =>
         val hub = getHub(ctx)
-        val channel = hub.createGlobalMessageChannel[AnyRef]
+        val channel = hub.createUnnamedGlobalMessageChannel[AnyRef]
         true
       }
     }
     """be able to create a channel""" in {
       inOwnContext { ctx =>
         val hub = getHub(ctx)
-        val channel = hub.createMessageChannel[AnyRef](None)
+        val channel = hub.createUnnamedMessageChannel[AnyRef](None)
         true
       }
     }
@@ -43,7 +43,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmAkkaContextTestKit
     """trigger a handler on the created channel""" in {
       inOwnContext { ctx =>
         val hub = getHub(ctx)
-        val channel = (hub.createGlobalMessageChannel[AnyRef]).awaitResult(Duration.Inf).forceResult
+        val channel = (hub.createUnnamedGlobalMessageChannel[AnyRef]).awaitResult(Duration.Inf).forceResult
         var hit = false
         val subscription = (channel <-* (x => hit = true)).awaitResult(Duration.Inf).forceResult
         hub.broadcast(Message(new A(1)))
@@ -56,7 +56,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmAkkaContextTestKit
     """trigger a handler on the created channel when a String is broadcasted""" in {
       inOwnContext { ctx =>
         val hub = getHub(ctx)
-        val channel = hub.createGlobalMessageChannel[String].awaitResult(Duration.Inf).forceResult
+        val channel = hub.createUnnamedGlobalMessageChannel[String].awaitResult(Duration.Inf).forceResult
         var hit = false
         val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
         hub.broadcast(Message("A"))
@@ -67,7 +67,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmAkkaContextTestKit
     """not be trigger a handler on the created channel when a UUID is broadcasted""" in {
       inOwnContext { ctx =>
         val hub = getHub(ctx)
-        val channel = hub.createGlobalMessageChannel[String].awaitResult(Duration.Inf).forceResult
+        val channel = hub.createUnnamedGlobalMessageChannel[String].awaitResult(Duration.Inf).forceResult
         var hit = false
         val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
         hub.broadcast(Message(java.util.UUID.randomUUID))
@@ -82,7 +82,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmAkkaContextTestKit
     """trigger a handler on the created channel""" in {
       inOwnContext { ctx =>
         val hub = getHub(ctx)
-        val channel = hub.createMessageChannel[AnyRef](None).awaitResult(Duration.Inf).forceResult
+        val channel = hub.createUnnamedMessageChannel[AnyRef](None).awaitResult(Duration.Inf).forceResult
         var hit = false
         val subscription = (channel <-* (x => hit = true)).awaitResult(Duration.Inf).forceResult
         hub.broadcast(Message(new A(1)))
@@ -95,7 +95,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmAkkaContextTestKit
     """trigger a handler on the created channel when a String is broadcasted""" in {
       inOwnContext { ctx =>
         val hub = getHub(ctx)
-        val channel = hub.createMessageChannel[String](None).awaitResult(Duration.Inf).forceResult
+        val channel = hub.createUnnamedMessageChannel[String](None).awaitResult(Duration.Inf).forceResult
         var hit = false
         val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
         hub.broadcast(Message("A"))
@@ -106,7 +106,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmAkkaContextTestKit
     """not be trigger a handler on the created channel when a UUID is broadcasted""" in {
       inOwnContext { ctx =>
         val hub = getHub(ctx)
-        val channel = hub.createMessageChannel[String](None).awaitResult(Duration.Inf).forceResult
+        val channel = hub.createUnnamedMessageChannel[String](None).awaitResult(Duration.Inf).forceResult
         var hit = false
         val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
         hub.broadcast(Message(java.util.UUID.randomUUID))

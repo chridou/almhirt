@@ -22,12 +22,13 @@ import almhirt.messaging.MessageHub
 import almhirt.OperationState
 import almhirt.Problem
 import com.typesafe.config.Config
+import almhirt.commanding.CommandEnvelope
 
 trait AlmhirtContext {
   def config: Config
   def akkaContext: AlmAkkaContext
   def messageHub: MessageHub
-  def commandChannel: MessageChannel[DomainCommand]
+  def commandChannel: MessageChannel[CommandEnvelope]
   def domainEventsChannel: MessageChannel[DomainEvent]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
