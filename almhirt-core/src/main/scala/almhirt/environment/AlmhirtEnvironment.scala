@@ -13,5 +13,4 @@ trait AlmhirtEnvironment extends Disposable {
   def repositories: HasRepositories
   def commandExecutor: CommandExecutor
   
-  def dispose = context.dispose
 }
