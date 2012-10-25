@@ -15,7 +15,7 @@ import almhirt.parts.CommandExecutor
 /**
  * Handles incoming commands. __NOT__ thread safe. Do not mutate, once almhirt is running!
  */
-class UnsafeCommandExecutor(repositories: HasRepositories, context: AlmhirtContext) extends CommandExecutor {
+class UnsafeCommandExecutorOnCallingThread(repositories: HasRepositories, context: AlmhirtContext) extends CommandExecutor {
   private val handlers: collection.mutable.Map[String, HandlesCommand] = collection.mutable.HashMap.empty
 
   def addHandler(handler: HandlesCommand) { handlers.put(handler.commandType.getName, handler)}

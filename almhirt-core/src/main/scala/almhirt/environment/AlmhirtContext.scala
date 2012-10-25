@@ -14,8 +14,10 @@
 */
 package almhirt.environment
 
+import almhirt._
 import almhirt.almakka.AlmAkkaContext
-import almhirt.commanding.DomainCommand
+import almhirt.commanding._
+import almhirt.parts._
 import almhirt.domain.DomainEvent
 import almhirt.messaging.MessageChannel
 import almhirt.messaging.MessageHub
@@ -23,8 +25,9 @@ import almhirt.OperationState
 import almhirt.Problem
 import com.typesafe.config.Config
 import almhirt.commanding.CommandEnvelope
+import almhirt.parts.HasRepositories
 
-trait AlmhirtContext {
+trait AlmhirtContext extends Disposable {
   def config: Config
   def akkaContext: AlmAkkaContext
   def messageHub: MessageHub
@@ -32,4 +35,10 @@ trait AlmhirtContext {
   def domainEventsChannel: MessageChannel[DomainEvent]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
+  def repositories: HasRepositories
+  def commandExecutor: CommandExecutor
+  
+  def uuidGenerator: UuidGenerator
+  
+  def reportProblem(prob: Problem): Unit
 }

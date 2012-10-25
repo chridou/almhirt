@@ -1,12 +1,17 @@
 package almhirt.environment
 
 import almhirt._
+import almhirt.commanding.CommandEnvelope
 import almhirt.messaging._
 import almhirt.parts._
 
-trait AlmhirtEnvironment {
+trait AlmhirtEnvironment extends Disposable {
   def context: AlmhirtContext
-  def repositories: HasRepositories
-  def commandExecutor: CommandExecutor
-  def reportProblem(prob: Problem) { context.problemChannel.post(Message.createWithUuid(prob)) }
+  
+  def reportProblem(prob: Problem) { context.reportProblem(prob) }
+  def executeCommand(commandEnvelope: CommandEnvelope) { context.commandExecutor.executeCommand(commandEnvelope) }
+  
+  def newUUID = context.uuidGenerator.generate 
+  
+  def dispose = context.dispose
 }
