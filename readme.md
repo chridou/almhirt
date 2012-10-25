@@ -21,10 +21,10 @@ No. Inspiration was taken from
 
 ## Why this name?
 
-* It starts with an 'a'
-* Nobody else will choose this name so we can skip the toplevel domain in package paths
-* The almhirt.org domain was still available
-* Isn't data like sheep? Almhirt will be a shephard to keep the sheep in their enclosure.
+* It starts with an 'a'.
+* Nobody else will choose this name so we can skip the toplevel domain in package paths.
+* The almhirt.org domain was still available.
+* Isn't data like sheep? Almhirt will be a shephard to keep the sheep in their corral.
 
 ## Is help welcome?
 
