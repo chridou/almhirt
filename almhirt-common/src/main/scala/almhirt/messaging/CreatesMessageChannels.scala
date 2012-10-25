@@ -17,6 +17,14 @@ package almhirt.messaging
 import almhirt._
 
 trait CreatesMessageChannels {
-  def createMessageChannel[TPayLoad <: AnyRef](topic: Option[String])(implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]]
-  def createGlobalMessageChannel[TPayLoad <: AnyRef](implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]]
+  def createMessageChannel[TPayLoad <: AnyRef](name: Option[String], topic: Option[String])(implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]]
+  def createNamedMessageChannel[TPayLoad <: AnyRef](name: String, topic: Option[String])(implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]] =
+    createMessageChannel(Some(name), topic)(m)
+  def createUnnamedMessageChannel[TPayLoad <: AnyRef](topic: Option[String])(implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]] =
+    createMessageChannel(None, topic)(m)
+  def createGlobalMessageChannel[TPayLoad <: AnyRef](name: Option[String])(implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]]
+  def createNamedGlobalMessageChannel[TPayLoad <: AnyRef](name: String)(implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]] =
+    createGlobalMessageChannel(Some(name))(m)
+  def createUnnamedGlobalMessageChannel[TPayLoad <: AnyRef](implicit m: Manifest[TPayLoad]): AlmFuture[MessageChannel[TPayLoad]] =
+    createGlobalMessageChannel(None)(m)
 }
