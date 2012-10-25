@@ -18,7 +18,7 @@ trait AlmhirtContextTestKit {
     """  
       akka {
         default-dispatcher {
-          type="akka.testkit.CallingThreadDispatcher"
+          type="akka.testkit.CallingThreadDispatcherConfigurator"
         }     
       }
       almhirt {
