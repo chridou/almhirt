@@ -39,7 +39,7 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
   	if(aquiredAddress.isEmpty) 
   	  reject("Aquired adresss must not be empty")
   	else if (address.isDefined)
-  	  reject("Adress is alredy known")
+  	  reject("Adress is already known")
   	else 
   	  update(TestPersonAddressAquired(id, version, aquiredAddress), handlers)
   }

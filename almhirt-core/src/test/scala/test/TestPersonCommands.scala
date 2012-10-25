@@ -11,6 +11,7 @@ case class NewTestPerson(name: String) extends TestPersonCreatorCommand
 case class ChangeTestPersonName(id: UUID, version: Option[Long], newName: String) extends TestPersonMutatorCommand
 case class SetTestPersonAddress(id: UUID, version: Option[Long], aquiredAddress: String) extends TestPersonMutatorCommand
 case class MoveTestPerson(id: UUID, version: Option[Long], newAddress: String) extends TestPersonMutatorCommand
+case class MoveBecauseOfMarriage(id: UUID, version: Option[Long], newName: String, newAddress: String) extends TestPersonMutatorCommand
 
 trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends UnitOfWork[TestPerson, TestPersonEvent]{
   val repositoryType = classOf[TestPersonRepository]
@@ -37,4 +38,10 @@ object SetTestPersonAdressUnitOfWork extends TestPersonMutatorUnitOfWork[SetTest
 object MoveTestPersonNameUnitOfWork extends TestPersonMutatorUnitOfWork[MoveTestPerson] {
   val commandType = classOf[MoveTestPerson]
   val handler = (cmd: MoveTestPerson, person: TestPerson) => person.move(cmd.newAddress).recordings
+}
+
+object MoveBecauseOfMarriageUnitOfWork extends TestPersonMutatorUnitOfWork[MoveBecauseOfMarriage] {
+  val commandType = classOf[MoveBecauseOfMarriage]
+  val handler = (cmd: MoveBecauseOfMarriage, person: TestPerson) => 
+    person.changeName(cmd.newName).flatMap(_.move(cmd.newAddress)).recordings
 }
