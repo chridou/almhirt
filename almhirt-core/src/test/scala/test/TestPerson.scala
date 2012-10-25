@@ -1,11 +1,8 @@
 package test
 
+import almhirt._
+import almhirt.domain._
 import almhirt.domain.impl.BasicAggregateRootRepository
-import almhirt.domain.AggregateRoot
-import almhirt.domain.CanCreateAggragateRoot
-import almhirt.domain.CreatingNewAggregateRootEvent
-import almhirt.domain.DomainEvent
-import almhirt.domain.UpdateRecorder
 import almhirt.environment.AlmhirtContext
 import almhirt.eventsourcing.DomainEventLog
 import java.util.UUID
@@ -37,9 +34,9 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
   
   def addressAquired(aquiredAddress: String): UpdateRecorder[TestPersonEvent, TestPerson] = {
   	if(aquiredAddress.isEmpty) 
-  	  reject("Aquired adresss must not be empty")
+  	  reject("Aquired addresss must not be empty")
   	else if (address.isDefined)
-  	  reject("Adress is already known")
+  	  reject("Address is already known")
   	else 
   	  update(TestPersonAddressAquired(id, version, aquiredAddress), handlers)
   }
@@ -55,5 +52,9 @@ object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
   	case e @ TestPersonCreated(entityId, name,_) => TestPerson(entityId, e.version, name, None, 0)
   }
   
-  def apply(name: String) = create(TestPersonCreated(UUID.randomUUID, name))
+  def apply(name: String) = 
+    if(name.isEmpty)
+      UpdateRecorder.reject(BusinessRuleViolatedProblem("Name must not be empty", "name", severity = Minor))
+    else
+      create(TestPersonCreated(UUID.randomUUID, name))
 }
