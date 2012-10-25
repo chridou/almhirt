@@ -35,10 +35,9 @@ trait AlmhirtContext extends Disposable {
   def domainEventsChannel: MessageChannel[DomainEvent]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
-  def repositories: HasRepositories
-  def commandExecutor: CommandExecutor
-  
+
   def uuidGenerator: UuidGenerator
   
+  def problemTopic: Option[String]
   def reportProblem(prob: Problem): Unit
 }

@@ -9,9 +9,9 @@ trait AlmhirtEnvironment extends Disposable {
   def context: AlmhirtContext
   
   def reportProblem(prob: Problem) { context.reportProblem(prob) }
-  def executeCommand(commandEnvelope: CommandEnvelope) { context.commandExecutor.executeCommand(commandEnvelope) }
-  
-  def newUUID = context.uuidGenerator.generate 
+
+  def repositories: HasRepositories
+  def commandExecutor: CommandExecutor
   
   def dispose = context.dispose
 }

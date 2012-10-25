@@ -23,7 +23,7 @@ import akka.util.duration._
 import com.typesafe.config._
 
 /** Components and values needed to use Akka */
-trait AlmAkkaContext {
+trait AlmAkkaContext extends Disposable{
   def config: Config
   def actorSystem: ActorSystem
   def futureDispatcher: MessageDispatcher
@@ -45,7 +45,8 @@ object AlmAkkaContext {
 	    val messageHubDispatcherName = Some("almhirt.messagehub-dispatcher")
 	    val shortDuration = config.getDouble("almhirt.durations.short") seconds
 	    val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
-	    val longDuration = config.getDouble("almhirt.durations.long") seconds }
+	    val longDuration = config.getDouble("almhirt.durations.long") seconds 
+	    def dispose = actorSystem.shutdown}
     ctx
   }
 }

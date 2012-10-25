@@ -38,12 +38,13 @@ trait AlmAkkaContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
+      def dispose = actorSystem.shutdown
     }
 
   def inOwnContext[T](compute: AlmAkkaContext => T): T = {
     val context = createTestContext
     val res = compute(context)
-    context.actorSystem.shutdown()
+    context.dispose()
     res
   }
 
@@ -57,12 +58,13 @@ trait AlmAkkaContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
+      def dispose = actorSystem.shutdown
     }
 
   def inFakeContext[T](compute: AlmAkkaContext => T): T = {
     val context = createFakeContext
     val res = compute(context)
-    context.actorSystem.shutdown()
+    context.dispose()
     res
   }
 }
