@@ -1,5 +1,5 @@
 package almhirt.parts
 
-import almhirt.commanding._
+import almhirt.commanding.ExecutesCommands
 
 trait CommandExecutor extends HasCommandHandlers with ExecutesCommands

@@ -1,8 +1,9 @@
 package almhirt.parts
 
-import almhirt._
-import almhirt.commanding.HandlesCommand
 import almhirt.commanding.DomainCommand
+import almhirt.commanding.HandlesCommand
+import almhirt.AlmValidation
+import almhirt.AlmValidation
 
 trait HasCommandHandlers {
   def addHandler(handler: HandlesCommand): Unit
