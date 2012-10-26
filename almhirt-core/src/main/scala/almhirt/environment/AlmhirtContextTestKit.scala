@@ -38,6 +38,7 @@ trait AlmhirtContextTestKit {
 
   def createTestContext(): AlmhirtContext = createTestContext(conf)
   def createTestContext(conf: Config): AlmhirtContext = {
+    val uuidGen = new JavaUtilUuidGenerator()
     val akkaCtx = new AlmAkkaContext {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
@@ -47,13 +48,12 @@ trait AlmhirtContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
-	  val uuidGenerator = new JavaUtilUuidGenerator()
+      def generateUuid = uuidGen.generate
       def dispose = actorSystem.shutdown
     }
     implicit val dur = akkaCtx.shortDuration
     val hub = MessageHub(Some("messageHub"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"))
     val cmddChannel = hub.createUnnamedMessageChannel[CommandEnvelope](Some("commands")).awaitResult.forceResult
-    val uuidGen = new JavaUtilUuidGenerator()
     val probTopic = None
 
     val context =
@@ -67,18 +67,18 @@ trait AlmhirtContextTestKit {
         val operationStateChannel = MessageChannel[OperationState](Some("operationStateChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
 
         val problemTopic = probTopic
-        def reportProblem(prob: Problem) { messageHub.broadcast(Message(prob)(uuidGen.generate)) }
-
-        val uuidGenerator = uuidGen
+        def reportProblem(prob: Problem) { messageHub.broadcast(Message(prob)(akkaContext.generateUuid)) }
+        def reportOperationState(opState: OperationState) { messageHub.broadcast(Message(opState)(akkaContext.generateUuid)) }
 
         def dispose = akkaContext.dispose
-        
-    }
+
+      }
     context
   }
 
   def createFakeContext(): AlmhirtContext = createFakeContext(conf)
   def createFakeContext(conf: Config): AlmhirtContext = {
+    val uuidGen = new JavaUtilUuidGenerator()
     val akkaCtx = new AlmAkkaContext {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
@@ -88,7 +88,7 @@ trait AlmhirtContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
-	  val uuidGenerator = new JavaUtilUuidGenerator()
+      def generateUuid = uuidGen.generate
       def dispose = actorSystem.shutdown
     }
     val context =
@@ -103,9 +103,10 @@ trait AlmhirtContextTestKit {
 
         val problemTopic = None
         def reportProblem(prob: Problem) {}
+        def reportOperationState(opState: OperationState) {}
 
         val uuidGenerator = new JavaUtilUuidGenerator()
-        
+
         def dispose = akkaContext.dispose
 
       }

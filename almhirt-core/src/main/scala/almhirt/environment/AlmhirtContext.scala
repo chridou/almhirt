@@ -38,4 +38,5 @@ trait AlmhirtContext extends Disposable {
 
   def problemTopic: Option[String]
   def reportProblem(prob: Problem): Unit
+  def reportOperationState(opState: OperationState): Unit
 }

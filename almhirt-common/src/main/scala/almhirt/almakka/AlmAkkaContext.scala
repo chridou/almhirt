@@ -32,11 +32,12 @@ trait AlmAkkaContext extends Disposable{
   def shortDuration: Duration
   def mediumDuration: Duration
   def longDuration: Duration
-  def uuidGenerator: UuidGenerator
+  def generateUuid: java.util.UUID
 }
 
 object AlmAkkaContext {
   def apply(config: Config): AlmAkkaContext = {
+    val uuidGen = new JavaUtilUuidGenerator()
     val ctx =
 	  new AlmAkkaContext {
 	    val config = ConfigFactory.load
@@ -47,7 +48,7 @@ object AlmAkkaContext {
 	    val shortDuration = config.getDouble("almhirt.durations.short") seconds
 	    val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
 	    val longDuration = config.getDouble("almhirt.durations.long") seconds
-	    val uuidGenerator = new JavaUtilUuidGenerator()
+	    def generateUuid = uuidGen.generate
 	    def dispose = actorSystem.shutdown}
     ctx
   }

@@ -29,7 +29,8 @@ trait AlmAkkaContextTestKit {
     """
   val conf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 
-  def createTestContext(): AlmAkkaContext =
+  def createTestContext(): AlmAkkaContext = {
+    val uuidGen = new JavaUtilUuidGenerator()
     new AlmAkkaContext {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
@@ -39,9 +40,10 @@ trait AlmAkkaContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
-	  val uuidGenerator = new JavaUtilUuidGenerator()
+      def generateUuid = uuidGen.generate
       def dispose = actorSystem.shutdown
     }
+  }
 
   def inOwnContext[T](compute: AlmAkkaContext => T): T = {
     val context = createTestContext
@@ -50,7 +52,8 @@ trait AlmAkkaContextTestKit {
     res
   }
 
-  def createFakeContext(): AlmAkkaContext =
+  def createFakeContext(): AlmAkkaContext = {
+    val uuidGen = new JavaUtilUuidGenerator()
     new AlmAkkaContext {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
@@ -60,9 +63,10 @@ trait AlmAkkaContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
-	  val uuidGenerator = new JavaUtilUuidGenerator()
+      def generateUuid = uuidGen.generate
       def dispose = actorSystem.shutdown
     }
+  }
 
   def inFakeContext[T](compute: AlmAkkaContext => T): T = {
     val context = createFakeContext

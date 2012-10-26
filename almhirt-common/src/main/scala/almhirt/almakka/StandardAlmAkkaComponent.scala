@@ -22,8 +22,10 @@ import com.typesafe.config._
 
 trait StandardAlmAkkaComponent extends AlmAkkaComponent {
   val almAkkaContext: AlmAkkaContext = new AlmAkkaByConfig()
-  
+
   private class AlmAkkaByConfig() extends AlmAkkaContext {
+    private val uuidGen = new JavaUtilUuidGenerator()
+
     val config = ConfigFactory.load
     val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
     val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
@@ -32,7 +34,7 @@ trait StandardAlmAkkaComponent extends AlmAkkaComponent {
     val shortDuration = config.getDouble("almhirt.durations.short") seconds
     val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
     val longDuration = config.getDouble("almhirt.durations.long") seconds
-	val uuidGenerator = new JavaUtilUuidGenerator()
+    def generateUuid = uuidGen.generate
     def dispose = actorSystem.shutdown
   }
 }
