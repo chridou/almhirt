@@ -17,12 +17,13 @@ package almhirt.messaging
 import java.util.UUID
 import org.joda.time.DateTime
 
-/** Multiple [[almhirt.messaging.Message]]s that share [[almhirt.messaging.MessageGrouping]]s with the same groupId belong to one group
- * 
+/**
+ * Multiple [[almhirt.messaging.Message]]s that share [[almhirt.messaging.MessageGrouping]]s with the same groupId belong to one group
+ *
  * Equality is defined by the id, since no two messages may ever have the same id.
- * 
+ *
  * @constructor Creates a new instance with a  group identifier, the position of this member in the group and a flag, whether this is the groups last message
- */ 
+ */
 final case class MessageGrouping(groupId: UUID, seq: Int, isLast: Boolean)
 
 /**
@@ -32,29 +33,29 @@ final case class MessageGrouping(groupId: UUID, seq: Int, isLast: Boolean)
  * timestamp: Timestamp of creation
  * topic: An optional topic for messaging scenarios
  */
-final case class MessageHeader(id: UUID, grouping: Option[MessageGrouping], metaData: Map[String, String],timestamp: DateTime, topic: Option[String])
+final case class MessageHeader(id: UUID, grouping: Option[MessageGrouping], metaData: Map[String, String], timestamp: DateTime, topic: Option[String])
 
 /** A message with a payload */
 final case class Message[+TPayload <: AnyRef](header: MessageHeader, payload: TPayload) {
   override val hashCode = header.id.hashCode
   override def equals(other: Any) = {
-  	other match {
-  	  case null => false
-  	  case m: Message[_] => m.header.id == this.header.id
-  	  case _ => false
-  	}
+    other match {
+      case null => false
+      case m: Message[_] => m.header.id == this.header.id
+      case _ => false
+    }
   }
 }
 
 /** A factory for messages */
 object Message {
-  def apply[T <: AnyRef](grouping: Option[MessageGrouping], metaData: Map[String,String], payload: T)(implicit id: UUID): Message[T] =
-  	new Message[T](MessageHeader(id, grouping, metaData, DateTime.now, None), payload)
-  
+  def apply[T <: AnyRef](grouping: Option[MessageGrouping], metaData: Map[String, String], payload: T)(implicit id: UUID): Message[T] =
+    new Message[T](MessageHeader(id, grouping, metaData, DateTime.now, None), payload)
+
   def apply[T <: AnyRef](payload: T)(implicit id: UUID): Message[T] =
-  	apply(None, Map.empty, payload)(id)
+    apply(None, Map.empty, payload)(id)
 
   def createWithUuid[T <: AnyRef](payload: T): Message[T] =
-  	apply(None, Map.empty, payload)(UUID.randomUUID)
-	
+    apply(None, Map.empty, payload)(UUID.randomUUID)
+
 }
