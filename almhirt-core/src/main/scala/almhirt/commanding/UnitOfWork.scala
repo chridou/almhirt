@@ -56,24 +56,26 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
         getIdAndVersion(com).bind(idAndVersion =>
           getRepository(repositories).map(repo => (com, repo, idAndVersion))))
     val future =
-      res.continueWithFuture{ case (com, repository, (id, version)) => 
-        getAggregateRoot(repository, id).mapV(ar =>
-          checkArId(ar, id).bind(ar =>
-            checkVersion(ar, version).bind(ar =>
-                  handler(com, ar).map((repository,_)))))}
+      res.continueWithFuture {
+        case (com, repository, (id, version)) =>
+          getAggregateRoot(repository, id).mapV(ar =>
+            checkArId(ar, id).bind(ar =>
+              checkVersion(ar, version).bind(ar =>
+                handler(com, ar).map((repository, _)))))
+      }
     future.onComplete(
       f => updateFailedOperationState(context, f, ticket),
-      { case (repository, (ar, events)) => repository.store(ar, events, ticket) }) 
+      { case (repository, (ar, events)) => repository.store(ar, events, ticket) })
   }
 
   private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
-      context.problemChannel.post(Message.createWithUuid(p))
-      ticket match {
-        case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, p)))
-        case None => ()
-      }
+    context.problemChannel.post(Message.createWithUuid(p))
+    ticket match {
+      case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, p)))
+      case None => ()
+    }
   }
-  
+
   private def checkCommandType(cmd: DomainCommand): AlmValidation[TCom] =
     boolean.fold(
       cmd.isMutator,
@@ -82,9 +84,9 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
   private def getIdAndVersion(cmd: TCom): AlmValidation[(UUID, Option[Long])] =
     option.cata(cmd.aggRootRef)(
-        s => (s.id, s.tryGetVersion).success, 
-        UnspecifiedProblem("Mutator without aggregate root ref: %s".format(cmd.getClass.getName)).failure)
-      
+      s => (s.id, s.tryGetVersion).success,
+      UnspecifiedProblem("Mutator without aggregate root ref: %s".format(cmd.getClass.getName)).failure)
+
   private def checkArId(ar: AR, id: UUID): AlmValidation[AR] =
     boolean.fold(ar.id == id, ar.success, UnspecifiedProblem("ids do not match", severity = Major).failure)
 
