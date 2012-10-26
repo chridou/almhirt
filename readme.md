@@ -4,9 +4,9 @@ Warning! This project is still in an early phase! Everything is subject to chang
 
 ## What is Almhirt?
 
-Almhirt aims to be an application toolkit. 
+Almhirt aims to be an application toolkit with a focus on CQRS but it doesn't force one to use the event sourcing part.
+What Almhirt forces to do is using commands and events.
 It's goal is to help building immutable domain models, avoid exceptional code paths and using a message driven design.
-Furthermore Almhirt will support event sourcing.
 
 ## What's the motivation?
 
