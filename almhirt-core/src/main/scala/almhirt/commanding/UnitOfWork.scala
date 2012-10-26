@@ -5,7 +5,8 @@ import scalaz.syntax.validation._
 import scalaz.std._
 import almhirt._
 import almhirt.syntax.almvalidation._
-import almhirt.almvalidation.funs._
+import almhirt.syntax.almfuture._
+import almhirt.almvalidation.funs.inTryCatch
 import almhirt.messaging._
 import almhirt.domain._
 import almhirt.parts.HasRepositories
@@ -49,18 +50,20 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
   def handler: MutatorCommandHandler[AR, TEvent, TCom]
   def handle(untypedcom: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[String]) {
-    //implicit val executionContext = context.akkaContext.futureDispatcher
-    checkCommandType(untypedcom).bind(com =>
-      getIdAndVersion(com).bind(idAndVersion =>
-        getRepository(repositories).sideEffect(
-          p =>  updateFailedOperationState(context, p, ticket),
-          repository =>
-            getAggregateRoot(repository, idAndVersion._1).mapV(ar =>
-              checkArId(ar, idAndVersion._1).bind(ar =>
-                checkVersion(ar, idAndVersion._2).bind(ar =>
-                  handler(com, ar)))).sideEffect(
-                    p => updateFailedOperationState(context, p, ticket),
-                    res => repository.store(res._1, res._2, ticket)))))
+    implicit val executionContext = context.akkaContext.futureDispatcher
+    val res =
+      checkCommandType(untypedcom).bind(com =>
+        getIdAndVersion(com).bind(idAndVersion =>
+          getRepository(repositories).map(repo => (com, repo, idAndVersion))))
+    val future =
+      res.continueWithFuture{ case (com, repository, (id, version)) => 
+        getAggregateRoot(repository, id).mapV(ar =>
+          checkArId(ar, id).bind(ar =>
+            checkVersion(ar, version).bind(ar =>
+                  handler(com, ar).map((repository,_)))))}
+    future.onComplete(
+      f => updateFailedOperationState(context, f, ticket),
+      { case (repository, (ar, events)) => repository.store(ar, events, ticket) }) 
   }
 
   private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
@@ -79,7 +82,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
   private def getIdAndVersion(cmd: TCom): AlmValidation[(UUID, Option[Long])] =
     option.cata(cmd.aggRootRef)(
-        s => (s.id, s.version).success, 
+        s => (s.id, s.tryGetVersion).success, 
         UnspecifiedProblem("Mutator without aggregate root ref: %s".format(cmd.getClass.getName)).failure)
       
   private def checkArId(ar: AR, id: UUID): AlmValidation[AR] =
