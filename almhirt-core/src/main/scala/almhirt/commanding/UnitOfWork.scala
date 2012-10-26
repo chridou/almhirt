@@ -29,7 +29,7 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
             fail => {
               context.problemChannel.post(Message.createWithUuid(fail))
               ticket match {
-                case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, fail)))
+                case Some(t) => context.reportOperationState(NotExecuted(t, fail))
                 case None => ()
               }
             },
@@ -40,7 +40,7 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       val p = ArgumentProblem("Not a creator command: %s".format(com.getClass.getName), severity = Major)
       context.problemChannel.post(Message.createWithUuid(p))
       ticket match {
-        case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, p)))
+        case Some(t) => context.reportOperationState(NotExecuted(t, p))
         case None => ()
       }
     }
@@ -71,7 +71,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
   private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
     context.problemChannel.post(Message.createWithUuid(p))
     ticket match {
-      case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, p)))
+      case Some(t) => context.reportOperationState(NotExecuted(t, p))
       case None => ()
     }
   }
