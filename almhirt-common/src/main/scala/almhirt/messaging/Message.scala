@@ -25,25 +25,22 @@ import org.joda.time.DateTime
  */ 
 final case class MessageGrouping(groupId: UUID, seq: Int, isLast: Boolean)
 
+/**
+ * id: A unique identifier
+ * grouping: Defines whether this message belongs to a group of messages
+ * metaData: Any meta data that can be serialized into a String. Key-value pairs
+ * timestamp: Timestamp of creation
+ * topic: An optional topic for messaging scenarios
+ */
+final case class MessageHeader(id: UUID, grouping: Option[MessageGrouping], metaData: Map[String, String],timestamp: DateTime, topic: Option[String])
+
 /** A message with a payload */
-class Message[+TPayload <: AnyRef](
-  /** A unique identifier */
-  val id: UUID,
-  /** Defines whether this message belongs to a group of messages */
-  val grouping: Option[MessageGrouping],
-  /** Any meta data that can be serialized into a String. Key-value pairs */
-  val metaData: Map[String, String],
-  /** Timestamp of creation */
-  val timestamp: DateTime,
-  /** An optional topic for messaging scenarios */
-  val topic: Option[String],
-  /** The payload */
-  val payload: TPayload) {
-  override val hashCode = id.hashCode
+final case class Message[+TPayload <: AnyRef](header: MessageHeader, payload: TPayload) {
+  override val hashCode = header.id.hashCode
   override def equals(other: Any) = {
   	other match {
   	  case null => false
-  	  case m: Message[_] => m.id == this.id
+  	  case m: Message[_] => m.header.id == this.header.id
   	  case _ => false
   	}
   }
@@ -52,7 +49,7 @@ class Message[+TPayload <: AnyRef](
 /** A factory for messages */
 object Message {
   def apply[T <: AnyRef](grouping: Option[MessageGrouping], metaData: Map[String,String], payload: T)(implicit id: UUID): Message[T] =
-  	new Message[T](id, grouping, metaData, DateTime.now, None, payload)
+  	new Message[T](MessageHeader(id, grouping, metaData, DateTime.now, None), payload)
   
   def apply[T <: AnyRef](payload: T)(implicit id: UUID): Message[T] =
   	apply(None, Map.empty, payload)(id)
