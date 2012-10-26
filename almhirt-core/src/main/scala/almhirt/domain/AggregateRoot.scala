@@ -65,14 +65,14 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
    * @param prob The reason for rejection as a problem
    * @return A failed [[almhirt.domain.UpdateRecorder]]
    */
-  def reject(prob: Problem): UpdateRecorder[Event, AR] = UpdateRecorder.reject(prob)
+  protected def reject(prob: Problem): UpdateRecorder[Event, AR] = UpdateRecorder.reject(prob)
 
    /** Abort the update process. Returns the default application problem
    * 
    * @param msg The reason for rejection as a message
    * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem]] being the default application problem
    */
-  def reject(msg: String): UpdateRecorder[Event, AR] = reject(defaultApplicationProblem.withMessage(msg))
+  protected def reject(msg: String): UpdateRecorder[Event, AR] = reject(defaultApplicationProblem.withMessage(msg))
 
    /** Abort the update process. Returns a  BusinessRuleViolatedProblem
    * 
@@ -81,7 +81,7 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
    * @param severity The severity of the failure. Default is [[almhirt.validation.NoProblem]]
    * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem.BusinessRuleViolatedProblem]] being the application problem
    */
-  def rejectBusinessRuleViolated(msg: String, key: String, severity: Severity = NoProblem): UpdateRecorder[Event, AR] = reject(BusinessRuleViolatedProblem(msg, key, severity))
+  protected def rejectBusinessRuleViolated(msg: String, key: String, severity: Severity = NoProblem): UpdateRecorder[Event, AR] = reject(BusinessRuleViolatedProblem(msg, key, severity))
 
   /** Validates the event and then applies the handler
    * 

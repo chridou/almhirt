@@ -72,11 +72,6 @@ class UnitOfWorkHandlerSpecs extends Specification {
       val res = ChangeTestPersonNameUnitOfWork.handler(ChangeTestPersonName(originalEntity.id, None, ""), originalEntity)
       res.isFailure
     }
-    """return a failure when a valid name and a different id and the correct version is supplied""" in {
-      val originalEntity = NewTestPersonUnitOfWork.handler(NewTestPerson("Harry")).forceResult._1
-      val res = ChangeTestPersonNameUnitOfWork.handler(ChangeTestPersonName(java.util.UUID.randomUUID, Some(originalEntity.version), "Bill"), originalEntity)
-      res.isFailure
-    }
     """return a failure when an invalid name and a different id and the correct version is supplied""" in {
       val originalEntity = NewTestPersonUnitOfWork.handler(NewTestPerson("Harry")).forceResult._1
       val res = ChangeTestPersonNameUnitOfWork.handler(ChangeTestPersonName(java.util.UUID.randomUUID, Some(originalEntity.version), ""), originalEntity)
