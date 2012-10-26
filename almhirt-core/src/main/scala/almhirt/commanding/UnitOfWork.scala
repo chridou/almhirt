@@ -58,9 +58,9 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
             getAggregateRoot(repository, idAndVersion._1).mapV(ar =>
               checkArId(ar, idAndVersion._1).bind(ar =>
                 checkVersion(ar, idAndVersion._2).bind(ar =>
-                  handler(com, ar).sideEffect(
+                  handler(com, ar)))).sideEffect(
                     p => updateFailedOperationState(context, p, ticket),
-                    res => repository.store(res._1, res._2, ticket))))))))
+                    res => repository.store(res._1, res._2, ticket)))))
   }
 
   private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {

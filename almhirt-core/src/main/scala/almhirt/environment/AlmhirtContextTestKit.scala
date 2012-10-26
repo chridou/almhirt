@@ -47,6 +47,7 @@ trait AlmhirtContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
+	  val uuidGenerator = new JavaUtilUuidGenerator()
       def dispose = actorSystem.shutdown
     }
     implicit val dur = akkaCtx.shortDuration
@@ -87,6 +88,7 @@ trait AlmhirtContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
+	  val uuidGenerator = new JavaUtilUuidGenerator()
       def dispose = actorSystem.shutdown
     }
     val context =

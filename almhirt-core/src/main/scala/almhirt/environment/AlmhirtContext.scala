@@ -36,8 +36,6 @@ trait AlmhirtContext extends Disposable {
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
 
-  def uuidGenerator: UuidGenerator
-  
   def problemTopic: Option[String]
   def reportProblem(prob: Problem): Unit
 }

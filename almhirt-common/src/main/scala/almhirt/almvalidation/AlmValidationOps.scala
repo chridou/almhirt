@@ -116,11 +116,13 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
         prob => if(prob.severity <= Major) v.success[P] else self,
         _ => self)
     
+  /** Never use in production code! */
   def forceResult(): T = 
-    self fold (prob => throw ValidationForcedException(prob), v => v)
+    self fold (prob => throw ResultForcedFromValidationException(prob), v => v)
 
+  /** Never use in production code! */
   def forceProblem(): P = 
-    self fold (prob => prob, v => throw new Exception("A problem has been forced from a success"))
+    self fold (prob => prob, v => throw new ProblemForcedFromValidationException())
   
   def toProblemOption(): Option[Problem] = 
     self fold (prob => Some(prob), _ => None)

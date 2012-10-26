@@ -72,6 +72,19 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit execution
       }
     })
   }
+
+  def sideEffect(fail: Problem => Unit, succ: R => Unit): Unit = {
+    underlying onComplete({
+      case Right(validation) => validation fold(fail, succ)
+      case Left(err) => {
+        val prob = err match {
+          case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out.", cause = Some(CauseIsThrowable(tout))) 
+          case exn => UnspecifiedProblem(message = exn.getMessage, severity = Major, category = SystemProblem, cause = Some(CauseIsThrowable(exn))) 
+        }
+        fail(prob)
+      }
+    })
+  }
   
   def onSuccess(onRes: R => Unit): AlmFuture[R] = 
     underlying onSuccess({

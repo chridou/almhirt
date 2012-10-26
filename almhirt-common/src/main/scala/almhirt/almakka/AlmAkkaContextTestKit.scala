@@ -3,6 +3,7 @@ package almhirt.almakka
 import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
 import akka.util.duration._
+import almhirt.JavaUtilUuidGenerator
 import com.typesafe.config._
 
 trait AlmAkkaContextTestKit {
@@ -38,6 +39,7 @@ trait AlmAkkaContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
+	  val uuidGenerator = new JavaUtilUuidGenerator()
       def dispose = actorSystem.shutdown
     }
 
@@ -58,6 +60,7 @@ trait AlmAkkaContextTestKit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
+	  val uuidGenerator = new JavaUtilUuidGenerator()
       def dispose = actorSystem.shutdown
     }
 
