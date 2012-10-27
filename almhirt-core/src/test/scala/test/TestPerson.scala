@@ -4,7 +4,7 @@ import almhirt._
 import almhirt.domain._
 import almhirt.domain.impl.BasicAggregateRootRepository
 import almhirt.environment.AlmhirtContext
-import almhirt.eventsourcing.DomainEventLog
+import almhirt.eventlog.DomainEventLog
 import java.util.UUID
 import org.joda.time.DateTime
 

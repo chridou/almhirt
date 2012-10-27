@@ -23,7 +23,7 @@ class AggregateRootFactorySpecsWithPersonEntity extends Specification {
   	}
   	"return a new Person when given a TestPersonCreated event to 'buildFromHistory'" in {
   	  val event = TestPersonCreated(UUID.randomUUID(), "Peter")
-  	  val entityValidation = TestPerson.rebuildFromHistory(NonEmptyList(event))
+  	  val entityValidation = TestPerson.rebuildFromHistory(List(event))
   	  val entity = entityValidation.forceResult
   	  entity.id must beEqualTo(event.id) and (entity.name must beEqualTo(event.name))
   	}
@@ -39,7 +39,7 @@ class AggregateRootFactorySpecsWithPersonEntity extends Specification {
   	}
   	"return a Failure when given a TestPersonNameChanged event to 'buildFromHistory'" in {
   	  val event = TestPersonNameChanged(UUID.randomUUID(), 1L, "Peter")
-  	  val entityValidation = TestPerson.rebuildFromHistory(NonEmptyList(event))
+  	  val entityValidation = TestPerson.rebuildFromHistory(List(event))
   	  entityValidation.isFailure
   	}
   }

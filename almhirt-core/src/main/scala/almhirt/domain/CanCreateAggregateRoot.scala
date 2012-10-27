@@ -31,7 +31,7 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
   }
 
   /** Creates a new aggregate root and applies all the events to it */
-  def rebuildFromHistory(history: NonEmptyList[Event]): DomainValidation[AR] = {
+  def rebuildFromHistory(history: List[Event]): DomainValidation[AR] = {
   	def buildEventSourced(es: AR, rest: List[Event]): DomainValidation[AR] = {
   	  rest match {
   	  	case Nil => es.success
@@ -39,7 +39,11 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
   	  	  es.applyEvent(x) fold(_.failure, buildEventSourced(_, xs))
   	  }
   	}
-    applyEvent(history.head) bind (freshES => buildEventSourced(freshES, history.tail))
+  	history match {
+  	  case Nil => EmptyCollectionProblem("At least one event is required to rebuild from history").failure
+  	  case ls => applyEvent(ls.head) bind (freshES => buildEventSourced(freshES, ls.tail))
+  	}
+    
   }
   
   /** Creates an UpdateRecorder from the creating event */

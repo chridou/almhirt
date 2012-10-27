@@ -15,7 +15,7 @@ class AggregateRootSpecsWithTestPerson extends Specification {
   
   "A Person created by methods on the aggregate root" should {
     "be the same when created from the history of" in {
-      val rebuilt = TestPerson.rebuildFromHistory(NonEmptyList(events.head, events.tail: _*))
+      val rebuilt = TestPerson.rebuildFromHistory(events)
       rebuilt must beEqualTo(shouldBe.result)
     }
   }
