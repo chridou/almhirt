@@ -5,7 +5,7 @@ import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.domain._
 import almhirt.environment.AlmhirtContextTestKit
-import almhirt.eventsourcing.impl.DevNullEventLog
+import almhirt.eventlog.impl.DevNullEventLog
 import test._
 
 class UnsafeRepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {

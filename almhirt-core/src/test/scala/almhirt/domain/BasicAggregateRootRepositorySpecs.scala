@@ -5,10 +5,10 @@ import scalaz.NonEmptyList
 import akka.util.Duration
 import almhirt._
 import almhirt.almvalidation.kit._
-import almhirt.eventsourcing.DomainEventLog
+import almhirt.eventlog.DomainEventLog
 import almhirt.domain.impl.BasicAggregateRootRepository
 import almhirt.environment.AlmhirtContextTestKit
-import almhirt.eventsourcing.impl._
+import almhirt.eventlog.impl._
 import test._
 
 class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContextTestKit {
