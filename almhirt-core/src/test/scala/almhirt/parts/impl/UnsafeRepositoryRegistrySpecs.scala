@@ -14,7 +14,7 @@ class UnsafeRepositoryRegistrySpecs extends Specification with AlmhirtContextTes
       inFakeContext(ctx => {
         val repo = new TestPersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new UnsafeRepositoryRegistry()
-        registry.register(repo)
+        registry.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](repo)
         true
       })
     }
@@ -22,8 +22,8 @@ class UnsafeRepositoryRegistrySpecs extends Specification with AlmhirtContextTes
       inFakeContext(ctx => {
         val repo = new TestPersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new UnsafeRepositoryRegistry()
-        registry.register(repo)
-        registry.get[TestPersonRepository].forceResult === repo
+        registry.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](repo)
+        registry.getForAggregateRoot[TestPerson, TestPersonEvent].forceResult === repo
       })
     }
   }

@@ -11,14 +11,11 @@ import almhirt.domain.DomainEvent
  */
 class UnsafeRepositoryRegistry extends HasRepositories {
   private val repos = scala.collection.mutable.Map[String, AnyRef]()
-  
-  def getByType(repoType: Class[_ <: AggregateRootRepository[_,_]]): AlmValidation[AnyRef] =
-    repos.get(repoType.getName) match {
+  def getForAggregateRootByType(arType: Class[_ <: AggregateRoot[_,_]]): AlmValidation[AnyRef] =
+    repos.get(arType.getName) match {
       case Some(r) => r.success
-      case None => NotFoundProblem("Repository of type '%s' not found".format(repoType.getName)).failure
+      case None => NotFoundProblem("Repository for aggregate root '%s' not found".format(arType.getName)).failure
     }
-
-  def register[T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[T]) {
+  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[AR]) =
     repos.put(m.erasure.getName, repo)
-  }
 }

@@ -12,8 +12,8 @@ import almhirt.domain._
 import almhirt.parts.HasRepositories
 import almhirt.environment.AlmhirtContext
 
-trait UnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent] extends HandlesCommand {
-  def repositoryType: Class[_ <: AggregateRootRepository[AR, TEvent]]
+abstract class UnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]) extends HandlesCommand {
+  val aggregateRootType = m.erasure.asInstanceOf[Class[AR]]
 }
 
 trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
@@ -21,7 +21,7 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
   def handle(com: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[String]) {
     if (com.isCreator) {
       val command = com.asInstanceOf[TCom]
-      repositories.getByType(repositoryType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
+      repositories.getForAggregateRootByType(self.aggregateRootType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
         fail =>
           (),
         repo => {
@@ -97,7 +97,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
   private def getRepository(repositories: HasRepositories): AlmValidation[AggregateRootRepository[AR, TEvent]] =
     repositories
-      .getByType(repositoryType)
+      .getForAggregateRootByType(self.aggregateRootType)
       .bind(x => inTryCatch(x.asInstanceOf[AggregateRootRepository[AR, TEvent]]))
 
   private def getAggregateRoot(repository: AggregateRootRepository[AR, TEvent], id: UUID): AlmFuture[AR] =

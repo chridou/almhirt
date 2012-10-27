@@ -4,11 +4,11 @@ import almhirt.AlmValidation
 import almhirt.domain._
 
 trait HasRepositories {
-  def getByType(repoType: Class[_ <: AggregateRootRepository[_,_]]): AlmValidation[AnyRef]
-  def get[T <: AggregateRootRepository[_,_]](implicit m: Manifest[T]): AlmValidation[T] =
-    getByType(m.erasure.asInstanceOf[Class[T]]).map(_.asInstanceOf[T])
+  def getForAggregateRootByType(arType: Class[_ <: AggregateRoot[_,_]]): AlmValidation[AnyRef]
+  def getForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, TEvent]] =
+    getForAggregateRootByType(m.erasure.asInstanceOf[Class[AR]]).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]])
   /** Registers a new repository. Has replace semantics. 
    */
-  def register[T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[T]): Unit
+  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[AR]): Unit
 }
 

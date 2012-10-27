@@ -14,7 +14,7 @@ class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContex
       inFakeContext(ctx => {
         val repo = new TestPersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new ConcurrentRepositoryRegistry()
-        registry.register(repo)
+        registry.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](repo)
         true
       })
     }
@@ -22,8 +22,8 @@ class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContex
       inFakeContext(ctx => {
         val repo = new TestPersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new ConcurrentRepositoryRegistry()
-        registry.register(repo)
-        registry.get[TestPersonRepository].forceResult === repo
+        registry.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](repo)
+        registry.getForAggregateRoot[TestPerson, TestPersonEvent].forceResult === repo
       })
     }
   }
