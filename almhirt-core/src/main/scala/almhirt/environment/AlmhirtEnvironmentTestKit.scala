@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import almhirt._
 import almhirt.almakka.AlmAkkaContext
 import almhirt.commanding._
+import almhirt.eventlog.impl._
 import almhirt.domain.DomainEvent
 import almhirt.messaging.impl._
 import almhirt.messaging._
@@ -37,13 +38,14 @@ trait AlmhirtEnvironmentTestKit {
 
   def createTestEnvironment(): AlmhirtEnvironment = createTestEnvironment(conf)
   def createTestEnvironment(aConf: Config): AlmhirtEnvironment = {
-    val almhirtCtx = contextTestKit.createTestContext(aConf)
+    implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
     val env =
       new AlmhirtEnvironment {
         def context = almhirtCtx
 
-        val repositories = new UnsafeRepositoryRegistry()
         def commandExecutor = new UnsafeCommandExecutorOnCallingThread(repositories, almhirtCtx)
+        val repositories = new UnsafeRepositoryRegistry()
+        val eventLog = new InefficientSerialziedInMemoryDomainEventLog()
 
         def dispose = context.dispose
       }
@@ -52,13 +54,14 @@ trait AlmhirtEnvironmentTestKit {
 
   def createFakeEnvironment(): AlmhirtEnvironment = createFakeEnvironment(conf)
   def createFakeEnvironment(aConf: Config): AlmhirtEnvironment = {
-    val almhirtCtx = contextTestKit.createTestContext(aConf)
+    implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
     val env =
       new AlmhirtEnvironment {
         def context = almhirtCtx
 
-        val repositories = new DevNullRepositoryRegistry()
         def commandExecutor = new DevNullCommandExecutor()
+        val repositories = new DevNullRepositoryRegistry()
+        val eventLog = new DevNullEventLog
 
         def dispose = context.dispose
       }
@@ -73,8 +76,8 @@ trait AlmhirtEnvironmentTestKit {
     res
   }
 
-  def inEnvironment[T](compute: AlmhirtEnvironment => T): T = inEnvironment[T](compute, conf)
-  def inEnvironment[T](compute: AlmhirtEnvironment => T, conf: Config): T = {
+  def inTestEnvironment[T](compute: AlmhirtEnvironment => T): T = inTestEnvironment[T](compute, conf)
+  def inTestEnvironment[T](compute: AlmhirtEnvironment => T, conf: Config): T = {
     val context = createTestEnvironment(conf)
     val res = compute(context)
     context.dispose
