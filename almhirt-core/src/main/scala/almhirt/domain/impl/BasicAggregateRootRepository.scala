@@ -3,7 +3,7 @@ package almhirt.domain.impl
 import scalaz._, Scalaz._
 import almhirt._
 import almhirt.domain._
-import almhirt.eventsourcing.DomainEventLog
+import almhirt.eventlog.DomainEventLog
 import almhirt.environment.AlmhirtContext
 
 abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends AggregateRootRepository[AR, Event] {

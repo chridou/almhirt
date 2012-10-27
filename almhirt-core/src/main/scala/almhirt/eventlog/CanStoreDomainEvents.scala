@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.eventsourcing
+package almhirt.eventlog
 
 import scalaz.{Validation}
 import almhirt._

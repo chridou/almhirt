@@ -1,4 +1,4 @@
-package almhirt.eventsourcing
+package almhirt.eventlog
 
 trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents{
 

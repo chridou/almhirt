@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.eventsourcing.impl
+package almhirt.eventlog.impl
 
 import java.util.UUID
 import scalaz.syntax.validation._
@@ -25,7 +25,7 @@ import almhirt._
 import almhirt.environment.AlmhirtContext
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
-import almhirt.eventsourcing._
+import almhirt.eventlog._
 
 class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
   private implicit def timeout = Timeout(almhirtContext.akkaContext.mediumDuration)
