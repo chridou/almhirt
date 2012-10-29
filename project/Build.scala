@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.10-SNAPSHOT"
+  val buildVersion      = "0.0.20-SNAPSHOT"
   val buildScalaVersion = "2.9.2"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -56,6 +56,33 @@ trait CommonBuild {
   )
 }
 
+trait XtractNDuceBuild {
+  import Dependencies._
+  import Resolvers._
+  def xtractnduceProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += specs2
+  )
+}
+
+trait DocItBuild {
+  import Dependencies._
+  import Resolvers._
+  def docitProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += specs2
+  )
+}
+
 trait CoreBuild {
   import Dependencies._
   import Resolvers._
@@ -99,7 +126,7 @@ trait UnfilteredBuild {
   
 }
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with UnfilteredBuild with CommonMongoBuild{
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with XtractNDuceBuild with UnfilteredBuild with DocItBuild with CommonMongoBuild{
   lazy val root = Project(	id = "almhirt",
 	                        base = file(".")) aggregate(common, core, commonMongo, unfiltered)
 	
@@ -109,8 +136,14 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with Unfiltere
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common)
 
-  lazy val commonMongo = commonMongoProject(	name = "almhirt-common-mongo",
-                       			baseFile = file("almhirt-common-mongo")) dependsOn(common)
+  lazy val xtractnduce = xtractnduceProject(	name = "almhirt-xtractnduce",
+                       			baseFile = file("almhirt-xtractnduce")) dependsOn(common)
+
+  lazy val docit = xtractnduceProject(	name = "almhirt-docit",
+                       			baseFile = file("almhirt-docit")) dependsOn(common)
+								
+  lazy val commonMongo = commonMongoProject(	name = "almhirt-xtractnduce-mongo",
+                       			baseFile = file("almhirt-xtractnduce-mongo")) dependsOn(common, xtractnduce)
 
   lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
 	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)
