@@ -22,7 +22,8 @@ trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonU
 
 object NewTestPersonUnitOfWork extends TestPersonCreatorUnitOfWork[NewTestPerson] {
   val commandType = classOf[NewTestPerson]
-  val handler = (cmd: NewTestPerson) => TestPerson(cmd.name).recordings
+  val handler = (cmd: NewTestPerson) => 
+    TestPerson(cmd.name).recordings
 }
 
 object ChangeTestPersonNameUnitOfWork extends TestPersonMutatorUnitOfWork[ChangeTestPersonName] {

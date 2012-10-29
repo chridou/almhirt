@@ -33,7 +33,6 @@ class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: Almhi
   private var loggedEvents: List[DomainEvent] = Nil
 
   private case class LogEvents(events: List[DomainEvent])
-  private case class LogEventsAsync(events: List[DomainEvent], ticket: Option[String])
   private case object GetAllEvents
   private case class GetEvents(entityId: UUID)
   private case class GetEventsFrom(entityId: UUID, from: Long)
@@ -46,28 +45,18 @@ class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: Almhi
       case LogEvents(events) =>
         loggedEvents = loggedEvents ++ events
         sender ! CommittedDomainEvents(events).success
-      case LogEventsAsync(events, ticket) =>
-        loggedEvents = loggedEvents ++ events
-        ticket match {
-          case Some(t) => almhirtContext.operationStateChannel.post(Message.createWithUuid(Executed(t)))
-          case None => ()
-        }
       case GetAllEvents =>
         sender ! loggedEvents.toIterable.success
       case GetEvents(entityId) =>
-        val pinnedSender = sender
-        AlmFuture { loggedEvents.view.filter(_.id == entityId).toIterable.success }.onComplete(pinnedSender ! _)
+        sender ! loggedEvents.view.filter(_.id == entityId).toIterable.success
       case GetEventsFrom(entityId, from) =>
-        val pinnedSender = sender
-        AlmFuture { loggedEvents.view.filter(x =>x.id == entityId && x.version >= from).toIterable.success }.onComplete(pinnedSender ! _)
+        sender ! loggedEvents.view.filter(x =>x.id == entityId && x.version >= from).toIterable.success
       case GetEventsFromTo(entityId, from, to) =>
-        val pinnedSender = sender
-        AlmFuture { loggedEvents.view.filter(x =>x.id == entityId && x.version >= from && x.version <= to).toIterable.success }.onComplete(pinnedSender ! _)
+        sender ! loggedEvents.view.filter(x =>x.id == entityId && x.version >= from && x.version <= to).toIterable.success
     }
   }
 
   def storeEvents(events: List[DomainEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
-  def storeEvents(events: List[DomainEvent], ticket: Option[String]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
 
   def getAllEvents() = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
   def getEvents(id: UUID) = (coordinator ? GetEvents(id)).toAlmFuture[Iterable[DomainEvent]]

@@ -18,23 +18,29 @@ import almhirt.parts.CommandExecutor
 class UnsafeCommandExecutorOnCallingThread(repositories: HasRepositories, context: AlmhirtContext) extends CommandExecutor {
   private val handlers: collection.mutable.Map[String, HandlesCommand] = collection.mutable.HashMap.empty
 
-  def addHandler(handler: HandlesCommand) { handlers.put(handler.commandType.getName, handler)}
+  def addHandler(handler: HandlesCommand) {
+    handlers.put(handler.commandType.getName, handler)
+  }
+  
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]) {
     handlers.remove(commandType.getName)
   }
-  def getHandlerByType(commandType: Class[_ <: DomainCommand]): AlmValidation[HandlesCommand] = 
+  
+  def getHandlerByType(commandType: Class[_ <: DomainCommand]): AlmValidation[HandlesCommand] =
     handlers.get(commandType.getName) match {
       case Some(h) => h.success
-      case None => NotFoundProblem("No handler found for command %s".format(commandType.getName)).failure
-  }
-    
+      case None => NotFoundProblem("No handler found for command %s".format(commandType.getName), severity = Major).failure
+    }
+
   def executeCommand(command: DomainCommand, ticket: Option[String]) {
     getHandlerForCommand(command).fold(
-      fail =>
+      fail => {
+        context.reportProblem(fail)
         ticket match {
           case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, fail)))
           case None => ()
-        },
+        }
+      },
       handler => handler.handle(command, repositories, context, ticket))
   }
 }

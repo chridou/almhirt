@@ -34,28 +34,28 @@ class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContex
   "A PersonRepository" should {
     "be able to store a person" in {
       withNewRepository(repo => {
-        repo.store(person1, events1).awaitResult(Duration.Inf).isSuccess
+        repo.storeAndRetrieveUpdated(person1, events1).awaitResult(Duration.Inf).isSuccess
       })
     }
     "return the same person as stored when get was called" in {
       withNewRepository(repo => {
-        repo.store(person1, events1).awaitResult(Duration.Inf)
+        repo.storeAndRetrieveUpdated(person1, events1).awaitResult(Duration.Inf)
         val res = repo.get(person1.id).awaitResult(Duration.Inf)
         res.forceResult === person1
       })
     }
     "return a NotFoundProblem when it is queried with a wrong id" in {
       withNewRepository(repo => {
-        repo.store(person1, events1).awaitResult(Duration.Inf)
+        repo.storeAndRetrieveUpdated(person1, events1).awaitResult(Duration.Inf)
         val res = repo.get(person2.id).awaitResult(Duration.Inf)
         classOf[NotFoundProblem].isAssignableFrom(res.forceProblem.getClass)
       })
     }
     "return the correct persons when queried by id" in {
       withNewRepository(repo => {
-        repo.store(person1, events1).awaitResult(Duration.Inf)
-        repo.store(person2, events2).awaitResult(Duration.Inf)
-        repo.store(person3, events3).awaitResult(Duration.Inf)
+        repo.storeAndRetrieveUpdated(person1, events1).awaitResult(Duration.Inf)
+        repo.storeAndRetrieveUpdated(person2, events2).awaitResult(Duration.Inf)
+        repo.storeAndRetrieveUpdated(person3, events3).awaitResult(Duration.Inf)
         val p1 = repo.get(person1.id).awaitResult(Duration.Inf).forceResult
         val p2 = repo.get(person2.id).awaitResult(Duration.Inf).forceResult
         val p3 = repo.get(person3.id).awaitResult(Duration.Inf).forceResult

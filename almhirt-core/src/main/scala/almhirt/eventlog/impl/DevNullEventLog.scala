@@ -16,7 +16,6 @@ import almhirt.eventlog._
 class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
   implicit private def futureContext = almhirtContext.akkaContext.futureDispatcher 
   def storeEvents(events: List[DomainEvent]) = AlmPromise{ CommittedDomainEvents(Nil).success }
-  def storeEvents(events: List[DomainEvent], ticket: Option[String]) = AlmPromise{ CommittedDomainEvents(Nil).success }
 
   def getAllEvents() = AlmPromise{ Iterable.empty.success }
   def getEvents(id: UUID) = AlmPromise{ Iterable.empty.success }

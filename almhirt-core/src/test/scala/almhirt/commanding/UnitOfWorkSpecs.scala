@@ -14,9 +14,13 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
           implicit val duration = env.context.akkaContext.mediumDuration
           env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(env.eventLog)(env.context))
           env.commandExecutor.addHandler(NewTestPersonUnitOfWork)
+          val reg = (env.context.problemChannel <-<* (prob => println(prob))).awaitResult.forceResult
           env.commandExecutor.executeCommand(CommandEnvelope(NewTestPerson("Betty"), None))
-          val events = env.eventLog.getAllEvents.awaitResult.forceResult.toList.map(_.asInstanceOf[TestPersonEvent])
-          val created = TestPerson.rebuildFromHistory(events).forceResult
+          val eventsRes = env.eventLog.getAllEvents.awaitResult
+          val events = eventsRes.forceResult.toList.map(_.asInstanceOf[TestPersonEvent])
+          val createdRes = TestPerson.rebuildFromHistory(events)
+          val created = createdRes.forceResult
+          reg.dispose
           created.name === "Betty"
       }
     }

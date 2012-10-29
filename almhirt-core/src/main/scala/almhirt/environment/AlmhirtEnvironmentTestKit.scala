@@ -41,10 +41,10 @@ trait AlmhirtEnvironmentTestKit {
     implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
     val env =
       new AlmhirtEnvironment {
-        def context = almhirtCtx
+        val context = almhirtCtx
 
-        def commandExecutor = new UnsafeCommandExecutorOnCallingThread(repositories, almhirtCtx)
         val repositories = new UnsafeRepositoryRegistry()
+        val commandExecutor = new UnsafeCommandExecutorOnCallingThread(repositories, almhirtCtx)
         val eventLog = new InefficientSerialziedInMemoryDomainEventLog()
 
         def dispose = context.dispose
@@ -57,10 +57,10 @@ trait AlmhirtEnvironmentTestKit {
     implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
     val env =
       new AlmhirtEnvironment {
-        def context = almhirtCtx
+        val context = almhirtCtx
 
-        def commandExecutor = new DevNullCommandExecutor()
         val repositories = new DevNullRepositoryRegistry()
+        val commandExecutor = new DevNullCommandExecutor()
         val eventLog = new DevNullEventLog
 
         def dispose = context.dispose
