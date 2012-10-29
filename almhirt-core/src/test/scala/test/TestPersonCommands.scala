@@ -7,7 +7,7 @@ trait TestPersonCommand extends DomainCommand
 trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyle
 trait TestPersonMutatorCommand extends TestPersonCommand with MutatorCommandStyle
 
-case class NewTestPerson(name: String) extends TestPersonCreatorCommand
+case class NewTestPerson(id: UUID, name: String) extends TestPersonCreatorCommand
 case class ChangeTestPersonName(id: UUID, version: Option[Long], newName: String) extends TestPersonMutatorCommand
 case class SetTestPersonAddress(id: UUID, version: Option[Long], aquiredAddress: String) extends TestPersonMutatorCommand
 case class MoveTestPerson(id: UUID, version: Option[Long], newAddress: String) extends TestPersonMutatorCommand
@@ -23,7 +23,7 @@ trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonU
 object NewTestPersonUnitOfWork extends TestPersonCreatorUnitOfWork[NewTestPerson] {
   val commandType = classOf[NewTestPerson]
   val handler = (cmd: NewTestPerson) => 
-    TestPerson(cmd.name).recordings
+    TestPerson(cmd.id, cmd.name).recordings
 }
 
 object ChangeTestPersonNameUnitOfWork extends TestPersonMutatorUnitOfWork[ChangeTestPersonName] {

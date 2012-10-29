@@ -5,7 +5,6 @@ import scalaz.syntax.validation._
 import akka.actor.{ ActorRefFactory, Actor, Props }
 import akka.pattern._
 import akka.util.Timeout
-import almhirt.almakka.AlmAkkaContext
 import almhirt.messaging.Message
 import almhirt._
 import almhirt.environment.AlmhirtContext
@@ -14,7 +13,7 @@ import almhirt.domain.DomainEvent
 import almhirt.eventlog._
 
 class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
-  implicit private def futureContext = almhirtContext.akkaContext.futureDispatcher 
+  implicit private def futureContext = almhirtContext.system.futureDispatcher 
   def storeEvents(events: List[DomainEvent]) = AlmPromise{ CommittedDomainEvents(Nil).success }
 
   def getAllEvents() = AlmPromise{ Iterable.empty.success }

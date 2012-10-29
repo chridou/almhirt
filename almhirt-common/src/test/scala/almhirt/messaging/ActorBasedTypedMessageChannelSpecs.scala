@@ -2,23 +2,24 @@ package almhirt.messaging
 
 import org.specs2.mutable._
 import akka.util.Duration
+import almhirt._
 import almhirt.syntax.almvalidation._
-import almhirt.almakka._
+import almhirt.almhirtsystem.AlmhirtsystemTestkit
 import scalaz._, Scalaz._
 
-class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaContextTestKit {
+class ActorBasedTypedMessageChannelSpecs extends Specification with AlmhirtsystemTestkit {
   private class A(val propa: Int)
   private class B(propa: Int, val propb: String) extends A(propa)
   
   
   implicit def randUUID = java.util.UUID.randomUUID
-  private def getChannel[T <: AnyRef](context: AlmAkkaContext)(implicit m: Manifest[T]): MessageChannel[T] = {
+  private def getChannel[T <: AnyRef](context: AlmhirtSystem)(implicit m: Manifest[T]): MessageChannel[T] = {
     impl.ActorBasedMessageChannel[T](Some("testChannel"), context)
   }
 
   """A MessageChannel[A] where B <: A""" should {
     """accept both As and Bs as message payloads""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         channel.post(Message(new A(1)))
         channel.post(Message(new B(1, "B")))
@@ -26,7 +27,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """take a handler for A that will be triggered when an A is posted""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         var hitA = false
         val future = channel <-* (x => hitA = true)
@@ -37,7 +38,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """take a handler for A that will be triggered when an B is posted""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         var hitA = false
         val future = channel <-* (x => hitA = true)
@@ -51,7 +52,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
   
   """A MessageChannel[B] where B <: A""" should {
     """take a handler for B that will be triggered when a B is posted""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[B](ctx)
         var hitB = false
         val future = channel <-* (x => hitB = true)
@@ -65,7 +66,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
   
   """A MessageChannel[A] with a subchannel of MessageChannel[B] where B <: A""" should {
     """trigger the handler on the parent for an A posted on the parent and not the handler on the subchannel""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -79,7 +80,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """trigger only the handler on the subchannel for a B posted on the subchannel""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -93,7 +94,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """trigger the handler on the parent for an A posted on the parent""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -107,7 +108,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """not trigger the handler on the subchannel for an A posted on the parent""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -122,7 +123,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
     }
     
     """not trigger the handler on the parent for an A posted on the parent when the classifier is not met""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -136,7 +137,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """trigger the handler on the parent for an A posted on the parent when the classifier is met""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -150,7 +151,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """not trigger the handler on the parent or the subchannelfor an B posted on the parent when the classifier is not met""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -164,7 +165,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """trigger the handler on the parent and the subchannel for an B posted on the parent when the classifier is met""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -178,7 +179,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """trigger the handler on the parent and not on the subchannel for an B posted on the parent when the classifier is met only in the parent""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false
@@ -192,7 +193,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with AlmAkkaConte
       }
     }
     """not trigger the handler on the parent but on the subchannel for an B posted on the subchannel when the classifier is met only in the subchannel""" in {
-      inOwnContext { ctx =>
+      inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
         val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
         var hitA = false

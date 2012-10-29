@@ -8,7 +8,6 @@ import akka.dispatch._
 import almhirt._
 import almhirt.messaging._
 import almhirt.messaging.impl.commands._
-import almakka.{ AlmAkkaContext }
 import almvalidation.kit._
 import almfuture.all._
 
@@ -24,20 +23,20 @@ object ActorBasedMessageChannel {
     new ActorBasedMessageChannelImpl[T](actorSystem, newDispatcher, timeout, futureDispatcher, None, None, None)
   }
 
-  def apply[T <: AnyRef](name: Option[String], almAkkaContext: AlmAkkaContext, registration: Option[RegistrationHolder], topicPattern: Option[String])(implicit m: Manifest[T]): MessageChannel[T] = {
-    val newDispatcher = MessageChannelActorHandler(name, almAkkaContext)
+  def apply[T <: AnyRef](name: Option[String], almhirtsystem: AlmhirtSystem, registration: Option[RegistrationHolder], topicPattern: Option[String])(implicit m: Manifest[T]): MessageChannel[T] = {
+    val newDispatcher = MessageChannelActorHandler(name, almhirtsystem)
     new ActorBasedMessageChannelImpl[T](
-      almAkkaContext.actorSystem,
+      almhirtsystem.actorSystem,
       newDispatcher,
-      almAkkaContext.mediumDuration,
-      almAkkaContext.futureDispatcher,
-      almAkkaContext.messageStreamDispatcherName,
+      almhirtsystem.mediumDuration,
+      almhirtsystem.futureDispatcher,
+      almhirtsystem.messageStreamDispatcherName,
       registration,
       topicPattern)
   }
 
-  def apply[T <: AnyRef](name: Option[String], almAkkaContext: AlmAkkaContext)(implicit m: Manifest[T]): MessageChannel[T] = {
-    apply(name, almAkkaContext, None, None)
+  def apply[T <: AnyRef](name: Option[String], almhirtsystem: AlmhirtSystem)(implicit m: Manifest[T]): MessageChannel[T] = {
+    apply(name, almhirtsystem, None, None)
   }
 
   private[impl] def apply[T <: AnyRef](name: Option[String], actorSystem: ActorRefFactory, timeout: Timeout, futureDispatcher: ExecutionContext, actorDispatcherName: Option[String], registration: Option[RegistrationHolder], topicPattern: Option[String], channelHandler: ActorRef)(implicit m: Manifest[T]): MessageChannel[T] = {

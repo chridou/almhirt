@@ -50,7 +50,7 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
   def handler: MutatorCommandHandler[AR, TEvent, TCom]
   def handle(untypedcom: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[String]) {
-    implicit val executionContext = context.akkaContext.futureDispatcher
+    implicit val executionContext = context.system.futureDispatcher
     val res =
       checkCommandType(untypedcom).bind(com =>
         getIdAndVersion(com).bind(idAndVersion =>

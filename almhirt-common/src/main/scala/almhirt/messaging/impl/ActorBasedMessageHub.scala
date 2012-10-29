@@ -28,8 +28,8 @@ object ActorBasedMessageHub {
     new ActorBasedMessageHubImpl(actorSystem, newDispatcher, timeout, futureDispatcher, actorDispatcherName)
   }
   
-  def apply(name: Option[String], almAkkaContext: AlmAkkaContext): ActorBasedMessageHub = {
-    apply(name, almAkkaContext.actorSystem, almAkkaContext.mediumDuration, almAkkaContext.futureDispatcher, almAkkaContext.messageHubDispatcherName)
+  def apply(name: Option[String], almhirtsystem: AlmhirtSystem): ActorBasedMessageHub = {
+    apply(name, almhirtsystem.actorSystem, almhirtsystem.mediumDuration, almhirtsystem.futureDispatcher, almhirtsystem.messageHubDispatcherName)
   }
   
   private class ActorBasedMessageHubImpl(actorSystem: ActorRefFactory, val dispatcher: ActorRef, implicit val timeout: Timeout, implicit val futureDispatcher: ExecutionContext, actorDispatcherName: Option[String]) extends ActorBasedMessageHub{

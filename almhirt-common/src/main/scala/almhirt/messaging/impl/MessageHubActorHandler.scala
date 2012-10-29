@@ -81,8 +81,8 @@ object MessageHubActorHandler {
      }
   }
 
-  def apply(name: Option[String], almAkkaContext: AlmAkkaContext): ActorRef =
-    apply(name, almAkkaContext.actorSystem, almAkkaContext.mediumDuration, almAkkaContext.futureDispatcher, almAkkaContext.messageHubDispatcherName)
+  def apply(name: Option[String], almhirtsystem: AlmhirtSystem): ActorRef =
+    apply(name, almhirtsystem.actorSystem, almhirtsystem.mediumDuration, almhirtsystem.futureDispatcher, almhirtsystem.messageHubDispatcherName)
   
   private class MessageHubActorHandlerImpl(val timeout: Timeout, val futureDispatcher: ExecutionContext) extends Actor with MessageHubActorHandler
   

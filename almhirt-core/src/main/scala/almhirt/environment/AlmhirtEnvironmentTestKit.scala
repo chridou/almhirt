@@ -2,7 +2,6 @@ package almhirt.environment
 
 import akka.actor.ActorSystem
 import almhirt._
-import almhirt.almakka.AlmAkkaContext
 import almhirt.commanding._
 import almhirt.eventlog.impl._
 import almhirt.domain.DomainEvent

@@ -15,7 +15,6 @@
 package almhirt.environment
 
 import almhirt._
-import almhirt.almakka.AlmAkkaContext
 import almhirt.commanding._
 import almhirt.parts._
 import almhirt.domain.DomainEvent
@@ -29,7 +28,7 @@ import almhirt.parts.HasRepositories
 
 trait AlmhirtContext extends Disposable {
   def config: Config
-  def akkaContext: AlmAkkaContext
+  def system: AlmhirtSystem
   def messageHub: MessageHub
   def commandChannel: MessageChannel[CommandEnvelope]
   def domainEventsChannel: MessageChannel[DomainEvent]

@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.util.Timeout.durationToTimeout
 import akka.util.duration.doubleToDurationDouble
 import almhirt._
-import almhirt.almakka.AlmAkkaContext
 import almhirt.commanding._
 import almhirt.domain.DomainEvent
 import almhirt.messaging.impl.DevNullMessageChannel
@@ -39,12 +38,12 @@ trait AlmhirtContextTestKit {
   def createTestContext(): AlmhirtContext = createTestContext(conf)
   def createTestContext(conf: Config): AlmhirtContext = {
     val uuidGen = new JavaUtilUuidGenerator()
-    val akkaCtx = new AlmAkkaContext {
+    val akkaCtx = new AlmhirtSystem {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
-      val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
-      val messageStreamDispatcherName = Some("almhirt.test-dispatcher")
-      val messageHubDispatcherName = Some("almhirt.test-dispatcher")
+      val futureDispatcher = actorSystem.dispatcher
+      val messageStreamDispatcherName = None
+      val messageHubDispatcherName = None
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
@@ -59,7 +58,7 @@ trait AlmhirtContextTestKit {
     val context =
       new AlmhirtContext {
         val config = conf
-        val akkaContext = akkaCtx
+        val system = akkaCtx
         val messageHub = hub
         val commandChannel = cmddChannel
         val domainEventsChannel = MessageChannel[DomainEvent](Some("domainEventsChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
@@ -69,11 +68,11 @@ trait AlmhirtContextTestKit {
         val problemTopic = probTopic
         def reportProblem(prob: Problem) { 
           println("A problem has been captured:\r\n%s".format(prob))
-          messageHub.broadcast(Message(prob)(akkaContext.generateUuid)) 
+          messageHub.broadcast(Message(prob)(system.generateUuid)) 
           }
-        def reportOperationState(opState: OperationState) { messageHub.broadcast(Message(opState)(akkaContext.generateUuid)) }
+        def reportOperationState(opState: OperationState) { messageHub.broadcast(Message(opState)(system.generateUuid)) }
 
-        def dispose = akkaContext.dispose
+        def dispose = system.dispose
 
       }
     context
@@ -82,7 +81,7 @@ trait AlmhirtContextTestKit {
   def createFakeContext(): AlmhirtContext = createFakeContext(conf)
   def createFakeContext(conf: Config): AlmhirtContext = {
     val uuidGen = new JavaUtilUuidGenerator()
-    val akkaCtx = new AlmAkkaContext {
+    val akkaCtx = new AlmhirtSystem {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
       val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
@@ -97,7 +96,7 @@ trait AlmhirtContextTestKit {
     val context =
       new AlmhirtContext {
         val config = conf
-        val akkaContext = akkaCtx
+        val system = akkaCtx
         val messageHub = new DevNullMessageHub()(akkaCtx.futureDispatcher)
         val commandChannel = new DevNullMessageChannel[CommandEnvelope]()(akkaCtx.futureDispatcher)
         val domainEventsChannel = new DevNullMessageChannel[DomainEvent]()(akkaCtx.futureDispatcher)
@@ -110,7 +109,7 @@ trait AlmhirtContextTestKit {
 
         val uuidGenerator = new JavaUtilUuidGenerator()
 
-        def dispose = akkaContext.dispose
+        def dispose = system.dispose
 
       }
     context

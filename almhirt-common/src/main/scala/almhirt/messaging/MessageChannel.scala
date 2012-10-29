@@ -24,9 +24,8 @@ import almhirt._
 trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T]
 
 object MessageChannel{ 
-import almhirt.almakka.AlmAkkaContext
-  def apply[T <: AnyRef](name: Option[String])(implicit almAkkaContext: AlmAkkaContext, m: Manifest[T]): MessageChannel[T] = {
-	impl.ActorBasedMessageChannel[T](name, almAkkaContext)
+  def apply[T <: AnyRef](name: Option[String])(implicit almhirtsystem: AlmhirtSystem, m: Manifest[T]): MessageChannel[T] = {
+	impl.ActorBasedMessageChannel[T](name, almhirtsystem)
   }
   def apply[T <: AnyRef](name: Option[String], actorSystem: ActorRefFactory, timeout: Timeout, futureDispatcher: ExecutionContext, actorDispatcherName: Option[String], registration: Option[RegistrationHolder], topicPattern: Option[String])(implicit m: Manifest[T]): MessageChannel[T] = 
 	impl.ActorBasedMessageChannel[T](name, actorSystem, timeout, futureDispatcher, actorDispatcherName, registration, topicPattern)(m)

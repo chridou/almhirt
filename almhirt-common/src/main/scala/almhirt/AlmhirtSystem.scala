@@ -1,0 +1,40 @@
+package almhirt
+
+import akka.actor.ActorSystem
+import akka.dispatch.MessageDispatcher
+import akka.util.duration.doubleToDurationDouble
+import akka.util.Duration
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
+/** Components and values needed to use Akka */
+trait AlmhirtSystem extends Disposable{
+  def config: Config
+  def actorSystem: ActorSystem
+  def futureDispatcher: MessageDispatcher
+  def messageStreamDispatcherName: Option[String]
+  def messageHubDispatcherName: Option[String]
+  def shortDuration: Duration
+  def mediumDuration: Duration
+  def longDuration: Duration
+  def generateUuid: java.util.UUID
+}
+
+object AlmhirtSystem {
+  def apply(config: Config): AlmhirtSystem = {
+    val uuidGen = new JavaUtilUuidGenerator()
+    val ctx =
+	  new AlmhirtSystem {
+	    val config = ConfigFactory.load
+	    val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
+	    val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
+	    val messageStreamDispatcherName = Some("almhirt.messagestream-dispatcher")
+	    val messageHubDispatcherName = Some("almhirt.messagehub-dispatcher")
+	    val shortDuration = config.getDouble("almhirt.durations.short") seconds
+	    val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
+	    val longDuration = config.getDouble("almhirt.durations.long") seconds
+	    def generateUuid = uuidGen.generate
+	    def dispose = actorSystem.shutdown}
+    ctx
+  }
+}

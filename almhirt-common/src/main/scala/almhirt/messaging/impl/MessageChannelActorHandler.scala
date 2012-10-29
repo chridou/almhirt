@@ -9,11 +9,10 @@ import akka.dispatch.ExecutionContext
 import almhirt._
 import almhirt.messaging._
 import almhirt.messaging.impl.commands._
-import almhirt.almakka._
 import almhirt.almfuture.all._
 import akka.dispatch.MessageDispatcher
 
-trait MessageChannelActorHandler extends AlmActorLogging { actor: Actor => 
+trait MessageChannelActorHandler extends almhirt.almakka.AlmActorLogging { actor: Actor => 
   implicit def timeout: Timeout
   implicit def futureDispatcher: ExecutionContext
   
@@ -71,8 +70,8 @@ object MessageChannelActorHandler {
      }
   }
 
-  def apply(name: Option[String], almAkkaContext: AlmAkkaContext): ActorRef =
-    apply(name, almAkkaContext.actorSystem, almAkkaContext.mediumDuration, almAkkaContext.futureDispatcher, almAkkaContext.messageStreamDispatcherName)
+  def apply(name: Option[String], almhirtsystem: AlmhirtSystem): ActorRef =
+    apply(name, almhirtsystem.actorSystem, almhirtsystem.mediumDuration, almhirtsystem.futureDispatcher, almhirtsystem.messageStreamDispatcherName)
   
   private class MessageChannelActorHandlerImpl(val timeout: Timeout, val futureDispatcher: ExecutionContext) extends Actor with MessageChannelActorHandler
 }

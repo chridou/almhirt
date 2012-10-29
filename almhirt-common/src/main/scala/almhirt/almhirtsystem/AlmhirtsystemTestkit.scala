@@ -1,12 +1,13 @@
-package almhirt.almakka
+package almhirt.almhirtsystem
 
 import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
 import akka.util.duration._
+import almhirt._
 import almhirt.JavaUtilUuidGenerator
 import com.typesafe.config._
 
-trait AlmAkkaContextTestKit {
+trait AlmhirtsystemTestkit {
   private val configText =
     """  
       akka {
@@ -27,11 +28,11 @@ trait AlmAkkaContextTestKit {
 	    }
 	   }
     """
-  val conf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
+  val defaultConfig = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 
-  def createTestContext(): AlmAkkaContext = {
+  def createTestSystem(conf: Config): AlmhirtSystem = {
     val uuidGen = new JavaUtilUuidGenerator()
-    new AlmAkkaContext {
+    new AlmhirtSystem {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
       val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
@@ -44,17 +45,22 @@ trait AlmAkkaContextTestKit {
       def dispose = actorSystem.shutdown
     }
   }
+  
+  def createTestSystem(): AlmhirtSystem = createTestSystem(defaultConfig)
 
-  def inOwnContext[T](compute: AlmAkkaContext => T): T = {
-    val context = createTestContext
+  def inTestSystem[T](compute: AlmhirtSystem => T): T = inTestSystem(defaultConfig, compute)
+  def inTestSystem[T](conf: Config, compute: AlmhirtSystem => T): T = {
+    val context = createTestSystem(conf)
     val res = compute(context)
     context.dispose()
     res
   }
 
-  def createFakeContext(): AlmAkkaContext = {
+  def createFakeSystem(): AlmhirtSystem = createFakeSystem(defaultConfig)
+  
+  def createFakeSystem(conf: Config): AlmhirtSystem = {
     val uuidGen = new JavaUtilUuidGenerator()
-    new AlmAkkaContext {
+    new AlmhirtSystem {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
       val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
@@ -68,8 +74,9 @@ trait AlmAkkaContextTestKit {
     }
   }
 
-  def inFakeContext[T](compute: AlmAkkaContext => T): T = {
-    val context = createFakeContext
+  def inFakeSystem[T](compute: AlmhirtSystem => T): T = inFakeSystem(defaultConfig, compute)
+  def inFakeSystem[T](conf: Config, compute: AlmhirtSystem => T): T = {
+    val context = createFakeSystem(conf)
     val res = compute(context)
     context.dispose()
     res
