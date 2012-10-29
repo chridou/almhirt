@@ -65,11 +65,13 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       }
     future.onComplete(
       f => updateFailedOperationState(context, f, ticket),
-      { case (repository, (ar, events)) => repository.store(ar, events, ticket) })
+      { case (repository, (ar, events)) => 
+        println("XXXXXXXXXXXX store:%s".format(events))
+        repository.store(ar, events, ticket) })
   }
 
   private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
-    context.problemChannel.post(Message.createWithUuid(p))
+    context.reportProblem(p)
     ticket match {
       case Some(t) => context.reportOperationState(NotExecuted(t, p))
       case None => ()

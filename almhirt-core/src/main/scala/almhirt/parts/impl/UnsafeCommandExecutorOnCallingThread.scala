@@ -37,7 +37,7 @@ class UnsafeCommandExecutorOnCallingThread(repositories: HasRepositories, contex
       fail => {
         context.reportProblem(fail)
         ticket match {
-          case Some(t) => context.operationStateChannel.post(Message.createWithUuid(NotExecuted(t, fail)))
+          case Some(t) => context.reportOperationState(NotExecuted(t, fail))
           case None => ()
         }
       },

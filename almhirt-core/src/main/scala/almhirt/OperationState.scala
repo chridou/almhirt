@@ -1,6 +1,7 @@
 package almhirt
 
-trait OperationState
-case class Executed(ticket: String) extends OperationState
+sealed trait OperationState{ def ticket: String }
+sealed trait ResultOperationState extends OperationState
 case class InProcess(ticket: String) extends OperationState
-case class NotExecuted(ticket: String, problem: Problem) extends OperationState
+case class Executed(ticket: String) extends ResultOperationState
+case class NotExecuted(ticket: String, problem: Problem) extends ResultOperationState

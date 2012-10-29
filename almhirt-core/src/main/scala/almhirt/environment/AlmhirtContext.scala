@@ -26,7 +26,12 @@ import com.typesafe.config.Config
 import almhirt.commanding.CommandEnvelope
 import almhirt.parts.HasRepositories
 
-trait AlmhirtContext extends Disposable {
+trait AlmhirtContextOps {
+  def reportProblem(prob: Problem): Unit
+  def reportOperationState(opState: OperationState): Unit
+}
+
+trait AlmhirtContext extends AlmhirtContextOps with Disposable {
   def config: Config
   def system: AlmhirtSystem
   def messageHub: MessageHub
@@ -36,6 +41,4 @@ trait AlmhirtContext extends Disposable {
   def operationStateChannel: MessageChannel[OperationState]
 
   def problemTopic: Option[String]
-  def reportProblem(prob: Problem): Unit
-  def reportOperationState(opState: OperationState): Unit
 }
