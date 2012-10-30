@@ -21,11 +21,11 @@ class UnsafeCommandExecutorOnCallingThread(repositories: HasRepositories, contex
   def addHandler(handler: HandlesCommand) {
     handlers.put(handler.commandType.getName, handler)
   }
-  
+
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]) {
     handlers.remove(commandType.getName)
   }
-  
+
   def getHandlerByType(commandType: Class[_ <: DomainCommand]): AlmValidation[HandlesCommand] =
     handlers.get(commandType.getName) match {
       case Some(h) => h.success
@@ -33,6 +33,7 @@ class UnsafeCommandExecutorOnCallingThread(repositories: HasRepositories, contex
     }
 
   def executeCommand(command: DomainCommand, ticket: Option[String]) {
+    ticket foreach (t => context.reportOperationState(InProcess(t)))
     getHandlerForCommand(command).fold(
       fail => {
         context.reportProblem(fail)
