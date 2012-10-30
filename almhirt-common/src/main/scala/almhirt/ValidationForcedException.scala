@@ -16,7 +16,7 @@ package almhirt
 
 /** Wow, let's hope you'll never trigger that one in production code ... 
  */
-case class ResultForcedFromValidationException(val problem: Problem) extends Exception("A value has been forced from a failure.")
+case class ResultForcedFromValidationException(val problem: Problem) extends Exception("A value has been forced from a failure: %s".format(problem.message))
 /** Wow, let's hope you'll never trigger that one in production code ... 
  */
 case class ProblemForcedFromValidationException() extends Exception("A problem has been forced from a success.")

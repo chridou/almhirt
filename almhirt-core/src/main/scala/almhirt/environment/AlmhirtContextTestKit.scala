@@ -16,9 +16,7 @@ trait AlmhirtContextTestKit {
   private val configText =
     """  
       akka {
-        default-dispatcher {
-          type="akka.testkit.CallingThreadDispatcherConfigurator"
-        }     
+		loglevel = WARNING
       }
       almhirt {
 		systemname = "almhirt-testing"
@@ -27,11 +25,7 @@ trait AlmhirtContextTestKit {
 		  medium = 2.5
 		  long = 10.0
 		}
-		test-dispatcher {
-		  # Dispatcher is the name of the event-based dispatcher
-		  type = "akka.testkit.CallingThreadDispatcherConfigurator"
-	    }
-	   }
+     }
     """
   val conf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 
@@ -79,7 +73,7 @@ trait AlmhirtContextTestKit {
     val akkaCtx = new AlmhirtSystem {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
-      val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
+      val futureDispatcher = actorSystem.dispatcher
       val messageStreamDispatcherName = None
       val messageHubDispatcherName = None
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds

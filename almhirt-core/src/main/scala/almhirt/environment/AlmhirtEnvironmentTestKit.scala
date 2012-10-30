@@ -17,9 +17,6 @@ trait AlmhirtEnvironmentTestKit {
     """  
       akka {
 		loglevel = WARNING
-        default-dispatcher {
-          type="akka.testkit.CallingThreadDispatcherConfigurator"
-        }     
       }
       almhirt {
 		systemname = "almhirt-testing"
@@ -28,10 +25,6 @@ trait AlmhirtEnvironmentTestKit {
 		  medium = 2.5
 		  long = 10.0
 		}
-		test-dispatcher {
-		  # Dispatcher is the name of the event-based dispatcher
-		  type = "akka.testkit.CallingThreadDispatcherConfigurator"
-	    }
 	   }
     """
   val conf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
@@ -39,7 +32,9 @@ trait AlmhirtEnvironmentTestKit {
   def createTestEnvironment(): AlmhirtEnvironment = createTestEnvironment(conf)
   def createTestEnvironment(aConf: Config): AlmhirtEnvironment = {
     implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
+    implicit val timeout = almhirtCtx.system.mediumDuration
     val tracker = util.OperationStateTracker()
+    val trackerRegistration = (almhirtCtx.operationStateChannel <-<*(opState => tracker.updateState(opState))).awaitResult.forceResult
     val env =
       new AlmhirtEnvironment {
         val context = almhirtCtx
@@ -49,6 +44,7 @@ trait AlmhirtEnvironmentTestKit {
         val eventLog = new InefficientSerialziedInMemoryDomainEventLog()
         val operationStateTracker = tracker
         def dispose { 
+          trackerRegistration.dispose
           tracker.dispose()
           context.dispose }
       }

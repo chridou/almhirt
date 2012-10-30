@@ -12,11 +12,12 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
       inTestEnvironment{
         env =>
           implicit val duration = env.context.system.mediumDuration
-          val id = env.context.system.generateUuid
+          val id = env.getUuid
           env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(env.eventLog)(env.context))
           env.commandExecutor.addHandler(NewTestPersonUnitOfWork)
           val reg = (env.context.problemChannel <-<* (prob => println(prob))).awaitResult.forceResult
-          env.commandExecutor.executeCommand(CommandEnvelope(NewTestPerson(id, "Betty"), None))
+          env.executeCommand(CommandEnvelope(NewTestPerson(id, "Betty"), Some("ticket")))
+          env.operationStateTracker.getResultFor("ticket").awaitResult
           val eventsRes = env.eventLog.getEvents(id).awaitResult
           val events = eventsRes.forceResult.toList.map(_.asInstanceOf[TestPersonEvent])
           val createdRes = TestPerson.rebuildFromHistory(events)
@@ -29,13 +30,14 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
       inTestEnvironment{
         env =>
           implicit val duration = env.context.system.mediumDuration
-          val id1 = env.context.system.generateUuid
-          val id2 = env.context.system.generateUuid
+          val id1 = env.getUuid
+          val id2 = env.getUuid
           env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(env.eventLog)(env.context))
           env.commandExecutor.addHandler(NewTestPersonUnitOfWork)
           val reg = (env.context.problemChannel <-<* (prob => println(prob))).awaitResult.forceResult
-          env.commandExecutor.executeCommand(CommandEnvelope(NewTestPerson(id1, "Betty"), None))
-          env.commandExecutor.executeCommand(CommandEnvelope(NewTestPerson(id2, "Brian"), None))
+          env.executeCommand(CommandEnvelope(NewTestPerson(id1, "Betty"), None))
+          env.executeCommand(CommandEnvelope(NewTestPerson(id2, "Brian"), Some("ticket")))
+          env.operationStateTracker.getResultFor("ticket").awaitResult
           val eventsRes1 = env.eventLog.getEvents(id1).awaitResult
           val events1= eventsRes1.forceResult.toList.map(_.asInstanceOf[TestPersonEvent])
           val eventsRes2 = env.eventLog.getEvents(id2).awaitResult
@@ -61,7 +63,7 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
           env.eventLog.storeEvents(jimEvents).awaitResult
           env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(env.eventLog)(env.context))
           env.commandExecutor.addHandler(ChangeTestPersonNameUnitOfWork)
-          env.commandExecutor.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("ticket")))
+          env.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("ticket")))
           val resV = env.operationStateTracker.getResultFor("ticket").awaitResult
           val res = resV.forceResult
           res === Executed("ticket")
@@ -74,7 +76,7 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
           env.eventLog.storeEvents(jimEvents).awaitResult
           env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(env.eventLog)(env.context))
           env.commandExecutor.addHandler(ChangeTestPersonNameUnitOfWork)
-          env.commandExecutor.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("ticket")))
+          env.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("ticket")))
           env.operationStateTracker.getResultFor("ticket").awaitResult
           val events = env.eventLog.getEvents(jim.id).awaitResult.forceResult.map(_.asInstanceOf[TestPersonEvent]).toList
           val jimUpdated = TestPerson.rebuildFromHistory(events).forceResult
