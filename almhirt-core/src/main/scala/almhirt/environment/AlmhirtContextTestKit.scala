@@ -46,7 +46,10 @@ trait AlmhirtContextTestKit {
     }
     implicit val dur = akkaCtx.shortDuration
     val hub = MessageHub(Some("messageHub"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"))
-    val cmddChannel = hub.createUnnamedMessageChannel[CommandEnvelope](Some("commands")).awaitResult.forceResult
+    val cmdChannel = hub.createUnnamedMessageChannel[CommandEnvelope](Some("commands")).awaitResult.forceResult
+    val opStateChannel = hub.createUnnamedMessageChannel[OperationState](Some("operationStates")).awaitResult.forceResult
+    val probChannel = hub.createUnnamedMessageChannel[Problem](Some("problems")).awaitResult.forceResult
+    val domEventsChannel = hub.createUnnamedMessageChannel[DomainEvent](Some("domainEvents")).awaitResult.forceResult
     val probTopic = None
 
     val context =
@@ -54,14 +57,21 @@ trait AlmhirtContextTestKit {
         val config = conf
         val system = akkaCtx
         val messageHub = hub
-        val commandChannel = cmddChannel
-        val domainEventsChannel = MessageChannel[DomainEvent](Some("domainEventsChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
-        val problemChannel = MessageChannel[Problem](Some("problemChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
-        val operationStateChannel = MessageChannel[OperationState](Some("operationStateChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
+        val commandChannel = cmdChannel
+        val domainEventsChannel = domEventsChannel
+        val problemChannel = probChannel
+        val operationStateChannel = opStateChannel
 
         val problemTopic = probTopic
 
-        def dispose = system.dispose
+        def dispose = {
+          messageHub.close
+          cmdChannel.close
+          opStateChannel.close
+          probChannel.close
+          domEventsChannel.close
+          system.dispose
+        }
 
       }
     context

@@ -56,4 +56,6 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
   def problemTopic: Option[String]
   def getDateTime = system.getDateTime
   def getUuid = system.generateUuid
+
+  def broadcastDomainEvent[T <: DomainEvent](event: T) { broadcast(event) }
 }

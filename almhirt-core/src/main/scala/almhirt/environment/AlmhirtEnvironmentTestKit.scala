@@ -16,7 +16,7 @@ trait AlmhirtEnvironmentTestKit {
   private val configText =
     """  
       akka {
-		loglevel = WARNING
+		loglevel = ERROR
       }
       almhirt {
 		systemname = "almhirt-testing"
@@ -34,19 +34,24 @@ trait AlmhirtEnvironmentTestKit {
     implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
     implicit val timeout = almhirtCtx.system.mediumDuration
     val tracker = util.OperationStateTracker()
-    val trackerRegistration = (almhirtCtx.operationStateChannel <-<*(opState => tracker.updateState(opState))).awaitResult.forceResult
+    val trackerRegistration = (almhirtCtx.operationStateChannel <-<* (opState => tracker.updateState(opState))).awaitResult.forceResult
+    val repos = new UnsafeRepositoryRegistry()
+    val cmdExecutor = new UnsafeCommandExecutorOnCallingThread(repos, almhirtCtx)
+    val cmdExecutorRegistration = (almhirtCtx.commandChannel <-<* (cmdEnvelope => cmdExecutor.executeCommand(cmdEnvelope))).awaitResult.forceResult
     val env =
       new AlmhirtEnvironment {
         val context = almhirtCtx
 
-        val repositories = new UnsafeRepositoryRegistry()
-        val commandExecutor = new UnsafeCommandExecutorOnCallingThread(repositories, almhirtCtx)
+        val repositories = repos
+        val commandExecutor = cmdExecutor
         val eventLog = new InefficientSerialziedInMemoryDomainEventLog()
         val operationStateTracker = tracker
-        def dispose { 
+        def dispose {
+          cmdExecutorRegistration.dispose
           trackerRegistration.dispose
-          tracker.dispose()
-          context.dispose }
+          tracker.dispose
+          context.dispose
+        }
       }
     env
   }

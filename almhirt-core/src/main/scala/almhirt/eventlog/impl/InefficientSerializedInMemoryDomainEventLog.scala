@@ -43,6 +43,7 @@ class InefficientSerialziedInMemoryDomainEventLog(implicit almhirtContext: Almhi
     def receive = {
       case LogEvents(events) =>
         loggedEvents = loggedEvents ++ events
+        events.foreach(event => almhirtContext.broadcastDomainEvent(event))
         sender ! CommittedDomainEvents(events).success
       case GetAllEvents =>
         sender ! loggedEvents.toIterable.success

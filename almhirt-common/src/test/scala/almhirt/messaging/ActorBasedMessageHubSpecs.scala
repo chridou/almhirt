@@ -65,7 +65,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit 
         hit === true
       }
     }
-    """not be trigger a handler on the created channel when a UUID is broadcasted""" in {
+    """not trigger a handler on the created channel when a UUID is broadcasted""" in {
       inTestSystem { ctx =>
         val hub = getHub(ctx)
         val channel = hub.createUnnamedGlobalMessageChannel[String].awaitResult(Duration.Inf).forceResult
