@@ -112,6 +112,17 @@ object OperationStateTracker {
     private case class RegisterResultCallback(ticket: String, callback: AlmValidation[ResultOperationState] => Unit)
     private case class GetState(ticket: String)
 
+    private class ResponseActor extends Actor {
+      private var receiver: ActorRef = null
+      def receive: Receive = {
+        case "getResponse" => receiver = sender
+        case s: ResultOperationState => 
+          receiver ! s
+          context.stop(self)
+      }
+    }
+    
+    
     def queryStateFor(ticket: String)(implicit atMost: Duration): AlmFuture[Option[OperationState]] = 
       (theActor.ask(GetState(ticket))(atMost)).toAlmFuture[Option[OperationState]]
 
@@ -119,8 +130,12 @@ object OperationStateTracker {
       theActor ! RegisterResultCallback(ticket, callback)
     }
     
-    def getResultFor(ticket: String)(implicit atMost: Duration): AlmFuture[ResultOperationState] = 
-       getStateFor(ticket).awaitResult
+    def getResultFor(ticket: String)(implicit atMost: Duration): AlmFuture[ResultOperationState] = {
+      val actor = almhirtContext.system.actorSystem.actorOf(Props(new ResponseActor))
+      val future = (actor.ask("getResponse")(atMost)).toAlmFuture[ResultOperationState]
+      notifyResult(ticket, resOpState => actor ! resOpState)(atMost)
+      future
+    }
 
     def dispose() = { almhirtContext.system.actorSystem.stop(theActor)}
   }

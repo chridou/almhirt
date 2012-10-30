@@ -61,7 +61,8 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
           env.eventLog.storeEvents(jimEvents).awaitResult
           env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(env.eventLog)(env.context))
           env.commandExecutor.addHandler(ChangeTestPersonNameUnitOfWork)
-          env.commandExecutor.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), None))
+          env.commandExecutor.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("ticket")))
+          env.operationStateTracker.getResultFor("ticket").awaitResult
           val events = env.eventLog.getEvents(jim.id).awaitResult.forceResult.map(_.asInstanceOf[TestPersonEvent]).toList
           val jimUpdated = TestPerson.rebuildFromHistory(events).forceResult
           jimUpdated.name === "Betty"
