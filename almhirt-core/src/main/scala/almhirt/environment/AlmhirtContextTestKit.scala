@@ -66,11 +66,6 @@ trait AlmhirtContextTestKit {
         val operationStateChannel = MessageChannel[OperationState](Some("operationStateChannel"), akkaCtx.actorSystem, akkaCtx.mediumDuration, akkaCtx.futureDispatcher, Some("almhirt.test-dispatcher"), None, None)
 
         val problemTopic = probTopic
-        def reportProblem(prob: Problem) { 
-          println("A problem has been captured:\r\n%s".format(prob))
-          messageHub.broadcast(Message(prob)(system.generateUuid)) 
-          }
-        def reportOperationState(opState: OperationState) { messageHub.broadcast(Message(opState)(system.generateUuid)) }
 
         def dispose = system.dispose
 
@@ -104,11 +99,6 @@ trait AlmhirtContextTestKit {
         val operationStateChannel = new DevNullMessageChannel[OperationState]()(akkaCtx.futureDispatcher)
 
         val problemTopic = None
-        def reportProblem(prob: Problem) {}
-        def reportOperationState(opState: OperationState) {}
-
-        val uuidGenerator = new JavaUtilUuidGenerator()
-
         def dispose = system.dispose
 
       }

@@ -53,7 +53,20 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
   val jimEvents = jimRecorder.events
   val jim = jimRecorder.result.forceResult
   
-  "A UnitOfWork(Mutator) supplied with the required services" should {
+  "A UnitOfWork(Mutator) executing an update command" should {
+    "produce a successful operation result" in {
+      inTestEnvironment{
+        env =>
+          implicit val duration = env.context.system.mediumDuration
+          env.eventLog.storeEvents(jimEvents).awaitResult
+          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(env.eventLog)(env.context))
+          env.commandExecutor.addHandler(ChangeTestPersonNameUnitOfWork)
+          env.commandExecutor.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("ticket")))
+          val resV = env.operationStateTracker.getResultFor("ticket").awaitResult
+          val res = resV.forceResult
+          res === Executed("ticket")
+      }
+    }
     "update a Person" in {
       inTestEnvironment{
         env =>

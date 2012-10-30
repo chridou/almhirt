@@ -6,6 +6,7 @@ import akka.util.duration.doubleToDurationDouble
 import akka.util.Duration
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.joda.time.DateTime
 
 /** Components and values needed to use Akka */
 trait AlmhirtSystem extends Disposable{
@@ -18,6 +19,7 @@ trait AlmhirtSystem extends Disposable{
   def mediumDuration: Duration
   def longDuration: Duration
   def generateUuid: java.util.UUID
+  def getDateTime: DateTime = new DateTime()
 }
 
 object AlmhirtSystem {

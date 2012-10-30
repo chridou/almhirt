@@ -18,17 +18,21 @@ import almhirt._
 import almhirt.commanding._
 import almhirt.parts._
 import almhirt.domain.DomainEvent
-import almhirt.messaging.MessageChannel
-import almhirt.messaging.MessageHub
+import almhirt.messaging._
 import almhirt.OperationState
 import almhirt.Problem
 import com.typesafe.config.Config
 import almhirt.commanding.CommandEnvelope
 import almhirt.parts.HasRepositories
+import org.joda.time.DateTime
 
 trait AlmhirtContextOps {
   def reportProblem(prob: Problem): Unit
   def reportOperationState(opState: OperationState): Unit
+  def executeCommand(cmdEnv: CommandEnvelope): Unit
+  def broadcast[T <: AnyRef](payload: T, metaData: Map[String,String]): Unit
+  def getDateTime: DateTime
+  def getUuid: java.util.UUID
 }
 
 trait AlmhirtContext extends AlmhirtContextOps with Disposable {
@@ -40,5 +44,16 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
 
+  def broadcast[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty) {
+    val header = MessageHeader(getUuid, None, metaData, getDateTime)
+    messageHub.broadcast(Message(header, payload))
+  }
+  
+  def executeCommand(cmdEnv: CommandEnvelope) { broadcast(cmdEnv) }
+  def reportOperationState(opState: OperationState) { broadcast(opState) }
+  def reportProblem(prob: Problem) { broadcast(prob) }
+  
   def problemTopic: Option[String]
+  def getDateTime = system.getDateTime
+  def getUuid = system.generateUuid
 }

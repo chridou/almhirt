@@ -16,6 +16,7 @@ trait AlmhirtEnvironmentTestKit {
   private val configText =
     """  
       akka {
+		loglevel = WARNING
         default-dispatcher {
           type="akka.testkit.CallingThreadDispatcherConfigurator"
         }     

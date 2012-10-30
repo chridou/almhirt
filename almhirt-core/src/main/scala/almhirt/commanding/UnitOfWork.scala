@@ -66,7 +66,6 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
     future.onComplete(
       f => updateFailedOperationState(context, f, ticket),
       { case (repository, (ar, events)) => 
-        println("XXXXXXXXXXXX store:%s".format(events))
         repository.store(ar, events, ticket) })
   }
 

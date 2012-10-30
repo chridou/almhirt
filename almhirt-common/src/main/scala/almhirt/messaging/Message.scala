@@ -33,7 +33,7 @@ final case class MessageGrouping(groupId: UUID, seq: Int, isLast: Boolean)
  * timestamp: Timestamp of creation
  * topic: An optional topic for messaging scenarios
  */
-final case class MessageHeader(id: UUID, grouping: Option[MessageGrouping], metaData: Map[String, String], timestamp: DateTime, topic: Option[String])
+final case class MessageHeader(id: UUID, grouping: Option[MessageGrouping], metaData: Map[String, String], timestamp: DateTime)
 
 /** A message with a payload */
 final case class Message[+TPayload <: AnyRef](header: MessageHeader, payload: TPayload) {
@@ -50,7 +50,7 @@ final case class Message[+TPayload <: AnyRef](header: MessageHeader, payload: TP
 /** A factory for messages */
 object Message {
   def apply[T <: AnyRef](grouping: Option[MessageGrouping], metaData: Map[String, String], payload: T)(implicit id: UUID): Message[T] =
-    new Message[T](MessageHeader(id, grouping, metaData, DateTime.now, None), payload)
+    new Message[T](MessageHeader(id, grouping, metaData, DateTime.now), payload)
 
   def apply[T <: AnyRef](payload: T)(implicit id: UUID): Message[T] =
     apply(None, Map.empty, payload)(id)
