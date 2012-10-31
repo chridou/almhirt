@@ -4,12 +4,12 @@ import almhirt.environment._
 import almhirt.commanding._
 import almhirt.domain._
 
-trait Almhirt extends AlmhirtEnvironmentOps with HasServices{
+trait Almhirt extends AlmhirtEnvironmentOps with HasServices with Disposable {
   def environment: AlmhirtEnvironment
   
   def reportProblem(prob: Problem) { environment.reportProblem(prob) }
   def reportOperationState(opState: OperationState) { environment.reportOperationState(opState) }
-  def executeCommand(cmdEnv: CommandEnvelope) { environment.executeCommand(cmdEnv) }
+  def executeCommand(cmdEnv: CommandEnvelope){ environment.executeCommand(cmdEnv) }
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String]) { environment.broadcast(payload, metaData) }
   def getDateTime = environment.getDateTime
   def getUuid = environment.getUuid

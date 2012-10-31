@@ -53,6 +53,7 @@ trait ProblemInstances {
   implicit def showsOperationTimedOutProblem: Show[OperationTimedOutProblem] = new Show[OperationTimedOutProblem] { override def shows(p: OperationTimedOutProblem) = standardShow(p) }
   implicit def showsOperationAbortedProblem: Show[OperationAbortedProblem] = new Show[OperationAbortedProblem] { override def shows(p: OperationAbortedProblem) = standardShow(p) }
   implicit def showsIllegalOperationProblem: Show[IllegalOperationProblem] = new Show[IllegalOperationProblem] { override def shows(p: IllegalOperationProblem) = standardShow(p) }
+  implicit def showsOperationNotSupportedProblem: Show[OperationNotSupportedProblem] = new Show[OperationNotSupportedProblem] { override def shows(p: OperationNotSupportedProblem) = standardShow(p) }
   implicit def showsArgumentProblem: Show[ArgumentProblem] = new Show[ArgumentProblem] { override def shows(p: ArgumentProblem) = standardShow(p) }
   implicit def showsPersistenceProblem: Show[PersistenceProblem] = new Show[PersistenceProblem] { override def shows(p: PersistenceProblem) = standardShow(p) }
   implicit def showsSingleMappingProblem: Show[SingleMappingProblem] = new Show[SingleMappingProblem] { override def shows(p: SingleMappingProblem) = standardShow(p) }

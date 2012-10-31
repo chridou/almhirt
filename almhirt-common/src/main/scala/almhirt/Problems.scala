@@ -106,6 +106,17 @@ case class IllegalOperationProblem(message: String, severity: Severity = Major, 
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/** The operation was not allowed in the current state/context
+ */
+case class OperationNotSupportedProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = OperationNotSupportedProblem
+  def withMessage(newMessage: String) = copy(message = newMessage)
+  def withSeverity(severity: Severity) = copy(severity = severity)
+  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+}
+
 /** An argument violating the operations contract has been passed
  */
 case class ArgumentProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
