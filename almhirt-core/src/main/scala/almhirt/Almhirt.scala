@@ -15,7 +15,7 @@ trait Almhirt extends AlmhirtEnvironmentOps with HasServices with Disposable {
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String]) { environment.broadcast(payload, metaData) }
   def getDateTime = environment.getDateTime
   def getUuid = environment.getUuid
-  def getRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, TEvent]] =
+  def getRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[AggregateRootRepository[AR, TEvent]] =
     environment.getRepository
 
   def queryOperationStateFor(ticket: String)(implicit atMost: Duration) = environment.operationStateTracker.queryStateFor(ticket)

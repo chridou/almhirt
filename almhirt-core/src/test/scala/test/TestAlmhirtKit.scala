@@ -8,12 +8,13 @@ trait TestAlmhirtKit {
   
   def createTestAlmhirt(): Almhirt = {
     val almhirt = testKit.createTestAlmhirt()
+    implicit val ctx = almhirt.environment.context
     almhirt.environment.registerRepository[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(almhirt.environment.eventLog)(almhirt.environment.context))
-    almhirt.environment.addCommandHandler(NewTestPersonUnitOfWork)
-    almhirt.environment.addCommandHandler(ChangeTestPersonNameUnitOfWork)
-    almhirt.environment.addCommandHandler(SetTestPersonAdressUnitOfWork)
-    almhirt.environment.addCommandHandler(MoveTestPersonNameUnitOfWork)
-    almhirt.environment.addCommandHandler(MoveBecauseOfMarriageUnitOfWork)
+    almhirt.environment.addCommandHandler(new NewTestPersonUnitOfWork)
+    almhirt.environment.addCommandHandler(new ChangeTestPersonNameUnitOfWork)
+    almhirt.environment.addCommandHandler(new SetTestPersonAdressUnitOfWork)
+    almhirt.environment.addCommandHandler(new MoveTestPersonNameUnitOfWork)
+    almhirt.environment.addCommandHandler(new MoveBecauseOfMarriageUnitOfWork)
     
     almhirt
   }

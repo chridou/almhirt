@@ -1,7 +1,9 @@
 package test
 
 import java.util.UUID
+import almhirt._
 import almhirt.commanding._
+import almhirt.environment.AlmhirtContext
 
 trait TestPersonCommand extends DomainCommand
 trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyle
@@ -13,36 +15,40 @@ case class SetTestPersonAddress(id: UUID, version: Option[Long], aquiredAddress:
 case class MoveTestPerson(id: UUID, version: Option[Long], newAddress: String) extends TestPersonMutatorCommand
 case class MoveBecauseOfMarriage(id: UUID, version: Option[Long], newName: String, newAddress: String) extends TestPersonMutatorCommand
 
-trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends UnitOfWork[TestPerson, TestPersonEvent]{
+trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends UnitOfWork[TestPerson, TestPersonEvent] {
   val repositoryType = classOf[TestPersonRepository]
 }
 
 trait TestPersonCreatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with CreatorUnitOfWorkStyle[TestPerson, TestPersonEvent, TCom]
 trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with MutatorUnitOfWorkStyle[TestPerson, TestPersonEvent, TCom]
 
-object NewTestPersonUnitOfWork extends TestPersonCreatorUnitOfWork[NewTestPerson] {
+class NewTestPersonUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonCreatorUnitOfWork[NewTestPerson] {
+  private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[NewTestPerson]
-  val handler = (cmd: NewTestPerson) => 
-    TestPerson(cmd.id, cmd.name).recordings
+  val handler = (cmd: NewTestPerson) => AlmFuture { TestPerson(cmd.id, cmd.name).recordings }
 }
 
-object ChangeTestPersonNameUnitOfWork extends TestPersonMutatorUnitOfWork[ChangeTestPersonName] {
+class ChangeTestPersonNameUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[ChangeTestPersonName] {
+  private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[ChangeTestPersonName]
-  val handler = (cmd: ChangeTestPersonName, person: TestPerson) => person.changeName(cmd.newName).recordings
+  val handler = (cmd: ChangeTestPersonName, person: TestPerson) => AlmFuture { person.changeName(cmd.newName).recordings }
 }
 
-object SetTestPersonAdressUnitOfWork extends TestPersonMutatorUnitOfWork[SetTestPersonAddress] {
+class SetTestPersonAdressUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[SetTestPersonAddress] {
+  private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[SetTestPersonAddress]
-  val handler = (cmd: SetTestPersonAddress, person: TestPerson) => person.move(cmd.aquiredAddress).recordings
+  val handler = (cmd: SetTestPersonAddress, person: TestPerson) => AlmFuture { person.move(cmd.aquiredAddress).recordings }
 }
 
-object MoveTestPersonNameUnitOfWork extends TestPersonMutatorUnitOfWork[MoveTestPerson] {
+class MoveTestPersonNameUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[MoveTestPerson] {
+  private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[MoveTestPerson]
-  val handler = (cmd: MoveTestPerson, person: TestPerson) => person.move(cmd.newAddress).recordings
+  val handler = (cmd: MoveTestPerson, person: TestPerson) => AlmFuture { person.move(cmd.newAddress).recordings }
 }
 
-object MoveBecauseOfMarriageUnitOfWork extends TestPersonMutatorUnitOfWork[MoveBecauseOfMarriage] {
+class MoveBecauseOfMarriageUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[MoveBecauseOfMarriage] {
+  private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[MoveBecauseOfMarriage]
-  val handler = (cmd: MoveBecauseOfMarriage, person: TestPerson) => 
-    person.changeName(cmd.newName).flatMap(_.move(cmd.newAddress)).recordings
+  val handler = (cmd: MoveBecauseOfMarriage, person: TestPerson) =>
+    AlmFuture { person.changeName(cmd.newName).flatMap(_.move(cmd.newAddress)).recordings }
 }

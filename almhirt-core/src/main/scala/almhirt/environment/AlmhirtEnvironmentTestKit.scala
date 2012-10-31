@@ -35,7 +35,7 @@ trait AlmhirtEnvironmentTestKit {
     implicit val timeout = almhirtCtx.system.mediumDuration
     val tracker = util.OperationStateTracker()
     val trackerRegistration = (almhirtCtx.operationStateChannel <-<* (opState => tracker.updateState(opState))).awaitResult.forceResult
-    val repos = new UnsafeRepositoryRegistry()
+    val repos = new UnsafeRepositoryRegistry(almhirtCtx)
     val cmdExecutor = new UnsafeCommandExecutorOnCallingThread(repos, almhirtCtx)
     val cmdExecutorRegistration = (almhirtCtx.commandChannel <-<* (cmdEnvelope => cmdExecutor.executeCommand(cmdEnvelope))).awaitResult.forceResult
     val env =
@@ -63,7 +63,7 @@ trait AlmhirtEnvironmentTestKit {
       new AlmhirtEnvironment {
         val context = almhirtCtx
 
-        val repositories = new DevNullRepositoryRegistry()
+        val repositories = new DevNullRepositoryRegistry(almhirtCtx)
         val commandExecutor = new DevNullCommandExecutor()
         val eventLog = new DevNullEventLog
         val operationStateTracker = util.OperationStateTracker()

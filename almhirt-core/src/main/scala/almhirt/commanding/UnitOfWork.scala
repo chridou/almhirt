@@ -52,22 +52,25 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
   def handler: MutatorCommandHandler[AR, TEvent, TCom]
   def handle(untypedcom: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[String]) {
     implicit val executionContext = context.system.futureDispatcher
-    val res =
-      checkCommandType(untypedcom).bind(com =>
-        getIdAndVersion(com).bind(idAndVersion =>
-          getRepository(repositories).map(repo => (com, repo, idAndVersion))))
-    val future =
-      res.continueWithFuture {
-        case (com, repository, (id, version)) =>
+    val step1 =
+      AlmFuture {
+        checkCommandType(untypedcom).bind(com =>
+          getIdAndVersion(com).map(idAndVersion =>
+            (com, idAndVersion)))
+      }.flatMap { case (com, idAndVersion) => getRepository(repositories).map(repo => (com, repo, idAndVersion)) }
+    val step2 =
+      step1.flatMap{ case (com, repository, (id, version)) =>
           getAggregateRoot(repository, id).mapV(ar =>
             checkArId(ar, id).bind(ar =>
-              checkVersion(ar, version).bind(ar =>
-                handler(com, ar).map((repository, _)))))
+              checkVersion(ar, version))).flatMap(ar =>
+                handler(com, ar).map((repository, _)))
       }
-    future.onComplete(
+    step2.onComplete(
       f => updateFailedOperationState(context, f, ticket),
-      { case (repository, (ar, events)) => 
-        repository.store(ar, events, ticket) })
+      {
+        case (repository, (ar, events)) =>
+          repository.store(ar, events, ticket)
+      })
   }
 
   private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
@@ -97,10 +100,10 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       v => boolean.fold(v == ar.version, ar.success, CollisionProblem("versions do not match", severity = Minor).failure),
       ar.success)
 
-  private def getRepository(repositories: HasRepositories): AlmValidation[AggregateRootRepository[AR, TEvent]] =
+  private def getRepository(repositories: HasRepositories): AlmFuture[AggregateRootRepository[AR, TEvent]] =
     repositories
       .getForAggregateRootByType(self.aggregateRootType)
-      .bind(x => inTryCatch(x.asInstanceOf[AggregateRootRepository[AR, TEvent]]))
+      .mapV(x => inTryCatch(x.asInstanceOf[AggregateRootRepository[AR, TEvent]]))
 
   private def getAggregateRoot(repository: AggregateRootRepository[AR, TEvent], id: UUID): AlmFuture[AR] =
     repository.get(id)
