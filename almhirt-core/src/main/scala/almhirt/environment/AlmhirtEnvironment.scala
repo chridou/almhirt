@@ -33,7 +33,7 @@ trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
   def operationStateTracker: util.OperationStateTracker
 
   def addCommandHandler(handler: HandlesCommand) { commandExecutor.addHandler(handler) }
-  def registerRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[_, _]](repo: T)(implicit m: Manifest[AR]) { repositories.registerForAggregateRoot(repo) }
+  def registerRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[AR, TEvent]](repo: T)(implicit m: Manifest[AR]) { repositories.registerForAggregateRoot[AR, TEvent, T](repo) }
 
   def getRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, TEvent]] =
     repositories.getForAggregateRoot

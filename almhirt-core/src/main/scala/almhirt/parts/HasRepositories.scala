@@ -9,6 +9,6 @@ trait HasRepositories {
     getForAggregateRootByType(m.erasure.asInstanceOf[Class[AR]]).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]])
   /** Registers a new repository. Has replace semantics. 
    */
-  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[_,_]](repo: T)(implicit m: Manifest[AR]): Unit
+  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[AR,TEvent]](repo: T)(implicit m: Manifest[AR]): Unit
 }
 

@@ -25,7 +25,7 @@ trait AlmhirtTestKit {
 
   def createTestAlmhirt(): Almhirt = createTestAlmhirt(conf)
   def createTestAlmhirt(aConf: Config): Almhirt = {
-    val env = environmentTestKit.createFakeEnvironment(aConf)
+    val env = environmentTestKit.createTestEnvironment(aConf)
     implicit val futureContext = env.context.system.futureDispatcher
     val almhirt =
       new Almhirt {
