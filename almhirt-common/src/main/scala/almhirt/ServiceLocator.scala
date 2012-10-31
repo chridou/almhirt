@@ -5,7 +5,7 @@ trait HasServices {
   def awaitService[T <: AnyRef]: AlmValidation[T]
 }
 
-trait RegistersServices {
+trait CanRegisterServices {
   def registerService[T <: AnyRef](service: T)(implicit m: Manifest[T]) = registerServiceByType(m.erasure, service)
   def registerServiceByType(clazz: Class[_], service: AnyRef)
 }
