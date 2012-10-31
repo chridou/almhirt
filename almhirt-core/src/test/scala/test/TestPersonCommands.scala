@@ -4,6 +4,7 @@ import java.util.UUID
 import almhirt._
 import almhirt.commanding._
 import almhirt.environment.AlmhirtContext
+import akka.dispatch.ExecutionContext
 
 trait TestPersonCommand extends DomainCommand
 trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyle
@@ -25,30 +26,30 @@ trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonU
 class NewTestPersonUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonCreatorUnitOfWork[NewTestPerson] {
   private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[NewTestPerson]
-  val handler = (cmd: NewTestPerson) => AlmFuture { TestPerson(cmd.id, cmd.name).recordings }
+  val handler = (cmd: NewTestPerson, ctx: ExecutionContext) => AlmFuture { TestPerson(cmd.id, cmd.name).recordings }
 }
 
 class ChangeTestPersonNameUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[ChangeTestPersonName] {
   private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[ChangeTestPersonName]
-  val handler = (cmd: ChangeTestPersonName, person: TestPerson) => AlmFuture { person.changeName(cmd.newName).recordings }
+  val handler = (cmd: ChangeTestPersonName, person: TestPerson, ctx: ExecutionContext) => AlmFuture { person.changeName(cmd.newName).recordings }
 }
 
 class SetTestPersonAdressUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[SetTestPersonAddress] {
   private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[SetTestPersonAddress]
-  val handler = (cmd: SetTestPersonAddress, person: TestPerson) => AlmFuture { person.move(cmd.aquiredAddress).recordings }
+  val handler = (cmd: SetTestPersonAddress, person: TestPerson, ctx: ExecutionContext) => AlmFuture { person.move(cmd.aquiredAddress).recordings }
 }
 
 class MoveTestPersonNameUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[MoveTestPerson] {
   private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[MoveTestPerson]
-  val handler = (cmd: MoveTestPerson, person: TestPerson) => AlmFuture { person.move(cmd.newAddress).recordings }
+  val handler = (cmd: MoveTestPerson, person: TestPerson, ctx: ExecutionContext) => AlmFuture { person.move(cmd.newAddress).recordings }
 }
 
 class MoveBecauseOfMarriageUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[MoveBecauseOfMarriage] {
   private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[MoveBecauseOfMarriage]
-  val handler = (cmd: MoveBecauseOfMarriage, person: TestPerson) =>
+  val handler = (cmd: MoveBecauseOfMarriage, person: TestPerson, ctx: ExecutionContext) =>
     AlmFuture { person.changeName(cmd.newName).flatMap(_.move(cmd.newAddress)).recordings }
 }

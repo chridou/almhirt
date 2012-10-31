@@ -46,7 +46,7 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
 trait CreatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
   def handler: CreatorCommandHandlerFuture[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com)
+  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com, context.system.futureDispatcher)
   
 }
 trait CreatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
@@ -118,7 +118,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
 trait MutatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends MutatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
   def handler: MutatorCommandHandlerFuture[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com, ar)
+  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com, ar, context.system.futureDispatcher)
   
 }
 trait MutatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends MutatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
