@@ -22,7 +22,7 @@ trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
 
   def reportProblem(prob: Problem) { context.reportProblem(prob) }
   def reportOperationState(opState: OperationState) { context.reportOperationState(opState) }
-  def executeCommand(cmdEnv: CommandEnvelope) { context.executeCommand(cmdEnv) }
+  def executeCommand(cmdEnv: CommandEnvelope) { context.postCommandEnvelope(cmdEnv) }
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String]) { context.broadcast(payload, metaData) }
   def getDateTime = context.getDateTime
   def getUuid = context.getUuid
@@ -38,4 +38,6 @@ trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
   def getRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, TEvent]] =
     repositories.getForAggregateRoot
 
+  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty) = context.messageWithPayload(payload, metaData)
+    
 }

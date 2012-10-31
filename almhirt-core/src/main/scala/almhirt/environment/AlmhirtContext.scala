@@ -30,10 +30,10 @@ import almhirt.util._
 trait AlmhirtContextOps {
   def reportProblem(prob: Problem): Unit
   def reportOperationState(opState: OperationState): Unit
-  def executeCommand(cmdEnv: CommandEnvelope): Unit
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String,String]): Unit
   def getDateTime: DateTime
   def getUuid: java.util.UUID
+  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty): Message[T]
 }
 
 trait AlmhirtContext extends AlmhirtContextOps with Disposable {
@@ -47,10 +47,10 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
 
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty) {
     val header = MessageHeader(getUuid, None, metaData, getDateTime)
-    messageHub.broadcast(Message(header, payload))
+    messageHub.broadcast(messageWithPayload(payload, metaData))
   }
   
-  def executeCommand(cmdEnv: CommandEnvelope) { broadcast(cmdEnv) }
+  def postCommandEnvelope(cmdEnv: CommandEnvelope) { commandChannel.post(messageWithPayload(cmdEnv)) }
   def reportOperationState(opState: OperationState) { broadcast(opState) }
   def reportProblem(prob: Problem) { broadcast(prob) }
   
@@ -59,4 +59,8 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
   def getUuid = system.generateUuid
 
   def broadcastDomainEvent[T <: DomainEvent](event: T) { broadcast(event) }
+  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty) = {
+    val header = MessageHeader(getUuid, None, metaData, getDateTime)
+    Message(header, payload)
+  }
 }

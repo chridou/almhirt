@@ -22,4 +22,6 @@ trait Almhirt extends AlmhirtEnvironmentOps with HasServices with Disposable {
   def onResultOperationState(ticket: String, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration){environment.operationStateTracker.onResult(ticket: String, callback: AlmValidation[ResultOperationState] => Unit)}
   def getResultOperationStateFor(ticket: String)(implicit atMost: Duration) = environment.operationStateTracker.getResultFor(ticket)
 
+  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty) = environment.messageWithPayload(payload, metaData)
+  
 }
