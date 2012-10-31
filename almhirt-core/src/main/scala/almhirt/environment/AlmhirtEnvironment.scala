@@ -10,8 +10,9 @@ import almhirt.domain._
 
 trait AlmhirtEnvironmentOps extends AlmhirtContextOps {
   def executeCommand(cmd: DomainCommand, ticket: Option[String])
-  def executeCommandWithTicket(cmd: DomainCommand, ticket: String) { executeCommand(cmd, Some(ticket)) }
-  def executeCommandWithOutTicket(cmd: DomainCommand) { executeCommand(cmd, None) }
+  def executeCommandTracked(cmd: DomainCommand, ticket: String) { executeCommand(cmd, Some(ticket)) }
+  def executeCommandUntracked(cmd: DomainCommand) { executeCommand(cmd, None) }
+  def getRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, TEvent]]
 }
 
 trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
@@ -33,5 +34,7 @@ trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
   def registerRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[_, _]](repo: T)(implicit m: Manifest[AR]) { repositories.registerForAggregateRoot(repo) }
 
   def executeCommand(cmd: DomainCommand, ticket: Option[String]) { context.executeCommand(CommandEnvelope(cmd, ticket)) }
+  def getRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, TEvent]] =
+    repositories.getForAggregateRoot
 
 }

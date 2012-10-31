@@ -12,7 +12,7 @@ class TestEnvironmentSpecs extends Specification with TestEnvironment {
     "create a person" in {
       inTestEnvironment{env =>
         val id1 = env.getUuid
-        env.executeCommandWithTicket(NewTestPerson(id1, "Harry"), "1")
+//        env.executeCommandWithTicket(NewTestPerson(id1, "Harry"), "1")
         env.operationStateTracker.getResultFor("1").awaitResult
         
         false}
