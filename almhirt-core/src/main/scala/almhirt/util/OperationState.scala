@@ -1,4 +1,6 @@
-package almhirt
+package almhirt.util
+
+import almhirt.Problem
 
 sealed trait OperationState{ def ticket: String }
 sealed trait ResultOperationState extends OperationState

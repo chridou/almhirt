@@ -5,6 +5,7 @@ import almhirt._
 import almhirt.domain._
 import almhirt.eventlog.DomainEventLog
 import almhirt.environment.AlmhirtContext
+import almhirt.util._
 
 abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends AggregateRootRepository[AR, Event] {
   implicit private def timeout = almhirtContext.system.mediumDuration 

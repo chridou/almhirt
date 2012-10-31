@@ -11,6 +11,7 @@ import almhirt.commanding.DomainCommand
 import almhirt.commanding.ExecutesCommands
 import almhirt.environment.AlmhirtEnvironment
 import almhirt.parts.CommandExecutor
+import almhirt.util._
 
 /**
  * Handles incoming commands. __NOT__ thread safe. Do not mutate, once almhirt is running!

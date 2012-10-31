@@ -11,6 +11,7 @@ import almhirt.messaging.impl.DevNullMessageHub
 import almhirt.messaging._
 import almhirt.syntax.almvalidation._
 import com.typesafe.config._
+import almhirt.util._
 
 trait AlmhirtContextTestKit {
   private val configText =

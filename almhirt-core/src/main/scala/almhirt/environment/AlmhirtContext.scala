@@ -19,12 +19,13 @@ import almhirt.commanding._
 import almhirt.parts._
 import almhirt.domain.DomainEvent
 import almhirt.messaging._
-import almhirt.OperationState
+import almhirt.util._
 import almhirt.Problem
 import com.typesafe.config.Config
 import almhirt.commanding.CommandEnvelope
 import almhirt.parts.HasRepositories
 import org.joda.time.DateTime
+import almhirt.util._
 
 trait AlmhirtContextOps {
   def reportProblem(prob: Problem): Unit

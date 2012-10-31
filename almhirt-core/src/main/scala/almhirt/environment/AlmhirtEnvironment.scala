@@ -7,6 +7,7 @@ import almhirt.parts._
 import almhirt.eventlog.DomainEventLog
 import almhirt.commanding._
 import almhirt.domain._
+import almhirt.util._
 
 trait AlmhirtEnvironmentOps extends AlmhirtContextOps {
   def executeCommand(cmd: DomainCommand, ticket: Option[String]) { executeCommand(CommandEnvelope(cmd, ticket)) } 

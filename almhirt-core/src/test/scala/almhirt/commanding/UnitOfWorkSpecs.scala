@@ -4,6 +4,7 @@ import org.specs2.mutable._
 import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
+import almhirt.util._
 import test._
 
 class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
