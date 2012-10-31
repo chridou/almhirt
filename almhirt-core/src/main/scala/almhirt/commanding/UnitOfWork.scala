@@ -18,7 +18,7 @@ abstract class UnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent
 }
 
 trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
-  def handler: CreatorCommandHandler[AR, TEvent, TCom]
+  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])]
   def handle(com: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[String]) {
     if (com.isCreator) {
       val command = com.asInstanceOf[TCom]
@@ -26,7 +26,7 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
         fail =>
           (),
         repo => {
-          handler(command).fold(
+          executeHandler(command, context).fold(
             fail => {
               context.problemChannel.post(Message.createWithUuid(fail))
               ticket match {
@@ -48,8 +48,19 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
   }
 }
 
+trait CreatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
+  def handler: CreatorCommandHandlerFuture[AR, TEvent, TCom]
+  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com)
+  
+}
+trait CreatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
+  def handler: CreatorCommandHandler[AR, TEvent, TCom]
+  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = 
+    AlmFuture(handler(com))(context.system.futureDispatcher)
+}
+
 trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
-  def handler: MutatorCommandHandler[AR, TEvent, TCom]
+  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])]
   def handle(untypedcom: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[String]) {
     implicit val executionContext = context.system.futureDispatcher
     val step1 =
@@ -63,7 +74,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
           getAggregateRoot(repository, id).mapV(ar =>
             checkArId(ar, id).bind(ar =>
               checkVersion(ar, version))).flatMap(ar =>
-                handler(com, ar).map((repository, _)))
+                executeHandler(com, ar, context).map((repository, _)))
       }
     step2.onComplete(
       f => updateFailedOperationState(context, f, ticket),
@@ -108,4 +119,16 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
   private def getAggregateRoot(repository: AggregateRootRepository[AR, TEvent], id: UUID): AlmFuture[AR] =
     repository.get(id)
 }
+
+trait MutatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends MutatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
+  def handler: MutatorCommandHandlerFuture[AR, TEvent, TCom]
+  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com, ar)
+  
+}
+trait MutatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends MutatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
+  def handler: MutatorCommandHandler[AR, TEvent, TCom]
+  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = 
+    AlmFuture(handler(com, ar))(context.system.futureDispatcher)
+}
+
 

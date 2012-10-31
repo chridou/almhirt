@@ -19,8 +19,8 @@ trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends UnitOfWork[TestPer
   val repositoryType = classOf[TestPersonRepository]
 }
 
-trait TestPersonCreatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with CreatorUnitOfWorkStyle[TestPerson, TestPersonEvent, TCom]
-trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with MutatorUnitOfWorkStyle[TestPerson, TestPersonEvent, TCom]
+trait TestPersonCreatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with CreatorUnitOfWorkStyleFuture[TestPerson, TestPersonEvent, TCom]
+trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with MutatorUnitOfWorkStyleFuture[TestPerson, TestPersonEvent, TCom]
 
 class NewTestPersonUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonCreatorUnitOfWork[NewTestPerson] {
   private implicit val executionContext = ctx.system.futureDispatcher
