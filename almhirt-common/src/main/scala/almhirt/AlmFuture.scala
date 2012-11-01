@@ -18,9 +18,10 @@ import java.util.concurrent.TimeoutException
 import scala.{Left, Right}
 import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
-import akka.dispatch.{Future, Promise, Await}
+import akka.dispatch.{Future, Promise, Await, ExecutionContext}
 import almhirt._
 import akka.util.Duration
+import scala.collection.generic.CanBuildFrom
 
 /** A future based on [[akka.dispatch.Future]].
  * 
@@ -122,6 +123,10 @@ object AlmFuture {
   def promise[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Promise.successful{compute})
   @deprecated("Use apply", "0.0.1")
   def future[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = apply(compute)(executor)
+
+//  def sequence[A, M[_] <: Traversable[_]](in: M[AlmFuture[A]])(implicit cbf: CanBuildFrom[M[AlmFuture[A]], A, M[A]], executor: ExecutionContext): AlmFuture[M[A]] =
+//    in.foldLeft(Promise.successful(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
+    
 }
 
 object AlmPromise{

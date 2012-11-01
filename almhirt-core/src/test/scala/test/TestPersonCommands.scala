@@ -38,7 +38,7 @@ class ChangeTestPersonNameUnitOfWork(implicit ctx: AlmhirtContext) extends TestP
 class SetTestPersonAdressUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[SetTestPersonAddress] {
   private implicit val executionContext = ctx.system.futureDispatcher
   val commandType = classOf[SetTestPersonAddress]
-  val handler = (cmd: SetTestPersonAddress, person: TestPerson, ctx: ExecutionContext) => AlmFuture { person.move(cmd.aquiredAddress).recordings }
+  val handler = (cmd: SetTestPersonAddress, person: TestPerson, ctx: ExecutionContext) => AlmFuture { person.addressAquired(cmd.aquiredAddress).recordings }
 }
 
 class MoveTestPersonNameUnitOfWork(implicit ctx: AlmhirtContext) extends TestPersonMutatorUnitOfWork[MoveTestPerson] {
