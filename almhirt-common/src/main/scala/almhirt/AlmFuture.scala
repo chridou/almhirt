@@ -113,17 +113,17 @@ object AlmFuture {
   @deprecated("Use apply", "0.0.1")
   def future[T](compute: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = apply(compute)(executor)
 
-//  def sequenceValidations[A, M[_] <: Traversable[_]](in: M[AlmFuture[A]])(implicit cbf: CanBuildFrom[M[AlmFuture[A]], A, M[A]], executor: ExecutionContext): Future[M[AlmValidation[A]]] = {
-//    in.foldLeft(Promise.successful(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
-//    val x = in.foldLeft(Promise.successful(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
-//    val fut = 
-//      in.foldLeft(Promise.successful(cbf(in)): Future[Builder[A, M[A]]])((facc, felem) =>for (bldr <- facc; a <- a.asInstanceOf[AlmFuture[A]]))
-//    sys.error("")
-//  }
+  //  def sequenceValidations[A, M[_] <: Traversable[_]](in: M[AlmFuture[A]])(implicit cbf: CanBuildFrom[M[AlmFuture[A]], A, M[A]], executor: ExecutionContext): Future[M[AlmValidation[A]]] = {
+  //    in.foldLeft(Promise.successful(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
+  //    val x = in.foldLeft(Promise.successful(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
+  //    val fut = 
+  //      in.foldLeft(Promise.successful(cbf(in)): Future[Builder[A, M[A]]])((facc, felem) =>for (bldr <- facc; a <- a.asInstanceOf[AlmFuture[A]]))
+  //    sys.error("")
+  //  }
 }
 
 object AlmPromise {
   def apply[T](result: => AlmValidation[T])(implicit executor: akka.dispatch.ExecutionContext) = new AlmFuture[T](Promise.successful { result })
-  def successful[T](result: T)(implicit executor: akka.dispatch.ExecutionContext) = apply { result.success }		  
-  def failed[T](prob: Problem)(implicit executor: akka.dispatch.ExecutionContext) = apply  { prob.failure[T] }		  
+  def successful[T](result: T)(implicit executor: akka.dispatch.ExecutionContext) = apply { result.success }
+  def failed[T](prob: Problem)(implicit executor: akka.dispatch.ExecutionContext) = apply { prob.failure[T] }
 }
