@@ -25,16 +25,16 @@ class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
 //        val complete = Await.result(Future.sequence(entities), akka.util.Duration(5, "s"))
 //        complete.foreach(x => x fold(f => println(f), succ => println(succ))) 
         
-        val insertStatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("insert%s".format(x._1.toString)).underlying)
-        val insertStatesRes = Await.result(Future.sequence(insertStatesFutures), akka.util.Duration(5, "s"))
+        val insertStatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("insert%s".format(x._1.toString)))
+        val insertStatesRes = Await.result(AlmFuture.sequenceValidations(insertStatesFutures), akka.util.Duration(5, "s"))
         insertStatesRes.foreach(x => x fold(f => println(f), succ => println(succ))) 
 
-        val update1StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("setaddress%s".format(x._1.toString)).underlying)
-        val update1StatesRes = Await.result(Future.sequence(update1StatesFutures), akka.util.Duration(5, "s"))
+        val update1StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("setaddress%s".format(x._1.toString)))
+        val update1StatesRes = Await.result(AlmFuture.sequenceValidations(update1StatesFutures), akka.util.Duration(5, "s"))
         update1StatesRes.foreach(x => x fold(f => println(f), succ => println(succ))) 
 
-        val update2StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("updatename%s".format(x._1.toString)).underlying)
-        val update2StatesRes = Await.result(Future.sequence(update2StatesFutures), akka.util.Duration(5, "s"))
+        val update2StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("updatename%s".format(x._1.toString)))
+        val update2StatesRes = Await.result(AlmFuture.sequenceValidations(update2StatesFutures), akka.util.Duration(5, "s"))
         update2StatesRes.foreach(x => x fold(f => println(f), succ => println(succ))) 
         
         //val res = complete.sequence
