@@ -44,7 +44,7 @@ trait AlmhirtEnvironmentTestKit {
 
         val repositories = repos
         val commandExecutor = cmdExecutor
-        val eventLog = new InefficientSerialziedInMemoryDomainEventLog()
+        val eventLog = new InefficientSerializingInMemoryDomainEventLog()
         val operationStateTracker = tracker
         def dispose {
           cmdExecutorRegistration.dispose
