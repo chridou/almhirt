@@ -8,8 +8,8 @@ trait CanValidateAggregateRootsAgainstEvents[AR <: AggregateRoot[AR,Event], Even
   def validateAggregateRootAgainstEvents(ar: AR, uncommittedEvents: List[Event]): AlmValidation[(AR, List[Event])] = {
     if (uncommittedEvents.isEmpty) 
       EmptyCollectionProblem("no events to append", category = ApplicationProblem, severity = Minor).failure
-    else if(uncommittedEvents.last.version != ar.version)
-      UnspecifiedProblem("The event's version does not match the aggregate root's version: %d != %d".format(uncommittedEvents.last.version, ar.version), category = ApplicationProblem, severity = Minor).failure
+    else if(uncommittedEvents.last.version +1 != ar.version)
+      UnspecifiedProblem("The last event's version must be one less that the aggregate root's version: %d + 1 != %d".format(uncommittedEvents.last.version, ar.version), category = ApplicationProblem, severity = Minor).failure
     else {
       uncommittedEvents match {
         case List(x) => 

@@ -34,7 +34,7 @@ class UnsafeCommandExecutorOnCallingThread(repositories: HasRepositories, contex
     }
 
   def executeCommand(command: DomainCommand, ticket: Option[String]) {
-    ticket foreach (t => context.reportOperationState(InProcess(t)))
+    ticket foreach { t => context.reportOperationState(InProcess(t)) }
     getHandlerForCommand(command).fold(
       fail => {
         context.reportProblem(fail)

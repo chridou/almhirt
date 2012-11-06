@@ -20,19 +20,13 @@ abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR, Event], Even
         else arFactory.rebuildFromHistory(events))
 
   def storeAndRetrieveUpdated(ar: AR, uncommittedEvents: List[Event]): AlmFuture[AR] =
-    validateAggregateRootAgainstEvents(ar, uncommittedEvents).continueWithFuture {
-      case (ar, events) =>
-        eventLog.storeEvents(uncommittedEvents).map(committedEvents => ar)
-    }
+    validateAggregateRootAgainstEvents(ar, uncommittedEvents).continueWithFuture { case (ar, events) => eventLog.storeEvents(uncommittedEvents).map(committedEvents => ar) }
 
   def store(ar: AR, uncommittedEvents: List[Event], ticket: Option[String]): Unit =
-    validateAggregateRootAgainstEvents(ar, uncommittedEvents).continueWithFuture {
-      case (ar, events) =>
-        eventLog.storeEvents(uncommittedEvents)
-          .onComplete(
-            fail => updateFailedOperationState(almhirtContext, fail, ticket),
-            succ => ticket.foreach(t => almhirtContext.reportOperationState(Executed(t))))
-    }
+    validateAggregateRootAgainstEvents(ar, uncommittedEvents).continueWithFuture { case (ar, events) => eventLog.storeEvents(uncommittedEvents) }
+      .onComplete(
+        fail => updateFailedOperationState(almhirtContext, fail, ticket),
+        succ => ticket.foreach(t => almhirtContext.reportOperationState(Executed(t))))
 
   private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
     context.reportProblem(p)

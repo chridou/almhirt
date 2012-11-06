@@ -8,7 +8,7 @@ import almhirt.almvalidation.kit._
 import almhirt.eventlog.DomainEventLog
 import almhirt.domain.impl.BasicAggregateRootRepository
 import almhirt.environment.AlmhirtContextTestKit
-import almhirt.eventlog.impl._
+import almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLog
 import test._
 
 class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContextTestKit {
@@ -26,7 +26,7 @@ class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContex
   
   private def withNewRepository[T](withRepo: TestPersonRepository => T): T = {
     inContext(ctx => {
-      val repo = new TestPersonRepository(new InefficientSerialziedInMemoryDomainEventLog()(ctx))(ctx)
+      val repo = new TestPersonRepository(new InefficientSerializingInMemoryDomainEventLog()(ctx))(ctx)
       withRepo(repo)
     })
   }

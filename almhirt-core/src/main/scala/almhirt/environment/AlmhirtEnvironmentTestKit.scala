@@ -34,10 +34,10 @@ trait AlmhirtEnvironmentTestKit {
     implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
     implicit val timeout = almhirtCtx.system.mediumDuration
     val tracker = util.OperationStateTracker()
-    val trackerRegistration = (almhirtCtx.operationStateChannel <-<* (opState => tracker.updateState(opState))).awaitResult.forceResult
+    val trackerRegistration = (almhirtCtx.operationStateChannel <-<* { opState => tracker.updateState(opState) }).awaitResult.forceResult
     val repos = new UnsafeRepositoryRegistry(almhirtCtx)
     val cmdExecutor = new UnsafeCommandExecutorOnCallingThread(repos, almhirtCtx)
-    val cmdExecutorRegistration = (almhirtCtx.commandChannel <-<* (cmdEnvelope => cmdExecutor.executeCommand(cmdEnvelope))).awaitResult.forceResult
+    val cmdExecutorRegistration = (almhirtCtx.commandChannel <-<* { cmdEnvelope => cmdExecutor.executeCommand(cmdEnvelope) }).awaitResult.forceResult
     val env =
       new AlmhirtEnvironment {
         val context = almhirtCtx

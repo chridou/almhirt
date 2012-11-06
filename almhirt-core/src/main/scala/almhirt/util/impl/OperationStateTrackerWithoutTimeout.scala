@@ -34,9 +34,7 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
               log.warning("InProcess state for ticket %s cannot be set because there is already a result!".format(ticket))
             } else {
               if (!collectedInProcess.contains(ticket)) {
-                val state = InProcess(ticket)
                 collectedInProcess += ticket
-                almhirtContext.reportOperationState(state)
               } else {
                 log.warning("InProcess state for ticket %s already received!".format(ticket))
               }

@@ -68,8 +68,8 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
     val step2 =
       step1.flatMap{ case (com, repository, (id, version)) =>
           getAggregateRoot(repository, id).mapV(ar =>
-            checkArId(ar, id).bind(ar =>
-              checkVersion(ar, version))).flatMap(ar =>
+            checkArId(ar, id, com).bind(ar =>
+              checkVersion(ar, version, com))).flatMap(ar =>
                 executeHandler(com, ar, context).map((repository, _)))
       }
     step2.onComplete(
@@ -99,12 +99,12 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       s => (s.id, s.tryGetVersion).success,
       UnspecifiedProblem("Mutator without aggregate root ref: %s".format(cmd.getClass.getName)).failure)
 
-  private def checkArId(ar: AR, id: UUID): AlmValidation[AR] =
-    boolean.fold(ar.id == id, ar.success, UnspecifiedProblem("ids do not match", severity = Major).failure)
+  private def checkArId(ar: AR, id: UUID, cmd: TCom): AlmValidation[AR] =
+    boolean.fold(ar.id == id, ar.success, UnspecifiedProblem("Refused to handle command: Ids do not match. The refused command is '%s'".format(cmd), severity = Major).failure)
 
-  private def checkVersion(ar: AR, version: Option[Long]): AlmValidation[AR] =
+  private def checkVersion(ar: AR, version: Option[Long], cmd: TCom): AlmValidation[AR] =
     option.cata(version)(
-      v => boolean.fold(v == ar.version, ar.success, CollisionProblem("versions do not match. Current version is '%d', targetted version is '%d'".format(ar.version, v), severity = Minor).failure),
+      v => boolean.fold(v == ar.version, ar.success, CollisionProblem("Refused to handle command: Versions do not match. Current version is '%d', targetted version is '%d'. The refused command is '%s'".format(ar.version, v, cmd), severity = Minor).failure),
       ar.success)
 
   private def getRepository(repositories: HasRepositories): AlmFuture[AggregateRootRepository[AR, TEvent]] =
