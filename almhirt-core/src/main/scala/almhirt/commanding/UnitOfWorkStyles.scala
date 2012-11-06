@@ -104,7 +104,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
   private def checkVersion(ar: AR, version: Option[Long]): AlmValidation[AR] =
     option.cata(version)(
-      v => boolean.fold(v == ar.version, ar.success, CollisionProblem("versions do not match. Current version is '%d', target version is '%d'".format(ar.version, v), severity = Minor).failure),
+      v => boolean.fold(v == ar.version, ar.success, CollisionProblem("versions do not match. Current version is '%d', targetted version is '%d'".format(ar.version, v), severity = Minor).failure),
       ar.success)
 
   private def getRepository(repositories: HasRepositories): AlmFuture[AggregateRootRepository[AR, TEvent]] =
