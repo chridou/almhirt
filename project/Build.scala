@@ -27,7 +27,7 @@ object Dependencies {
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0-M2" % "compile"
 	
-	lazy val akka_actor  = "com.typesafe.akka" % "akka-actor" % "2.0.2"
+	lazy val akka_actor  = "com.typesafe.akka" % "akka-actor" % "2.0.3"
 
 	lazy val unfiltered = "net.databinder" %% "unfiltered-netty" % "0.6.3"
 
@@ -36,7 +36,7 @@ object Dependencies {
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 	
 	lazy val specs2 = "org.specs2" %% "specs2" % "1.11" % "test"
-	lazy val akka_testkit = "com.typesafe.akka" % "akka-testkit" % "2.0.2" % "test"
+	lazy val akka_testkit = "com.typesafe.akka" % "akka-testkit" % "2.0.3" % "test"
 
 }
 
@@ -45,6 +45,7 @@ trait CommonBuild {
   import Resolvers._
   def commonProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
