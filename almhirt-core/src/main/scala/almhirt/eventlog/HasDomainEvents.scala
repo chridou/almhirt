@@ -24,4 +24,6 @@ trait HasDomainEvents {
   def getEvents(aggRootId: UUID): AlmFuture[Iterable[DomainEvent]]
   def getEvents(aggRootId: UUID, fromVersion: Long): AlmFuture[Iterable[DomainEvent]]
   def getEvents(aggRootId: UUID, fromVersion: Long, toVersion: Long): AlmFuture[Iterable[DomainEvent]]
+  def getRawVersion(aggRootId: UUID): AlmFuture[Long] = getVersion(aggRootId).map(_.getOrElse(0))
+  def getVersion(aggRootId: UUID): AlmFuture[Option[Long]] = getRawVersion(aggRootId).map{ case 0 => None; case v => Some(v) }
 }

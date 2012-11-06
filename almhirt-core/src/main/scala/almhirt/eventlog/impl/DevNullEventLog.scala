@@ -13,12 +13,12 @@ import almhirt.domain.DomainEvent
 import almhirt.eventlog._
 
 class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
-  implicit private def futureContext = almhirtContext.system.futureDispatcher 
-  def storeEvents(events: List[DomainEvent]) = AlmPromise{ CommittedDomainEvents(Nil).success }
+  implicit private def futureContext = almhirtContext.system.futureDispatcher
+  def storeEvents(events: List[DomainEvent]) = AlmPromise { CommittedDomainEvents(Nil).success }
 
-  def getAllEvents() = AlmPromise{ Iterable.empty.success }
-  def getEvents(id: UUID) = AlmPromise{ Iterable.empty.success }
-  def getEvents(id: UUID, fromVersion: Long) = AlmPromise{ Iterable.empty.success }
-  def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = AlmPromise{ Iterable.empty.success }
-
+  def getAllEvents() = AlmPromise { Iterable.empty.success }
+  def getEvents(id: UUID) = AlmPromise { Iterable.empty.success }
+  def getEvents(id: UUID, fromVersion: Long) = AlmPromise { Iterable.empty.success }
+  def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = AlmPromise { Iterable.empty.success }
+  override def getRawVersion(aggRootId: UUID) = AlmPromise.successful { 0L }
 }

@@ -21,7 +21,6 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
       insertStates.foreach(x => x fold (f => println(f), succ => println(succ)))
     }
 
-
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(SetTestPersonAddress(x._2, Some(1), x._4), "A setaddress%s".format(x._1.toString)))
     val update1StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A setaddress%s".format(x._1.toString)))
     val update1StatesRes = AlmFuture.sequence(update1StatesFutures).awaitResult
@@ -43,76 +42,76 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
       succ => succ.forall(_.isSuccess) && succ.forall(_.forceResult.isFinishedSuccesfully))
   }                                               //> NotExecuted(A insert0,almhirt.UnspecifiedProblem
                                                   //| The last event's version must be one less that the aggregate root's version
-                                                  //| : 1 + 1 != 1
+                                                  //| : 0 + 1 != 0
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A insert1,almhirt.UnspecifiedProblem
                                                   //| The last event's version must be one less that the aggregate root's version
-                                                  //| : 1 + 1 != 1
+                                                  //| : 0 + 1 != 0
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A insert2,almhirt.UnspecifiedProblem
                                                   //| The last event's version must be one less that the aggregate root's version
-                                                  //| : 1 + 1 != 1
+                                                  //| : 0 + 1 != 0
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A insert3,almhirt.UnspecifiedProblem
                                                   //| The last event's version must be one less that the aggregate root's version
-                                                  //| : 1 + 1 != 1
+                                                  //| : 0 + 1 != 0
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A setaddress0,almhirt.NotFoundProblem
-                                                  //| No aggregate root found with id '009e0143-62b3-4dd4-98da-3b0ac661ac79'
+                                                  //| No aggregate root found with id '2a69095b-c202-478f-9432-1d39dcb35550'
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A setaddress1,almhirt.NotFoundProblem
-                                                  //| No aggregate root found with id 'beb9dcd2-c9cf-46c3-924e-849c687309d8'
+                                                  //| No aggregate root found with id 'ffc8f959-3c26-4f57-a0dc-cc8f17e02063'
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A setaddress2,almhirt.NotFoundProblem
-                                                  //| No aggregate root found with id 'b13c9724-e64b-4e98-9fe5-4dc26148f5ca'
+                                                  //| No aggregate root found with id 'c3e4dcd2-f6f4-466d-9076-35b0385a0f71'
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A setaddress3,almhirt.NotFoundProblem
-                                                  //| No aggregate root found with id 'b1827bac-e16b-4f7a-ac9c-342f1783a884'
+                                                  //| No aggregate root found with id '72ab89e1-558c-4866-940c-959c62f9614e'
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A updatename0,almhirt.NotFoundProblem
-                                                  //| No aggregate root found with id '009e0143-62b3-4dd4-98da-3b0ac661ac79'
+                                                  //| No aggregate root found with id '2a69095b-c202-478f-9432-1d39dcb35550'
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A updatename1,almhirt.NotFoundProblem
-                                                  //| No aggregate root found with id 'beb9dcd2-c9cf-46c3-924e-849c687309d8'
+                                                  //| No aggregate root found with id 'ffc8f959-3c26-4f57-a0dc-cc8f17e02063'
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A updatename2,almhirt.NotFoundProblem
-                                                  //| No aggregate root found with id 'b13c9724-e64b-4e98-9fe5-4dc26148f5ca'
+                                                  //| No aggregate root found with id 'c3e4dcd2-f6f4-466d-9076-35b0385a0f71'
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()
                                                   //| )
                                                   //| NotExecuted(A updatename3,almhirt.NotFoundProblem
-                                                  //| No aggregate root found with id 'b1827bac-e16b-4f7a-ac9c-342f1783a884'
+                                                  //| No aggregate root found with id '72ab89e1-558c-4866-940c-959c62f9614e'
                                                   //| Category: ApplicationProblem
                                                   //| Severity: Minor
                                                   //| Arguments: Map()

@@ -49,7 +49,7 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
 
 object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
   def creationHandler = {
-  	case e @ TestPersonCreated(entityId, name,_) => TestPerson(entityId, e.version, name, None, 0)
+  	case e @ TestPersonCreated(entityId, name,_) => TestPerson(entityId, e.version, name, None, 1)
   }
   
   def apply(name: String) = 

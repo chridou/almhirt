@@ -1,5 +1,5 @@
 package almhirt.eventlog
 
-trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents{
+trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents {
 
 }
