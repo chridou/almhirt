@@ -24,7 +24,7 @@ abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR,Event], Event
 
   def store(ar: AR, uncommitedEvents: List[Event], ticket: Option[String]): Unit = 
     if(uncommitedEvents.isEmpty) {
-      val prob = UnspecifiedProblem("no events", category = ApplicationProblem, severity = Minor)
+      val prob = EmptyCollectionProblem("no events to append", category = ApplicationProblem, severity = Minor)
       updateFailedOperationState(almhirtContext, prob, ticket)
     }
     else {
