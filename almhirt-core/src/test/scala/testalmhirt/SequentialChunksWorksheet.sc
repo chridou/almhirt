@@ -20,6 +20,7 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
     insertStatesRes.foreach { insertStates =>
       insertStates.foreach(x => x fold (f => println(f), succ => println(succ)))
     }
+    
 
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(SetTestPersonAddress(x._2, Some(1), x._4), "A setaddress%s".format(x._1.toString)))
     val update1StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A setaddress%s".format(x._1.toString)))
@@ -39,27 +40,70 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
     }.fold(
       f => false,
       succ => succ.forall(_.isSuccess) && succ.forall(_.forceResult.isFinishedSuccesfully))
-  }                                               //> NotExecuted(A insert0,almhirt.UnspecifiedProblem
-                                                  //| Cannot cast scala.None$ to scalaz.Validation
-                                                  //| Category: SystemProblem
-                                                  //| Severity: Major
+  }                                               //> Executed(A insert0)
+                                                  //| Executed(A insert1)
+                                                  //| Executed(A insert2)
+                                                  //| Executed(A insert3)
+                                                  //| NotExecuted(A setaddress0,almhirt.UnspecifiedProblem
+                                                  //| The first event's version must be equal to the target aggregate root's vers
+                                                  //| ion: 1 != 0
+                                                  //| Category: ApplicationProblem
+                                                  //| Severity: Minor
                                                   //| Arguments: Map()
-                                                  //| Exception: java.lang.ClassCastException: Cannot cast scala.None$ to scalaz.
-                                                  //| Validation
-                                                  //| Stacktrace:
-                                                  //| java.lang.Class.cast(Unknown Source)
-                                                  //| akka.dispatch.Future$$anonfun$mapTo$1.liftedTree4$1(Future.scala:649)
-                                                  //| akka.dispatch.Future$$anonfun$mapTo$1.apply(Future.scala:648)
-                                                  //| akka.dispatch.Future$$anonfun$mapTo$1.apply(Future.scala:645)
-                                                  //| akka.dispatch.DefaultPromise.akka$dispatch$DefaultPromise$$notifyCompleted(
-                                                  //| Future.scala:943)
-                                                  //| akka.dispatch.DefaultPromise$$anonfun$tryComplete$1$$anonfun$apply$mcV$sp$4
-                                                  //| .apply(Future.scala:920)
-                                                  //| akka.dispatch.DefaultPromise$$anonfun$tryComplete$1$$anonfun$apply$mcV$sp$4
-                                                  //| .apply(Future.scala:920)
-                                                  //| scala.collection.LinearSeqOptimized$class.foreach(LinearSeqOptimized.scala:
-                                                  //| 59)
-                                                  //| scala.collection.immutable.Lis
-                                                  //| Output exceeds cutoff limit.
+                                                  //| )
+                                                  //| NotExecuted(A setaddress1,almhirt.UnspecifiedProblem
+                                                  //| The first event's version must be equal to the target aggregate root's vers
+                                                  //| ion: 1 != 0
+                                                  //| Category: ApplicationProblem
+                                                  //| Severity: Minor
+                                                  //| Arguments: Map()
+                                                  //| )
+                                                  //| NotExecuted(A setaddress2,almhirt.UnspecifiedProblem
+                                                  //| The first event's version must be equal to the target aggregate root's vers
+                                                  //| ion: 1 != 0
+                                                  //| Category: ApplicationProblem
+                                                  //| Severity: Minor
+                                                  //| Arguments: Map()
+                                                  //| )
+                                                  //| NotExecuted(A setaddress3,almhirt.UnspecifiedProblem
+                                                  //| The first event's version must be equal to the target aggregate root's vers
+                                                  //| ion: 1 != 0
+                                                  //| Category: ApplicationProblem
+                                                  //| Severity: Minor
+                                                  //| Arguments: Map()
+                                                  //| )
+                                                  //| NotExecuted(A updatename0,almhirt.CollisionProblem
+                                                  //| Refused to handle command: Versions do not match. Current version is '1', t
+                                                  //| argetted version is '2'. The refused command is 'ChangeTestPersonName(5adb8
+                                                  //| 769-d8d6-4a8e-b20a-7d5560166cf8,Some(2),newName0)'
+                                                  //| Category: ApplicationProblem
+                                                  //| Severity: Minor
+                                                  //| Arguments: Map()
+                                                  //| )
+                                                  //| NotExecuted(A updatename1,almhirt.CollisionProblem
+                                                  //| Refused to handle command: Versions do not match. Current version is '1', t
+                                                  //| argetted version is '2'. The refused command is 'ChangeTestPersonName(e163b
+                                                  //| 65a-2be8-4978-9bd9-bfd1d6b009f5,Some(2),newName1)'
+                                                  //| Category: ApplicationProblem
+                                                  //| Severity: Minor
+                                                  //| Arguments: Map()
+                                                  //| )
+                                                  //| NotExecuted(A updatename2,almhirt.CollisionProblem
+                                                  //| Refused to handle command: Versions do not match. Current version is '1', t
+                                                  //| argetted version is '2'. The refused command is 'ChangeTestPersonName(ed156
+                                                  //| 912-a650-4315-af3f-d24122064f4d,Some(2),newName2)'
+                                                  //| Category: ApplicationProblem
+                                                  //| Severity: Minor
+                                                  //| Arguments: Map()
+                                                  //| )
+                                                  //| NotExecuted(A updatename3,almhirt.CollisionProblem
+                                                  //| Refused to handle command: Versions do not match. Current version is '1', t
+                                                  //| argetted version is '2'. The refused command is 'ChangeTestPersonName(36cad
+                                                  //| 592-cf17-4924-99ad-3fd24314a302,Some(2),newName3)'
+                                                  //| Category: ApplicationProblem
+                                                  //| Severity: Minor
+                                                  //| Arguments: Map()
+                                                  //| )
+                                                  //| res0: Boolean = false
 
 }

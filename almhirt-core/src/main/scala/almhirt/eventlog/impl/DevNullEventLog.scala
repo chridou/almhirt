@@ -15,6 +15,7 @@ import almhirt.eventlog._
 class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
   implicit private def futureContext = almhirtContext.system.futureDispatcher
   def storeEvents(events: List[DomainEvent]) = AlmPromise { CommittedDomainEvents(Nil).success }
+  def purgeEvents(aggRootId: java.util.UUID) = AlmPromise { PurgedDomainEvents(Nil).success }
 
   def getAllEvents() = AlmPromise { Iterable.empty.success }
   def getEvents(id: UUID) = AlmPromise { Iterable.empty.success }

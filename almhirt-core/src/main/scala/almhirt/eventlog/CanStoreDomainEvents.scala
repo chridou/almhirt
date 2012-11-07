@@ -19,10 +19,12 @@ import almhirt._
 import almhirt.domain.DomainEvent
 
 case class CommittedDomainEvents(val events: List[DomainEvent])
+case class PurgedDomainEvents(val events: List[DomainEvent])
 
 /** Logs domain events. It doesn't validate them or check for consistency in any way. 
  */
 trait CanStoreDomainEvents {
   /** Log the domain events and in a case of success return them. Events must contain the events in order of occurence */
   def storeEvents(events: List[DomainEvent]): AlmFuture[CommittedDomainEvents]
+  def purgeEvents(aggRootId: java.util.UUID): AlmFuture[PurgedDomainEvents]
 }

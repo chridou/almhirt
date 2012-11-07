@@ -60,6 +60,7 @@ class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: Almh
   }
 
   def storeEvents(events: List[DomainEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
+  def purgeEvents(aggRootId: java.util.UUID) = AlmPromise { PurgedDomainEvents(Nil).success }
 
   def getAllEvents() = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
   def getEvents(id: UUID) = (coordinator ? GetEvents(id)).toAlmFuture[Iterable[DomainEvent]]
