@@ -23,30 +23,31 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
   import almhirt.problem.ProblemDefaults._
   /** Applies the event and returns a new aggregate root from the event or a failure */
   def applyEvent = { event: Event =>
-  	try { 
-  	  creationHandler(event).success 
-  	} catch {
-      case err: MatchError =>defaultSystemProblem.withMessage("Unhandled creation event: %s".format(event.getClass.getName)).failure
-      case err => defaultSystemProblem.withMessage(err.getMessage()).failure}
+    try {
+      creationHandler(event).success
+    } catch {
+      case err: MatchError => defaultSystemProblem.withMessage("Unhandled creation event: %s".format(event.getClass.getName)).failure
+      case err => defaultSystemProblem.withMessage(err.getMessage()).failure
+    }
   }
 
   /** Creates a new aggregate root and applies all the events to it */
   def rebuildFromHistory(history: Iterable[Event]): DomainValidation[AR] = {
-  	def buildEventSourced(es: AR, rest: Iterable[Event]): DomainValidation[AR] = {
-  	  if(rest.isEmpty)
-  	  	es.success
-  	  else
-  	    es.applyEvent(rest.head) fold(_.failure, buildEventSourced(_, rest.drop(1)))
-  	}
-  	if(history.isEmpty)
-  	  EmptyCollectionProblem("At least one event is required to rebuild from history").failure
-  	else
-  	  applyEvent(history.head) bind (freshAR => buildEventSourced(freshAR, history.drop(1)))
+    def buildEventSourced(es: AR, rest: Iterable[Event]): DomainValidation[AR] = {
+      if (rest.isEmpty)
+        es.success
+      else
+        es.applyEvent(rest.head) fold (_.failure, buildEventSourced(_, rest.drop(1)))
+    }
+    if (history.isEmpty)
+      EmptyCollectionProblem("At least one event is required to rebuild from history").failure
+    else
+      applyEvent(history.head) bind (freshAR => buildEventSourced(freshAR, history.drop(1)))
   }
-  
+
   /** Creates an UpdateRecorder from the creating event */
-  def create(event: Event): UpdateRecorder[Event,AR] =
-  	applyEvent(event) fold (UpdateRecorder.reject(_), UpdateRecorder.accept(event, _))
+  def create(event: Event): UpdateRecorder[Event, AR] =
+    applyEvent(event) fold (UpdateRecorder.reject(_), UpdateRecorder.accept(event, _))
 
   /** The event passed to this handler must create a new aggregate root */
   protected def creationHandler: PartialFunction[Event, AR]
