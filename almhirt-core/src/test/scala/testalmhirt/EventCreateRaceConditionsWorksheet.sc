@@ -15,7 +15,7 @@ object EventCreateRaceConditionsWorksheet extends TestAlmhirtKit {
     val repo = almhirtInstance.environment.repositories.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult
     val count = 50
     val id = almhirtInstance.getUuid
- 
+
     val commandEnvelopes = Vector((for (i <- 1 to count) yield CommandEnvelope(NewTestPerson(id, "name%d".format(i)), Some(i.toString))): _*)
 
     commandEnvelopes.foreach(almhirtInstance.executeCommand(_))
@@ -39,23 +39,11 @@ object EventCreateRaceConditionsWorksheet extends TestAlmhirtKit {
                                                   //| Executed(8)
                                                   //| Executed(9)
                                                   //| Executed(10)
-                                                  //| NotExecuted(11,almhirt.UnspecifiedProblem
-                                                  //| The first event's version must be equal to the next required event version:
-                                                  //|  0 != 1
-                                                  //| Category: ApplicationProblem
-                                                  //| Severity: Minor
-                                                  //| Arguments: Map()
-                                                  //| )
+                                                  //| Executed(11)
                                                   //| Executed(12)
                                                   //| Executed(13)
                                                   //| Executed(14)
-                                                  //| NotExecuted(15,almhirt.UnspecifiedProblem
-                                                  //| The first event's version must be equal to the next required event version:
-                                                  //|  0 != 1
-                                                  //| Category: ApplicationProblem
-                                                  //| Severity: Minor
-                                                  //| Arguments: Map()
-                                                  //| )
+                                                  //| Executed(15)
                                                   //| Executed(16)
                                                   //| Executed(17)
                                                   //| Executed(18)
@@ -91,102 +79,106 @@ object EventCreateRaceConditionsWorksheet extends TestAlmhirtKit {
                                                   //| Executed(48)
                                                   //| Executed(49)
                                                   //| Executed(50)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name2,2012-11-07T19:
-                                                  //| 12:59.954+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name42,2012-11-07T19
-                                                  //| :13:00.128+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name41,2012-11-07T19
-                                                  //| :13:00.128+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name44,2012-11-07T19
-                                                  //| :13:00.128+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name43,2012-11-07T19
-                                                  //| :13:00.128+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name45,2012-11-07T19
-                                                  //| :13:00.128+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name46,2012-11-07T19
-                                                  //| :13:00.128+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name24,2012-11-07T19
-                                                  //| :12:59.993+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name47,2012-11-07T19
-                                                  //| :13:00.129+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name48,2012-11-07T19
-                                                  //| :13:00.129+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name49,2012-11-07T19
-                                                  //| :13:00.129+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name50,2012-11-07T19
-                                                  //| :13:00.129+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name22,2012-11-07T19
-                                                  //| :12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name14,2012-11-07T19
-                                                  //| :12:59.954+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name5,2012-11-07T19:
-                                                  //| 12:59.954+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name40,2012-11-07T19
-                                                  //| :13:00.128+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name39,2012-11-07T19
-                                                  //| :13:00.128+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name18,2012-11-07T19
-                                                  //| :12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name6,2012-11-07T19:
-                                                  //| 12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name20,2012-11-07T19
-                                                  //| :12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name7,2012-11-07T19:
-                                                  //| 12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name1,2012-11-07T19:
-                                                  //| 12:59.954+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name38,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name8,2012-11-07T19:
-                                                  //| 12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name16,2012-11-07T19
-                                                  //| :12:59.955+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name19,2012-11-07T19
-                                                  //| :12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name3,2012-11-07T19:
-                                                  //| 12:59.993+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name10,2012-11-07T19
-                                                  //| :12:59.954+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name12,2012-11-07T19
-                                                  //| :12:59.954+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name23,2012-11-07T19
-                                                  //| :12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name21,2012-11-07T19
-                                                  //| :12:59.993+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name9,2012-11-07T19:
-                                                  //| 12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name25,2012-11-07T19
-                                                  //| :13:00.123+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name4,2012-11-07T19:
-                                                  //| 12:59.954+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name27,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name26,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name30,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name31,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name32,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name29,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name28,2012-11-07T19
-                                                  //| :13:00.126+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name17,2012-11-07T19
-                                                  //| :12:59.992+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name13,2012-11-07T19
-                                                  //| :12:59.993+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name36,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name37,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name33,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name34,2012-11-07T19
-                                                  //| :13:00.127+01:00)
-                                                  //| TestPersonCreated(1914b48e-54de-4860-b73d-7cfee691df97,name35,2012-11-07T19
-                                                  //| :13:00.127+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name1,2012-11-07T19:
+                                                  //| 14:51.990+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name37,2012-11-07T19
+                                                  //| :14:52.160+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name25,2012-11-07T19
+                                                  //| :14:52.154+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name33,2012-11-07T19
+                                                  //| :14:52.159+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name27,2012-11-07T19
+                                                  //| :14:52.154+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name17,2012-11-07T19
+                                                  //| :14:51.998+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name11,2012-11-07T19
+                                                  //| :14:51.992+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name41,2012-11-07T19
+                                                  //| :14:52.160+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name26,2012-11-07T19
+                                                  //| :14:52.159+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name42,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name34,2012-11-07T19
+                                                  //| :14:52.159+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name39,2012-11-07T19
+                                                  //| :14:52.160+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name5,2012-11-07T19:
+                                                  //| 14:51.991+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name40,2012-11-07T19
+                                                  //| :14:52.160+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name29,2012-11-07T19
+                                                  //| :14:52.154+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name32,2012-11-07T19
+                                                  //| :14:52.159+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name30,2012-11-07T19
+                                                  //| :14:52.159+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name14,2012-11-07T19
+                                                  //| :14:51.992+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name43,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name44,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name45,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name15,2012-11-07T19
+                                                  //| :14:51.993+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name46,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name49,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name47,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name48,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name50,2012-11-07T19
+                                                  //| :14:52.161+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name2,2012-11-07T19:
+                                                  //| 14:51.990+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name19,2012-11-07T19
+                                                  //| :14:51.999+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name16,2012-11-07T19
+                                                  //| :14:51.998+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name13,2012-11-07T19
+                                                  //| :14:51.992+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name4,2012-11-07T19:
+                                                  //| 14:51.990+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name23,2012-11-07T19
+                                                  //| :14:52.000+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name20,2012-11-07T19
+                                                  //| :14:51.999+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name18,2012-11-07T19
+                                                  //| :14:51.999+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name22,2012-11-07T19
+                                                  //| :14:51.999+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name10,2012-11-07T19
+                                                  //| :14:51.992+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name3,2012-11-07T19:
+                                                  //| 14:51.990+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name12,2012-11-07T19
+                                                  //| :14:51.992+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name8,2012-11-07T19:
+                                                  //| 14:51.993+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name21,2012-11-07T19
+                                                  //| :14:51.999+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name7,2012-11-07T19:
+                                                  //| 14:51.993+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name28,2012-11-07T19
+                                                  //| :14:52.154+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name24,2012-11-07T19
+                                                  //| :14:52.000+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name9,2012-11-07T19:
+                                                  //| 14:51.991+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name38,2012-11-07T19
+                                                  //| :14:52.160+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name36,2012-11-07T19
+                                                  //| :14:52.159+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name6,2012-11-07T19:
+                                                  //| 14:51.991+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name35,2012-11-07T19
+                                                  //| :14:52.159+01:00)
+                                                  //| TestPersonCreated(74491403-6c99-4353-9e05-42aab407d468,name31,2012-11-07T19
+                                                  //| :14:52.159+01:00)
                                                   //| ---------- FAILURE -----------------
-                                                  //| EVENTS: 48
+                                                  //| EVENTS: 50
 }
