@@ -9,7 +9,7 @@ trait CanValidateAggregateRootsAgainstEvents[AR <: AggregateRoot[AR, Event], Eve
     if (uncommittedEvents.isEmpty)
       EmptyCollectionProblem("no events to append", category = ApplicationProblem, severity = Minor).failure
     else if (uncommittedEvents.head.version != currentVersion)
-      UnspecifiedProblem("The first event's version must be equal to the target aggregate root's version: %d != %d".format(uncommittedEvents.head.version, currentVersion), category = ApplicationProblem, severity = Minor).failure
+      UnspecifiedProblem("The first event's version must be equal to the target aggregate root's current version: %d != %d".format(uncommittedEvents.head.version, currentVersion), category = ApplicationProblem, severity = Minor).failure
     else if (uncommittedEvents.last.version + 1L != newAr.version)
       UnspecifiedProblem("The last event's version must be one less that the aggregate root's version: %d + 1 != %d".format(uncommittedEvents.last.version, newAr.version), category = ApplicationProblem, severity = Minor).failure
     else {
