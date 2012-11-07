@@ -98,7 +98,7 @@ trait UpdateRecorder[+Event <: DomainEvent, +AR <: AggregateRoot[_, _]] {
   
   def recordings: AlmValidation[(AR, List[Event])] = {
     val (events, validation) = apply(Nil)
-    validation.map((_, events))
+    validation.map((_, events.reverse))
   }
 }
 

@@ -36,7 +36,7 @@ class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: Almh
   private case class GetEvents(entityId: UUID)
   private case class GetEventsFrom(entityId: UUID, from: Long)
   private case class GetEventsFromTo(entityId: UUID, from: Long, to: Long)
-  private case class GetVersion(entityId: UUID)
+  private case class GetRequiredEventVersion(entityId: UUID)
 
   private val coordinator = almhirtContext.system.actorSystem.actorOf(Props(new Coordinator()), "InefficientInMemoryEventLog")
 
@@ -54,8 +54,8 @@ class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: Almh
         sender ! loggedEvents.view.filter(x =>x.id == entityId && x.version >= from).toIterable.success
       case GetEventsFromTo(entityId, from, to) =>
         sender ! loggedEvents.view.filter(x =>x.id == entityId && x.version >= from && x.version <= to).toIterable.success
-      case GetVersion(entityId) =>
-        sender ! loggedEvents.view.filter(x => x.id == entityId).lastOption.map(_.version).success
+      case GetRequiredEventVersion(entityId) =>
+        sender ! loggedEvents.view.filter(x => x.id == entityId).lastOption.map(_.version + 1L).getOrElse(0L).success
     }
   }
 
@@ -66,6 +66,6 @@ class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: Almh
   def getEvents(id: UUID) = (coordinator ? GetEvents(id)).toAlmFuture[Iterable[DomainEvent]]
   def getEvents(id: UUID, fromVersion: Long) = (coordinator ? GetEventsFrom(id, fromVersion)).toAlmFuture[Iterable[DomainEvent]]
   def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = (coordinator ? GetEventsFromTo(id, fromVersion, toVersion)).toAlmFuture[Iterable[DomainEvent]]
-  override def getVersion(id: UUID): AlmFuture[Option[Long]] = (coordinator ? GetVersion(id)).toAlmFuture[Option[Long]]
+  override def getRequiredNextEventVersion(id: UUID): AlmFuture[Long] = (coordinator ? GetRequiredEventVersion(id)).toAlmFuture[Long]
 
 }

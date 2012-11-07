@@ -21,5 +21,5 @@ class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEve
   def getEvents(id: UUID) = AlmPromise { Iterable.empty.success }
   def getEvents(id: UUID, fromVersion: Long) = AlmPromise { Iterable.empty.success }
   def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = AlmPromise { Iterable.empty.success }
-  override def getRawVersion(aggRootId: UUID) = AlmPromise.successful { 0L }
+  override def getRequiredNextEventVersion(aggRootId: UUID) = AlmPromise.successful { 0L }
 }
