@@ -5,9 +5,11 @@ import scalaz.std._
 import almhirt._
 
 trait CanValidateAggregateRootsAgainstEvents[AR <: AggregateRoot[AR,Event], Event <: DomainEvent] {
-  def validateAggregateRootAgainstEvents(ar: AR, uncommittedEvents: List[Event]): AlmValidation[(AR, List[Event])] = {
+  def validateAggregateRootAgainstEvents(ar: AR, uncommittedEvents: List[Event], targetVersion: Long): AlmValidation[(AR, List[Event])] = {
     if (uncommittedEvents.isEmpty) 
       EmptyCollectionProblem("no events to append", category = ApplicationProblem, severity = Minor).failure
+    else if(uncommittedEvents.head.version != targetVersion)
+      UnspecifiedProblem("The first event's version must be equal to the target aggregate root's version: %d != %d".format(uncommittedEvents.head.version, targetVersion), category = ApplicationProblem, severity = Minor).failure
     else if(uncommittedEvents.last.version + 1L != ar.version)
       UnspecifiedProblem("The last event's version must be one less that the aggregate root's version: %d + 1 != %d".format(uncommittedEvents.last.version, ar.version), category = ApplicationProblem, severity = Minor).failure
     else {

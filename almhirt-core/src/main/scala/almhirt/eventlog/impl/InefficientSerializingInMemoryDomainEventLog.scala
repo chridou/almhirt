@@ -55,7 +55,7 @@ class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: Almh
       case GetEventsFromTo(entityId, from, to) =>
         sender ! loggedEvents.view.filter(x =>x.id == entityId && x.version >= from && x.version <= to).toIterable.success
       case GetVersion(entityId) =>
-        sender ! loggedEvents.view.filter(x => x.id == entityId).lastOption.map(_.version)
+        sender ! loggedEvents.view.filter(x => x.id == entityId).lastOption.map(_.version).success
     }
   }
 
