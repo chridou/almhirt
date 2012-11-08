@@ -24,10 +24,10 @@ trait CanCreateSubChannels[T <: AnyRef] {
    * @tparam TPayload The type of the to which the subchannel is restricted
    * @param classifier A predicate to further filter the messages of type TPayload 
    */
-  def createSubChannel[TPayload <: T](classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]]
+  def createSubChannel[TPayload <: T](name: String, classifier: Message[TPayload] => Boolean)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]]
   /** Creates a subchannel filtered by type
    * 
    * @tparam TPayload The type of the to which the subchannel is restricted
    */
-  def createSubChannel[TPayload <: T](implicit m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = createSubChannel(_ => true)
+  def createSubChannel[TPayload <: T](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = createSubChannel(name, _ => true)
 }

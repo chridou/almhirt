@@ -8,10 +8,13 @@ import almhirt.NotFoundProblem
 import almhirt.commanding.DomainCommand
 import almhirt.commanding.ExecutesCommands
 import almhirt.parts.CommandExecutor
+import almhirt.environment.AlmhirtEnvironment
 
-class DevNullCommandExecutor() extends CommandExecutor {
+class DevNullCommandExecutor(implicit env: AlmhirtEnvironment) extends CommandExecutor {
+  import akka.actor._
+  val actor = env.context.system.actorSystem.actorOf(Props(new Actor { def receive: Receive = { case _ => () } }))
   def addHandler(handler: HandlesCommand) {}
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]) {}
-  def getHandlerByType(commandType: Class[_ <: DomainCommand]): AlmValidation[HandlesCommand] = NotFoundProblem("DevNullCommandHandlerRegistry has no commands").failure 
-  def executeCommand(com: DomainCommand, ticket: Option[String]) {}	  
+  def getHandlerByType(commandType: Class[_ <: DomainCommand]): AlmValidation[HandlesCommand] = NotFoundProblem("DevNullCommandHandlerRegistry has no commands").failure
+  def executeCommand(com: DomainCommand, ticket: Option[String]) {}
 }

@@ -24,18 +24,18 @@ import almhirt._
  * ''Messages must be delivered to the handlers in the same order they are received''
  */
 trait SubscribableForMessages[T <: AnyRef] {
-  def <-* (handler: Message[T] => Unit, classifier: Message[T] => Boolean): AlmFuture[RegistrationHolder]
+  def <-* (handler: Message[T] => Unit, classifier: Message[T] => Boolean)(implicit atMost: akka.util.Duration): AlmFuture[RegistrationHolder]
 
-  def <-* (handler: Message[T] => Unit): AlmFuture[RegistrationHolder] = 
+  def <-* (handler: Message[T] => Unit)(implicit atMost: akka.util.Duration): AlmFuture[RegistrationHolder] = 
   	<-* (handler, (_: Message[T]) => true)
 
-  def <-<* (handler: T => Unit): AlmFuture[RegistrationHolder] = 
+  def <-<* (handler: T => Unit)(implicit atMost: akka.util.Duration): AlmFuture[RegistrationHolder] = 
   	<-* (m => handler(m.payload), (_: Message[T]) => true)
 
-  def <-<* (handler: T => Unit, classifier: T => Boolean): AlmFuture[RegistrationHolder] = 
+  def <-<* (handler: T => Unit, classifier: T => Boolean)(implicit atMost: akka.util.Duration): AlmFuture[RegistrationHolder] = 
   	<-* (x => handler(x.payload), (x => classifier(x.payload)))
   	
-  def <-#[TPayload <: T](handler: Message[TPayload] => Unit, classifier: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = {
+  def <-#[TPayload <: T](handler: Message[TPayload] => Unit, classifier: Message[TPayload] => Boolean)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = {
     def wrappedHandler(message: Message[T]): Unit =
       handler(message.asInstanceOf[Message[TPayload]])
     def wrappedClassifier(message: Message[T]) = 
@@ -46,14 +46,14 @@ trait SubscribableForMessages[T <: AnyRef] {
     <-* (wrappedHandler, wrappedClassifier)
   }
 	
-  def <-#[TPayload <: T](handler: Message[TPayload] => Unit)(implicit m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
-  	<-# [TPayload](handler, (_: Message[TPayload]) => true)(m)
+  def <-#[TPayload <: T](handler: Message[TPayload] => Unit)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
+  	<-# [TPayload](handler, (_: Message[TPayload]) => true)
 
-  def <-<#[TPayload <: T](handler: TPayload => Unit, classifier: TPayload => Boolean)(implicit m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
- 	<-# ((x: Message[TPayload]) => handler(x.payload), ((x: Message[TPayload]) => classifier(x.payload)))(m)
+  def <-<#[TPayload <: T](handler: TPayload => Unit, classifier: TPayload => Boolean)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
+ 	<-# ((x: Message[TPayload]) => handler(x.payload), ((x: Message[TPayload]) => classifier(x.payload)))
 
-  def <-<#[TPayload <: T](handler: TPayload => Unit)(implicit m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
- 	<-# ((x: Message[TPayload]) => handler(x.payload), ((x: Message[TPayload]) => true))(m)
+  def <-<#[TPayload <: T](handler: TPayload => Unit)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
+ 	<-# ((x: Message[TPayload]) => handler(x.payload), ((x: Message[TPayload]) => true))
 
 }
 

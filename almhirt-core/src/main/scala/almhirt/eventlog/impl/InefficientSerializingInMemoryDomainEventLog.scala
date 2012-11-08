@@ -29,43 +29,35 @@ import almhirt.eventlog._
 class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
   private implicit def timeout = Timeout(almhirtContext.system.mediumDuration)
   private implicit def executionContext = almhirtContext.system.futureDispatcher
-  private var loggedEvents: List[DomainEvent] = Nil
-
-  private case class LogEvents(events: List[DomainEvent])
-  private case object GetAllEvents
-  private case class GetEvents(entityId: UUID)
-  private case class GetEventsFrom(entityId: UUID, from: Long)
-  private case class GetEventsFromTo(entityId: UUID, from: Long, to: Long)
-  private case class GetRequiredEventVersion(entityId: UUID)
-
-  private val coordinator = almhirtContext.system.actorSystem.actorOf(Props(new Coordinator()), "InefficientInMemoryEventLog")
+  val actor = almhirtContext.system.actorSystem.actorOf(Props(new Coordinator()), "InefficientInMemoryEventLog")
 
   private class Coordinator() extends Actor with almakka.AlmActorLogging {
+    private var loggedEvents: List[DomainEvent] = Nil
     def receive = {
       case LogEvents(events) =>
         loggedEvents = loggedEvents ++ events
         events.foreach(event => almhirtContext.broadcastDomainEvent(event))
         sender ! CommittedDomainEvents(events).success
       case GetAllEvents =>
-        sender ! loggedEvents.toIterable.success
-      case GetEvents(entityId) =>
-        sender ! loggedEvents.view.filter(_.id == entityId).toIterable.success
-      case GetEventsFrom(entityId, from) =>
-        sender ! loggedEvents.view.filter(x =>x.id == entityId && x.version >= from).toIterable.success
-      case GetEventsFromTo(entityId, from, to) =>
-        sender ! loggedEvents.view.filter(x =>x.id == entityId && x.version >= from && x.version <= to).toIterable.success
-      case GetRequiredEventVersion(entityId) =>
-        sender ! loggedEvents.view.filter(x => x.id == entityId).lastOption.map(_.version + 1L).getOrElse(0L).success
+        sender ! AllEvents(DomainEventsChunk(0, true, loggedEvents.toIterable.success))
+      case GetEvents(aggId) =>
+        sender ! EventsForAggregateRoot(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.id == aggId).toIterable.success))
+      case GetEventsFrom(aggId, from) =>
+        sender ! EventsForAggregateRoot(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x =>x.id == aggId && x.version >= from).toIterable.success))
+      case GetEventsFromTo(aggId, from, to) =>
+        sender ! EventsForAggregateRoot(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x =>x.id == aggId && x.version >= from && x.version <= to).toIterable.success))
+      case GetRequiredNextEventVersion(aggId) =>
+        sender ! RequiredNextEventVersion(aggId, loggedEvents.view.filter(x => x.id == aggId).lastOption.map(_.version + 1L).getOrElse(0L).success)
     }
   }
 
-  def storeEvents(events: List[DomainEvent]) = (coordinator ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
+  def storeEvents(events: List[DomainEvent]) = (actor ? LogEvents(events)).toAlmFuture[CommittedDomainEvents]
   def purgeEvents(aggRootId: java.util.UUID) = AlmPromise { PurgedDomainEvents(Nil).success }
 
-  def getAllEvents() = (coordinator ? GetAllEvents).toAlmFuture[Iterable[DomainEvent]]
-  def getEvents(id: UUID) = (coordinator ? GetEvents(id)).toAlmFuture[Iterable[DomainEvent]]
-  def getEvents(id: UUID, fromVersion: Long) = (coordinator ? GetEventsFrom(id, fromVersion)).toAlmFuture[Iterable[DomainEvent]]
-  def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = (coordinator ? GetEventsFromTo(id, fromVersion, toVersion)).toAlmFuture[Iterable[DomainEvent]]
-  override def getRequiredNextEventVersion(id: UUID): AlmFuture[Long] = (coordinator ? GetRequiredEventVersion(id)).toAlmFuture[Long]
+  def getAllEvents() = (actor ? GetAllEvents).mapTo[AllEvents].map(x => x.chunk.events)
+  def getEvents(id: UUID) = (actor ? GetEvents(id)).mapTo[EventsForAggregateRoot].map(x => x.chunk.events)
+  def getEvents(id: UUID, fromVersion: Long) = (actor ? GetEventsFrom(id, fromVersion)).mapTo[EventsForAggregateRoot].map(x => x.chunk.events)
+  def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = (actor ? GetEventsFromTo(id, fromVersion, toVersion)).mapTo[EventsForAggregateRoot].map(x => x.chunk.events)
+  override def getRequiredNextEventVersion(id: UUID): AlmFuture[Long] = (actor ? GetRequiredNextEventVersion(id)).mapTo[RequiredNextEventVersion].map(x => x.nextVersion)
 
 }

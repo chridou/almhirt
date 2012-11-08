@@ -5,7 +5,7 @@ import scalaz.syntax.validation._
 import akka.actor._
 import almhirt._
 
-class MessageChannelActor extends Actor {
+class MessageHubActor extends Actor {
   private var almhirtsystem: Option[AlmhirtSystem] = None
 
   private var subscriptions = Vector.empty[(UUID, MessagingSubscription)]
@@ -13,6 +13,9 @@ class MessageChannelActor extends Actor {
 
   def receive = {
     case PostMessage(message) =>
+      subscriptions.filter(_._2.predicate(message)).foreach(_._2.handler(message))
+      subChannels.filter(_._3(message)).foreach(_._2 ! PostMessage(message))
+    case BroadcastMessage(message) =>
       subscriptions.filter(_._2.predicate(message)).foreach(_._2.handler(message))
       subChannels.filter(_._3(message)).foreach(_._2 ! PostMessage(message))
     case Subscribe(subscription) =>

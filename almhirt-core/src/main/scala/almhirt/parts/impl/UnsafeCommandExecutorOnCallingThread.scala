@@ -18,6 +18,8 @@ import almhirt.util._
  */
 class UnsafeCommandExecutorOnCallingThread(repositories: HasRepositories, context: AlmhirtContext) extends CommandExecutor {
   private val handlers: collection.mutable.Map[String, HandlesCommand] = collection.mutable.HashMap.empty
+  import akka.actor._
+  val actor = context.system.actorSystem.actorOf(Props(new Actor { def receive: Receive = { case _ => () } }))
 
   def addHandler(handler: HandlesCommand) {
     handlers.put(handler.commandType.getName, handler)
