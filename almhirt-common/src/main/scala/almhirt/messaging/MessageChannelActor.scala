@@ -12,17 +12,17 @@ class MessageChannelActor extends Actor {
   private var subChannels = Vector.empty[(UUID, ActorRef, Message[AnyRef] => Boolean)]
 
   def receive = {
-    case PostMessage(message) =>
+    case PostMessageCmd(message) =>
       subscriptions.filter(_._2.predicate(message)).foreach(_._2.handler(message))
-      subChannels.filter(_._3(message)).foreach(_._2 ! PostMessage(message))
-    case Subscribe(subscription) =>
+      subChannels.filter(_._3(message)).foreach(_._2 ! PostMessageCmd(message))
+    case SubscribeCmd(subscription) =>
       val registrationToken = UUID.randomUUID
       val registration = new RegistrationUUID { val ticket = registrationToken; def dispose { self ! Unsubscribe(ticket) } }
       subscriptions = subscriptions :+ (registrationToken, subscription)
-      sender ! registration.success
+      sender ! SubscriptionRsp(registration.success)
     case Unsubscribe(token) =>
       subscriptions = subscriptions.filterNot(_._1 == token)
-    case CreateSubChannel(name, predicate) =>
+    case CreateSubChannelCmd(name, predicate) =>
       val registrationToken = UUID.randomUUID
       val registration = new RegistrationUUID { val ticket = registrationToken; def dispose { self ! UnsubscribeSubChannel(ticket) } }
       val actor =
@@ -36,8 +36,8 @@ class MessageChannelActor extends Actor {
         }
       almhirtsystem.foreach(sys => actor ! UseAlmhirtSystemMessage(sys))
       subChannels = subChannels :+ (registrationToken, actor, predicate)
-      actor ! Subscription(registration.success)
-      sender ! NewSubChannel(name, actor.success)
+      actor ! SubscriptionRsp(registration.success)
+      sender ! NewSubChannelRsp(name, actor.success)
     case UnsubscribeSubChannel(token) =>
       subChannels = subChannels.filterNot(_._1 == token)
     case UseAlmhirtSystemMessage(system) =>

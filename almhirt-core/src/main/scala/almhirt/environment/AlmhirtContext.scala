@@ -47,7 +47,7 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
 
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) {
     val header = MessageHeader(getUuid, None, metaData, getDateTime)
-    messageHub.actor ! BroadcastMessage(messageWithPayload(payload, metaData))
+    messageHub.actor ! BroadcastMessageCmd(messageWithPayload(payload, metaData))
   }
 
   def broadcastCommandEnvelope(cmdEnv: CommandEnvelope) { broadcast(cmdEnv) }
