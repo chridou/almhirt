@@ -5,7 +5,7 @@ import almhirt.ActorBased
 import almhirt.environment.AlmhirtContext
 
 sealed trait AggregateRootRepositoryCmd
-case class GetAggregateRootCmd(aggId: java.util.UUID) extends AggregateRootRepositoryCmd
+case class GetAggregateRootQry(aggId: java.util.UUID) extends AggregateRootRepositoryCmd
 case class StoreAggregateRootCmd[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AggregateRoot[AR, Event], uncommittedEvents: List[DomainEvent], ticket: Option[String]) extends AggregateRootRepositoryCmd
 
 sealed trait AggregateRootRepositoryRsp

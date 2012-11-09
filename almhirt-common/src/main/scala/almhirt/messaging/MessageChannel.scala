@@ -44,12 +44,12 @@ object MessageChannel {
       val filter = MessagePredicate[T](classifier)
       def wrappedHandler(message: Message[AnyRef]): Unit =
         handler(message.asInstanceOf[Message[T]])
-      (actor ? SubscribeCmd(new MessagingSubscription{ val predicate = filter; val handler = wrappedHandler _}))(atMost).toAlmFuture[RegistrationHolder]
+      (actor ? SubscribeQry(new MessagingSubscription{ val predicate = filter; val handler = wrappedHandler _}))(atMost).toAlmFuture[RegistrationHolder]
     }
 
     def createSubChannel[TPayload <: T](name: String, classifier: Message[TPayload] => Boolean)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       val filter = MessagePredicate[TPayload](classifier)
-      (actor ? CreateSubChannelCmd(name, filter))(atMost)
+      (actor ? CreateSubChannelQry(name, filter))(atMost)
         .mapTo[NewSubChannelRsp]
         .map(subchannel => subchannel.channel).toAlmFuture[ActorRef]
         .map(newActor => MessageChannel[TPayload](newActor, futureExecutionContext))

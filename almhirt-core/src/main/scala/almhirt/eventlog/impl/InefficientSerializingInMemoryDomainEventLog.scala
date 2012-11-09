@@ -34,30 +34,30 @@ class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: Almh
   private class Coordinator() extends Actor with almakka.AlmActorLogging {
     private var loggedEvents: List[DomainEvent] = Nil
     def receive = {
-      case LogEventsCmd(events, executionIdent) =>
+      case LogEventsQry(events, executionIdent) =>
         loggedEvents = loggedEvents ++ events
         events.foreach(event => almhirtContext.broadcastDomainEvent(event))
         sender ! CommittedDomainEventsRsp(events, executionIdent).success
-      case GetAllEventsCmd =>
+      case GetAllEventsQry =>
         sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success))
-      case GetEventsCmd(aggId) =>
+      case GetEventsQry(aggId) =>
         sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.id == aggId).toIterable.success))
-      case GetEventsFromCmd(aggId, from) =>
+      case GetEventsFromQry(aggId, from) =>
         sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x =>x.id == aggId && x.version >= from).toIterable.success))
-      case GetEventsFromToCmd(aggId, from, to) =>
+      case GetEventsFromToQry(aggId, from, to) =>
         sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x =>x.id == aggId && x.version >= from && x.version <= to).toIterable.success))
-      case GetRequiredNextEventVersionCmd(aggId) =>
+      case GetRequiredNextEventVersionQry(aggId) =>
         sender ! RequiredNextEventVersionRsp(aggId, loggedEvents.view.filter(x => x.id == aggId).lastOption.map(_.version + 1L).getOrElse(0L).success)
     }
   }
 
-  def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsCmd(events, None)).toAlmFuture[CommittedDomainEventsRsp].map(_.events)
+  def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None)).toAlmFuture[CommittedDomainEventsRsp].map(_.events)
   def purgeEvents(aggRootId: java.util.UUID) = AlmPromise { Nil.success }
 
-  def getAllEvents() = (actor ? GetAllEventsCmd).mapTo[AllEventsRsp].map(x => x.chunk.events)
-  def getEvents(id: UUID) = (actor ? GetEventsCmd(id)).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
-  def getEvents(id: UUID, fromVersion: Long) = (actor ? GetEventsFromCmd(id, fromVersion)).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
-  def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = (actor ? GetEventsFromToCmd(id, fromVersion, toVersion)).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
-  override def getRequiredNextEventVersion(id: UUID): AlmFuture[Long] = (actor ? GetRequiredNextEventVersionCmd(id)).mapTo[RequiredNextEventVersionRsp].map(x => x.nextVersion)
+  def getAllEvents() = (actor ? GetAllEventsQry).mapTo[AllEventsRsp].map(x => x.chunk.events)
+  def getEvents(id: UUID) = (actor ? GetEventsQry(id)).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
+  def getEvents(id: UUID, fromVersion: Long) = (actor ? GetEventsFromQry(id, fromVersion)).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
+  def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = (actor ? GetEventsFromToQry(id, fromVersion, toVersion)).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
+  override def getRequiredNextEventVersion(id: UUID): AlmFuture[Long] = (actor ? GetRequiredNextEventVersionQry(id)).mapTo[RequiredNextEventVersionRsp].map(x => x.nextVersion)
 
 }

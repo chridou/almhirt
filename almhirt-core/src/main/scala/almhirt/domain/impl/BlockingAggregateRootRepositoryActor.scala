@@ -43,7 +43,7 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
   }
 
   def receive: Receive = {
-    case GetAggregateRootCmd(aggId) =>
+    case GetAggregateRootQry(aggId) =>
       val res = getFromEventLog(aggId).awaitResult
       sender ! AggregateRootFromRepositoryRsp[AR, Event](res)
     case StoreAggregateRootCmd(ar, uncommittedEvents, ticket) =>

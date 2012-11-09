@@ -17,7 +17,7 @@ abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], 
   implicit private def futureContext = almhirtContext.system.futureDispatcher
 
   def get(id: java.util.UUID): AlmFuture[AR] = 
-    (actor ? GetAggregateRootCmd(id))(duration)
+    (actor ? GetAggregateRootQry(id))(duration)
       .asInstanceOf[Future[AggregateRootFromRepositoryRsp[AR, Event]]]
       .map(_.ar) 
 

@@ -9,8 +9,8 @@ sealed trait MessagingCmd extends MessagingMsg
 
 case class BroadcastMessageCmd(message: Message[AnyRef]) extends MessagingCmd
 case class PostMessageCmd(message: Message[AnyRef]) extends MessagingCmd
-case class SubscribeCmd(subscription: MessagingSubscription) extends MessagingCmd
-case class CreateSubChannelCmd(name: String, predicate: Message[AnyRef] => Boolean) extends MessagingCmd
+case class SubscribeQry(subscription: MessagingSubscription) extends MessagingCmd
+case class CreateSubChannelQry(name: String, predicate: Message[AnyRef] => Boolean) extends MessagingCmd
 
 sealed trait MessagingRsp extends MessagingMsg
 

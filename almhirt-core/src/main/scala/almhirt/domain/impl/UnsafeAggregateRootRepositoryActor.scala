@@ -43,7 +43,7 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
   }
 
   def receive: Receive = {
-    case GetAggregateRootCmd(aggId) =>
+    case GetAggregateRootQry(aggId) =>
       val pinnedSender = sender
       getFromEventLog(aggId).onComplete(pinnedSender ! AggregateRootFromRepositoryRsp[AR, Event](_))
     case StoreAggregateRootCmd(ar, uncommittedEvents, ticket) =>
