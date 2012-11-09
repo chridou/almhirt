@@ -6,15 +6,16 @@ import almhirt.syntax.almvalidation._
 import almhirt.domain._
 import almhirt.environment.AlmhirtContextTestKit
 import almhirt.eventlog.impl.DevNullEventLog
+import almhirt.parts.HasRepositories
 import test._
 
-class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
+class RepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
   implicit val duration = akka.util.Duration(1, "s")
-  """The concurrent repository registry""" should {
+  """The unsafe repository registry""" should {
     """be able to register a repository""" in {
       inTestContext(implicit ctx => {
         val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
-        val registry = new ConcurrentRepositoryRegistry(ctx)
+        val registry = HasRepositories(ctx)
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         true
       })
@@ -22,7 +23,7 @@ class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContex
     """be able to register a repository and retrieve it""" in {
       inTestContext(implicit ctx => {
         val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
-        val registry = new ConcurrentRepositoryRegistry(ctx)
+        val registry = HasRepositories(ctx)
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         registry.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult === repo
       })

@@ -12,7 +12,7 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
                                                   //> atMost  : akka.util.FiniteDuration = 500 milliseconds
   inTestAlmhirt { almhirt =>
     implicit val executor = almhirt.environment.context.system.futureDispatcher
-    val idsAndNamesAndAdresses = Vector((for (i <- 0 until 10) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
+    val idsAndNamesAndAdresses = Vector((for (i <- 0 until 20) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
 
     val repo = almhirt.environment.repositories.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult
 
@@ -71,17 +71,17 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
                                                   //| Executed(StringTrackingTicket(A insert7))
                                                   //| Executed(StringTrackingTicket(A insert8))
                                                   //| Executed(StringTrackingTicket(A insert9))
-                                                  //| --- setaddress done ---
-                                                  //| Executed(StringTrackingTicket(A setaddress0))
-                                                  //| Executed(StringTrackingTicket(A setaddress1))
-                                                  //| Executed(StringTrackingTicket(A setaddress2))
-                                                  //| Executed(StringTrackingTicket(A setaddress3))
-                                                  //| Executed(StringTrackingTicket(A setaddress4))
-                                                  //| Executed(StringTrackingTicket(A setaddress5))
-                                                  //| Executed(StringTrackingTicket(A setaddress6))
-                                                  //| Executed(StringTrackingTicket(A setaddress7))
-                                                  //| Executed(StringTrackingTicket(A setaddress8))
-                                                  //| Executed(Str
+                                                  //| Executed(StringTrackingTicket(A insert10))
+                                                  //| Executed(StringTrackingTicket(A insert11))
+                                                  //| Executed(StringTrackingTicket(A insert12))
+                                                  //| Executed(StringTrackingTicket(A insert13))
+                                                  //| Executed(StringTrackingTicket(A insert14))
+                                                  //| Executed(StringTrackingTicket(A insert15))
+                                                  //| Executed(StringTrackingTicket(A insert16))
+                                                  //| Executed(StringTrackingTicket(A insert17))
+                                                  //| Executed(StringTrackingTicket(A insert18))
+                                                  //| Executed(StringTrackingTicket(A insert19))
+                                                  //| --- setaddress done 
                                                   //| Output exceeds cutoff limit.
 
 }

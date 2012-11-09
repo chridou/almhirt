@@ -7,7 +7,7 @@ import almhirt.eventlog.impl._
 import almhirt.domain.DomainEvent
 import almhirt.messaging._
 import almhirt.syntax.almvalidation._
-import almhirt.parts.impl._
+import almhirt.parts._
 import com.typesafe.config._
 
 trait AlmhirtEnvironmentTestKit {
@@ -34,8 +34,8 @@ trait AlmhirtEnvironmentTestKit {
     implicit val timeout = almhirtCtx.system.mediumDuration
     val tracker = util.OperationStateTracker()
     val trackerRegistration = (almhirtCtx.operationStateChannel <-<* { opState => tracker.updateState(opState) }).awaitResult.forceResult
-    val repos = new UnsafeRepositoryRegistry(almhirtCtx)
-    val cmdExecutor = new UnsafeCommandExecutorOnCallingThread(repos, almhirtCtx)
+    val repos = HasRepositories(almhirtCtx)
+    val cmdExecutor = CommandExecutor(repos)
     val cmdExecutorRegistration = (almhirtCtx.commandChannel <-<* { cmdEnvelope => cmdExecutor.executeCommand(cmdEnvelope) }).awaitResult.forceResult
     val env =
       new AlmhirtEnvironment {

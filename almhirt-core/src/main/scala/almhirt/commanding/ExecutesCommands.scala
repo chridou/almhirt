@@ -6,6 +6,6 @@ trait ExecutesCommandCmd
 case class ExecuteCommandCmd(commandEnvelope: CommandEnvelope) extends ExecutesCommandCmd
 
 trait ExecutesCommands {
-  def executeCommand(com: DomainCommand, ticket: Option[TrackingTicket]): Unit
-  def executeCommand(commandEnvelope: CommandEnvelope) { executeCommand(commandEnvelope.command, commandEnvelope.ticket) }
+  def executeCommand(com: DomainCommand, ticket: Option[TrackingTicket]){ executeCommand(CommandEnvelope(com, ticket)) }
+  def executeCommand(commandEnvelope: CommandEnvelope): Unit
 }
