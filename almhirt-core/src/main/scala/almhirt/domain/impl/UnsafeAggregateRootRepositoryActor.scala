@@ -21,7 +21,7 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
         if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
         else arFactory.rebuildFromHistory(events))
 
-  private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[String]): Unit =
+  private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]): Unit =
     eventLog.getRequiredNextEventVersion(ar.id).flatMap(nextRequiredEventVersion =>
       validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture {
         case (ar, events) => eventLog.storeEvents(uncommittedEvents)
@@ -34,7 +34,7 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
           succ.foreach(event => almhirtContext.broadcastDomainEvent(event))
         })
 
-  private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
+  private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[TrackingTicket]) {
     context.reportProblem(p)
     ticket match {
       case Some(t) => context.reportOperationState(NotExecuted(t, p))

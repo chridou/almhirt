@@ -3,10 +3,11 @@ package almhirt.domain
 import almhirt._
 import almhirt.ActorBased
 import almhirt.environment.AlmhirtContext
+import almhirt.util.TrackingTicket
 
 sealed trait AggregateRootRepositoryCmd
 case class GetAggregateRootQry(aggId: java.util.UUID) extends AggregateRootRepositoryCmd
-case class StoreAggregateRootCmd[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AggregateRoot[AR, Event], uncommittedEvents: List[DomainEvent], ticket: Option[String]) extends AggregateRootRepositoryCmd
+case class StoreAggregateRootCmd[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AggregateRoot[AR, Event], uncommittedEvents: List[DomainEvent], ticket: Option[TrackingTicket]) extends AggregateRootRepositoryCmd
 
 sealed trait AggregateRootRepositoryRsp
 case class AggregateRootFromRepositoryRsp[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AlmValidation[AR]) extends AggregateRootRepositoryRsp

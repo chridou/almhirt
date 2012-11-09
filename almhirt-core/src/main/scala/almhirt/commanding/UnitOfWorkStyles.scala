@@ -15,7 +15,7 @@ import almhirt.util._
 
 trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
   protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])]
-  def handle(com: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[String]) {
+  def handle(com: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[TrackingTicket]) {
     if (com.isCreator) {
       val command = com.asInstanceOf[TCom]
       repositories.getForAggregateRootByType(self.aggregateRootType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
@@ -57,7 +57,7 @@ trait CreatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <
 
 trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
   protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])]
-  def handle(untypedcom: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[String]) {
+  def handle(untypedcom: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[TrackingTicket]) {
     implicit val executionContext = context.system.futureDispatcher
     val step1 =
       AlmFuture {
@@ -80,7 +80,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       })
   }
 
-  private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
+  private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[TrackingTicket]) {
     context.reportProblem(p)
     ticket match {
       case Some(t) => context.reportOperationState(NotExecuted(t, p))

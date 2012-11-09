@@ -14,9 +14,9 @@ import almhirt.almakka.AlmActorLogging
 
 trait OperationStateTracker extends Disposable {
   def updateState(opState: OperationState): Unit
-  def queryStateFor(ticket: String)(implicit atMost: Duration): AlmFuture[Option[OperationState]]
-  def onResult(ticket: String, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration): Unit
-  def getResultFor(ticket: String)(implicit atMost: Duration): AlmFuture[ResultOperationState]
+  def queryStateFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[Option[OperationState]]
+  def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration): Unit
+  def getResultFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[ResultOperationState]
 }
 
 object OperationStateTracker {

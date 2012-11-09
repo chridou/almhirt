@@ -9,6 +9,7 @@ import almhirt.commanding.DomainCommand
 import almhirt.commanding.ExecutesCommands
 import almhirt.parts.CommandExecutor
 import almhirt.environment.AlmhirtEnvironment
+import almhirt.util.TrackingTicket
 
 class DevNullCommandExecutor(implicit env: AlmhirtEnvironment) extends CommandExecutor {
   import akka.actor._
@@ -16,5 +17,5 @@ class DevNullCommandExecutor(implicit env: AlmhirtEnvironment) extends CommandEx
   def addHandler(handler: HandlesCommand) {}
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]) {}
   def getHandlerByType(commandType: Class[_ <: DomainCommand]): AlmValidation[HandlesCommand] = NotFoundProblem("DevNullCommandHandlerRegistry has no commands").failure
-  def executeCommand(com: DomainCommand, ticket: Option[String]) {}
+  def executeCommand(com: DomainCommand, ticket: Option[TrackingTicket]) {}
 }

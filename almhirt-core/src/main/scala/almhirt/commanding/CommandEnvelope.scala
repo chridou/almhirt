@@ -1,3 +1,5 @@
 package almhirt.commanding
 
-case class CommandEnvelope(command: DomainCommand, ticket: Option[String])
+import almhirt.util.TrackingTicket
+
+case class CommandEnvelope(command: DomainCommand, ticket: Option[TrackingTicket])

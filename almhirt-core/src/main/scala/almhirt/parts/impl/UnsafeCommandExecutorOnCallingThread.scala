@@ -35,7 +35,7 @@ class UnsafeCommandExecutorOnCallingThread(repositories: HasRepositories, contex
       case None => NotFoundProblem("No handler found for command %s".format(commandType.getName), severity = Major).failure
     }
 
-  def executeCommand(command: DomainCommand, ticket: Option[String]) {
+  def executeCommand(command: DomainCommand, ticket: Option[TrackingTicket]) {
     ticket foreach { t => context.reportOperationState(InProcess(t)) }
     getHandlerForCommand(command).fold(
       fail => {

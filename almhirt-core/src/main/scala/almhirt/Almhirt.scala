@@ -18,9 +18,9 @@ trait Almhirt extends AlmhirtEnvironmentOps with HasServices with Disposable {
   def getReadOnlyRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[HasAggregateRoots[AR, TEvent]] =
     environment.getReadOnlyRepository
 
-  def queryOperationStateFor(ticket: String)(implicit atMost: Duration) = environment.operationStateTracker.queryStateFor(ticket)
-  def onResultOperationState(ticket: String, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration){environment.operationStateTracker.onResult(ticket: String, callback: AlmValidation[ResultOperationState] => Unit)}
-  def getResultOperationStateFor(ticket: String)(implicit atMost: Duration) = environment.operationStateTracker.getResultFor(ticket)
+  def queryOperationStateFor(ticket: TrackingTicket)(implicit atMost: Duration) = environment.operationStateTracker.queryStateFor(ticket)
+  def onResultOperationState(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration){environment.operationStateTracker.onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)}
+  def getResultOperationStateFor(ticket: TrackingTicket)(implicit atMost: Duration) = environment.operationStateTracker.getResultFor(ticket)
 
   def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty) = environment.messageWithPayload(payload, metaData)
   

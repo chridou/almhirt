@@ -22,9 +22,9 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
   private val theActor = almhirtContext.system.actorSystem.actorOf(Props(new TheActor()), "operationStateTracker")
 
   private class TheActor extends Actor with AlmActorLogging {
-    val collectedInProcess = collection.mutable.Set.empty[String]
-    val collectedResults = collection.mutable.HashMap.empty[String, ResultOperationState]
-    val resultCallbacks = collection.mutable.HashMap.empty[String, List[AlmValidation[ResultOperationState] => Unit]]
+    val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
+    val collectedResults = collection.mutable.HashMap.empty[TrackingTicket, ResultOperationState]
+    val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[AlmValidation[ResultOperationState] => Unit]]
 
     def receive: Receive = {
       case OperationStateReceived(opState) =>
@@ -80,8 +80,8 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
   }
 
   private case class OperationStateReceived(opState: OperationState)
-  private case class RegisterResultCallback(ticket: String, callback: AlmValidation[ResultOperationState] => Unit, atMost: Duration)
-  private case class GetState(ticket: String)
+  private case class RegisterResultCallback(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit, atMost: Duration)
+  private case class GetState(ticket: TrackingTicket)
 
   private class ResponseActor extends Actor {
     private var receiver: ActorRef = null
@@ -99,14 +99,14 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
 	theActor ! OperationStateReceived(opState)
   }
 
-  def queryStateFor(ticket: String)(implicit atMost: Duration): AlmFuture[Option[OperationState]] =
+  def queryStateFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[Option[OperationState]] =
     (theActor.ask(GetState(ticket))(atMost)).toAlmFuture[Option[OperationState]]
 
-  def onResult(ticket: String, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration) {
+  def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration) {
     theActor ! RegisterResultCallback(ticket, callback, atMost)
   }
 
-  def getResultFor(ticket: String)(implicit atMost: Duration): AlmFuture[ResultOperationState] = {
+  def getResultFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[ResultOperationState] = {
     val actor = almhirtContext.system.actorSystem.actorOf(Props(new ResponseActor))
     val future = (actor.ask("getResponse")(atMost)).toAlmFuture[ResultOperationState]
     onResult(ticket, resOpState => actor ! ResOpCmd(resOpState))(atMost)

@@ -10,8 +10,8 @@ import almhirt.domain._
 import almhirt.util._
 
 trait AlmhirtEnvironmentOps extends AlmhirtContextOps {
-  def executeCommand(cmd: DomainCommand, ticket: Option[String]) { executeCommand(CommandEnvelope(cmd, ticket)) } 
-  def executeTrackedCommand(cmd: DomainCommand, ticket: String) { executeCommand(CommandEnvelope(cmd, Some(ticket))) }
+  def executeCommand(cmd: DomainCommand, ticket: Option[TrackingTicket]) { executeCommand(CommandEnvelope(cmd, ticket)) } 
+  def executeTrackedCommand(cmd: DomainCommand, ticket: TrackingTicket) { executeCommand(CommandEnvelope(cmd, Some(ticket))) }
   def executeUntrackedCommand(cmd: DomainCommand) { executeCommand(CommandEnvelope(cmd, None)) }
   def executeCommand(cmdEnv: CommandEnvelope): Unit
   def getReadOnlyRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[HasAggregateRoots[AR, TEvent]]
