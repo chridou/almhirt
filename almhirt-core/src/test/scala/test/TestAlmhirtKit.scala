@@ -2,6 +2,7 @@ package test
 
 import almhirt._
 import almhirt.environment._
+import almhirt.domain.AggregateRootRepository
 
 trait TestAlmhirtKit {
   val testKit = new AlmhirtTestKit{}
@@ -9,7 +10,8 @@ trait TestAlmhirtKit {
   def createTestAlmhirt(): Almhirt = {
     val almhirt = testKit.createTestAlmhirt()
     implicit val ctx = almhirt.environment.context
-    almhirt.environment.registerRepository[TestPerson, TestPersonEvent, TestPersonRepository](new TestPersonRepository(almhirt.environment.eventLog)(almhirt.environment.context))
+    val personRepository = AggregateRootRepository.basic[TestPerson, TestPersonEvent](TestPerson, almhirt.environment.eventLog)
+    almhirt.environment.registerRepository[TestPerson, TestPersonEvent](personRepository)
     almhirt.environment.addCommandHandler(new NewTestPersonUnitOfWork)
     almhirt.environment.addCommandHandler(new ChangeTestPersonNameUnitOfWork)
     almhirt.environment.addCommandHandler(new SetTestPersonAdressUnitOfWork)

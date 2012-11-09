@@ -11,5 +11,5 @@ import almhirt.domain.DomainEvent
 class DevNullRepositoryRegistry(context: AlmhirtContext) extends HasRepositories {
   private implicit val executionContext = context.system.futureDispatcher
   def getForAggregateRootByType(arType: Class[_ <: AggregateRoot[_, _]]): AlmFuture[AnyRef] = AlmPromise { NotFoundProblem("Repository for aggregate root  '%s' not found".format(arType.getName)).failure }
-  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[_, _]](repo: T)(implicit m: Manifest[AR]) {}
+  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: Manifest[AR]) {}
 }

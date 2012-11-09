@@ -19,6 +19,6 @@ class UnsafeRepositoryRegistry(context: AlmhirtContext) extends HasRepositories 
         case None => NotFoundProblem("Repository for aggregate root '%s' not found".format(arType.getName)).failure
       }
     }
-  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[AR, TEvent]](repo: T)(implicit m: Manifest[AR]) =
+  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: Manifest[AR]) =
     repos.put(m.erasure.getName, repo)
 }

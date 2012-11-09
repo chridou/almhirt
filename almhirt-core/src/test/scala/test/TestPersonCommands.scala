@@ -5,6 +5,7 @@ import almhirt._
 import almhirt.commanding._
 import almhirt.environment.AlmhirtContext
 import akka.dispatch.ExecutionContext
+import almhirt.domain.AggregateRootRepository
 
 trait TestPersonCommand extends DomainCommand
 trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyle
@@ -17,7 +18,7 @@ case class MoveTestPerson(id: UUID, version: Option[Long], newAddress: String) e
 case class MoveBecauseOfMarriage(id: UUID, version: Option[Long], newName: String, newAddress: String) extends TestPersonMutatorCommand
 
 trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends UnitOfWork[TestPerson, TestPersonEvent] {
-  val repositoryType = classOf[TestPersonRepository]
+  val repositoryType = classOf[AggregateRootRepository[TestPerson, TestPersonEvent]]
 }
 
 trait TestPersonCreatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with CreatorUnitOfWorkStyleFuture[TestPerson, TestPersonEvent, TCom]
