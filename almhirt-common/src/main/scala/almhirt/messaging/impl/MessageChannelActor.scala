@@ -1,11 +1,12 @@
-package almhirt.messaging
+package almhirt.messaging.impl
 
 import java.util.UUID
 import scalaz.syntax.validation._
 import akka.actor._
 import almhirt._
+import almhirt.messaging._
 
-class MessageHubActor extends Actor {
+class MessageChannelActor extends Actor {
   private var almhirtsystem: Option[AlmhirtSystem] = None
 
   private var subscriptions = Vector.empty[(UUID, MessagingSubscription)]
@@ -13,9 +14,6 @@ class MessageHubActor extends Actor {
 
   def receive = {
     case PostMessageCmd(message) =>
-      subscriptions.filter(_._2.predicate(message)).foreach(_._2.handler(message))
-      subChannels.filter(_._3(message)).foreach(_._2 ! PostMessageCmd(message))
-    case BroadcastMessageCmd(message) =>
       subscriptions.filter(_._2.predicate(message)).foreach(_._2.handler(message))
       subChannels.filter(_._3(message)).foreach(_._2 ! PostMessageCmd(message))
     case SubscribeQry(subscription) =>
