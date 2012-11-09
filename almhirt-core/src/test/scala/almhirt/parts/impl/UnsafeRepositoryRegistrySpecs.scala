@@ -13,7 +13,7 @@ class UnsafeRepositoryRegistrySpecs extends Specification with AlmhirtContextTes
   """The unsafe repository registry""" should {
     """be able to register a repository""" in {
       inTestContext(implicit ctx => {
-        val repo = AggregateRootRepository.basic[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
+        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
         val registry = new UnsafeRepositoryRegistry(ctx)
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         true
@@ -21,7 +21,7 @@ class UnsafeRepositoryRegistrySpecs extends Specification with AlmhirtContextTes
     }
     """be able to register a repository and retrieve it""" in {
       inTestContext(implicit ctx => {
-        val repo = AggregateRootRepository.basic[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
+        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
         val registry = new UnsafeRepositoryRegistry(ctx)
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         registry.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult === repo

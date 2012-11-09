@@ -10,7 +10,7 @@ trait TestAlmhirtKit {
   def createTestAlmhirt(): Almhirt = {
     val almhirt = testKit.createTestAlmhirt()
     implicit val ctx = almhirt.environment.context
-    val personRepository = AggregateRootRepository.basic[TestPerson, TestPersonEvent](TestPerson, almhirt.environment.eventLog)
+    val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent](TestPerson, almhirt.environment.eventLog)
     almhirt.environment.registerRepository[TestPerson, TestPersonEvent](personRepository)
     almhirt.environment.addCommandHandler(new NewTestPersonUnitOfWork)
     almhirt.environment.addCommandHandler(new ChangeTestPersonNameUnitOfWork)

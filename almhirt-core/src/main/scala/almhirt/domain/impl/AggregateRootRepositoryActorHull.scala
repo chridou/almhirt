@@ -17,11 +17,11 @@ abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], 
   implicit private def futureContext = almhirtContext.system.futureDispatcher
 
   def get(id: java.util.UUID): AlmFuture[AR] = 
-    (actor ? GetAggregateRoot(id))(duration)
-      .asInstanceOf[Future[AggregateRootFromRepositoryResponse[AR, Event]]]
+    (actor ? GetAggregateRootCmd(id))(duration)
+      .asInstanceOf[Future[AggregateRootFromRepositoryRsp[AR, Event]]]
       .map(_.ar) 
 
   def store(ar: AR, uncommittedEvents: List[Event], ticket: Option[String]): Unit =
-    (actor ! StoreAggregateRoot(ar, uncommittedEvents, ticket))
+    (actor ! StoreAggregateRootCmd(ar, uncommittedEvents, ticket))
   
 }

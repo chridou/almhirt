@@ -9,7 +9,7 @@ import almhirt.eventlog.DomainEventLog
 import almhirt.environment.AlmhirtContext
 import almhirt.util._
 
-abstract class BasicAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends Actor  {
+abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
   implicit private def timeout = almhirtContext.system.mediumDuration
   implicit private def futureContext = almhirtContext.system.futureDispatcher
@@ -22,13 +22,18 @@ abstract class BasicAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event],
         else arFactory.rebuildFromHistory(events))
 
   private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[String]): Unit =
-    eventLog.getRequiredNextEventVersion(ar.id).flatMap(nextRequiredEventVersion => 
-    validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture { case (ar, events) => 
-      eventLog.storeEvents(uncommittedEvents) } )
+    eventLog.getRequiredNextEventVersion(ar.id).flatMap(nextRequiredEventVersion =>
+      validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture {
+        case (ar, events) => eventLog.storeEvents(uncommittedEvents)
+      })
       .onComplete(
-        fail => updateFailedOperationState(almhirtContext, fail, ticket),
-        succ => ticket.foreach(t => almhirtContext.reportOperationState(Executed(t))))
-        
+        fail =>
+          updateFailedOperationState(almhirtContext, fail, ticket),
+        succ => {
+          ticket.foreach(t => almhirtContext.reportOperationState(Executed(t)))
+          succ.foreach(event => almhirtContext.broadcastDomainEvent(event))
+        })
+
   private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[String]) {
     context.reportProblem(p)
     ticket match {
@@ -36,13 +41,13 @@ abstract class BasicAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event],
       case None => ()
     }
   }
-  
+
   def receive: Receive = {
-    case GetAggregateRoot(aggId) => 
+    case GetAggregateRootCmd(aggId) =>
       val pinnedSender = sender
-      getFromEventLog(aggId).onComplete(pinnedSender ! AggregateRootFromRepositoryResponse[AR, Event](_))
-    case StoreAggregateRoot(ar, uncommittedEvents, ticket) => 
+      getFromEventLog(aggId).onComplete(pinnedSender ! AggregateRootFromRepositoryRsp[AR, Event](_))
+    case StoreAggregateRootCmd(ar, uncommittedEvents, ticket) =>
       storeToEventLog(ar.asInstanceOf[AR], uncommittedEvents.asInstanceOf[List[Event]], ticket)
-      
+
   }
 }

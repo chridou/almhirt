@@ -5,6 +5,15 @@ import almhirt.commanding.HandlesCommand
 import almhirt.AlmValidation
 import almhirt.AlmValidation
 
+sealed trait HasCommandHandlersCommands
+case class AddCommandHandler(handler: HandlesCommand) extends HasCommandHandlersCommands
+case class RemoveCommandHandler(commandType: Class[_ <: DomainCommand]) extends HasCommandHandlersCommands
+case class GetCommandHandler(commandType: Class[_ <: DomainCommand]) extends HasCommandHandlersCommands
+
+sealed trait HasCommandHandlersResponse
+case class CommandHandlerResponse(handler: AlmValidation[HandlesCommand]) extends HasCommandHandlersResponse
+
+
 trait HasCommandHandlers {
   def addHandler(handler: HandlesCommand): Unit
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]): Unit
