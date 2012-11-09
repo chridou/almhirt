@@ -8,14 +8,15 @@ import almhirt.syntax.almvalidation._
 import almhirt.almhirtsystem.AlmhirtsystemTestkit
 
 class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTestkit {
-  implicit def randUUID = java.util.UUID.randomUUID
+  implicit val atMost = akka.util.Duration(1, "s")
+  implicit def getUUID = java.util.UUID.randomUUID()
   private def getChannel[T <: AnyRef](context: AlmhirtSystem)(implicit m: Manifest[T]): MessageChannel[T] = {
-    impl.ActorBasedMessageChannel[T](Some("testChannel"), context)
+    MessageChannel[T]("testChannel")(context, m)
   }
 
   "An ActorBasedMessageStream" should {
     "return a subscription when subscribed to" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         val future = channel <-* ({ case _ => () }, _ => true)
         val subscription = future.awaitResult(Duration.Inf)
@@ -24,7 +25,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
   }
 
     "not execute a handler when the subscription is cancelled" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, _ => true)
@@ -35,7 +36,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
       }
     }
     "execute one handler when the subscription for one of two was cancelled" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hitCount = 0
         val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => true)
@@ -48,7 +49,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
       }
     }
     "execute a subscribed handler when classifier always returns true" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, _ => true)
@@ -58,7 +59,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
       }
     }
     "execute two handlers when classifier always returns true for 2 subscriptions" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hitCount = 0
         val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => true)
@@ -70,7 +71,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
       }
     }
     "execute only the handler for which the classifier returns true" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hitCount = 0
         val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => false)
@@ -82,7 +83,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
       }
     }
     "never execute a subscribed handler when classifier always returns false" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, _ => false)
@@ -92,7 +93,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
       }
     }
     "execute a subscribed handler when classifier is met" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "a" => true })
@@ -102,7 +103,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
       }
     }
     "not execute a subscribed handler when classifier is not met but the payload is of the same type" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "a" => true; case _ => false })
@@ -112,7 +113,7 @@ class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTest
       }
     }
     "not execute a subscribed handler when classifier is not met because the payload is of a different type" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val channel = getChannel[AnyRef](ctx)
         var hit = false
         val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "1" => true; case _ => false })

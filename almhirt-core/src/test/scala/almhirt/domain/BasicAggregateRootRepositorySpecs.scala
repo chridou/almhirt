@@ -25,7 +25,7 @@ class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContex
   val person3 = shouldBe2.result.forceResult
   
   private def withNewRepository[T](withRepo: TestPersonRepository => T): T = {
-    inContext(ctx => {
+    inTestContext(ctx => {
       val repo = new TestPersonRepository(new InefficientSerializingInMemoryDomainEventLog()(ctx))(ctx)
       withRepo(repo)
     })

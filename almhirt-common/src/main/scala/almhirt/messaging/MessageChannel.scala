@@ -17,17 +17,48 @@ package almhirt.messaging
 import java.util.UUID
 import akka.actor._
 import akka.pattern._
-import akka.util.Timeout
+import akka.util._
 import akka.dispatch._
 import almhirt._
+import almhirt.almfuture.all._
 
-trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T]
+trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T] with ActorBased
 
-object MessageChannel{ 
-  def apply[T <: AnyRef](name: Option[String])(implicit almhirtsystem: AlmhirtSystem, m: Manifest[T]): MessageChannel[T] = {
-	impl.ActorBasedMessageChannel[T](name, almhirtsystem)
+object MessageChannel {
+  def apply[T <: AnyRef](actor: ActorRef, futureExecutionContext: ExecutionContext)(implicit m: Manifest[T]): MessageChannel[T] = {
+    new ActorBasedMessageChannelImpl[T](actor)(futureExecutionContext, m)
   }
-  def apply[T <: AnyRef](name: Option[String], actorSystem: ActorRefFactory, timeout: Timeout, futureDispatcher: ExecutionContext, actorDispatcherName: Option[String], registration: Option[RegistrationHolder], topicPattern: Option[String])(implicit m: Manifest[T]): MessageChannel[T] = 
-	impl.ActorBasedMessageChannel[T](name, actorSystem, timeout, futureDispatcher, actorDispatcherName, registration, topicPattern)(m)
+
+  def apply[T <: AnyRef](name: String)(implicit almhirtsystem: AlmhirtSystem, m: Manifest[T]): MessageChannel[T] = {
+    val actor =
+      almhirtsystem.messageStreamDispatcherName match {
+        case None => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor], name = name)
+        case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
+      }
+    actor ! UseAlmhirtSystemMessage(almhirtsystem)
+    apply[T](actor, almhirtsystem.futureDispatcher)(m)
+  }
+
+  class ActorBasedMessageChannelImpl[T <: AnyRef](val actor: ActorRef)(implicit futureExecutionContext: ExecutionContext, m: Manifest[T]) extends MessageChannel[T] {
+    def <-*(handler: Message[T] => Unit, classifier: Message[T] => Boolean)(implicit atMost: akka.util.Duration): AlmFuture[RegistrationHolder] = {
+      val filter = MessagePredicate[T](classifier)
+      def wrappedHandler(message: Message[AnyRef]): Unit =
+        handler(message.asInstanceOf[Message[T]])
+      (actor ? Subscribe(new MessagingSubscription{ val predicate = filter; val handler = wrappedHandler _}))(atMost).toAlmFuture[RegistrationHolder]
+    }
+
+    def createSubChannel[TPayload <: T](name: String, classifier: Message[TPayload] => Boolean)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
+      val filter = MessagePredicate[TPayload](classifier)
+      (actor ? CreateSubChannel(name, filter))(atMost)
+        .mapTo[NewSubChannel]
+        .map(subchannel => subchannel.channel).toAlmFuture[ActorRef]
+        .map(newActor => MessageChannel[TPayload](newActor, futureExecutionContext))
+    }
+
+    def post[U <: T](message: Message[U]) = actor ! PostMessage(message)
+
+    def close() { }
     
+  }
+
 }

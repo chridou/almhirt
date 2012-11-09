@@ -14,19 +14,42 @@
 */
 package almhirt.messaging
 
+import java.util.UUID
 import akka.actor._
 import akka.pattern._
-import akka.util.Timeout
-import akka.dispatch.ExecutionContext
+import akka.util._
+import akka.dispatch._
 import almhirt._
-import almhirt.Closeable
-import almhirt.messaging.impl.ActorBasedMessageHub
+import almhirt.almfuture.all._
 
-trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with Closeable
+trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable
 
 object MessageHub {
-  def apply(name: Option[String])(implicit almhirtsystem: AlmhirtSystem): MessageHub = impl.ActorBasedMessageHub(name, almhirtsystem)
-  def apply(implicit almhirtsystem: AlmhirtSystem): MessageHub = apply(None)(almhirtsystem)
-  def apply(name: Option[String], actorSystem: ActorRefFactory, timeout: Timeout, futureDispatcher: ExecutionContext, actorDispatcherName: Option[String]): MessageHub =
-    ActorBasedMessageHub(name, actorSystem, timeout, futureDispatcher, actorDispatcherName)
+  def apply(actor: ActorRef, futureExecutionContext: ExecutionContext): MessageHub = {
+    new ActorBasedMessageHubImpl(actor)(futureExecutionContext)
+  }
+
+  def apply(name: String)(implicit almhirtsystem: AlmhirtSystem): MessageHub = {
+    val actor =
+      almhirtsystem.messageHubDispatcherName match {
+        case None => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor], name = name)
+        case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor].withDispatcher(dn), name = name)
+      }
+    actor ! UseAlmhirtSystemMessage(almhirtsystem)
+    apply(actor, almhirtsystem.futureDispatcher)
+  }
+
+  private class ActorBasedMessageHubImpl(val actor: ActorRef)(implicit futureExecutionContext: ExecutionContext) extends MessageHub {
+    def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
+      (actor ? CreateSubChannel(name, MessagePredicate[TPayload]))(atMost)
+        .mapTo[NewSubChannel]
+        .map(subchannel => subchannel.channel).toAlmFuture[ActorRef]
+        .map(newActor => MessageChannel[TPayload](newActor, futureExecutionContext))
+    }
+    
+    def broadcast(message: Message[AnyRef], topic: Option[String]) = actor ! BroadcastMessage(message)
+    
+    def close() {}
+  }
+
 }

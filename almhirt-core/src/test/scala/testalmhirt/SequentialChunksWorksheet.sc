@@ -8,7 +8,8 @@ import test._
 import almhirt.almfuture.inst._
 
 object SequentialChunksWorksheet extends TestAlmhirtKit {
-  implicit val atMost = akka.util.Duration(3, "s")//> atMost  : akka.util.FiniteDuration = 3 seconds
+  implicit val atMost = akka.util.Duration(500, "ms")
+                                                  //> atMost  : akka.util.FiniteDuration = 500 milliseconds
   inTestAlmhirt { almhirt =>
     implicit val executor = almhirt.environment.context.system.futureDispatcher
     val idsAndNamesAndAdresses = Vector((for (i <- 0 until 1) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
@@ -33,7 +34,6 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
       updateStates.foreach(x => x fold (f => println(f), succ => println(succ)))
     }
 
-
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(MoveBecauseOfMarriage(x._2, Some(2), "namemarriage%s".format(x._3), "addressmarriage%s".format(x._3)), "A updatemarriage%s".format(x._1.toString)))
     val update2StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A updatemarriage%s".format(x._1.toString)))
     val update2StatesRes = AlmFuture.sequence(update2StatesFutures).awaitResult
@@ -43,14 +43,12 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
       updateStates.foreach(x => x fold (f => println(f), succ => println(succ)))
     }
 
- 
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(ChangeTestPersonName(x._2, Some(4), "new%s".format(x._3)), "A updatename%s".format(x._1.toString)))
     val update3StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A updatename%s".format(x._1.toString)))
     val update3StatesRes = AlmFuture.sequence(update3StatesFutures).awaitResult
     println("--- updatename done ---")
     if(update3StatesRes.isFailure) println(update3StatesRes)
- 
-   
+      
 //    almhirt.environment.eventLog.getAllEvents.awaitResult.forceResult.foreach(println)
 //    AlmFuture.sequence(idsAndNamesAndAdresses.map(x => repo.get(x._2))).awaitResult.forceResult.foreach(println)
     

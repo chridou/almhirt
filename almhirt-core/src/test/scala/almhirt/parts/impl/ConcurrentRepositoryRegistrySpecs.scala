@@ -12,7 +12,7 @@ class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContex
   implicit val duration = akka.util.Duration(1, "s")
   """The concurrent repository registry""" should {
     """be able to register a repository""" in {
-      inFakeContext(implicit ctx => {
+      inTestContext(implicit ctx => {
         val repo = new TestPersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new ConcurrentRepositoryRegistry(ctx)
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](repo)
@@ -20,7 +20,7 @@ class ConcurrentRepositoryRegistrySpecs extends Specification with AlmhirtContex
       })
     }
     """be able to register a repository and retrieve it""" in {
-      inFakeContext(ctx => {
+      inTestContext(ctx => {
         val repo = new TestPersonRepository(new DevNullEventLog()(ctx))(ctx)
         val registry = new ConcurrentRepositoryRegistry(ctx)
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent, TestPersonRepository](repo)

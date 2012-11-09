@@ -56,29 +56,4 @@ trait AlmhirtsystemTestkit {
     res
   }
 
-  def createFakeSystem(): AlmhirtSystem = createFakeSystem(defaultConfig)
-  
-  def createFakeSystem(conf: Config): AlmhirtSystem = {
-    val uuidGen = new JavaUtilUuidGenerator()
-    new AlmhirtSystem {
-      val config = conf
-      val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
-      val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
-      val messageStreamDispatcherName = None
-      val messageHubDispatcherName = None
-      val shortDuration = conf.getDouble("almhirt.durations.short") seconds
-      val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
-      val longDuration = conf.getDouble("almhirt.durations.long") seconds
-      def generateUuid = uuidGen.generate
-      def dispose = actorSystem.shutdown
-    }
-  }
-
-  def inFakeSystem[T](compute: AlmhirtSystem => T): T = inFakeSystem(defaultConfig, compute)
-  def inFakeSystem[T](conf: Config, compute: AlmhirtSystem => T): T = {
-    val context = createFakeSystem(conf)
-    val res = compute(context)
-    context.dispose()
-    res
-  }
 }

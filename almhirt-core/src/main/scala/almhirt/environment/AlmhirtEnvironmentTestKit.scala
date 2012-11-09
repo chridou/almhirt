@@ -5,7 +5,6 @@ import almhirt._
 import almhirt.commanding._
 import almhirt.eventlog.impl._
 import almhirt.domain.DomainEvent
-import almhirt.messaging.impl._
 import almhirt.messaging._
 import almhirt.syntax.almvalidation._
 import almhirt.parts.impl._
@@ -56,32 +55,7 @@ trait AlmhirtEnvironmentTestKit {
     env
   }
 
-  def createFakeEnvironment(): AlmhirtEnvironment = createFakeEnvironment(conf)
-  def createFakeEnvironment(aConf: Config): AlmhirtEnvironment = {
-    implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
-    val env =
-      new AlmhirtEnvironment {
-        val context = almhirtCtx
-
-        val repositories = new DevNullRepositoryRegistry(almhirtCtx)
-        val commandExecutor = new DevNullCommandExecutor()
-        val eventLog = new DevNullEventLog
-        val operationStateTracker = util.OperationStateTracker()
-
-        def dispose = context.dispose
-      }
-    env
-  }
-
-  def inFakeEnvironment[T](compute: AlmhirtEnvironment => T): T = inFakeEnvironment[T](compute, conf)
-  def inFakeEnvironment[T](compute: AlmhirtEnvironment => T, conf: Config): T = {
-    val context = createFakeEnvironment(conf)
-    val res = compute(context)
-    context.dispose
-    res
-  }
-
-  def inTestEnvironment[T](compute: AlmhirtEnvironment => T): T = inTestEnvironment[T](compute, conf)
+   def inTestEnvironment[T](compute: AlmhirtEnvironment => T): T = inTestEnvironment[T](compute, conf)
   def inTestEnvironment[T](compute: AlmhirtEnvironment => T, conf: Config): T = {
     val context = createTestEnvironment(conf)
     val res = compute(context)

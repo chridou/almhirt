@@ -12,9 +12,10 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
   private class B(propa: Int, val propb: String) extends A(propa)
   
   
-  implicit def randUUID = java.util.UUID.randomUUID
+  implicit val atMost = akka.util.Duration(1, "s")
+  implicit def getUUID = java.util.UUID.randomUUID()
   private def getChannel[T <: AnyRef](context: AlmhirtSystem)(implicit m: Manifest[T]): MessageChannel[T] = {
-    impl.ActorBasedMessageChannel[T](Some("testChannel"), context)
+    MessageChannel[T]("testChannel")(context, m)
   }
 
   """A MessageChannel[A] where B <: A""" should {
@@ -68,7 +69,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """trigger the handler on the parent for an A posted on the parent and not the handler on the subchannel""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true)).awaitResult(Duration.Inf).forceResult
@@ -82,7 +83,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """trigger only the handler on the subchannel for a B posted on the subchannel""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true)).awaitResult(Duration.Inf).forceResult
@@ -96,7 +97,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """trigger the handler on the parent for an A posted on the parent""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true)).awaitResult(Duration.Inf).forceResult
@@ -110,7 +111,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """not trigger the handler on the subchannel for an A posted on the parent""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true)).awaitResult(Duration.Inf).forceResult
@@ -125,7 +126,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """not trigger the handler on the parent for an A posted on the parent when the classifier is not met""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).awaitResult(Duration.Inf).forceResult
@@ -139,7 +140,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """trigger the handler on the parent for an A posted on the parent when the classifier is met""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).awaitResult(Duration.Inf).forceResult
@@ -153,7 +154,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """not trigger the handler on the parent or the subchannelfor an B posted on the parent when the classifier is not met""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).awaitResult(Duration.Inf).forceResult
@@ -167,7 +168,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """trigger the handler on the parent and the subchannel for an B posted on the parent when the classifier is met""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).awaitResult(Duration.Inf).forceResult
@@ -181,7 +182,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """trigger the handler on the parent and not on the subchannel for an B posted on the parent when the classifier is met only in the parent""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).awaitResult(Duration.Inf).forceResult
@@ -195,7 +196,7 @@ class ActorBasedTypedMessageChannelSpecs extends Specification with Almhirtsyste
     """not trigger the handler on the parent but on the subchannel for an B posted on the subchannel when the classifier is met only in the subchannel""" in {
       inTestSystem { ctx =>
         val channel = getChannel[A](ctx)
-        val subChannel = channel.createSubChannel[B].awaitResult(Duration.Inf).forceResult
+        val subChannel = channel.createSubChannel[B]("sub").awaitResult(Duration.Inf).forceResult
         var hitA = false
         var hitB = false
         val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).awaitResult(Duration.Inf).forceResult

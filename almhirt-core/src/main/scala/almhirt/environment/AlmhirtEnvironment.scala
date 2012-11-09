@@ -14,7 +14,7 @@ trait AlmhirtEnvironmentOps extends AlmhirtContextOps {
   def executeTrackedCommand(cmd: DomainCommand, ticket: String) { executeCommand(CommandEnvelope(cmd, Some(ticket))) }
   def executeUntrackedCommand(cmd: DomainCommand) { executeCommand(CommandEnvelope(cmd, None)) }
   def executeCommand(cmdEnv: CommandEnvelope): Unit
-  def getRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[AggregateRootRepository[AR, TEvent]]
+  def getReadOnlyRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[HasAggregateRoots[AR, TEvent]]
 }
 
 trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
@@ -22,10 +22,13 @@ trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
 
   def reportProblem(prob: Problem) { context.reportProblem(prob) }
   def reportOperationState(opState: OperationState) { context.reportOperationState(opState) }
-  def executeCommand(cmdEnv: CommandEnvelope) { context.postCommandEnvelope(cmdEnv) }
+  def executeCommand(cmdEnv: CommandEnvelope) { context.broadcastCommandEnvelope(cmdEnv) }
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String]) { context.broadcast(payload, metaData) }
   def getDateTime = context.getDateTime
   def getUuid = context.getUuid
+  def getReadOnlyRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[HasAggregateRoots[AR, TEvent]] =
+    repositories.getForAggregateRoot
+  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty) = context.messageWithPayload(payload, metaData)
 
   def commandExecutor: CommandExecutor
   def repositories: HasRepositories
@@ -35,9 +38,6 @@ trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
   def addCommandHandler(handler: HandlesCommand) { commandExecutor.addHandler(handler) }
   def registerRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, T <: AggregateRootRepository[AR, TEvent]](repo: T)(implicit m: Manifest[AR]) { repositories.registerForAggregateRoot[AR, TEvent, T](repo) }
 
-  def getRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[AggregateRootRepository[AR, TEvent]] =
-    repositories.getForAggregateRoot
 
-  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String,String] = Map.empty) = context.messageWithPayload(payload, metaData)
     
 }
