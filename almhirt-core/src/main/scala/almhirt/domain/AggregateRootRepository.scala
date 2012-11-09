@@ -19,6 +19,6 @@ object AggregateRootRepository {
   import akka.actor._
   def basic[AR <: AggregateRoot[AR,Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit ctx: AlmhirtContext): AggregateRootRepository[AR, Event] = {
     val actor = ctx.system.actorSystem.actorOf(Props(new BasicAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, ctx) {}))
-    new BasicAggregateRootRepository[AR, Event](actor, ctx){}
+    new AggregateRootRepositoryActorHull[AR, Event](actor, ctx){}
   }
 }

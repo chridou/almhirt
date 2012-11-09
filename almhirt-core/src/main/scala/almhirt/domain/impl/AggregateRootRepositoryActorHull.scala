@@ -12,7 +12,7 @@ import almhirt.eventlog.DomainEventLog
 import almhirt.environment.AlmhirtContext
 import almhirt.util._
 
-abstract class BasicAggregateRootRepository[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](val actor: ActorRef, almhirtContext: AlmhirtContext) extends AggregateRootRepository[AR, Event] with CanValidateAggregateRootsAgainstEvents[AR, Event] {
+abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](val actor: ActorRef, almhirtContext: AlmhirtContext) extends AggregateRootRepository[AR, Event] with CanValidateAggregateRootsAgainstEvents[AR, Event] {
   implicit private def duration = almhirtContext.system.mediumDuration
   implicit private def futureContext = almhirtContext.system.futureDispatcher
 
