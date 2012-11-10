@@ -15,7 +15,7 @@ class RepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
     """be able to register a repository""" in {
       inTestContext(implicit ctx => {
         val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
-        val registry = HasRepositories(ctx)
+        val registry = HasRepositories().forceResult
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         true
       })
@@ -23,7 +23,7 @@ class RepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
     """be able to register a repository and retrieve it""" in {
       inTestContext(implicit ctx => {
         val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
-        val registry = HasRepositories(ctx)
+        val registry = HasRepositories().forceResult
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         registry.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult === repo
       })

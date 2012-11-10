@@ -41,7 +41,6 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
   def system: AlmhirtSystem
   def messageHub: MessageHub
   def commandChannel: MessageChannel[CommandEnvelope]
-  def domainEventsChannel: MessageChannel[DomainEvent]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
 
@@ -63,4 +62,43 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
     val header = MessageHeader(getUuid, None, metaData, getDateTime)
     Message(header, payload)
   }
+}
+
+object AlmhirtContext {
+  import akka.pattern._
+  import akka.util.Duration._
+  import almhirt.syntax.almvalidation._
+  import almhirt.almfuture.all._
+  def apply(aConfig: Config)(implicit sys: AlmhirtSystem): AlmFuture[AlmhirtContext] = {
+    implicit val atMost = sys.mediumDuration
+    implicit val executionContext = sys.futureDispatcher
+
+    val hub = MessageHub("messageHub")
+    val probTopic = None
+    for {
+      cmdChannel <- hub.createMessageChannel[CommandEnvelope]("commandChannel")
+      opStateChannel <- hub.createMessageChannel[OperationState]("operationStateChannel")
+      probChannel <- hub.createMessageChannel[Problem]("problemChannel")
+    } yield (
+      new AlmhirtContext {
+        val config = aConfig
+        val system = sys
+        val messageHub = hub
+        val commandChannel = cmdChannel
+        val problemChannel = probChannel
+        val operationStateChannel = opStateChannel
+
+        val problemTopic = probTopic
+
+        def dispose = {
+          messageHub.close
+          cmdChannel.close
+          opStateChannel.close
+          probChannel.close
+          system.dispose
+        }
+      })
+  }
+  def apply()(implicit sys: AlmhirtSystem): AlmFuture[AlmhirtContext] = apply(sys.config)
+
 }

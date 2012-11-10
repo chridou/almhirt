@@ -19,7 +19,7 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
   implicit private val executionContext = almhirtContext.system.futureDispatcher
   implicit private val timeout = almhirtContext.system.mediumDuration
 
-  private val theActor = almhirtContext.system.actorSystem.actorOf(Props(new TheActor()), "operationStateTracker")
+  val actor = almhirtContext.system.actorSystem.actorOf(Props(new TheActor()), "operationStateTracker")
 
   private class TheActor extends Actor with AlmActorLogging {
     val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
@@ -27,7 +27,7 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
     val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[AlmValidation[ResultOperationState] => Unit]]
 
     def receive: Receive = {
-      case OperationStateReceived(opState) =>
+      case UpdateOperationStateCmd(opState) =>
         opState match {
           case InProcess(ticket) =>
             if (collectedResults.contains(ticket)) {
@@ -55,7 +55,7 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
               }
             }
         }
-      case RegisterResultCallback(ticket, callback, _) =>
+      case RegisterResultCallbackCmd(ticket, callback, _) =>
         if (collectedResults.contains(ticket)) {
           callback(collectedResults(ticket).success)
         } else {
@@ -65,7 +65,7 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
             resultCallbacks += (ticket -> List(callback))
         }
 
-      case GetState(ticket) =>
+      case GetStateQry(ticket) =>
         if (collectedInProcess.contains(ticket))
           sender ! Some(InProcess(ticket)).success
         else if (collectedResults.contains(ticket))
@@ -78,10 +78,6 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
     override def postRestart(reason: Throwable) {}
     override def postStop() {}
   }
-
-  private case class OperationStateReceived(opState: OperationState)
-  private case class RegisterResultCallback(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit, atMost: Duration)
-  private case class GetState(ticket: TrackingTicket)
 
   private class ResponseActor extends Actor {
     private var receiver: ActorRef = null
@@ -96,14 +92,14 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
   private case class ResOpCmd(res: AlmValidation[ResultOperationState])
 
   def updateState(opState: OperationState) {
-	theActor ! OperationStateReceived(opState)
+	actor ! UpdateOperationStateCmd(opState)
   }
 
   def queryStateFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[Option[OperationState]] =
-    (theActor.ask(GetState(ticket))(atMost)).toAlmFuture[Option[OperationState]]
+    (actor.ask(GetStateQry(ticket))(atMost)).toAlmFuture[Option[OperationState]]
 
   def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration) {
-    theActor ! RegisterResultCallback(ticket, callback, atMost)
+    actor ! RegisterResultCallbackCmd(ticket, callback, atMost)
   }
 
   def getResultFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[ResultOperationState] = {
@@ -113,5 +109,5 @@ class OperationStateTrackerWithoutTimeout(almhirtContext: AlmhirtContext) extend
     future
   }
 
-  def dispose() = { almhirtContext.system.actorSystem.stop(theActor) }
+  def dispose() = { almhirtContext.system.actorSystem.stop(actor) }
 }

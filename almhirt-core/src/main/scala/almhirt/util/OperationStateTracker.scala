@@ -12,7 +12,12 @@ import almhirt.environment.AlmhirtContext
 import almhirt.commanding.DomainCommand
 import almhirt.almakka.AlmActorLogging
 
-trait OperationStateTracker extends Disposable {
+trait OperationStateTrackerCmd
+case class UpdateOperationStateCmd(opState: OperationState) extends OperationStateTrackerCmd
+case class RegisterResultCallbackCmd(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit, atMost: Duration) extends OperationStateTrackerCmd
+case class GetStateQry(ticket: TrackingTicket) extends OperationStateTrackerCmd
+
+trait OperationStateTracker extends Disposable with ActorBased {
   def updateState(opState: OperationState): Unit
   def queryStateFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[Option[OperationState]]
   def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration): Unit
@@ -20,7 +25,7 @@ trait OperationStateTracker extends Disposable {
 }
 
 object OperationStateTracker {
-  def apply()(implicit context: AlmhirtContext): OperationStateTracker = {
-    new impl.OperationStateTrackerWithoutTimeout(context)
+  def apply()(implicit context: AlmhirtContext): AlmValidation[OperationStateTracker] = {
+    new impl.OperationStateTrackerWithoutTimeout(context).success
   }
 }

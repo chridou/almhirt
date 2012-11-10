@@ -9,7 +9,7 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 
 /** Components and values needed to use Akka */
-trait AlmhirtSystem extends Disposable{
+trait AlmhirtSystem extends Disposable {
   def config: Config
   def actorSystem: ActorSystem
   def futureDispatcher: MessageDispatcher
@@ -23,20 +23,23 @@ trait AlmhirtSystem extends Disposable{
 }
 
 object AlmhirtSystem {
-  def apply(config: Config): AlmhirtSystem = {
+  def apply(config: Config): AlmValidation[AlmhirtSystem] = {
+    import scalaz.syntax.validation._
     val uuidGen = new JavaUtilUuidGenerator()
     val ctx =
-	  new AlmhirtSystem {
-	    val config = ConfigFactory.load
-	    val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
-	    val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
-	    val messageStreamDispatcherName = Some("almhirt.messagestream-dispatcher")
-	    val messageHubDispatcherName = Some("almhirt.messagehub-dispatcher")
-	    val shortDuration = config.getDouble("almhirt.durations.short") seconds
-	    val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
-	    val longDuration = config.getDouble("almhirt.durations.long") seconds
-	    def generateUuid = uuidGen.generate
-	    def dispose = actorSystem.shutdown}
-    ctx
+      new AlmhirtSystem {
+        val config = ConfigFactory.load
+        val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
+        val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
+        val messageStreamDispatcherName = Some("almhirt.messagestream-dispatcher")
+        val messageHubDispatcherName = Some("almhirt.messagehub-dispatcher")
+        val shortDuration = config.getDouble("almhirt.durations.short") seconds
+        val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
+        val longDuration = config.getDouble("almhirt.durations.long") seconds
+        def generateUuid = uuidGen.generate
+        def dispose = actorSystem.shutdown
+      }
+    ctx.success
   }
+  def apply(): AlmValidation[AlmhirtSystem] = almhirt.almvalidation.funs.inTryCatch { ConfigFactory.load() }.bind(apply(_))
 }

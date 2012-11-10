@@ -22,9 +22,10 @@ trait HasRepositories extends almhirt.ActorBased {
 }
 
 object HasRepositories {
-  def apply(context: AlmhirtContext): HasRepositories = {
+  import scalaz.syntax.validation._
+  def apply()(implicit context: AlmhirtContext): AlmValidation[HasRepositories] = {
     val actor = context.system.actorSystem.actorOf(Props[impl.RepositoryRegistryActor], "HasRepositories")
-    new impl.RepositoryRegistryActorHull(actor, context)
+    new impl.RepositoryRegistryActorHull(actor, context).success
   }
 }
 

@@ -30,29 +30,9 @@ trait AlmhirtEnvironmentTestKit {
 
   def createTestEnvironment(): AlmhirtEnvironment = createTestEnvironment(conf)
   def createTestEnvironment(aConf: Config): AlmhirtEnvironment = {
-    implicit val almhirtCtx = contextTestKit.createTestContext(aConf)
-    implicit val timeout = almhirtCtx.system.mediumDuration
-    val tracker = util.OperationStateTracker()
-    val trackerRegistration = (almhirtCtx.operationStateChannel <-<* { opState => tracker.updateState(opState) }).awaitResult.forceResult
-    val repos = HasRepositories(almhirtCtx)
-    val cmdExecutor = CommandExecutor(repos)
-    val cmdExecutorRegistration = (almhirtCtx.commandChannel <-<* { cmdEnvelope => cmdExecutor.executeCommand(cmdEnvelope) }).awaitResult.forceResult
-    val env =
-      new AlmhirtEnvironment {
-        val context = almhirtCtx
-
-        val repositories = repos
-        val commandExecutor = cmdExecutor
-        val eventLog = new InefficientSerializingInMemoryDomainEventLog()
-        val operationStateTracker = tracker
-        def dispose {
-          cmdExecutorRegistration.dispose
-          trackerRegistration.dispose
-          tracker.dispose
-          context.dispose
-        }
-      }
-    env
+    implicit val almhirtSys = AlmhirtSystem(conf).forceResult
+    implicit val context = AlmhirtContext(conf).awaitResult(almhirtSys.shortDuration).forceResult
+    AlmhirtEnvironment(conf).awaitResult(almhirtSys.shortDuration).forceResult
   }
 
    def inTestEnvironment[T](compute: AlmhirtEnvironment => T): T = inTestEnvironment[T](compute, conf)

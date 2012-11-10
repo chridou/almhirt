@@ -10,7 +10,7 @@ class OperationStateTrackerSpecs extends Specification with AlmhirtContextTestKi
   private implicit val atMost = akka.util.Duration(2, "s")
   def withTrackerInFakeContext[T](compute: OperationStateTracker => T) =
       inTestContext { implicit ctx =>
-        val tracker = OperationStateTracker()
+        val tracker = OperationStateTracker().forceResult
         compute(tracker)
       }
   

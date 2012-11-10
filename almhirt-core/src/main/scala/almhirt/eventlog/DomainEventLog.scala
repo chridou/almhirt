@@ -20,10 +20,20 @@ case class CommittedDomainEventsRsp(events: Iterable[DomainEvent], executionIden
 case class PurgedDomainEventsRsp(events: Iterable[DomainEvent], executionIdent: Option[UUID]) extends DomainEventLogRsp
 
 case class DomainEventsChunk(
-  /** Starts with Zero 
+  /**
+   * Starts with Zero
    */
   index: Int,
   isLast: Boolean,
   events: AlmValidation[Iterable[DomainEvent]])
 
 trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almhirt.ActorBased
+
+object DomainEventLog {
+  import scalaz.syntax.validation._
+  import almhirt.environment.AlmhirtContext
+  import almhirt.eventlog.impl._
+  def apply()(implicit ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
+    (new InefficientSerializingInMemoryDomainEventLog).success
+  }
+}
