@@ -5,7 +5,7 @@ import almhirt.domain.DomainEvent
 import almhirt.AlmValidation
 
 sealed trait DomainEventLogCmd
-case class LogEventsQry(events: List[DomainEvent], executionIdent: Option[UUID]) extends DomainEventLogCmd
+case class LogEventsQry(events: List[DomainEvent], executionIdent: Option[UUID] = None) extends DomainEventLogCmd
 case object GetAllEventsQry extends DomainEventLogCmd
 case class GetEventsQry(aggId: UUID) extends DomainEventLogCmd
 case class GetEventsFromQry(aggId: UUID, from: Long) extends DomainEventLogCmd
