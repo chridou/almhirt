@@ -16,11 +16,11 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
           implicit val duration = env.context.system.mediumDuration
           implicit val ctx = env.context
           val id = env.getUuid
-          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
-          env.commandExecutor.addHandler(new NewTestPersonUnitOfWork())
+//          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
+//          env.commandExecutor.addHandler(new NewTestPersonUnitOfWork())
           val reg = (env.context.problemChannel <-<* (prob => println(prob))).awaitResult.forceResult
-          env.executeCommand(CommandEnvelope(NewTestPerson(id, "Betty"), Some("ticket")))
-          env.operationStateTracker.getResultFor("ticket").awaitResult
+          env.executeCommand(CommandEnvelope(NewTestPerson(id, "Betty"), Some("create a new Person")))
+          env.operationStateTracker.getResultFor("create a new Person").awaitResult
           val eventsRes = env.eventLog.getEvents(id).awaitResult
           val events = eventsRes.forceResult.toList.map(_.asInstanceOf[TestPersonEvent])
           val createdRes = TestPerson.rebuildFromHistory(events)
@@ -36,12 +36,12 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
           implicit val ctx = env.context
           val id1 = env.getUuid
           val id2 = env.getUuid
-          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
-          env.commandExecutor.addHandler(new NewTestPersonUnitOfWork())
+//          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
+//          env.commandExecutor.addHandler(new NewTestPersonUnitOfWork())
           val reg = (env.context.problemChannel <-<* (prob => println(prob))).awaitResult.forceResult
           env.executeCommand(CommandEnvelope(NewTestPerson(id1, "Betty"), None))
-          env.executeCommand(CommandEnvelope(NewTestPerson(id2, "Brian"), Some("ticket")))
-          env.operationStateTracker.getResultFor("ticket").awaitResult
+          env.executeCommand(CommandEnvelope(NewTestPerson(id2, "Brian"), Some("create 2 new Persons")))
+          env.operationStateTracker.getResultFor("create 2 new Persons").awaitResult
           val eventsRes1 = env.eventLog.getEvents(id1).awaitResult
           val events1= eventsRes1.forceResult.toList.map(_.asInstanceOf[TestPersonEvent])
           val eventsRes2 = env.eventLog.getEvents(id2).awaitResult
@@ -66,12 +66,12 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
           implicit val duration = env.context.system.mediumDuration
           implicit val ctx = env.context
           env.eventLog.storeEvents(jimEvents).awaitResult
-          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
-          env.commandExecutor.addHandler(new ChangeTestPersonNameUnitOfWork)
-          env.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("ticket")))
-          val resV = env.operationStateTracker.getResultFor("ticket").awaitResult
+//          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
+//          env.commandExecutor.addHandler(new ChangeTestPersonNameUnitOfWork)
+          env.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("produce a successful operation result")))
+          val resV = env.operationStateTracker.getResultFor("produce a successful operation result").awaitResult
           val res = resV.forceResult
-          res === Executed("ticket")
+          res === Executed("produce a successful operation result")
       }
     }
     "update a Person" in {
@@ -80,10 +80,10 @@ class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
           implicit val duration = env.context.system.mediumDuration
           implicit val ctx = env.context
           env.eventLog.storeEvents(jimEvents).awaitResult
-          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
-          env.commandExecutor.addHandler(new ChangeTestPersonNameUnitOfWork)
-          env.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("ticket")))
-          env.operationStateTracker.getResultFor("ticket").awaitResult
+//          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
+//          env.commandExecutor.addHandler(new ChangeTestPersonNameUnitOfWork)
+          env.executeCommand(CommandEnvelope(ChangeTestPersonName(jim.id, None, "Betty"), Some("update a Person")))
+          env.operationStateTracker.getResultFor("update a Person").awaitResult
           val events = env.eventLog.getEvents(jim.id).awaitResult.forceResult.map(_.asInstanceOf[TestPersonEvent]).toList
           val jimUpdated = TestPerson.rebuildFromHistory(events).forceResult
           jimUpdated.name === "Betty"

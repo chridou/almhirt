@@ -31,7 +31,7 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
               }
             },
             succ =>
-              repo.store(succ._1, succ._2, ticket))
+              repo.actor ! StoreAggregateRootCmd(succ._1, succ._2, ticket))
         })
     } else {
       val p = ArgumentProblem("Not a creator command: %s".format(com.getClass.getName), severity = Major)
@@ -76,7 +76,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       f => updateFailedOperationState(context, f, ticket),
       {
         case (repository, (ar, events)) =>
-          repository.store(ar, events, ticket)
+          repository.actor ! StoreAggregateRootCmd(ar, events, ticket)
       })
   }
 
