@@ -17,6 +17,9 @@ case class UpdateOperationStateCmd(opState: OperationState) extends OperationSta
 case class RegisterResultCallbackCmd(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit, atMost: Duration) extends OperationStateTrackerCmd
 case class GetStateQry(ticket: TrackingTicket) extends OperationStateTrackerCmd
 
+trait OperationStateTrackerRsp
+case class OperationStateRsp(ticket: TrackingTicket, state: AlmValidation[Option[OperationState]])
+
 trait OperationStateTracker extends Disposable with ActorBased {
   def updateState(opState: OperationState): Unit
   def queryStateFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[Option[OperationState]]
@@ -25,7 +28,9 @@ trait OperationStateTracker extends Disposable with ActorBased {
 }
 
 object OperationStateTracker {
+  import akka.actor._
   def apply()(implicit context: AlmhirtContext): AlmValidation[OperationStateTracker] = {
-    new impl.OperationStateTrackerWithoutTimeout(context).success
+    val actor = context.system.actorSystem.actorOf(Props(new impl.OperationStateTrackerWithoutTimeoutActor), "operationStateTracker")
+    new impl.OperationStateTrackerActorHull(actor).success
   }
 }

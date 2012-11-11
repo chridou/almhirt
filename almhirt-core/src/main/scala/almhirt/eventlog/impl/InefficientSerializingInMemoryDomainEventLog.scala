@@ -37,7 +37,7 @@ class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: Almh
       case LogEventsQry(events, executionIdent) =>
         loggedEvents = loggedEvents ++ events
         events.foreach(event => almhirtContext.broadcastDomainEvent(event))
-        sender ! CommittedDomainEventsRsp(events, executionIdent).success
+        sender ! CommittedDomainEventsRsp(events.success, executionIdent)
       case GetAllEventsQry =>
         sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success))
       case GetEventsQry(aggId) =>
@@ -51,7 +51,7 @@ class InefficientSerializingInMemoryDomainEventLog(implicit almhirtContext: Almh
     }
   }
 
-  def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None)).toAlmFuture[CommittedDomainEventsRsp].map(_.events)
+  def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None)).mapTo[CommittedDomainEventsRsp].map(_.events)
   def purgeEvents(aggRootId: java.util.UUID) = AlmPromise { Nil.success }
 
   def getAllEvents() = (actor ? GetAllEventsQry).mapTo[AllEventsRsp].map(x => x.chunk.events)

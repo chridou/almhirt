@@ -1,0 +1,73 @@
+package almhirt.util.impl
+
+import scalaz.syntax.validation._
+import akka.actor._
+import akka.util.Duration
+import akka.util.duration._
+import akka.pattern._
+import almhirt._
+import almhirt.util._
+import almhirt.syntax.almfuture._
+import almhirt.syntax.almvalidation._
+import almhirt.messaging.MessageStream
+import almhirt.environment.AlmhirtContext
+import almhirt.commanding.DomainCommand
+import almhirt.almakka.AlmActorLogging
+
+class OperationStateTrackerWithoutTimeoutActor(implicit almhirtContext: AlmhirtContext) extends Actor with AlmActorLogging {
+  val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
+  val collectedResults = collection.mutable.HashMap.empty[TrackingTicket, ResultOperationState]
+  val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[AlmValidation[ResultOperationState] => Unit]]
+
+  def receive: Receive = {
+    case UpdateOperationStateCmd(opState) =>
+      opState match {
+        case InProcess(ticket) =>
+          if (collectedResults.contains(ticket)) {
+            log.warning("InProcess state for ticket %s cannot be set because there is already a result!".format(ticket))
+          } else {
+            if (!collectedInProcess.contains(ticket)) {
+              collectedInProcess += ticket
+            } else {
+              log.warning("InProcess state for ticket %s already received!".format(ticket))
+            }
+          }
+        case resState: ResultOperationState =>
+          if (!collectedInProcess.contains(resState.ticket))
+            log.warning("ResultState received but no InProcess state for ticket %s".format(resState.ticket))
+          else
+            collectedInProcess -= resState.ticket
+
+          if (collectedResults.contains(resState.ticket)) {
+            log.warning("ResultState state for ticket %s will not be changed because there is already a result! No callbacks will be triggered because any previously registered callback has already been triggered.".format(resState.ticket))
+          } else {
+            collectedResults += (resState.ticket -> resState)
+            if (resultCallbacks.contains(resState.ticket)) {
+              resultCallbacks(resState.ticket).foreach(callback => callback(resState.success))
+              resultCallbacks - resState.ticket
+            }
+          }
+      }
+    case RegisterResultCallbackCmd(ticket, callback, _) =>
+      if (collectedResults.contains(ticket)) {
+        callback(collectedResults(ticket).success)
+      } else {
+        if (resultCallbacks.contains(ticket))
+          resultCallbacks += (ticket -> (callback :: resultCallbacks(ticket)))
+        else
+          resultCallbacks += (ticket -> List(callback))
+      }
+
+    case GetStateQry(ticket) =>
+      if (collectedInProcess.contains(ticket))
+        sender ! OperationStateRsp(ticket, Some(InProcess(ticket)).success)
+      else if (collectedResults.contains(ticket))
+        sender ! OperationStateRsp(ticket, Some(collectedResults(ticket)).success)
+      else
+        sender ! OperationStateRsp(ticket, None.success)
+  }
+
+  override def preStart() {}
+  override def postRestart(reason: Throwable) {}
+  override def postStop() {}
+}

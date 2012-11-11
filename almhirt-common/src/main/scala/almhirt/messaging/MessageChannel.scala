@@ -52,7 +52,7 @@ object MessageChannel {
       val filter = MessagePredicate[TPayload](classifier)
       (actor ? CreateSubChannelQry(name, filter))(atMost)
         .mapTo[NewSubChannelRsp]
-        .map(subchannel => subchannel.channel).toAlmFuture[ActorRef]
+        .map(subchannel => subchannel.channel).mapToAlmFuture[ActorRef]
         .map(newActor => MessageChannel[TPayload](newActor, futureExecutionContext))
     }
 

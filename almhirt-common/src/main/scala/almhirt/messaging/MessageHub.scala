@@ -44,7 +44,7 @@ object MessageHub {
     def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       (actor ? CreateSubChannelQry(name, MessagePredicate[TPayload]))(atMost)
         .mapTo[NewSubChannelRsp]
-        .map(subchannel => subchannel.channel).toAlmFuture[ActorRef]
+        .map(subchannel => subchannel.channel).mapToAlmFuture[ActorRef]
         .map(newActor => MessageChannel[TPayload](newActor, futureExecutionContext))
     }
     

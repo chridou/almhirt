@@ -16,8 +16,8 @@ sealed trait DomainEventLogRsp
 case class EventsForAggregateRootRsp(aggId: UUID, chunk: DomainEventsChunk) extends DomainEventLogRsp
 case class AllEventsRsp(chunk: DomainEventsChunk) extends DomainEventLogRsp
 case class RequiredNextEventVersionRsp(aggId: UUID, nextVersion: AlmValidation[Long]) extends DomainEventLogRsp
-case class CommittedDomainEventsRsp(events: Iterable[DomainEvent], executionIdent: Option[UUID]) extends DomainEventLogRsp
-case class PurgedDomainEventsRsp(events: Iterable[DomainEvent], executionIdent: Option[UUID]) extends DomainEventLogRsp
+case class CommittedDomainEventsRsp(events: AlmValidation[Iterable[DomainEvent]], executionIdent: Option[UUID]) extends DomainEventLogRsp
+case class PurgedDomainEventsRsp(events: AlmValidation[Iterable[DomainEvent]], executionIdent: Option[UUID]) extends DomainEventLogRsp
 
 case class DomainEventsChunk(
   /**

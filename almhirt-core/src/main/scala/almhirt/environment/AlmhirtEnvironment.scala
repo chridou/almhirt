@@ -52,10 +52,16 @@ object AlmhirtEnvironment {
     implicit val executor = ctx.system.futureDispatcher
     for {
       tracker <- AlmPromise(OperationStateTracker())
-      trackerRegistration <- (ctx.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker.actor)))(atMost).toAlmFuture[SubscriptionRsp].mapV(_.registration)
+      trackerRegistration <- (ctx.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker.actor)))(atMost)
+        .mapTo[SubscriptionRsp]
+        .map(_.registration)
+        .toAlmFuture
       repos <- AlmPromise(HasRepositories())
       cmdExecutor <- AlmPromise(CommandExecutor(repos))
-      cmdExecutorRegistration <- (ctx.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost).toAlmFuture[SubscriptionRsp].mapV(_.registration)
+      cmdExecutorRegistration <- (ctx.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
+        .mapTo[SubscriptionRsp]
+        .map(_.registration)
+        .toAlmFuture
       theEventLog <- AlmPromise(DomainEventLog())
     } yield (
       new AlmhirtEnvironment {

@@ -31,13 +31,17 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
    * 
    * @tparam T The success type in [[almhirt.validation.AlmValidation[T]]]
    */
-  def toAlmFuture[T](implicit m: Manifest[T], executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] = 
+  def mapToAlmFuture[T](implicit m: Manifest[T], executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] = 
     new AlmFuture[T](self.mapTo[AlmValidation[T]])
 }
 
+trait AlmFutureOps1[T] extends Ops[Future[AlmValidation[T]]] {
+  def toAlmFuture(implicit executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] = 
+    new AlmFuture[T](self)
+}
 
 /** Operations for starting a future operation from a [[almhirt.validation.AlmValidation]] */
-trait AlmFutureOps1[T] extends Ops[AlmValidation[T]] {
+trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
   /** In case of success start the given computation otherwise return the Failure 
    * 
    * @param compute The function to execute async
@@ -106,5 +110,6 @@ trait AlmFutureOps1[T] extends Ops[AlmValidation[T]] {
 
 trait ToAlmFutureOps {
   implicit def FromAkkaFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 {def self = a }
-  implicit def FromAlmValidationToAlmFutureOps1[T](a: AlmValidation[T]): AlmFutureOps1[T] = new AlmFutureOps1[T]{def self = a }
+  implicit def FromAkkaFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] {def self = a }
+  implicit def FromAlmValidationToAlmFutureOps2[T](a: AlmValidation[T]): AlmFutureOps2[T] = new AlmFutureOps2[T]{def self = a }
 }

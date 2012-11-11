@@ -9,10 +9,9 @@ import almhirt.almfuture.inst._
 
 object SequentialChunksWorksheet extends TestAlmhirtKit {
   implicit val atMost = akka.util.Duration(500, "ms")
-                                                  //> atMost  : akka.util.FiniteDuration = 500 milliseconds
   inTestAlmhirt { almhirt =>
     implicit val executor = almhirt.environment.context.system.futureDispatcher
-    val idsAndNamesAndAdresses = Vector((for (i <- 0 until 20) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
+    val idsAndNamesAndAdresses = Vector((for (i <- 0 until 1) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
 
     val repo = almhirt.environment.repositories.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult
 
@@ -44,6 +43,7 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
     }
 
 
+
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(ChangeTestPersonName(x._2, Some(4), "new%s".format(x._3)), "A updatename%s".format(x._1.toString)))
     val update3StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A updatename%s".format(x._1.toString)))
     val update3StatesRes = AlmFuture.sequence(update3StatesFutures).awaitResult
@@ -60,28 +60,6 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
     }.fold(
       f => false,
       succ => succ.forall(_.isSuccess) && succ.forall(_.forceResult.isFinishedSuccesfully))
-  }                                               //> --- insert done ---
-                                                  //| Executed(StringTrackingTicket(A insert0))
-                                                  //| Executed(StringTrackingTicket(A insert1))
-                                                  //| Executed(StringTrackingTicket(A insert2))
-                                                  //| Executed(StringTrackingTicket(A insert3))
-                                                  //| Executed(StringTrackingTicket(A insert4))
-                                                  //| Executed(StringTrackingTicket(A insert5))
-                                                  //| Executed(StringTrackingTicket(A insert6))
-                                                  //| Executed(StringTrackingTicket(A insert7))
-                                                  //| Executed(StringTrackingTicket(A insert8))
-                                                  //| Executed(StringTrackingTicket(A insert9))
-                                                  //| Executed(StringTrackingTicket(A insert10))
-                                                  //| Executed(StringTrackingTicket(A insert11))
-                                                  //| Executed(StringTrackingTicket(A insert12))
-                                                  //| Executed(StringTrackingTicket(A insert13))
-                                                  //| Executed(StringTrackingTicket(A insert14))
-                                                  //| Executed(StringTrackingTicket(A insert15))
-                                                  //| Executed(StringTrackingTicket(A insert16))
-                                                  //| Executed(StringTrackingTicket(A insert17))
-                                                  //| Executed(StringTrackingTicket(A insert18))
-                                                  //| Executed(StringTrackingTicket(A insert19))
-                                                  //| --- setaddress done 
-                                                  //| Output exceeds cutoff limit.
+  }
 
 }

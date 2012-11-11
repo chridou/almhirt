@@ -34,7 +34,7 @@ class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEve
   private class Coordinator() extends Actor with almakka.AlmActorLogging {
     def receive = {
       case LogEventsQry(events,_) =>
-        sender ! CommittedDomainEventsRsp(events, None).success
+        sender ! CommittedDomainEventsRsp(events.success, None)
       case GetAllEventsQry =>
         sender ! AllEventsRsp(DomainEventsChunk(0, true, Iterable.empty.success))
       case GetEventsQry(aggId) =>
@@ -48,7 +48,7 @@ class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEve
     }
   }
 
-  def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None)).toAlmFuture[CommittedDomainEventsRsp].map(_.events)
+  def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None)).mapTo[CommittedDomainEventsRsp].map(_.events)
   def purgeEvents(aggRootId: java.util.UUID) = AlmPromise { Nil.success }
 
   def getAllEvents() = (actor ? GetAllEventsQry).mapTo[AllEventsRsp].map(x => x.chunk.events)
