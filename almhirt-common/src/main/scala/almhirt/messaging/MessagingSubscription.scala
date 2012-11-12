@@ -13,6 +13,12 @@ object MessagingSubscription {
       val handler = (message: Message[AnyRef]) => actor ! (message.payload)
     }
   
+  def forActor[TPayload <: AnyRef, U](actor: ActorRef, map: TPayload => U)(implicit m: Manifest[TPayload]): MessagingSubscription =
+    new MessagingSubscription {
+      val predicate = MessagePredicate[TPayload]
+      val handler = (message: Message[AnyRef]) => actor ! (map(message.payload.asInstanceOf[TPayload]))
+    }
+  
   def typeBasedHandler[TPayload <: AnyRef](aHandler: TPayload => Unit)(implicit m: Manifest[TPayload]): MessagingSubscription =
     new MessagingSubscription {
       val predicate = MessagePredicate[TPayload]
