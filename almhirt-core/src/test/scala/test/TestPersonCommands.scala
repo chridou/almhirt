@@ -1,7 +1,7 @@
 package test
 
 import java.util.UUID
-import almhirt._
+import almhirt.core._
 import almhirt.commanding._
 import almhirt.environment.AlmhirtContext
 import akka.dispatch.ExecutionContext

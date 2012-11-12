@@ -14,7 +14,7 @@
 */
 package almhirt.problem
 
-import almhirt._
+import almhirt.common._
 
 trait ProblemDefaults {
   val defaultSystemProblem = UnspecifiedProblem("unspecified system problem", category = SystemProblem)

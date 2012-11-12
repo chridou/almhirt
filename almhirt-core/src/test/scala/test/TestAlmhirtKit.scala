@@ -3,6 +3,7 @@ package test
 import almhirt._
 import almhirt.environment._
 import almhirt.domain.AggregateRootRepository
+import almhirt.environment.Almhirt
 
 trait TestAlmhirtKit {
   val testKit = new AlmhirtTestKit{}

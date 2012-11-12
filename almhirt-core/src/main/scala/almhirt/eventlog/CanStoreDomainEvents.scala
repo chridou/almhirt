@@ -17,6 +17,7 @@ package almhirt.eventlog
 import scalaz.{Validation}
 import almhirt._
 import almhirt.domain.DomainEvent
+import almhirt.core.AlmFuture
 
 
 /** Logs domain events. It doesn't validate them or check for consistency in any way. 

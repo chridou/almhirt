@@ -12,10 +12,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+package almhirt
+
 import scalaz.Validation
 
 /** Classes and traits needed at other places*/
-package object almhirt {
+package object common {
   /** A registration using a UUID as a token */
   type RegistrationUUID = Registration[java.util.UUID]
   

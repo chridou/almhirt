@@ -1,10 +1,10 @@
 package almhirt.parts
 
-import almhirt._
+import almhirt.common._
 import almhirt.environment._
 import almhirt.commanding.ExecutesCommands
 
-trait CommandExecutor extends HasCommandHandlers with ExecutesCommands with almhirt.ActorBased
+trait CommandExecutor extends HasCommandHandlers with ExecutesCommands with almhirt.core.ActorBased
 
 object CommandExecutor {
   import scalaz.syntax.validation._

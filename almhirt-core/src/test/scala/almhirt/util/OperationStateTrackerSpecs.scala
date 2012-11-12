@@ -1,7 +1,7 @@
 package almhirt.util
 
 import org.specs2.mutable._
-import almhirt._
+import almhirt.common._
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
 import test._

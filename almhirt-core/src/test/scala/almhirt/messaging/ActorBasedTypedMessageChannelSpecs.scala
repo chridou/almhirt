@@ -4,9 +4,9 @@ import org.specs2.mutable._
 import akka.util.Duration
 import almhirt._
 import almhirt.syntax.almvalidation._
-import almhirt.almhirtsystem.AlmhirtsystemTestkit
+import almhirt.environment.AlmhirtsystemTestkit
 import scalaz._, Scalaz._
-import almhirt.AlmhirtSystem
+import almhirt.environment.AlmhirtSystem
 
 class ActorBasedTypedMessageChannelSpecs extends Specification with AlmhirtsystemTestkit {
   private class A(val propa: Int)

@@ -14,7 +14,7 @@
 */
 package almhirt.problem
 
-import almhirt._
+import almhirt.common._
 import scalaz.Show
 import scalaz.Semigroup
 

@@ -1,6 +1,6 @@
 package almhirt.util
 
-import almhirt.Problem
+import almhirt.common._
 
 sealed trait TrackingTicket
 case class StringTrackingTicket(ident: String) extends TrackingTicket

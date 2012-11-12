@@ -3,7 +3,8 @@ package almhirt.commanding
 import java.util.UUID
 import scalaz.syntax.validation._
 import scalaz.std._
-import almhirt._
+import almhirt.common._
+import almhirt.core._
 import almhirt.syntax.almvalidation._
 import almhirt.syntax.almfuture._
 import almhirt.almvalidation.funs.inTryCatch
@@ -12,6 +13,7 @@ import almhirt.domain._
 import almhirt.parts.HasRepositories
 import almhirt.environment.AlmhirtContext
 import almhirt.util._
+import almhirt.core.AlmFuture
 
 trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
   protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])]

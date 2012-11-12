@@ -1,13 +1,13 @@
 package testalmhirt
 
 import org.specs2.mutable._
-//import scalaz._, Scalaz._
 import akka.dispatch.{Await, Future}
 import almhirt._
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import test._
 import almhirt.almfuture.inst._
+import almhirt.core.AlmFuture
 
 class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
   private implicit val atMost = akka.util.Duration(2, "s")

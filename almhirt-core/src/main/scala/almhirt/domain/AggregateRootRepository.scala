@@ -1,7 +1,7 @@
 package almhirt.domain
 
-import almhirt._
-import almhirt.ActorBased
+import almhirt.core._
+import almhirt.common._
 import almhirt.environment.AlmhirtContext
 import almhirt.util.TrackingTicket
 
@@ -12,7 +12,7 @@ case class StoreAggregateRootCmd[AR <: AggregateRoot[AR, Event], Event <: Domain
 sealed trait AggregateRootRepositoryRsp
 case class AggregateRootFromRepositoryRsp[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AlmValidation[AR]) extends AggregateRootRepositoryRsp
 
-trait AggregateRootRepository[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends HasAggregateRoots[AR, Event] with StoresAggregateRoots[AR, Event] with almhirt.ActorBased
+trait AggregateRootRepository[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends HasAggregateRoots[AR, Event] with StoresAggregateRoots[AR, Event] with ActorBased
 
 object AggregateRootRepository {
   import almhirt.domain.impl._

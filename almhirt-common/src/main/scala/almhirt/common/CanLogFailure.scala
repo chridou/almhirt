@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt
+package almhirt.common
 
 trait CanLogProblems {
   def logProblem(prob: Problem, minSeverity: Severity): Unit

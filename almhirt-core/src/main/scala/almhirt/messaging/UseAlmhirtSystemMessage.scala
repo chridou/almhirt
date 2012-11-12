@@ -1,3 +1,3 @@
 package almhirt.messaging
 
-case class UseAlmhirtSystemMessage(system: almhirt.AlmhirtSystem)
+case class UseAlmhirtSystemMessage(system: almhirt.environment.AlmhirtSystem)

@@ -15,7 +15,8 @@
 package almhirt.messaging
 
 import java.util.UUID
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 /** Publishes messages to its subscribers. 
  * This is the weakest contract a channel must fulfill:
@@ -26,7 +27,7 @@ import almhirt._
  * * not guarantee that all handlers will be called on the same thread
  * * not guarantee that handlers won't be called concurrently
  */
-trait MessageStream[T <: AnyRef] extends SubscribableForMessages[T] with almhirt.Closeable {
+trait MessageStream[T <: AnyRef] extends SubscribableForMessages[T] with Closeable {
   /** Ceases activity of this message stream and unregisters it if it was registered somewhere
    */
   def close()

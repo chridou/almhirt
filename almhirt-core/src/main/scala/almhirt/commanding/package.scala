@@ -1,7 +1,9 @@
 package almhirt
 
 import akka.dispatch.ExecutionContext
-import almhirt.environment._
+import almhirt.common._
+import almhirt.core._
+import almhirt.domain._
 
 package object commanding {
   type MutatorCommandHandlerFuture[AR <: domain.AggregateRoot[AR, TEvent], TEvent <: domain.DomainEvent, TCom <: DomainCommand] = (TCom, AR, ExecutionContext) => AlmFuture[(AR, List[TEvent])]

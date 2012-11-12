@@ -2,7 +2,7 @@ package almhirt.almvalidation
 
 import org.specs2.mutable.Specification
 import scalaz.syntax.validation.ToValidationV
-import almhirt._
+import almhirt.common._
 import almhirt.almvalidation._
 
 class AlmMatchersSpecs extends Specification with ToAlmValidationOps{

@@ -2,7 +2,8 @@ package almhirt.environment
 
 import scalaz.syntax.validation._
 import akka.actor.ActorSystem
-import almhirt._
+import almhirt.common._
+import almhirt.core._
 import com.typesafe.config._
 
 trait AlmhirtTestKit {

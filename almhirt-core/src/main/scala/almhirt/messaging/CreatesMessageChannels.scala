@@ -14,7 +14,7 @@
 */
 package almhirt.messaging
 
-import almhirt._
+import almhirt.core.AlmFuture
 
 trait CreatesMessageChannels {
   def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]]

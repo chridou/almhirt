@@ -15,7 +15,8 @@
 package almhirt.messaging
 
 import java.util.UUID
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 /** Someone you can subscribe to to receive [[almhirt.messaging.Message]]s. 
  *

@@ -17,7 +17,7 @@ package almhirt.problem
 import scalaz.Scalaz.ToFoldableOps
 import scalaz.syntax.Ops
 import scalaz.NonEmptyList
-import almhirt._
+import almhirt.common._
 
 trait ProblemOps0 extends Ops[NonEmptyList[Problem]]{
   import inst._

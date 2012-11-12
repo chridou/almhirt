@@ -15,7 +15,9 @@
 package almhirt.almakka
 
 import akka.event._
-import almhirt._, almvalidation.kit._
+import almhirt.common._
+import almhirt.core._
+import almhirt.almvalidation.kit._
 
 /** Enables an [[akka.actor.Actor]] to log directly on [[almhirt.validation.Problem]]s 
  * 

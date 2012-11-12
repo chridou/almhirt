@@ -6,7 +6,7 @@ import scalaz.syntax.validation._
 import scalaz.{Failure}
 import org.specs2.mutable._
 import org.specs2.mutable.Specification
-import almhirt._
+import almhirt.common._
 
 class AlmValidationSpecs extends Specification {
   import almhirt.almvalidation.funs._

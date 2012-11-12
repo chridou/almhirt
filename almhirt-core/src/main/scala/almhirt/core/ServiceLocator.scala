@@ -1,4 +1,6 @@
-package almhirt
+package almhirt.core
+
+import almhirt.common._
 
 trait HasServices {
   def getService[T <: AnyRef]: AlmFuture[T]

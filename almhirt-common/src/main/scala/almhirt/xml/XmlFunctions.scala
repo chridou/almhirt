@@ -16,9 +16,9 @@ package almhirt.xml
 
 import scalaz._, Scalaz._
 import org.joda.time.DateTime
-import almhirt._
-import almvalidation.funs._
-import problem.inst._
+import almhirt.common._
+import almhirt.almvalidation.funs._
+import almhirt.problem.inst._
 import almhirt.syntax.almvalidation._
 
 trait XmlFunctions {

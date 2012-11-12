@@ -2,7 +2,8 @@ package almhirt.domain
 
 import scalaz.syntax.validation._
 import scalaz.std._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 trait CanValidateAggregateRootsAgainstEvents[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] {
   def validateAggregateRootAgainstEvents(newAr: AR, uncommittedEvents: List[Event], nextRequiredEventVersion: Long): AlmValidation[(AR, List[Event])] = {

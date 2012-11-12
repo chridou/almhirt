@@ -16,7 +16,8 @@ package almhirt.domain
 
 import java.util.UUID
 import scalaz._, Scalaz._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 import almhirt.syntax.almvalidation._
 
 

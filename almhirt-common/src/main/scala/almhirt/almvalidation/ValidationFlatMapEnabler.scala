@@ -14,7 +14,7 @@
 */
 package almhirt.almvalidation
 
-import almhirt._
+import almhirt.common._
 
 trait ValidationFlatMapEnabler {
   implicit def almValidation2FlatMapW[T](validation: AlmValidation[T]) = new AlmValidationFlatMapW(validation)

@@ -16,7 +16,8 @@ package almhirt.domain
 
 import java.util.UUID
 import scalaz._, Scalaz._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 /** Functionality to create a new aggregate root */
 trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {

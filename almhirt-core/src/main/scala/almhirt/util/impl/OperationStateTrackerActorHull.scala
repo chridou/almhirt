@@ -5,7 +5,8 @@ import akka.actor._
 import akka.util.Duration
 import akka.util.duration._
 import akka.pattern._
-import almhirt._
+import almhirt.common._
+import almhirt.core._
 import almhirt.environment._
 import almhirt.almfuture.all._
 import almhirt.util._

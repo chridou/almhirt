@@ -1,6 +1,8 @@
-package almhirt
+package almhirt.environment
 
 import akka.util.Duration
+import almhirt.core._
+import almhirt.common._
 import almhirt.environment._
 import almhirt.commanding._
 import almhirt.domain._

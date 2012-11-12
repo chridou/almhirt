@@ -1,14 +1,15 @@
 package almhirt.parts.impl
 
 import scalaz.syntax.validation._
-import almhirt._
+import almhirt.common._
 import almhirt.parts.HasCommandHandlers
-import almhirt.NotFoundProblem
 import almhirt.commanding._
 import almhirt.parts.CommandExecutor
 import almhirt.environment._
 import almhirt.util.TrackingTicket
 import akka.util.Duration
+import almhirt.core.AlmPromise
+import almhirt.core.AlmFuture
 
 class DevNullCommandExecutor(implicit context: AlmhirtContext) extends CommandExecutor {
   import akka.actor._

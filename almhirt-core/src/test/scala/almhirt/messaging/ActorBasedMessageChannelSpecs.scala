@@ -2,10 +2,10 @@ package almhirt.messaging
 
 import org.specs2.mutable._
 import akka.util.Duration
-import almhirt._
+import almhirt.environment.AlmhirtContextTestKit
 import almhirt.syntax.almvalidation._
-import almhirt.almhirtsystem.AlmhirtsystemTestkit
-import almhirt.AlmhirtSystem
+import almhirt.environment.AlmhirtsystemTestkit
+import almhirt.environment.AlmhirtSystem
 
 class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTestkit {
   implicit val atMost = akka.util.Duration(1, "s")

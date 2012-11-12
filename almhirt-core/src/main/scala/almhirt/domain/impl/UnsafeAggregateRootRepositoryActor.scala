@@ -2,12 +2,14 @@ package almhirt.domain.impl
 
 import scalaz._, Scalaz._
 import akka.actor._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 import almhirt.syntax.almfuture._
 import almhirt.domain._
 import almhirt.eventlog.DomainEventLog
 import almhirt.environment.AlmhirtContext
 import almhirt.util._
+import almhirt.core.AlmFuture
 
 abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}

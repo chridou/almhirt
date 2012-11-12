@@ -3,8 +3,9 @@ package almhirt.messaging.impl
 import java.util.UUID
 import scalaz.syntax.validation._
 import akka.actor._
-import almhirt._
+import almhirt.common._
 import almhirt.messaging._
+import almhirt.environment.AlmhirtSystem
 
 class MessageChannelActor extends Actor {
   private var almhirtsystem: Option[AlmhirtSystem] = None

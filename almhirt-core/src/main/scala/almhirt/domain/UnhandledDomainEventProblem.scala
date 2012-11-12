@@ -14,7 +14,8 @@
 */
 package almhirt.domain
 
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 /** Used to indicate that an event couldn't be handled by an aggregate root's handler. 
  * This is a major problem as it indicates a software defect.

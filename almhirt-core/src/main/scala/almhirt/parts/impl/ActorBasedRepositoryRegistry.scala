@@ -4,11 +4,12 @@ import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
 import akka.util.Duration._
-import almhirt._
+import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.environment._
 import almhirt.domain._
 import almhirt.parts._
+import almhirt.core.AlmFuture
 
 class RepositoryRegistryActor extends Actor {
   private val repos = scala.collection.mutable.Map[String, AnyRef]()

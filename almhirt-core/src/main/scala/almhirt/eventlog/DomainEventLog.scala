@@ -1,8 +1,9 @@
 package almhirt.eventlog
 
 import java.util.UUID
+import almhirt.common._
+import almhirt.core._
 import almhirt.domain.DomainEvent
-import almhirt.AlmValidation
 
 sealed trait DomainEventLogCmd
 case class LogEventsQry(events: List[DomainEvent], executionIdent: Option[UUID] = None) extends DomainEventLogCmd
@@ -27,7 +28,7 @@ case class DomainEventsChunk(
   isLast: Boolean,
   events: AlmValidation[Iterable[DomainEvent]])
 
-trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almhirt.ActorBased
+trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almhirt.core.ActorBased
 
 object DomainEventLog {
   import scalaz.syntax.validation._

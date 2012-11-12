@@ -12,14 +12,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt
+package almhirt.core
 
 import java.util.concurrent.TimeoutException
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.Builder
 import scalaz.syntax.validation._
 import akka.dispatch.{ Future, Promise, Await, ExecutionContext }
-import almhirt._
+import almhirt.common._
 import akka.util.Duration
 
 /**
@@ -32,7 +32,7 @@ import akka.util.Duration
  * Errors which would end in a Throwable end in a SystemProblem whereas a TimeoutException ends in a TimeoutProblem.
  */
 class AlmFuture[+R](val underlying: Future[AlmValidation[R]])(implicit executionContext: akka.dispatch.ExecutionContext) {
-  import almfuture.all._
+  import almhirt.almfuture.all._
   def map[T](compute: R => T): AlmFuture[T] =
     new AlmFuture[T](underlying map { validation => validation map compute })
 

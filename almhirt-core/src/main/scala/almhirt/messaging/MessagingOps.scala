@@ -16,7 +16,8 @@ package almhirt.messaging
 
 import scalaz._
 import Scalaz._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 object MessagingUtils {
   def patternMatchesTopic(pattern: String, topic: String): Boolean = true

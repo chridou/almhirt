@@ -19,9 +19,11 @@ import akka.actor._
 import akka.pattern._
 import akka.util._
 import akka.dispatch._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.messaging.impl.MessageChannelActor
+import almhirt.environment.AlmhirtSystem
 
 trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T] with ActorBased
 

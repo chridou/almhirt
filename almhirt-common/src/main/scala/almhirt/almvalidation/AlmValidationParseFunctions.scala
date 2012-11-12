@@ -18,7 +18,7 @@ import java.util.UUID
 import scalaz.{Validation, Success, Failure, ValidationNEL}
 import scalaz.syntax.validation._
 import org.joda.time.DateTime
-import almhirt._
+import almhirt.common._
 
 /** Parsing operations that result in a validation 
  * 

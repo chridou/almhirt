@@ -14,9 +14,8 @@
 */
 package almhirt.problem
 
-import almhirt.ApplicationProblem
-import almhirt.ProblemCategory
 import scalaz.Monoid
+import almhirt.common._
 
 trait ProblemCategoryInstances {
   implicit def toProbelCategoryMonoid: Monoid[ProblemCategory] =

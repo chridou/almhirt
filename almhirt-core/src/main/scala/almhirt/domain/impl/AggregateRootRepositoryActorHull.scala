@@ -5,12 +5,14 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout._
 import akka.dispatch._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.domain._
 import almhirt.eventlog.DomainEventLog
 import almhirt.environment.AlmhirtContext
 import almhirt.util._
+import almhirt.core.AlmFuture
 
 abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](val actor: ActorRef, almhirtContext: AlmhirtContext) extends AggregateRootRepository[AR, Event] with CanValidateAggregateRootsAgainstEvents[AR, Event] {
   implicit private def duration = almhirtContext.system.mediumDuration

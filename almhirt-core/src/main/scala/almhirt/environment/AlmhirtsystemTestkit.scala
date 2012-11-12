@@ -1,10 +1,9 @@
-package almhirt.almhirtsystem
+package almhirt.environment
 
 import akka.actor.ActorSystem
-import akka.dispatch.MessageDispatcher
 import akka.util.duration._
 import almhirt._
-import almhirt.JavaUtilUuidGenerator
+import almhirt.core.JavaUtilUuidGenerator
 import com.typesafe.config._
 
 trait AlmhirtsystemTestkit {

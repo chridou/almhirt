@@ -15,7 +15,8 @@
 package almhirt.domain
 
 import scalaz._, Scalaz._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 import almhirt.syntax.almvalidation._
 
 /** Records the events for aggregate root updates.

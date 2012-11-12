@@ -17,7 +17,7 @@ package almhirt.almvalidation
 import scalaz.{Validation, Success, Failure, ValidationNEL}
 import scalaz.syntax.validation._
 import org.joda.time.DateTime
-import almhirt._
+import almhirt.common._
 
 trait AlmValidationFunctions {
   import almhirt.problem.ProblemDefaults._

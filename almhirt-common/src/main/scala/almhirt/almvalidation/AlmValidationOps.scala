@@ -20,7 +20,7 @@ import scalaz.{Validation, NonEmptyList}
 import scalaz.syntax.Ops
 import scalaz.syntax.validation._
 import org.joda.time.DateTime
-import almhirt._
+import almhirt.common._
 
 /** Implicits for parsing Strings 
  *
@@ -138,9 +138,9 @@ trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
   
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
   def noneIsBadData(message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
-    almvalidation.funs.noneIsBadData(self, message, key)
+    funs.noneIsBadData(self, message, key)
   def noneIsNotFound(message: String = "Not found"): AlmValidation[T] =
-    almvalidation.funs.noneIsNotFound(self, message)
+    funs.noneIsNotFound(self, message)
 }
   
 trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {

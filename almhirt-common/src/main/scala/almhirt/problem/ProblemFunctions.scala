@@ -14,13 +14,7 @@
 */
 package almhirt.problem
 
-import almhirt.ApplicationProblem
-import almhirt.Major
-import almhirt.ProblemCause
-import almhirt.Severity
-import almhirt.SingleBadDataProblem
-import almhirt.SystemProblem
-import almhirt.UnspecifiedProblem
+import almhirt.common._
 
 trait ProblemFunctions {
   def badData(key: String, message: String) =

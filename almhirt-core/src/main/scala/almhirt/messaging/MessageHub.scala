@@ -19,9 +19,11 @@ import akka.actor._
 import akka.pattern._
 import akka.util._
 import akka.dispatch._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.messaging.impl.MessageHubActor
+import almhirt.environment.AlmhirtSystem
 
 trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable
 

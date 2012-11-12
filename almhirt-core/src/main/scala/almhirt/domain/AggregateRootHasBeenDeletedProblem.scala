@@ -1,6 +1,7 @@
 package almhirt.domain
 
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 case class AggregateRootHasBeenDeletedProblem(message: String = "The aggregate root has been deleted.", id: java.util.UUID, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = AggregateRootHasBeenDeletedProblem

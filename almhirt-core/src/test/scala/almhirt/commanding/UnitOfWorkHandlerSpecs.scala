@@ -3,10 +3,11 @@ package almhirt.commanding
 import org.specs2.mutable._
 import java.util.UUID
 import scalaz.syntax.validation._
-import almhirt._
+import almhirt.common._
+import almhirt.core._
 import almhirt.syntax.almvalidation._
-import test._
 import almhirt.environment.AlmhirtContextTestKit
+import test._
 
 class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
   implicit val duration = akka.util.Duration(1, "s")

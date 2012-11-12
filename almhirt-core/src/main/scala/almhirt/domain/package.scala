@@ -15,7 +15,8 @@
 package almhirt
 
 import scalaz.Validation
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 package object domain {
   //type EntityValidation[+α <: Entity[_, _]] = ({type λ[α]=Validation[Problem, α]})#λ[α]

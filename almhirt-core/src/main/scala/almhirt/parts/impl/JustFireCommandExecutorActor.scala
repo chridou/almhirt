@@ -4,13 +4,13 @@ import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
 import akka.util.Duration
-import almhirt._
+import almhirt.common._
+import almhirt.core._
 import almhirt.almfuture.all._
 import almhirt.messaging._
 import almhirt.parts._
 import almhirt.environment._
 import almhirt.commanding._
-import almhirt.NotFoundProblem
 import almhirt.environment.AlmhirtEnvironment
 import almhirt.parts.CommandExecutor
 import almhirt.util._

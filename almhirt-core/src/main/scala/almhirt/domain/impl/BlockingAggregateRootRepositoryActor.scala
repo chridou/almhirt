@@ -2,7 +2,8 @@ package almhirt.domain.impl
 
 import scalaz._, Scalaz._
 import akka.actor._
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 import almhirt.syntax.almfuture._
 import almhirt.domain._
 import almhirt.eventlog.DomainEventLog

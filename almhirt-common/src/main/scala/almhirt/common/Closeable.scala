@@ -12,20 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+package almhirt.common
 
-package almhirt
-
-sealed trait AlmMatcher
-
-case class AlmSuccess[T](succ: T) extends AlmMatcher
-case class AlmFailure(p: Problem) extends AlmMatcher
-
-object AlmSeverity {
-  def unapply[R](validation: AlmValidation[R]): Option[Severity] = 
-    validation fold (f => Some(f.severity), succ => None)
-}
-
-object AlmCategory {
-  def unapply[R](validation: AlmValidation[R]): Option[ProblemCategory] = 
-    validation fold (f => Some(f.category), succ => None)
+/** A Resource that has to be closed. Usually a resource which is used for a few operations*/
+trait Closeable {
+ def close()
 }

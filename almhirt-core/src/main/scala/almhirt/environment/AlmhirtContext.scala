@@ -14,13 +14,13 @@
 */
 package almhirt.environment
 
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 import almhirt.commanding._
 import almhirt.parts._
 import almhirt.domain.DomainEvent
 import almhirt.messaging._
 import almhirt.util._
-import almhirt.Problem
 import com.typesafe.config.Config
 import almhirt.commanding.CommandEnvelope
 import almhirt.parts.HasRepositories

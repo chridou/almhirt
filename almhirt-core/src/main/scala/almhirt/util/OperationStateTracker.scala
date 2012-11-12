@@ -4,7 +4,8 @@ import scalaz.syntax.validation._
 import akka.util.Duration
 import akka.util.duration._
 import akka.pattern._
-import almhirt._
+import almhirt.common._
+import almhirt.core._
 import almhirt.syntax.almfuture._
 import almhirt.syntax.almvalidation._
 import almhirt.messaging.MessageStream

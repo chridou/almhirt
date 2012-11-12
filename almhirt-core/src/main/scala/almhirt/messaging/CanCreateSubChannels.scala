@@ -14,7 +14,7 @@
 */
 package almhirt.messaging
 
-import almhirt._
+import almhirt.core.AlmFuture
 
 /** Creates subchannels with a payload type smaller than the current payload type. Types that do not fit will not be published on the subchannel.
  */

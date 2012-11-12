@@ -1,6 +1,6 @@
 package test
 
-import almhirt._
+import almhirt.common._
 import almhirt.domain._
 import almhirt.domain.impl._
 import almhirt.environment._

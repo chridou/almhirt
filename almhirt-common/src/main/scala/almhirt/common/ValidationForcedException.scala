@@ -12,16 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt
+package almhirt.common
 
-sealed trait ProblemCategory{
-  def and(other: ProblemCategory): ProblemCategory = 
-    (this,other) match {
-    case(SystemProblem,_) => SystemProblem
-    case(_,SystemProblem) => SystemProblem
-    case _  => ApplicationProblem
-  }
-}
-
-case object SystemProblem extends ProblemCategory
-case object ApplicationProblem extends ProblemCategory
+/** Wow, let's hope you'll never trigger that one in production code ... 
+ */
+case class ResultForcedFromValidationException(val problem: Problem) extends Exception("A value has been forced from a failure: %s".format(problem.message))
+/** Wow, let's hope you'll never trigger that one in production code ... 
+ */
+case class ProblemForcedFromValidationException() extends Exception("A problem has been forced from a success.")

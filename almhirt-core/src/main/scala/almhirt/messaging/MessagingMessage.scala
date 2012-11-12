@@ -1,7 +1,8 @@
 package almhirt.messaging
 
 import akka.actor.ActorRef
-import almhirt._
+import almhirt.core._
+import almhirt.common._
 
 sealed trait MessagingMsg
 

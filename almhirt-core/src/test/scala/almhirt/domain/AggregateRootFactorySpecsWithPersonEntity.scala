@@ -3,7 +3,6 @@ package almhirt.domain
 import java.util.UUID
 import scalaz._, Scalaz._
 import org.specs2.mutable._
-import almhirt._
 import almhirt.syntax.almvalidation._
 import test._
 

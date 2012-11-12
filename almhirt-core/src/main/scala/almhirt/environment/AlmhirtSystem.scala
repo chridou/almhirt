@@ -1,4 +1,4 @@
-package almhirt
+package almhirt.environment
 
 import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
@@ -7,7 +7,9 @@ import akka.util.Duration
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
-import scalaz.syntax.validation.ToValidationV
+import almhirt.common._
+import almhirt.core._
+
 
 /** Components and values needed to use Akka */
 trait AlmhirtSystem extends Disposable {

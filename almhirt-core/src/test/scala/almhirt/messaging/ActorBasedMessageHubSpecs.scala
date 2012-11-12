@@ -6,9 +6,9 @@ import akka.util.Duration
 import almhirt.syntax.almvalidation._
 import almhirt._
 import almhirt.almfuture.all._
-import almhirt.almhirtsystem.AlmhirtsystemTestkit
+import almhirt.environment.AlmhirtsystemTestkit
 import scalaz._, Scalaz._
-import almhirt.AlmhirtSystem
+import almhirt.environment.AlmhirtSystem
 
 class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit {
   implicit val atMost = akka.util.Duration(1, "s")

@@ -1,6 +1,7 @@
 package almhirt.environment
 
-import almhirt._
+import almhirt.common._
+import almhirt.core._
 import almhirt.commanding.CommandEnvelope
 import almhirt.messaging._
 import almhirt.parts._
@@ -36,7 +37,7 @@ trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
   def commandExecutor: CommandExecutor
   def repositories: HasRepositories
   def eventLog: DomainEventLog
-  def operationStateTracker: util.OperationStateTracker
+  def operationStateTracker: almhirt.util.OperationStateTracker
 
   def addCommandHandler(handler: HandlesCommand) { commandExecutor.addHandler(handler) }
   def registerRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: Manifest[AR]) { repositories.registerForAggregateRoot[AR, TEvent](repo) }

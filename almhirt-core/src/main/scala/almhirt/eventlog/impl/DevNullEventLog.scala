@@ -20,18 +20,20 @@ import akka.actor.{ ActorRefFactory, Actor, Props }
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.messaging.Message
-import almhirt._
+import almhirt.core._
+import almhirt.almakka._
 import almhirt.environment.AlmhirtContext
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._
+import almhirt.core.AlmFuture
 
 class DevNullEventLog(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
   private implicit def timeout = Timeout(almhirtContext.system.mediumDuration)
   private implicit def executionContext = almhirtContext.system.futureDispatcher
   val actor = almhirtContext.system.actorSystem.actorOf(Props(new Coordinator()), "InefficientInMemoryEventLog")
 
-  private class Coordinator() extends Actor with almakka.AlmActorLogging {
+  private class Coordinator() extends Actor with AlmActorLogging {
     def receive = {
       case LogEventsQry(events,_) =>
         sender ! CommittedDomainEventsRsp(events.success, None)

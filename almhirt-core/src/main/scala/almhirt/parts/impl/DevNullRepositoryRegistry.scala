@@ -2,7 +2,8 @@ package almhirt.parts.impl
 
 import scalaz.syntax.validation._
 import akka.actor._
-import almhirt._
+import almhirt.common._
+import almhirt.core._
 import almhirt.environment._
 import almhirt.domain.AggregateRootRepository
 import almhirt.parts.HasRepositories
