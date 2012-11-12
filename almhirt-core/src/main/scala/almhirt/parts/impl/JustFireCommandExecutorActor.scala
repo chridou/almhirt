@@ -35,6 +35,7 @@ class JustFireCommandExecutorActor(repositories: HasRepositories)(implicit conte
     }
 
   private def executeCommand(command: DomainCommand, ticket: Option[TrackingTicket]) {
+    println("E**************************EXEEEEECUTEEE: %s".format(ticket))
     ticket foreach { t => context.reportOperationState(InProcess(t)) }
     getHandlerByType(command.getClass).fold(
       fail => {
@@ -48,7 +49,7 @@ class JustFireCommandExecutorActor(repositories: HasRepositories)(implicit conte
   }
 
   def receive: Receive = {
-    case ExecuteCommandCmd(commandEnvelope) => executeCommand(commandEnvelope.command, commandEnvelope.ticket)
+    case commandEnvelope: CommandEnvelope => executeCommand(commandEnvelope.command, commandEnvelope.ticket)
     case AddCommandHandlerCmd(handler) => addHandler(handler)
     case RemoveCommandHandlerCmd(commandType) => removeHandlerByType(commandType)
     case GetCommandHandlerQry(commandType) => sender ! CommandHandlerRsp(getHandlerByType(commandType))
@@ -61,5 +62,5 @@ class CommandExecutorActorHull(val actor: ActorRef, context: AlmhirtContext) ext
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]) { actor ! RemoveCommandHandlerCmd(commandType) }
   def getHandlerByType(commandType: Class[_ <: DomainCommand])(implicit atMost: Duration): AlmFuture[HandlesCommand] =
     (actor ? GetCommandHandlerQry(commandType))(atMost).mapTo[CommandHandlerRsp].map(_.handler)
-  def executeCommand(commandEnvelope: CommandEnvelope) { actor ! ExecuteCommandCmd(commandEnvelope) }
+  def executeCommand(commandEnvelope: CommandEnvelope) { actor ! commandEnvelope }
 }
