@@ -73,6 +73,20 @@ trait XtractNDuceBuild {
 }
 */
 
+trait RiftWarpBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += specs2
+  )
+}
+
 trait DocItBuild {
   import Dependencies._
   import Resolvers._
@@ -133,7 +147,7 @@ trait UnfilteredBuild {
 }
 */
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with DocItBuild {
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with DocItBuild with RiftWarpBuild{
   lazy val root = Project(	id = "almhirt",
 	                        base = file(".")) aggregate(common, core, docit)
 	
@@ -146,6 +160,10 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with DocItBuil
 /*
   lazy val xtractnduce = xtractnduceProject(	name = "almhirt-xtractnduce",
                        			baseFile = file("almhirt-xtractnduce")) dependsOn(common) */
+
+  lazy val riftwarp = riftwarpProject(	name = "almhirt-riftwarp",
+                       			baseFile = file("almhirt-riftwarp")) dependsOn(common)
+
 
   lazy val docit = docitProject(	name = "almhirt-docit",
                        			baseFile = file("almhirt-docit")) dependsOn(common)

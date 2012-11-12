@@ -16,7 +16,7 @@ package almhirt.docit
 
 import scala.xml._
 import scalaz._, Scalaz._
-import almhirt._
+import almhirt.common._
 import almhirt.syntax.almvalidation._
 
 
