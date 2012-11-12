@@ -47,11 +47,11 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 trait CreatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
   def handler: CreatorCommandHandlerFuture[AR, TEvent, TCom]
   protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com, context.system.futureDispatcher)
-  
+
 }
 trait CreatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
   def handler: CreatorCommandHandler[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = 
+  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] =
     AlmFuture(handler(com))(context.system.futureDispatcher)
 }
 
@@ -66,11 +66,13 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
             (com, idAndVersion)))
       }.flatMap { case (com, idAndVersion) => getRepository(repositories).map(repo => (com, repo, idAndVersion)) }
     val step2 =
-      step1.flatMap{ case (com, repository, (id, version)) =>
+      step1.flatMap {
+        case (com, repository, (id, version)) =>
           getAggregateRoot(repository, id).mapV(ar =>
             checkArId(ar, id, com).bind(ar =>
-              checkVersion(ar, version, com))).flatMap(ar =>
-                executeHandler(com, ar, context).map((repository, _)))
+              checkVersion(ar, version, com))).flatMap { ar =>
+            executeHandler(com, ar, context).map((repository, _))
+          }
       }
     step2.onComplete(
       f => updateFailedOperationState(context, f, ticket),
@@ -104,7 +106,9 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
   private def checkVersion(ar: AR, version: Option[Long], cmd: TCom): AlmValidation[AR] =
     option.cata(version)(
-      v => boolean.fold(v == ar.version, ar.success, CollisionProblem("Refused to handle command: Versions do not match. Current version is '%d', targetted version is '%d'. The refused command is '%s'".format(ar.version, v, cmd), severity = Minor).failure),
+      v => boolean.fold(v == ar.version,
+        ar.success,
+        CollisionProblem("Refused to handle command: Versions do not match. Current version is '%d', targetted version is '%d'. The refused command is '%s'".format(ar.version, v, cmd), severity = Minor).failure),
       ar.success)
 
   private def getRepository(repositories: HasRepositories): AlmFuture[AggregateRootRepository[AR, TEvent]] =
@@ -119,11 +123,11 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 trait MutatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends MutatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
   def handler: MutatorCommandHandlerFuture[AR, TEvent, TCom]
   protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com, ar, context.system.futureDispatcher)
-  
+
 }
 trait MutatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] extends MutatorUnitOfWorkStyle[AR, TEvent, TCom] { self: UnitOfWork[AR, TEvent] =>
   def handler: MutatorCommandHandler[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = 
+  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] =
     AlmFuture(handler(com, ar))(context.system.futureDispatcher)
 }
 

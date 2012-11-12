@@ -72,17 +72,17 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
         res.awaitResult.isSuccess
       }
     }
+    """return a success when a valid name is supplied with an incorrect version, because a handler doesn't have to check for the version.""" in {
+      inTestContext { implicit ctx =>
+        val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version + 1), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        res.awaitResult.isSuccess
+      }
+    }
     """return a failure when an invalid name is supplied incuding the correct version""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
         val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), ""), originalEntity, ctx.system.futureDispatcher)
-        res.awaitResult.isFailure
-      }
-    }
-    """return a failure when an valid name is supplied with an incorrect version""" in {
-      inTestContext { implicit ctx =>
-        val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version + 1), "Bill"), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.isFailure
       }
     }
@@ -97,20 +97,6 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
         val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, None, ""), originalEntity, ctx.system.futureDispatcher)
-        res.awaitResult.isFailure
-      }
-    }
-    """return a failure when an invalid name and a different id and the correct version is supplied""" in {
-      inTestContext { implicit ctx =>
-        val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(java.util.UUID.randomUUID, Some(originalEntity.version), ""), originalEntity, ctx.system.futureDispatcher)
-        res.awaitResult.isFailure
-      }
-    }
-    """return a failure when an invalid name and a different id and no version is supplied""" in {
-      inTestContext { implicit ctx =>
-        val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(java.util.UUID.randomUUID, None, ""), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.isFailure
       }
     }
