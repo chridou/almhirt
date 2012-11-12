@@ -20,7 +20,7 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirtContext: AlmhirtC
   val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[AlmValidation[ResultOperationState] => Unit]]
 
   def receive: Receive = {
-    case UpdateOperationStateCmd(opState) =>
+    case opState: OperationState =>
       opState match {
         case InProcess(ticket) =>
           if (collectedResults.contains(ticket)) {

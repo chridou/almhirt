@@ -28,7 +28,7 @@ class OperationStateTrackerActorHull(val actor: ActorRef)(implicit almhirtContex
   private case class ResOpCmd(res: AlmValidation[ResultOperationState])
 
   def updateState(opState: OperationState) {
-    actor ! UpdateOperationStateCmd(opState)
+    actor ! opState
   }
 
   def queryStateFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[Option[OperationState]] =

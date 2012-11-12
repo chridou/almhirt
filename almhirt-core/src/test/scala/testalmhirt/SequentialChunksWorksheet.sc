@@ -43,7 +43,6 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
       updateStates.foreach(x => x fold (f => println(f), succ => println(succ)))
     }
 
-
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(ChangeTestPersonName(x._2, Some(4), "new%s".format(x._3)), "A updatename%s".format(x._1.toString)))
     val update3StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A updatename%s".format(x._1.toString)))
     val update3StatesRes = AlmFuture.sequence(update3StatesFutures).awaitResult
@@ -53,6 +52,7 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
     //    almhirt.environment.eventLog.getAllEvents.awaitResult.forceResult.foreach(println)
     //    AlmFuture.sequence(idsAndNamesAndAdresses.map(x => repo.get(x._2))).awaitResult.forceResult.foreach(println)
 
+
     update3StatesRes.map { updateStates =>
       updateStates.foreach(x => x fold (f => println(f), succ => println(succ)))
       updateStates
@@ -60,24 +60,13 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
       f => false,
       succ => succ.forall(_.isSuccess) && succ.forall(_.forceResult.isFinishedSuccesfully))
   }                                               //> --- insert done ---
-                                                  //| Failure(almhirt.OperationTimedOutProblem
-                                                  //| A future operation timed out: Futures timed out after [500] milliseconds
-                                                  //| Category: SystemProblem
-                                                  //| Severity: Major
-                                                  //| Arguments: Map()
-                                                  //| Exception: java.util.concurrent.TimeoutException: Futures timed out after [
-                                                  //| 500] milliseconds
-                                                  //| Stacktrace:
-                                                  //| akka.dispatch.DefaultPromise.ready(Future.scala:870)
-                                                  //| akka.dispatch.DefaultPromise.result(Future.scala:874)
-                                                  //| akka.dispatch.Await$.result(Future.scala:74)
-                                                  //| almhirt.AlmFuture.awaitResult(AlmFuture.scala:97)
-                                                  //| worksheets.SequentialChunksWorksheet$$anonfun$main$1$$anonfun$1.apply(works
-                                                  //| heets.SequentialChunksWorksheet.scala:20)
-                                                  //| worksheets.SequentialChunksWorksheet$$anonfun$main$1$$anonfun$1.apply(works
-                                                  //| heets.SequentialChunksWorksheet.scala:12)
-                                                  //| test.TestAlmhirtKit$class.inTestAlmhirt(TestAlmhirtKit.scala:26)
-                                                  //| worksheets.SequentialChunksWorksheet$.inTestAlmhirt(worksheets.SequentialCh
-                                                  //| unksWorksheet.scala:10)
+                                                  //| Executed(StringTrackingTicket(A insert0))
+                                                  //| --- setaddress done ---
+                                                  //| Executed(StringTrackingTicket(A setaddress0))
+                                                  //| --- updatemarriage done ---
+                                                  //| Executed(StringTrackingTicket(A updatemarriage0))
+                                                  //| --- updatename done ---
+                                                  //| Executed(StringTrackingTicket(A updatename0))
+                                                  //| res0: Boolean = true
 
 }

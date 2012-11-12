@@ -26,7 +26,7 @@ trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
   def reportProblem(prob: Problem) { context.reportProblem(prob) }
   def reportOperationState(opState: OperationState) { context.reportOperationState(opState) }
   def executeCommand(cmdEnv: CommandEnvelope) { context.broadcastCommandEnvelope(cmdEnv) }
-  def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String]) { context.broadcast(payload, metaData) }
+  def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { context.broadcast(payload, metaData) }
   def getDateTime = context.getDateTime
   def getUuid = context.getUuid
   def getReadOnlyRepository[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[HasAggregateRoots[AR, TEvent]] =
@@ -58,7 +58,7 @@ object AlmhirtEnvironment {
         .toAlmFuture
       repos <- AlmPromise(HasRepositories())
       cmdExecutor <- AlmPromise(CommandExecutor(repos))
-      cmdExecutorRegistration <- (ctx.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
+      cmdExecutorRegistration <- (ctx.commandChannel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
         .mapTo[SubscriptionRsp]
         .map(_.registration)
         .toAlmFuture

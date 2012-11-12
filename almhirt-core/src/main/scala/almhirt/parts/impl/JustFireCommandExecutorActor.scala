@@ -35,7 +35,6 @@ class JustFireCommandExecutorActor(repositories: HasRepositories)(implicit conte
     }
 
   private def executeCommand(command: DomainCommand, ticket: Option[TrackingTicket]) {
-    println("E**************************EXEEEEECUTEEE: %s".format(ticket))
     ticket foreach { t => context.reportOperationState(InProcess(t)) }
     getHandlerByType(command.getClass).fold(
       fail => {

@@ -13,7 +13,6 @@ import almhirt.commanding.DomainCommand
 import almhirt.almakka.AlmActorLogging
 
 trait OperationStateTrackerCmd
-case class UpdateOperationStateCmd(opState: OperationState) extends OperationStateTrackerCmd
 case class RegisterResultCallbackCmd(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit, atMost: Duration) extends OperationStateTrackerCmd
 case class GetStateQry(ticket: TrackingTicket) extends OperationStateTrackerCmd
 

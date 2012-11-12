@@ -23,7 +23,7 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
         res.awaitResult.isFailure
       }
     }
-    """create a new TestPerson with version 1""" in {
+    """create a new TestPerson with version 0""" in {
       inTestContext { implicit ctx =>
         val res = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher)
         res.awaitResult.forceResult._1.version === 1L
@@ -41,11 +41,11 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
         res._2.head.isInstanceOf[TestPersonCreated]
       }
     }
-    """create exactly one TestPersonCreated event with version = 1""" in {
+    """create exactly one TestPersonCreated event with version = 0""" in {
       inTestContext { implicit ctx =>
         val res = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult
         val event = res._2.head.asInstanceOf[TestPersonCreated]
-        event.version === 1L
+        event.version === 0L
       }
     }
     """create exactly one TestPersonCreated event with the correct name""" in {
@@ -104,13 +104,6 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
         val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(java.util.UUID.randomUUID, Some(originalEntity.version), ""), originalEntity, ctx.system.futureDispatcher)
-        res.awaitResult.isFailure
-      }
-    }
-    """return a failure when a valid name and a different id and no version is supplied""" in {
-      inTestContext { implicit ctx =>
-        val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(java.util.UUID.randomUUID, None, "Bill"), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.isFailure
       }
     }

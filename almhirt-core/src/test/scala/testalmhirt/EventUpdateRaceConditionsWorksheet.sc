@@ -27,16 +27,15 @@ object EventUpdateRaceConditionsWorksheet extends TestAlmhirtKit {
 //    statesFuturesRes.foreach { updateStates =>
 //      updateStates.foreach(x => x fold (f => println(f), succ => println(succ)))
 //    }
-
     
     val events = almhirtInstance.environment.eventLog.getAllEvents.awaitResult.forceResult
     events.foreach(println)
     if(events.size == 2) println ("++++++++++++++++ SUCCESS ++++++++++++++++") else println ("---------- FAILURE -----------------")
     println("EVENTS: %d".format(events.size))
-  }                                               //> TestPersonCreated(30fc7765-c9db-4d1f-8a63-b19c347308d9,InitialName,2012-11-
-                                                  //| 09T20:39:54.984+01:00)
-                                                  //| TestPersonNameChanged(30fc7765-c9db-4d1f-8a63-b19c347308d9,1,name10,2012-11
-                                                  //| -09T20:39:55.258+01:00)
+  }                                               //> TestPersonCreated(700836d8-bc9b-45a8-ac12-c13ff2ad7f3f,InitialName,2012-11-
+                                                  //| 12T12:17:45.824+01:00)
+                                                  //| TestPersonNameChanged(700836d8-bc9b-45a8-ac12-c13ff2ad7f3f,1,name104,2012-1
+                                                  //| 1-12T12:17:46.168+01:00)
                                                   //| ++++++++++++++++ SUCCESS ++++++++++++++++
                                                   //| EVENTS: 2
 

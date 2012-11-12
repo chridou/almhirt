@@ -30,12 +30,10 @@ class InefficientSerializingInMemoryDomainEventLogActor(implicit almhirtContext:
   private var loggedEvents: List[DomainEvent] = Nil
   def receive: Receive = {
     case LogEventsQry(events, executionIdent) =>
-      println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXInefficientSerializingInMemoryDomainEventLogActor_Add:%s".format(events))
       loggedEvents = loggedEvents ++ events
       events.foreach(event => almhirtContext.broadcastDomainEvent(event))
       sender ! CommittedDomainEventsRsp(events.success, executionIdent)
     case GetAllEventsQry =>
-      println("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYInefficientSerializingInMemoryDomainEventLogActor_GET")
       sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success))
     case GetEventsQry(aggId) =>
       sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.id == aggId).toIterable.success))

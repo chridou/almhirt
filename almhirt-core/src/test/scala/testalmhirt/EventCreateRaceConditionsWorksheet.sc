@@ -25,12 +25,13 @@ object EventCreateRaceConditionsWorksheet extends TestAlmhirtKit {
 //      states.foreach(x => x fold (f => println(f), succ => println(succ)))
 //    }
 
+
     val events = almhirtInstance.environment.eventLog.getAllEvents.awaitResult.forceResult
     events.foreach(println)
     if (events.size == 1) println("++++++++++++++++ SUCCESS ++++++++++++++++") else println("---------- FAILURE -----------------")
     println("EVENTS: %d".format(events.size))
-  }                                               //> TestPersonCreated(2cfb82e8-8a43-4ce3-a1b7-8e82df5ff48e,name7,2012-11-09T20:
-                                                  //| 40:13.687+01:00)
+  }                                               //> TestPersonCreated(382d7b72-2b74-4bec-9117-1ed5535c685c,name36,2012-11-12T12
+                                                  //| :17:38.458+01:00)
                                                   //| ++++++++++++++++ SUCCESS ++++++++++++++++
                                                   //| EVENTS: 1
 }
