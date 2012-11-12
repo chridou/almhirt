@@ -7,6 +7,7 @@ import akka.util.Duration
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
+import scalaz.syntax.validation.ToValidationV
 
 /** Components and values needed to use Akka */
 trait AlmhirtSystem extends Disposable {

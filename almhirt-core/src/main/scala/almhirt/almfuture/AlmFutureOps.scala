@@ -21,6 +21,7 @@ import scalaz.Scalaz.ToValidationV
 import scalaz.syntax.Ops
 import almhirt._
 import almvalidation.kit._
+import almhirt.AlmFuture
 
 /** Implicits on an untyped [[akka.dispatch.Future]] */
 trait AlmFutureOps0 extends Ops[Future[Any]] {

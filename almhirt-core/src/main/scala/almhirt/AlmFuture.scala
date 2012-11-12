@@ -15,10 +15,8 @@
 package almhirt
 
 import java.util.concurrent.TimeoutException
-import scala.{ Left, Right }
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.Builder
-import scalaz.{ Validation, Success, Failure }
 import scalaz.syntax.validation._
 import akka.dispatch.{ Future, Promise, Await, ExecutionContext }
 import almhirt._
