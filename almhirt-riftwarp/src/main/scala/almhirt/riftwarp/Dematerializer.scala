@@ -1,6 +1,40 @@
 package almhirt.riftwarp
 
-/** Pushes atoms into the void */
-trait Dematerializer {
+import almhirt.common._
 
+trait Dematerializer {
+  type DematerializesTo <: AnyRef
+  /**
+   * Xml, Json, etc
+   */
+  def channelType: String
+  def dematerialize: AlmValidation[DematerializesTo]
+  def dematerializeRaw: AnyRef = dematerialize.map(_.asInstanceOf[AnyRef])
+}
+
+trait DematerializesToString extends Dematerializer {
+  type DematerializesTo = String
+  /**
+   * Xml, Json, etc
+   */
+  def channelType: String
+  def dematerialize: AlmValidation[DematerializesTo]
+}
+
+trait DematerializesToByteArray extends Dematerializer {
+  type DematerializesTo = Array[Byte]
+  /**
+   * Xml, Json, etc
+   */
+  def channelType: String
+  def dematerialize: AlmValidation[DematerializesTo]
+}
+
+trait DematerializesToMap extends Dematerializer {
+  type DematerializesTo = Map[String, Any]
+  /**
+   * Xml, Json, etc
+   */
+  val channelType = "map"
+  def dematerialize: AlmValidation[DematerializesTo]
 }
