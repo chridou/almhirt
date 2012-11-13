@@ -16,10 +16,9 @@ object Worksheet {
   val decomposer = barracks.tryGetDecomposerFor(testObject).get
                                                   //> decomposer  : almhirt.riftwarp.Decomposer[almhirt.riftwarp.TestObjectA] = al
                                                   //| mhirt.riftwarp.TestObjectADecomposer@603b1d04
-  
-  val dematerializer = new ImmutableToMapDematerializer(Map.empty)(barracks)
-                                                  //> dematerializer  : almhirt.riftwarp.impl.ImmutableToMapDematerializer = almhi
-                                                  //| rt.riftwarp.impl.ImmutableToMapDematerializer@2393385d
+  val dematerializer = new dematerializers.ToMapDematerializer(Map.empty)(barracks)
+                                                  //> dematerializer  : almhirt.riftwarp.impl.dematerializers.ToMapDematerializer 
+                                                  //| = almhirt.riftwarp.impl.dematerializers.ToMapDematerializer@2393385d
   val res = decomposer.decompose(testObject)(dematerializer).bind(_.dematerialize)
                                                   //> res  : scalaz.Validation[almhirt.common.Problem,almhirt.riftwarp.Demateriali
                                                   //| zer#DematerializesTo] = Success(Map(typedescriptor -> TypeDescriptor(almhirt
