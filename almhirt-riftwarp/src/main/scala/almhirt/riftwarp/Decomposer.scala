@@ -2,12 +2,13 @@ package almhirt.riftwarp
 
 import almhirt.common._
 
-trait RawDecomposer{
+trait RawDecomposer extends HasTypeDescriptor {
   def decomposeRaw(what: AnyRef)(implicit into: Dematerializer): AlmValidation[Dematerializer]
 }
 
 /** instance -> Atoms 
  */
 trait Decomposer[T <: AnyRef] extends RawDecomposer {
-  def decompose(what: T)(implicit into: Dematerializer): AlmValidation[Dematerializer] = decomposeRaw(what.asInstanceOf[AnyRef])
+  def decomposeRaw(what: AnyRef)(implicit into: Dematerializer): AlmValidation[Dematerializer] = decompose(what.asInstanceOf[T])
+  def decompose(what: T)(implicit into: Dematerializer): AlmValidation[Dematerializer]
 }

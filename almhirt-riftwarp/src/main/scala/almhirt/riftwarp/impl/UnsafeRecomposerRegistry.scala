@@ -1,15 +1,21 @@
 package almhirt.riftwarp.impl
 
+import scalaz.std._
 import almhirt.common._
-import almhirt.riftwarp.HasRecomposers
+import almhirt.riftwarp._
 
 class UnsafeRecomposerRegistry extends HasRecomposers {
-  private var recomposers = Map.empty[String, AnyRef]
-  def tryGetRecomposerByName(typeDescriptor: String): Option[AnyRef] = {
-    recomposers.get(typeDescriptor)
-  }
+  private var recomposers = Map.empty[TypeDescriptor, (RawRecomposer, Boolean)]
 
-  def addRecomposerByName(typeDescriptor: String, decomposer: AnyRef) {
-    recomposers = recomposers + (typeDescriptor -> decomposer)
-  }
+  def tryGetRawRecomposer(typeDescriptor: TypeDescriptor) =
+    recomposers.get(typeDescriptor).map(_._1)
+
+  def tryGetRecomposer[T <: AnyRef](typeDescriptor: TypeDescriptor): Option[Recomposer[T]] =
+    recomposers.get(typeDescriptor).flatMap {
+      case (desc, isTyped) =>
+        boolean.fold(isTyped, Some(desc.asInstanceOf[Recomposer[T]]), None)
+    }
+
+  def addRawRecomposer(recomposer: RawRecomposer) { recomposers = recomposers + (recomposer.typeDescriptor -> (recomposer, false)) }
+  def addRecomposer(recomposer: Recomposer[_]) { recomposers = recomposers + (recomposer.typeDescriptor -> (recomposer.asInstanceOf[RawRecomposer], true)) }
 }

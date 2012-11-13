@@ -1,8 +1,9 @@
 package almhirt.riftwarp
 
+import scalaz.syntax.validation._
 import almhirt.common._
 
-trait Dematerializer {
+trait Dematerializer extends DematerializationFunnel {
   type DematerializesTo <: AnyRef
   /**
    * Xml, Json, etc

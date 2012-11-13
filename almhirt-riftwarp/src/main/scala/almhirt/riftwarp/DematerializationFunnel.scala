@@ -52,16 +52,9 @@ trait DematerializationFunnel { self: Dematerializer =>
   def addComplexType[T <: AnyRef](ident: String, aComplexType: T)(implicit m: Manifest[T]): AlmValidation[Dematerializer]
   def addComplexType[T <: AnyRef](ident: String, anOptionalComplexType: Option[T])(implicit m: Manifest[T]): AlmValidation[Dematerializer]
   
-  def addTypeDescriptor(typeName: String): AlmValidation[Dematerializer]
+  def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[Dematerializer]
    
   def fail(prob: Problem): AlmValidation[Dematerializer] = prob.failure
-  
-//  def flatMap(f: DematerializationFunnel => AlmValidation[DematerializationFunnel]): AlmValidation[DematerializationFunnel] =
-//    f(this).fold(
-//        fail => fail.failure, 
-//        succ => succ.success)
-//  def map(f: DematerializationFunnel => DematerializationFunnel): AlmValidation[DematerializationFunnel] =
-//    f(this).success
 }
 
 trait NoneHasNoEffectDematerializationFunnel extends DematerializationFunnel { self: Dematerializer =>

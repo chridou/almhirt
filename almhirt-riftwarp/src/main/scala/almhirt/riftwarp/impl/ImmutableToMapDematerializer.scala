@@ -35,7 +35,7 @@ class ImmutableToMapDematerializer(state: Map[String, Any])(implicit hasDecompos
   def addComplexType[T <: AnyRef](ident: String, aComplexType: T, dec: T => Dematerializer)(implicit m: Manifest[T]): AlmValidation[Dematerializer] = sys.error("")
   def addComplexType[T <: AnyRef](ident: String, aComplexType: T)(implicit m: Manifest[T]): AlmValidation[Dematerializer] = sys.error("")
  
-  def addTypeDescriptor(typeName: String) = ImmutableToMapDematerializer(state + ("typedescriptor" -> typeName)).success
+  def addTypeDescriptor(descriptor: TypeDescriptor) = ImmutableToMapDematerializer(state + ("typedescriptor" -> descriptor)).success
 
 }
 
