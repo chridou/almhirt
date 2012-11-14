@@ -8,7 +8,7 @@ trait Dematerializer extends DematerializationFunnel {
   /**
    * Xml, Json, etc
    */
-  def channelType: String
+  def channelType: RiftChannel
   def dematerialize: AlmValidation[DematerializesTo]
   def dematerializeRaw: AnyRef = dematerialize.map(_.asInstanceOf[AnyRef])
 }
@@ -18,7 +18,7 @@ trait DematerializesToString extends Dematerializer {
   /**
    * Xml, Json, etc
    */
-  def channelType: String
+  def channelType: RiftChannel
   def dematerialize: AlmValidation[DematerializesTo]
 }
 
@@ -27,7 +27,7 @@ trait DematerializesToByteArray extends Dematerializer {
   /**
    * Xml, Json, etc
    */
-  def channelType: String
+  def channelType: RiftChannel
   def dematerialize: AlmValidation[DematerializesTo]
 }
 
@@ -36,6 +36,6 @@ trait DematerializesToMap extends Dematerializer {
   /**
    * Xml, Json, etc
    */
-  val channelType = "map"
+  val channelType = RiftMap
   def dematerialize: AlmValidation[DematerializesTo]
 }
