@@ -7,32 +7,30 @@ import almhirt.almvalidation.funs._
 import almhirt.riftwarp._
 
 class FromMapRematerializationArray(theMap: Map[String, Any]) extends RematiarializationArrayBasedOnOptionGetters{
-  def tryGetString(ident: String) = option.cata(theMap.get(ident))(almCast(_).map(Some(_)), None.success)
+  def tryGetString(ident: String) = option.cata(theMap.get(ident))(almCast[String](_).map(Some(_)), None.success)
 
-//  def getBoolean(ident: String): AlmValidationSBD[String]
-//  def tryGetBoolean(ident: String): AlmValidationSBD[Option[String]]
+  def tryGetBoolean(ident: String) = option.cata(theMap.get(ident))(almCast[Boolean](_).map(Some(_)), None.success)
 
-  def tryGetByte(ident: String) = option.cata(theMap.get(ident))(almCast(_).map(Some(_)), None.success)
-  def tryGetInt(ident: String) = option.cata(theMap.get(ident))(almCast(_).map(Some(_)), None.success)
-//  def tryGetLong(ident: String): AlmValidationSBD[Option[Long]]
-//  def tryGetBigInt(ident: String): AlmValidationSBD[Option[BigInt]]
-//  
-//  def tryGetFloat(ident: String): AlmValidationSBD[Option[Float]]
-//  def tryGetDouble(ident: String): AlmValidationSBD[Option[Double]]
-//  def tryGetBigDecimal(ident: String): AlmValidationSBD[Option[BigDecimal]]
-//  
-//  def tryGetByteArray(ident: String): AlmValidationSBD[Option[Array[Byte]]]
-//  def tryGetBlob(ident: String): AlmValidationSBD[Option[Array[Byte]]]
-//
-//  def tryGetDateTime(ident: String): AlmValidationSBD[Option[org.joda.time.DateTime]]
-//  
-//  def tryGetUuid(ident: String): AlmValidationSBD[Option[java.util.UUID]]
-//
-//  def tryGetJson(ident: String): AlmValidationSBD[Option[String]]
-//  def tryGetXml(ident: String): AlmValidationSBD[Option[scala.xml.Node]]
-
-  def getTypeDescriptor = tryGetFromMap(TypeDescriptor.defaultKey, theMap, Major).bind(almCast(_))
+  def tryGetByte(ident: String) = option.cata(theMap.get(ident))(almCast[Byte](_).map(Some(_)), None.success)
+  def tryGetInt(ident: String) = option.cata(theMap.get(ident))(almCast[Int](_).map(Some(_)), None.success)
+  def tryGetLong(ident: String) = option.cata(theMap.get(ident))(almCast[Long](_).map(Some(_)), None.success)
+  def tryGetBigInt(ident: String) = option.cata(theMap.get(ident))(almCast[BigInt](_).map(Some(_)), None.success)
   
+  def tryGetFloat(ident: String) = option.cata(theMap.get(ident))(almCast[Float](_).map(Some(_)), None.success)
+  def tryGetDouble(ident: String) = option.cata(theMap.get(ident))(almCast[Double](_).map(Some(_)), None.success)
+  def tryGetBigDecimal(ident: String) = option.cata(theMap.get(ident))(almCast[BigDecimal](_).map(Some(_)), None.success)
+  
+  def tryGetByteArray(ident: String) = option.cata(theMap.get(ident))(almCast[Array[Byte]](_).map(Some(_)), None.success)
+  def tryGetBlob(ident: String) = option.cata(theMap.get(ident))(almCast[Array[Byte]](_).map(Some(_)), None.success)
+
+  def tryGetDateTime(ident: String) = option.cata(theMap.get(ident))(almCast[org.joda.time.DateTime](_).map(Some(_)), None.success)
+  
+  def tryGetUuid(ident: String) = option.cata(theMap.get(ident))(almCast[_root_.java.util.UUID](_).map(Some(_)), None.success)
+
+  def tryGetJson(ident: String) = option.cata(theMap.get(ident))(almCast[String](_).map(Some(_)), None.success)
+  def tryGetXml(ident: String) = option.cata(theMap.get(ident))(almCast[scala.xml.Node](_).map(Some(_)), None.success)
+
+  def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
 }
 
 object FromMapRematerializationArray extends FromMapRematerializationArrayFactory {

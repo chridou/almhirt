@@ -4,7 +4,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 
 trait RawDematerializer extends DematerializationFunnel {
-  def dematerializeRaw: AnyRef
+  def dematerializeRaw: AlmValidation[AnyRef]
 }
 
 trait Dematerializer[T <: AnyRef] extends RawDematerializer {
@@ -13,7 +13,7 @@ trait Dematerializer[T <: AnyRef] extends RawDematerializer {
    */
   def channelType: RiftChannel
   def dematerialize: AlmValidation[T]
-  def dematerializeRaw: AnyRef = dematerialize.map(_.asInstanceOf[AnyRef])
+  def dematerializeRaw: AlmValidation[AnyRef] = dematerialize.map(_.asInstanceOf[AnyRef])
 
 }
 

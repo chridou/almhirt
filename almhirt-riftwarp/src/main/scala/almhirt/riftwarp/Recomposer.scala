@@ -9,7 +9,7 @@ trait RawRecomposer extends HasTypeDescriptor {
 /** atoms -> instance */
 trait Recomposer[T] extends RawRecomposer {
   def recompose(from: RematerializationArray): AlmValidation[T]
-  def recomposeRaw(from: RematerializationArray) = recomposeRaw(from)
+  def recomposeRaw(from: RematerializationArray) = recompose(from).map(_.asInstanceOf[AnyRef])
 }
 
 class EnrichedRawRecomposer[T](raw: RawRecomposer) extends Recomposer[T] {
