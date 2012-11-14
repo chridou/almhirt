@@ -4,6 +4,6 @@ trait HasTypeDescriptor {
   def typeDescriptor: TypeDescriptor
 }
 
-trait HasDefaultDescriptor extends HasTypeDescriptor {
+trait HasDefaultTypeDescriptor extends HasTypeDescriptor {
   val typeDescriptor = TypeDescriptor(this.getClass().getName())
 }

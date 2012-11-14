@@ -139,6 +139,17 @@ case class EmptyCollectionProblem(message: String, severity: Severity = Minor, c
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/** As instanceOf failed
+ */
+case class TypeCastProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = TypeCastProblem
+  def withMessage(newMessage: String) = copy(message = newMessage)
+  def withSeverity(severity: Severity) = copy(severity = severity)
+  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+}
+
 /** There is a problem with the persistent store. This problem is more of technical nature and thus by default a system problem.
  */
 case class PersistenceProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {

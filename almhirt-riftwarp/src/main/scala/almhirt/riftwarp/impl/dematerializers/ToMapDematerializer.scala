@@ -6,7 +6,7 @@ import almhirt.common._
 import almhirt.riftwarp._
 
 class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers) extends DematerializesToMap with NoneHasNoEffectDematerializationFunnel {
-  def dematerialize: AlmValidation[DematerializesTo] = state.success
+  def dematerialize: AlmValidation[Map[String, Any]] = state.success
 
   def addString(ident: String, aValue: String) = (ToMapDematerializer(state + (ident -> aValue))).success
 
@@ -31,11 +31,11 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   def addJson(ident: String, aValue: String) = (ToMapDematerializer(state + (ident -> aValue))).success
   def addXml(ident: String, aValue: scala.xml.Node) = (ToMapDematerializer(state + (ident -> aValue))).success
 
-  def addComplexRaw(ident: String, aComplexType: AnyRef, clazz: Class[_ <: AnyRef]): AlmValidation[Dematerializer] = sys.error("")
-  def addComplexType[T <: AnyRef](ident: String, aComplexType: T, dec: T => Dematerializer)(implicit m: Manifest[T]): AlmValidation[Dematerializer] = sys.error("")
-  def addComplexType[T <: AnyRef](ident: String, aComplexType: T)(implicit m: Manifest[T]): AlmValidation[Dematerializer] = sys.error("")
+  def addComplexRaw(ident: String, aComplexType: AnyRef, clazz: Class[_ <: AnyRef]): AlmValidation[Dematerializer[Map[String, Any]]] = sys.error("")
+  def addComplexType[T <: AnyRef](ident: String, aComplexType: T, dec: T => Dematerializer[Map[String, Any]])(implicit m: Manifest[T]): AlmValidation[Dematerializer[Map[String, Any]]] = sys.error("")
+  def addComplexType[T <: AnyRef](ident: String, aComplexType: T)(implicit m: Manifest[T]): AlmValidation[Dematerializer[Map[String, Any]]] = sys.error("")
  
-  def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + ("typedescriptor" -> descriptor))).success
+  def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
 
 }
 
