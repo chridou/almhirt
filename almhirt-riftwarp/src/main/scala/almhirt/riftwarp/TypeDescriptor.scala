@@ -30,7 +30,6 @@ class TypeDescriptor private (val name: String, val version: Option[Int]) extend
   def toString(versionDelim: String) = {
     option.cata(version)(v => "%s%sv%d".format(name, versionDelim, v), name)
   }
-
 }
 
 object TypeDescriptor {
