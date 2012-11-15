@@ -44,37 +44,38 @@ trait RematerializationArray {
   def getXml(ident: String): AlmValidation[scala.xml.Node]
   def tryGetXml(ident: String): AlmValidation[Option[scala.xml.Node]]
 
-//  def getComplexType[T](ident: String, rec: Recomposer[T]): AlmValidationMBD[T]
-//  def tryGetComplexType[T](ident: String, rec: Recomposer[T]): AlmValidationMBD[Option[T]]
+  def getComplexType[T](ident: String, recomposer: Recomposer[T]): AlmValidation[T]
+  def tryGetComplexType[T](ident: String, recomposer: Recomposer[T]): AlmValidation[Option[T]]
   
   def getTypeDescriptor: AlmValidation[TypeDescriptor]
   def tryGetTypeDescriptor: AlmValidation[Option[TypeDescriptor]]
 }
 
 trait RematiarializationArrayBasedOnOptionGetters extends RematerializationArray {
-  def getString(ident: String) = tryGetString(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getString(ident: String) = tryGetString(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getBoolean(ident: String) = tryGetBoolean(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getBoolean(ident: String) = tryGetBoolean(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getByte(ident: String) = tryGetByte(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getInt(ident: String) = tryGetInt(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getLong(ident: String) = tryGetLong(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getBigInt(ident: String) = tryGetBigInt(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getByte(ident: String) = tryGetByte(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getInt(ident: String) = tryGetInt(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getLong(ident: String) = tryGetLong(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getBigInt(ident: String) = tryGetBigInt(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
-  def getFloat(ident: String) = tryGetFloat(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getDouble(ident: String) = tryGetDouble(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getBigDecimal(ident: String) = tryGetBigDecimal(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getFloat(ident: String) = tryGetFloat(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getDouble(ident: String) = tryGetDouble(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getBigDecimal(ident: String) = tryGetBigDecimal(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
-  def getByteArray(ident: String) = tryGetByteArray(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getBlob(ident: String) = tryGetBlob(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getByteArray(ident: String) = tryGetByteArray(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getBlob(ident: String) = tryGetBlob(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getDateTime(ident: String) = tryGetDateTime(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getDateTime(ident: String) = tryGetDateTime(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
-  def getUuid(ident: String) = tryGetUuid(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getUuid(ident: String) = tryGetUuid(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getJson(ident: String) = tryGetJson(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getXml(ident: String) = tryGetXml(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getJson(ident: String) = tryGetJson(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getXml(ident: String) = tryGetXml(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getTypeDescriptor = tryGetTypeDescriptor.bind(v => option.cata(v)(_.success, KeyNotFoundProblem("nothing found for '%s'".format(TypeDescriptor.defaultKey), args = Map("key" -> TypeDescriptor.defaultKey)).failure))
-
+  def getComplexType[T](ident: String, recomposer: Recomposer[T]) = tryGetComplexType(ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  
+  def getTypeDescriptor = tryGetTypeDescriptor.bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(TypeDescriptor.defaultKey), args = Map("key" -> TypeDescriptor.defaultKey)).failure))
 }

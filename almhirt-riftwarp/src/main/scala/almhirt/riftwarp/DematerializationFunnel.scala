@@ -42,13 +42,8 @@ trait DematerializationFunnel {
   def addXml(ident: String, aValue: scala.xml.Node): AlmValidation[DematerializationFunnel]
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]): AlmValidation[DematerializationFunnel]
 
-//  def addComplexRaw(ident: String, aComplexType: AnyRef, clazz: Class[_ <: AnyRef]): AlmValidation[DematerializationFunnel]
-//  def addOptionalComplexRaw(ident: String, anOptionalComplexType: Option[_ <: AnyRef], clazz: Class[_ <: AnyRef]): AlmValidation[DematerializationFunnel]
-//    
-//  def addComplexType[U <: AnyRef](ident: String, aComplexType: U, dec: U => Decomposer[T])(implicit m: Manifest[U]): AlmValidation[DematerializationFunnel]
-//  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U], dec: T => Decomposer[T])(implicit m: Manifest[U]): AlmValidation[DematerializationFunnel]
-//  def addComplexType[U <: AnyRef](ident: String, aComplexType: U)(implicit m: Manifest[U]): AlmValidation[DematerializationFunnel]
-//  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U])(implicit m: Manifest[U]): AlmValidation[DematerializationFunnel]
+  def addComplexType[U <: AnyRef](ident: String, aComplexType: U, decomposer: Decomposer[U]): AlmValidation[DematerializationFunnel]
+  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U], decomposer: Decomposer[U]): AlmValidation[DematerializationFunnel]
   
   def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[DematerializationFunnel]
    
@@ -81,13 +76,5 @@ trait NoneHasNoEffectDematerializationFunnel { funnel: DematerializationFunnel =
   def addOptionalJson(ident: String, anOptionalValue: Option[String]) = option.cata(anOptionalValue)(addJson(ident, _), this.success)
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = option.cata(anOptionalValue)(addXml(ident, _), this.success)
 
-//  def addOptionalComplexRaw(ident: String, anOptionalComplexType: Option[_ <: AnyRef], clazz: Class[_ <: AnyRef]): AlmValidation[Dematerializer[T]] =
-//     option.cata(anOptionalComplexType)(addComplexRaw(ident, _, clazz), this.success)
-//  
-//  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U], dec: U => Decomposer[T])(implicit m: Manifest[U]): AlmValidation[Dematerializer[T]] =
-//    option.cata(anOptionalComplexType)(s => addComplexType(ident, s, dec), this.success)
-//    
-//  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U])(implicit m: Manifest[U]): AlmValidation[Dematerializer[T]] =
-//    option.cata(anOptionalComplexType)(s => addComplexType(ident, s), this.success)
-    
+  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U], decomposer: Decomposer[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _, decomposer), this.success)
 }

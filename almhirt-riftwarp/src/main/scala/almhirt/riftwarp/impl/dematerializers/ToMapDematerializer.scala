@@ -31,12 +31,15 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   def addJson(ident: String, aValue: String) = (ToMapDematerializer(state + (ident -> aValue))).success
   def addXml(ident: String, aValue: scala.xml.Node) = (ToMapDematerializer(state + (ident -> aValue))).success
 
-  def addComplexRaw(ident: String, aComplexType: AnyRef, clazz: Class[_ <: AnyRef]): AlmValidation[Dematerializer[Map[String, Any]]] = sys.error("")
-  def addComplexType[T <: AnyRef](ident: String, aComplexType: T, dec: T => Dematerializer[Map[String, Any]])(implicit m: Manifest[T]): AlmValidation[Dematerializer[Map[String, Any]]] = sys.error("")
-  def addComplexType[T <: AnyRef](ident: String, aComplexType: T)(implicit m: Manifest[T]): AlmValidation[Dematerializer[Map[String, Any]]] = sys.error("")
- 
+  def addComplexType[U <: AnyRef](ident: String, aComplexType: U, decomposer: Decomposer[U]): AlmValidation[DematerializationFunnel] = {
+    decomposer.decompose(aComplexType)(ToMapDematerializer()).bind(toEmbed =>
+      toEmbed.asInstanceOf[ToMapDematerializer].dematerialize).map(theMapToEmbed =>
+      ToMapDematerializer(state + (ident -> theMapToEmbed)))
+  }
+  
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
 
+  
 }
 
 object ToMapDematerializer {
