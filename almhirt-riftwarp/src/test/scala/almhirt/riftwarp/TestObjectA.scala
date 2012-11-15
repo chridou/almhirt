@@ -14,7 +14,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .bind(_.addString("name", what.name))
       .bind(_.addOptionalString("friend", what.friend))
       .bind(_.addInt("age", what.age))
-      .bind(_.addOptionalComplexType("address", what.address, new TestAddressDecomposer()))
+      .bind(_.addOptionalComplexType("address", what.address))
   }
 }
 
@@ -24,7 +24,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
     val name = from.getString("name").toAgg
     val friend = from.tryGetString("friend").toAgg
     val age = from.getInt("age").toAgg
-    val address = from.tryGetComplexType("address", new TestAddressRecomposer).toAgg
+    val address = from.tryGetComplexType("address").toAgg
     ( name |@| friend |@| age |@| address)(TestObjectA.apply)
   }
 }

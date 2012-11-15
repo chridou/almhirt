@@ -6,17 +6,19 @@ import almhirt.riftwarp.impl._
 
 
 object Worksheet {
-  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@2f
-                                                  //| 92d8d4
+  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@7c
+                                                  //| 868269
   riftWarp.barracks.addDecomposer(new TestObjectADecomposer())
   riftWarp.barracks.addDecomposer(new TestAddressDecomposer())
   riftWarp.barracks.addRecomposer(new TestObjectARecomposer())
   riftWarp.barracks.addRecomposer(new TestAddressRecomposer())
 
 
+
   val testObject = new TestObjectA("Peter", Some("Paul"), 15, Some(TestAddress("Ldenscheid", "Gustav-Adolf-Strae")))
                                                   //> testObject  : almhirt.riftwarp.TestObjectA = TestObjectA(Peter,Some(Paul),15
                                                   //| ,Some(TestAddress(Ldenscheid,Gustav-Adolf-Strae)))
+   
        
   val resV = riftWarp.prepareForWarp[Map[String, Any]](RiftMap)(testObject)
                                                   //> resV  : almhirt.common.package.AlmValidation[Map[String,Any]] = Success(Map(

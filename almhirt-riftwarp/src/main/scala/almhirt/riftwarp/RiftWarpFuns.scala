@@ -9,7 +9,7 @@ object RiftWarpFuns {
       almCast[Dematerializer[To]](funnel).bind(demat =>
         demat.dematerialize))
         
-  def receiveFromWarp[From <: AnyRef, T <: AnyRef](warpStream: From)(factory: RematerializationArrayFactory[From], recomposer: Recomposer[T]): AlmValidation[T] = {
+  def receiveFromWarp[From <: AnyRef, T <: AnyRef](warpStream: From)(factory: RematerializationArrayFactory[From], recomposer: Recomposer[T])(implicit hasRecomposers: HasRecomposers): AlmValidation[T] = {
     val array = factory.createRematerializationArray(warpStream)
     recomposer.recompose(array)
   }

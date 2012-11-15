@@ -44,8 +44,10 @@ trait RematerializationArray {
   def getXml(ident: String): AlmValidation[scala.xml.Node]
   def tryGetXml(ident: String): AlmValidation[Option[scala.xml.Node]]
 
-  def getComplexType[T](ident: String, recomposer: Recomposer[T]): AlmValidation[T]
-  def tryGetComplexType[T](ident: String, recomposer: Recomposer[T]): AlmValidation[Option[T]]
+  def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]): AlmValidation[T]
+  def tryGetComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]): AlmValidation[Option[T]]
+  def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[T]
+  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]]
   
   def getTypeDescriptor: AlmValidation[TypeDescriptor]
   def tryGetTypeDescriptor: AlmValidation[Option[TypeDescriptor]]
@@ -75,7 +77,8 @@ trait RematiarializationArrayBasedOnOptionGetters extends RematerializationArray
   def getJson(ident: String) = tryGetJson(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getXml(ident: String) = tryGetXml(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getComplexType[T](ident: String, recomposer: Recomposer[T]) = tryGetComplexType(ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) = tryGetComplexType(ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexType(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
   def getTypeDescriptor = tryGetTypeDescriptor.bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(TypeDescriptor.defaultKey), args = Map("key" -> TypeDescriptor.defaultKey)).failure))
 }

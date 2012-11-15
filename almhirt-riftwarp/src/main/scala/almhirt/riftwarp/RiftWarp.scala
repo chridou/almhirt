@@ -30,6 +30,7 @@ trait RiftWarp {
   }
 
   def receiveFromWarp[From <: AnyRef, T <: AnyRef](channel: RiftChannel)(warpStream: From)(implicit mtarget: Manifest[T], mfrom: Manifest[From]): AlmValidation[T] = {
+	implicit val hasRecomposers = barracks
     toolShed.tryGetRematerializationArray(channel, warpStream) match {
       case Some(array) =>
         array.tryGetTypeDescriptor.bind { descFromArray =>

@@ -1,7 +1,7 @@
 package almhirt.riftwarp
 
 trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArrayFactories {
-  def tryGetRematerializationArray[From <: AnyRef](forChannel: RiftChannel, from: From)(implicit m: Manifest[From]): Option[RematerializationArray] =
+  def tryGetRematerializationArray[From <: AnyRef](forChannel: RiftChannel, from: From)(implicit hasRecomposers: HasRecomposers, m: Manifest[From]): Option[RematerializationArray] =
     tryGetArrayFactory[From](forChannel).map(factory => factory.createRematerializationArray(from))
 }
 

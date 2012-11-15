@@ -36,6 +36,13 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
       toEmbed.asInstanceOf[ToMapDematerializer].dematerialize).map(theMapToEmbed =>
       ToMapDematerializer(state + (ident -> theMapToEmbed)))
   }
+
+  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[DematerializationFunnel] = {
+    hasDecomposers.tryGetDecomposerForAny(aComplexType) match {
+      case Some(decomposer) => addComplexType(ident, aComplexType, decomposer)
+      case None => UnspecifiedProblem("No decomposer found for ident '%s'".format(ident)).failure
+    }
+  }
   
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
 

@@ -44,7 +44,10 @@ trait DematerializationFunnel {
 
   def addComplexType[U <: AnyRef](ident: String, aComplexType: U, decomposer: Decomposer[U]): AlmValidation[DematerializationFunnel]
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U], decomposer: Decomposer[U]): AlmValidation[DematerializationFunnel]
-  
+
+  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[DematerializationFunnel]
+  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[DematerializationFunnel]
+
   def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[DematerializationFunnel]
    
   def fail(prob: Problem): AlmValidation[DematerializationFunnel] = prob.failure
@@ -77,4 +80,7 @@ trait NoneHasNoEffectDematerializationFunnel { funnel: DematerializationFunnel =
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = option.cata(anOptionalValue)(addXml(ident, _), this.success)
 
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U], decomposer: Decomposer[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _, decomposer), this.success)
+
+  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _), this.success)
+
 }
