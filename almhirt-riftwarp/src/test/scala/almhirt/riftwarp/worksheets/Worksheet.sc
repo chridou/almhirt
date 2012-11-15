@@ -5,8 +5,8 @@ import almhirt.riftwarp._
 import almhirt.riftwarp.impl._
 
 object Worksheet {
-  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@1a
-                                                  //| 84da23
+  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@6e
+                                                  //| b7d79e
   riftWarp.barracks.addDecomposer(new TestObjectADecomposer())
   riftWarp.barracks.addRecomposer(new TestObjectARecomposer())
 
@@ -37,4 +37,5 @@ object Worksheet {
   riftWarp.prepareForWarp[Map[String, Any]](RiftMap)(testObject).bind(warpStream =>
     riftWarp.receiveFromWarp[Map[String, Any], TestObjectA](RiftMap)(warpStream)).map(rearrived =>
       rearrived == testObject)                    //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(true)
+      
 }
