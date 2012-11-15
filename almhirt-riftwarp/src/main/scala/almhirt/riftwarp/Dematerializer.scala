@@ -18,7 +18,13 @@ trait Dematerializer[T <: AnyRef] extends RawDematerializer {
 }
 
 trait DematerializesToString extends Dematerializer[String] {
-  type DematerializesTo = String
+  /**
+   * Xml, Json, etc
+   */
+  def channelType: RiftChannel
+}
+
+trait DematerializesToCord extends Dematerializer[scalaz.Cord] {
   /**
    * Xml, Json, etc
    */
@@ -26,7 +32,6 @@ trait DematerializesToString extends Dematerializer[String] {
 }
 
 trait DematerializesToByteArray extends Dematerializer[Array[Byte]] {
-  type DematerializesTo = Array[Byte]
   /**
    * Xml, Json, etc
    */
@@ -34,7 +39,6 @@ trait DematerializesToByteArray extends Dematerializer[Array[Byte]] {
 }
 
 trait DematerializesToMap extends Dematerializer[Map[String, Any]] {
-  type DematerializesTo = Map[String, Any]
   /**
    * Xml, Json, etc
    */
