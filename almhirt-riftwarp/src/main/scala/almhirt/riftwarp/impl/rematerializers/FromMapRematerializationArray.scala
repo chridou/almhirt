@@ -35,8 +35,8 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
     theMap.get(ident) match {
       case Some(elem) =>
         almCast[Map[String, Any]](elem).bind { elemAsMap =>
-          val rematerializationArray = FromMapRematerializationArray.createRematerializationArray(elemAsMap)
-          recomposer.recompose(rematerializationArray)
+          FromMapRematerializationArray.createRematerializationArray(elemAsMap).bind(rematerializationArray =>
+            recomposer.recompose(rematerializationArray))
         }.map(res =>
           Some(res))
       case None =>
@@ -47,15 +47,16 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
     theMap.get(ident) match {
       case Some(elem) =>
         almCast[Map[String, Any]](elem).bind { elemAsMap =>
-          val rematerializationArray = FromMapRematerializationArray.createRematerializationArray(elemAsMap)
-          rematerializationArray.tryGetTypeDescriptor.map {
-            case Some(td) => td
-            case None => TypeDescriptor(m.erasure)
-          }.bind(td =>
-            hasRecomposers.tryGetRecomposer[T](td) match {
-              case Some(recomposer) => recomposer.recompose(rematerializationArray)
-              case None => UnspecifiedProblem("No recomposer found for ident '%s' and type descriptor '%s'".format(ident, td)).failure
-            }).map(res => Some(res))
+          FromMapRematerializationArray.createRematerializationArray(elemAsMap).bind { rematerializationArray =>
+            rematerializationArray.tryGetTypeDescriptor.map {
+              case Some(td) => td
+              case None => TypeDescriptor(m.erasure)
+            }.bind(td =>
+              hasRecomposers.tryGetRecomposer[T](td) match {
+                case Some(recomposer) => recomposer.recompose(rematerializationArray)
+                case None => UnspecifiedProblem("No recomposer found for ident '%s' and type descriptor '%s'".format(ident, td)).failure
+              }).map(res => Some(res))
+          }
         }
       case None =>
         None.success
@@ -68,5 +69,5 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
 object FromMapRematerializationArray extends FromMapRematerializationArrayFactory {
   def apply()(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = apply(Map.empty)
   def apply(state: Map[String, Any])(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = new FromMapRematerializationArray(state)
-  def createRematerializationArray(from: Map[String, Any])(implicit hasRecomposers: HasRecomposers): RematerializationArray = apply(from)
+  def createRematerializationArray(from: Map[String, Any])(implicit hasRecomposers: HasRecomposers): AlmValidation[RematerializationArray] = apply(from).success
 }

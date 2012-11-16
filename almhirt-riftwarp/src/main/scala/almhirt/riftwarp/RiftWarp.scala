@@ -31,7 +31,7 @@ trait RiftWarp {
 
   def receiveFromWarp[From <: AnyRef, T <: AnyRef](channel: RiftChannel)(warpStream: From)(implicit mtarget: Manifest[T], mfrom: Manifest[From]): AlmValidation[T] = {
 	implicit val hasRecomposers = barracks
-    toolShed.tryGetRematerializationArray(channel, warpStream) match {
+    toolShed.tryGetRematerializationArray(channel, warpStream).bind {
       case Some(array) =>
         array.tryGetTypeDescriptor.bind { descFromArray =>
           val typeDescriptor = descFromArray.getOrElse(TypeDescriptor(mtarget.erasure))
@@ -67,5 +67,8 @@ object RiftWarp {
     riftWarp.toolShed.addDematerializer(impl.dematerializers.ToJsonCordDematerializer()(riftWarp.barracks))
 
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromMapRematerializationArray)
+    riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonMapRematerializationArray)
+    riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonStringRematerializationArray)
+    riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonCordRematerializationArray)
   }
 }

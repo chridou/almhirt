@@ -10,7 +10,6 @@ object RiftWarpFuns {
         demat.dematerialize))
         
   def receiveFromWarp[From <: AnyRef, T <: AnyRef](warpStream: From)(factory: RematerializationArrayFactory[From], recomposer: Recomposer[T])(implicit hasRecomposers: HasRecomposers): AlmValidation[T] = {
-    val array = factory.createRematerializationArray(warpStream)
-    recomposer.recompose(array)
+    factory.createRematerializationArray(warpStream).bind(array => recomposer.recompose(array))
   }
 }

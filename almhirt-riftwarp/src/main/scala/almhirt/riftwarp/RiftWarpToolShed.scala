@@ -1,8 +1,11 @@
 package almhirt.riftwarp
 
+import almhirt.common._
+import almhirt.almvalidation.kit._
+
 trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArrayFactories {
-  def tryGetRematerializationArray[From <: AnyRef](forChannel: RiftChannel, from: From)(implicit hasRecomposers: HasRecomposers, m: Manifest[From]): Option[RematerializationArray] =
-    tryGetArrayFactory[From](forChannel).map(factory => factory.createRematerializationArray(from))
+  def tryGetRematerializationArray[From <: AnyRef](forChannel: RiftChannel, from: From)(implicit hasRecomposers: HasRecomposers, m: Manifest[From]): AlmValidation[Option[RematerializationArray]] =
+    tryGetArrayFactory[From](forChannel).map(factory => factory.createRematerializationArray(from)).validationOut
 }
 
 object RiftWarpToolShed {
