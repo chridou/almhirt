@@ -40,7 +40,14 @@ trait AlmValidationParseFunctions{
     } catch {
       case err => badData("Not a valid number(Long): %s".format(toParse), key).failure[Long]
     }
-  
+
+  def parseBigIntAlm(toParse: String, key: String = "some value"): AlmValidationSBD[BigInt] =
+    try {
+      BigInt.apply(toParse).success
+    } catch {
+      case err => badData("Not a valid number(BigInt): %s".format(toParse), key).failure[BigInt]
+    }
+    
   def parseDoubleAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Double] =
     try {
       toParse.toDouble.success[SingleBadDataProblem]
@@ -69,7 +76,7 @@ trait AlmValidationParseFunctions{
       case err => badData("Not a valid DateTime: %s".format(toParse), key).failure[DateTime]
     }
 
-  def parseUUIDAlm(toParse: String, key: String = "some value"): AlmValidationSBD[UUID] =
+  def parseUuidAlm(toParse: String, key: String = "some value"): AlmValidationSBD[UUID] =
     try {
       UUID.fromString(toParse).success[SingleBadDataProblem]
      } catch {
@@ -91,6 +98,13 @@ trait AlmValidationParseFunctions{
       case err => badData("Not a Base64 encoded String".format(toParse), key).failure[Array[Byte]]
     }
      
+  def parseXmlAlm(toParse: String, key: String = "some value"): AlmValidationSBD[scala.xml.Node] =
+    try {
+      scala.xml.XML.loadString(toParse).success[SingleBadDataProblem]
+     } catch {
+      case err => badData("No valid XML: %s".format(toParse), key).failure
+    }
+     
   def tryParseIntAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Option[Int]] =
     emptyStringIsNone(toParse, x => parseIntAlm(x, key))
   
@@ -110,7 +124,7 @@ trait AlmValidationParseFunctions{
     emptyStringIsNone(toParse, x => parseDateTimeAlm(x, key))
 
   def tryParseUUIDAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Option[UUID]] =
-    emptyStringIsNone(toParse, x => parseUUIDAlm(x, key))
+    emptyStringIsNone(toParse, x => parseUuidAlm(x, key))
 
   def tryParseBooleanAlm(toParse: String, key: String = "some value"): AlmValidationSBD[Option[Boolean]] =
     emptyStringIsNone(toParse, x => parseBooleanAlm(x, key))

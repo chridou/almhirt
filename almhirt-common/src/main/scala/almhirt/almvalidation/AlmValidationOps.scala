@@ -46,8 +46,8 @@ trait AlmValidationOps0 extends Ops[String] {
     parseDecimalAlm(self, key)
   def toDateTimeAlm(key: String = "some value"): AlmValidationSBD[DateTime] =  
     parseDateTimeAlm(self, key)
-  def toUUIDAlm(key: String = "some value"): AlmValidationSBD[UUID] =  
-    parseUUIDAlm(self, key)
+  def toUuidAlm(key: String = "some value"): AlmValidationSBD[UUID] =  
+    parseUuidAlm(self, key)
   def toBytesFromBase64Alm(key: String = "some value"): AlmValidationSBD[Array[Byte]] =  
     parseBase64Alm(self, key)
   def notEmptyAlm(key: String = "some value"): AlmValidationSBD[String] =  

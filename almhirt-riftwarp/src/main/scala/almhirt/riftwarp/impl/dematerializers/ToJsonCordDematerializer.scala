@@ -41,7 +41,7 @@ class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: Ha
     addPart(ident, value.toString)
 
   private def addBigIntPart(ident: String, value: BigInt): AlmValidation[DematerializationFunnel] =
-    addPart(ident, value.toString)
+    addStringLikePart(ident, value.toString)
 
   private def addFloatingPointPart(ident: String, value: Double): AlmValidation[DematerializationFunnel] =
     addPart(ident, value.toString)
