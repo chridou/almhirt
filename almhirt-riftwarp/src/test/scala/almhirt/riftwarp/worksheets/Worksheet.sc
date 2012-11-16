@@ -6,8 +6,8 @@ import almhirt.riftwarp.impl._
 
 
 object Worksheet {
-  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@7c
-                                                  //| 868269
+  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@6e
+                                                  //| 28d8da
   riftWarp.barracks.addDecomposer(new TestObjectADecomposer())
   riftWarp.barracks.addDecomposer(new TestAddressDecomposer())
   riftWarp.barracks.addRecomposer(new TestObjectARecomposer())
@@ -19,34 +19,30 @@ object Worksheet {
                                                   //> testObject  : almhirt.riftwarp.TestObjectA = TestObjectA(Peter,Some(Paul),15
                                                   //| ,Some(TestAddress(Ldenscheid,Gustav-Adolf-Strae)))
    
+  
        
-  val resV = riftWarp.prepareForWarp[Map[String, Any]](RiftMap)(testObject)
-                                                  //> resV  : almhirt.common.package.AlmValidation[Map[String,Any]] = Success(Map(
-                                                  //| name -> Peter, friend -> Paul, age -> 15, address -> Map(typedescriptor -> a
-                                                  //| lmhirt.riftwarp.TestAddress, city -> Ldenscheid, street -> Gustav-Adolf-Stra
-                                                  //| e), typedescriptor -> almhirt.riftwarp.TestObjectA))
+  val resV = riftWarp.prepareForWarp[scalaz.Cord](RiftJson)(testObject)
+                                                  //> resV  : almhirt.common.package.AlmValidation[scalaz.Cord] = Success({"riftwa
+                                                  //| rptd":"almhirt.riftwarp.TestObjectA","name":"Peter","friend":"Paul","age":15
+                                                  //| ,"address":{"riftwarptd":"almhirt.riftwarp.TestAddress","city":"Ldenscheid",
+                                                  //| "street":"Gustav-Adolf-Strae"}})
   
-  val warpStream = resV.forceResult               //> warpStream  : Map[String,Any] = Map(name -> Peter, friend -> Paul, age -> 15
-                                                  //| , address -> Map(typedescriptor -> almhirt.riftwarp.TestAddress, city -> Lde
-                                                  //| nscheid, street -> Gustav-Adolf-Strae), typedescriptor -> almhirt.riftwarp.T
-                                                  //| estObjectA)
+  val warpStream = resV.forceResult               //> warpStream  : scalaz.Cord = {"riftwarptd":"almhirt.riftwarp.TestObjectA","na
+                                                  //| me":"Peter","friend":"Paul","age":15,"address":{"riftwarptd":"almhirt.riftwa
+                                                  //| rp.TestAddress","city":"Ldenscheid","street":"Gustav-Adolf-Strae"}}
 
 
 
-  val backFromWarpV = riftWarp.receiveFromWarp[Map[String, Any], TestObjectA](RiftMap)(warpStream)
-                                                  //> backFromWarpV  : almhirt.common.package.AlmValidation[almhirt.riftwarp.TestO
-                                                  //| bjectA] = Success(TestObjectA(Peter,Some(Paul),15,Some(TestAddress(Ldenschei
-                                                  //| d,Gustav-Adolf-Strae))))
+//  val backFromWarpV = riftWarp.receiveFromWarp[Map[String, Any], TestObjectA](RiftMap)(warpStream)
   
-  val backFromWarp = backFromWarpV.forceResult    //> backFromWarp  : almhirt.riftwarp.TestObjectA = TestObjectA(Peter,Some(Paul),
-                                                  //| 15,Some(TestAddress(Ldenscheid,Gustav-Adolf-Strae)))
+//  val backFromWarp = backFromWarpV.forceResult
   
-  testObject == backFromWarp                      //> res0: Boolean = true
+//  testObject == backFromWarp
   
  
   
   riftWarp.prepareForWarp[Map[String, Any]](RiftMap)(testObject).bind(warpStream =>
     riftWarp.receiveFromWarp[Map[String, Any], TestObjectA](RiftMap)(warpStream)).map(rearrived =>
-      rearrived == testObject)                    //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(true)
+      rearrived == testObject)                    //> res0: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(true)
       
 }

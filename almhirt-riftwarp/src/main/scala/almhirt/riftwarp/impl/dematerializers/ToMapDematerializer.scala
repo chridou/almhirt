@@ -31,7 +31,7 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   def addJson(ident: String, aValue: String) = (ToMapDematerializer(state + (ident -> aValue))).success
   def addXml(ident: String, aValue: scala.xml.Node) = (ToMapDematerializer(state + (ident -> aValue))).success
 
-  def addComplexType[U <: AnyRef](ident: String, aComplexType: U, decomposer: Decomposer[U]): AlmValidation[DematerializationFunnel] = {
+  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[DematerializationFunnel] = {
     decomposer.decompose(aComplexType)(ToMapDematerializer()).bind(toEmbed =>
       toEmbed.asInstanceOf[ToMapDematerializer].dematerialize).map(theMapToEmbed =>
       ToMapDematerializer(state + (ident -> theMapToEmbed)))
@@ -39,7 +39,7 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
 
   def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[DematerializationFunnel] = {
     hasDecomposers.tryGetDecomposerForAny(aComplexType) match {
-      case Some(decomposer) => addComplexType(ident, aComplexType, decomposer)
+      case Some(decomposer) => addComplexType(decomposer)(ident, aComplexType)
       case None => UnspecifiedProblem("No decomposer found for ident '%s'".format(ident)).failure
     }
   }

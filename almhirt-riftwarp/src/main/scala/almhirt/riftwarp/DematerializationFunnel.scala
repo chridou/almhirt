@@ -42,8 +42,8 @@ trait DematerializationFunnel {
   def addXml(ident: String, aValue: scala.xml.Node): AlmValidation[DematerializationFunnel]
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]): AlmValidation[DematerializationFunnel]
 
-  def addComplexType[U <: AnyRef](ident: String, aComplexType: U, decomposer: Decomposer[U]): AlmValidation[DematerializationFunnel]
-  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U], decomposer: Decomposer[U]): AlmValidation[DematerializationFunnel]
+  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[DematerializationFunnel]
+  def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[DematerializationFunnel]
 
   def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[DematerializationFunnel]
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[DematerializationFunnel]
@@ -79,7 +79,7 @@ trait NoneHasNoEffectDematerializationFunnel { funnel: DematerializationFunnel =
   def addOptionalJson(ident: String, anOptionalValue: Option[String]) = option.cata(anOptionalValue)(addJson(ident, _), this.success)
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = option.cata(anOptionalValue)(addXml(ident, _), this.success)
 
-  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U], decomposer: Decomposer[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _, decomposer), this.success)
+  def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(decomposer)(ident, _), this.success)
 
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _), this.success)
 

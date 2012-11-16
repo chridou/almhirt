@@ -33,7 +33,7 @@ sealed class TypeDescriptor private (val identifier: String, val version: Option
 }
 
 object TypeDescriptor {
-  val defaultKey = "typedescriptor"
+  val defaultKey = "riftwarptd"
 
   def apply(name: String, version: Option[Int], versionDelim: String): TypeDescriptor = new TypeDescriptor(name, version, versionDelim)
   def apply(name: String): TypeDescriptor = new TypeDescriptor(name, None, ";")
