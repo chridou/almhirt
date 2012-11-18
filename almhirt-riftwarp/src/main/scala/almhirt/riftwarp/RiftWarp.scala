@@ -10,28 +10,28 @@ trait RiftWarp {
   def barracks: RiftWarpBarracks
   def toolShed: RiftWarpToolShed
 
-  def prepareForWarp[To <: AnyRef](channel: RiftChannel)(what: AnyRef)(implicit m: Manifest[To]): AlmValidation[To] = {
+  def prepareForWarp[To <: AnyRef](warpType: RiftDescriptor)(what: AnyRef)(implicit m: Manifest[To]): AlmValidation[To] = {
     val typeDescriptor =
       what match {
         case htd: HasTypeDescriptor => htd.typeDescriptor
         case x => TypeDescriptor(x.getClass)
       }
     val decomposer = barracks.tryGetRawDecomposer(typeDescriptor)
-    val dematerializer = toolShed.tryGetDematerializer[To](channel)
+    val dematerializer = toolShed.tryGetDematerializer[To](warpType)
     (decomposer, dematerializer) match {
       case (Some(dec), Some(dem)) =>
         dec.decomposeRaw(what)(dem).bind(funnel =>
           almCast[RawDematerializer](funnel).bind(demat =>
             demat.dematerializeRaw.map(_.asInstanceOf[To])))
       case (None, Some(_)) => UnspecifiedProblem("No decomposer found for '%s'".format(typeDescriptor)).failure
-      case (Some(_), None) => UnspecifiedProblem("No dematerializer found channel '%s'".format(channel)).failure
-      case (None, None) => UnspecifiedProblem("No decomposer found for '%s' and no dematerializer found channel '%s'".format(typeDescriptor, channel)).failure
+      case (Some(_), None) => UnspecifiedProblem("No dematerializer found for '%s'".format(warpType)).failure
+      case (None, None) => UnspecifiedProblem("No decomposer found for '%s' and no dematerializer found for '%s'".format(typeDescriptor, warpType)).failure
     }
   }
 
-  def receiveFromWarp[From <: AnyRef, T <: AnyRef](channel: RiftChannel)(warpStream: From)(implicit mtarget: Manifest[T], mfrom: Manifest[From]): AlmValidation[T] = {
+  def receiveFromWarp[From <: AnyRef, T <: AnyRef](warpType: RiftDescriptor)(warpStream: From)(implicit mtarget: Manifest[T], mfrom: Manifest[From]): AlmValidation[T] = {
 	implicit val hasRecomposers = barracks
-    toolShed.tryGetRematerializationArray(channel, warpStream).bind {
+    toolShed.tryGetRematerializationArray(warpType, warpStream).bind {
       case Some(array) =>
         array.tryGetTypeDescriptor.bind { descFromArray =>
           val typeDescriptor = descFromArray.getOrElse(TypeDescriptor(mtarget.erasure))
@@ -43,7 +43,7 @@ trait RiftWarp {
           }
         }
       case None =>
-        UnspecifiedProblem("No rematerialization array found for channel '%s' and source '%s'".format(channel, mfrom.erasure.getName)).failure
+        UnspecifiedProblem("No rematerialization array found for '%s' and source '%s'".format(warpType, mfrom.erasure.getName)).failure
     }
   }
 }

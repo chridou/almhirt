@@ -6,6 +6,7 @@ import almhirt.common._
 import almhirt.riftwarp._
 
 class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers) extends DematerializesToMap with NoneHasNoEffectDematerializationFunnel {
+  val descriptor = RiftFullDescriptor(RiftMap, ToolGroupRiftStd)
   def dematerialize: AlmValidation[Map[String, Any]] = state.success
 
   def addString(ident: String, aValue: String) = (ToMapDematerializer(state + (ident -> aValue))).success

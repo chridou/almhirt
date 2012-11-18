@@ -9,12 +9,12 @@ import almhirt.common._
 import almhirt.riftwarp._
 
 class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: HasDecomposers) extends DematerializesToCord {
-  val channelType = RiftJson
+  val descriptor = RiftFullDescriptor(RiftJson, ToolGroupStdLib)
   def dematerialize = ('{' -: state :- '}').success
 
-  private def launderString(str: String): Cord = Cord(str.replaceAll("\"", """\""""))
+  private def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
 
-  def addPart(ident: String, part: Cord): AlmValidation[ToJsonCordDematerializer] = {
+  def addPart(ident: String, part: Cord): AlmValidation[DematerializationFunnel] = {
     val fieldCord = '\"' + ident + "\":"
     val completeCord = fieldCord ++ part
     if (state.length == 0)
@@ -23,7 +23,7 @@ class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: Ha
       ToJsonCordDematerializer((state :- ',') ++ completeCord).success
   }
   
-  def addStringLikePart(ident: String, part: Cord): AlmValidation[ToJsonCordDematerializer] =
+  def addStringLikePart(ident: String, part: Cord): AlmValidation[DematerializationFunnel] =
     addPart(ident, '\"' -: part :- '\"')
 
   private val nullCord = Cord("null")
@@ -134,5 +134,15 @@ class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: Ha
 object ToJsonCordDematerializer {
   def apply()(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = apply(Cord(""))
   def apply(state: Cord)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = new ToJsonCordDematerializer(state)
-  
 }
+
+//object ToJsonStringDematerializer {
+//  def apply()(implicit hasDecomposers: HasDecomposers): DematerializesToString = apply(Cord(""))
+//  def apply(state: Cord)(implicit hasDecomposers: HasDecomposers): DematerializesToString = {
+//    val inner = ToJsonCordDematerializer(state)
+//    new DematerializesToString {
+//      val descriptor = RiftFullDescriptor(RiftJson, ToolGroupStdLib)
+//      def dematerialize = ('{' -: state :- '}').success
+//    }
+//  }
+//}

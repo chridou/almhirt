@@ -71,13 +71,13 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
 }
 
 object FromJsonMapRematerializationArray extends RematerializationArrayFactory[Map[String, Any]] {
-  val channelType = RiftJson
+  val descriptor = RiftFullDescriptor(RiftJson, ToolGroupStdLib)
   def apply(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers): FromJsonMapRematerializationArray = new FromJsonMapRematerializationArray(jsonMap)
   def createRematerializationArray(from: Map[String, Any])(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = apply(from).success
 }
 
 object FromJsonStringRematerializationArray extends RematerializationArrayFactory[String] {
-  val channelType = RiftJson
+  val descriptor = RiftFullDescriptor(RiftJson, ToolGroupStdLib)
   def apply(json: String)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = {
     JSON.parseFull(json) match {
       case Some(map) => 
@@ -91,7 +91,7 @@ object FromJsonStringRematerializationArray extends RematerializationArrayFactor
 
 import scalaz.Cord
 object FromJsonCordRematerializationArray extends RematerializationArrayFactory[Cord] {
-  val channelType = RiftJson
+  val descriptor = RiftFullDescriptor(RiftJson, ToolGroupStdLib)
   def apply(json: Cord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = 
     FromJsonStringRematerializationArray.createRematerializationArray(json.toString)
   def createRematerializationArray(from: Cord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = 

@@ -67,6 +67,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
 }
 
 object FromMapRematerializationArray extends FromMapRematerializationArrayFactory {
+  val descriptor = RiftFullDescriptor(RiftMap, ToolGroupRiftStd)
   def apply()(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = apply(Map.empty)
   def apply(state: Map[String, Any])(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = new FromMapRematerializationArray(state)
   def createRematerializationArray(from: Map[String, Any])(implicit hasRecomposers: HasRecomposers): AlmValidation[RematerializationArray] = apply(from).success
