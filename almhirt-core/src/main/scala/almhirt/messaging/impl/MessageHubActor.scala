@@ -6,6 +6,8 @@ import akka.actor._
 import almhirt.common._
 import almhirt.messaging._
 import almhirt.environment.AlmhirtSystem
+import almhirt.environment.ConfigHelper
+import almhirt.environment.ConfigPaths
 
 class MessageHubActor extends Actor {
   private var almhirtsystem: Option[AlmhirtSystem] = None
@@ -34,7 +36,7 @@ class MessageHubActor extends Actor {
         almhirtsystem match {
           case None => context.actorOf(Props[MessageChannelActor], name = name)
           case Some(sys) =>
-            sys.messageStreamDispatcherName match {
+            ConfigHelper.tryGetDispatcherName(sys.config)(ConfigPaths.messagechannels) match {
               case None => context.actorOf(Props[MessageChannelActor], name = name)
               case Some(dn) => context.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
             }

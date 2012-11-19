@@ -9,22 +9,42 @@ import com.typesafe.config._
 trait AlmhirtsystemTestkit {
   private val configText =
     """  
-      akka {
-        default-dispatcher {
-          type="akka.testkit.CallingThreadDispatcher"
-        }     
-      }
-      almhirt {
-		systemname = "almhirt-testing"
-		durations {
-		  short = 0.5
-		  medium = 2.5
-		  long = 10.0
-		}
-		test-dispatcher {
-		  # Dispatcher is the name of the event-based dispatcher
-		  type = "akka.testkit.CallingThreadDispatcherConfigurator"
-	    }
+		  akka {
+		  	default-dispatcher {
+          	type="akka.testkit.CallingThreadDispatcher"
+		  	}     
+		  }
+		  almhirt {
+		  	systemname = "almhirt-testing"
+		  	durations {
+		  		short = 0.5
+		  		medium = 2.5
+		  		long = 10.0
+		  	}
+    messagehub {
+      dispatchername = "almhirt.dispatchers.test-dispatcher"
+    }
+    messagechannels {
+      dispatchername = "almhirt.dispatchers.test-dispatcher"
+    }
+    eventlog {
+      dispatchername = "almhirt.dispatchers.test-dispatcher"
+    }
+    commandexecutor {
+      dispatchername = "almhirt.dispatchers.test-dispatcher"
+    }
+    repositories {
+      dispatchername = "almhirt.dispatchers.test-dispatcher"
+    }
+    futures {
+      dispatchername = "almhirt.dispatchers.test-dispatcher"
+    }
+		  	dispatchers {
+		  		test-dispatcher {
+		  		# Dispatcher is the name of the event-based dispatcher
+		  		type = "akka.testkit.CallingThreadDispatcherConfigurator"
+		  	}
+		  }
 	   }
     """
   val defaultConfig = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
@@ -34,9 +54,7 @@ trait AlmhirtsystemTestkit {
     new AlmhirtSystem {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
-      val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.test-dispatcher")
-      val messageStreamDispatcherName = Some("almhirt.test-dispatcher")
-      val messageHubDispatcherName = Some("almhirt.test-dispatcher")
+      val futureDispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherName(config)(ConfigPaths.futures))
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds

@@ -16,8 +16,6 @@ trait AlmhirtSystem extends Disposable {
   def config: Config
   def actorSystem: ActorSystem
   def futureDispatcher: MessageDispatcher
-  def messageStreamDispatcherName: Option[String]
-  def messageHubDispatcherName: Option[String]
   def shortDuration: Duration
   def mediumDuration: Duration
   def longDuration: Duration
@@ -33,9 +31,7 @@ object AlmhirtSystem {
       new AlmhirtSystem {
         val config = ConfigFactory.load
         val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
-        val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
-        val messageStreamDispatcherName = Some("almhirt.messagestream-dispatcher")
-        val messageHubDispatcherName = Some("almhirt.messagehub-dispatcher")
+        val futureDispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherName(config)(ConfigPaths.futures))
         val shortDuration = config.getDouble("almhirt.durations.short") seconds
         val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
         val longDuration = config.getDouble("almhirt.durations.long") seconds

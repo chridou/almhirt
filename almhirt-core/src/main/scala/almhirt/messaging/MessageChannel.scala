@@ -24,6 +24,8 @@ import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.messaging.impl.MessageChannelActor
 import almhirt.environment.AlmhirtSystem
+import almhirt.environment.ConfigHelper
+import almhirt.environment.ConfigPaths
 
 trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T] with ActorBased
 
@@ -34,7 +36,7 @@ object MessageChannel {
 
   def apply[T <: AnyRef](name: String)(implicit almhirtsystem: AlmhirtSystem, m: Manifest[T]): MessageChannel[T] = {
     val actor =
-      almhirtsystem.messageStreamDispatcherName match {
+      ConfigHelper.tryGetDispatcherName(almhirtsystem.config)(ConfigPaths.messagechannels) match {
         case None => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor], name = name)
         case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
       }

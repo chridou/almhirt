@@ -24,6 +24,8 @@ import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.messaging.impl.MessageHubActor
 import almhirt.environment.AlmhirtSystem
+import almhirt.environment.ConfigHelper
+import almhirt.environment.ConfigPaths
 
 trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable
 
@@ -34,7 +36,7 @@ object MessageHub {
 
   def apply(name: String)(implicit almhirtsystem: AlmhirtSystem): MessageHub = {
     val actor =
-      almhirtsystem.messageHubDispatcherName match {
+      ConfigHelper.tryGetDispatcherName(almhirtsystem.config)(ConfigPaths.messagehub) match {
         case None => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor], name = name)
         case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor].withDispatcher(dn), name = name)
       }
@@ -49,9 +51,9 @@ object MessageHub {
         .map(subchannel => subchannel.channel).mapToAlmFuture[ActorRef]
         .map(newActor => MessageChannel[TPayload](newActor, futureExecutionContext))
     }
-    
+
     def broadcast(message: Message[AnyRef], topic: Option[String]) = actor ! BroadcastMessageCmd(message)
-    
+
     def close() {}
   }
 
