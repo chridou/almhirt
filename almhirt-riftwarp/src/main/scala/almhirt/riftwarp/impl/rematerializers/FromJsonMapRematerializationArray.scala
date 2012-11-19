@@ -24,8 +24,10 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
   def tryGetDouble(ident: String) = option.cata(get(ident))(almCast[Double](_).map(Some(_)), None.success)
   def tryGetBigDecimal(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseDecimalAlm(_, ident)).map(Some(_)), None.success)
 
-  def tryGetByteArray(ident: String) = option.cata(get(ident))(almCast[Array[Double]](_).map(x => Some(x.map(_.toByte))), None.success)
-  def tryGetBlob(ident: String) = option.cata(get(ident))(almCast[Array[Double]](_).map(x => Some(x.map(_.toByte))), None.success)
+  def tryGetByteArray(ident: String) = 
+    option.cata(get(ident))(almCast[List[Double]](_).map(x => Some(x.toArray.map(_.toByte))), None.success)
+  def tryGetBlob(ident: String) = 
+    option.cata(get(ident))(almCast[String](_).bind(parseBase64Alm(_, ident).map(Some(_))), None.success)
 
   def tryGetDateTime(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseDateTimeAlm(_, ident)).map(Some(_)), None.success)
 

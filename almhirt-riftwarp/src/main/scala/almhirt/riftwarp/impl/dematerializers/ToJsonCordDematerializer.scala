@@ -95,7 +95,10 @@ class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: Ha
   
   def addByteArray(ident: String, aValue: Array[Byte]) = addByteArrayPart(ident, aValue)
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArray)
-  def addBlob(ident: String, aValue: Array[Byte]) = addByteArrayPart(ident, aValue)
+  def addBlob(ident: String, aValue: Array[Byte]) = {
+    val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
+    addStringLikePart(ident, theBlob)
+  }
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBlob)
 
   def addDateTime(ident: String, aValue: org.joda.time.DateTime) = addDateTimePart(ident, aValue)

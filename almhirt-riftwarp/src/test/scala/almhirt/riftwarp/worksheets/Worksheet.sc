@@ -6,76 +6,63 @@ import almhirt.riftwarp.impl._
 
 
 object Worksheet {
-  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@16
-                                                  //| f8f7db
+  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@75
+                                                  //| bbb4f4
   riftWarp.barracks.addDecomposer(new TestObjectADecomposer())
   riftWarp.barracks.addDecomposer(new TestAddressDecomposer())
   riftWarp.barracks.addRecomposer(new TestObjectARecomposer())
   riftWarp.barracks.addRecomposer(new TestAddressRecomposer())
 
 
-  val testObject = new TestObjectA("Peter", Some("Paul"), 15, Some(TestAddress("Ldenscheid", """Gustav-"Adolf"-Strae""")))
-                                                  //> testObject  : almhirt.riftwarp.TestObjectA = TestObjectA(Peter,Some(Paul),15
-                                                  //| ,Some(TestAddress(Ldenscheid,Gustav-"Adolf"-Strae)))
+  val testObject = TestObjectA.pete               //> testObject  : almhirt.riftwarp.TestObjectA = TestObjectA(Pete,Some(Jim),true
+                                                  //| ,47,12737823792992474737892456985496456847789872389723984,99283823727372382.
+                                                  //| 62253651576457646,12.5,[B@78076da7,[B@2fb02c81,Some(TestAddress(Berlin,An de
+                                                  //| r Mauer 89)))
    
-  
-  
       
   val resV = riftWarp.prepareForWarp[scalaz.Cord](RiftJson)(testObject)
                                                   //> resV  : almhirt.common.package.AlmValidation[scalaz.Cord] = Success({"riftwa
-                                                  //| rptd":"almhirt.riftwarp.TestObjectA","name":"Peter","friend":"Paul","age":15
-                                                  //| ,"address":{"riftwarptd":"almhirt.riftwarp.TestAddress","city":"Ldenscheid",
-                                                  //| "street":"Gustav-"Adolf"-Strae"}})
+                                                  //| rptd":"almhirt.riftwarp.TestObjectA","name":"Pete","friend":"Jim","isMale":t
+                                                  //| rue,"age":47,"atoms":"12737823792992474737892456985496456847789872389723984"
+                                                  //| ,"balance":"99283823727372382.62253651576457646","size":12.5,"coins":[0,1,2,
+                                                  //| 3,4,5,6,7,8,9,10,-1],"image":"FanpAAAAgIDq","address":{"riftwarptd":"almhirt
+                                                  //| .riftwarp.TestAddress","city":"Berlin","street":"An der Mauer 89"}})
   
   val warpStream = resV.forceResult               //> warpStream  : scalaz.Cord = {"riftwarptd":"almhirt.riftwarp.TestObjectA","na
-                                                  //| me":"Peter","friend":"Paul","age":15,"address":{"riftwarptd":"almhirt.riftwa
-                                                  //| rp.TestAddress","city":"Ldenscheid","street":"Gustav-"Adolf"-Strae"}}
-
+                                                  //| me":"Pete","friend":"Jim","isMale":true,"age":47,"atoms":"127378237929924747
+                                                  //| 37892456985496456847789872389723984","balance":"99283823727372382.6225365157
+                                                  //| 6457646","size":12.5,"coins":[0,1,2,3,4,5,6,7,8,9,10,-1],"image":"FanpAAAAgI
+                                                  //| Dq","address":{"riftwarptd":"almhirt.riftwarp.TestAddress","city":"Berlin","
+                                                  //| street":"An der Mauer 89"}}
 
   val backFromWarpV = riftWarp.receiveFromWarp[scalaz.Cord, TestObjectA](RiftJson)(warpStream)
                                                   //> backFromWarpV  : almhirt.common.package.AlmValidation[almhirt.riftwarp.TestO
-                                                  //| bjectA] = Failure(almhirt.common.ParsingProblem
-                                                  //| Could not parse JSON
-                                                  //| Category: ApplicationProblem
-                                                  //| Severity: Minor
-                                                  //| Arguments: Map()
-                                                  //| Input:
-                                                  //| {"riftwarptd":"almhirt.riftwarp.TestObjectA","name":"Peter","friend":"Paul",
-                                                  //| "age":15,"address":{"riftwarptd":"almhirt.riftwarp.TestAddress","city":"Lden
-                                                  //| scheid","street":"Gustav-"Adolf"-Strae"}}
-                                                  //| )
+                                                  //| bjectA] = Success(TestObjectA(Pete,Some(Jim),true,47,12737823792992474737892
+                                                  //| 456985496456847789872389723984,99283823727372382.62253651576457646,12.5,[B@4
+                                                  //| 719d351,[B@70808f4e,Some(TestAddress(Berlin,An der Mauer 89))))
   
-  val backFromWarp = backFromWarpV.forceResult    //> almhirt.common.ResultForcedFromValidationException: A value has been forced 
-                                                  //| from a failure: Could not parse JSON
-                                                  //| 	at almhirt.almvalidation.AlmValidationOps5$$anonfun$forceResult$1.apply(
-                                                  //| AlmValidationOps.scala:121)
-                                                  //| 	at almhirt.almvalidation.AlmValidationOps5$$anonfun$forceResult$1.apply(
-                                                  //| AlmValidationOps.scala:121)
-                                                  //| 	at scalaz.Validation$class.fold(Validation.scala:64)
-                                                  //| 	at scalaz.Failure.fold(Validation.scala:305)
-                                                  //| 	at almhirt.almvalidation.AlmValidationOps5$class.forceResult(AlmValidati
-                                                  //| onOps.scala:121)
-                                                  //| 	at almhirt.almvalidation.ToAlmValidationOps$$anon$6.forceResult(AlmValid
-                                                  //| ationOps.scala:195)
-                                                  //| 	at almhirt.riftwarp.worksheets.Worksheet$$anonfun$main$1.apply$mcV$sp(al
-                                                  //| mhirt.riftwarp.worksheets.Worksheet.scala:28)
-                                                  //| 	at org.scalaide.worksheet.runtime.library.WorksheetSupport$$anonfun$$exe
-                                                  //| cute$1.apply$mcV$sp(WorksheetSupport.scala:76)
-                                                  //| 	at org.scalaide.worksheet.runtime.library.WorksheetSupport$.redirected(W
-                                                  //| orksheetSu
-                                                  //| Output exceeds cutoff limit.
+  val backFromWarp = backFromWarpV.forceResult    //> backFromWarp  : almhirt.riftwarp.TestObjectA = TestObjectA(Pete,Some(Jim),tr
+                                                  //| ue,47,12737823792992474737892456985496456847789872389723984,9928382372737238
+                                                  //| 2.62253651576457646,12.5,[B@4719d351,[B@70808f4e,Some(TestAddress(Berlin,An 
+                                                  //| der Mauer 89)))
   
-  testObject == backFromWarp
+  testObject == backFromWarp                      //> res0: Boolean = false
   
  
   
   riftWarp.prepareForWarp[Map[String, Any]](RiftMap)(testObject).bind(warpStream =>
     riftWarp.receiveFromWarp[Map[String, Any], TestObjectA](RiftMap)(warpStream)).map(rearrived =>
-      rearrived == testObject)
+      rearrived == testObject)                    //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(true)
 
 
   riftWarp.prepareForWarp[Map[String, Any]](RiftJson)(testObject).bind(warpStream =>
     riftWarp.receiveFromWarp[Map[String, Any], TestObjectA](RiftJson)(warpStream)).map(rearrived =>
-      rearrived == testObject)
+      rearrived == testObject)                    //> res2: scalaz.Validation[almhirt.common.Problem,Boolean] = Failure(almhirt.c
+                                                  //| ommon.UnspecifiedProblem
+                                                  //| No dematerializer found for 'channel_json'
+                                                  //| Category: SystemProblem
+                                                  //| Severity: Major
+                                                  //| Arguments: Map()
+                                                  //| )
       
 }
