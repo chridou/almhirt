@@ -120,7 +120,7 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with DocItBuil
                        			baseFile = file("almhirt-common"))
 
   lazy val core = coreProject(	name = "almhirt-core",
-	                       		baseFile = file("almhirt-core")) dependsOn(common)
+	                       		baseFile = file("almhirt-core")) dependsOn(common, riftwarp)
 
 /*
   lazy val xtractnduce = xtractnduceProject(	name = "almhirt-xtractnduce",
