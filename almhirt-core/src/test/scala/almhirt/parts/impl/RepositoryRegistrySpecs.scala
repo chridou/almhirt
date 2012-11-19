@@ -5,7 +5,7 @@ import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.domain._
 import almhirt.environment.AlmhirtContextTestKit
-import almhirt.eventlog.impl.DevNullEventLog
+import almhirt.eventlog._
 import almhirt.parts.HasRepositories
 import test._
 
@@ -14,7 +14,7 @@ class RepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
   """The unsafe repository registry""" should {
     """be able to register a repository""" in {
       inTestContext(implicit ctx => {
-        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
+        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, DomainEventLog.devNull()(ctx).forceResult)
         val registry = HasRepositories().forceResult
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         true
@@ -22,7 +22,7 @@ class RepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
     }
     """be able to register a repository and retrieve it""" in {
       inTestContext(implicit ctx => {
-        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, new DevNullEventLog()(ctx))
+        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, DomainEventLog.devNull()(ctx).forceResult)
         val registry = HasRepositories().forceResult
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         registry.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult === repo

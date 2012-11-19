@@ -5,6 +5,8 @@ import akka.util.duration._
 import almhirt._
 import almhirt.core.JavaUtilUuidGenerator
 import com.typesafe.config._
+import almhirt.environment.configuration.ConfigPaths
+import almhirt.environment.configuration.ConfigHelper
 
 trait AlmhirtsystemTestkit {
   private val configText =

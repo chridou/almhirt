@@ -19,8 +19,11 @@ trait AlmhirtTestKit {
 		  short = 0.5
 		  medium = 2.5
 		  long = 10.0
-		}
-	   }
+		  }
+		  eventlog {
+		  	factory = "almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLogFactory"
+		  }
+	  }
     """
   val conf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 

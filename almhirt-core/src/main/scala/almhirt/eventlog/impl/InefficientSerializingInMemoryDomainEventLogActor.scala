@@ -19,12 +19,23 @@ import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
+import almhirt.common._
 import almhirt.messaging.Message
-import almhirt._
 import almhirt.environment.AlmhirtContext
+import almhirt.environment.configuration._
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._
+
+class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventLogFactory {
+  def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
+    val props =  
+      SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new impl.InefficientSerializingInMemoryDomainEventLogActor()(ctx)))
+      val actor = ctx.system.actorSystem.actorOf(props, "domainEventLog")
+      new impl.DomainEventLogActorHull(actor)(ctx).success
+  }
+}
+
 
 class InefficientSerializingInMemoryDomainEventLogActor(implicit almhirtContext: AlmhirtContext) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil

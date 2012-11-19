@@ -17,6 +17,7 @@ object SequentialChunksWorksheet extends TestAlmhirtKit {
     val repo = almhirt.environment.repositories.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult
 
 
+
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(NewTestPerson(x._2, x._3), "A insert%s".format(x._1.toString)))
     val insertStatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A insert%s".format(x._1.toString)))
     val insertStatesRes = AlmFuture.sequence(insertStatesFutures).awaitResult

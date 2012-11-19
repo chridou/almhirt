@@ -9,6 +9,7 @@ import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import almhirt.common._
 import almhirt.core._
+import almhirt.environment.configuration._
 
 
 /** Components and values needed to use Akka */

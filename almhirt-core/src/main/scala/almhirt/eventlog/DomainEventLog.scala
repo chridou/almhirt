@@ -42,4 +42,9 @@ object DomainEventLog {
     val actor = context.system.actorSystem.actorOf(Props(new impl.InefficientSerializingInMemoryDomainEventLogActor), "domainEventLog")
     new impl.DomainEventLogActorHull(actor).success
   }
+
+  def devNull()(implicit context: AlmhirtContext): AlmValidation[DomainEventLog] = {
+    new DevNullEventLogFactory().createDomainEventLog(context)
+  }
+  
 }

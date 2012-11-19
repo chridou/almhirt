@@ -6,8 +6,8 @@ import akka.actor._
 import almhirt.common._
 import almhirt.messaging._
 import almhirt.environment.AlmhirtSystem
-import almhirt.environment.ConfigHelper
-import almhirt.environment.ConfigPaths
+import almhirt.environment.configuration.ConfigPaths
+import almhirt.environment.configuration.ConfigHelper
 
 class MessageChannelActor extends Actor {
   private var almhirtsystem: Option[AlmhirtSystem] = None

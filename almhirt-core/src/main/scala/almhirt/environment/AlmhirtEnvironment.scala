@@ -10,6 +10,7 @@ import almhirt.commanding._
 import almhirt.domain._
 import almhirt.util._
 import com.typesafe.config.Config
+import almhirt.environment.configuration.SystemHelper
 
 trait AlmhirtEnvironmentOps extends AlmhirtContextOps {
   def executeCommand(cmd: DomainCommand, ticket: Option[TrackingTicket]) { executeCommand(CommandEnvelope(cmd, ticket)) }
@@ -63,7 +64,7 @@ object AlmhirtEnvironment {
         .mapTo[SubscriptionRsp]
         .map(_.registration)
         .toAlmFuture
-      theEventLog <- AlmPromise(DomainEventLog())
+      theEventLog <- AlmPromise(SystemHelper.createEventLogFromFactory(ctx))
     } yield (
       new AlmhirtEnvironment {
         val config = aConfig
