@@ -121,21 +121,12 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with DocItBuil
 
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common, riftwarp)
-
-/*
-  lazy val xtractnduce = xtractnduceProject(	name = "almhirt-xtractnduce",
-                       			baseFile = file("almhirt-xtractnduce")) dependsOn(common) */
-
   lazy val riftwarp = riftwarpProject(	name = "almhirt-riftwarp",
                        			baseFile = file("almhirt-riftwarp")) dependsOn(common)
 
 
   lazy val docit = docitProject(	name = "almhirt-docit",
                        			baseFile = file("almhirt-docit")) dependsOn(common)
-
-/*								
-  lazy val commonMongo = commonMongoProject(	name = "almhirt-xtractnduce-mongo",
-                       			baseFile = file("almhirt-xtractnduce-mongo")) dependsOn(common, xtractnduce)
 
   lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
 	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)*/
