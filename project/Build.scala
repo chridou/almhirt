@@ -55,22 +55,6 @@ trait CommonBuild {
   )
 }
 
-/*
-trait XtractNDuceBuild {
-  import Dependencies._
-  import Resolvers._
-  def xtractnduceProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += apache_codecs,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2
-  )
-}
-*/
-
 trait RiftWarpBuild {
   import Dependencies._
   import Resolvers._
@@ -114,23 +98,6 @@ trait CoreBuild {
   )
   
 }
-
-/*
-trait CommonMongoBuild {
-  import Dependencies._
-  import Resolvers._
-  def commonMongoProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += casbah,
-	  libraryDependencies += specs2
-  )
-}
-*/
 
 /*
 trait UnfilteredBuild {
