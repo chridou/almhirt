@@ -29,6 +29,8 @@ object Dependencies {
 	
 	lazy val akka_actor  = "com.typesafe.akka" % "akka-actor" % "2.0.3"
 
+//	lazy val slick  = "com.typesafe" %% "slick" % "0.11.2"
+
 	lazy val unfiltered = "net.databinder" %% "unfiltered-netty" % "0.6.3"
 
 	lazy val casbah  = "org.mongodb" %% "casbah" % "2.3.0"
@@ -96,7 +98,36 @@ trait CoreBuild {
 	  libraryDependencies += specs2,
 	  libraryDependencies += akka_testkit
   )
-  
+}
+
+trait SlickEventLogBuild {
+  import Dependencies._
+  import Resolvers._
+  def slickEventLogProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+//	  libraryDependencies += slick,
+	  libraryDependencies += specs2
+  )
+}
+
+trait AnormEventLogBuild {
+  import Dependencies._
+  import Resolvers._
+  def anormEventLogProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += "play" % "anorm_2.9.1" % "2.0.4",
+	  libraryDependencies += specs2
+  )
 }
 
 /*
@@ -112,7 +143,7 @@ trait UnfilteredBuild {
 }
 */
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with DocItBuild with RiftWarpBuild{
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpBuild with DocItBuild with SlickEventLogBuild with AnormEventLogBuild {
   lazy val root = Project(	id = "almhirt",
 	                        base = file(".")) aggregate(common, core, riftwarp, docit)
 	
@@ -128,6 +159,12 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with DocItBuil
   lazy val docit = docitProject(	name = "almhirt-docit",
                        			baseFile = file("almhirt-docit")) dependsOn(common)
 
+  lazy val slickEventLog = slickEventLogProject(	name = "almhirt-slickeventlog",
+                       			baseFile = file("/ext/eventlogs/almhirt-slickeventlog")) dependsOn(core)
+
+  lazy val anormEventLog = anormEventLogProject(	name = "almhirt-anormeventlog",
+                       			baseFile = file("/ext/eventlogs/almhirt-anormeventlog")) dependsOn(core)
+								
 /* lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
 	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)*/
 
