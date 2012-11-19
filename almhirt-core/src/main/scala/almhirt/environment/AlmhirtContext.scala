@@ -76,6 +76,10 @@ object AlmhirtContext {
 
     val hub = MessageHub("messageHub")
     val probTopic = None
+    
+    val theRiftWarp = almhirt.riftwarp.RiftWarp.unsafeWithDefaults
+    almhirt.core.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(theRiftWarp)
+    
     for {
       cmdChannel <- hub.createMessageChannel[CommandEnvelope]("commandChannel")
       opStateChannel <- hub.createMessageChannel[OperationState]("operationStateChannel")
@@ -89,7 +93,7 @@ object AlmhirtContext {
         val problemChannel = probChannel
         val operationStateChannel = opStateChannel
 
-        val riftWarp = almhirt.riftwarp.RiftWarp.unsafeWithDefaults
+        val riftWarp = theRiftWarp
         
         val problemTopic = probTopic
 
