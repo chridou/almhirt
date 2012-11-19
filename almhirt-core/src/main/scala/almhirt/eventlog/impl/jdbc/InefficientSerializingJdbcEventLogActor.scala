@@ -52,22 +52,26 @@ class InefficientSerializingJdbcEventLogActor(settings: JdbcEventLogSettings)(im
 
   private def storeEvents(events: List[DomainEvent]): AlmValidation[List[DomainEvent]] = {
     val entriesV = events.map(event => createLogEntry(event).toAgg).sequence
-    entriesV.map(entries =>
+    entriesV.bind(entries =>
       inTransaction(conn => {
-        val statement = conn.createStatement()
-
-        val count = statement.executeBatch()
+        val statement = conn.prepareStatement("INSERT INTO %s VALUES(?, ?, ?, ?)".format(logTableName))
+        entries.foreach(entry => {
+          statement.setObject(1, entry.id)
+          statement.setLong(2, entry.version)
+          statement.setDate(3, new java.sql.Date(entry.timestamp.getMillis()))
+          statement.setString(4, entry.payload)
+          statement.execute()
+          statement.clearParameters()
+        })		
         events.success
       }))
-    sys.error("")
   }
 
   private var loggedEvents: List[DomainEvent] = Nil
   def receive: Receive = {
     case LogEventsQry(events, executionIdent) =>
-      loggedEvents = loggedEvents ++ events
-      events.foreach(event => almhirtContext.broadcastDomainEvent(event))
-      sender ! CommittedDomainEventsRsp(events.success, executionIdent)
+      val res = storeEvents(events)
+      sender ! CommittedDomainEventsRsp(res, executionIdent)
     case GetAllEventsQry =>
       sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success))
     case GetEventsQry(aggId) =>
