@@ -54,7 +54,6 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
   def reportOperationState(opState: OperationState) { broadcast(opState) }
   def reportProblem(prob: Problem) { broadcast(prob) }
 
-  def problemTopic: Option[String]
   def getDateTime = system.getDateTime
   def getUuid = system.generateUuid
 
@@ -75,7 +74,6 @@ object AlmhirtContext {
     implicit val executionContext = sys.futureDispatcher
 
     val hub = MessageHub("messageHub")
-    val probTopic = None
     
     val theRiftWarp = almhirt.riftwarp.RiftWarp.unsafeWithDefaults
     almhirt.core.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(theRiftWarp)
@@ -95,8 +93,6 @@ object AlmhirtContext {
 
         val riftWarp = theRiftWarp
         
-        val problemTopic = probTopic
-
         def dispose = {
           messageHub.close
           cmdChannel.close
