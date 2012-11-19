@@ -128,7 +128,7 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with DocItBuil
   lazy val docit = docitProject(	name = "almhirt-docit",
                        			baseFile = file("almhirt-docit")) dependsOn(common)
 
-  lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
+/* lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
 	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)*/
 
 										
