@@ -98,20 +98,18 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       inTryCatch(cmd.asInstanceOf[TCom]).bimap(f => f.withSeverity(Major), x => x),
       UnspecifiedProblem("not a mutator: %s".format(cmd.getClass.getName), severity = Major).failure)
 
-  private def getIdAndVersion(cmd: TCom): AlmValidation[(UUID, Option[Long])] =
+  private def getIdAndVersion(cmd: TCom): AlmValidation[(UUID, Long)] =
     option.cata(cmd.aggRootRef)(
-      s => (s.id, s.tryGetVersion).success,
+      s => (s.id, s.version).success,
       UnspecifiedProblem("Mutator without aggregate root ref: %s".format(cmd.getClass.getName)).failure)
 
   private def checkArId(ar: AR, id: UUID, cmd: TCom): AlmValidation[AR] =
     boolean.fold(ar.id == id, ar.success, UnspecifiedProblem("Refused to handle command: Ids do not match. The refused command is '%s'".format(cmd), severity = Major).failure)
 
-  private def checkVersion(ar: AR, version: Option[Long], cmd: TCom): AlmValidation[AR] =
-    option.cata(version)(
-      v => boolean.fold(v == ar.version,
+  private def checkVersion(ar: AR, version: Long, cmd: TCom): AlmValidation[AR] =
+    boolean.fold(version == ar.version,
         ar.success,
-        CollisionProblem("Refused to handle command: Versions do not match. Current version is '%d', targetted version is '%d'. The refused command is '%s'".format(ar.version, v, cmd), severity = Minor).failure),
-      ar.success)
+        CollisionProblem("Refused to handle command: Versions do not match. Current version is '%d', targetted version is '%d'. The refused command is '%s'".format(ar.version, version, cmd), severity = Minor).failure)
 
   private def getRepository(repositories: HasRepositories): AlmFuture[AggregateRootRepository[AR, TEvent]] =
     repositories

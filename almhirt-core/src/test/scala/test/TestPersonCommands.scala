@@ -12,10 +12,11 @@ trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyl
 trait TestPersonMutatorCommand extends TestPersonCommand with MutatorCommandStyle
 
 case class NewTestPerson(id: UUID, name: String) extends TestPersonCreatorCommand
-case class ChangeTestPersonName(id: UUID, version: Option[Long], newName: String) extends TestPersonMutatorCommand
-case class SetTestPersonAddress(id: UUID, version: Option[Long], aquiredAddress: String) extends TestPersonMutatorCommand
-case class MoveTestPerson(id: UUID, version: Option[Long], newAddress: String) extends TestPersonMutatorCommand
-case class MoveBecauseOfMarriage(id: UUID, version: Option[Long], newName: String, newAddress: String) extends TestPersonMutatorCommand
+case class ChangeTestPersonName(target: AggregateRootRef, newName: String) extends TestPersonMutatorCommand
+case class SetTestPersonAddress(target: AggregateRootRef, aquiredAddress: String) extends TestPersonMutatorCommand
+case class MoveTestPerson(target: AggregateRootRef, newAddress: String) extends TestPersonMutatorCommand
+case class MoveBecauseOfMarriage(target: AggregateRootRef, newName: String, newAddress: String) extends TestPersonMutatorCommand
+
 
 trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends UnitOfWork[TestPerson, TestPersonEvent]
 

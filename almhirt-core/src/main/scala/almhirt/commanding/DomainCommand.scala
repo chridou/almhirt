@@ -17,25 +17,23 @@ package almhirt.commanding
 import java.util.UUID
 
 trait DomainCommand {
+  def aggRootRef: Option[AggregateRootRef]
   /**
    * The affected aggregate root
    */
-  def aggRootRef: Option[almhirt.domain.AggregateRootRef]
-
-  def isMutator = aggRootRef.isDefined
-  def isCreator = aggRootRef.isEmpty
+  def isMutator: Boolean
+  def isCreator: Boolean
 }
 
 trait MutatorCommandStyle { self: DomainCommand =>
-  def id: java.util.UUID
-  def version: Option[Long]
-  def aggRootRef =
-    version match {
-      case Some(v) => Some(almhirt.domain.SpecificVersion(id, v))
-      case None => Some(almhirt.domain.LatestVersion(id))
-    }
+  def aggRootRef = Some(target)
+  def target: AggregateRootRef
+  val isMutator = true
+  val isCreator = false
 }
 
 trait CreatorCommandStyle { self: DomainCommand =>
   def aggRootRef = None
+  val isMutator = false
+  val isCreator = true
 }

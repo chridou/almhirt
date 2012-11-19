@@ -8,6 +8,7 @@ import almhirt.environment._
 import test._
 import almhirt.almfuture.inst._
 import almhirt.core.AlmFuture
+import almhirt.commanding._
 
 class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
   private implicit val atMost = akka.util.Duration(2, "s")
@@ -25,7 +26,7 @@ class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
 //      insertStates.foreach(x => x fold (f => println(f), succ => println(succ)))
 //    }
 
-    idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(SetTestPersonAddress(x._2, Some(1), x._4), "A setaddress%s".format(x._1.toString)))
+    idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(SetTestPersonAddress(AggregateRootRef(x._2, 1), x._4), "A setaddress%s".format(x._1.toString)))
     val update1StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A setaddress%s".format(x._1.toString)))
     val update1StatesRes = AlmFuture.sequence(update1StatesFutures).awaitResult
     if(update1StatesRes.isFailure) println(update1StatesRes)
@@ -33,7 +34,7 @@ class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
 //      updateStates.foreach(x => x fold (f => println(f), succ => println(succ)))
 //    }
 
-    idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(ChangeTestPersonName(x._2, Some(2), "new%s".format(x._3)), "A updatename%s".format(x._1.toString)))
+    idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(ChangeTestPersonName(AggregateRootRef(x._2, 2), "new%s".format(x._3)), "A updatename%s".format(x._1.toString)))
     val update2StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.getResultOperationStateFor("A updatename%s".format(x._1.toString)))
     val update2StatesRes = AlmFuture.sequence(update2StatesFutures).awaitResult
     if(update2StatesRes.isFailure) println(update2StatesRes)

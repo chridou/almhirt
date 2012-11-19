@@ -69,70 +69,56 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
     """return a success when a valid name is supplied incuding the correct version""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.isSuccess
       }
     }
     """return a success when a valid name is supplied with an incorrect version, because a handler doesn't have to check for the version.""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version + 1), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version + 1), "Bill"), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.isSuccess
       }
     }
     """return a failure when an invalid name is supplied incuding the correct version""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), ""), originalEntity, ctx.system.futureDispatcher)
-        res.awaitResult.isFailure
-      }
-    }
-    """return a success when a valid name is supplied without a version""" in {
-      inTestContext { implicit ctx =>
-        val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, None, "Bill"), originalEntity, ctx.system.futureDispatcher)
-        res.awaitResult.isSuccess
-      }
-    }
-    """return a failure when an invalid name is supplied without a version""" in {
-      inTestContext { implicit ctx =>
-        val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, None, ""), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), ""), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.isFailure
       }
     }
     """create a new TestPerson with version increased by 1""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.forceResult._1.version === originalEntity.version + 1L
       }
     }
     """create a new TestPerson with the changed name""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.forceResult._1.name === "Bill"
       }
     }
     """create exactly one event""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.forceResult._2.length === 1
       }
     }
     """create a TestPersonNameChanged event""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         res.awaitResult.forceResult._2.head.isInstanceOf[TestPersonNameChanged]
       }
     }
     """create exactly one TestPersonNameChanged with the id being the same as the entity's id""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         val event = res.awaitResult.forceResult._2.head.asInstanceOf[TestPersonNameChanged]
         event.id === originalEntity.id
       }
@@ -140,7 +126,7 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
     """create exactly one TestPersonNameChanged with the version being one less then the new entity's version""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         val event = res.awaitResult.forceResult._2.head.asInstanceOf[TestPersonNameChanged]
         event.version === res.awaitResult.forceResult._1.version - 1L
       }
@@ -148,7 +134,7 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
     """create exactly one TestPersonNameChanged with the version being the same as the original entity's version""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         val event = res.awaitResult.forceResult._2.head.asInstanceOf[TestPersonNameChanged]
         event.version === originalEntity.version
       }
@@ -156,7 +142,7 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
     """create exactly one TestPersonNameChanged with name being the new entitie's name""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
-        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(originalEntity.id, Some(originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
+        val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         val event = res.awaitResult.forceResult._2.head.asInstanceOf[TestPersonNameChanged]
         event.newName === res.awaitResult.forceResult._1.name
       }
