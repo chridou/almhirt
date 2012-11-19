@@ -160,10 +160,10 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpB
                        			baseFile = file("almhirt-docit")) dependsOn(common)
 
   lazy val slickEventLog = slickEventLogProject(	name = "almhirt-slickeventlog",
-                       			baseFile = file("/ext/eventlogs/almhirt-slickeventlog")) dependsOn(core)
+                       			baseFile = file("./ext/eventlogs/almhirt-slickeventlog")) dependsOn(core)
 
   lazy val anormEventLog = anormEventLogProject(	name = "almhirt-anormeventlog",
-                       			baseFile = file("/ext/eventlogs/almhirt-anormeventlog")) dependsOn(core)
+                       			baseFile = file("./ext/eventlogs/almhirt-anormeventlog")) dependsOn(core)
 								
 /* lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
 	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)*/
