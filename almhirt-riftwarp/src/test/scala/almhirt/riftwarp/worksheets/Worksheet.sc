@@ -6,8 +6,8 @@ import almhirt.riftwarp.impl._
 
 
 object Worksheet {
-  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@75
-                                                  //| bbb4f4
+  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@76
+                                                  //| 653b8e
   riftWarp.barracks.addDecomposer(new TestObjectADecomposer())
   riftWarp.barracks.addDecomposer(new TestAddressDecomposer())
   riftWarp.barracks.addRecomposer(new TestObjectARecomposer())
@@ -16,7 +16,7 @@ object Worksheet {
 
   val testObject = TestObjectA.pete               //> testObject  : almhirt.riftwarp.TestObjectA = TestObjectA(Pete,Some(Jim),true
                                                   //| ,47,12737823792992474737892456985496456847789872389723984,99283823727372382.
-                                                  //| 62253651576457646,12.5,[B@78076da7,[B@2fb02c81,Some(TestAddress(Berlin,An de
+                                                  //| 62253651576457646,12.5,[B@2fb02c81,[B@5739e19c,Some(TestAddress(Berlin,An de
                                                   //| r Mauer 89)))
    
       
@@ -38,13 +38,13 @@ object Worksheet {
   val backFromWarpV = riftWarp.receiveFromWarp[scalaz.Cord, TestObjectA](RiftJson)(warpStream)
                                                   //> backFromWarpV  : almhirt.common.package.AlmValidation[almhirt.riftwarp.TestO
                                                   //| bjectA] = Success(TestObjectA(Pete,Some(Jim),true,47,12737823792992474737892
-                                                  //| 456985496456847789872389723984,99283823727372382.62253651576457646,12.5,[B@4
-                                                  //| 719d351,[B@70808f4e,Some(TestAddress(Berlin,An der Mauer 89))))
+                                                  //| 456985496456847789872389723984,99283823727372382.62253651576457646,12.5,[B@7
+                                                  //| 0808f4e,[B@8408396,Some(TestAddress(Berlin,An der Mauer 89))))
   
   val backFromWarp = backFromWarpV.forceResult    //> backFromWarp  : almhirt.riftwarp.TestObjectA = TestObjectA(Pete,Some(Jim),tr
                                                   //| ue,47,12737823792992474737892456985496456847789872389723984,9928382372737238
-                                                  //| 2.62253651576457646,12.5,[B@4719d351,[B@70808f4e,Some(TestAddress(Berlin,An 
-                                                  //| der Mauer 89)))
+                                                  //| 2.62253651576457646,12.5,[B@70808f4e,[B@8408396,Some(TestAddress(Berlin,An d
+                                                  //| er Mauer 89)))
   
   testObject == backFromWarp                      //> res0: Boolean = false
   
@@ -55,14 +55,8 @@ object Worksheet {
       rearrived == testObject)                    //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(true)
 
 
-  riftWarp.prepareForWarp[Map[String, Any]](RiftJson)(testObject).bind(warpStream =>
-    riftWarp.receiveFromWarp[Map[String, Any], TestObjectA](RiftJson)(warpStream)).map(rearrived =>
-      rearrived == testObject)                    //> res2: scalaz.Validation[almhirt.common.Problem,Boolean] = Failure(almhirt.c
-                                                  //| ommon.UnspecifiedProblem
-                                                  //| No dematerializer found for 'channel_json'
-                                                  //| Category: SystemProblem
-                                                  //| Severity: Major
-                                                  //| Arguments: Map()
-                                                  //| )
+  riftWarp.prepareForWarp[scalaz.Cord](RiftJson)(testObject).bind(warpStream =>
+    riftWarp.receiveFromWarp[scalaz.Cord, TestObjectA](RiftJson)(warpStream)).map(rearrived =>
+      rearrived == testObject)                    //> res2: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(false)
       
 }
