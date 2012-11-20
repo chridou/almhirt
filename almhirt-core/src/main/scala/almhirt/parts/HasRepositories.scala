@@ -4,7 +4,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.domain._
 import almhirt.environment.AlmhirtContext
-import almhirt.core.AlmFuture
+import almhirt.common.AlmFuture
 
 sealed trait HasRepositoriesCmd
 case class GetRepositoryForAggregateRootQry(arType: Class[_ <: AggregateRoot[_,_]]) extends HasRepositoriesCmd
@@ -13,7 +13,7 @@ case class RegisterForAggregateRootCmd[AR <: AggregateRoot[AR, TEvent], TEvent <
 sealed trait HasRepositoriesRsp
 case class RepositoryForAggregateRootRsp(arType: Class[_ <: AggregateRoot[_,_]], repository: AlmValidation[AnyRef]) extends HasRepositoriesRsp
 
-trait HasRepositories extends almhirt.core.ActorBased {
+trait HasRepositories extends almhirt.common.ActorBased {
   def getForAggregateRootByType(arType: Class[_ <: AggregateRoot[_,_]]): AlmFuture[AnyRef]
   def getForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmFuture[AggregateRootRepository[AR, TEvent]] =
     getForAggregateRootByType(m.erasure.asInstanceOf[Class[AR]]).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]])

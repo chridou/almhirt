@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.core
+package almhirt.common
 
 import java.util.concurrent.TimeoutException
 import scala.collection.generic.CanBuildFrom
@@ -21,6 +21,7 @@ import scalaz.syntax.validation._
 import akka.dispatch.{ Future, Promise, Await, ExecutionContext }
 import almhirt.common._
 import akka.util.Duration
+import almhirt.almfuture.all.akkaFutureToAlmhirtFuture
 
 /**
  * A future based on [[akka.dispatch.Future]].

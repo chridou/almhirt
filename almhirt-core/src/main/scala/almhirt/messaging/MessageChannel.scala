@@ -26,6 +26,8 @@ import almhirt.messaging.impl.MessageChannelActor
 import almhirt.environment.AlmhirtSystem
 import almhirt.environment.configuration.ConfigPaths
 import almhirt.environment.configuration.ConfigHelper
+import almhirt.common.ActorBased
+import almhirt.common.AlmFuture
 
 trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T] with ActorBased
 

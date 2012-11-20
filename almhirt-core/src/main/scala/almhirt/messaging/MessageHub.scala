@@ -26,6 +26,8 @@ import almhirt.messaging.impl.MessageHubActor
 import almhirt.environment.AlmhirtSystem
 import almhirt.environment.configuration.ConfigPaths
 import almhirt.environment.configuration.ConfigHelper
+import almhirt.common.ActorBased
+import almhirt.common.AlmFuture
 
 trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable
 

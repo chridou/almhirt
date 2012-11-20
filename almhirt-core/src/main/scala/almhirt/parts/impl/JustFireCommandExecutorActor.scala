@@ -14,6 +14,7 @@ import almhirt.commanding._
 import almhirt.environment.AlmhirtEnvironment
 import almhirt.parts.CommandExecutor
 import almhirt.util._
+import almhirt.common.AlmFuture
 
 /**
  */

@@ -26,6 +26,7 @@ import almhirt.commanding.CommandEnvelope
 import almhirt.parts.HasRepositories
 import org.joda.time.DateTime
 import almhirt.util._
+import almhirt.common.AlmFuture
 
 trait AlmhirtContextOps {
   def reportProblem(prob: Problem): Unit

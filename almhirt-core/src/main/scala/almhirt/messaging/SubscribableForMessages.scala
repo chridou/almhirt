@@ -17,6 +17,7 @@ package almhirt.messaging
 import java.util.UUID
 import almhirt.core._
 import almhirt.common._
+import almhirt.common.AlmFuture
 
 /** Someone you can subscribe to to receive [[almhirt.messaging.Message]]s. 
  *

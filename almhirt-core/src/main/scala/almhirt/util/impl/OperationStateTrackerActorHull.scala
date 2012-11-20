@@ -10,6 +10,7 @@ import almhirt.core._
 import almhirt.environment._
 import almhirt.almfuture.all._
 import almhirt.util._
+import almhirt.common.AlmFuture
 
 class OperationStateTrackerActorHull(val actor: ActorRef)(implicit almhirtContext: AlmhirtContext) extends OperationStateTracker {
 

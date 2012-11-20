@@ -15,8 +15,7 @@
 package almhirt.almfuture
 
 import akka.dispatch.Future
-import almhirt._, common._, core._
-import almhirt.core.AlmFuture
+import almhirt.common._
 
 
 trait AlmFutureInstances {

@@ -13,7 +13,7 @@ import almhirt.domain._
 import almhirt.parts.HasRepositories
 import almhirt.environment.AlmhirtContext
 import almhirt.util._
-import almhirt.core.AlmFuture
+import almhirt.common.AlmFuture
 
 trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: UnitOfWork[AR, TEvent] =>
   protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])]

@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.environment._
 import almhirt.commanding.ExecutesCommands
 
-trait CommandExecutor extends HasCommandHandlers with ExecutesCommands with almhirt.core.ActorBased
+trait CommandExecutor extends HasCommandHandlers with ExecutesCommands with almhirt.common.ActorBased
 
 object CommandExecutor {
   import scalaz.syntax.validation._

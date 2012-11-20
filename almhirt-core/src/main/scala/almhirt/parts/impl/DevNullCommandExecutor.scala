@@ -8,8 +8,8 @@ import almhirt.parts.CommandExecutor
 import almhirt.environment._
 import almhirt.util.TrackingTicket
 import akka.util.Duration
-import almhirt.core.AlmPromise
-import almhirt.core.AlmFuture
+import almhirt.common.AlmFuture
+import almhirt.common.AlmPromise
 
 class DevNullCommandExecutor(implicit context: AlmhirtContext) extends CommandExecutor {
   import akka.actor._

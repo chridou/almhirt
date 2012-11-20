@@ -9,6 +9,7 @@ import almhirt.domain._
 import almhirt.eventlog.DomainEventLog
 import almhirt.environment.AlmhirtContext
 import almhirt.util._
+import almhirt.common.AlmFuture
 
 abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}

@@ -5,12 +5,11 @@ import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
 import akka.util.duration._
-import almhirt.core._
+import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.environment._
 import almhirt.domain._
 import almhirt.eventlog._
-import almhirt.core.AlmFuture
 
 class DomainEventLogActorHull(val actor: ActorRef)(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
   private implicit def atMost = almhirtContext.system.mediumDuration

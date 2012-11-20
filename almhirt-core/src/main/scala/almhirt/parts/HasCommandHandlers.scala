@@ -3,7 +3,7 @@ package almhirt.parts
 import akka.util.Duration
 import almhirt.common._
 import almhirt.commanding._
-import almhirt.core.AlmFuture
+import almhirt.common.AlmFuture
 
 sealed trait HasCommandHandlersCmd
 case class AddCommandHandlerCmd(handler: HandlesCommand) extends HasCommandHandlersCmd

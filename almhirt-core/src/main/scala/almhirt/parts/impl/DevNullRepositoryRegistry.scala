@@ -9,6 +9,7 @@ import almhirt.domain.AggregateRootRepository
 import almhirt.parts.HasRepositories
 import almhirt.domain.AggregateRoot
 import almhirt.domain.DomainEvent
+import almhirt.common.AlmFuture
 
 class DevNullRepositoryRegistry(context: AlmhirtContext) extends HasRepositories {
   private implicit val executionContext = context.system.futureDispatcher

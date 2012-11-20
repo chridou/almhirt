@@ -33,7 +33,6 @@ object ChannelWiringCommands extends TestAlmhirtKit {
     hit1 && hit2
 
 
-
   }                                               //> true
                                                   //| true
                                                   //| res0: Boolean = true

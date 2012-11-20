@@ -9,7 +9,7 @@ import almhirt.almfuture.all._
 import almhirt.environment._
 import almhirt.domain._
 import almhirt.parts._
-import almhirt.core.AlmFuture
+import almhirt.common.AlmFuture
 
 class RepositoryRegistryActor extends Actor {
   private val repos = scala.collection.mutable.Map[String, AnyRef]()

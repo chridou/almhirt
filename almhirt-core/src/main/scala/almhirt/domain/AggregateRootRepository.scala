@@ -4,6 +4,7 @@ import almhirt.core._
 import almhirt.common._
 import almhirt.environment.AlmhirtContext
 import almhirt.util.TrackingTicket
+import almhirt.common.ActorBased
 
 sealed trait AggregateRootRepositoryCmd
 case class GetAggregateRootQry(aggId: java.util.UUID) extends AggregateRootRepositoryCmd

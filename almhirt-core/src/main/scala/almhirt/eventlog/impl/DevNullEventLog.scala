@@ -28,7 +28,7 @@ import almhirt.environment.configuration._
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._
-import almhirt.core.AlmFuture
+import almhirt.common.AlmFuture
 
 class DevNullEventLogFactory() extends DomainEventLogFactory {
   def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {

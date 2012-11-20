@@ -7,6 +7,7 @@ import almhirt.environment._
 import almhirt.commanding._
 import almhirt.domain._
 import almhirt.util._
+import almhirt.common.AlmFuture
 
 trait Almhirt extends AlmhirtEnvironmentOps with HasServices with Disposable {
   def environment: AlmhirtEnvironment

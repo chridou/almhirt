@@ -53,6 +53,7 @@ trait CommonBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
 	  libraryDependencies += specs2
   )
 }
@@ -94,7 +95,6 @@ trait CoreBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += akka_actor,
 	  libraryDependencies += specs2,
 	  libraryDependencies += akka_testkit
   )

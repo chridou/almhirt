@@ -12,6 +12,8 @@ import almhirt.messaging.MessageStream
 import almhirt.environment.AlmhirtContext
 import almhirt.commanding.DomainCommand
 import almhirt.almakka.AlmActorLogging
+import almhirt.common.ActorBased
+import almhirt.common.AlmFuture
 
 trait OperationStateTrackerCmd
 case class RegisterResultCallbackCmd(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit, atMost: Duration) extends OperationStateTrackerCmd

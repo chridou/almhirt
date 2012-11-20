@@ -11,6 +11,7 @@ import almhirt.domain._
 import almhirt.util._
 import com.typesafe.config.Config
 import almhirt.environment.configuration.SystemHelper
+import almhirt.common.AlmFuture
 
 trait AlmhirtEnvironmentOps extends AlmhirtContextOps {
   def executeCommand(cmd: DomainCommand, ticket: Option[TrackingTicket]) { executeCommand(CommandEnvelope(cmd, ticket)) }

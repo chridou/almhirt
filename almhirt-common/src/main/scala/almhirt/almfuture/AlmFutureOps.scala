@@ -19,8 +19,8 @@ import akka.dispatch.Promise
 import scala.reflect.Manifest
 import scalaz.Scalaz.ToValidationV
 import scalaz.syntax.Ops
-import almhirt._, common._, core._
-import almvalidation.kit._
+import almhirt.common._
+import almhirt.almvalidation.kit._
 
 /** Implicits on an untyped [[akka.dispatch.Future]] */
 trait AlmFutureOps0 extends Ops[Future[Any]] {
