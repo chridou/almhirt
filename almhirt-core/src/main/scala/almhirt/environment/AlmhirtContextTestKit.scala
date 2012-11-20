@@ -31,7 +31,6 @@ trait AlmhirtContextTestKit {
 
   def createTestContext(): AlmhirtContext = createTestContext(defaultConf)
   def createTestContext(aConf: Config): AlmhirtContext = {
-    println(aConf.getConfig("almhirt"))
     implicit val almhirtSys = systemTestKit.createTestSystem(aConf)
     implicit val context = AlmhirtContext().awaitResult(almhirtSys.shortDuration).forceResult
     context

@@ -100,21 +100,6 @@ trait CoreBuild {
   )
 }
 
-trait SlickEventLogBuild {
-  import Dependencies._
-  import Resolvers._
-  def slickEventLogProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-//	  libraryDependencies += slick,
-	  libraryDependencies += specs2
-  )
-}
-
 trait AnormEventLogBuild {
   import Dependencies._
   import Resolvers._
@@ -126,6 +111,7 @@ trait AnormEventLogBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += "play" % "anorm_2.9.1" % "2.0.4",
+	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
 	  libraryDependencies += specs2
   )
 }
@@ -143,7 +129,7 @@ trait UnfilteredBuild {
 }
 */
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpBuild with DocItBuild with SlickEventLogBuild with AnormEventLogBuild {
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpBuild with DocItBuild with AnormEventLogBuild {
   lazy val root = Project(	id = "almhirt",
 	                        base = file(".")) aggregate(common, core, riftwarp, docit, anormEventLog)
 	
@@ -158,9 +144,6 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpB
 
   lazy val docit = docitProject(	name = "almhirt-docit",
                        			baseFile = file("almhirt-docit")) dependsOn(common)
-
-  lazy val slickEventLog = slickEventLogProject(	name = "almhirt-slickeventlog",
-                       			baseFile = file("./ext/eventlogs/almhirt-slickeventlog")) dependsOn(core)
 
   lazy val anormEventLog = anormEventLogProject(	name = "almhirt-anormeventlog",
                        			baseFile = file("./ext/eventlogs/almhirt-anormeventlog")) dependsOn(core)

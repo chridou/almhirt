@@ -4,8 +4,17 @@ import java.sql.Connection
 import scalaz.syntax.validation._
 import almhirt.common._
 import java.sql.DriverManager
+import java.util.Properties
 
 object DbUtil {
+  def getConnection(url: String, props: Properties) = {
+    try {
+      DriverManager.getConnection(url, props).success
+    } catch {
+      case exn => PersistenceProblem("Could not connect to %s".format(url), cause = Some(CauseIsThrowable(exn))).failure
+    }
+  }
+  
   def withConnection[T](getConnection: () => AlmValidation[Connection])(compute: Connection => AlmValidation[T]): AlmValidation[T] = {
     val connection = getConnection()
     connection.bind(conn => {
@@ -15,7 +24,7 @@ object DbUtil {
         res
       } catch {
         case exn =>
-          PersistenceProblem("Could not execute a db operation", cause = Some(CauseIsThrowable(exn))).failure
+          PersistenceProblem("Could not execute a db operation: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
       } finally {
         conn.close()
       }
@@ -33,10 +42,29 @@ object DbUtil {
       } catch {
         case exn =>
           conn.rollback
-          PersistenceProblem("Could not execute transaction. Rolled back.", cause = Some(CauseIsThrowable(exn))).failure
+          PersistenceProblem("Could not execute transaction. Rolled back: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
       } finally {
         conn.setAutoCommit(originalState)
       }
     }
   }
+  
+  def inTransactionWithConnection[T](getConnection: () => AlmValidation[Connection])(compute: Connection => AlmValidation[T]): AlmValidation[T] = {
+    withConnection(getConnection) { conn =>
+      val originalState = conn.getAutoCommit()
+      conn.setAutoCommit(false)
+      try {
+        val res = compute(conn)
+        conn.commit()
+        res
+      } catch {
+        case exn =>
+          conn.rollback
+          PersistenceProblem("Could not execute transaction. Rolled back: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
+      } finally {
+        conn.setAutoCommit(originalState)
+      }
+    }
+  }
+  
 }

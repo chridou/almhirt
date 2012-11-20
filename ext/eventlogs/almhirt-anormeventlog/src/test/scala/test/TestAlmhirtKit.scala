@@ -21,10 +21,12 @@ trait TestAlmhirtKit {
 		  }
 		  eventlog {
 		  	factory = "almhirt.eventlog.anorm.SerializingAnormEventLogFactory"
-		  	actorname = "testeventlog"
-		  	driver = "org.h2.driver"
+		  	actorname = "anorm-test-eventlog"
+		  	driver = "org.h2.Driver"
 		  	connection = "jdbc:h2:mem:almhirtanormtest"
 		  	eventlogtable = "eventlog"
+		  	create_schema = true
+		  	ddlpath = "/conf/ddl.sql"
 		  }
 	  }
     """

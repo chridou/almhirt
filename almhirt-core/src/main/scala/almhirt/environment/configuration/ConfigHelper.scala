@@ -24,6 +24,9 @@ object ConfigHelper {
     option.cata(tryGetString(config)(path))(_.success, KeyNotFoundProblem("String not found: %s".format(path), args = Map("key" -> path)).failure)
   }
 
+  def getBoolean(config: Config)(path: String): AlmValidation[Boolean] =
+    almhirt.almvalidation.funs.inTryCatch(config.getBoolean(path))
+  
   def tryGetSubConfig(config: Config)(path: String): Option[Config] =
     config.getConfig(path) match {
       case null => None
