@@ -29,18 +29,17 @@ trait AlmhirtEnvironmentTestKit {
 		  }
 	  }
     """
-  val conf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
+  val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 
-  def createTestEnvironment(): AlmhirtEnvironment = createTestEnvironment(conf)
+  def createTestEnvironment(): AlmhirtEnvironment = createTestEnvironment(defaultConf)
   def createTestEnvironment(aConf: Config): AlmhirtEnvironment = {
-    implicit val almhirtSys = AlmhirtSystem(conf).forceResult
-    implicit val context = AlmhirtContext(conf).awaitResult(almhirtSys.shortDuration).forceResult
-    AlmhirtEnvironment(conf).awaitResult(almhirtSys.shortDuration).forceResult
+    implicit val context = contextTestKit.createTestContext(aConf)
+    AlmhirtEnvironment().awaitResult(context.system.shortDuration).forceResult
   }
 
-   def inTestEnvironment[T](compute: AlmhirtEnvironment => T): T = inTestEnvironment[T](compute, conf)
-  def inTestEnvironment[T](compute: AlmhirtEnvironment => T, conf: Config): T = {
-    val context = createTestEnvironment(conf)
+  def inTestEnvironment[T](compute: AlmhirtEnvironment => T): T = inTestEnvironment[T](compute, defaultConf)
+  def inTestEnvironment[T](compute: AlmhirtEnvironment => T, aConf: Config): T = {
+    val context = createTestEnvironment(aConf)
     val res = compute(context)
     context.dispose
     res

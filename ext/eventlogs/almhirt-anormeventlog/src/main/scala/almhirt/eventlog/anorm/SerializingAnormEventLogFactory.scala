@@ -11,10 +11,16 @@ import almhirt.eventlog.impl.DomainEventLogActorHull
 
 class SerializingAnormEventLogFactory extends DomainEventLogFactory {
   def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
-    val settings = AnormSettings("", new Properties() , "")
-    val props =
-      SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new SerializingAnormEventLogActor(settings)(ctx)))
-    val actor = ctx.system.actorSystem.actorOf(props, "domainEventLog")
-    new DomainEventLogActorHull(actor)(ctx).success
+    val tableName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".eventlogtable").getOrElse("eventlog")
+    val actorName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".actorname").getOrElse("domaineventlog")
+    ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".connection").bind(connection =>
+      ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".driver").bind(drivername =>
+        almhirt.almvalidation.funs.inTryCatch({ Class.forName(drivername); () }).map { _ =>
+          val settings = AnormSettings(connection, new Properties(), tableName)
+          val props =
+            SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new SerializingAnormEventLogActor(settings)(ctx)))
+          val actor = ctx.system.actorSystem.actorOf(props, actorName)
+          new DomainEventLogActorHull(actor)(ctx)
+        }))
   }
 }

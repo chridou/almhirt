@@ -22,8 +22,6 @@ trait AlmhirtEnvironmentOps extends AlmhirtContextOps {
 }
 
 trait AlmhirtEnvironment extends AlmhirtEnvironmentOps with Disposable {
-  def config: Config
-
   def context: AlmhirtContext
 
   def reportProblem(prob: Problem) { context.reportProblem(prob) }
@@ -50,7 +48,7 @@ object AlmhirtEnvironment {
   import akka.util.Duration._
   import almhirt.syntax.almvalidation._
   import almhirt.almfuture.all._
-  def apply(aConfig: Config)(implicit ctx: AlmhirtContext): AlmFuture[AlmhirtEnvironment] = {
+  def apply()(implicit ctx: AlmhirtContext): AlmFuture[AlmhirtEnvironment] = {
     implicit val atMost = ctx.system.mediumDuration
     implicit val executor = ctx.system.futureDispatcher
     for {
@@ -68,7 +66,6 @@ object AlmhirtEnvironment {
       theEventLog <- AlmPromise(SystemHelper.createEventLogFromFactory(ctx))
     } yield (
       new AlmhirtEnvironment {
-        val config = aConfig
         val context = ctx
         val repositories = repos
         val commandExecutor = cmdExecutor
@@ -82,6 +79,4 @@ object AlmhirtEnvironment {
         }
       })
   }
-  def apply()(implicit ctx: AlmhirtContext): AlmFuture[AlmhirtEnvironment] = apply(ctx.config)
-
 }

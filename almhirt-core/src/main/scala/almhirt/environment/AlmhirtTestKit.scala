@@ -25,9 +25,9 @@ trait AlmhirtTestKit {
 		  }
 	  }
     """
-  val conf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
+  val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 
-  def createTestAlmhirt(): Almhirt = createTestAlmhirt(conf)
+  def createTestAlmhirt(): Almhirt = createTestAlmhirt(defaultConf)
   def createTestAlmhirt(aConf: Config): Almhirt = {
     val env = environmentTestKit.createTestEnvironment(aConf)
     implicit val futureContext = env.context.system.futureDispatcher
@@ -41,9 +41,9 @@ trait AlmhirtTestKit {
     almhirt
   }
 
-  def inTestAlmhirt[T](compute: Almhirt => T): T = inTestAlmhirt(compute, conf)
+  def inTestAlmhirt[T](compute: Almhirt => T): T = inTestAlmhirt(compute, defaultConf)
   def inTestAlmhirt[T](compute: Almhirt => T, aConf: Config): T = {
-    val almhirt = createTestAlmhirt(conf)
+    val almhirt = createTestAlmhirt(aConf)
     val res = compute(almhirt)
     almhirt.dispose
     res

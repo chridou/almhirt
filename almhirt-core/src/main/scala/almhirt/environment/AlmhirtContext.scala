@@ -70,7 +70,7 @@ object AlmhirtContext {
   import akka.util.Duration._
   import almhirt.syntax.almvalidation._
   import almhirt.almfuture.all._
-  def apply(aConfig: Config)(implicit sys: AlmhirtSystem): AlmFuture[AlmhirtContext] = {
+  def apply()(implicit sys: AlmhirtSystem): AlmFuture[AlmhirtContext] = {
     implicit val atMost = sys.mediumDuration
     implicit val executionContext = sys.futureDispatcher
 
@@ -85,7 +85,7 @@ object AlmhirtContext {
       probChannel <- hub.createMessageChannel[Problem]("problemChannel")
     } yield (
       new AlmhirtContext {
-        val config = aConfig
+        val config = sys.config
         val system = sys
         val messageHub = hub
         val commandChannel = cmdChannel
@@ -103,6 +103,4 @@ object AlmhirtContext {
         }
       })
   }
-  def apply()(implicit sys: AlmhirtSystem): AlmFuture[AlmhirtContext] = apply(sys.config)
-
 }

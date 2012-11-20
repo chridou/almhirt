@@ -12,6 +12,7 @@ import com.typesafe.config._
 import almhirt.util._
 
 trait AlmhirtContextTestKit {
+  val systemTestKit = new AlmhirtsystemTestkit {}
   private val configText =
     """  
       akka {
@@ -26,18 +27,19 @@ trait AlmhirtContextTestKit {
 		}
      }
     """
-  val conf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
+  val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 
-  def createTestContext(): AlmhirtContext = createTestContext(conf)
-  def createTestContext(conf: Config): AlmhirtContext = {
-    implicit val almhirtSys = AlmhirtSystem(conf).forceResult
-    implicit val context = AlmhirtContext(conf).awaitResult(almhirtSys.shortDuration).forceResult
+  def createTestContext(): AlmhirtContext = createTestContext(defaultConf)
+  def createTestContext(aConf: Config): AlmhirtContext = {
+    println(aConf.getConfig("almhirt"))
+    implicit val almhirtSys = systemTestKit.createTestSystem(aConf)
+    implicit val context = AlmhirtContext().awaitResult(almhirtSys.shortDuration).forceResult
     context
   }
 
-  def inTestContext[T](compute: AlmhirtContext => T): T = inTestContext[T](compute, conf)
-  def inTestContext[T](compute: AlmhirtContext => T, conf: Config): T = {
-    val context = createTestContext(conf)
+  def inTestContext[T](compute: AlmhirtContext => T): T = inTestContext[T](compute, defaultConf)
+  def inTestContext[T](compute: AlmhirtContext => T, aConf: Config): T = {
+    val context = createTestContext(aConf)
     val res = compute(context)
     context.dispose
     res
