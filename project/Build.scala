@@ -145,7 +145,7 @@ trait UnfilteredBuild {
 
 object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpBuild with DocItBuild with SlickEventLogBuild with AnormEventLogBuild {
   lazy val root = Project(	id = "almhirt",
-	                        base = file(".")) aggregate(common, core, riftwarp, docit)
+	                        base = file(".")) aggregate(common, core, riftwarp, docit, anormEventLog)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))

@@ -2,8 +2,11 @@ package almhirt.eventlog.anorm
 
 import java.util.UUID
 import java.util.Properties
-import java.sql._
+import java.sql.{ DriverManager, Connection }
+import scalaz._, Scalaz._
 import scalaz.syntax.validation._
+import scalaz.std._
+import org.joda.time.DateTime
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
@@ -13,90 +16,108 @@ import almhirt.environment.AlmhirtContext
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._
-import anorm._
-import org.joda.time.DateTime
 import almhirt.riftwarp.RiftJson
-
-case class AnormSettings(connection: String, props: Properties)
-case class AnormEventLogEntry(id: UUID, version: Long, timestamp: DateTime, payload: String)
+import _root_.anorm._
 
 class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
 
-  private def createLogEntry(event: DomainEvent): AlmValidation[AnormEventLogEntry] = {
-    val serializedEvent = almhirtContext.riftWarp.prepareForWarp(RiftJson)(event)
-    serializedEvent.map(serEvent =>
-      AnormEventLogEntry(event.id, event.version, almhirtContext.getDateTime, serEvent))
+  private val cmdInsert = "INSERT INTO %s VALUES({id}, {version}, {timestamp}, {payload})".format(settings.logTableName)
+  private val cmdNextId = "SELECT max(version)+1 AS next FROM %s e WHERE e.id = {id}".format(settings.logTableName)
+  private val qryAllEvents = "SELECT * FROM %s".format(settings.logTableName)
+  private val qryAllEventsFor = "SELECT * FROM %s e WHERE e.id = {id}".format(settings.logTableName)
+  private val qryAllEventsForFrom = "SELECT * FROM %s e WHERE e.id = {id} AND e.version >= {from}".format(settings.logTableName)
+  private val qryAllEventsForFromTo = "SELECT * FROM %s e WHERE e.id = {id} AND e.version >= {from} AND e.version <= {to}".format(settings.logTableName)
+
+  private def getConnection() = {
+    try {
+      DriverManager.getConnection(settings.connection, settings.props).success
+    } catch {
+      case exn => PersistenceProblem("Could not connect to %s".format(settings.connection), cause = Some(CauseIsThrowable(exn))).failure
+    }
   }
 
-  private def inConnection[T](compute: Connection => AlmValidation[T]): AlmValidation[T] = {
-    val connection =
-      try {
-        DriverManager.getConnection(settings.connection, settings.props).success
-      } catch {
-        case exn => PersistenceProblem("Could not connect to %s".format(settings.connection), cause = Some(CauseIsThrowable(exn))).failure
-      }
-    connection.bind(conn => {
-      try {
-        val res = compute(conn)
-        conn.close()
-        res
-      } catch {
-        case exn =>
-          conn.close()
-          PersistenceProblem("Could not execute a db operation", cause = Some(CauseIsThrowable(exn))).failure
-      }
-    })
+  private def withConnection[T](compute: Connection => AlmValidation[T]): AlmValidation[T] =
+    DbUtil.withConnection(getConnection)(compute)
+
+  private def inTransaction[T](compute: Connection => AlmValidation[T]): AlmValidation[T] =
+    DbUtil.inTransaction(withConnection[T])(compute)
+
+  private def storeEvents(events: List[DomainEvent]): AlmValidation[List[DomainEvent]] = {
+    val entriesV = AnormEventLogEntry.fromDomainEvents(events)
+    entriesV.bind(entries =>
+      inTransaction(implicit conn => {
+        val rowsInserted =
+          entries.map { entry =>
+            val cmd = SQL(cmdInsert).on("id" -> entry.id, "version" -> entry.version, "timestamp" -> entry.timestamp, "payload" -> entry.payload)
+            cmd.executeInsert()
+          }.flatten
+        if (rowsInserted.length == events.length)
+          events.success
+        else
+          PersistenceProblem("Number of committed events(%d) does not match the number of events to store(%d)!".format(rowsInserted.length, events.length)).failure
+      }))
   }
 
-  //private def inTransaction[T](compute: Connection => AlmValidation[T]): AlmValidation[T] = {
-  //    inConnection { conn =>
-  //      conn.setAutoCommit(false)
-  //      try {
-  //        val res = compute(conn)
-  //        conn.commit()
-  //        conn.setAutoCommit(true)
-  //        res
-  //      } catch {
-  //        case exn =>
-  //          conn.rollback
-  //          conn.setAutoCommit(true)
-  //          PersistenceProblem("Could not execute transaction", cause = Some(CauseIsThrowable(exn))).failure
-  //      }
-  //    }
-  //  }  
+  private def getEventsFor(id: UUID, from: Option[Long], to: Option[Long]): AlmValidation[Iterable[DomainEvent]] = {
+    val cmd =
+      (from, to) match {
+        case (None, None) => SQL(qryAllEventsFor).on("id" -> id)
+        case (Some(from), None) => SQL(qryAllEventsForFrom).on("id" -> id, "from" -> from)
+        case (None, Some(to)) => SQL(qryAllEventsForFromTo).on("id" -> id, "from" -> 0, "to" -> to)
+        case (Some(from), Some(to)) => SQL(qryAllEventsForFromTo).on("id" -> id, "from" -> from, "to" -> to)
+      }
+    val result = withConnection { implicit conn =>
+      val payloadsV =
+        cmd().map { row =>
+          val str = inTryCatch { row[String]("payload") }
+          str.bind(x =>
+            almhirtContext.riftWarp.receiveFromWarp[String, DomainEvent](RiftJson)(x))
+        }.map(_.toAgg).toList
+      payloadsV.sequence
+    }
+    result
+  }
 
-  //private def storeEvents(events: List[DomainEvent]): AlmValidation[List[DomainEvent]] = {
-  //    val entriesV = events.map(event => createLogEntry(event).toAgg).sequence
-  //    entriesV.bind(entries =>
-  //      inTransaction(conn => {
-  //        val statement = conn.prepareStatement("INSERT INTO %s VALUES(?, ?, ?, ?)".format(logTableName))
-  //        entries.foreach(entry => {
-  //          statement.setObject(1, entry.id)
-  //          statement.setLong(2, entry.version)
-  //          statement.setDate(3, new java.sql.Date(entry.timestamp.getMillis()))
-  //          statement.setString(4, entry.payload)
-  //          statement.execute()
-  //          statement.clearParameters()
-  //        })	
-  //        events.success
-  //      }))
-  //  }
+  private def getAllEvents(): AlmValidation[Iterable[DomainEvent]] = {
+    val cmd = SQL(qryAllEvents)
+    val result = withConnection { implicit conn =>
+      val payloadsV =
+        cmd().map { row =>
+          val str = inTryCatch { row[String]("payload") }
+          str.bind(x =>
+            almhirtContext.riftWarp.receiveFromWarp[String, DomainEvent](RiftJson)(x))
+        }.map(_.toAgg).toList
+      payloadsV.sequence
+    }
+    result
+  }
+
+  private def getNextRequiredVersion(aggId: UUID): AlmValidation[Long] = {
+    withConnection { implicit conn =>
+      val rowOpt = SQL(cmdNextId).on("id" -> aggId).apply().headOption
+      option.cata(rowOpt)(v => inTryCatch { v[Long]("next") }, 0L.success)
+    }
+  }
 
   def receive: Receive = {
     case LogEventsQry(events, executionIdent) =>
-      loggedEvents = loggedEvents ++ events
-      events.foreach(event => almhirtContext.broadcastDomainEvent(event))
-      sender ! CommittedDomainEventsRsp(events.success, executionIdent)
+      val res = storeEvents(events)
+      sender ! CommittedDomainEventsRsp(res, executionIdent)
     case GetAllEventsQry =>
-      sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success))
+      val res = getAllEvents()
+      sender ! AllEventsRsp(DomainEventsChunk(0, true, res))
     case GetEventsQry(aggId) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.id == aggId).toIterable.success))
+      val res = getEventsFor(aggId, None, None)
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res))
     case GetEventsFromQry(aggId, from) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.id == aggId && x.version >= from).toIterable.success))
+      val res = getEventsFor(aggId, Some(from), None)
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res))
     case GetEventsFromToQry(aggId, from, to) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.id == aggId && x.version >= from && x.version <= to).toIterable.success))
+      val res = getEventsFor(aggId, Some(from), Some(to))
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res))
     case GetRequiredNextEventVersionQry(aggId) =>
-      sender ! RequiredNextEventVersionRsp(aggId, loggedEvents.view.filter(x => x.id == aggId).lastOption.map(_.version + 1L).getOrElse(0L).success)
+      val res = getNextRequiredVersion(aggId)
+      sender ! RequiredNextEventVersionRsp(aggId, res)
   }
 }
