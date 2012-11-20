@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS eventlog
 (	id UUID PRIMARY KEY,
-	version BIGINT,
-	timestamp TIMESTAMP,
-	payload CLOB)
+	version BIGINT NOT NULL,
+	timestamp TIMESTAMP NOT NULL,
+	payload CLOB NOT NULL)

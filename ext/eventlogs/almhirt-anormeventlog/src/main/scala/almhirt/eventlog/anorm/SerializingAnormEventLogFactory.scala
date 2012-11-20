@@ -16,10 +16,8 @@ class SerializingAnormEventLogFactory extends DomainEventLogFactory {
     val ddlSql = source.mkString
     DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
       val statement = conn.createStatement()
-      if (statement.execute(ddlSql))
-        settings.success
-      else
-        PersistenceProblem("Schema was not generated").failure
+      statement.executeUpdate(ddlSql)
+      settings.success
     }
   }
 

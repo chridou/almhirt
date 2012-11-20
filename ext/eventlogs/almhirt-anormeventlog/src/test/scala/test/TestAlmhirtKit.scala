@@ -23,7 +23,7 @@ trait TestAlmhirtKit {
 		  	factory = "almhirt.eventlog.anorm.SerializingAnormEventLogFactory"
 		  	actorname = "anorm-test-eventlog"
 		  	driver = "org.h2.Driver"
-		  	connection = "jdbc:h2:mem:almhirtanormtest"
+		  	connection = "jdbc:h2:mem:almhirtanormtest;DB_CLOSE_DELAY=-1"
 		  	eventlogtable = "eventlog"
 		  	create_schema = true
 		  	ddlpath = "/conf/ddl.sql"

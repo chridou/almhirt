@@ -16,7 +16,7 @@ object SystemHelper {
   }
 
   def createEventLogFromFactory(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
-   ConfigHelper.getFactoryName(ctx.config)(ConfigPaths.eventlog).bind(factoryName =>
+    ConfigHelper.getFactoryName(ctx.config)(ConfigPaths.eventlog).bind(factoryName =>
       inTryCatch(Class.forName(factoryName).newInstance().asInstanceOf[{ def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] }]).bind(factory =>
         factory.createDomainEventLog(ctx)))
   }

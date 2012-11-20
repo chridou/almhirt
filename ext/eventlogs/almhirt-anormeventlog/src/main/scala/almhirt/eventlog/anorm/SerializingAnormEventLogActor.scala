@@ -23,7 +23,7 @@ class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtCon
   private var loggedEvents: List[DomainEvent] = Nil
 
   private val cmdInsert = "INSERT INTO %s VALUES({id}, {version}, {timestamp}, {payload})".format(settings.logTableName)
-  private val cmdNextId = "SELECT max(version)+1 AS next FROM %s e WHERE e.id = {id}".format(settings.logTableName)
+  private val cmdNextId = "SELECT MAX(version)+1 AS next FROM %s e WHERE e.id = {id}".format(settings.logTableName)
   private val qryAllEvents = "SELECT * FROM %s".format(settings.logTableName)
   private val qryAllEventsFor = "SELECT * FROM %s e WHERE e.id = {id}".format(settings.logTableName)
   private val qryAllEventsForFrom = "SELECT * FROM %s e WHERE e.id = {id} AND e.version >= {from}".format(settings.logTableName)
@@ -96,7 +96,7 @@ class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtCon
   private def getNextRequiredVersion(aggId: UUID): AlmValidation[Long] = {
     withConnection { implicit conn =>
       val rowOpt = SQL(cmdNextId).on("id" -> aggId).apply().headOption
-      option.cata(rowOpt)(v => inTryCatch { v[Long]("next") }, 0L.success)
+      option.cata(rowOpt)(v => inTryCatch { v[Option[Long]]("next").getOrElse(0L) }, 0L.success)
     }
   }
 
