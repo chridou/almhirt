@@ -75,6 +75,7 @@ object AlmhirtEnvironment {
           cmdExecutorRegistration.dispose
           trackerRegistration.dispose
           tracker.dispose
+          eventLog.close()
           context.dispose
         }
       })

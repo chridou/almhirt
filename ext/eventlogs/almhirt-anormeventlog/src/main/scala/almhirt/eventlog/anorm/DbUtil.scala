@@ -37,6 +37,7 @@ object DbUtil {
       conn.setAutoCommit(false)
       try {
         val res = compute(conn)
+        //res.fold(fail, succ)
         conn.commit()
         res
       } catch {

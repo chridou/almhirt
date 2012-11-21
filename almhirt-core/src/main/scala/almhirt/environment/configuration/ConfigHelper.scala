@@ -27,6 +27,9 @@ object ConfigHelper {
   def getBoolean(config: Config)(path: String): AlmValidation[Boolean] =
     almhirt.almvalidation.funs.inTryCatch(config.getBoolean(path))
   
+  def isBooleanSet(config: Config)(path: String): Boolean =
+    getBoolean(config)(path).fold(_ => false, x => x)
+    
   def tryGetSubConfig(config: Config)(path: String): Option[Config] =
     config.getConfig(path) match {
       case null => None

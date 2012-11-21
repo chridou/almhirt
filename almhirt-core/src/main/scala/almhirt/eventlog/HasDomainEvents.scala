@@ -16,8 +16,8 @@ package almhirt.eventlog
 
 import java.util.UUID
 import scalaz.Validation
+import almhirt.common._
 import almhirt.domain.DomainEvent
-import almhirt.common.AlmFuture
 
 trait HasDomainEvents {
   def getAllEvents: AlmFuture[Iterable[DomainEvent]]

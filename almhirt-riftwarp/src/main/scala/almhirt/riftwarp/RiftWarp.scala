@@ -23,9 +23,9 @@ trait RiftWarp {
         dec.decomposeRaw(what)(dem).bind(funnel =>
           almCast[RawDematerializer](funnel).bind(demat =>
             demat.dematerializeRaw.map(_.asInstanceOf[To])))
-      case (None, Some(_)) => UnspecifiedProblem("No decomposer found for '%s'".format(typeDescriptor)).failure
-      case (Some(_), None) => UnspecifiedProblem("No dematerializer found for '%s'".format(warpType)).failure
-      case (None, None) => UnspecifiedProblem("No decomposer found for '%s' and no dematerializer found for '%s'".format(typeDescriptor, warpType)).failure
+      case (None, Some(_)) => UnspecifiedProblem("No decomposer found for type '%s'".format(typeDescriptor)).failure
+      case (Some(_), None) => UnspecifiedProblem("No dematerializer found for warping through '%s' into a '%s'".format(warpType, m.erasure.getName())).failure
+      case (None, None) => UnspecifiedProblem("No decomposer found for type '%s' and no dematerializer found for warping through '%s' into a '%s'".format(typeDescriptor, warpType, m.erasure.getName())).failure
     }
   }
 

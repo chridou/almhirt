@@ -13,11 +13,28 @@ import scala.io.Source
 class SerializingAnormEventLogFactory extends DomainEventLogFactory {
   private def createSchema(settings: AnormSettings, pathToSchema: String): AlmValidation[AnormSettings] = {
     val source = Source.fromURL(getClass.getResource(pathToSchema))
-    val ddlSql = source.mkString
+    val ddlSql = source.mkString.format(settings.logTableName)
     DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
       val statement = conn.createStatement()
       statement.executeUpdate(ddlSql)
       settings.success
+    }
+  }
+
+  private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, ctx: AlmhirtContext): DomainEventLog = {
+    val props =
+      SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new SerializingAnormEventLogActor(settings)(ctx)))
+    val actor = ctx.system.actorSystem.actorOf(props, actorName)
+    if (dropOnClose) {
+      def dropTable() =
+        DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
+          val statement = conn.createStatement()
+          statement.executeUpdate("DROP TABLE %s".format(settings.logTableName))
+          Unit.success
+        }
+      new DomainEventLogActorHull(actor, dropTable)(ctx)
+    } else {
+      new DomainEventLogActorHull(actor)(ctx)
     }
   }
 
@@ -36,18 +53,21 @@ class SerializingAnormEventLogFactory extends DomainEventLogFactory {
 
           })
 
-    val tableName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".eventlogtable").getOrElse("eventlog")
+    val dropOnClose = ConfigHelper.isBooleanSet(ctx.config)(ConfigPaths.eventlog + ".drop_on_close")
+    val tableName = {
+      val baseName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".eventlogtable").getOrElse("eventlog")
+      if (ConfigHelper.isBooleanSet(ctx.config)(ConfigPaths.eventlog + ".randomize_tablename"))
+        "%s_%s".format(baseName, util.Random.nextInt.toString.filterNot(c => c == '-'))
+      else
+        baseName
+    }
+
     val actorName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".actorname").getOrElse("domaineventlog")
     ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".connection").bind(connection =>
       ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".driver").bind(drivername =>
         almhirt.almvalidation.funs.inTryCatch({ Class.forName(drivername); () }).bind { _ =>
           val settings = AnormSettings(connection, new Properties(), tableName)
-          createSchemaFun(settings).map(settings => {
-            val props =
-              SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new SerializingAnormEventLogActor(settings)(ctx)))
-            val actor = ctx.system.actorSystem.actorOf(props, actorName)
-            new DomainEventLogActorHull(actor)(ctx)
-          })
+          createSchemaFun(settings).map(settings => createEventLog(settings, actorName, dropOnClose, ctx))
         }))
   }
 }

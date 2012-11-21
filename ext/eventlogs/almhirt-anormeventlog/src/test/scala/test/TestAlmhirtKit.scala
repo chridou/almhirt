@@ -27,6 +27,8 @@ trait TestAlmhirtKit {
 		  	eventlogtable = "eventlog"
 		  	create_schema = true
 		  	ddlpath = "/conf/ddl.sql"
+		  	drop_on_close = true
+		  	randomize_tablename = true
 		  }
 	  }
     """

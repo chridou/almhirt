@@ -2,7 +2,7 @@ package almhirt.eventlog.anorm
 
 import java.util.UUID
 import java.util.Properties
-import java.sql.{ DriverManager, Connection }
+import java.sql.{ DriverManager, Connection, Timestamp }
 import scalaz._, Scalaz._
 import scalaz.syntax.validation._
 import scalaz.std._
@@ -49,13 +49,17 @@ class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtCon
       inTransaction(implicit conn => {
         val rowsInserted =
           entries.map { entry =>
-            val cmd = SQL(cmdInsert).on("id" -> entry.id, "version" -> entry.version, "timestamp" -> entry.timestamp, "payload" -> entry.payload)
+            val timestamp = new Timestamp(entry.timestamp.getMillis())
+            val cmd = SQL(cmdInsert).on("id" -> entry.id, "version" -> entry.version, "timestamp" -> timestamp, "payload" -> entry.payload.toString)
             cmd.executeInsert()
           }.flatten
-        if (rowsInserted.length == events.length)
+// This one has to be observed. Does insert always return 0 within a transaction?
+//          Tests show, that there was a row inserted.  
+//        if (rowsInserted.length == events.length)
+//          events.success
+//        else
+//          PersistenceProblem("Number of committed events(%d) does not match the number of events to store(%d)!".format(rowsInserted.length, events.length)).failure
           events.success
-        else
-          PersistenceProblem("Number of committed events(%d) does not match the number of events to store(%d)!".format(rowsInserted.length, events.length)).failure
       }))
   }
 
