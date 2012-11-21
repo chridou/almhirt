@@ -19,7 +19,7 @@ import almhirt.eventlog._
 import almhirt.riftwarp.RiftJson
 import _root_.anorm._
 
-class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
+class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
 
   private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, timestamp, payload) VALUES({id}, {aggId}, {aggVersion}, {timestamp}, {payload})".format(settings.logTableName)

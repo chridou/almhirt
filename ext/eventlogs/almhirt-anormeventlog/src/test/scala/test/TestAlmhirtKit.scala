@@ -20,14 +20,14 @@ trait TestAlmhirtKit {
 		  long = 10.0
 		  }
 		  eventlog {
-		  	factory = "almhirt.eventlog.anorm.SerializingAnormEventLogFactory"
-		  	dbtemplate = "postgres"
-		  	#dbtemplate = "h2"
+		  	factory = "almhirt.eventlog.anorm.SerializingAnormJsonEventLogFactory"
+		  	#dbtemplate = "postgres"
+		  	dbtemplate = "h2"
 		  	#driver = "org.h2.Driver"
 		  	#ddlpath = "/conf/h2ddl.sql"
 		  	actorname = "anorm-test-eventlog"
-		  	#connection = "jdbc:h2:mem:almhirtanormtest;DB_CLOSE_DELAY=-1"
-		  	connection = "jdbc:postgresql://localhost/almhirteventlog"
+		  	connection = "jdbc:h2:mem:almhirtanormtest;DB_CLOSE_DELAY=-1"
+		  	#connection = "jdbc:postgresql://localhost/almhirteventlog"
 		  	properties {
 		  		user = "testuser"
 		  		password = "testuser"

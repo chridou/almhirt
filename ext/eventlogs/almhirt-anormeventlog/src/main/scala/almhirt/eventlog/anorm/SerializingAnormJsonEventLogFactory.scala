@@ -12,7 +12,7 @@ import almhirt.eventlog.impl.DomainEventLogActorHull
 import scala.io.Source
 import com.typesafe.config._
 
-class SerializingAnormEventLogFactory extends DomainEventLogFactory {
+class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
   private def createSchema(settings: AnormSettings, pathToSchema: String): AlmValidation[AnormSettings] = {
     val resource = getClass.getResource(pathToSchema)
     if (resource != null) {
@@ -30,7 +30,7 @@ class SerializingAnormEventLogFactory extends DomainEventLogFactory {
 
   private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, ctx: AlmhirtContext): DomainEventLog = {
     val props =
-      SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new SerializingAnormEventLogActor(settings)(ctx)))
+      SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new SerializingAnormJsonEventLogActor(settings)(ctx)))
     val actor = ctx.system.actorSystem.actorOf(props, actorName)
     if (dropOnClose) {
       def dropTable() =
