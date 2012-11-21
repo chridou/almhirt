@@ -107,10 +107,10 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
    * @return The passed event wrapped in a success if it is valid otherwise a failure
    */
   protected def validateEvent(event: Event): AlmValidation[Event] = {
-  	if (event.id != this.id)
+  	if (event.aggId != this.id)
   	  defaultApplicationProblem.withMessage("Ids do not match!").failure
-  	else if(event.version != this.version)
-  	  CollisionProblem("Conflict: Versions do not match. Targetted version is %d but the entity has version %d. The event was: %s".format(event.version, this.version, event.getClass().getName)).failure
+  	else if(event.aggVersion != this.version)
+  	  CollisionProblem("Conflict: Versions do not match. Targetted version is %d but the entity has version %d. The event was: %s".format(event.aggVersion, this.version, event.getClass().getName)).failure
   	else
   	  event.success
   }

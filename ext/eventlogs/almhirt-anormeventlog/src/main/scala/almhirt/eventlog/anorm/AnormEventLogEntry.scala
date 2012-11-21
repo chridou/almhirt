@@ -9,13 +9,13 @@ import almhirt.domain.DomainEvent
 import almhirt.environment.AlmhirtContext
 import almhirt.riftwarp.RiftJson
 
-case class AnormEventLogEntry(id: UUID, version: Long, timestamp: DateTime, payload: scalaz.Cord)
+case class AnormEventLogEntry(id: UUID, aggId: UUID, aggVersion: Long, timestamp: DateTime, payload: scalaz.Cord)
 
 object AnormEventLogEntry{
   def fromDomainEvent(event: DomainEvent)(implicit ctx: AlmhirtContext): AlmValidation[AnormEventLogEntry] = {
     val serializedEvent= ctx.riftWarp.prepareForWarp[scalaz.Cord](RiftJson)(event)
     serializedEvent.map(serEvent =>
-      AnormEventLogEntry(event.id, event.version, ctx.getDateTime, serEvent))
+      AnormEventLogEntry(event.id, event.aggId, event.aggVersion, ctx.getDateTime, serEvent))
   }
   
   def fromDomainEvents(events: List[DomainEvent])(implicit ctx: AlmhirtContext): AlmValidation[List[AnormEventLogEntry]] =

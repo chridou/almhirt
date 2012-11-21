@@ -57,7 +57,7 @@ class SerializingAnormEventLogFactory extends DomainEventLogFactory {
     val tableName = {
       val baseName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".eventlogtable").getOrElse("eventlog")
       if (ConfigHelper.isBooleanSet(ctx.config)(ConfigPaths.eventlog + ".randomize_tablename"))
-        "%s_%s".format(baseName, util.Random.nextInt.toString.filterNot(c => c == '-'))
+        "%s_%s".format(baseName, util.Random.nextInt.toString.replaceAll("-", "N"))
       else
         baseName
     }

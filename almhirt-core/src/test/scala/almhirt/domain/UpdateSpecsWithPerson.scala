@@ -23,7 +23,7 @@ class UpdateSpecsWithPerson extends Specification {
       (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).events.length must beEqualTo(1)
     }
     "have created a single event with a targetted version of 1" in {
-      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).events.head.version must beEqualTo(1)
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).events.head.aggVersion must beEqualTo(1)
     }
     "have created a single event of type TestPersonNameChanged" in {
       (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).events.head.isInstanceOf[TestPersonNameChanged]
@@ -34,11 +34,11 @@ class UpdateSpecsWithPerson extends Specification {
     }
     "have created a TestPersonNameChanged event containing a version of 1" in {
       (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")})
-        .events.head.asInstanceOf[TestPersonNameChanged].version must beEqualTo(1)
+        .events.head.asInstanceOf[TestPersonNameChanged].aggVersion must beEqualTo(1)
     }
     "have created a TestPersonNameChanged event containing an entityId which is the same as the origins" in {
       (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")})
-        .events.head.asInstanceOf[TestPersonNameChanged].id must beEqualTo(person.id)
+        .events.head.asInstanceOf[TestPersonNameChanged].aggId must beEqualTo(person.id)
     }
     "reject having her name changed to an empty String" in {
       (UpdateRecorder.startWith(person) flatMap {_.changeName("")}).isRejected
@@ -78,11 +78,11 @@ class UpdateSpecsWithPerson extends Specification {
     }
     "have created a TestPersonAddressAquired event containing a version of 2" in {
       (updateWithName flatMap {_.addressAquired("Gibraltar")})
-        .events.tail.head.asInstanceOf[TestPersonAddressAquired].version must beEqualTo(2)
+        .events.tail.head.asInstanceOf[TestPersonAddressAquired].aggVersion must beEqualTo(2)
     }
     "have created a TestPersonAddressAquired event containing an entityId which is the same as the origins" in {
       (updateWithName flatMap {_.addressAquired("Gibraltar")})
-        .events.tail.head.asInstanceOf[TestPersonAddressAquired].id must beEqualTo(person.id)
+        .events.tail.head.asInstanceOf[TestPersonAddressAquired].aggId must beEqualTo(person.id)
     }
     "reject having her address changed to an empty String" in {
       (updateWithName flatMap {_.addressAquired("")}).isRejected

@@ -8,7 +8,7 @@ import almhirt.commanding.AggregateRootRef
 
 trait SerializationFuns {
   def serializeCommonDomainEventFields(event: DomainEvent, funnel: DematerializationFunnel): AlmValidation[DematerializationFunnel] =
-    funnel.addUuid("id", event.id).bind(f => f.addLong("version", event.version))
+    funnel.addUuid("aggId", event.aggId).bind(f => f.addLong("aggVersion", event.aggVersion))
 
   def serializeCommonMutatorCommandFields(com: MutatorCommandStyle, funnel: DematerializationFunnel): AlmValidation[DematerializationFunnel] =
     funnel.addComplexType[AggregateRootRef]("target", com.target)

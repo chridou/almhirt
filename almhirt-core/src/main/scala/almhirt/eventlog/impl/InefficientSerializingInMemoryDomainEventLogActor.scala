@@ -46,12 +46,12 @@ class InefficientSerializingInMemoryDomainEventLogActor(implicit almhirtContext:
     case GetAllEventsQry =>
       sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success))
     case GetEventsQry(aggId) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.id == aggId).toIterable.success))
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.aggId == aggId).toIterable.success))
     case GetEventsFromQry(aggId, from) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.id == aggId && x.version >= from).toIterable.success))
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success))
     case GetEventsFromToQry(aggId, from, to) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.id == aggId && x.version >= from && x.version <= to).toIterable.success))
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success))
     case GetRequiredNextEventVersionQry(aggId) =>
-      sender ! RequiredNextEventVersionRsp(aggId, loggedEvents.view.filter(x => x.id == aggId).lastOption.map(_.version + 1L).getOrElse(0L).success)
+      sender ! RequiredNextEventVersionRsp(aggId, loggedEvents.view.filter(x => x.aggId == aggId).lastOption.map(_.aggVersion + 1L).getOrElse(0L).success)
   }
 }

@@ -22,12 +22,12 @@ import _root_.anorm._
 class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
 
-  private val cmdInsert = "INSERT INTO %s VALUES({id}, {version}, {timestamp}, {payload})".format(settings.logTableName)
-  private val cmdNextId = "SELECT MAX(version)+1 AS next FROM %s e WHERE e.id = {id}".format(settings.logTableName)
+  private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, timestamp, payload) VALUES({id}, {aggId}, {aggVersion}, {timestamp}, {payload})".format(settings.logTableName)
+  private val cmdNextId = "SELECT MAX(aggVersion)+1 AS next FROM %s e WHERE e.aggId = {aggId}".format(settings.logTableName)
   private val qryAllEvents = "SELECT * FROM %s".format(settings.logTableName)
-  private val qryAllEventsFor = "SELECT * FROM %s e WHERE e.id = {id}".format(settings.logTableName)
-  private val qryAllEventsForFrom = "SELECT * FROM %s e WHERE e.id = {id} AND e.version >= {from}".format(settings.logTableName)
-  private val qryAllEventsForFromTo = "SELECT * FROM %s e WHERE e.id = {id} AND e.version >= {from} AND e.version <= {to}".format(settings.logTableName)
+  private val qryAllEventsFor = "SELECT * FROM %s e WHERE e.aggId = {aggId}".format(settings.logTableName)
+  private val qryAllEventsForFrom = "SELECT * FROM %s e WHERE e.aggId = {aggId} AND e.aggVersion >= {from}".format(settings.logTableName)
+  private val qryAllEventsForFromTo = "SELECT * FROM %s e WHERE e.aggId = {aggId} AND e.aggVersion >= {from} AND e.aggVersion <= {to}".format(settings.logTableName)
 
   private def getConnection() = {
     try {
@@ -50,7 +50,7 @@ class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtCon
         val rowsInserted =
           entries.map { entry =>
             val timestamp = new Timestamp(entry.timestamp.getMillis())
-            val cmd = SQL(cmdInsert).on("id" -> entry.id, "version" -> entry.version, "timestamp" -> timestamp, "payload" -> entry.payload.toString)
+            val cmd = SQL(cmdInsert).on("id" -> entry.id, "aggId" -> entry.aggId, "aggVersion" -> entry.aggVersion, "timestamp" -> timestamp, "payload" -> entry.payload.toString)
             cmd.executeInsert()
           }.flatten
 // This one has to be observed. Does insert always return 0 within a transaction?
@@ -66,10 +66,10 @@ class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtCon
   private def getEventsFor(id: UUID, from: Option[Long], to: Option[Long]): AlmValidation[Iterable[DomainEvent]] = {
     val cmd =
       (from, to) match {
-        case (None, None) => SQL(qryAllEventsFor).on("id" -> id)
-        case (Some(from), None) => SQL(qryAllEventsForFrom).on("id" -> id, "from" -> from)
-        case (None, Some(to)) => SQL(qryAllEventsForFromTo).on("id" -> id, "from" -> 0, "to" -> to)
-        case (Some(from), Some(to)) => SQL(qryAllEventsForFromTo).on("id" -> id, "from" -> from, "to" -> to)
+        case (None, None) => SQL(qryAllEventsFor).on("aggId" -> id)
+        case (Some(from), None) => SQL(qryAllEventsForFrom).on("aggId" -> id, "from" -> from)
+        case (None, Some(to)) => SQL(qryAllEventsForFromTo).on("aggId" -> id, "from" -> 0, "to" -> to)
+        case (Some(from), Some(to)) => SQL(qryAllEventsForFromTo).on("aggId" -> id, "from" -> from, "to" -> to)
       }
     val result = withConnection { implicit conn =>
       val payloadsV =
@@ -99,7 +99,7 @@ class SerializingAnormEventLogActor(settings: AnormSettings)(implicit almhirtCon
 
   private def getNextRequiredVersion(aggId: UUID): AlmValidation[Long] = {
     withConnection { implicit conn =>
-      val rowOpt = SQL(cmdNextId).on("id" -> aggId).apply().headOption
+      val rowOpt = SQL(cmdNextId).on("aggId" -> aggId).apply().headOption
       option.cata(rowOpt)(v => inTryCatch { v[Option[Long]]("next").getOrElse(0L) }, 0L.success)
     }
   }

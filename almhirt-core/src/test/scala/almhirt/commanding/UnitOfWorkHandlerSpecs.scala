@@ -46,7 +46,7 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
       inTestContext { implicit ctx =>
         val res = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult
         val event = res._2.head.asInstanceOf[TestPersonCreated]
-        event.version === 0L
+        event.aggVersion === 0L
       }
     }
     """create exactly one TestPersonCreated event with the correct name""" in {
@@ -56,11 +56,11 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
         event.name === "Harry"
       }
     }
-    """create exactly one TestPersonCreated event with the same id as the created entity""" in {
+    """create exactly one TestPersonCreated event with the same aggId as the created entity""" in {
       inTestContext { implicit ctx =>
         val res = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult
         val event = res._2.head.asInstanceOf[TestPersonCreated]
-        event.id === res._1.id
+        event.aggId === res._1.id
       }
     }
   }
@@ -115,12 +115,12 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
         res.awaitResult.forceResult._2.head.isInstanceOf[TestPersonNameChanged]
       }
     }
-    """create exactly one TestPersonNameChanged with the id being the same as the entity's id""" in {
+    """create exactly one TestPersonNameChanged with the aggId being the same as the entity's id""" in {
       inTestContext { implicit ctx =>
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
         val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         val event = res.awaitResult.forceResult._2.head.asInstanceOf[TestPersonNameChanged]
-        event.id === originalEntity.id
+        event.aggId === originalEntity.id
       }
     }
     """create exactly one TestPersonNameChanged with the version being one less then the new entity's version""" in {
@@ -128,7 +128,7 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
         val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         val event = res.awaitResult.forceResult._2.head.asInstanceOf[TestPersonNameChanged]
-        event.version === res.awaitResult.forceResult._1.version - 1L
+        event.aggVersion === res.awaitResult.forceResult._1.version - 1L
       }
     }
     """create exactly one TestPersonNameChanged with the version being the same as the original entity's version""" in {
@@ -136,7 +136,7 @@ class UnitOfWorkHandlerSpecs extends Specification with AlmhirtContextTestKit {
         val originalEntity = new NewTestPersonUnitOfWork().handler(NewTestPerson(java.util.UUID.randomUUID, "Harry"), ctx.system.futureDispatcher).awaitResult.forceResult._1
         val res = new ChangeTestPersonNameUnitOfWork().handler(ChangeTestPersonName(AggregateRootRef(originalEntity.id, originalEntity.version), "Bill"), originalEntity, ctx.system.futureDispatcher)
         val event = res.awaitResult.forceResult._2.head.asInstanceOf[TestPersonNameChanged]
-        event.version === originalEntity.version
+        event.aggVersion === originalEntity.version
       }
     }
     """create exactly one TestPersonNameChanged with name being the new entitie's name""" in {

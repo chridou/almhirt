@@ -19,9 +19,13 @@ import org.joda.time.DateTime
 
 /** These events can create or mutate an aggregate root in the dimension of time */
 trait DomainEvent {
+  /** The events unique identifier */
+  def id: UUID
   /** The affected aggregate root */
-  def id: UUID 
+  def aggId: UUID 
   /** The version of the aggregate root __before__ applying the event */
-  def version: Long
+  def aggVersion: Long
+  /** The events date of creation */
+  def timestamp: DateTime
 }
 

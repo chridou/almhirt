@@ -9,17 +9,18 @@ import almhirt.domain._
 import almhirt.riftwarp._
 
 trait TestPersonEvent extends DomainEvent
-case class TestPersonCreated(id: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent
-case class TestPersonNameChanged(id: UUID, version: Long, newName: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonAddressAquired(id: UUID, version: Long, aquiredAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonMoved(id: UUID, version: Long, newAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonUnhandledEvent(id: UUID, version: Long, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+case class TestPersonCreated(id: UUID, aggId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent
+case class TestPersonNameChanged(id: UUID,aggId: UUID, aggVersion: Long, newName: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+case class TestPersonAddressAquired(id: UUID,aggId: UUID, aggVersion: Long, aquiredAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+case class TestPersonMoved(id: UUID,aggId: UUID, aggVersion: Long, newAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+case class TestPersonUnhandledEvent(id: UUID,aggId: UUID, aggVersion: Long, timestamp: DateTime = DateTime.now) extends TestPersonEvent
 
 class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonCreated])
   def decompose(what: TestPersonCreated)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
+      .bind(_.addUuid("aggId", what.aggId))
       .bind(_.addString("name", what.name))
       .bind(_.addDateTime("timestamp", what.timestamp))
   }
@@ -29,9 +30,10 @@ class TestPersonCreatedRecomposer extends Recomposer[TestPersonCreated] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonCreated])
   def recompose(from: RematerializationArray): AlmValidation[TestPersonCreated] = {
     val id = from.getUuid("id").toAgg
+    val aggId = from.getUuid("aggId").toAgg
     val name = from.getString("name").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| name |@| timestamp)(TestPersonCreated.apply)
+    (id |@| aggId |@| name |@| timestamp)(TestPersonCreated.apply)
   }
 }
 
@@ -40,8 +42,9 @@ class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] 
   def decompose(what: TestPersonNameChanged)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
-      .bind(_.addLong("version", what.version))
-      .bind(_.addString("name", what.newName))
+      .bind(_.addUuid("aggId", what.aggId))
+      .bind(_.addLong("aggVersion", what.aggVersion))
+      .bind(_.addString("newName", what.newName))
       .bind(_.addDateTime("timestamp", what.timestamp))
   }
 }
@@ -50,10 +53,11 @@ class TestPersonNameChangedRecomposer extends Recomposer[TestPersonNameChanged] 
   val typeDescriptor = TypeDescriptor(classOf[TestPersonNameChanged])
   def recompose(from: RematerializationArray): AlmValidation[TestPersonNameChanged] = {
     val id = from.getUuid("id").toAgg
-    val version = from.getLong("version").toAgg
+    val aggId = from.getUuid("aggId").toAgg
+    val aggVersion = from.getLong("aggVersion").toAgg
     val newName = from.getString("newName").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| version |@| newName |@| timestamp)(TestPersonNameChanged.apply)
+    (id |@| aggId|@| aggVersion |@| newName |@| timestamp)(TestPersonNameChanged.apply)
   }
 }
 
@@ -62,7 +66,8 @@ class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAqu
   def decompose(what: TestPersonAddressAquired)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
-      .bind(_.addLong("version", what.version))
+      .bind(_.addUuid("aggId", what.aggId))
+      .bind(_.addLong("aggVersion", what.aggVersion))
       .bind(_.addString("aquiredAddress", what.aquiredAddress))
       .bind(_.addDateTime("timestamp", what.timestamp))
   }
@@ -72,10 +77,11 @@ class TestPersonAddressAquiredRecomposer extends Recomposer[TestPersonAddressAqu
   val typeDescriptor = TypeDescriptor(classOf[TestPersonAddressAquired])
   def recompose(from: RematerializationArray): AlmValidation[TestPersonAddressAquired] = {
     val id = from.getUuid("id").toAgg
-    val version = from.getLong("version").toAgg
+    val aggId = from.getUuid("aggId").toAgg
+    val aggVersion = from.getLong("aggVersion").toAgg
     val aquiredAddress = from.getString("aquiredAddress").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| version |@| aquiredAddress |@| timestamp)(TestPersonAddressAquired.apply)
+    (id |@| aggId|@| aggVersion |@| aquiredAddress |@| timestamp)(TestPersonAddressAquired.apply)
   }
 }
 
@@ -84,7 +90,8 @@ class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] {
   def decompose(what: TestPersonMoved)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
-      .bind(_.addLong("version", what.version))
+      .bind(_.addUuid("aggId", what.aggId))
+      .bind(_.addLong("aggVersion", what.aggVersion))
       .bind(_.addString("newAddress", what.newAddress))
       .bind(_.addDateTime("timestamp", what.timestamp))
   }
@@ -94,10 +101,11 @@ class TestPersonMovedRecomposer extends Recomposer[TestPersonMoved] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonMoved])
   def recompose(from: RematerializationArray): AlmValidation[TestPersonMoved] = {
     val id = from.getUuid("id").toAgg
-    val version = from.getLong("version").toAgg
+    val aggId = from.getUuid("aggId").toAgg
+    val aggVersion = from.getLong("aggVersion").toAgg
     val newAddress = from.getString("newAddress").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| version |@| newAddress |@| timestamp)(TestPersonMoved.apply)
+    (id |@| aggId|@| aggVersion |@| newAddress |@| timestamp)(TestPersonMoved.apply)
   }
 }
 
@@ -106,7 +114,8 @@ class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledE
   def decompose(what: TestPersonUnhandledEvent)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
-      .bind(_.addLong("version", what.version))
+      .bind(_.addUuid("aggId", what.aggId))
+      .bind(_.addLong("aggVersion", what.aggVersion))
       .bind(_.addDateTime("timestamp", what.timestamp))
   }
 }
@@ -115,8 +124,9 @@ class TestPersonUnhandledEventRecomposer extends Recomposer[TestPersonUnhandledE
   val typeDescriptor = TypeDescriptor(classOf[TestPersonUnhandledEvent])
   def recompose(from: RematerializationArray): AlmValidation[TestPersonUnhandledEvent] = {
     val id = from.getUuid("id").toAgg
-    val version = from.getLong("version").toAgg
+    val aggId = from.getUuid("aggId").toAgg
+    val aggVersion = from.getLong("aggVersion").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| version |@| timestamp)(TestPersonUnhandledEvent.apply)
+    (id |@| aggId|@| aggVersion |@| timestamp)(TestPersonUnhandledEvent.apply)
   }
 }
