@@ -13,7 +13,7 @@ import scala.io.Source
 class SerializingAnormEventLogFactory extends DomainEventLogFactory {
   private def createSchema(settings: AnormSettings, pathToSchema: String): AlmValidation[AnormSettings] = {
     val source = Source.fromURL(getClass.getResource(pathToSchema))
-    val ddlSql = source.mkString.format(settings.logTableName)
+    val ddlSql = source.mkString.replaceAll("%tblname%", settings.logTableName)
     DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
       val statement = conn.createStatement()
       statement.executeUpdate(ddlSql)
