@@ -20,7 +20,7 @@ class SerializingAnormEventLogFactory extends DomainEventLogFactory {
       val ddlSql = source.mkString.replaceAll("%tblname%", settings.logTableName)
       DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
         val statement = conn.createStatement()
-        statement.executeUpdate(ddlSql)
+        statement.execute(ddlSql)
         settings.success
       }
     } else {

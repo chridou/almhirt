@@ -41,7 +41,7 @@ object DbUtil {
       } catch {
         case exn =>
           conn.rollback
-          PersistenceProblem("Could not execute transaction. Rolled back: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
+          PersistenceProblem("Could not commit transaction. Rolled back: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
       } finally {
         conn.setAutoCommit(originalState)
       }
@@ -54,12 +54,12 @@ object DbUtil {
       conn.setAutoCommit(false)
       try {
         val res = compute(conn)
-        conn.commit()
-        res
+        res.fold(problem => { conn.rollback(); problem.failure }, succ => { conn.commit(); succ.success })
       } catch {
         case exn =>
           conn.rollback
-          PersistenceProblem("Could not execute transaction. Rolled back: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
+          println(exn.getClass().getName())
+          PersistenceProblem("Could not commit transaction. Rolled back: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
       } finally {
         conn.setAutoCommit(originalState)
       }
