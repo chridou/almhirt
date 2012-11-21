@@ -10,15 +10,21 @@ import almhirt.eventlog._
 import almhirt.environment.configuration._
 import almhirt.eventlog.impl.DomainEventLogActorHull
 import scala.io.Source
+import com.typesafe.config._
 
 class SerializingAnormEventLogFactory extends DomainEventLogFactory {
   private def createSchema(settings: AnormSettings, pathToSchema: String): AlmValidation[AnormSettings] = {
-    val source = Source.fromURL(getClass.getResource(pathToSchema))
-    val ddlSql = source.mkString.replaceAll("%tblname%", settings.logTableName)
-    DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
-      val statement = conn.createStatement()
-      statement.executeUpdate(ddlSql)
-      settings.success
+    val resource = getClass.getResource(pathToSchema)
+    if (resource != null) {
+      val source = Source.fromURL(resource)
+      val ddlSql = source.mkString.replaceAll("%tblname%", settings.logTableName)
+      DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
+        val statement = conn.createStatement()
+        statement.executeUpdate(ddlSql)
+        settings.success
+      }
+    } else {
+      UnspecifiedProblem("Could not find the schema ddl file in resources at '%s'".format(pathToSchema)).failure
     }
   }
 
@@ -47,7 +53,7 @@ class SerializingAnormEventLogFactory extends DomainEventLogFactory {
           f => (settings, template) => settings.success,
           s => {
             if (s) {
-              (settings, template) => 
+              (settings, template) =>
                 option.cata(template.ddlScriptName)(createSchema(settings, _), UnspecifiedProblem("Schema path not specified. Cannot create a schema.").failure)
             } else
               (settings, template) => settings.success
@@ -76,11 +82,22 @@ class SerializingAnormEventLogFactory extends DomainEventLogFactory {
       }
     }
 
+    import collection.JavaConversions._
+
     val actorName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".actorname").getOrElse("domaineventlog")
     ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".connection").bind(connection =>
       dbTemplate.bind(dbTemplate =>
         almhirt.almvalidation.funs.inTryCatch({ Class.forName(dbTemplate.driverName); () }).bind { _ =>
-          val settings = AnormSettings(connection, new Properties(), tableName)
+          val props =
+            ConfigHelper.tryGetSubConfig(ctx.config)(ConfigPaths.eventlog + ".properties") match {
+              case Some(config) =>
+                config.entrySet()
+                  .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
+                  .foldLeft(new Properties)((acc, x) => { acc.setProperty(x._1, x._2); acc })
+              case None => new Properties()
+            }
+          val settings =
+            AnormSettings(connection, props, tableName)
           createSchemaFun(settings, dbTemplate).map(settings => createEventLog(settings, actorName, dropOnClose, ctx))
         }))
   }

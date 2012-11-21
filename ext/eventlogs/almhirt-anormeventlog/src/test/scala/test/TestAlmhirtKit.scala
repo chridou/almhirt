@@ -21,13 +21,19 @@ trait TestAlmhirtKit {
 		  }
 		  eventlog {
 		  	factory = "almhirt.eventlog.anorm.SerializingAnormEventLogFactory"
+		  	#dbtemplate = "postgres"
 		  	dbtemplate = "h2"
+		  	#driver = "org.h2.Driver"
+		  	#ddlpath = "/conf/h2ddl.sql"
 		  	actorname = "anorm-test-eventlog"
-		  	driver = "org.h2.Driver"
 		  	connection = "jdbc:h2:mem:almhirtanormtest;DB_CLOSE_DELAY=-1"
+		  	#connection = "jdbc:postgresql://lumsearch/eventlogtest"
+		  	properties {
+		  		user = "lumsearchTestUser"
+		  		password = "lumsearchTestUser"
+		  	}
 		  	eventlogtable = "eventlog"
 		  	create_schema = true
-		  	ddlpath = "/conf/h2ddl.sql"
 		  	drop_on_close = true
 		  	randomize_tablename = true
 		  }

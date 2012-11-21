@@ -112,6 +112,7 @@ trait AnormEventLogBuild {
 	  libraryDependencies += scalaz,
 	  libraryDependencies += "play" % "anorm_2.9.1" % "2.0.4",
 	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
+	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
 	  libraryDependencies += specs2
   )
 }

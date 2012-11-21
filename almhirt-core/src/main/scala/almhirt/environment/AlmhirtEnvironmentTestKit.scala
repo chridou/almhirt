@@ -1,6 +1,7 @@
 package almhirt.environment
 
 import akka.actor.ActorSystem
+import akka.util.Duration
 import almhirt._
 import almhirt.commanding._
 import almhirt.eventlog.impl._
@@ -34,7 +35,7 @@ trait AlmhirtEnvironmentTestKit {
   def createTestEnvironment(): AlmhirtEnvironment = createTestEnvironment(defaultConf)
   def createTestEnvironment(aConf: Config): AlmhirtEnvironment = {
     implicit val context = contextTestKit.createTestContext(aConf)
-    AlmhirtEnvironment().awaitResult(context.system.shortDuration).forceResult
+    AlmhirtEnvironment().awaitResult(Duration(10, "s")).forceResult
   }
 
   def inTestEnvironment[T](compute: AlmhirtEnvironment => T): T = inTestEnvironment[T](compute, defaultConf)
