@@ -68,62 +68,62 @@ class SerializingAnormEventLogSpecs extends Specification with TestAlmhirtKit {
           res.headOption === Some(event)
         }
       }
-      "accept 1000 events with the same aggId and return them in the same order (getEvents(aggId))" in {
+      "accept 100 events with the same aggId and return them in the same order (getEvents(aggId))" in {
         withEmptyEventLog { (eventLog, almhirt) =>
           val aggId = almhirt.getUuid
           val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-          val events = firstEvent :: (for (i <- 1 until 1000) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i))).toList
-          val resCommit = eventLog.storeEvents(events).awaitResult(Duration(2, "s")).forceResult
-          val res = eventLog.getEvents(aggId).awaitResult(Duration(2, "s"))
+          val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i))).toList
+          val resCommit = eventLog.storeEvents(events).awaitResult(Duration(1, "s")).forceResult
+          val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s"))
           res.forceResult === events
         }
       }
-      "accept 1000 events with the same aggId shuffled with 1000 other events and return the events for a specific aggId in the same order(getEvents(aggId))" in {
+      "accept 100 events with the same aggId shuffled with 100 other events and return the events for a specific aggId in the same order(getEvents(aggId))" in {
         withEmptyEventLog { (eventLog, almhirt) =>
           val aggId = almhirt.getUuid
           val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-          val events = firstEvent :: (for (i <- 1 until 1000) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-          val eventsToShuffleIn = (for (i <- 0 until 1000) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+          val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
+          val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
           val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
-          val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(2, "s")).forceResult
-          val res = eventLog.getEvents(aggId).awaitResult(Duration(2, "s")).forceResult
+          val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(1, "s")).forceResult
+          val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).forceResult
           res === events
         }
       }
-      "accept 1000 events with the same aggId shuffled with 1000 other events and return the last 100 events for a specific aggId in the same order(getEvents(aggId, from))" in {
+      "accept 100 events with the same aggId shuffled with 100 other events and return the last 10 events for a specific aggId in the same order(getEvents(aggId, from))" in {
         withEmptyEventLog { (eventLog, almhirt) =>
           val aggId = almhirt.getUuid
           val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-          val events = firstEvent :: (for (i <- 1 until 1000) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-          val eventsToShuffleIn = (for (i <- 0 until 1000) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+          val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
+          val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
           val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
-          val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(2, "s")).forceResult
-          val res = eventLog.getEvents(aggId, 900).awaitResult(Duration(2, "s")).forceResult
-          res === events.drop(900)
+          val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(1, "s")).forceResult
+          val res = eventLog.getEvents(aggId, 90).awaitResult(Duration(1, "s")).forceResult
+          res === events.drop(90)
         }
       }
-      "accept 1000 events with the same aggId shuffled with 1000 other events and return the first 100 events for a specific aggId in the same order(getEvents(aggId, from, to))" in {
+      "accept 100 events with the same aggId shuffled with 100 other events and return the first 10 events for a specific aggId in the same order(getEvents(aggId, from, to))" in {
         withEmptyEventLog { (eventLog, almhirt) =>
           val aggId = almhirt.getUuid
           val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-          val events = firstEvent :: (for (i <- 1 until 1000) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-          val eventsToShuffleIn = (for (i <- 0 until 1000) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+          val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
+          val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
           val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
-          val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(2, "s")).forceResult
-          val res = eventLog.getEvents(aggId, 0, 99).awaitResult(Duration(2, "s")).forceResult
-          res === events.take(100)
+          val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(1, "s")).forceResult
+          val res = eventLog.getEvents(aggId, 0, 9).awaitResult(Duration(1, "s")).forceResult
+          res === events.take(10)
         }
       }
-      "accept 1000 events with the same aggId shuffled with 1000 other events and return the events from 400 to 599 for a specific aggId in the same order(getEvents(aggId, from, to))" in {
+      "accept 100 events with the same aggId shuffled with 100 other events and return the events from 40 to 59 for a specific aggId in the same order(getEvents(aggId, from, to))" in {
         withEmptyEventLog { (eventLog, almhirt) =>
           val aggId = almhirt.getUuid
           val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-          val events = firstEvent :: (for (i <- 1 until 1000) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-          val eventsToShuffleIn = (for (i <- 0 until 1000) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+          val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
+          val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
           val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
-          val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(2, "s")).forceResult
-          val res = eventLog.getEvents(aggId, 400, 599).awaitResult(Duration(2, "s")).forceResult
-          res === events.drop(400).take(200)
+          val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(1, "s")).forceResult
+          val res = eventLog.getEvents(aggId, 40, 59).awaitResult(Duration(1, "s")).forceResult
+          res === events.drop(40).take(20)
         }
       }
     }

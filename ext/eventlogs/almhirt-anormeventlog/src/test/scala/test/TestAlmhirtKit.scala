@@ -21,12 +21,13 @@ trait TestAlmhirtKit {
 		  }
 		  eventlog {
 		  	factory = "almhirt.eventlog.anorm.SerializingAnormEventLogFactory"
+		  	dbtemplate = "h2"
 		  	actorname = "anorm-test-eventlog"
 		  	driver = "org.h2.Driver"
 		  	connection = "jdbc:h2:mem:almhirtanormtest;DB_CLOSE_DELAY=-1"
 		  	eventlogtable = "eventlog"
 		  	create_schema = true
-		  	ddlpath = "/conf/ddl.sql"
+		  	ddlpath = "/conf/h2ddl.sql"
 		  	drop_on_close = true
 		  	randomize_tablename = true
 		  }

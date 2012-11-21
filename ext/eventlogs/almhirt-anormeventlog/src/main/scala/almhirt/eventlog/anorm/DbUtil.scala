@@ -14,7 +14,7 @@ object DbUtil {
       case exn => PersistenceProblem("Could not connect to %s".format(url), cause = Some(CauseIsThrowable(exn))).failure
     }
   }
-  
+
   def withConnection[T](getConnection: () => AlmValidation[Connection])(compute: Connection => AlmValidation[T]): AlmValidation[T] = {
     val connection = getConnection()
     connection.bind(conn => {
@@ -37,9 +37,7 @@ object DbUtil {
       conn.setAutoCommit(false)
       try {
         val res = compute(conn)
-        //res.fold(fail, succ)
-        conn.commit()
-        res
+        res.fold(problem => { conn.rollback(); problem.failure }, succ => { conn.commit(); succ.success })
       } catch {
         case exn =>
           conn.rollback
@@ -49,7 +47,7 @@ object DbUtil {
       }
     }
   }
-  
+
   def inTransactionWithConnection[T](getConnection: () => AlmValidation[Connection])(compute: Connection => AlmValidation[T]): AlmValidation[T] = {
     withConnection(getConnection) { conn =>
       val originalState = conn.getAutoCommit()
@@ -67,5 +65,5 @@ object DbUtil {
       }
     }
   }
-  
+
 }

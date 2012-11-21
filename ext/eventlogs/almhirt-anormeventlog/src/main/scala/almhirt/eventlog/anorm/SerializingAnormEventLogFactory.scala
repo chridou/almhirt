@@ -2,6 +2,7 @@ package almhirt.eventlog.anorm
 
 import java.util.Properties
 import scalaz.syntax.validation._
+import scalaz.std._
 import akka.actor._
 import almhirt.common._
 import almhirt.environment._
@@ -39,35 +40,48 @@ class SerializingAnormEventLogFactory extends DomainEventLogFactory {
   }
 
   def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
-    val createSchemaFun: AnormSettings => AlmValidation[AnormSettings] =
+    val createSchemaFun: (AnormSettings, DbTemplate) => AlmValidation[AnormSettings] =
       ConfigHelper
         .getBoolean(ctx.config)(ConfigPaths.eventlog + ".create_schema")
         .fold(
-          f => x => x.success,
+          f => (settings, template) => settings.success,
           s => {
             if (s) {
-              val path = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".ddlpath").getOrElse("/conf/ddl.sql")
-              x => createSchema(x, path)
+              (settings, template) => 
+                option.cata(template.ddlScriptName)(createSchema(settings, _), UnspecifiedProblem("Schema path not specified. Cannot create a schema.").failure)
             } else
-              x => x.success
+              (settings, template) => settings.success
 
           })
 
     val dropOnClose = ConfigHelper.isBooleanSet(ctx.config)(ConfigPaths.eventlog + ".drop_on_close")
+
     val tableName = {
       val baseName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".eventlogtable").getOrElse("eventlog")
       if (ConfigHelper.isBooleanSet(ctx.config)(ConfigPaths.eventlog + ".randomize_tablename"))
-        "%s_%s".format(baseName, util.Random.nextInt.toString.replaceAll("-", "N"))
+        "%s_%s".format(baseName, _root_.scala.util.Random.nextInt.toString.replaceAll("-", "N"))
       else
         baseName
     }
 
+    val dbTemplate = {
+      DbTemplate.tryGetTemplate(ctx.config) match {
+        case Some(template) =>
+          template.success
+        case None =>
+          ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".driver").map { driverName =>
+            val ddlPath = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".ddlpath")
+            DbTemplate(driverName, ddlPath)
+          }
+      }
+    }
+
     val actorName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".actorname").getOrElse("domaineventlog")
     ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".connection").bind(connection =>
-      ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".driver").bind(drivername =>
-        almhirt.almvalidation.funs.inTryCatch({ Class.forName(drivername); () }).bind { _ =>
+      dbTemplate.bind(dbTemplate =>
+        almhirt.almvalidation.funs.inTryCatch({ Class.forName(dbTemplate.driverName); () }).bind { _ =>
           val settings = AnormSettings(connection, new Properties(), tableName)
-          createSchemaFun(settings).map(settings => createEventLog(settings, actorName, dropOnClose, ctx))
+          createSchemaFun(settings, dbTemplate).map(settings => createEventLog(settings, actorName, dropOnClose, ctx))
         }))
   }
 }
