@@ -39,6 +39,11 @@ class SerializingAnormJsonEventLogMegaSpecs extends Specification with TestAlmhi
         val end = almhirt.getDateTime
         val diff2 = new org.joda.time.Period(end.getMillis() - inter.getMillis())
         println("Read took %s".format(diff2))
+        val typedEvents = events.map(_.asInstanceOf[TestPersonEvent])
+        val post1 = almhirt.getDateTime
+        val fromHistory = TestPerson.rebuildFromHistory(typedEvents) 
+        val post2 = almhirt.getDateTime
+        println("Rebuild agregate root took %s".format(new org.joda.time.Period(post2.getMillis() - post1.getMillis())))
         res === events
       }
     }
