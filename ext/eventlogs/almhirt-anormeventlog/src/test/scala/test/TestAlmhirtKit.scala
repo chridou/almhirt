@@ -40,10 +40,9 @@ trait TestAlmhirtKit {
 	  }
     """
   val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
-  
-  
-  val testKit = new AlmhirtTestKit{}
-  
+
+  val testKit = new AlmhirtTestKit {}
+
   def createTestAlmhirt(): Almhirt = {
     val almhirt = testKit.createTestAlmhirt(defaultConf)
     implicit val ctx = almhirt.environment.context
@@ -54,9 +53,9 @@ trait TestAlmhirtKit {
     almhirt.environment.addCommandHandler(new SetTestPersonAdressUnitOfWork)
     almhirt.environment.addCommandHandler(new MoveTestPersonNameUnitOfWork)
     almhirt.environment.addCommandHandler(new MoveBecauseOfMarriageUnitOfWork)
-    
+
     val barracks = ctx.riftWarp.barracks
-    
+
     barracks.addDecomposer(new TestPersonCreatedDecomposer)
     barracks.addDecomposer(new TestPersonNameChangedDecomposer)
     barracks.addDecomposer(new TestPersonAddressAquiredDecomposer)
@@ -68,14 +67,17 @@ trait TestAlmhirtKit {
     barracks.addRecomposer(new TestPersonAddressAquiredRecomposer)
     barracks.addRecomposer(new TestPersonMovedRecomposer)
     barracks.addRecomposer(new TestPersonUnhandledEventRecomposer)
-    
+
     almhirt
   }
-  
+
   def inTestAlmhirt[T](compute: Almhirt => T) = {
     val almhirt = createTestAlmhirt()
-    val res = compute(almhirt)
-    almhirt.dispose
-    res
+    try {
+      val res = compute(almhirt)
+      res
+    } finally {
+      almhirt.dispose
+    }
   }
 }

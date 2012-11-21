@@ -15,6 +15,7 @@
 package almhirt.eventlog
 
 import scalaz.{Validation}
+import akka.util.Duration
 import almhirt._
 import almhirt.domain.DomainEvent
 import almhirt.common.AlmFuture
