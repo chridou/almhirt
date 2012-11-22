@@ -10,7 +10,7 @@ import almhirt.riftwarp._
 
 class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: HasDecomposers) extends DematerializesToCord {
   val descriptor = RiftFullDescriptor(RiftJson, ToolGroupStdLib)
-  def dematerialize = ('{' -: state :- '}').success
+  def dematerialize = DimensionCord(('{' -: state :- '}')).success
 
   private def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
 
@@ -115,7 +115,7 @@ class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: Ha
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[DematerializationFunnel] = {
     decomposer.decompose(aComplexType)(ToJsonCordDematerializer()).bind(toEmbed =>
       toEmbed.asInstanceOf[ToJsonCordDematerializer].dematerialize).bind(json =>
-      addComplexPart(ident, json))
+      addComplexPart(ident, json.manifestation))
   }
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[DematerializationFunnel] = 
     ifNoneAddNull(ident: String, anOptionalComplexType, addComplexType(decomposer))

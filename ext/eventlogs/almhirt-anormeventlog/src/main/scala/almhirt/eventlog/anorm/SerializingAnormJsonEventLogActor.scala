@@ -18,6 +18,8 @@ import almhirt.domain.DomainEvent
 import almhirt.eventlog._
 import almhirt.riftwarp.RiftJson
 import _root_.anorm._
+import almhirt.riftwarp.DimensionString
+import almhirt.riftwarp.DimensionString
 
 class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
@@ -76,7 +78,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhir
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
           str.bind(x =>
-            almhirtContext.riftWarp.receiveFromWarp[String, DomainEvent](RiftJson)(x))
+            almhirtContext.riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson)(x))
         }.map(_.toAgg).toList
       payloadsV.sequence
     }
@@ -90,7 +92,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhir
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
           str.bind(x =>
-            almhirtContext.riftWarp.receiveFromWarp[String, DomainEvent](RiftJson)(x))
+            almhirtContext.riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson)(x))
         }.map(_.toAgg).toList
       payloadsV.sequence
     }

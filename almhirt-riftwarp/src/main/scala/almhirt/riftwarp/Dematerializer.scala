@@ -8,7 +8,7 @@ trait RawDematerializer extends DematerializationFunnel {
   def dematerializeRaw: AlmValidation[AnyRef]
 }
 
-trait Dematerializer[T <: AnyRef] extends RawDematerializer {
+trait Dematerializer[T <: RiftDimension] extends RawDematerializer {
   /**
    * Xml, Json, etc
    */
@@ -17,14 +17,14 @@ trait Dematerializer[T <: AnyRef] extends RawDematerializer {
 
 }
 
-trait DematerializesToString extends Dematerializer[String] {
+trait DematerializesToString extends Dematerializer[DimensionString] {
 }
 
-trait DematerializesToCord extends Dematerializer[scalaz.Cord] {
+trait DematerializesToCord extends Dematerializer[DimensionCord] {
 }
 
-trait DematerializesToByteArray extends Dematerializer[Array[Byte]] {
+trait DematerializesToByteArray extends Dematerializer[DimensionBinary] {
 }
 
-trait DematerializesToMap extends Dematerializer[Map[String, Any]] {
+trait DematerializesToRawMap extends Dematerializer[DimensionRawMap] {
 }

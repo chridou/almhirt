@@ -35,7 +35,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
     theMap.get(ident) match {
       case Some(elem) =>
         almCast[Map[String, Any]](elem).bind { elemAsMap =>
-          FromMapRematerializationArray.createRematerializationArray(elemAsMap).bind(rematerializationArray =>
+          FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(elemAsMap)).bind(rematerializationArray =>
             recomposer.recompose(rematerializationArray))
         }.map(res =>
           Some(res))
@@ -47,7 +47,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
     theMap.get(ident) match {
       case Some(elem) =>
         almCast[Map[String, Any]](elem).bind { elemAsMap =>
-          FromMapRematerializationArray.createRematerializationArray(elemAsMap).bind { rematerializationArray =>
+          FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(elemAsMap)).bind { rematerializationArray =>
             rematerializationArray.tryGetTypeDescriptor.map {
               case Some(td) => td
               case None => TypeDescriptor(m.erasure)
@@ -66,9 +66,10 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
   def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
 }
 
-object FromMapRematerializationArray extends FromMapRematerializationArrayFactory {
+object FromMapRematerializationArray extends FromRawMapRematerializationArrayFactory {
   val descriptor = RiftFullDescriptor(RiftMap, ToolGroupRiftStd)
-  def apply()(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = apply(Map.empty)
+  def apply()(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = apply(Map.empty[String, Any])
   def apply(state: Map[String, Any])(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = new FromMapRematerializationArray(state)
-  def createRematerializationArray(from: Map[String, Any])(implicit hasRecomposers: HasRecomposers): AlmValidation[RematerializationArray] = apply(from).success
+  def apply(state: DimensionRawMap)(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = new FromMapRematerializationArray(state.manifestation)
+  def createRematerializationArray(from: DimensionRawMap)(implicit hasRecomposers: HasRecomposers): AlmValidation[RematerializationArray] = apply(from).success
 }

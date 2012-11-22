@@ -10,7 +10,7 @@ trait RiftWarp {
   def barracks: RiftWarpBarracks
   def toolShed: RiftWarpToolShed
 
-  def prepareForWarp[To <: AnyRef](warpType: RiftDescriptor)(what: AnyRef)(implicit m: Manifest[To]): AlmValidation[To] = {
+  def prepareForWarp[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(what: AnyRef)(implicit m: Manifest[To]): AlmValidation[To] = {
     val typeDescriptor =
       what match {
         case htd: HasTypeDescriptor => htd.typeDescriptor
@@ -29,7 +29,7 @@ trait RiftWarp {
     }
   }
 
-  def receiveFromWarp[From <: AnyRef, T <: AnyRef](warpType: RiftDescriptor)(warpStream: From)(implicit mtarget: Manifest[T], mfrom: Manifest[From]): AlmValidation[T] = {
+  def receiveFromWarp[From <: RiftTypedDimension[_], T <: AnyRef](warpType: RiftDescriptor)(warpStream: From)(implicit mtarget: Manifest[T], mfrom: Manifest[From]): AlmValidation[T] = {
 	implicit val hasRecomposers = barracks
     toolShed.tryGetRematerializationArray(warpType, warpStream).bind {
       case Some(array) =>
@@ -63,7 +63,7 @@ object RiftWarp {
   }
 
   private def initializeWithDefaults(riftWarp: RiftWarp) {
-    riftWarp.toolShed.addDematerializer(impl.dematerializers.ToMapDematerializer(Map.empty)(riftWarp.barracks))
+    riftWarp.toolShed.addDematerializer(impl.dematerializers.ToRawMapDematerializer(Map.empty)(riftWarp.barracks))
     riftWarp.toolShed.addDematerializer(impl.dematerializers.ToJsonCordDematerializer()(riftWarp.barracks))
 
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromMapRematerializationArray)

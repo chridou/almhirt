@@ -2,7 +2,7 @@ package almhirt.riftwarp
 
 import almhirt.common._
 
-trait RematerializationArrayFactory[From <: AnyRef] {
+trait RematerializationArrayFactory[From <: RiftDimension] {
   /**
    * Xml, Json, etc
    */
@@ -11,5 +11,4 @@ trait RematerializationArrayFactory[From <: AnyRef] {
   def createRematerializationArrayRaw(from: AnyRef)(implicit hasRecomposers: HasRecomposers) = createRematerializationArray(from.asInstanceOf[From])
 }
 
-trait FromMapRematerializationArrayFactory extends RematerializationArrayFactory[Map[String, Any]] {
-}
+trait FromRawMapRematerializationArrayFactory extends RematerializationArrayFactory[DimensionRawMap]

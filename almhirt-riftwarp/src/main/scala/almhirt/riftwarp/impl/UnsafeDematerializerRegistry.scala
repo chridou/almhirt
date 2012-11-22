@@ -7,7 +7,7 @@ class UnsafeDematerializerRegistry extends HasDematerializers {
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannelDescriptor, HashMap[String, AnyRef]]]()
   private val channelregistry = collection.mutable.HashMap[RiftChannelDescriptor, collection.mutable.HashMap[String, AnyRef]]()
 
-  def addDematerializer[D <: Dematerializer[_], To <: AnyRef](dematerializer: Dematerializer[To], asChannelDefault: Boolean)(implicit m: Manifest[To]) {
+  def addDematerializer[D <: Dematerializer[_], To <: RiftTypedDimension[_]](dematerializer: Dematerializer[To], asChannelDefault: Boolean)(implicit m: Manifest[To]) {
     val identifier = m.erasure.getName
 
     if (!toolregistry.contains(dematerializer.descriptor.toolGroup))
@@ -25,7 +25,7 @@ class UnsafeDematerializerRegistry extends HasDematerializers {
       channeltypeentry += (identifier -> dematerializer)
   }
 
-  def tryGetDematerializer[To <: AnyRef](warpType: RiftDescriptor)(implicit m: Manifest[To]): Option[Dematerializer[To]] = {
+  def tryGetDematerializer[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[To]): Option[Dematerializer[To]] = {
     val identifier = m.erasure.getName
     (warpType match {
       case ct: RiftChannelDescriptor =>

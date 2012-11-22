@@ -7,7 +7,7 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannelDescriptor, HashMap[String, AnyRef]]]()
   private val channelregistry = collection.mutable.HashMap[RiftChannelDescriptor, collection.mutable.HashMap[String, AnyRef]]()
 
-  def addArrayFactory[D <: RematerializationArrayFactory[_], From <: AnyRef](rematArray: RematerializationArrayFactory[From], asChannelDefault: Boolean)(implicit m: Manifest[From]) {
+  def addArrayFactory[D <: RematerializationArrayFactory[_], From <: RiftTypedDimension[_]](rematArray: RematerializationArrayFactory[From], asChannelDefault: Boolean)(implicit m: Manifest[From]) {
     val identifier = m.erasure.getName
 
     if (!toolregistry.contains(rematArray.descriptor.toolGroup))
@@ -25,7 +25,7 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
       channeltypeentry += (identifier -> rematArray)
   }
 
-  def tryGetArrayFactory[From <: AnyRef](warpType: RiftDescriptor)(implicit m: Manifest[From]): Option[RematerializationArrayFactory[From]] = {
+  def tryGetArrayFactory[From <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[From]): Option[RematerializationArrayFactory[From]] = {
     val identifier = m.erasure.getName
     (warpType match {
       case ct: RiftChannelDescriptor =>
