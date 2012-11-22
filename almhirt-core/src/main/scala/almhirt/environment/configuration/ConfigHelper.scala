@@ -6,6 +6,9 @@ import akka.actor._
 import com.typesafe.config.Config
 import almhirt.common.AlmValidation
 import almhirt.common.KeyNotFoundProblem
+import almhirt.common.UnspecifiedProblem
+import almhirt.common.CauseIsProblem
+import almhirt.common.CauseIsThrowable
 
 object ConfigHelper {
   def tryGetString(config: Config)(path: String): Option[String] = {
@@ -26,10 +29,24 @@ object ConfigHelper {
 
   def getBoolean(config: Config)(path: String): AlmValidation[Boolean] =
     almhirt.almvalidation.funs.inTryCatch(config.getBoolean(path))
-  
+
   def isBooleanSet(config: Config)(path: String): Boolean =
     getBoolean(config)(path).fold(_ => false, x => x)
-    
+
+  def getDuration(config: Config)(path: String): AlmValidation[akka.util.Duration] = {
+    try {
+      config.getNanoseconds(path) match {
+        case null => KeyNotFoundProblem("Entry for duration not found: %s".format(path), args = Map("key" -> path)).failure
+        case nanos => akka.util.Duration.fromNanos(nanos).success
+      }
+    } catch {
+      case exn => UnspecifiedProblem("Not a duration on path '%s'".format(path), cause = Some(CauseIsThrowable(exn)), args = Map("key" -> path)).failure
+    }
+  }
+
+  def tryGetDuration(config: Config)(path: String): Option[akka.util.Duration] = 
+    (getDuration(config)(path)).fold(_ => None, succ => Some(succ))
+  
   def tryGetSubConfig(config: Config)(path: String): Option[Config] =
     config.getConfig(path) match {
       case null => None
@@ -44,7 +61,7 @@ object ConfigHelper {
 
   def getFactoryName(config: Config)(path: String): AlmValidation[String] =
     getSubConfig(config)(path).bind(getString(_)("factory"))
-    
+
   def lookUpDispatcher(system: ActorSystem)(name: Option[String]): akka.dispatch.MessageDispatcher = {
     name match {
       case Some(n) => system.dispatchers.lookup(n)

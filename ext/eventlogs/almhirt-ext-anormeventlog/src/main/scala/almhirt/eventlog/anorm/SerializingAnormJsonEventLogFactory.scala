@@ -32,16 +32,19 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
     val props =
       SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new SerializingAnormJsonEventLogActor(settings)(ctx)))
     val actor = ctx.system.actorSystem.actorOf(props, actorName)
+    val maxCallDuration = ConfigHelper.tryGetDuration(ctx.config)(ConfigPaths.eventlog+".maximum_direct_call_duration")
     if (dropOnClose) {
-      def dropTable() =
+      def dropTable() = {
         DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
           val statement = conn.createStatement()
           statement.executeUpdate("DROP TABLE %s".format(settings.logTableName))
           Unit.success
         }
-      new DomainEventLogActorHull(actor, dropTable)(ctx)
+        ()
+      }
+      new DomainEventLogActorHull(actor, Some(() => dropTable()), maxCallDuration)(ctx)
     } else {
-      new DomainEventLogActorHull(actor)(ctx)
+      new DomainEventLogActorHull(actor, None, None)(ctx)
     }
   }
 
