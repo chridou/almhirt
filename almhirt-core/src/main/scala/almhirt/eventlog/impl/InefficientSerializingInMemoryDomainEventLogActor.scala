@@ -43,14 +43,14 @@ class InefficientSerializingInMemoryDomainEventLogActor(implicit almhirtContext:
       loggedEvents = loggedEvents ++ events
       events.foreach(event => almhirtContext.broadcastDomainEvent(event))
       sender ! CommittedDomainEventsRsp(events.success, executionIdent)
-    case GetAllEventsQry =>
-      sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success))
-    case GetEventsQry(aggId) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.aggId == aggId).toIterable.success))
-    case GetEventsFromQry(aggId, from) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success))
-    case GetEventsFromToQry(aggId, from, to) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success))
+    case GetAllEventsQry(chunkSize, execIdent) =>
+      sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)
+    case GetEventsQry(aggId, chunkSize, execIdent) =>
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.aggId == aggId).toIterable.success), execIdent)
+    case GetEventsFromQry(aggId, from, chunkSize, execIdent) =>
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success), execIdent)
+    case GetEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success), execIdent)
     case GetRequiredNextEventVersionQry(aggId) =>
       sender ! RequiredNextEventVersionRsp(aggId, loggedEvents.view.filter(x => x.aggId == aggId).lastOption.map(_.aggVersion + 1L).getOrElse(0L).success)
   }

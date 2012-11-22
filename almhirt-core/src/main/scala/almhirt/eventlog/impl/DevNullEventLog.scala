@@ -43,14 +43,14 @@ class DevNullEventLogActor(implicit almhirtContext: AlmhirtContext) extends Acto
   def receive = {
     case LogEventsQry(events, _) =>
       sender ! CommittedDomainEventsRsp(events.success, None)
-    case GetAllEventsQry =>
-      sender ! AllEventsRsp(DomainEventsChunk(0, true, Iterable.empty.success))
-    case GetEventsQry(aggId) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success))
-    case GetEventsFromQry(aggId, from) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success))
-    case GetEventsFromToQry(aggId, from, to) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success))
+    case GetAllEventsQry(chunkSize, execIdent) =>
+      sender ! AllEventsRsp(DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+    case GetEventsQry(aggId, chunkSize, execIdent) =>
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+    case GetEventsFromQry(aggId, from, chunkSize, execIdent) =>
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+    case GetEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
     case GetRequiredNextEventVersionQry(aggId) =>
       sender ! RequiredNextEventVersionRsp(aggId, 0L.success)
   }

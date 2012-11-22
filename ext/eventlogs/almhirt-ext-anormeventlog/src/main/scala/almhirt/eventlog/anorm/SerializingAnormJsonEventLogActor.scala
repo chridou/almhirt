@@ -110,18 +110,18 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhir
     case LogEventsQry(events, executionIdent) =>
       val res = storeEvents(events)
       sender ! CommittedDomainEventsRsp(res, executionIdent)
-    case GetAllEventsQry =>
+    case GetAllEventsQry(chunkSize, execIdent) =>
       val res = getAllEvents()
-      sender ! AllEventsRsp(DomainEventsChunk(0, true, res))
-    case GetEventsQry(aggId) =>
+      sender ! AllEventsRsp(DomainEventsChunk(0, true, res), execIdent)
+    case GetEventsQry(aggId, chunkSize, execIdent) =>
       val res = getEventsFor(aggId, None, None)
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res))
-    case GetEventsFromQry(aggId, from) =>
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
+    case GetEventsFromQry(aggId, from, chunkSize, execIdent) =>
       val res = getEventsFor(aggId, Some(from), None)
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res))
-    case GetEventsFromToQry(aggId, from, to) =>
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
+    case GetEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
       val res = getEventsFor(aggId, Some(from), Some(to))
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res))
+      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
     case GetRequiredNextEventVersionQry(aggId) =>
       val res = getNextRequiredVersion(aggId)
       sender ! RequiredNextEventVersionRsp(aggId, res)
