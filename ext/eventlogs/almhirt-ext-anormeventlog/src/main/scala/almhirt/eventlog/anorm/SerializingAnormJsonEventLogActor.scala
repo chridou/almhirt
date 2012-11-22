@@ -78,7 +78,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhir
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
           str.bind(x =>
-            almhirtContext.riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson)(x))
+            almhirtContext.riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
         }.map(_.toAgg).toList
       payloadsV.sequence
     }
@@ -92,7 +92,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhir
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
           str.bind(x =>
-            almhirtContext.riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson)(x))
+            almhirtContext.riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
         }.map(_.toAgg).toList
       payloadsV.sequence
     }

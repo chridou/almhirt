@@ -22,5 +22,6 @@ trait ToolGroup extends Equals {
 }
 
 object ToolGroup {
-  def apply(aName: String): ToolGroup = new ToolGroup { val name = aName }
+  val StdLib = ToolGroupStdLib()
+  val RiftStd = ToolGroupRiftStd()
 }

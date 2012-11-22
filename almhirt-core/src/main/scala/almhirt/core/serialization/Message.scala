@@ -9,12 +9,12 @@ import almhirt.messaging._
 
 class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
   val typeDescriptor = TypeDescriptor(classOf[MessageGrouping], 1)
-  def decompose(grouping: MessageGrouping)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
+  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: MessageGrouping)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
-      .bind(_.addUuid("groupId", grouping.groupId))
-      .bind(_.addInt("seq", grouping.seq))
-      .bind(_.addBoolean("isLast", grouping.isLast))
+      .bind(_.addUuid("groupId", what.groupId))
+      .bind(_.addInt("seq", what.seq))
+      .bind(_.addBoolean("isLast", what.isLast))
   }
 }
 
@@ -29,13 +29,13 @@ class MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
 
 class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
   val typeDescriptor = TypeDescriptor(classOf[MessageHeader], 1)
-  def decompose(header: MessageHeader)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
+  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: MessageHeader)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
-      .bind(_.addUuid("id", header.id))
-      .bind(_.addOptionalComplexType("grouping", header.grouping))
+      .bind(_.addUuid("id", what.id))
+      .bind(_.addOptionalComplexType("grouping", what.grouping))
       //.bind(_.addOptionalComplexType("metaData", header.metaData))
-      .bind(_.addDateTime("timestamp", header.timestamp))
+      .bind(_.addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -52,11 +52,11 @@ class MessageHeaderRecomposer extends Recomposer[MessageHeader] {
 
 class MessageDecomposer extends Decomposer[Message[AnyRef]] {
   val typeDescriptor = TypeDescriptor(classOf[Message[AnyRef]], 1)
-  def decompose(message: Message[AnyRef])(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
+  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: Message[AnyRef])(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
-      .bind(_.addComplexType("header", message.header))
-      .bind(_.addComplexType("payload", message.payload))
+      .bind(_.addComplexType("header", what.header))
+      .bind(_.addComplexType("payload", what.payload))
   }
 }
 

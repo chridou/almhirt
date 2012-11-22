@@ -6,7 +6,7 @@ import almhirt.common._
 import almhirt.riftwarp._
 
 class ToRawMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers) extends DematerializesToRawMap[RiftMap] with NoneHasNoEffectDematerializationFunnel[DimensionRawMap, RiftMap] {
-  val descriptor = RiftFullDescriptor(RiftMap(), ToolGroupRiftStd)
+  val descriptor = RiftFullDescriptor(RiftMap(), ToolGroupRiftStd())
   def dematerialize: AlmValidation[DimensionRawMap] = DimensionRawMap(state).success
 
   def addString(ident: String, aValue: String) = (ToRawMapDematerializer(state + (ident -> aValue))).success

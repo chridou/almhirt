@@ -9,7 +9,7 @@ import almhirt.common._
 import almhirt.riftwarp._
 
 class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: HasDecomposers) extends DematerializesToCord[RiftJson] {
-  val descriptor = RiftFullDescriptor(RiftJson(), ToolGroupStdLib)
+  val descriptor = RiftFullDescriptor(RiftJson(), ToolGroupStdLib())
   def dematerialize = DimensionCord(('{' -: state :- '}')).success
 
   private def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))

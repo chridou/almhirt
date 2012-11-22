@@ -14,7 +14,7 @@ case class AnormEventLogEntry(id: UUID, aggId: UUID, aggVersion: Long, timestamp
 
 object AnormEventLogEntry{
   def fromDomainEvent(event: DomainEvent)(implicit ctx: AlmhirtContext): AlmValidation[AnormEventLogEntry] = {
-    val serializedEvent= ctx.riftWarp.prepareForWarp[DimensionCord](RiftJson)(event)
+    val serializedEvent= ctx.riftWarp.prepareForWarp[DimensionCord,RiftJson](event)
     serializedEvent.map(serEvent =>
       AnormEventLogEntry(event.id, event.aggId, event.aggVersion, ctx.getDateTime, serEvent.manifestation))
   }
