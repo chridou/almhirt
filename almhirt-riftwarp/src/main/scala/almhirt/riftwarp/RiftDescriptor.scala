@@ -3,7 +3,7 @@ package almhirt.riftwarp
 sealed trait RiftDescriptor {
 }
 
-trait RiftChannelDescriptor extends RiftDescriptor with Equals {
+trait RiftChannelDescriptor extends RiftDescriptor {
   def channelType: String
   def contentType: Option[String]
   def contentTypeExt: Option[String]
@@ -27,17 +27,17 @@ trait RiftChannelDescriptor extends RiftDescriptor with Equals {
   
 }
 
-object RiftChannelDescriptor {
-  def apply(aChannelType: String, aContentType: Option[String], aContentTypeExt: Option[String]): RiftChannelDescriptor =
-    new RiftChannelDescriptor {
-      val channelType = aChannelType
-      val contentTypeExt = aContentType
-      val contentType = aContentTypeExt
-    }
-  
-  def apply(aChannelType: String): RiftChannelDescriptor = apply(aChannelType, None, None)
-  
-}
+//object RiftChannelDescriptor {
+//  def apply(aChannelType: String, aContentType: Option[String], aContentTypeExt: Option[String]): RiftChannelDescriptor =
+//    new RiftChannelDescriptor {
+//      val channelType = aChannelType
+//      val contentTypeExt = aContentType
+//      val contentType = aContentTypeExt
+//    }
+//  
+//  def apply(aChannelType: String): RiftChannelDescriptor = apply(aChannelType, None, None)
+//  
+//}
 
 sealed trait RiftFullDescriptor extends RiftDescriptor with Equals {
   def channelType: RiftChannelDescriptor

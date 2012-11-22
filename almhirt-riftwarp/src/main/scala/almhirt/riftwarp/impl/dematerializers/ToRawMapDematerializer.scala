@@ -5,8 +5,8 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.riftwarp._
 
-class ToRawMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers) extends DematerializesToRawMap with NoneHasNoEffectDematerializationFunnel {
-  val descriptor = RiftFullDescriptor(RiftMap, ToolGroupRiftStd)
+class ToRawMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers) extends DematerializesToRawMap[RiftMap] with NoneHasNoEffectDematerializationFunnel[DimensionRawMap, RiftMap] {
+  val descriptor = RiftFullDescriptor(RiftMap(), ToolGroupRiftStd)
   def dematerialize: AlmValidation[DimensionRawMap] = DimensionRawMap(state).success
 
   def addString(ident: String, aValue: String) = (ToRawMapDematerializer(state + (ident -> aValue))).success
@@ -32,13 +32,13 @@ class ToRawMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: H
   def addJson(ident: String, aValue: String) = (ToRawMapDematerializer(state + (ident -> aValue))).success
   def addXml(ident: String, aValue: scala.xml.Node) = (ToRawMapDematerializer(state + (ident -> aValue))).success
 
-  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[DematerializationFunnel] = {
+  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToRawMapDematerializer] = {
     decomposer.decompose(aComplexType)(ToRawMapDematerializer()).bind(toEmbed =>
       toEmbed.asInstanceOf[ToRawMapDematerializer].dematerialize).map(theMapToEmbed =>
       ToRawMapDematerializer(state + (ident -> theMapToEmbed.manifestation)))
   }
 
-  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[DematerializationFunnel] = {
+  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[ToRawMapDematerializer] = {
     hasDecomposers.tryGetDecomposerForAny(aComplexType) match {
       case Some(decomposer) => addComplexType(decomposer)(ident, aComplexType)
       case None => UnspecifiedProblem("No decomposer found for ident '%s'".format(ident)).failure

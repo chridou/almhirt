@@ -1,43 +1,54 @@
 package almhirt.riftwarp
 
-object RiftMap extends RiftChannelDescriptor {
+case class RiftMap() extends RiftChannelDescriptor {
   val channelType = "channel_map"
   val contentTypeExt = None
   val contentType = None
 }
-object RiftJson extends RiftChannelDescriptor {
+case class RiftJson() extends RiftChannelDescriptor  {
   val channelType = "channel_json"
   val contentTypeExt = Some("json")
   val contentType = Some("text/x-json")
 }
-object RiftBson extends RiftChannelDescriptor {
+case class RiftBson() extends RiftChannelDescriptor  {
   val channelType = "channel_bson"
   val contentTypeExt = None
   val contentType = None
 }
-object RiftXml extends RiftChannelDescriptor {
+case class RiftXml() extends RiftChannelDescriptor  {
   val channelType = "channel_xml"
   val contentTypeExt = Some("xml")
   val contentType = Some("text/xml")
 }
-object RiftMessagePack extends RiftChannelDescriptor {
+case class RiftMessagePack() extends RiftChannelDescriptor   {
   val channelType = "channel_msgpack"
   val contentTypeExt = None
   val contentType = None
 }
-object RiftProtocolBuffers extends RiftChannelDescriptor {
+case class RiftProtocolBuffers() extends RiftChannelDescriptor  {
   val channelType = "channel_protobuf"
   val contentTypeExt = None
   val contentType = None
 }
-object RiftThrift extends RiftChannelDescriptor {
+case class RiftThrift() extends RiftChannelDescriptor  {
   val channelType = "channel_thrift"
   val contentTypeExt = None
   val contentType = None
 }
-object RiftYaml extends RiftChannelDescriptor {
+case class RiftYaml() extends RiftChannelDescriptor  {
   val channelType = "channel_yaml"
   val contentTypeExt = None
   val contentType = None
+}
+
+object RiftChannel{
+  val rawMap = new RiftMap 
+  val json = new RiftMap 
+  val bson = new RiftBson 
+  val xml = new RiftXml 
+  val messagePack = new RiftMessagePack 
+  val protobuf = new RiftProtocolBuffers 
+  val thrift = new RiftThrift 
+  val yaml = new RiftYaml 
 }
 

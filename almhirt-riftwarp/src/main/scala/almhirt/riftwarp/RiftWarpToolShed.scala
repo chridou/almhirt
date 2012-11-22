@@ -11,8 +11,9 @@ trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArray
 object RiftWarpToolShed {
   def apply(hasDematerializers: HasDematerializers, hasRematerializationArrayFactories: HasRematerializationArrayFactories): RiftWarpToolShed = {
     new RiftWarpToolShed {
-      def addDematerializer[D <: Dematerializer[_], To <: RiftTypedDimension[_]](dematerializer: Dematerializer[To], isChannelDefault: Boolean = false)(implicit m: Manifest[To]) = hasDematerializers.addDematerializer(dematerializer)
-      def tryGetDematerializer[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[To]): Option[Dematerializer[To]] = hasDematerializers.tryGetDematerializer(warpType)
+      def addDematerializer[D <: Dematerializer[_,_], To <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](dematerializer: Dematerializer[To,TChannel], isChannelDefault: Boolean = false)(implicit m: Manifest[To]) = hasDematerializers.addDematerializer(dematerializer)
+      def tryGetDematerializerByDescriptor[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[To]): Option[Dematerializer[To,_]] = hasDematerializers.tryGetDematerializerByDescriptor(warpType)
+      def tryGetDematerializer[To <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](implicit md: Manifest[To], mc: Manifest[TChannel]): Option[Dematerializer[To,TChannel]] = hasDematerializers.tryGetDematerializer[To, TChannel]
       def addArrayFactory[R <: RematerializationArrayFactory[_], From <: RiftTypedDimension[_]](arrayFactory: RematerializationArrayFactory[From], isChannelDefault: Boolean = false)(implicit m: Manifest[From]) = hasRematerializationArrayFactories.addArrayFactory(arrayFactory)
       def tryGetArrayFactory[From <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[From]): Option[RematerializationArrayFactory[From]] = hasRematerializationArrayFactories.tryGetArrayFactory(warpType)
     }

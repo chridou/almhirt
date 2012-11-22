@@ -13,12 +13,13 @@ object Worksheet {
   riftWarp.barracks.addRecomposer(new TestAddressRecomposer())
 
 
+
   val testObject = TestObjectA.pete               //> testObject  : almhirt.riftwarp.TestObjectA = TestObjectA(Pete,Some(Jim),true
                                                   //| ,47,12737823792992474737892456985496456847789872389723984,99283823727372382.
                                                   //| 62253651576457646,12.5,[B@23309e87,[B@4cf7c31d,Some(TestAddress(Berlin,An de
                                                   //| r Mauer 89)))
          
-  val resV = riftWarp.prepareForWarp[DimensionCord](RiftJson)(testObject)
+  val resV = riftWarp.prepareForWarp[DimensionCord,RiftJson](testObject)
                                                   //> resV  : almhirt.common.package.AlmValidation[almhirt.riftwarp.DimensionCord]
                                                   //|  = Success(DimensionCord({"riftwarptd":"almhirt.riftwarp.TestObjectA","name"
                                                   //| :"Pete","friend":"Jim","isMale":true,"age":47,"atoms":"127378237929924747378
@@ -34,28 +35,28 @@ object Worksheet {
                                                   //| ,7,8,9,10,-1],"image":"FanpAAAAgIDq","address":{"riftwarptd":"almhirt.riftwa
                                                   //| rp.TestAddress","city":"Berlin","street":"An der Mauer 89"}})
 
-  val backFromWarpV = riftWarp.receiveFromWarp[DimensionCord, TestObjectA](RiftJson)(warpStream)
+  val backFromWarpV = riftWarp.receiveFromWarp[DimensionCord, TestObjectA](RiftJson())(warpStream)
                                                   //> backFromWarpV  : almhirt.common.package.AlmValidation[almhirt.riftwarp.TestO
                                                   //| bjectA] = Success(TestObjectA(Pete,Some(Jim),true,47,12737823792992474737892
-                                                  //| 456985496456847789872389723984,99283823727372382.62253651576457646,12.5,[B@e
-                                                  //| f894ce,[B@61f1680f,Some(TestAddress(Berlin,An der Mauer 89))))
+                                                  //| 456985496456847789872389723984,99283823727372382.62253651576457646,12.5,[B@3
+                                                  //| 465b738,[B@1dfd868,Some(TestAddress(Berlin,An der Mauer 89))))
   
   val backFromWarp = backFromWarpV.forceResult    //> backFromWarp  : almhirt.riftwarp.TestObjectA = TestObjectA(Pete,Some(Jim),tr
                                                   //| ue,47,12737823792992474737892456985496456847789872389723984,9928382372737238
-                                                  //| 2.62253651576457646,12.5,[B@ef894ce,[B@61f1680f,Some(TestAddress(Berlin,An d
+                                                  //| 2.62253651576457646,12.5,[B@3465b738,[B@1dfd868,Some(TestAddress(Berlin,An d
                                                   //| er Mauer 89)))
   
   testObject == backFromWarp                      //> res0: Boolean = false
   
   
   
-  riftWarp.prepareForWarp[DimensionRawMap](RiftMap)(testObject).bind(warpStream =>
-    riftWarp.receiveFromWarp[DimensionRawMap, TestObjectA](RiftMap)(warpStream)).map(rearrived =>
+  riftWarp.prepareForWarp[DimensionRawMap, RiftMap](testObject).bind(warpStream =>
+    riftWarp.receiveFromWarp[DimensionRawMap, TestObjectA](RiftMap())(warpStream)).map(rearrived =>
       rearrived == testObject)                    //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(true)
 
 
-  riftWarp.prepareForWarp[DimensionCord](RiftJson)(testObject).bind(warpStream =>
-    riftWarp.receiveFromWarp[DimensionCord, TestObjectA](RiftJson)(warpStream)).map(rearrived =>
+  riftWarp.prepareForWarp[DimensionCord,RiftJson](testObject).bind(warpStream =>
+    riftWarp.receiveFromWarp[DimensionCord, TestObjectA](RiftJson())(warpStream)).map(rearrived =>
       rearrived == testObject)                    //> res2: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(false)
       
 }

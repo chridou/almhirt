@@ -34,7 +34,7 @@ object TestObjectA {
 
 class TestObjectADecomposer extends Decomposer[TestObjectA] {
   val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
-  def decompose(what: TestObjectA)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
+  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestObjectA)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addString("name", what.name))
       .bind(_.addOptionalString("friend", what.friend))
@@ -70,7 +70,7 @@ case class TestAddress(city: String, street: String) extends HasDefaultTypeDescr
 
 class TestAddressDecomposer extends Decomposer[TestAddress] {
   val typeDescriptor = TypeDescriptor(classOf[TestAddress])
-  def decompose(what: TestAddress)(implicit into: DematerializationFunnel): AlmValidation[DematerializationFunnel] = {
+  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestAddress)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addString("city", what.city))
       .bind(_.addString("street", what.street))

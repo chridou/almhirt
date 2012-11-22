@@ -10,22 +10,22 @@ trait RiftWarp {
   def barracks: RiftWarpBarracks
   def toolShed: RiftWarpToolShed
 
-  def prepareForWarp[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(what: AnyRef)(implicit m: Manifest[To]): AlmValidation[To] = {
+  def prepareForWarp[To <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: AnyRef)(implicit m: Manifest[To], n: Manifest[TChannel]): AlmValidation[To] = {
     val typeDescriptor =
       what match {
         case htd: HasTypeDescriptor => htd.typeDescriptor
         case x => TypeDescriptor(x.getClass)
       }
     val decomposer = barracks.tryGetRawDecomposer(typeDescriptor)
-    val dematerializer = toolShed.tryGetDematerializer[To](warpType)
+    val dematerializer = toolShed.tryGetDematerializer[To, TChannel]
     (decomposer, dematerializer) match {
       case (Some(dec), Some(dem)) =>
         dec.decomposeRaw(what)(dem).bind(funnel =>
           almCast[RawDematerializer](funnel).bind(demat =>
             demat.dematerializeRaw.map(_.asInstanceOf[To])))
       case (None, Some(_)) => UnspecifiedProblem("No decomposer found for type '%s'".format(typeDescriptor)).failure
-      case (Some(_), None) => UnspecifiedProblem("No dematerializer found for warping through '%s' into a '%s'".format(warpType, m.erasure.getName())).failure
-      case (None, None) => UnspecifiedProblem("No decomposer found for type '%s' and no dematerializer found for warping through '%s' into a '%s'".format(typeDescriptor, warpType, m.erasure.getName())).failure
+      case (Some(_), None) => UnspecifiedProblem("No dematerializer found for warping through '%s' into a '%s'".format(n.erasure.getName(), m.erasure.getName())).failure
+      case (None, None) => UnspecifiedProblem("No decomposer found for type '%s' and no dematerializer found for warping through '%s' into a '%s'".format(typeDescriptor, n.erasure.getName(), m.erasure.getName())).failure
     }
   }
 
