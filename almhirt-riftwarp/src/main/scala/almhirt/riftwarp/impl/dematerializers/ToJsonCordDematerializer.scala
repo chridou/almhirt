@@ -8,11 +8,16 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.riftwarp._
 
+object ToJsonCordDematerializerFuns {
+  def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
+}
+
 class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: HasDecomposers) extends DematerializesToCord[RiftJson] {
+  import ToJsonCordDematerializerFuns._
+  
   val descriptor = RiftFullDescriptor(RiftJson(), ToolGroupStdLib())
   def dematerialize = DimensionCord(('{' -: state :- '}')).success
 
-  private def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
   def addPart(ident: String, part: Cord): AlmValidation[ToJsonCordDematerializer] = {
     val fieldCord = '\"' + ident + "\":"
     val completeCord = fieldCord ++ part
