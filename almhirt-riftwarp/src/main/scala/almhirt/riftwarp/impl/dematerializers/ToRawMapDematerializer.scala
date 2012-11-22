@@ -44,6 +44,10 @@ class ToRawMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: H
       case None => UnspecifiedProblem("No decomposer found for ident '%s'".format(ident)).failure
     }
   }
+
+  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit cbsma: CanDematerializePrimitiveMA[M, A, DimensionRawMap, RiftMap]): AlmValidation[Dematerializer[DimensionRawMap, RiftMap]] =
+    cbsma.dematerialize(ma).map(dim => ToRawMapDematerializer(state + (ident -> dim.manifestation)))
+  
   
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToRawMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
 

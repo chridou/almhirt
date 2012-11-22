@@ -129,6 +129,12 @@ class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: Ha
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[ToJsonCordDematerializer] = 
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexType(x, y))
 
+  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit cbsma: CanDematerializePrimitiveMA[M, A, DimensionCord, RiftJson]): AlmValidation[ToJsonCordDematerializer] =
+    cbsma.dematerialize(ma).bind(dim => addPart(ident, dim.manifestation))
+    
+  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit cbsma: CanDematerializePrimitiveMA[M, A, DimensionCord, RiftJson]): AlmValidation[ToJsonCordDematerializer] =
+     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y))
+    
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
     
 }

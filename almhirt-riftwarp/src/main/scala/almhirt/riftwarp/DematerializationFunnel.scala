@@ -32,6 +32,6 @@ trait NoneHasNoEffectDematerializationFunnel[TDimension <: RiftTypedDimension[_]
 
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _), this.success)
 
-//  def addOptionalSimpleMA[M[_], A](ident: String, ma: Option[M[A]])(implicit cbsma: CanDematerializeSimpleMA[M, A]) = option.cata(ma)(addSimpleMA(ident, _), this.success)
+  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit cbsma: CanDematerializePrimitiveMA[M, A, TDimension, TChannel]) = option.cata(ma)(addPrimitiveMA(ident, _)(cbsma), this.success) 
   
 }
