@@ -19,11 +19,14 @@ class SerializingAnormJsonEventLogMegaSpecs extends Specification with TestAlmhi
   "An anorm SerializingAnormEventLog" should {
     "accept %d events with the same aggId shuffled with %d other events and return the events for a specific aggId in the same order(getEvents(aggId))".format(count, count) in {
       withEmptyEventLog { (eventLog, almhirt) =>
+        val rnd = new java.util.Random
+        //def createString() = ""
+        def createString() = (for (i <- 1 to 1000) yield 65+(rnd.nextInt() % 20)).foldLeft("")((agg, c) => agg + c)
         val aggId = almhirt.getUuid
         val pre1 = almhirt.getDateTime
         val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-        val events = firstEvent :: (for (i <- 1 until count) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-        val eventsToShuffleIn = (for (i <- 0 until count) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+        val events = firstEvent :: (for (i <- 1 until count) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d_%s".format(i, createString)).asInstanceOf[DomainEvent]).toList
+        val eventsToShuffleIn = (for (i <- 0 until count) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d_%s".format(i, createString)).asInstanceOf[DomainEvent]).toList
         val pre2 = almhirt.getDateTime
         println("Events creation took %s".format(new org.joda.time.Period(pre2.getMillis() - pre1.getMillis())))
 

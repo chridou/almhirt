@@ -13,7 +13,7 @@ import almhirt.eventlog._
 import akka.util.Duration
 
 class DomainEventLogActorHull(val actor: ActorRef, onClose: () => Unit)(implicit almhirtContext: AlmhirtContext) extends DomainEventLog {
-  private implicit def atMost = Duration(60, "seconds")
+  private implicit def atMost = Duration(120, "seconds")
   private implicit def executionContext = almhirtContext.system.futureDispatcher
 
   def this(actor: ActorRef)(implicit almhirtContext: AlmhirtContext) = this(actor, () => ())
