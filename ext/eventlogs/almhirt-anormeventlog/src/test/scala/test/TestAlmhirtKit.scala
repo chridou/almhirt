@@ -7,39 +7,7 @@ import almhirt.environment.Almhirt
 import com.typesafe.config.ConfigFactory
 
 trait TestAlmhirtKit {
-  private val configText =
-    """  
-      akka {
-		loglevel = ERROR
-      }
-      almhirt {
-		systemname = "almhirt-testing"
-		durations {
-		  short = 0.5
-		  medium = 2.5
-		  long = 10.0
-		  }
-		  eventlog {
-		  	factory = "almhirt.eventlog.anorm.SerializingAnormJsonEventLogFactory"
-		  	#dbtemplate = "postgres"
-		  	dbtemplate = "h2"
-		  	#driver = "org.h2.Driver"
-		  	#ddlpath = "/conf/h2ddl.sql"
-		  	actorname = "anorm-test-eventlog"
-		  	connection = "jdbc:h2:mem:almhirtanormtest;DB_CLOSE_DELAY=-1"
-		  	#connection = "jdbc:postgresql://localhost/almhirteventlog"
-		  	properties {
-		  		user = "testuser"
-		  		password = "testuser"
-		  	}
-		  	eventlogtable = "anormeventlog"
-		  	create_schema = true
-		  	drop_on_close = true
-		  	randomize_tablename = true
-		  }
-	  }
-    """
-  val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
+  val defaultConf = ConfigFactory.load
 
   val testKit = new AlmhirtTestKit {}
 
