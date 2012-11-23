@@ -47,7 +47,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .bind(_.addDouble("size", what.size))
       .bind(_.addByteArray("coins", what.coins))
       .bind(_.addBlob("image", what.image))
-      .bind(_.addPrimitiveMA("dices", what.dices))
+      .bind(_.addPrimitiveMA[List,String, TDimension, TChannel]("dices", what.dices))
       .bind(_.addOptionalComplexType("address", what.address))
   }
 }

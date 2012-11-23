@@ -12,7 +12,7 @@ object ToJsonCordDematerializerFuns {
   def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
 }
 
-class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: HasDecomposers) extends DematerializesToCord[RiftJson] {
+class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecomposers) extends ToCordDematerializer[RiftJson](manifest[RiftJson]) {
   import ToJsonCordDematerializerFuns._
   
   val descriptor = RiftFullDescriptor(RiftJson(), ToolGroupStdLib())
@@ -134,12 +134,18 @@ class ToJsonCordDematerializer private (state: Cord)(implicit hasDecomposers: Ha
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[ToJsonCordDematerializer] = 
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexType(x, y))
 
-  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit cbsma: CanDematerializePrimitiveMA[M, A, DimensionCord, RiftJson]): AlmValidation[ToJsonCordDematerializer] =
-    cbsma.dematerialize(ma).bind(dim => addPart(ident, dim.manifestation))
+  def addPrimitiveMA[M[_], A](ident: String, ma: M[A], dematerializeMA: M[A] => AlmValidation[DimensionCord]): AlmValidation[ToJsonCordDematerializer] =
+    dematerializeMA(ma).bind(dim => addPart(ident, dim.manifestation))
     
-  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit cbsma: CanDematerializePrimitiveMA[M, A, DimensionCord, RiftJson]): AlmValidation[ToJsonCordDematerializer] =
-     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y))
+  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]], dematerialzeMA: M[A] => AlmValidation[DimensionCord]): AlmValidation[ToJsonCordDematerializer] = 
+     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y, dematerialzeMA))
+
+  def addPrimitiveMA[M[_], A](ident: String, ma: M[A]): AlmValidation[ToJsonCordDematerializer] =
+    sys.error("")
     
+  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]]): AlmValidation[ToJsonCordDematerializer] = 
+    sys.error("")
+     
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
     
 }
