@@ -6,4 +6,9 @@ trait HasDematerializers {
 
   def tryGetDematerializerByDescriptor[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[To]): Option[Dematerializer[_, To]]
   def tryGetDematerializer[TChannel <: RiftChannelDescriptor, To <: RiftTypedDimension[_]](implicit md: Manifest[To], mc: Manifest[TChannel]): Option[Dematerializer[TChannel,To]]
+
+  def addCanDematerializePrimitiveMA[M[_], A, TChannel <: RiftChannelDescriptor, TDimension <: RiftDimension](cdsma: CanDematerializePrimitiveMA[M, A, TChannel, TDimension]): Unit
+  def tryGetCanDematerializePrimitiveMA[M[_], A, TChannel <: RiftChannelDescriptor, TDimension <: RiftDimension](implicit mM: Manifest[M[_]] , mA: Manifest[A], mC: Manifest[TChannel], mD: Manifest[TDimension]): Option[CanDematerializePrimitiveMA[M, A, TChannel, TDimension]] =
+    tryGetCanDematerializePrimitiveMAByTypes(mM.erasure, mA.erasure, mC.erasure.asInstanceOf[Class[_ <: RiftChannelDescriptor]], mD.erasure.asInstanceOf[Class[_ <: RiftDimension]]).map(_.asInstanceOf[CanDematerializePrimitiveMA[M, A, TChannel, TDimension]])
+  def tryGetCanDematerializePrimitiveMAByTypes(tM: Class[_] , tA: Class[_], tChannel: Class[_ <: RiftChannelDescriptor], tDimension: Class[_ <: RiftDimension]): Option[AnyRef]
 }

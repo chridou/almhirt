@@ -64,11 +64,20 @@ object RiftWarp {
 
   private def initializeWithDefaults(riftWarp: RiftWarp) {
     riftWarp.toolShed.addDematerializer(impl.dematerializers.ToMapDematerializer(Map.empty)(riftWarp.barracks))
-    riftWarp.toolShed.addDematerializer(impl.dematerializers.ToJsonCordDematerializer()(riftWarp.barracks))
+    riftWarp.toolShed.addDematerializer(impl.dematerializers.ToJsonCordDematerializer()(riftWarp.barracks, riftWarp.toolShed))
 
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromMapRematerializationArray)
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonMapRematerializationArray)
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonStringRematerializationArray)
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonCordRematerializationArray)
+    
+    import almhirt.riftwarp.impl.dematerializers.simplema._
+    riftWarp.toolShed.addCanDematerializePrimitiveMA(new JsonCordPrimitiveDematerializerToListUsingToStringOnItem[Boolean](){})
+    riftWarp.toolShed.addCanDematerializePrimitiveMA(new JsonCordPrimitiveDematerializerToListUsingToStringOnItem[Byte](){})
+    riftWarp.toolShed.addCanDematerializePrimitiveMA(new JsonCordPrimitiveDematerializerToListUsingToStringOnItem[Int](){})
+    riftWarp.toolShed.addCanDematerializePrimitiveMA(new JsonCordPrimitiveDematerializerToListUsingToStringOnItem[Long](){})
+    riftWarp.toolShed.addCanDematerializePrimitiveMA(new JsonCordPrimitiveDematerializerToListUsingToStringOnItem[BigInt](){})
+    riftWarp.toolShed.addCanDematerializePrimitiveMA(new JsonCordPrimitiveDematerializerToListUsingToStringOnItem[Float](){})
+    riftWarp.toolShed.addCanDematerializePrimitiveMA(new JsonCordPrimitiveDematerializerToListUsingToStringOnItem[Double](){})
   }
 }

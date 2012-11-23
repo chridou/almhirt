@@ -32,7 +32,7 @@ trait NoneHasNoEffectDematerializationFunnel[TChannel <: RiftChannelDescriptor, 
 
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _), dematerializer.success)
 
-  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]], dematerialzeMA: M[A] => AlmValidation[TDimension]) = option.cata(ma)(addPrimitiveMA(ident, _, dematerialzeMA), dematerializer.success) 
-  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]]) = option.cata(ma)(addPrimitiveMA(ident, _), dematerializer.success) 
+  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]], dematerialzeMA: M[A] => AlmValidation[TDimension])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addPrimitiveMA(ident, _, dematerialzeMA), dematerializer.success) 
+  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addPrimitiveMA(ident, _), dematerializer.success) 
   
 }

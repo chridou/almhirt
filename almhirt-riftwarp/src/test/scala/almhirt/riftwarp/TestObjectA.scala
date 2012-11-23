@@ -16,6 +16,7 @@ case class TestObjectA(
   coins: Array[Byte],
   image: Array[Byte],
   dices: List[Int],
+  words: List[String],
   address: Option[TestAddress]) extends HasDefaultTypeDescriptor
 
 object TestObjectA {
@@ -31,6 +32,7 @@ object TestObjectA {
       Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 255.toByte),
       Array[Byte](21, 169.toByte, 233.toByte, 0, 0, 0, 128.toByte, 128.toByte, 234.toByte),
       List(4,6,8,10,12,20),
+      List("aaa", "bbb", "ccc"),
       Some(TestAddress("Berlin", "An der Mauer 89")))
 }
 
@@ -47,7 +49,8 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .bind(_.addDouble("size", what.size))
       .bind(_.addByteArray("coins", what.coins))
       .bind(_.addBlob("image", what.image))
-//      .bind(_.addPrimitiveMA[List,String, TDimension, TChannel]("dices", what.dices))
+      .bind(_.addPrimitiveMA("dices", what.dices))
+      .bind(_.addPrimitiveMA("words", what.words))
       .bind(_.addOptionalComplexType("address", what.address))
   }
 }
@@ -65,7 +68,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
     val coins = from.getByteArray("coins").toAgg
     val image = from.getBlob("image").toAgg
     val address = from.tryGetComplexType("address").toAgg
-    (name |@| friend |@| isMale |@| age |@| atoms |@| balance |@| size |@| coins |@| image |@| List.empty.success[Problem].toAgg |@| address)(TestObjectA.apply)
+    (name |@| friend |@| isMale |@| age |@| atoms |@| balance |@| size |@| coins |@| image |@| List.empty.success[Problem].toAgg |@| List.empty.success[Problem].toAgg |@| address)(TestObjectA.apply)
   }
 }
 
