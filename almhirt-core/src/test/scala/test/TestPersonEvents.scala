@@ -17,7 +17,7 @@ case class TestPersonUnhandledEvent(id: UUID,aggId: UUID, aggVersion: Long, time
 
 class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonCreated])
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestPersonCreated)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestPersonCreated)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
       .bind(_.addUuid("aggId", what.aggId))
@@ -39,7 +39,7 @@ class TestPersonCreatedRecomposer extends Recomposer[TestPersonCreated] {
 
 class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonNameChanged])
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestPersonNameChanged)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestPersonNameChanged)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
       .bind(_.addUuid("aggId", what.aggId))
@@ -63,7 +63,7 @@ class TestPersonNameChangedRecomposer extends Recomposer[TestPersonNameChanged] 
 
 class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAquired] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonAddressAquired])
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestPersonAddressAquired)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestPersonAddressAquired)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
       .bind(_.addUuid("aggId", what.aggId))
@@ -87,7 +87,7 @@ class TestPersonAddressAquiredRecomposer extends Recomposer[TestPersonAddressAqu
 
 class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonMoved])
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestPersonMoved)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestPersonMoved)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
       .bind(_.addUuid("aggId", what.aggId))
@@ -111,7 +111,7 @@ class TestPersonMovedRecomposer extends Recomposer[TestPersonMoved] {
 
 class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledEvent] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonUnhandledEvent])
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestPersonUnhandledEvent)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestPersonUnhandledEvent)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addUuid("id", what.id))
       .bind(_.addUuid("aggId", what.aggId))

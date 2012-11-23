@@ -13,8 +13,8 @@ trait CanDematerializePrimitiveMA[M[_], A, TChannel <: RiftChannelDescriptor, TD
 abstract class CanDematerializePrimitiveMABase[M[_], A, TChannel <: RiftChannelDescriptor, TDimension <: RiftDimension](mM: Manifest[M[_]] , mA: Manifest[A], mC: Manifest[TChannel], mD: Manifest[TDimension]) extends CanDematerializePrimitiveMA[M, A, TChannel, TDimension]{
   val tM = mM.erasure
   val tA = mA.erasure
-  val tChannel = mC.erasure
-  val tDimension = mD.erasure
+  val tChannel = mC.erasure.asInstanceOf[Class[_ <: RiftChannelDescriptor]]
+  val tDimension = mD.erasure.asInstanceOf[Class[_ <: RiftDimension]]
 }
 
 abstract class CanDematerializePrimitiveMAToCord[M[_], A, TChannel <: RiftChannelDescriptor](mM: Manifest[M[_]] , mA: Manifest[A], mC: Manifest[TChannel]) extends CanDematerializePrimitiveMABase[M, A, TChannel, DimensionCord](mM, mA, mC, manifest[DimensionCord])

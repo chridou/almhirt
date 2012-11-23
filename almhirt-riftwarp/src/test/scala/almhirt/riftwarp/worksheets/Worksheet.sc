@@ -5,20 +5,19 @@ import almhirt.riftwarp._
 import almhirt.riftwarp.impl._
 
 object Worksheet {
-  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@2c
-                                                  //| e1899b
+  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : almhirt.riftwarp.RiftWarp = almhirt.riftwarp.RiftWarp$$anon$1@1e
+                                                  //| aff1e8
   riftWarp.barracks.addDecomposer(new TestObjectADecomposer())
   riftWarp.barracks.addDecomposer(new TestAddressDecomposer())
   riftWarp.barracks.addRecomposer(new TestObjectARecomposer())
   riftWarp.barracks.addRecomposer(new TestAddressRecomposer())
 
-
   val testObject = TestObjectA.pete               //> testObject  : almhirt.riftwarp.TestObjectA = TestObjectA(Pete,Some(Jim),true
                                                   //| ,47,12737823792992474737892456985496456847789872389723984,99283823727372382.
-                                                  //| 62253651576457646,12.5,[B@4cf7c31d,[B@1e2acc65,Some(TestAddress(Berlin,An de
-                                                  //| r Mauer 89)))
+                                                  //| 62253651576457646,12.5,[B@b670fa5,[B@1b341f7c,List(4, 6, 8, 10, 12, 20),Some
+                                                  //| (TestAddress(Berlin,An der Mauer 89)))
          
-  val resV = riftWarp.prepareForWarp[DimensionCord,RiftJson](testObject)
+  val resV = riftWarp.prepareForWarp[RiftJson, DimensionCord](testObject)
                                                   //> resV  : almhirt.common.package.AlmValidation[almhirt.riftwarp.DimensionCord]
                                                   //|  = Success(DimensionCord({"riftwarptd":"almhirt.riftwarp.TestObjectA","name"
                                                   //| :"Pete","friend":"Jim","isMale":true,"age":47,"atoms":"127378237929924747378
@@ -37,24 +36,24 @@ object Worksheet {
   val backFromWarpV = riftWarp.receiveFromWarp[DimensionCord, TestObjectA](RiftJson())(warpStream)
                                                   //> backFromWarpV  : almhirt.common.package.AlmValidation[almhirt.riftwarp.TestO
                                                   //| bjectA] = Success(TestObjectA(Pete,Some(Jim),true,47,12737823792992474737892
-                                                  //| 456985496456847789872389723984,99283823727372382.62253651576457646,12.5,[B@6
-                                                  //| 1f1680f,[B@2fe6e305,Some(TestAddress(Berlin,An der Mauer 89))))
+                                                  //| 456985496456847789872389723984,99283823727372382.62253651576457646,12.5,[B@4
+                                                  //| aeae50c,[B@3639d41,List(),Some(TestAddress(Berlin,An der Mauer 89))))
   
   val backFromWarp = backFromWarpV.forceResult    //> backFromWarp  : almhirt.riftwarp.TestObjectA = TestObjectA(Pete,Some(Jim),tr
                                                   //| ue,47,12737823792992474737892456985496456847789872389723984,9928382372737238
-                                                  //| 2.62253651576457646,12.5,[B@61f1680f,[B@2fe6e305,Some(TestAddress(Berlin,An 
-                                                  //| der Mauer 89)))
+                                                  //| 2.62253651576457646,12.5,[B@4aeae50c,[B@3639d41,List(),Some(TestAddress(Berl
+                                                  //| in,An der Mauer 89)))
   
   testObject == backFromWarp                      //> res0: Boolean = false
   
   
   
-  riftWarp.prepareForWarp[DimensionRawMap, RiftMap](testObject).bind(warpStream =>
+  riftWarp.prepareForWarp[RiftMap, DimensionRawMap](testObject).bind(warpStream =>
     riftWarp.receiveFromWarp[DimensionRawMap, TestObjectA](RiftMap())(warpStream)).map(rearrived =>
-      rearrived == testObject)                    //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(true)
+      rearrived == testObject)                    //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(false)
 
 
-  riftWarp.prepareForWarp[DimensionCord,RiftJson](testObject).bind(warpStream =>
+  riftWarp.prepareForWarp[RiftJson, DimensionCord](testObject).bind(warpStream =>
     riftWarp.receiveFromWarp[DimensionCord, TestObjectA](RiftJson())(warpStream)).map(rearrived =>
       rearrived == testObject)                    //> res2: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(false)
       

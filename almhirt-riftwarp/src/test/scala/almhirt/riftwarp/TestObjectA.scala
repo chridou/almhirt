@@ -36,7 +36,7 @@ object TestObjectA {
 
 class TestObjectADecomposer extends Decomposer[TestObjectA] {
   val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestObjectA)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestObjectA)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addString("name", what.name))
       .bind(_.addOptionalString("friend", what.friend))
@@ -47,7 +47,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .bind(_.addDouble("size", what.size))
       .bind(_.addByteArray("coins", what.coins))
       .bind(_.addBlob("image", what.image))
-      .bind(_.addPrimitiveMA[List,String, TDimension, TChannel]("dices", what.dices))
+//      .bind(_.addPrimitiveMA[List,String, TDimension, TChannel]("dices", what.dices))
       .bind(_.addOptionalComplexType("address", what.address))
   }
 }
@@ -65,7 +65,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
     val coins = from.getByteArray("coins").toAgg
     val image = from.getBlob("image").toAgg
     val address = from.tryGetComplexType("address").toAgg
-    (name |@| friend |@| isMale |@| age |@| atoms |@| balance |@| size |@| coins |@| image |@| address)(TestObjectA.apply)
+    (name |@| friend |@| isMale |@| age |@| atoms |@| balance |@| size |@| coins |@| image |@| List.empty.success[Problem].toAgg |@| address)(TestObjectA.apply)
   }
 }
 
@@ -73,7 +73,7 @@ case class TestAddress(city: String, street: String) extends HasDefaultTypeDescr
 
 class TestAddressDecomposer extends Decomposer[TestAddress] {
   val typeDescriptor = TypeDescriptor(classOf[TestAddress])
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TestAddress)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestAddress)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addString("city", what.city))
       .bind(_.addString("street", what.street))

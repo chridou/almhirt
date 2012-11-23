@@ -9,7 +9,7 @@ import almhirt.messaging._
 
 class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
   val typeDescriptor = TypeDescriptor(classOf[MessageGrouping], 1)
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: MessageGrouping)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: MessageGrouping)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .bind(_.addUuid("groupId", what.groupId))
@@ -29,7 +29,7 @@ class MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
 
 class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
   val typeDescriptor = TypeDescriptor(classOf[MessageHeader], 1)
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: MessageHeader)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: MessageHeader)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .bind(_.addUuid("id", what.id))
@@ -52,7 +52,7 @@ class MessageHeaderRecomposer extends Recomposer[MessageHeader] {
 
 class MessageDecomposer extends Decomposer[Message[AnyRef]] {
   val typeDescriptor = TypeDescriptor(classOf[Message[AnyRef]], 1)
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: Message[AnyRef])(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: Message[AnyRef])(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .bind(_.addComplexType("header", what.header))

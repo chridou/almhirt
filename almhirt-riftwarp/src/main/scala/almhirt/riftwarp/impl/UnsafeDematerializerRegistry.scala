@@ -7,7 +7,7 @@ class UnsafeDematerializerRegistry extends HasDematerializers {
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannelDescriptor, HashMap[String, AnyRef]]]()
   private val channelregistry = collection.mutable.HashMap[String, collection.mutable.HashMap[String, AnyRef]]()
 
-  def addDematerializer[D <: Dematerializer[_,_], To <: RiftTypedDimension[_],TChannel <: RiftChannelDescriptor](dematerializer: Dematerializer[To,TChannel], asChannelDefault: Boolean)(implicit m: Manifest[To]) {
+  def addDematerializer[D <: Dematerializer[_,_], TChannel <: RiftChannelDescriptor, To <: RiftTypedDimension[_]](dematerializer: Dematerializer[TChannel, To], asChannelDefault: Boolean)(implicit m: Manifest[To]) {
     val identifier = m.erasure.getName
 
     if (!toolregistry.contains(dematerializer.descriptor.toolGroup))
@@ -25,27 +25,27 @@ class UnsafeDematerializerRegistry extends HasDematerializers {
       channeltypeentry += (identifier -> dematerializer)
   }
 
-  def tryGetDematerializerByDescriptor[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[To]): Option[Dematerializer[To,_]] = {
+  def tryGetDematerializerByDescriptor[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[To]): Option[Dematerializer[_, To]] = {
     val identifier = m.erasure.getName
     (warpType match {
       case ct: RiftChannelDescriptor =>
         for {
           entry <- channelregistry.get(ct.getClass().getName())
           dematerializer <- entry.get(identifier)
-        } yield dematerializer.asInstanceOf[Dematerializer[To,_]]
+        } yield dematerializer.asInstanceOf[Dematerializer[_, To]]
       case fd: RiftFullDescriptor =>
         for {
           toolentries <- toolregistry.get(fd.toolGroup)
           channelEntries <- toolentries.get(fd.channelType)
           dematerializer <- channelEntries.get(identifier)
-        } yield dematerializer.asInstanceOf[Dematerializer[To,_]]
+        } yield dematerializer.asInstanceOf[Dematerializer[_, To]]
     })
   }
 
-  def tryGetDematerializer[To <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](implicit md: Manifest[To], mc: Manifest[TChannel]): Option[Dematerializer[To,TChannel]] = 
+  def tryGetDematerializer[TChannel <: RiftChannelDescriptor, To <: RiftTypedDimension[_]](implicit md: Manifest[To], mc: Manifest[TChannel]): Option[Dematerializer[TChannel, To]] = 
         for {
           entry <- channelregistry.get(mc.erasure.getName())
           dematerializer <- entry.get(md.erasure.getName())
-        } yield dematerializer.asInstanceOf[Dematerializer[To,TChannel]]
+        } yield dematerializer.asInstanceOf[Dematerializer[TChannel, To]]
   
 }

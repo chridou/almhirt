@@ -10,14 +10,14 @@ trait RiftWarp {
   def barracks: RiftWarpBarracks
   def toolShed: RiftWarpToolShed
 
-  def prepareForWarp[To <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: AnyRef)(implicit m: Manifest[To], n: Manifest[TChannel]): AlmValidation[To] = {
+  def prepareForWarp[TChannel <: RiftChannelDescriptor,To <: RiftTypedDimension[_]](what: AnyRef)(implicit m: Manifest[To], n: Manifest[TChannel]): AlmValidation[To] = {
     val typeDescriptor =
       what match {
         case htd: HasTypeDescriptor => htd.typeDescriptor
         case x => TypeDescriptor(x.getClass)
       }
     val decomposer = barracks.tryGetRawDecomposer(typeDescriptor)
-    val dematerializer = toolShed.tryGetDematerializer[To, TChannel]
+    val dematerializer = toolShed.tryGetDematerializer[TChannel,To]
     (decomposer, dematerializer) match {
       case (Some(dec), Some(dem)) =>
         dec.decomposeRaw(what)(dem).bind(funnel =>
@@ -63,7 +63,7 @@ object RiftWarp {
   }
 
   private def initializeWithDefaults(riftWarp: RiftWarp) {
-    riftWarp.toolShed.addDematerializer(impl.dematerializers.ToRawMapDematerializer(Map.empty)(riftWarp.barracks))
+    riftWarp.toolShed.addDematerializer(impl.dematerializers.ToMapDematerializer(Map.empty)(riftWarp.barracks))
     riftWarp.toolShed.addDematerializer(impl.dematerializers.ToJsonCordDematerializer()(riftWarp.barracks))
 
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromMapRematerializationArray)

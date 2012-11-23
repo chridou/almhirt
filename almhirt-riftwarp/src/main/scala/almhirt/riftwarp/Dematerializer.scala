@@ -74,8 +74,8 @@ trait Dematerializer[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedD
 }
 
 abstract class BaseDematerializer[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](mChannel: Manifest[TChannel], mDimension: Manifest[TDimension]) extends Dematerializer[TChannel, TDimension]{
-  val tChannel = mChannel.erasure
-  val tDimension = mDimension.erasure
+  val tChannel = mChannel.erasure.asInstanceOf[Class[_ <: RiftChannelDescriptor]]
+  val tDimension = mDimension.erasure.asInstanceOf[Class[_ <: RiftTypedDimension[_]]]
 }
 
 abstract class ToStringDematerializer[TChannel <: RiftChannelDescriptor](mChannel: Manifest[TChannel]) extends BaseDematerializer[TChannel, DimensionString](mChannel, manifest[DimensionString]) {

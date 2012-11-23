@@ -10,7 +10,7 @@ import almhirt.util.StringTrackingTicket
 
 class TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
   val typeDescriptor = TypeDescriptor(classOf[TrackingTicket], 1)
-  def decompose[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](what: TrackingTicket)(implicit into: Dematerializer[TDimension, TChannel]): AlmValidation[Dematerializer[TDimension, TChannel]] = {
+  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TrackingTicket)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     what match {
       case StringTrackingTicket(ident) =>
         into
