@@ -4,90 +4,87 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import scalaz._, Scalaz._
 import almhirt.common.AlmValidation
+import java.util.UUID
+import org.joda.time.DateTime
+
+case class PrimitiveMAs(
+  listString: List[String],
+  listInt: List[Int],
+  listDouble: List[Double],
+  listBigDecimal: List[BigDecimal],
+  listDateTime: List[DateTime],
+  vectorString: Vector[String],
+  vectorInt: Vector[Int],
+  vectorDouble: Vector[Double],
+  vectorBigDecimal: Vector[BigDecimal],
+  vectorDateTime: Vector[DateTime],
+  setString: Set[String],
+  setInt: Set[Int],
+  setDouble: Set[Double],
+  setBigDecimal: Set[BigDecimal],
+  setDateTime: Set[DateTime],
+  iterableString: Iterable[String],
+  iterableInt: Iterable[Int],
+  iterableDouble: Iterable[Double],
+  iterableBigDecimal: Iterable[BigDecimal],
+  iterableDateTime: Iterable[DateTime])
 
 case class TestObjectA(
-  name: String,
-  friend: Option[String],
-  isMale: Boolean,
-  age: Int,
-  atoms: BigInt,
-  balance: BigDecimal,
-  size: Double,
-  coins: Array[Byte],
-  image: Array[Byte],
-  dices: List[Int],
-  words: List[String],
-  address: Option[TestAddress]) extends HasDefaultTypeDescriptor
+  str: String,
+  strOpt: Option[String],
+  bool: Boolean,
+  byte: Byte,
+  int: Int,
+  long: Long,
+  bigInt: BigInt,
+  float: Float,
+  double: Double,
+  bigDec: BigDecimal,
+  dateTime: DateTime,
+  uuid: UUID,
+  arrayByte: Array[Byte],
+  blob: Array[Byte],
+  primitiveMAs: PrimitiveMAs,
+  addressOpt: Option[TestAddress]) extends HasDefaultTypeDescriptor
 
 object TestObjectA {
   val pete: TestObjectA =
     TestObjectA(
-      "Pete",
-      Some("Jim"),
-      true,
-      47,
-      BigInt("12737823792992474737892456985496456847789872389723984"),
-      BigDecimal("99283823727372382.62253651576457645725428449249274974734798749465573"),
-      12.5,
-      Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 255.toByte),
-      Array[Byte](21, 169.toByte, 233.toByte, 0, 0, 0, 128.toByte, 128.toByte, 234.toByte),
-      List(4,6,8,10,12,20),
-      List("aaa", "bbb", "ccc"),
-      Some(TestAddress("Berlin", "An der Mauer 89")))
+      str = "I am Pete",
+      strOpt = Some("I am Henry, too"),
+      bool = true,
+      byte = 127,
+      int = -237823,
+      long = -278234263,
+      bigInt = BigInt("265876257682376587365863876528756875682765252520577305007209857025728132213242"),
+      float = 1.367232235F,
+      double = 1.3672322350005D,
+      bigDec = BigDecimal("23761247614876823746.23846749182408184098140981094809184834082307582375243658732465897259724"),
+      dateTime = new DateTime(),
+      uuid = UUID.randomUUID(),
+      arrayByte = Array(126, -123, 12, -45, -128),
+      blob = Array(0, 0, 0, 0, 0, 6, -123, 12, -45, -128, 112, 0, 0, 0),
+      primitiveMAs = PrimitiveMAs(
+        listString = List("alpha", "beta", "gamma", "delta"),
+        listInt = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+        listDouble = List(1.0, 0.5, 0.2, 0.125),
+        listBigDecimal = List(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
+        listDateTime = List(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4)),
+        vectorString = Vector("alpha", "beta", "gamma", "delta"),
+        vectorInt = Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+        vectorDouble = Vector(1.0, 0.5, 0.2, 0.125),
+        vectorBigDecimal = Vector(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
+        vectorDateTime = Vector(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4)),
+        setString = Set("alpha", "beta", "gamma", "delta"),
+        setInt = Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+        setDouble = Set(1.0, 0.5, 0.2, 0.125),
+        setBigDecimal = Set(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
+        setDateTime = Set(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4)),
+        iterableString = Iterable("alpha", "beta", "gamma", "delta"),
+        iterableInt = Iterable(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+        iterableDouble = Iterable(1.0, 0.5, 0.2, 0.125),
+        iterableBigDecimal = Iterable(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
+        iterableDateTime = Iterable(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
+      addressOpt = Some(TestAddress("Berlin", "At the wall 89")))
 }
 
-class TestObjectADecomposer extends Decomposer[TestObjectA] {
-  val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
-  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestObjectA)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
-      .bind(_.addString("name", what.name))
-      .bind(_.addOptionalString("friend", what.friend))
-      .bind(_.addBoolean("isMale", what.isMale))
-      .bind(_.addInt("age", what.age))
-      .bind(_.addBigInt("atoms", what.atoms))
-      .bind(_.addBigDecimal("balance", what.balance))
-      .bind(_.addDouble("size", what.size))
-      .bind(_.addByteArray("coins", what.coins))
-      .bind(_.addBlob("image", what.image))
-      .bind(_.addPrimitiveMA("dices", what.dices))
-      .bind(_.addPrimitiveMA("words", what.words))
-      .bind(_.addOptionalComplexType("address", what.address))
-  }
-}
-
-class TestObjectARecomposer extends Recomposer[TestObjectA] {
-  val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
-  def recompose(from: RematerializationArray): AlmValidation[TestObjectA] = {
-    val name = from.getString("name").toAgg
-    val friend = from.tryGetString("friend").toAgg
-    val isMale = from.getBoolean("isMale").toAgg
-    val age = from.getInt("age").toAgg
-    val atoms = from.getBigInt("atoms").toAgg
-    val balance = from.getBigDecimal("balance").toAgg
-    val size = from.getDouble("size").toAgg
-    val coins = from.getByteArray("coins").toAgg
-    val image = from.getBlob("image").toAgg
-    val address = from.tryGetComplexType("address").toAgg
-    (name |@| friend |@| isMale |@| age |@| atoms |@| balance |@| size |@| coins |@| image |@| List.empty.success[Problem].toAgg |@| List.empty.success[Problem].toAgg |@| address)(TestObjectA.apply)
-  }
-}
-
-case class TestAddress(city: String, street: String) extends HasDefaultTypeDescriptor
-
-class TestAddressDecomposer extends Decomposer[TestAddress] {
-  val typeDescriptor = TypeDescriptor(classOf[TestAddress])
-  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: TestAddress)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
-      .bind(_.addString("city", what.city))
-      .bind(_.addString("street", what.street))
-  }
-}
-
-class TestAddressRecomposer extends Recomposer[TestAddress] {
-  val typeDescriptor = TypeDescriptor(classOf[TestAddress])
-  def recompose(from: RematerializationArray): AlmValidation[TestAddress] = {
-    val city = from.getString("city").toAgg
-    val street = from.getString("street").toAgg
-    (city |@| street)(TestAddress.apply)
-  }
-}

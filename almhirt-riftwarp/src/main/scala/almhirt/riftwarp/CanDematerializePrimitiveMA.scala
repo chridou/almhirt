@@ -19,6 +19,4 @@ abstract class CanDematerializePrimitiveMABase[M[_], A, TChannel <: RiftChannelD
 
 abstract class CanDematerializePrimitiveMAToCord[M[_], A, TChannel <: RiftChannelDescriptor](mM: Manifest[M[_]] , mA: Manifest[A], mC: Manifest[TChannel]) extends CanDematerializePrimitiveMABase[M, A, TChannel, DimensionCord](mM, mA, mC, manifest[DimensionCord])
 
-abstract class CanDematerializePrimitiveListToCord[A, TChannel <: RiftChannelDescriptor](mA: Manifest[A], mC: Manifest[TChannel]) extends CanDematerializePrimitiveMAToCord[List, A, TChannel](manifest[List[_]], mA, mC)
-abstract class CanDematerializePrimitiveVectorToCord[A, TChannel <: RiftChannelDescriptor](mA: Manifest[A], mC: Manifest[TChannel]) extends CanDematerializePrimitiveMAToCord[Vector, A, TChannel](manifest[Vector[_]], mA, mC)
-abstract class CanDematerializePrimitiveIterableToCord[A, TChannel <: RiftChannelDescriptor](mA: Manifest[A], mC: Manifest[TChannel]) extends CanDematerializePrimitiveMAToCord[Iterable, A, TChannel](manifest[Iterable[_]], mA, mC)
+abstract class CanDematerializePrimitiveMAToJsonCord[M[_], A](mM: Manifest[M[_]], mA: Manifest[A]) extends CanDematerializePrimitiveMAToCord[M, A, RiftJson](mM, mA, manifest[RiftJson])

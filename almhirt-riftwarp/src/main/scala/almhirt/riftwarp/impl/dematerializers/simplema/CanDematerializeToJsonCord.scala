@@ -7,14 +7,22 @@ import almhirt.common._
 import almhirt.riftwarp._
 import almhirt.riftwarp.impl.dematerializers.ToJsonCordDematerializerFuns
 
-//class CanDematerializeListStringToJsonCord extends CanDematerializePrimitiveMA[List, String, DimensionCord, RiftJson]{
-//  def dematerialize(ma:List[String]): AlmValidation[DimensionCord] = {
-//    DimensionCord(ma.map(ToJsonCordDematerializerFuns.launderString(_)).mkString("[", ",", "]")).success
-//  }
-//}
-//
-
-abstract class JsonCordPrimitiveDematerializerToListUsingToStringOnItem[A]()(implicit mA: Manifest[A]) extends CanDematerializePrimitiveListToCord[A, RiftJson](mA, manifest[RiftJson]){
-  def dematerialize(ma: List[A]): AlmValidation[DimensionCord] =
+abstract class CanDematerializePrimitiveMAToJsonValueByToString[M[_] <: Iterable[_], A]()(implicit mM: Manifest[M[_]], mA: Manifest[A]) extends CanDematerializePrimitiveMAToJsonCord[M,A](mM,mA){
+  def dematerialize(ma: M[A]): AlmValidation[DimensionCord] =
     DimensionCord('[' + ma.mkString(",") + ']').success
 }
+
+abstract class CanDematerializePrimitiveMAToJsonString[M[_] <: Iterable[_], A]()(implicit mM: Manifest[M[_]], mA: Manifest[A]) extends CanDematerializePrimitiveMAToJsonCord[M,A](mM,mA){
+  def dematerialize(ma: M[A]): AlmValidation[DimensionCord] = {
+    val strings = ma.iterator.map((x:Any) => x.toString)
+    DimensionCord('[' + strings.map((a:String) => """"%s"""".format(a)).mkString(",") + ']').success
+  }
+}
+
+abstract class CanDematerializePrimitiveMAToJsonStringLaundered[M[_] <: Iterable[_], A]()(implicit mM: Manifest[M[_]], mA: Manifest[A]) extends CanDematerializePrimitiveMAToJsonCord[M,A](mM,mA){
+  def dematerialize(ma: M[A]): AlmValidation[DimensionCord] = {
+    val strings = ma.iterator.map((x:Any) => ToJsonCordDematerializerFuns.launderString(x.toString))
+    DimensionCord('[' + strings.map((a:Cord) => '\"' -: a :- '\"').mkString(",") + ']').success
+  }
+}
+
