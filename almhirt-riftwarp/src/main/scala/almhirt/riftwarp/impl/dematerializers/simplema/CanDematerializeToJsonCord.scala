@@ -7,6 +7,7 @@ import almhirt.common._
 import almhirt.riftwarp._
 import almhirt.riftwarp.impl.dematerializers.ToJsonCordDematerializerFuns
 
+
 abstract class CanDematerializePrimitiveMAToJsonValueByToString[M[_] <: Iterable[_], A]()(implicit mM: Manifest[M[_]], mA: Manifest[A]) extends CanDematerializePrimitiveMAToJsonCord[M,A](mM,mA){
   def dematerialize(ma: M[A]): AlmValidation[DimensionCord] =
     DimensionCord('[' + ma.mkString(",") + ']').success

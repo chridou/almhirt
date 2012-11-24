@@ -5,7 +5,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 
 /** Extracts atoms from the other side */
-trait RematerializationArray {
+trait RematerializationArray[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor] {
   def getString(ident: String): AlmValidation[String]
   def tryGetString(ident: String): AlmValidation[Option[String]]
 
@@ -49,11 +49,13 @@ trait RematerializationArray {
   def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[T]
   def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]]
   
+  def getPrimitiveMA[M[_], A](ident: String, rematerialize: TDimension => AlmValidation[M[A]])
+  
   def getTypeDescriptor: AlmValidation[TypeDescriptor]
   def tryGetTypeDescriptor: AlmValidation[Option[TypeDescriptor]]
 }
 
-trait RematiarializationArrayBasedOnOptionGetters extends RematerializationArray {
+trait RematiarializationArrayBasedOnOptionGetters[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor] extends RematerializationArray[TDimension, TChannel] {
   def getString(ident: String) = tryGetString(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getBoolean(ident: String) = tryGetBoolean(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))

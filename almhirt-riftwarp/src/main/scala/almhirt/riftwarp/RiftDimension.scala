@@ -14,3 +14,4 @@ case class DimensionCord(manifestation: scalaz.Cord) extends RiftTypedDimension[
 case class DimensionBinary(manifestation: Array[Byte]) extends RiftTypedDimension[Array[Byte]]
 case class DimensionRawMap(manifestation: Map[String, Any]) extends RiftTypedDimension[Map[String, Any]]
 case class DimensionStdLibJsonMap(manifestation: Map[String, Any]) extends RiftTypedDimension[Map[String, Any]]
+case class DimensionStdLibJsonList(manifestation: List[Any]) extends RiftTypedDimension[List[Any]]

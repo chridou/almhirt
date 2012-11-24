@@ -1,7 +1,7 @@
 package almhirt.riftwarp
 
 trait HasRematerializationArrayFactories {
-  def addArrayFactory[R <: RematerializationArrayFactory[_], From <: RiftTypedDimension[_]](arrayFactory: RematerializationArrayFactory[From], asChannelDefault: Boolean = false)(implicit m: Manifest[From])
-  def addArrayFactoryAsDefault[R <: RematerializationArrayFactory[_], From <: RiftTypedDimension[_]](arrayFactory: RematerializationArrayFactory[From])(implicit m: Manifest[From]) = addArrayFactory(arrayFactory, true)
-  def tryGetArrayFactory[From <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[From]): Option[RematerializationArrayFactory[From]]
+  def addArrayFactory[R <: RematerializationArrayFactory[TDimension, TChannel], TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](arrayFactory: RematerializationArrayFactory[TDimension, TChannel], isChannelDefault: Boolean = false)(implicit mD: Manifest[TDimension], mC: Manifest[TChannel]): Unit
+  def addArrayFactoryAsDefault[R <: RematerializationArrayFactory[TDimension, TChannel], TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](arrayFactory: RematerializationArrayFactory[TDimension, TChannel])(implicit mD: Manifest[TDimension], mC: Manifest[TChannel]) = addArrayFactory(arrayFactory, true)
+  def tryGetArrayFactory[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](implicit mD: Manifest[TDimension], mC: Manifest[TChannel]): Option[RematerializationArrayFactory[TDimension, TChannel]]
 }

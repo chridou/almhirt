@@ -7,7 +7,7 @@ import almhirt.almvalidation.funs._
 import almhirt.riftwarp._
 import almhirt.riftwarp.TypeDescriptor
 
-class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers) extends RematiarializationArrayBasedOnOptionGetters {
+class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers) extends RematiarializationArrayBasedOnOptionGetters[DimensionRawMap, RiftMap] {
   def tryGetString(ident: String) = option.cata(theMap.get(ident))(almCast[String](_).map(Some(_)), None.success)
 
   def tryGetBoolean(ident: String) = option.cata(theMap.get(ident))(almCast[Boolean](_).map(Some(_)), None.success)
@@ -66,10 +66,10 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
   def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
 }
 
-object FromMapRematerializationArray extends FromRawMapRematerializationArrayFactory {
+object FromMapRematerializationArray extends RematerializationArrayFactory[DimensionRawMap, RiftMap] {
   val descriptor = RiftFullDescriptor(RiftMap(), ToolGroupRiftStd())
   def apply()(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = apply(Map.empty[String, Any])
   def apply(state: Map[String, Any])(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = new FromMapRematerializationArray(state)
   def apply(state: DimensionRawMap)(implicit hasRecomposers: HasRecomposers): FromMapRematerializationArray = new FromMapRematerializationArray(state.manifestation)
-  def createRematerializationArray(from: DimensionRawMap)(implicit hasRecomposers: HasRecomposers): AlmValidation[RematerializationArray] = apply(from).success
+  def createRematerializationArray(from: DimensionRawMap)(implicit hasRecomposers: HasRecomposers): AlmValidation[RematerializationArray[DimensionRawMap, RiftMap]] = apply(from).success
 }
