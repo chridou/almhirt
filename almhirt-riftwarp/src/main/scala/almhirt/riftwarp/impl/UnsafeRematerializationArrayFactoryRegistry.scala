@@ -8,7 +8,7 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
   private val channelregistry = collection.mutable.HashMap[String, collection.mutable.HashMap[String, AnyRef]]()
   private val canRematerializePrimitiveMARegistry = collection.mutable.HashMap[String, AnyRef]()
 
-  def addArrayFactory[R <: RematerializationArrayFactory[TDimension, TChannel], TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](arrayFactory: RematerializationArrayFactory[TDimension, TChannel], isChannelDefault: Boolean = false)(implicit mD: Manifest[TDimension], mC: Manifest[TChannel]) {
+  def addArrayFactory[R <: RematerializationArrayFactory[TDimension, TChannel], TDimension <: RiftTypedDimension[_], TChannel <: RiftChannel](arrayFactory: RematerializationArrayFactory[TDimension, TChannel], isChannelDefault: Boolean = false)(implicit mD: Manifest[TDimension], mC: Manifest[TChannel]) {
     val identDim = mD.erasure.getName
     val identCh = mC.erasure.getName
 
@@ -27,7 +27,7 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
       channeltypeentry += (identDim -> arrayFactory)
   }
 
-  def tryGetArrayFactory[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](implicit mD: Manifest[TDimension], mC: Manifest[TChannel]): Option[RematerializationArrayFactory[TDimension, TChannel]] = {
+  def tryGetArrayFactory[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannel](implicit mD: Manifest[TDimension], mC: Manifest[TChannel]): Option[RematerializationArrayFactory[TDimension, TChannel]] = {
     val identDim = mD.erasure.getName
     val identCh = mC.erasure.getName
     for {
@@ -36,10 +36,10 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
     } yield dematerializer.asInstanceOf[RematerializationArrayFactory[TDimension, TChannel]]
   }
   
-  def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](crsma: CanRematerializePrimitiveMA[M, A, TDimension, TChannel]) {
+  def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftTypedDimension[_], TChannel <: RiftChannel](crsma: CanRematerializePrimitiveMA[M, A, TDimension, TChannel]) {
     canRematerializePrimitiveMARegistry += ("%s-%s-%s-%s".format(crsma.tM.getName(), crsma.tA.getName(), crsma.tDimension.getName(), crsma.tChannel.getName()) -> crsma)
   }
-  def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_] , tA: Class[_], tDimension: Class[_ <: RiftTypedDimension[_]], tChannel: Class[_ <: RiftChannelDescriptor]): Option[AnyRef] =
+  def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_] , tA: Class[_], tDimension: Class[_ <: RiftTypedDimension[_]], tChannel: Class[_ <: RiftChannel]): Option[AnyRef] =
     canRematerializePrimitiveMARegistry.get("%s-%s-%s-%s".format(tM.getName(), tA.getName(), tDimension.getName(), tChannel.getName()))
   
 }

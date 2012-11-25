@@ -21,6 +21,20 @@ trait ToolGroup extends Equals {
   override def toString() = name
 }
 
+
+class ToolGroupRiftStd extends ToolGroup { val name = "tool_riftstd" }
+object ToolGroupRiftStd {
+  private val theInstance = new ToolGroupRiftStd()
+  def apply() = theInstance
+}
+
+class ToolGroupStdLib extends ToolGroup { val name = "tool_stdlib" }
+object ToolGroupStdLib {
+  private val theInstance = new ToolGroupStdLib()
+  def apply() = theInstance
+}
+
+
 object ToolGroup {
   val StdLib = ToolGroupStdLib()
   val RiftStd = ToolGroupRiftStd()

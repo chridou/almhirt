@@ -1,6 +1,31 @@
 package almhirt.riftwarp
 
-class RiftMap() extends RiftChannelDescriptor {
+
+trait RiftChannel {
+  def channelType: String
+  def contentType: Option[String]
+  def contentTypeExt: Option[String]
+
+  def canEqual(other: Any) = {
+    other.isInstanceOf[almhirt.riftwarp.RiftChannel]
+  }
+
+  override def equals(other: Any) = {
+    other match {
+      case that: almhirt.riftwarp.RiftChannel => that.canEqual(RiftChannel.this) && channelType == that.channelType
+      case _ => false
+    }
+  }
+
+  override def hashCode() = {
+    channelType.hashCode
+  }
+
+  override def toString() = channelType
+  
+}
+
+class RiftMap() extends RiftChannel {
   val channelType = "channel_map"
   val contentTypeExt = None
   val contentType = None
@@ -10,7 +35,7 @@ object RiftMap {
   def apply() = theInstance
 }
 
-class RiftJson() extends RiftChannelDescriptor {
+class RiftJson() extends RiftChannel {
   val channelType = "channel_json"
   val contentTypeExt = Some("json")
   val contentType = Some("text/x-json")
@@ -20,7 +45,7 @@ object RiftJson {
   def apply() = theInstance
 }
 
-class RiftBson() extends RiftChannelDescriptor {
+class RiftBson() extends RiftChannel {
   val channelType = "channel_bson"
   val contentTypeExt = None
   val contentType = None
@@ -30,7 +55,7 @@ object RiftBson {
   def apply() = theInstance
 }
 
-class RiftXml() extends RiftChannelDescriptor {
+class RiftXml() extends RiftChannel {
   val channelType = "channel_xml"
   val contentTypeExt = Some("xml")
   val contentType = Some("text/xml")
@@ -40,7 +65,7 @@ object RiftXml {
   def apply() = theInstance
 }
 
-class RiftMessagePack() extends RiftChannelDescriptor {
+class RiftMessagePack() extends RiftChannel {
   val channelType = "channel_msgpack"
   val contentTypeExt = None
   val contentType = None
@@ -50,7 +75,7 @@ object RiftMessagePack {
   def apply() = theInstance
 }
 
-class RiftProtocolBuffers() extends RiftChannelDescriptor {
+class RiftProtocolBuffers() extends RiftChannel {
   val channelType = "channel_protobuf"
   val contentTypeExt = None
   val contentType = None
@@ -60,7 +85,7 @@ object RiftProtocolBuffers {
   def apply() = theInstance
 }
 
-class RiftThrift() extends RiftChannelDescriptor {
+class RiftThrift() extends RiftChannel {
   val channelType = "channel_thrift"
   val contentTypeExt = None
   val contentType = None
@@ -70,7 +95,7 @@ object RiftThrift {
   def apply() = theInstance
 }
 
-class RiftYaml() extends RiftChannelDescriptor {
+class RiftYaml() extends RiftChannel {
   val channelType = "channel_yaml"
   val contentTypeExt = None
   val contentType = None
@@ -90,4 +115,3 @@ object RiftChannel {
   val Thrift = RiftThrift()
   val Yaml = RiftYaml()
 }
-

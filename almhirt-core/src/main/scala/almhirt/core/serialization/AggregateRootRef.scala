@@ -9,7 +9,7 @@ import almhirt.commanding._
 
 class AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
   val typeDescriptor = TypeDescriptor(classOf[AggregateRootRef], 1)
-  def decompose[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](what: AggregateRootRef)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: AggregateRootRef)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .bind(_.addUuid("id", what.id))

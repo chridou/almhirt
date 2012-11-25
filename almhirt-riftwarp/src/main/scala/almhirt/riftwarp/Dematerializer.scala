@@ -4,85 +4,82 @@ import scalaz.syntax.validation._
 import almhirt.common._
 
 trait RawDematerializer {
-  def tChannel: Class[_ <: RiftChannelDescriptor]
-  def tDimension: Class[_ <: RiftTypedDimension[_]]
-  def descriptor: RiftFullDescriptor
+  def channel: RiftChannel
+  def dimension: RiftDimension[_]
+  def toolGroup: ToolGroup
   def dematerializeRaw: AlmValidation[AnyRef]
 }
 
-trait Dematerializer[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]] extends RawDematerializer {
+trait Dematerializer[TManifestation <: Manifestation[_]] extends RawDematerializer {
   /**
    * Xml, Json, etc
    */
-  def dematerialize: AlmValidation[TDimension]
+  def dematerialize: AlmValidation[TManifestation]
   def dematerializeRaw: AlmValidation[AnyRef] = dematerialize.map(_.asInstanceOf[AnyRef])
 
-  def addString(ident: String, aValue: String): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalString(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addString(ident: String, aValue: String): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalString(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TManifestation]]
 
-  def addBoolean(ident: String, aValue: Boolean): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalBoolean(ident: String, anOptionalValue: Option[Boolean]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addBoolean(ident: String, aValue: Boolean): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalBoolean(ident: String, anOptionalValue: Option[Boolean]): AlmValidation[Dematerializer[TManifestation]]
 
-  def addByte(ident: String, aValue: Byte): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalByte(ident: String, anOptionalValue: Option[Byte]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addInt(ident: String, aValue: Int): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalInt(ident: String, anOptionalValue: Option[Int]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addLong(ident: String, aValue: Long): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalLong(ident: String, anOptionalValue: Option[Long]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addBigInt(ident: String, aValue: BigInt): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalBigInt(ident: String, anOptionalValue: Option[BigInt]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addByte(ident: String, aValue: Byte): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalByte(ident: String, anOptionalValue: Option[Byte]): AlmValidation[Dematerializer[TManifestation]]
+  def addInt(ident: String, aValue: Int): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalInt(ident: String, anOptionalValue: Option[Int]): AlmValidation[Dematerializer[TManifestation]]
+  def addLong(ident: String, aValue: Long): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalLong(ident: String, anOptionalValue: Option[Long]): AlmValidation[Dematerializer[TManifestation]]
+  def addBigInt(ident: String, aValue: BigInt): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalBigInt(ident: String, anOptionalValue: Option[BigInt]): AlmValidation[Dematerializer[TManifestation]]
   
-  def addFloat(ident: String, aValue: Float): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalFloat(ident: String, anOptionalValue: Option[Float]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addDouble(ident: String, aValue: Double): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalDouble(ident: String, anOptionalValue: Option[Double]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addBigDecimal(ident: String, aValue: BigDecimal): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalBigDecimal(ident: String, anOptionalValue: Option[BigDecimal]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addFloat(ident: String, aValue: Float): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalFloat(ident: String, anOptionalValue: Option[Float]): AlmValidation[Dematerializer[TManifestation]]
+  def addDouble(ident: String, aValue: Double): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalDouble(ident: String, anOptionalValue: Option[Double]): AlmValidation[Dematerializer[TManifestation]]
+  def addBigDecimal(ident: String, aValue: BigDecimal): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalBigDecimal(ident: String, anOptionalValue: Option[BigDecimal]): AlmValidation[Dematerializer[TManifestation]]
   
-  def addByteArray(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addByteArray(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TManifestation]]
+  def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TManifestation]]
 
-  def addDateTime(ident: String, aValue: org.joda.time.DateTime): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addDateTime(ident: String, aValue: org.joda.time.DateTime): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]): AlmValidation[Dematerializer[TManifestation]]
   
-  def addUuid(ident: String, aValue: _root_.java.util.UUID): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalUuid(ident: String, anOptionalValue: Option[ _root_.java.util.UUID]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addUuid(ident: String, aValue: _root_.java.util.UUID): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalUuid(ident: String, anOptionalValue: Option[ _root_.java.util.UUID]): AlmValidation[Dematerializer[TManifestation]]
 
-  def addJson(ident: String, aValue: String): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalJson(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addXml(ident: String, aValue: scala.xml.Node): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addJson(ident: String, aValue: String): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalJson(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TManifestation]]
+  def addXml(ident: String, aValue: scala.xml.Node): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]): AlmValidation[Dematerializer[TManifestation]]
 
-  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[TManifestation]]
 
-  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[Dematerializer[TChannel, TDimension]]
-  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[Dematerializer[TManifestation]]
+  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[TManifestation]]
 
-  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TChannel, TDimension]] 
-  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TChannel, TDimension]] 
+  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TManifestation]] 
+  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TManifestation]] 
   
-  def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[Dematerializer[TChannel, TDimension]]
+  def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[Dematerializer[TManifestation]]
    
-  def fail(prob: Problem): AlmValidation[Dematerializer[TChannel, TDimension]] = prob.failure
+  def fail(prob: Problem): AlmValidation[Dematerializer[TManifestation]] = prob.failure
   
 }
 
-abstract class BaseDematerializer[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedDimension[_]](mChannel: Manifest[TChannel], mDimension: Manifest[TDimension]) extends Dematerializer[TChannel, TDimension]{
-  val tChannel = mChannel.erasure.asInstanceOf[Class[_ <: RiftChannelDescriptor]]
-  val tDimension = mDimension.erasure.asInstanceOf[Class[_ <: RiftTypedDimension[_]]]
+abstract class BaseDematerializer[TManifestation <: Manifestation[_]](val channel: RiftChannel, val dimension: RiftDimension[_], val toolGroup: ToolGroup) extends Dematerializer[TChannel, TManifestation]
+
+abstract class ToStringDematerializer(channel: RiftChannel, toolGroup: ToolGroup) extends BaseDematerializer[ManifestationString](channel, Dim ,toolGroup) {
 }
 
-abstract class ToStringDematerializer[TChannel <: RiftChannelDescriptor](mChannel: Manifest[TChannel]) extends BaseDematerializer[TChannel, DimensionString](mChannel, manifest[DimensionString]) {
+abstract class ToCordDematerializer(channel: RiftChannel) extends BaseDematerializer[ManifestationCord](mChannel, manifest[DimensionCord]) {
 }
 
-abstract class ToCordDematerializer[TChannel <: RiftChannelDescriptor](mChannel: Manifest[TChannel]) extends BaseDematerializer[TChannel, DimensionCord](mChannel, manifest[DimensionCord]) {
+abstract class ToBinaryDematerializer(channel: RiftChannel) extends BaseDematerializer[ManifestationBinary](mChannel, manifest[DimensionBinary]) {
 }
 
-abstract class ToBinaryDematerializer[TChannel <: RiftChannelDescriptor](mChannel: Manifest[TChannel]) extends BaseDematerializer[TChannel, DimensionBinary](mChannel, manifest[DimensionBinary]) {
-}
-
-abstract class ToRawMapDematerializer[TChannel <: RiftChannelDescriptor](mChannel: Manifest[TChannel]) extends BaseDematerializer[TChannel, DimensionRawMap](mChannel, manifest[DimensionRawMap]) {
+abstract class ToRawMapDematerializer(channel: RiftChannel) extends BaseDematerializer[ManifestationRawMap](mChannel, manifest[DimensionRawMap]) {
 }

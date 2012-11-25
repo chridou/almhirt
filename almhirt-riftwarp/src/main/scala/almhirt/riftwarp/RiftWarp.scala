@@ -10,7 +10,7 @@ trait RiftWarp {
   def barracks: RiftWarpBarracks
   def toolShed: RiftWarpToolShed
 
-  def prepareForWarp[TChannel <: RiftChannelDescriptor, To <: RiftTypedDimension[_]](what: AnyRef)(implicit m: Manifest[To], n: Manifest[TChannel]): AlmValidation[To] = {
+  def prepareForWarp[TChannel <: RiftChannel, To <: RiftTypedDimension[_]](what: AnyRef)(implicit m: Manifest[To], n: Manifest[TChannel]): AlmValidation[To] = {
     val typeDescriptor =
       what match {
         case htd: HasTypeDescriptor => htd.typeDescriptor
@@ -29,7 +29,7 @@ trait RiftWarp {
     }
   }
 
-  def receiveFromWarp[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor, T <: AnyRef](warpStream: TDimension)(implicit mtarget: Manifest[T], mD: Manifest[TDimension], mC: Manifest[TChannel]): AlmValidation[T] = {
+  def receiveFromWarp[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannel, T <: AnyRef](warpStream: TDimension)(implicit mtarget: Manifest[T], mD: Manifest[TDimension], mC: Manifest[TChannel]): AlmValidation[T] = {
     implicit val hasRecomposers = barracks
     implicit val hasRecomposersForKKTs = toolShed
     toolShed.tryGetRematerializationArray(warpStream).bind {
