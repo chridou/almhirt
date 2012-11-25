@@ -36,10 +36,10 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
     } yield dematerializer.asInstanceOf[RematerializationArrayFactory[TDimension, TChannel]]
   }
   
-  def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftDimension, TChannel <: RiftChannelDescriptor](crsma: CanRematerializePrimitiveMA[M, A, TDimension, TChannel]) {
+  def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](crsma: CanRematerializePrimitiveMA[M, A, TDimension, TChannel]) {
     canRematerializePrimitiveMARegistry += ("%s-%s-%s-%s".format(crsma.tM.getName(), crsma.tA.getName(), crsma.tDimension.getName(), crsma.tChannel.getName()) -> crsma)
   }
-  def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_] , tA: Class[_], tDimension: Class[_ <: RiftDimension], tChannel: Class[_ <: RiftChannelDescriptor]): Option[AnyRef] =
+  def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_] , tA: Class[_], tDimension: Class[_ <: RiftTypedDimension[_]], tChannel: Class[_ <: RiftChannelDescriptor]): Option[AnyRef] =
     canRematerializePrimitiveMARegistry.get("%s-%s-%s-%s".format(tM.getName(), tA.getName(), tDimension.getName(), tChannel.getName()))
   
 }

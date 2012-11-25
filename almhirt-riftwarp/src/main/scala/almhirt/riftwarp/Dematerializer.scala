@@ -61,9 +61,6 @@ trait Dematerializer[TChannel <: RiftChannelDescriptor, TDimension <: RiftTypedD
   def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[Dematerializer[TChannel, TDimension]]
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[TChannel, TDimension]]
 
-  def addPrimitiveMA[M[_], A](ident: String, ma: M[A], dematerialzeMA: M[A] => AlmValidation[TDimension])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TChannel, TDimension]] 
-  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]], dematerialzeMA: M[A] => AlmValidation[TDimension])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TChannel, TDimension]] 
-
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TChannel, TDimension]] 
   def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TChannel, TDimension]] 
   

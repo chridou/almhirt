@@ -45,10 +45,6 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
     }
   }
   
-  def addPrimitiveMA[M[_], A](ident: String, ma: M[A], dematerializeMA: M[A] => AlmValidation[DimensionRawMap])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] =
-    dematerializeMA(ma).map(dim => ToMapDematerializer(state + (ident -> dim.manifestation)))
-    
-
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] =
     (ToMapDematerializer(state + (ident -> ma))).success
     

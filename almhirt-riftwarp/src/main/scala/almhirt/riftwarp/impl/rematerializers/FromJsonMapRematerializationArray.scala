@@ -7,10 +7,10 @@ import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.riftwarp._
 
-class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers) extends RematiarializationArrayBasedOnOptionGetters[DimensionStdLibJsonMap, RiftJson] {
+class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs) extends RematiarializationArrayBasedOnOptionGetters {
   private def get(key: String): Option[Any] =
-	jsonMap.get(key).flatMap(v => if(v == null) None else Some(v))
-  
+    jsonMap.get(key).flatMap(v => if (v == null) None else Some(v))
+
   def tryGetString(ident: String) = option.cata(get(ident))(almCast[String](_).map(Some(_)), None.success)
 
   def tryGetBoolean(ident: String) = option.cata(get(ident))(almCast[Boolean](_).map(Some(_)), None.success)
@@ -24,9 +24,9 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
   def tryGetDouble(ident: String) = option.cata(get(ident))(almCast[Double](_).map(Some(_)), None.success)
   def tryGetBigDecimal(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseDecimalAlm(_, ident)).map(Some(_)), None.success)
 
-  def tryGetByteArray(ident: String) = 
+  def tryGetByteArray(ident: String) =
     option.cata(get(ident))(almCast[List[Double]](_).map(x => Some(x.toArray.map(_.toByte))), None.success)
-  def tryGetBlob(ident: String) = 
+  def tryGetBlob(ident: String) =
     option.cata(get(ident))(almCast[String](_).bind(parseBase64Alm(_, ident).map(Some(_))), None.success)
 
   def tryGetDateTime(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseDateTimeAlm(_, ident)).map(Some(_)), None.success)
@@ -68,38 +68,56 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
     }
   }
 
-  def tryGetTypeDescriptor = 
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+    get(ident) match {
+      case Some(elem) =>
+        almCast[List[A]](elem).bind(la =>
+          hasRematerializersForHKTs.tryGetCanRematerializePrimitiveMA[M, A, DimensionListAny, RiftJson] match {
+            case Some(crpma) =>
+              crpma.rematerialize(DimensionListAny(la)).map(Some(_))
+            case None =>
+              UnspecifiedProblem("No rematerializer found for ident '%s' and M[A] '%s[%s]'".format(ident, mM.erasure.getName(), mA.erasure.getName())).failure
+          })
+      case None =>
+        None.success
+    }
+
+  def tryGetTypeDescriptor =
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).bind(TypeDescriptor.parse(_)).map(Some(_)), None.success)
 }
 
 object FromJsonMapRematerializationArray extends RematerializationArrayFactory[DimensionStdLibJsonMap, RiftJson] {
   val descriptor = RiftFullDescriptor(RiftJson(), ToolGroupStdLib())
-  def apply(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers): FromJsonMapRematerializationArray = new FromJsonMapRematerializationArray(jsonMap)
-  def apply(jsonMap: DimensionStdLibJsonMap)(implicit hasRecomposers: HasRecomposers): FromJsonMapRematerializationArray = new FromJsonMapRematerializationArray(jsonMap.manifestation)
-  def createRematerializationArray(from: DimensionStdLibJsonMap)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = apply(from).success
+  
+  def apply(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): FromJsonMapRematerializationArray = new FromJsonMapRematerializationArray(jsonMap)
+  def apply(jsonMap: DimensionStdLibJsonMap)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): FromJsonMapRematerializationArray = new FromJsonMapRematerializationArray(jsonMap.manifestation)
+  def createRematerializationArray(from: DimensionStdLibJsonMap)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): AlmValidation[FromJsonMapRematerializationArray] = apply(from).success
 }
 
 object FromJsonStringRematerializationArray extends RematerializationArrayFactory[DimensionString, RiftJson] {
   val descriptor = RiftFullDescriptor(RiftJson(), ToolGroupStdLib())
-  def apply(json: String)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = {
+  
+  def apply(json: String)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): AlmValidation[FromJsonMapRematerializationArray] = {
     JSON.parseFull(json) match {
-      case Some(map) => 
+      case Some(map) =>
         almCast[Map[String, Any]](map).map(FromJsonMapRematerializationArray(_))
-      case None => 
+      case None =>
         ParsingProblem("Could not parse JSON", input = Some(json)).failure
     }
   }
-  def apply(json: DimensionString)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = apply(json.manifestation)
-  def createRematerializationArray(from: DimensionString)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = apply(from)
+  def apply(json: DimensionString)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): AlmValidation[FromJsonMapRematerializationArray] = apply(json.manifestation)
+  def createRematerializationArray(from: DimensionString)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): AlmValidation[FromJsonMapRematerializationArray] = 
+    apply(from)
 }
 
 import scalaz.Cord
 object FromJsonCordRematerializationArray extends RematerializationArrayFactory[DimensionCord, RiftJson] {
   val descriptor = RiftFullDescriptor(RiftJson(), ToolGroupStdLib())
-  def apply(json: Cord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = 
+  
+  def apply(json: Cord)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): AlmValidation[FromJsonMapRematerializationArray] =
     FromJsonStringRematerializationArray.createRematerializationArray(DimensionString(json.toString))
-  def apply(json: DimensionCord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = 
+  def apply(json: DimensionCord)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): AlmValidation[FromJsonMapRematerializationArray] =
     FromJsonStringRematerializationArray.createRematerializationArray(DimensionString(json.manifestation.toString))
-  def createRematerializationArray(from: DimensionCord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromJsonMapRematerializationArray] = 
+  def createRematerializationArray(from: DimensionCord)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): AlmValidation[FromJsonMapRematerializationArray] =
     apply(from)
 }

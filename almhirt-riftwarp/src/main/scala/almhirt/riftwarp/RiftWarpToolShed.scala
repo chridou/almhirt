@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 
 trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArrayFactories with HasRematerializersForHKTs {
-  def tryGetRematerializationArray[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](from: TDimension)(implicit hasRecomposers: HasRecomposers, mD: Manifest[TDimension], mC: Manifest[TChannel]): AlmValidation[Option[RematerializationArray[TDimension, TChannel]]] =
+  def tryGetRematerializationArray[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](from: TDimension)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs, mD: Manifest[TDimension], mC: Manifest[TChannel]): AlmValidation[Option[RematerializationArray]] =
     tryGetArrayFactory[TDimension, TChannel].map(factory => factory.createRematerializationArray(from)).validationOut
 }
 
@@ -21,8 +21,8 @@ object RiftWarpToolShed {
       def addArrayFactory[R <: RematerializationArrayFactory[TDimension, TChannel], TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](arrayFactory: RematerializationArrayFactory[TDimension, TChannel], isChannelDefault: Boolean = false)(implicit mD: Manifest[TDimension], mC: Manifest[TChannel]) = hasRematerializationArrayFactories.addArrayFactory(arrayFactory)
       def tryGetArrayFactory[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](implicit mD: Manifest[TDimension], mC: Manifest[TChannel]): Option[RematerializationArrayFactory[TDimension, TChannel]] = hasRematerializationArrayFactories.tryGetArrayFactory
 
-      def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftDimension, TChannel <: RiftChannelDescriptor](crsma: CanRematerializePrimitiveMA[M, A, TDimension, TChannel]) { hasRematerializersForHKTs.addCanRematerializePrimitiveMA(crsma) }
-      def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], tDimension: Class[_ <: RiftDimension], tChannel: Class[_ <: RiftChannelDescriptor]) = hasRematerializersForHKTs.tryGetCanRematerializePrimitiveMAByTypes(tM, tA, tDimension, tChannel)
+      def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftTypedDimension[_], TChannel <: RiftChannelDescriptor](crsma: CanRematerializePrimitiveMA[M, A, TDimension, TChannel]) { hasRematerializersForHKTs.addCanRematerializePrimitiveMA(crsma) }
+      def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], tDimension: Class[_ <: RiftTypedDimension[_]], tChannel: Class[_ <: RiftChannelDescriptor]) = hasRematerializersForHKTs.tryGetCanRematerializePrimitiveMAByTypes(tM, tA, tDimension, tChannel)
 
     }
   }
