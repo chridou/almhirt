@@ -26,7 +26,7 @@ trait RiftChannel {
 }
 
 class RiftMap() extends RiftChannel {
-  val channelType = "channel_map"
+  val channelType = "map"
   val contentTypeExt = None
   val contentType = None
 }
@@ -36,7 +36,7 @@ object RiftMap {
 }
 
 class RiftJson() extends RiftChannel {
-  val channelType = "channel_json"
+  val channelType = "json"
   val contentTypeExt = Some("json")
   val contentType = Some("text/x-json")
 }
@@ -46,7 +46,7 @@ object RiftJson {
 }
 
 class RiftBson() extends RiftChannel {
-  val channelType = "channel_bson"
+  val channelType = "bson"
   val contentTypeExt = None
   val contentType = None
 }
@@ -56,7 +56,7 @@ object RiftBson {
 }
 
 class RiftXml() extends RiftChannel {
-  val channelType = "channel_xml"
+  val channelType = "xml"
   val contentTypeExt = Some("xml")
   val contentType = Some("text/xml")
 }
@@ -66,7 +66,7 @@ object RiftXml {
 }
 
 class RiftMessagePack() extends RiftChannel {
-  val channelType = "channel_msgpack"
+  val channelType = "msgpack"
   val contentTypeExt = None
   val contentType = None
 }
@@ -76,7 +76,7 @@ object RiftMessagePack {
 }
 
 class RiftProtocolBuffers() extends RiftChannel {
-  val channelType = "channel_protobuf"
+  val channelType = "protobuf"
   val contentTypeExt = None
   val contentType = None
 }
@@ -86,7 +86,7 @@ object RiftProtocolBuffers {
 }
 
 class RiftThrift() extends RiftChannel {
-  val channelType = "channel_thrift"
+  val channelType = "thrift"
   val contentTypeExt = None
   val contentType = None
 }
@@ -96,7 +96,7 @@ object RiftThrift {
 }
 
 class RiftYaml() extends RiftChannel {
-  val channelType = "channel_yaml"
+  val channelType = "yaml"
   val contentTypeExt = None
   val contentType = None
 }

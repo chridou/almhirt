@@ -24,7 +24,7 @@ import almhirt.riftwarp.DimensionString
 class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
 
-  private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, timestamp, payload) VALUES({id}, {aggId}, {aggVersion}, {timestamp}, {payload})".format(settings.logTableName)
+  private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, timestamp, channel, payload) VALUES({id}, {aggId}, {aggVersion}, {timestamp}, {channel}, {payload})".format(settings.logTableName)
   private val cmdNextId = "SELECT MAX(aggVersion)+1 AS next FROM %s e WHERE e.aggId = {aggId}".format(settings.logTableName)
   private val qryAllEvents = "SELECT * FROM %s".format(settings.logTableName)
   private val qryAllEventsFor = "SELECT * FROM %s e WHERE e.aggId = {aggId}".format(settings.logTableName)
@@ -52,7 +52,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhir
         val rowsInserted =
           entries.map { entry =>
             val timestamp = new Timestamp(entry.timestamp.getMillis())
-            val cmd = SQL(cmdInsert).on("id" -> entry.id, "aggId" -> entry.aggId, "aggVersion" -> entry.aggVersion, "timestamp" -> timestamp, "payload" -> entry.payload.toString)
+            val cmd = SQL(cmdInsert).on("id" -> entry.id, "aggId" -> entry.aggId, "aggVersion" -> entry.aggVersion, "timestamp" -> timestamp, "channel" -> RiftJson().channelType, "payload" -> entry.payload.toString)
             cmd.executeInsert()
           }.flatten
 // This one has to be observed. Does insert always return 0 within a transaction?
