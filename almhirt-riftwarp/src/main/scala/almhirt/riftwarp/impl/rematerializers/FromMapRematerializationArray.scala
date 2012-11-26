@@ -6,7 +6,7 @@ import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.riftwarp._
 
-class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs) extends RematiarializationArrayBasedOnOptionGetters {
+class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs) extends RematerializationArrayBasedOnOptionGetters {
   def tryGetString(ident: String) = option.cata(theMap.get(ident))(almCast[String](_).map(Some(_)), None.success)
 
   def tryGetBoolean(ident: String) = option.cata(theMap.get(ident))(almCast[Boolean](_).map(Some(_)), None.success)
@@ -69,7 +69,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
 }
 
 object FromMapRematerializationArray extends RematerializationArrayFactory[DimensionRawMap] {
-  val channel = RiftJson()
+  val channel = RiftMap()
   val tDimension = classOf[DimensionRawMap].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupRiftStd()
   

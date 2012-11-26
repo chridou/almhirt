@@ -56,7 +56,7 @@ trait RematerializationArray {
   def tryGetTypeDescriptor: AlmValidation[Option[TypeDescriptor]]
 }
 
-trait RematiarializationArrayBasedOnOptionGetters extends RematerializationArray {
+trait RematerializationArrayBasedOnOptionGetters extends RematerializationArray {
   def getString(ident: String) = tryGetString(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getBoolean(ident: String) = tryGetBoolean(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))

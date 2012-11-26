@@ -15,7 +15,7 @@ abstract class CanRematerializeListAny[M[_], A, TDimension <: DimensionListAny, 
   def cToA(c: C): AlmValidation[A]
   def createMA(la: List[A]): M[A]
   
-  def rematerialize(dim: DimensionListAny): AlmValidation[M[A]] = 
+  def rematerialize(dim: TDimension): AlmValidation[M[A]] = 
     rematerializeToListC(dim).bind(lc =>
       lc.map(c => cToA(c).toAgg).sequence.map(la =>
         createMA(la)))

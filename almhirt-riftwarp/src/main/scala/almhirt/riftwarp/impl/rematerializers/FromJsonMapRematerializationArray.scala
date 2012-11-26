@@ -7,7 +7,7 @@ import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.riftwarp._
 
-class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs) extends RematiarializationArrayBasedOnOptionGetters {
+class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs) extends RematerializationArrayBasedOnOptionGetters {
   private def get(key: String): Option[Any] =
     jsonMap.get(key).flatMap(v => if (v == null) None else Some(v))
 
