@@ -24,7 +24,7 @@ import almhirt.riftwarp.DimensionString
 class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
 
-  private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, timestamp, channel, payload) VALUES({id}, {aggId}, {aggVersion}, {timestamp}, {channel}, {payload})".format(settings.logTableName)
+  private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, channel, timestamp, payload) VALUES({id}, {aggId}, {aggVersion}, {channel}, {timestamp}, {payload})".format(settings.logTableName)
   private val cmdNextId = "SELECT MAX(aggVersion)+1 AS next FROM %s e WHERE e.aggId = {aggId}".format(settings.logTableName)
   private val qryAllEvents = "SELECT * FROM %s".format(settings.logTableName)
   private val qryAllEventsFor = "SELECT * FROM %s e WHERE e.aggId = {aggId}".format(settings.logTableName)

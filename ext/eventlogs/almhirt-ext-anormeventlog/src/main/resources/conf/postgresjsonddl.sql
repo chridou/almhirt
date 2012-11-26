@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS %tblname%
     id UUID UNIQUE,
 	aggId UUID NOT NULL,
 	aggVersion BIGINT NOT NULL,
+	channel VARCHAR(16) NOT NULL,
 	timestamp TIMESTAMP NOT NULL,
 	payload TEXT NOT NULL);
 	
