@@ -2,6 +2,10 @@ package almhirt.riftwarp
 
 
 trait RiftChannel {
+  /** Unique identifier of a channel. Should be its common symbol for a HTTP content-type, if exists(like "json", "xml"...)
+   * 
+   * MAY NOT BE LONGER THAN 16 CHARS
+   */
   def channelType: String
   def contentType: Option[String]
   def contentTypeExt: Option[String]
