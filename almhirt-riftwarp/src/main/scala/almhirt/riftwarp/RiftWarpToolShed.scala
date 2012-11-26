@@ -3,7 +3,7 @@ package almhirt.riftwarp
 import almhirt.common._
 import almhirt.almvalidation.kit._
 
-trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArrayFactories with HasRematerializersForHKTs {
+trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArrayFactories {
   def tryGetRematerializationArray[TDimension <: RiftDimension](from: TDimension)(channel: RiftChannel)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs, mD: Manifest[TDimension]): AlmValidation[Option[RematerializationArray]] =
     tryGetArrayFactory[TDimension](channel).map(factory => factory.createRematerializationArray(from)).validationOut
 

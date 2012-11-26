@@ -138,7 +138,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
       case Some(cdmpma) => 
         cdmpma.dematerialize(ma).bind(dim => addPart(ident, dim.manifestation))
       case None => 
-        UnspecifiedProblem("No primitive dematerializer found for M[A](%s[%s]) found for ident '%s'".format(mM.erasure.getName(), mA.erasure.getName(), ident)).failure
+        UnspecifiedProblem("No primitive dematerializer found for M[A](%s[%s]) for ident '%s'".format(mM.erasure.getName(), mA.erasure.getName(), ident)).failure
     }
 
   def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
