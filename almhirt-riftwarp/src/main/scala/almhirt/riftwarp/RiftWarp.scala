@@ -3,36 +3,39 @@ package almhirt.riftwarp
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
-import almhirt.almvalidation.funs._
+import almhirt.almvalidation.kit._
 import almhirt.almvalidation.flatmap
 
 trait RiftWarp {
   def barracks: RiftWarpBarracks
   def toolShed: RiftWarpToolShed
 
-  def prepareForWarp[TChannel <: RiftChannel, To <: RiftTypedDimension[_]](what: AnyRef)(implicit m: Manifest[To], n: Manifest[TChannel]): AlmValidation[To] = {
+  def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] = {
     val typeDescriptor =
       what match {
         case htd: HasTypeDescriptor => htd.typeDescriptor
         case x => TypeDescriptor(x.getClass)
       }
     val decomposer = barracks.tryGetRawDecomposer(typeDescriptor)
-    val dematerializer = toolShed.tryGetDematerializer[TChannel, To]
+    val dematerializerV = 
+      toolShed.tryGetDematerializerFactory[TDimension](channel, toolGroup).map(factory =>
+        factory.createDematerializer(barracks, toolShed)).validationOut
+    dematerializerV.bind(dematerializer =>
     (decomposer, dematerializer) match {
       case (Some(dec), Some(dem)) =>
         dec.decomposeRaw(what)(dem).bind(funnel =>
           almCast[RawDematerializer](funnel).bind(demat =>
-            demat.dematerializeRaw.map(_.asInstanceOf[To])))
+            demat.dematerializeRaw.map(_.asInstanceOf[TDimension])))
       case (None, Some(_)) => UnspecifiedProblem("No decomposer found for type '%s'".format(typeDescriptor)).failure
-      case (Some(_), None) => UnspecifiedProblem("No dematerializer found for warping through '%s' into a '%s'".format(n.erasure.getName(), m.erasure.getName())).failure
-      case (None, None) => UnspecifiedProblem("No decomposer found for type '%s' and no dematerializer found for warping through '%s' into a '%s'".format(typeDescriptor, n.erasure.getName(), m.erasure.getName())).failure
-    }
+      case (Some(_), None) => UnspecifiedProblem("No dematerializer found for warping through '%s' into a '%s'".format(channel, m.erasure.getName())).failure
+      case (None, None) => UnspecifiedProblem("No decomposer found for type '%s' and no dematerializer found for warping through '%s' into a '%s'".format(typeDescriptor, channel, m.erasure.getName())).failure
+    })
   }
 
-  def receiveFromWarp[TDimension <: RiftTypedDimension[_], TChannel <: RiftChannel, T <: AnyRef](warpStream: TDimension)(implicit mtarget: Manifest[T], mD: Manifest[TDimension], mC: Manifest[TChannel]): AlmValidation[T] = {
+  def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mtarget: Manifest[T], mD: Manifest[TDimension]): AlmValidation[T] = {
     implicit val hasRecomposers = barracks
     implicit val hasRecomposersForKKTs = toolShed
-    toolShed.tryGetRematerializationArray(warpStream).bind {
+    toolShed.tryGetRematerializationArray[TDimension](warpStream)(channel).bind {
       case Some(array) =>
         array.tryGetTypeDescriptor.bind { descFromArray =>
           val typeDescriptor = descFromArray.getOrElse(TypeDescriptor(mtarget.erasure))
@@ -44,7 +47,7 @@ trait RiftWarp {
           }
         }
       case None =>
-        UnspecifiedProblem("No rematerialization array found for '%s' and from dimension '%s'".format(mC.erasure.getName(), mD.erasure.getName)).failure
+        UnspecifiedProblem("No rematerialization array found for '%s' and from dimension '%s'".format(channel, mD.erasure.getName)).failure
     }
   }
 }
@@ -64,8 +67,8 @@ object RiftWarp {
   }
 
   private def initializeWithDefaults(riftWarp: RiftWarp) {
-    riftWarp.toolShed.addDematerializer(impl.dematerializers.ToMapDematerializer(Map.empty)(riftWarp.barracks))
-    riftWarp.toolShed.addDematerializer(impl.dematerializers.ToJsonCordDematerializer()(riftWarp.barracks, riftWarp.toolShed))
+    riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToMapDematerializer)
+    riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToJsonCordDematerializer)
 
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromMapRematerializationArray)
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonMapRematerializationArray)
@@ -127,56 +130,56 @@ object RiftWarp {
 
     import almhirt.riftwarp.impl.rematerializers.simplema._
     import almhirt.almvalidation.funs._
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, String, String] { def cToA(c: String) = c.success; def createMA(la: List[String]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Boolean, Boolean] { def cToA(c: Boolean) = c.success;  def createMA(la: List[Boolean]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Byte, Double] { def cToA(c: Double) = c.toByte.success;  def createMA(la: List[Byte]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Int, Double] { def cToA(c: Double) = c.toInt.success;  def createMA(la: List[Int]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Long, Double] { def cToA(c: Double) = c.toLong.success;  def createMA(la: List[Long]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, BigInt, String] { def cToA(c: String) = parseBigIntAlm(c);  def createMA(la: List[BigInt]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Float, Double] { def cToA(c: Double) = c.toFloat.success;  def createMA(la: List[Float]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Double, Double] { def cToA(c: Double) = c.success;  def createMA(la: List[Double]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, BigDecimal, String] { def cToA(c: String) = parseDecimalAlm(c);  def createMA(la: List[BigDecimal]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, org.joda.time.DateTime, String] { def cToA(c: String) = parseDateTimeAlm(c);  def createMA(la: List[org.joda.time.DateTime]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, _root_.java.util.UUID, String] { def cToA(c: String) = parseUuidAlm(c);  def createMA(la: List[_root_.java.util.UUID]) = Iterable(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, scala.xml.Node, String] { def cToA(c: String) = parseXmlAlm(c);  def createMA(la: List[scala.xml.Node]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, String, DimensionListAny, String](RiftJson()) { def cToA(c: String) = c.success; def createMA(la: List[String]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Boolean, DimensionListAny, Boolean](RiftJson()) { def cToA(c: Boolean) = c.success;  def createMA(la: List[Boolean]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Byte, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toByte.success;  def createMA(la: List[Byte]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Int, DimensionListAny, Double](RiftJson()){ def cToA(c: Double) = c.toInt.success;  def createMA(la: List[Int]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Long, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toLong.success;  def createMA(la: List[Long]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, BigInt, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseBigIntAlm(c);  def createMA(la: List[BigInt]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Float, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toFloat.success;  def createMA(la: List[Float]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, Double, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.success;  def createMA(la: List[Double]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, BigDecimal, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseDecimalAlm(c);  def createMA(la: List[BigDecimal]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, org.joda.time.DateTime, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseDateTimeAlm(c);  def createMA(la: List[org.joda.time.DateTime]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, _root_.java.util.UUID, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseUuidAlm(c);  def createMA(la: List[_root_.java.util.UUID]) = Iterable(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, scala.xml.Node, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseXmlAlm(c);  def createMA(la: List[scala.xml.Node]) = Iterable(la: _*) })
 
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, String, String] { def cToA(c: String) = c.success; def createMA(la: List[String]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Boolean, Boolean] { def cToA(c: Boolean) = c.success;  def createMA(la: List[Boolean]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Byte, Double] { def cToA(c: Double) = c.toByte.success;  def createMA(la: List[Byte]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Int, Double] { def cToA(c: Double) = c.toInt.success;  def createMA(la: List[Int]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Long, Double] { def cToA(c: Double) = c.toLong.success;  def createMA(la: List[Long]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, BigInt, String] { def cToA(c: String) = parseBigIntAlm(c);  def createMA(la: List[BigInt]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Float, Double] { def cToA(c: Double) = c.toFloat.success;  def createMA(la: List[Float]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Double, Double] { def cToA(c: Double) = c.success;  def createMA(la: List[Double]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, BigDecimal, String] { def cToA(c: String) = parseDecimalAlm(c);  def createMA(la: List[BigDecimal]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, org.joda.time.DateTime, String] { def cToA(c: String) = parseDateTimeAlm(c);  def createMA(la: List[org.joda.time.DateTime]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, _root_.java.util.UUID, String] { def cToA(c: String) = parseUuidAlm(c);  def createMA(la: List[_root_.java.util.UUID]) = la })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, scala.xml.Node, String] { def cToA(c: String) = parseXmlAlm(c);  def createMA(la: List[scala.xml.Node]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, String, DimensionListAny, String](RiftJson()) { def cToA(c: String) = c.success; def createMA(la: List[String]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Boolean, DimensionListAny, Boolean](RiftJson()) { def cToA(c: Boolean) = c.success;  def createMA(la: List[Boolean]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Byte, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toByte.success;  def createMA(la: List[Byte]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Int, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toInt.success;  def createMA(la: List[Int]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Long, DimensionListAny, Double](RiftJson()){ def cToA(c: Double) = c.toLong.success;  def createMA(la: List[Long]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, BigInt, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseBigIntAlm(c);  def createMA(la: List[BigInt]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Float, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toFloat.success;  def createMA(la: List[Float]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, Double, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.success;  def createMA(la: List[Double]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, BigDecimal, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseDecimalAlm(c);  def createMA(la: List[BigDecimal]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, org.joda.time.DateTime, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseDateTimeAlm(c);  def createMA(la: List[org.joda.time.DateTime]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, _root_.java.util.UUID, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseUuidAlm(c);  def createMA(la: List[_root_.java.util.UUID]) = la })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[List, scala.xml.Node, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseXmlAlm(c);  def createMA(la: List[scala.xml.Node]) = la })
 
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, String, String] { def cToA(c: String) = c.success; def createMA(la: List[String]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Boolean, Boolean] { def cToA(c: Boolean) = c.success;  def createMA(la: List[Boolean]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Byte, Double] { def cToA(c: Double) = c.toByte.success;  def createMA(la: List[Byte]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Int, Double] { def cToA(c: Double) = c.toInt.success;  def createMA(la: List[Int]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Long, Double] { def cToA(c: Double) = c.toLong.success;  def createMA(la: List[Long]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, BigInt, String] { def cToA(c: String) = parseBigIntAlm(c);  def createMA(la: List[BigInt]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Float, Double] { def cToA(c: Double) = c.toFloat.success;  def createMA(la: List[Float]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Double, Double] { def cToA(c: Double) = c.success;  def createMA(la: List[Double]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, BigDecimal, String] { def cToA(c: String) = parseDecimalAlm(c);  def createMA(la: List[BigDecimal]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, org.joda.time.DateTime, String] { def cToA(c: String) = parseDateTimeAlm(c);  def createMA(la: List[org.joda.time.DateTime]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, _root_.java.util.UUID, String] { def cToA(c: String) = parseUuidAlm(c);  def createMA(la: List[_root_.java.util.UUID]) = Vector(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, scala.xml.Node, String] { def cToA(c: String) = parseXmlAlm(c);  def createMA(la: List[scala.xml.Node]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, String, DimensionListAny, String](RiftJson()) { def cToA(c: String) = c.success; def createMA(la: List[String]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Boolean, DimensionListAny, Boolean](RiftJson()) { def cToA(c: Boolean) = c.success;  def createMA(la: List[Boolean]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Byte, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toByte.success;  def createMA(la: List[Byte]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Int, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toInt.success;  def createMA(la: List[Int]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Long, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toLong.success;  def createMA(la: List[Long]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, BigInt, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseBigIntAlm(c);  def createMA(la: List[BigInt]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Float, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toFloat.success;  def createMA(la: List[Float]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, Double, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.success;  def createMA(la: List[Double]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, BigDecimal, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseDecimalAlm(c);  def createMA(la: List[BigDecimal]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, org.joda.time.DateTime, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseDateTimeAlm(c);  def createMA(la: List[org.joda.time.DateTime]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, _root_.java.util.UUID, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseUuidAlm(c);  def createMA(la: List[_root_.java.util.UUID]) = Vector(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Vector, scala.xml.Node, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseXmlAlm(c);  def createMA(la: List[scala.xml.Node]) = Vector(la: _*) })
 
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, String, String] { def cToA(c: String) = c.success; def createMA(la: List[String]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Boolean, Boolean] { def cToA(c: Boolean) = c.success;  def createMA(la: List[Boolean]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Byte, Double] { def cToA(c: Double) = c.toByte.success;  def createMA(la: List[Byte]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Int, Double] { def cToA(c: Double) = c.toInt.success;  def createMA(la: List[Int]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Long, Double] { def cToA(c: Double) = c.toLong.success;  def createMA(la: List[Long]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, BigInt, String] { def cToA(c: String) = parseBigIntAlm(c);  def createMA(la: List[BigInt]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Float, Double] { def cToA(c: Double) = c.toFloat.success;  def createMA(la: List[Float]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Double, Double] { def cToA(c: Double) = c.success;  def createMA(la: List[Double]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, BigDecimal, String] { def cToA(c: String) = parseDecimalAlm(c);  def createMA(la: List[BigDecimal]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, org.joda.time.DateTime, String] { def cToA(c: String) = parseDateTimeAlm(c);  def createMA(la: List[org.joda.time.DateTime]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, _root_.java.util.UUID, String] { def cToA(c: String) = parseUuidAlm(c);  def createMA(la: List[_root_.java.util.UUID]) = Set(la: _*) })
-    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, scala.xml.Node, String] { def cToA(c: String) = parseXmlAlm(c);  def createMA(la: List[scala.xml.Node]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, String, DimensionListAny, String](RiftJson()) { def cToA(c: String) = c.success; def createMA(la: List[String]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Boolean, DimensionListAny, Boolean](RiftJson()) { def cToA(c: Boolean) = c.success;  def createMA(la: List[Boolean]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Byte, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toByte.success;  def createMA(la: List[Byte]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Int, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toInt.success;  def createMA(la: List[Int]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Long, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toLong.success;  def createMA(la: List[Long]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, BigInt, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseBigIntAlm(c);  def createMA(la: List[BigInt]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Float, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.toFloat.success;  def createMA(la: List[Float]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, Double, DimensionListAny, Double](RiftJson()) { def cToA(c: Double) = c.success;  def createMA(la: List[Double]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, BigDecimal, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseDecimalAlm(c);  def createMA(la: List[BigDecimal]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, org.joda.time.DateTime, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseDateTimeAlm(c);  def createMA(la: List[org.joda.time.DateTime]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, _root_.java.util.UUID, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseUuidAlm(c);  def createMA(la: List[_root_.java.util.UUID]) = Set(la: _*) })
+    riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Set, scala.xml.Node, DimensionListAny, String](RiftJson()) { def cToA(c: String) = parseXmlAlm(c);  def createMA(la: List[scala.xml.Node]) = Set(la: _*) })
   }
 }

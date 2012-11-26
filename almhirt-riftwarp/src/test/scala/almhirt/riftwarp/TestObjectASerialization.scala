@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 
 class TestObjectADecomposer extends Decomposer[TestObjectA] {
   val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
-  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: TestObjectA)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestObjectA)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addByteArray("arrayByte", what.arrayByte))
       .bind(_.addBlob("blob", what.blob))
@@ -46,7 +46,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
 
 class PrimitiveTypesDecomposer extends Decomposer[PrimitiveTypes] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveTypes])
-  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: PrimitiveTypes)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveTypes)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addString("str", what.str))
       .bind(_.addBoolean("bool", what.bool))
@@ -92,7 +92,7 @@ class PrimitiveTypesRecomposer extends Recomposer[PrimitiveTypes] {
 
 class PrimitiveListMAsDecomposer extends Decomposer[PrimitiveListMAs] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveListMAs])
-  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: PrimitiveListMAs)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveListMAs)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addPrimitiveMA("listString", what.listString))
       .bind(_.addPrimitiveMA("listInt", what.listInt))
@@ -120,7 +120,7 @@ class PrimitiveListMAsRecomposer extends Recomposer[PrimitiveListMAs] {
 
 class PrimitiveVectorMAsDecomposer extends Decomposer[PrimitiveVectorMAs] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveVectorMAs])
-  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: PrimitiveVectorMAs)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveVectorMAs)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addPrimitiveMA("vectorString", what.vectorString))
       .bind(_.addPrimitiveMA("vectorInt", what.vectorInt))
@@ -149,7 +149,7 @@ class PrimitiveVectorMAsRecomposer extends Recomposer[PrimitiveVectorMAs] {
 
 class PrimitiveSetMAsDecomposer extends Decomposer[PrimitiveSetMAs] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveSetMAs])
-  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: PrimitiveSetMAs)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveSetMAs)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addPrimitiveMA("setString", what.setString))
       .bind(_.addPrimitiveMA("setInt", what.setInt))
@@ -178,7 +178,7 @@ class PrimitiveSetMAsRecomposer extends Recomposer[PrimitiveSetMAs] {
 
 class PrimitiveIterableMAsDecomposer extends Decomposer[PrimitiveIterableMAs] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveIterableMAs])
-  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: PrimitiveIterableMAs)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveIterableMAs)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
 
       .bind(_.addPrimitiveMA("iterableString", what.iterableString))
@@ -210,7 +210,7 @@ case class TestAddress(city: String, street: String) extends HasDefaultTypeDescr
 
 class TestAddressDecomposer extends Decomposer[TestAddress] {
   val typeDescriptor = TypeDescriptor(classOf[TestAddress])
-  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: TestAddress)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestAddress)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addString("city", what.city))
       .bind(_.addString("street", what.street))

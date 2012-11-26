@@ -5,7 +5,6 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.riftwarp._
-import almhirt.riftwarp.TypeDescriptor
 
 class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs) extends RematiarializationArrayBasedOnOptionGetters {
   def tryGetString(ident: String) = option.cata(theMap.get(ident))(almCast[String](_).map(Some(_)), None.success)
@@ -69,8 +68,11 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
   def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
 }
 
-object FromMapRematerializationArray extends RematerializationArrayFactory[DimensionRawMap, RiftMap] {
-  val descriptor = RiftFullDescriptor(RiftMap(), ToolGroupRiftStd())
+object FromMapRematerializationArray extends RematerializationArrayFactory[DimensionRawMap] {
+  val channel = RiftJson()
+  val tDimension = classOf[DimensionRawMap].asInstanceOf[Class[_ <: RiftDimension]]
+  val toolGroup = ToolGroupRiftStd()
+  
   def apply()(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): FromMapRematerializationArray = apply(Map.empty[String, Any])
   def apply(state: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): FromMapRematerializationArray = new FromMapRematerializationArray(state)
   def apply(state: DimensionRawMap)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs): FromMapRematerializationArray = new FromMapRematerializationArray(state.manifestation)

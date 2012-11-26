@@ -4,7 +4,7 @@ import almhirt.common._
 import scalaz.syntax.validation._
 
 import scalaz.std._
-trait NoneHasNoEffectDematerializationFunnel[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]] { dematerializer: Dematerializer[TChannel, TDimension] =>
+trait NoneHasNoEffectDematerializationFunnel[TDimension <: RiftDimension] { dematerializer: Dematerializer[TDimension] =>
   def addOptionalString(ident: String, anOptionalValue: Option[String]) = option.cata(anOptionalValue)(addString(ident, _), dematerializer.success)
 
   def addOptionalBoolean(ident: String, anOptionalValue: Option[Boolean]) = option.cata(anOptionalValue)(addBoolean(ident, _), dematerializer.success)

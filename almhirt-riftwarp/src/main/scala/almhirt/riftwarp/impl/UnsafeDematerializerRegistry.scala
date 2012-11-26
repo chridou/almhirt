@@ -5,54 +5,49 @@ import almhirt.riftwarp._
 class UnsafeDematerializerRegistry extends HasDematerializers {
   import scala.collection.mutable._
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannel, HashMap[String, AnyRef]]]()
-  private val channelregistry = collection.mutable.HashMap[String, collection.mutable.HashMap[String, AnyRef]]()
+  private val channelregistry = collection.mutable.HashMap[RiftChannel, collection.mutable.HashMap[String, AnyRef]]()
 
   private val canDematerializePrimitiveMARegistry = collection.mutable.HashMap[String, AnyRef]()
 
-  def addDematerializer[D <: Dematerializer[_, _], TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](dematerializer: Dematerializer[TChannel, TDimension], asChannelDefault: Boolean) {
-    val identifier = dematerializer.tDimension
+  def addDematerializerFactory(factory: DematerializerFactory[_ <: RiftDimension], asChannelDefault: Boolean) {
+    val dimensionIdent = factory.tDimension.getName()
 
-    if (!toolregistry.contains(dematerializer.toolGroup))
-      toolregistry += (dematerializer.toolGroup -> HashMap[RiftChannel, HashMap[String, AnyRef]]())
-    val tooltypeentry = toolregistry(dematerializer.toolGroup)
-    if (!tooltypeentry.contains(dematerializer.descriptor.channelType))
-      tooltypeentry += (dematerializer.descriptor.channelType -> HashMap[String, AnyRef]())
-    val channelEntry = tooltypeentry(dematerializer.descriptor.channelType)
-    channelEntry += (identifier -> dematerializer.asInstanceOf[AnyRef])
+    if (!toolregistry.contains(factory.toolGroup))
+      toolregistry += (factory.toolGroup -> HashMap[RiftChannel, HashMap[String, AnyRef]]())
+    val tooltypeentry = toolregistry(factory.toolGroup)
+    if (!tooltypeentry.contains(factory.channel))
+      tooltypeentry += (factory.channel -> HashMap[String, AnyRef]())
+    val channelEntry = tooltypeentry(factory.channel)
+    channelEntry += (dimensionIdent -> factory.asInstanceOf[AnyRef])
 
-    if (!channelregistry.contains(dematerializer.descriptor.channelType.getClass().getName()))
-      channelregistry += (dematerializer.descriptor.channelType.getClass().getName() -> collection.mutable.HashMap[String, AnyRef]())
-    val channeltypeentry = channelregistry(dematerializer.descriptor.channelType.getClass().getName())
-    if (asChannelDefault || !channeltypeentry.contains(identifier))
-      channeltypeentry += (identifier -> dematerializer)
+    if (!channelregistry.contains(factory.channel))
+      channelregistry += (factory.channel -> collection.mutable.HashMap[String, AnyRef]())
+    val channeltypeentry = channelregistry(factory.channel)
+    if (asChannelDefault || !channeltypeentry.contains(dimensionIdent))
+      channeltypeentry += (dimensionIdent -> factory)
   }
 
-  def tryGetDematerializerByDescriptor[To <: RiftTypedDimension[_]](warpType: RiftDescriptor)(implicit m: Manifest[To]): Option[Dematerializer[_, To]] = {
-    val identifier = m.erasure.getName
-    (warpType match {
-      case ct: RiftChannel =>
+  def tryGetDematerializerFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mD: Manifest[TDimension]): Option[DematerializerFactory[TDimension]] = {
+    val dimensionIdent = mD.erasure.getName
+    (toolGroup match {
+      case None =>
         for {
-          entry <- channelregistry.get(ct.getClass().getName())
-          dematerializer <- entry.get(identifier)
-        } yield dematerializer.asInstanceOf[Dematerializer[_, To]]
-      case fd: RiftFullDescriptor =>
+          entry <- channelregistry.get(channel)
+          dematerializer <- entry.get(dimensionIdent)
+        } yield dematerializer.asInstanceOf[DematerializerFactory[TDimension]]
+      case Some(toolGroup) =>
         for {
-          toolentries <- toolregistry.get(fd.toolGroup)
-          channelEntries <- toolentries.get(fd.channelType)
-          dematerializer <- channelEntries.get(identifier)
-        } yield dematerializer.asInstanceOf[Dematerializer[_, To]]
+          toolentries <- toolregistry.get(toolGroup)
+          channelEntries <- toolentries.get(channel)
+          dematerializer <- channelEntries.get(dimensionIdent)
+        } yield dematerializer.asInstanceOf[DematerializerFactory[TDimension]]
     })
   }
 
-  def tryGetDematerializer[TChannel <: RiftChannel, To <: RiftTypedDimension[_]](implicit md: Manifest[To], mc: Manifest[TChannel]): Option[Dematerializer[TChannel, To]] =
-    for {
-      entry <- channelregistry.get(mc.erasure.getName())
-      dematerializer <- entry.get(md.erasure.getName())
-    } yield dematerializer.asInstanceOf[Dematerializer[TChannel, To]]
-
-  def addCanDematerializePrimitiveMA[M[_], A, TChannel <: RiftChannel, TDimension <: RiftDimension](cdsma: CanDematerializePrimitiveMA[M, A, TChannel, TDimension]) =
-    canDematerializePrimitiveMARegistry += ("%s-%s-%s-%s".format(cdsma.tM.getName(), cdsma.tA.getName(), cdsma.tChannel.getName(), cdsma.tDimension.getName()) -> cdsma)
-  def tryGetCanDematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], tChannel: Class[_ <: RiftChannel], tDimension: Class[_ <: RiftDimension]) =
-    canDematerializePrimitiveMARegistry.get("%s-%s-%s-%s".format(tM.getName(), tA.getName(), tChannel.getName(), tDimension.getName()))
+  def addCanDematerializePrimitiveMA[M[_], A](cdsma: CanDematerializePrimitiveMA[M, A, _ <: RiftDimension]) {
+    canDematerializePrimitiveMARegistry += ("%s-%s-%s-%s".format(cdsma.tM.getName(), cdsma.tA.getName(), cdsma.channel, cdsma.tDimension.getName()) -> cdsma)
+  }
+  def tryGetCanDematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], channel: RiftChannel, tDimension: Class[_ <: RiftDimension]) =
+    canDematerializePrimitiveMARegistry.get("%s-%s-%s-%s".format(tM.getName(), tA.getName(), channel, tDimension.getName()))
 
 }

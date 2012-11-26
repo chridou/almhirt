@@ -10,7 +10,7 @@ import almhirt.util._
 
 class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
   val typeDescriptor = TypeDescriptor(classOf[CommandEnvelope], 1)
-  def decompose[TChannel <: RiftChannel, TDimension <: RiftTypedDimension[_]](what: CommandEnvelope)(implicit into: Dematerializer[TChannel, TDimension]): AlmValidation[Dematerializer[TChannel, TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: CommandEnvelope)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .bind(_.addComplexType("command", what.command))

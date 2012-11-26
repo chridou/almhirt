@@ -5,7 +5,7 @@ import almhirt.almvalidation.kit._
 import almhirt.common._
 import almhirt.riftwarp._
 
-abstract class CanRematerializeListAny[M[_], A, C](implicit mM: Manifest[M[_]], mA: Manifest[A]) extends CanRematerializePrimitiveMABase[M, A, DimensionListAny, RiftJson](mM, mA, manifest[DimensionListAny], manifest[RiftJson]) {
+abstract class CanRematerializeListAny[M[_], A, TDimension <: DimensionListAny, C](channel: RiftChannel)(implicit mM: Manifest[M[_]], mA: Manifest[A], mD: Manifest[TDimension]) extends CanRematerializePrimitiveMABase[M, A, TDimension](channel)(mM, mA,mD) {
   protected def rematerializeToListC(dim: DimensionListAny): AlmValidation[List[C]] = {
     almhirt.almvalidation.funs.inTryCatch {
       dim.manifestation.map(_.asInstanceOf[C])

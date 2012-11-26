@@ -2,17 +2,16 @@ package almhirt.riftwarp
 
 import almhirt.common._
 
-trait CanRematerializePrimitiveMA[M[_], A, TDimension <: RiftTypedDimension[_], TChannel <: RiftChannel] {
+trait CanRematerializePrimitiveMA[M[_], A, TDimension <: RiftDimension] {
   def tM: Class[_]
   def tA: Class[_]
   def tDimension: Class[_ <: RiftDimension]
-  def tChannel: Class[_ <: RiftChannel]
+  def channel: RiftChannel
   def rematerialize(dim: TDimension): AlmValidation[M[A]]
 }
 
-abstract class CanRematerializePrimitiveMABase[M[_], A, TDimension <: RiftTypedDimension[_], TChannel <: RiftChannel](mM: Manifest[M[_]] , mA: Manifest[A], mD: Manifest[TDimension], mC: Manifest[TChannel]) extends CanRematerializePrimitiveMA[M, A, TDimension, TChannel]{
+abstract class CanRematerializePrimitiveMABase[M[_], A, TDimension <: RiftDimension](val channel: RiftChannel)(implicit mM: Manifest[M[_]] , mA: Manifest[A], mD: Manifest[TDimension]) extends CanRematerializePrimitiveMA[M, A, TDimension]{
   val tM = mM.erasure
   val tA = mA.erasure
   val tDimension = mD.erasure.asInstanceOf[Class[_ <: RiftDimension]]
-  val tChannel = mC.erasure.asInstanceOf[Class[_ <: RiftChannel]]
 }

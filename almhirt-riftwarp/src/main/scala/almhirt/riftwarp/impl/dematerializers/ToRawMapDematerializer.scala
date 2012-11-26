@@ -5,8 +5,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.riftwarp._
 
-class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers) extends ToRawMapDematerializer[RiftMap](manifest[RiftMap]) with NoneHasNoEffectDematerializationFunnel[RiftMap, DimensionRawMap] {
-  val descriptor = RiftFullDescriptor(RiftMap(), ToolGroupRiftStd())
+class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers) extends ToRawMapDematerializer(RiftMap(), ToolGroupRiftStd()) with NoneHasNoEffectDematerializationFunnel[DimensionRawMap] {
   def dematerialize: AlmValidation[DimensionRawMap] = DimensionRawMap(state).success
 
   def addString(ident: String, aValue: String) = (ToMapDematerializer(state + (ident -> aValue))).success
@@ -52,7 +51,13 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
 }
 
-object ToMapDematerializer {
+object ToMapDematerializer extends DematerializerFactory[DimensionRawMap] {
+  val channel = RiftMap()
+  val tDimension = classOf[DimensionRawMap].asInstanceOf[Class[_ <: RiftDimension]]
+  val toolGroup = ToolGroupRiftStd()
+  
   def apply()(implicit hasDecomposers: HasDecomposers): ToMapDematerializer = apply(Map.empty)
   def apply(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers): ToMapDematerializer = new ToMapDematerializer(state)
+  def createDematerializer(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers): AlmValidation[Dematerializer[DimensionRawMap]] =
+    apply().success
 }

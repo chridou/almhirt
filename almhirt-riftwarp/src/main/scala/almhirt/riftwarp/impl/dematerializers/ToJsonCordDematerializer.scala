@@ -12,10 +12,9 @@ object ToJsonCordDematerializerFuns {
   def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
 }
 
-class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers) extends ToCordDematerializer[RiftJson](manifest[RiftJson]) {
+class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
   import ToJsonCordDematerializerFuns._
 
-  val descriptor = RiftFullDescriptor(RiftJson(), ToolGroupStdLib())
   def dematerialize = DimensionCord(('{' -: state :- '}')).success
 
   def addPart(ident: String, part: Cord): AlmValidation[ToJsonCordDematerializer] = {
@@ -135,7 +134,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexType(x, y))
 
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
-    hasDematerializers.tryGetCanDematerializePrimitiveMA[M, A, RiftJson, DimensionCord] match {
+    hasDematerializers.tryGetCanDematerializePrimitiveMA[M, A, DimensionCord](RiftJson()) match {
       case Some(cdmpma) => 
         cdmpma.dematerialize(ma).bind(dim => addPart(ident, dim.manifestation))
       case None => 
@@ -149,18 +148,12 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
 
 }
 
-object ToJsonCordDematerializer {
+object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord]{
+  val channel = RiftJson()
+  val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
+  val toolGroup = ToolGroupStdLib()
   def apply()(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers): ToJsonCordDematerializer = apply(Cord(""))
   def apply(state: Cord)(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers): ToJsonCordDematerializer = new ToJsonCordDematerializer(state)
+  def createDematerializer(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers): AlmValidation[Dematerializer[DimensionCord]] =
+    apply().success
 }
-
-//object ToJsonStringDematerializer {
-//  def apply()(implicit hasDecomposers: HasDecomposers): DematerializesToString = apply(Cord(""))
-//  def apply(state: Cord)(implicit hasDecomposers: HasDecomposers): DematerializesToString = {
-//    val inner = ToJsonCordDematerializer(state)
-//    new DematerializesToString {
-//      val descriptor = RiftFullDescriptor(RiftJson, ToolGroupStdLib)
-//      def dematerialize = ('{' -: state :- '}').success
-//    }
-//  }
-//}
