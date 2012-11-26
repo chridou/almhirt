@@ -7,12 +7,13 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.riftwarp._
+import almhirt.riftwarp.ma._
 
 object ToJsonCordDematerializerFuns {
   def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
 }
 
-class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
+class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
   import ToJsonCordDematerializerFuns._
 
   def dematerialize = DimensionCord(('{' -: state :- '}')).success
@@ -158,8 +159,8 @@ object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord]{
   val channel = RiftJson()
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
-  def apply()(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers): ToJsonCordDematerializer = apply(Cord(""))
-  def apply(state: Cord)(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers): ToJsonCordDematerializer = new ToJsonCordDematerializer(state)
-  def createDematerializer(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers): AlmValidation[Dematerializer[DimensionCord]] =
+  def apply()(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""))
+  def apply(state: Cord)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = new ToJsonCordDematerializer(state)
+  def createDematerializer(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionCord]] =
     apply().success
 }
