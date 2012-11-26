@@ -2,7 +2,7 @@ package almhirt.riftwarp.impl
 
 import almhirt.riftwarp._
 
-class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationArrayFactories with HasRematerializersForHKTs {
+class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationArrayFactories {
   import scala.collection.mutable._
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannel, HashMap[String, AnyRef]]]()
   private val channelregistry = collection.mutable.HashMap[RiftChannel, collection.mutable.HashMap[String, AnyRef]]()
