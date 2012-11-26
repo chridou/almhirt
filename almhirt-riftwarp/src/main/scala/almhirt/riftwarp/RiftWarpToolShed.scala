@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 
 trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArrayFactories {
-  def tryGetRematerializationArray[TDimension <: RiftDimension](from: TDimension)(channel: RiftChannel)(implicit hasRecomposers: HasRecomposers, hasRematerializersForHKTs: HasRematerializersForHKTs, mD: Manifest[TDimension]): AlmValidation[Option[RematerializationArray]] =
+  def tryGetRematerializationArray[TDimension <: RiftDimension](from: TDimension)(channel: RiftChannel)(implicit hasRecomposers: HasRecomposers, hasRematerializationArrayFactories: HasRematerializationArrayFactories, mD: Manifest[TDimension]): AlmValidation[Option[RematerializationArray]] =
     tryGetArrayFactory[TDimension](channel).map(factory => factory.createRematerializationArray(from)).validationOut
 
   def tryGetDematerializer[TDimension <: RiftDimension](to: TDimension)(channel: RiftChannel)(implicit hasDecomposers: HasDecomposers, hasDematerializers: HasDematerializers, mD: Manifest[TDimension]): AlmValidation[Option[Dematerializer[TDimension]]] =
@@ -12,7 +12,7 @@ trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArray
 }
 
 object RiftWarpToolShed {
-  def apply(hasDematerializers: HasDematerializers, hasRematerializationArrayFactories: HasRematerializationArrayFactories, hasRematerializersForHKTs: HasRematerializersForHKTs): RiftWarpToolShed = {
+  def apply(hasDematerializers: HasDematerializers, hasRematerializationArrayFactories: HasRematerializationArrayFactories): RiftWarpToolShed = {
     new RiftWarpToolShed {
       def addDematerializerFactory(factory: DematerializerFactory[_ <: RiftDimension], asChannelDefault: Boolean) { hasDematerializers.addDematerializerFactory(factory, asChannelDefault) }
       def tryGetDematerializerFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit md: Manifest[TDimension]) = hasDematerializers.tryGetDematerializerFactory(channel)
@@ -23,14 +23,14 @@ object RiftWarpToolShed {
       def addArrayFactory(arrayFactory: RematerializationArrayFactory[_ <: RiftDimension], isChannelDefault: Boolean = false) { hasRematerializationArrayFactories.addArrayFactory(arrayFactory, isChannelDefault) }
       def tryGetArrayFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mD: Manifest[TDimension]) = hasRematerializationArrayFactories.tryGetArrayFactory(channel)
 
-      def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftDimension](crsma: CanRematerializePrimitiveMA[M, A, TDimension]) { hasRematerializersForHKTs.addCanRematerializePrimitiveMA(crsma) }
-      def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], tDimension: Class[_ <: RiftDimension], channel: RiftChannel) = hasRematerializersForHKTs.tryGetCanRematerializePrimitiveMAByTypes(tM, tA, tDimension, channel)
+      def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftDimension](crsma: CanRematerializePrimitiveMA[M, A, TDimension]) { hasRematerializationArrayFactories.addCanRematerializePrimitiveMA(crsma) }
+      def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], tDimension: Class[_ <: RiftDimension], channel: RiftChannel) = hasRematerializationArrayFactories.tryGetCanRematerializePrimitiveMAByTypes(tM, tA, tDimension, channel)
 
     }
   }
 
   def unsafe(): RiftWarpToolShed = {
     val unsafeReRegistry = new impl.UnsafeRematerializationArrayFactoryRegistry
-    apply(new impl.UnsafeDematerializerRegistry, unsafeReRegistry, unsafeReRegistry)
+    apply(new impl.UnsafeDematerializerRegistry, unsafeReRegistry)
   }
 }
