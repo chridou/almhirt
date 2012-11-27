@@ -4,8 +4,8 @@ import almhirt.riftwarp.RiftDimension
 import almhirt.riftwarp.RiftChannel
 
 trait HasFunctionObjects {
-  def addToMADimensionFunctor[M[_]](fo: RegisterableToMADimensionFunctor[M]): Unit 
-  def tryGetToMADimensionFunctor[M[_]](implicit mM: Manifest[M[_]]): Option[RegisterableToMADimensionFunctor[M]] 
-  def addToMDimensionFold[M[_], TDimension <: RiftDimension](fo: RegisterableToMDimensionFold[M, TDimension]): Unit 
-  def tryGetToMDimensionFold[M[_], TDimension <: RiftDimension](channel: RiftChannel)(implicit mM: Manifest[M[_]], mD: Manifest[RiftDimension]): Option[RegisterableToMDimensionFold[M, TDimension]] 
+  def addMAFunctions[M[_]](fo: RegisterableMAFunctions[M]): Unit 
+  def tryGetMAFunctions[M[_]](implicit mM: Manifest[M[_]]): Option[MAFunctions[M]] 
+  def addChannelFolder[A, B](fo: RegisterableChannelFolder[A,B]): Unit 
+  def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[ChannelFolder[A,B]] 
 }

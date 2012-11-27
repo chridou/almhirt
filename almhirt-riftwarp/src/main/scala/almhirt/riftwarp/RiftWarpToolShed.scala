@@ -27,11 +27,10 @@ object RiftWarpToolShed {
       def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftDimension](crsma: CanRematerializePrimitiveMA[M, A, TDimension]) { hasRematerializationArrayFactories.addCanRematerializePrimitiveMA(crsma) }
       def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], tDimension: Class[_ <: RiftDimension], channel: RiftChannel) = hasRematerializationArrayFactories.tryGetCanRematerializePrimitiveMAByTypes(tM, tA, tDimension, channel)
 
-      def addToMADimensionFunctor[M[_]](fo: RegisterableToMADimensionFunctor[M]) { functionObjectRegistry.addToMADimensionFunctor(fo) }
-      def tryGetToMADimensionFunctor[M[_]](implicit mM: Manifest[M[_]]) = functionObjectRegistry.tryGetToMADimensionFunctor
-      def addToMDimensionFold[M[_], TDimension <: RiftDimension](fo: RegisterableToMDimensionFold[M, TDimension]) { functionObjectRegistry.addToMDimensionFold(fo) }
-      def tryGetToMDimensionFold[M[_], TDimension <: RiftDimension](channel: RiftChannel)(implicit mM: Manifest[M[_]], mD: Manifest[RiftDimension]): Option[RegisterableToMDimensionFold[M, TDimension]] = functionObjectRegistry.tryGetToMDimensionFold(channel)
-
+      def addMAFunctions[M[_]](fo: RegisterableMAFunctions[M]) { functionObjectRegistry.addMAFunctions[M](fo) }
+      def tryGetMAFunctions[M[_]](implicit mM: Manifest[M[_]]) = functionObjectRegistry.tryGetMAFunctions[M]
+      def addChannelFolder[A, B](fo: RegisterableChannelFolder[A, B]) = { functionObjectRegistry.addChannelFolder[A, B](fo) }
+      def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[ChannelFolder[A, B]] = functionObjectRegistry.tryGetChannelFolder[A,B](channel)
     }
   }
 

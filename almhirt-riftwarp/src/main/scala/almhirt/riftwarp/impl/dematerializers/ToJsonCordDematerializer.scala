@@ -135,12 +135,13 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexType(x, y))
 
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
-    hasDematerializers.tryGetCanDematerializePrimitiveMA[M, A, DimensionCord](RiftJson()) match {
-      case Some(cdmpma) => 
-        cdmpma.dematerialize(ma).bind(dim => addPart(ident, dim.manifestation))
-      case None => 
-        UnspecifiedProblem("No primitive dematerializer found for M[A](%s[%s]) for ident '%s'".format(mM.erasure.getName(), mA.erasure.getName(), ident)).failure
-    }
+//    hasDematerializers.tryGetCanDematerializePrimitiveMA[M, A, DimensionCord](RiftJson()) match {
+//      case Some(cdmpma) => 
+//        cdmpma.dematerialize(ma).bind(dim => addPart(ident, dim.manifestation))
+//      case None => 
+//        UnspecifiedProblem("No primitive dematerializer found for M[A](%s[%s]) for ident '%s'".format(mM.erasure.getName(), mA.erasure.getName(), ident)).failure
+//    }
+	sys.error("")
 
   def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y))

@@ -128,6 +128,15 @@ object RiftWarp {
     riftWarp.toolShed.addCanDematerializePrimitiveMA(new CanDematerializePrimitiveMAToJsonString[Set, _root_.java.util.UUID]() {})
     riftWarp.toolShed.addCanDematerializePrimitiveMA(new CanDematerializePrimitiveMAToJsonStringLaundered[Set, scala.xml.Node]() {})
 
+    import almhirt.riftwarp.ma._
+    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.listFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.vectorFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.setFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.iterableFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.treeFunctionObject)
+    
+    riftWarp.toolShed.addChannelFolder(JsonCordFolder)
+    
     import almhirt.riftwarp.impl.rematerializers.simplema._
     import almhirt.almvalidation.funs._
     riftWarp.toolShed.addCanRematerializePrimitiveMA(new CanRematerializeListAny[Iterable, String, DimensionListAny, String](RiftJson()) { def cToA(c: String) = c.success; def createMA(la: List[String]) = Iterable(la: _*) })

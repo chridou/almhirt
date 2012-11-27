@@ -45,20 +45,23 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
     }
   }
 
-  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] =
-    hasFunctionObjects.tryGetToMADimensionFunctor[M] match {
-      case Some(_) => (ToMapDematerializer(state + (ident -> ma))).success
-      case None => sys.error("")
-    }
+  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
+	sys.error("")
+//    hasFunctionObjects.tryGetToMADimensionFunctor[M] match {
+//      case Some(_) => (ToMapDematerializer(state + (ident -> ma))).success
+//      case None => sys.error("")
+//    }
+  }
 
  
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-    hasFunctionObjects.tryGetToMADimensionFunctor[M] match {
-      case Some(functor) => 
-        val mDim = functor.map[A, DimensionRawMap](ma)(x => decomposer.decompose(x)(ToMapDematerializer()).bind(_.dematerialize))
-        sys.error("")
-      case None => sys.error("")
-    }
+	sys.error("")
+    //    hasFunctionObjects.tryGetToMADimensionFunctor[M] match {
+//      case Some(functor) => 
+//        val mDim = functor.map[A, DimensionRawMap](ma)(x => decomposer.decompose(x)(ToMapDematerializer()).bind(_.dematerialize))
+//        sys.error("")
+//      case None => sys.error("")
+//    }
   }
 
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success

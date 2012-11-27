@@ -5,27 +5,26 @@ import almhirt.riftwarp.ma._
 
 class UnsafeFunctionObjectRegistry extends HasFunctionObjects {
   import scala.collection.mutable._
-  val toDimensionFunctors = HashMap[String, AnyRef]()
-  val toDimensionFolders = HashMap[String, AnyRef]()
+  val functionObjects = HashMap[String, AnyRef]()
+  val channelFolders = HashMap[String, AnyRef]()
 
-  def addToMADimensionFunctor[M[_]](fo: RegisterableToMADimensionFunctor[M]){
-    if(!toDimensionFunctors.contains(fo.tM.getName()))
-      toDimensionFunctors += (fo.tM.getName() -> fo)
+  def addMAFunctions[M[_]](fo: RegisterableMAFunctions[M]) {
+    if(!functionObjects.contains(fo.tM.getName()))
+      functionObjects += (fo.tM.getName() -> fo)
   } 
   
-  def tryGetToMADimensionFunctor[M[_]](implicit mM: Manifest[M[_]]): Option[RegisterableToMADimensionFunctor[M]] = {
-    toDimensionFunctors.get(mM.erasure.getName()).map(_.asInstanceOf[RegisterableToMADimensionFunctor[M]])
-  }
+  def tryGetMAFunctions[M[_]](implicit mM: Manifest[M[_]]): Option[MAFunctions[M]] =
+    functionObjects.get(mM.erasure.getName()).map(_.asInstanceOf[MAFunctions[M]])
   
-  def addToMDimensionFold[M[_], TDimension <: RiftDimension](fo: RegisterableToMDimensionFold[M, TDimension]){
-    val ident = "%s_%s_%s".format(fo.channel.channelType, fo.tDim.getName(), fo.tM.getName())
-     if(!toDimensionFolders.contains(ident))
-      toDimensionFolders += (ident -> fo)
+  def addChannelFolder[A, B](folder: RegisterableChannelFolder[A,B]) { 
+    val ident = "%s_%s_%s".format(folder.channel.channelType, folder.tA.getName(), folder.tB.getName())
+     if(!channelFolders.contains(ident))
+      channelFolders += (ident -> folder)
  }
   
-  def tryGetToMDimensionFold[M[_], TDimension <: RiftDimension](channel: RiftChannel)(implicit mM: Manifest[M[_]], mD: Manifest[RiftDimension]): Option[RegisterableToMDimensionFold[M, TDimension]] = {
-    val ident = "%s_%s_%s".format(channel.channelType, mD.erasure.getName(), mM.erasure.getName())
-    toDimensionFolders.get(ident).map(_.asInstanceOf[RegisterableToMDimensionFold[M, TDimension]])
+  def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[ChannelFolder[A,B]] = { 
+    val ident = "%s_%s_%s".format(channel.channelType, mA.erasure.getName(), mB.erasure.getName())
+    channelFolders.get(ident).map(_.asInstanceOf[RegisterableChannelFolder[A, B]])
   }
 }
 
