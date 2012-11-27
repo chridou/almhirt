@@ -11,6 +11,46 @@ import almhirt.riftwarp.ma._
 
 object ToJsonCordDematerializerFuns {
   def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
+
+  def mapStringLike(part: Cord): Cord = '\"' -: part :- '\"'
+
+  val mapString = (value: String) => Cord(launderString(value))
+  val mapBoolean = (value: Boolean) => Cord(value.toString)
+  val mapLong = (value: Long) => Cord(value.toString)
+  val mapBigInt = (value: BigInt) => Cord(mapStringLike(value.toString))
+  val mapFloatingPoint = (value: Double) => Cord(value.toString)
+  val mapBigDecimal = (value: BigDecimal) => Cord(mapStringLike(value.toString))
+  val mapDateTime = (value: DateTime) => Cord(mapStringLike(value.toString))
+  val mapUuid = (value: _root_.java.util.UUID) => Cord(mapStringLike(value.toString))
+
+  def mapperByType[A](implicit m: Manifest[A]): AlmValidation[A => Cord] = {
+    val t = m.erasure
+    if (t == classOf[String])
+      (mapString).asInstanceOf[A => Cord].success
+    else if (t == classOf[Boolean])
+      (mapBoolean).asInstanceOf[A => Cord].success
+    else if (t == classOf[Byte])
+      ((x: Byte) => mapLong(x)).asInstanceOf[A => Cord].success
+    else if (t == classOf[Int])
+      ((x: Int) => mapLong(x)).asInstanceOf[A => Cord].success
+    else if (t == classOf[Long])
+      (mapLong).asInstanceOf[A => Cord].success
+    else if (t == classOf[BigInt])
+      (mapBigInt).asInstanceOf[A => Cord].success
+    else if (t == classOf[Float])
+      ((x: Float) => mapFloatingPoint(x)).asInstanceOf[A => Cord].success
+    else if (t == classOf[Double])
+      (mapFloatingPoint).asInstanceOf[A => Cord].success
+    else if (t == classOf[BigDecimal])
+      (mapBigDecimal).asInstanceOf[A => Cord].success
+    else if (t == classOf[DateTime])
+      (mapDateTime).asInstanceOf[A => Cord].success
+    else if (t == classOf[_root_.java.util.UUID])
+      (mapUuid).asInstanceOf[A => Cord].success
+    else
+      UnspecifiedProblem("No mapper found for %s".format(t.getName())).failure
+
+  }
 }
 
 class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
@@ -28,7 +68,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
   }
 
   def addStringLikePart(ident: String, part: Cord): AlmValidation[ToJsonCordDematerializer] =
-    addPart(ident, '\"' -: part :- '\"')
+    addPart(ident, mapStringLike(part))
 
   private val nullCord = Cord("null")
 
@@ -36,22 +76,22 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     addPart(ident, nullCord)
 
   private def addStringPart(ident: String, value: String): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, launderString(value))
+    addStringLikePart(ident, mapString(value))
 
   private def addBooleanPart(ident: String, value: Boolean): AlmValidation[ToJsonCordDematerializer] =
-    addPart(ident, value.toString)
+    addPart(ident, mapBoolean(value))
 
   private def addLongPart(ident: String, value: Long): AlmValidation[ToJsonCordDematerializer] =
-    addPart(ident, value.toString)
+    addPart(ident, mapLong(value))
 
   private def addBigIntPart(ident: String, value: BigInt): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, value.toString)
+    addStringLikePart(ident, mapBigInt(value))
 
   private def addFloatingPointPart(ident: String, value: Double): AlmValidation[ToJsonCordDematerializer] =
-    addPart(ident, value.toString)
+    addPart(ident, mapFloatingPoint(value))
 
   private def addBigDecimalPart(ident: String, value: BigDecimal): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, value.toString)
+    addStringLikePart(ident, mapBigDecimal(value))
 
   private def addByteArrayPart(ident: String, value: Array[Byte]): AlmValidation[ToJsonCordDematerializer] =
     addPart(ident, '[' + value.mkString(",") + ']')
@@ -60,7 +100,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     addStringLikePart(ident, value.toString())
 
   private def addUuidPart(ident: String, value: _root_.java.util.UUID): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, value.toString())
+    addStringLikePart(ident, mapUuid(value))
 
   private def addJsonPart(ident: String, value: String): AlmValidation[ToJsonCordDematerializer] =
     addPart(ident, value.toString())
@@ -135,13 +175,10 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexType(x, y))
 
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
-//    hasDematerializers.tryGetCanDematerializePrimitiveMA[M, A, DimensionCord](RiftJson()) match {
-//      case Some(cdmpma) => 
-//        cdmpma.dematerialize(ma).bind(dim => addPart(ident, dim.manifestation))
-//      case None => 
-//        UnspecifiedProblem("No primitive dematerializer found for M[A](%s[%s]) for ident '%s'".format(mM.erasure.getName(), mA.erasure.getName(), ident)).failure
-//    }
-	sys.error("")
+    mapperByType[A].bind(map =>
+      MAFuncs.map(ma)(x => DimensionCord(map(x))).bind(mcord =>
+        MAFuncs.fold(this.channel)(mcord)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
+          ToJsonCordDematerializer((state :- ',') ++ dimCord.manifestation)))
 
   def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y))
@@ -149,14 +186,14 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     sys.error("")
 
-  def addOptionalComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = 
+  def addOptionalComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMA(decomposer)(x, y))
-    
+
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
 
 }
 
-object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord]{
+object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord] {
   val channel = RiftJson()
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()

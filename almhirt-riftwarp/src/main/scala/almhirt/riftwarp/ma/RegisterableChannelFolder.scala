@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.riftwarp._
 
 trait ChannelFolder[A, B] {
-  def fold[M[_]](ma: M[A])(funcObj: RegisterableMAFunctions[M]): AlmValidation[B]
+  def fold[M[_]](ma: M[A])(funcObj: MAFunctions[M]): AlmValidation[B]
 }
 
 trait RegisterableChannelFolder[A, B] extends ChannelFolder[A, B] {

@@ -10,7 +10,7 @@ trait JsonCordFolder extends RegisterableChannelFolder[DimensionCord, DimensionC
   val channel = RiftJson()
   val tA = classOf[DimensionCord]
   val tB = classOf[DimensionCord]
-  def fold[M[_]](ma: M[DimensionCord])(funcObj: RegisterableMAFunctions[M]): AlmValidation[DimensionCord] = {
+  def fold[M[_]](ma: M[DimensionCord])(funcObj: MAFunctions[M]): AlmValidation[DimensionCord] = {
     if (funcObj.isEmpty(ma)) {
       DimensionCord("[]").success
     } else {

@@ -3,6 +3,7 @@ package almhirt.riftwarp.impl.dematerializers
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.riftwarp._
 import almhirt.riftwarp.ma._
 
@@ -46,22 +47,25 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   }
 
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-	sys.error("")
-//    hasFunctionObjects.tryGetToMADimensionFunctor[M] match {
-//      case Some(_) => (ToMapDematerializer(state + (ident -> ma))).success
-//      case None => sys.error("")
-//    }
+    sys.error("")
+    hasFunctionObjects.tryGetMAFunctions[M] match {
+      case Some(fo) =>
+        (ToMapDematerializer(state + (ident -> ma))).success
+      case None => UnspecifiedProblem("No function object  found for ident '%s' and M[_](%s[_])".format(ident, mM.erasure.getName())).failure
+    }
   }
 
- 
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-	sys.error("")
-    //    hasFunctionObjects.tryGetToMADimensionFunctor[M] match {
-//      case Some(functor) => 
-//        val mDim = functor.map[A, DimensionRawMap](ma)(x => decomposer.decompose(x)(ToMapDematerializer()).bind(_.dematerialize))
-//        sys.error("")
-//      case None => sys.error("")
-//    }
+    sys.error("")
+    hasFunctionObjects.tryGetMAFunctions[M] match {
+      case Some(fo) =>
+        val mapped = fo.map(ma)(elem =>
+          (decomposer.decompose(elem)(ToMapDematerializer()).bind(_.dematerialize).toAgg))
+        fo.sequenceValidations(mapped)
+          .map(x => fo.map(x)(_.manifestation))
+          .map(x => ToMapDematerializer(state + (ident -> x)))
+      case None => UnspecifiedProblem("No function object  found for ident '%s' and M[_](%s[_])".format(ident, mM.erasure.getName())).failure
+    }
   }
 
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
