@@ -28,3 +28,4 @@ trait JsonCordFolder extends RegisterableChannelFolder[DimensionCord, DimensionC
 }
 
 object JsonCordFolder extends JsonCordFolder
+
