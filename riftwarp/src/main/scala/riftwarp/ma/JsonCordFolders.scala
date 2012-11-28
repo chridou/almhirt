@@ -17,7 +17,9 @@ trait JsonCordFolder extends RegisterableChannelFolder[DimensionCord, DimensionC
       if (funcObj.hasLinearCharacteristics) {
         val head = funcObj.head(ma)
         val tail = funcObj.tail(ma)
-        funcObj.fold(tail)(head)((acc, elem) => DimensionCord((acc.manifestation :- ',') ++ elem.manifestation)).success
+        funcObj.fold(tail)(head)((acc, elem) => DimensionCord((acc.manifestation :- ',') ++ elem.manifestation))
+          .success
+          .map(x => DimensionCord('[' -: x.manifestation :- ']'))
       } else {
         UnspecifiedProblem("Not yet supported").failure
       }
