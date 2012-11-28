@@ -5,7 +5,7 @@ import almhirt.almvalidation.kit._
 import ma._
 
 trait RiftWarpToolShed extends HasDematerializers with HasRematerializationArrayFactories with HasFunctionObjects {
-  def tryGetRematerializationArray[TDimension <: RiftDimension](from: TDimension)(channel: RiftChannel)(implicit hasRecomposers: HasRecomposers, hasRematerializationArrayFactories: HasRematerializationArrayFactories, mD: Manifest[TDimension]): AlmValidation[Option[RematerializationArray]] =
+  def tryGetRematerializationArray[TDimension <: RiftDimension](from: TDimension)(channel: RiftChannel)(implicit hasRecomposers: HasRecomposers, hasRematerializationArrayFactories: HasRematerializationArrayFactories, hasFunctionObjects: HasFunctionObjects, mD: Manifest[TDimension]): AlmValidation[Option[RematerializationArray]] =
     tryGetArrayFactory[TDimension](channel).map(factory => factory.createRematerializationArray(from)).validationOut
 
   def tryGetDematerializer[TDimension <: RiftDimension](to: TDimension)(channel: RiftChannel)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects, mD: Manifest[TDimension]): AlmValidation[Option[Dematerializer[TDimension]]] =
