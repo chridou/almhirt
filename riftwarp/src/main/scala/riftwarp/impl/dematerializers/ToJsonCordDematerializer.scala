@@ -14,7 +14,7 @@ object ToJsonCordDematerializerFuns {
 
   def mapStringLike(part: Cord): Cord = '\"' -: part :- '\"'
 
-  val mapString = (value: String) => Cord(launderString(value))
+  val mapString = (value: String) => Cord(mapStringLike(launderString(value)))
   val mapBoolean = (value: Boolean) => Cord(value.toString)
   val mapLong = (value: Long) => Cord(value.toString)
   val mapBigInt = (value: BigInt) => Cord(mapStringLike(value.toString))
@@ -67,16 +67,13 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
       ToJsonCordDematerializer((state :- ',') ++ completeCord).success
   }
 
-  def addStringLikePart(ident: String, part: Cord): AlmValidation[ToJsonCordDematerializer] =
-    addPart(ident, mapStringLike(part))
-
   private val nullCord = Cord("null")
 
   private def addNonePart(ident: String): AlmValidation[ToJsonCordDematerializer] =
     addPart(ident, nullCord)
 
   private def addStringPart(ident: String, value: String): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, mapString(value))
+    addPart(ident, mapString(value))
 
   private def addBooleanPart(ident: String, value: Boolean): AlmValidation[ToJsonCordDematerializer] =
     addPart(ident, mapBoolean(value))
@@ -85,28 +82,28 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     addPart(ident, mapLong(value))
 
   private def addBigIntPart(ident: String, value: BigInt): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, mapBigInt(value))
+    addPart(ident, mapBigInt(value))
 
   private def addFloatingPointPart(ident: String, value: Double): AlmValidation[ToJsonCordDematerializer] =
     addPart(ident, mapFloatingPoint(value))
 
   private def addBigDecimalPart(ident: String, value: BigDecimal): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, mapBigDecimal(value))
+    addPart(ident, mapBigDecimal(value))
 
   private def addByteArrayPart(ident: String, value: Array[Byte]): AlmValidation[ToJsonCordDematerializer] =
     addPart(ident, '[' + value.mkString(",") + ']')
 
   private def addDateTimePart(ident: String, value: DateTime): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, value.toString())
+    addPart(ident, mapDateTime(value))
 
   private def addUuidPart(ident: String, value: _root_.java.util.UUID): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, mapUuid(value))
+    addPart(ident, mapUuid(value))
 
   private def addJsonPart(ident: String, value: String): AlmValidation[ToJsonCordDematerializer] =
-    addPart(ident, value.toString())
+    addPart(ident, mapString(value))
 
   private def addXmlPart(ident: String, value: _root_.scala.xml.Node): AlmValidation[ToJsonCordDematerializer] =
-    addStringLikePart(ident, value.toString())
+    addPart(ident,  mapString(value.toString()))
 
   private def addComplexPart(ident: String, value: Cord): AlmValidation[ToJsonCordDematerializer] =
     addPart(ident, value)
@@ -141,7 +138,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArray)
   def addBlob(ident: String, aValue: Array[Byte]) = {
     val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    addStringLikePart(ident, theBlob)
+    addPart(ident, mapString(theBlob))
   }
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBlob)
 
@@ -177,8 +174,8 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     mapperByType[A].bind(map =>
       MAFuncs.map(ma)(x => DimensionCord(map(x))).bind(mcord =>
-        MAFuncs.fold(this.channel)(mcord)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
-          ToJsonCordDematerializer((state :- ',') ++ dimCord.manifestation)))
+        MAFuncs.fold(this.channel)(mcord)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
+        addPart(ident, dimCord.manifestation)))
 
   def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y))
