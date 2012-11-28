@@ -22,7 +22,7 @@ class UnsafeFunctionObjectRegistry extends HasFunctionObjects {
       channelFolders += (ident -> folder)
  }
   
-  def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[ChannelFolder[A,B]] = { 
+  def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[Folder[A,B]] = { 
     val ident = "%s_%s_%s".format(channel.channelType, mA.erasure.getName(), mB.erasure.getName())
     channelFolders.get(ident).map(_.asInstanceOf[RegisterableChannelFolder[A, B]])
   }
