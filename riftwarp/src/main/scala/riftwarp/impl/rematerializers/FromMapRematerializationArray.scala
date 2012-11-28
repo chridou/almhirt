@@ -3,11 +3,11 @@ package riftwarp.impl.rematerializers
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
-import almhirt.almvalidation.funs._
+import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.ma._
 
-class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects) extends RematerializationArrayBasedOnOptionGetters {
+class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayBasedOnOptionGetters {
   def tryGetString(ident: String) = option.cata(theMap.get(ident))(almCast[String](_).map(Some(_)), None.success)
 
   def tryGetBoolean(ident: String) = option.cata(theMap.get(ident))(almCast[Boolean](_).map(Some(_)), None.success)
@@ -65,6 +65,28 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
 
   def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = 
     option.cata(theMap.get(ident))(almCast[M[A]](_).map(Some(_)), None.success)
+    
+  def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = 
+    option.cata(theMap.get(ident))(
+      mx =>
+        boolean.fold(
+          mx.getClass == mM.erasure,
+          functionObjects.getMAFunctions[M].bind(fo =>
+            computeSafely(
+              fo.sequenceValidations(
+                fo.map(fo.map(mx.asInstanceOf[M[Map[String, Any]]])( elem =>
+                  FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(elem)).bind(remat =>
+                    recomposer.recompose(remat)))(_.toAgg))))),            
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_]".format(ident)).failure),
+      None.success)
+
+    
+    //    option.cata(theMap.get(ident))(
+//        elem =>
+//          almCast[Map[String, Any]](elem).bind (elemAsMap =>
+//          	FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(elemAsMap)).bind(rematerializationArray =>
+//              recomposer.recompose(rematerializationArray)  )            ), 
+//        None.success)
   
   def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
 }

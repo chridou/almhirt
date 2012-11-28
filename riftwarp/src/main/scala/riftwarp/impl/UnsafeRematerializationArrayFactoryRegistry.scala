@@ -6,7 +6,6 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
   import scala.collection.mutable._
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannel, HashMap[String, AnyRef]]]()
   private val channelregistry = collection.mutable.HashMap[RiftChannel, collection.mutable.HashMap[String, AnyRef]]()
-  private val canRematerializePrimitiveMARegistry = collection.mutable.HashMap[String, AnyRef]()
 
   def addArrayFactory(arrayFactory: RematerializationArrayFactory[_ <: RiftDimension], isChannelDefault: Boolean = false) {
     val identDim = arrayFactory.tDimension.getName()
@@ -42,10 +41,4 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
         } yield dematerializer.asInstanceOf[RematerializationArrayFactory[TDimension]]
     })
   }
-  
-  def addCanRematerializePrimitiveMA[M[_], A, TDimension <: RiftDimension](crsma: CanRematerializePrimitiveMA[M, A, TDimension]) {
-    canRematerializePrimitiveMARegistry += ("%s-%s-%s-%s".format(crsma.tM.getName(), crsma.tA.getName(), crsma.tDimension.getName(), crsma.channel) -> crsma)
-  }
- def tryGetCanRematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], tDimension: Class[_ <: RiftDimension], channel: RiftChannel): Option[AnyRef] =
-    canRematerializePrimitiveMARegistry.get("%s-%s-%s-%s".format(tM.getName(), tA.getName(), tDimension.getName(), channel))
 }

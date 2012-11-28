@@ -16,7 +16,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .bind(_.addComplexType("primitiveTypes", what.primitiveTypes))
       .bind(_.addComplexType("primitiveListMAs", what.primitiveListMAs))
       .bind(_.addComplexType("primitiveVectorMAs", what.primitiveVectorMAs))
-      .bind(_.addComplexType("primitiveSetMAs", what.primitiveSetMAs))
+      .bind(_.addOptionalComplexType("primitiveSetMAs", what.primitiveSetMAs))
       .bind(_.addComplexType("primitiveIterableMAs", what.primitiveIterableMAs))
       .bind(_.addComplexType("complexMAs", what.complexMAs))
       .bind(_.addOptionalComplexType("addressOpt", what.addressOpt))
@@ -31,7 +31,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
     val primitiveTypes = from.getComplexType[PrimitiveTypes]("primitiveTypes").toAgg
     val primitiveListMAs = from.getComplexType[PrimitiveListMAs]("primitiveListMAs").toAgg
     val primitiveVectorMAs = from.getComplexType[PrimitiveVectorMAs]("primitiveVectorMAs").toAgg
-    val primitiveSetMAs = from.getComplexType[PrimitiveSetMAs]("primitiveSetMAs").toAgg
+    val primitiveSetMAs = from.tryGetComplexType[PrimitiveSetMAs]("primitiveSetMAs").toAgg
     val primitiveIterableMAs = from.getComplexType[PrimitiveIterableMAs]("primitiveIterableMAs").toAgg
     val complexMAs = from.getComplexType[ComplexMAs]("complexMAs").toAgg
     val addressOpt = from.tryGetComplexType[TestAddress]("addressOpt").toAgg
@@ -158,7 +158,7 @@ class PrimitiveSetMAsDecomposer extends Decomposer[PrimitiveSetMAs] {
       .bind(_.addPrimitiveMA("setInt", what.setInt))
       .bind(_.addPrimitiveMA("setDouble", what.setDouble))
       .bind(_.addPrimitiveMA("setBigDecimal", what.setBigDecimal))
-      .bind(_.addPrimitiveMA("setDateTime", what.setDateTime))
+      .bind(_.addOptionalPrimitiveMA("setDateTime", what.setDateTime))
   }
 }
 
@@ -170,7 +170,7 @@ class PrimitiveSetMAsRecomposer extends Recomposer[PrimitiveSetMAs] {
     val setInt = from.getPrimitiveMA[Set, Int]("setInt").toAgg
     val setDouble = from.getPrimitiveMA[Set, Double]("setDouble").toAgg
     val setBigDecimal = from.getPrimitiveMA[Set, BigDecimal]("setBigDecimal").toAgg
-    val setDateTime = from.getPrimitiveMA[Set, DateTime]("setDateTime").toAgg
+    val setDateTime = from.tryGetPrimitiveMA[Set, DateTime]("setDateTime").toAgg
     (setString
       |@| setInt
       |@| setDouble

@@ -21,7 +21,7 @@ trait ListToSetConverter extends RegisterableConvertsMAToNA[List, Set] {
 
 trait ListToIterableConverter extends RegisterableConvertsMAToNA[List, Iterable] {
   def tM = classOf[List[_]]
-  def tN = classOf[Set[_]]
+  def tN = classOf[Iterable[_]]
   def convert[A](ma: List[A]): AlmValidation[Iterable[A]] = Iterable(ma: _*).success
 }
 

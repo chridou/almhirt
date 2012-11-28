@@ -191,7 +191,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
   def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[ToJsonCordDematerializer] = {
     hasDecomposers.tryGetDecomposerForAny(aComplexType) match {
       case Some(decomposer) => addComplexType(decomposer)(ident, aComplexType)
-      case None => UnspecifiedProblem("No decomposer found for ident '%s'".format(ident)).failure
+      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, aComplexType.getClass.getName())).failure
     }
   }
 

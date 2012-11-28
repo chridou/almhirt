@@ -39,7 +39,7 @@ case class PrimitiveSetMAs(
   setInt: Set[Int],
   setDouble: Set[Double],
   setBigDecimal: Set[BigDecimal],
-  setDateTime: Set[DateTime])
+  setDateTime: Option[Set[DateTime]])
 
 case class PrimitiveIterableMAs(
   iterableString: Iterable[String],
@@ -60,7 +60,7 @@ case class TestObjectA(
   primitiveTypes: PrimitiveTypes,
   primitiveListMAs: PrimitiveListMAs,
   primitiveVectorMAs: PrimitiveVectorMAs,
-  primitiveSetMAs: PrimitiveSetMAs,
+  primitiveSetMAs: Option[PrimitiveSetMAs],
   primitiveIterableMAs: PrimitiveIterableMAs,
   complexMAs: ComplexMAs,
   addressOpt: Option[TestAddress]) extends HasDefaultTypeDescriptor
@@ -94,12 +94,14 @@ object TestObjectA {
         vectorDouble = Vector(1.0, 0.5, 0.2, 0.125),
         vectorBigDecimal = Vector(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
         vectorDateTime = Vector(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
-      primitiveSetMAs = PrimitiveSetMAs(
+      primitiveSetMAs = Some(PrimitiveSetMAs(
         setString = Set("alpha", "beta", "gamma", "delta"),
         setInt = Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
         setDouble = Set(1.0, 0.5, 0.2, 0.125),
         setBigDecimal = Set(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
-        setDateTime = Set(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
+        setDateTime = None)),
+//        setDateTime = Some(Set(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))))),
+//      primitiveSetMAs = None,
       primitiveIterableMAs = PrimitiveIterableMAs(
         iterableString = Iterable("alpha", "beta", "gamma", "delta"),
         iterableInt = Iterable(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
