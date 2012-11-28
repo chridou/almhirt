@@ -95,7 +95,7 @@ object TestObjectA {
         vectorBigDecimal = Vector(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
         vectorDateTime = Vector(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
       primitiveSetMAs = PrimitiveSetMAs(
-        setString = Set("alpha", "beta", "gamma", "delta"),
+        setString = Set("""al"p"ha""", "beta", "gamma", "delta"),
         setInt = Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
         setDouble = Set(1.0, 0.5, 0.2, 0.125),
         setBigDecimal = Set(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),

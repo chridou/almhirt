@@ -7,8 +7,6 @@ class UnsafeDematerializerRegistry extends HasDematerializers {
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannel, HashMap[String, AnyRef]]]()
   private val channelregistry = collection.mutable.HashMap[RiftChannel, collection.mutable.HashMap[String, AnyRef]]()
 
-  private val canDematerializePrimitiveMARegistry = collection.mutable.HashMap[String, AnyRef]()
-
   def addDematerializerFactory(factory: DematerializerFactory[_ <: RiftDimension], asChannelDefault: Boolean) {
     val dimensionIdent = factory.tDimension.getName()
 
@@ -43,11 +41,4 @@ class UnsafeDematerializerRegistry extends HasDematerializers {
         } yield dematerializer.asInstanceOf[DematerializerFactory[TDimension]]
     })
   }
-
-  def addCanDematerializePrimitiveMA[M[_], A](cdsma: CanDematerializePrimitiveMA[M, A, _ <: RiftDimension]) {
-    canDematerializePrimitiveMARegistry += ("%s-%s-%s-%s".format(cdsma.tM.getName(), cdsma.tA.getName(), cdsma.channel, cdsma.tDimension.getName()) -> cdsma)
-  }
-  def tryGetCanDematerializePrimitiveMAByTypes(tM: Class[_], tA: Class[_], channel: RiftChannel, tDimension: Class[_ <: RiftDimension]) =
-    canDematerializePrimitiveMARegistry.get("%s-%s-%s-%s".format(tM.getName(), tA.getName(), channel, tDimension.getName()))
-
 }
