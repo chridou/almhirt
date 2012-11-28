@@ -71,7 +71,7 @@ object TestObjectA {
       arrayByte = Array(126, -123, 12, -45, -128),
       blob = Array(0, 0, 0, 0, 0, 6, -123, 12, -45, -128, 112, 0, 0, 0),
       primitiveTypes = PrimitiveTypes(
-        str = "I am Pete",
+        str = """I am Pete""",
         bool = true,
         byte = 127,
         int = -237823,
@@ -95,7 +95,7 @@ object TestObjectA {
         vectorBigDecimal = Vector(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
         vectorDateTime = Vector(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
       primitiveSetMAs = PrimitiveSetMAs(
-        setString = Set("""al"p"ha""", "beta", "gamma", "delta"),
+        setString = Set("alpha", "beta", "gamma", "delta"),
         setInt = Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
         setDouble = Set(1.0, 0.5, 0.2, 0.125),
         setBigDecimal = Set(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),

@@ -10,7 +10,7 @@ import riftwarp._
 import riftwarp.ma._
 
 object ToJsonCordDematerializerFuns {
-  def launderString(str: String): Cord = Cord(str.replaceAll(""""""", """\""""))
+  def launderString(str: String): Cord = Cord(str)
 
   def mapStringLike(part: Cord): Cord = '\"' -: part :- '\"'
 
