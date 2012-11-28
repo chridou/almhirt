@@ -18,6 +18,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .bind(_.addComplexType("primitiveVectorMAs", what.primitiveVectorMAs))
       .bind(_.addComplexType("primitiveSetMAs", what.primitiveSetMAs))
       .bind(_.addComplexType("primitiveIterableMAs", what.primitiveIterableMAs))
+      .bind(_.addComplexType("complexMAs", what.complexMAs))
       .bind(_.addOptionalComplexType("addressOpt", what.addressOpt))
   }
 }
@@ -32,6 +33,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
     val primitiveVectorMAs = from.getComplexType[PrimitiveVectorMAs]("primitiveVectorMAs").toAgg
     val primitiveSetMAs = from.getComplexType[PrimitiveSetMAs]("primitiveSetMAs").toAgg
     val primitiveIterableMAs = from.getComplexType[PrimitiveIterableMAs]("primitiveIterableMAs").toAgg
+    val complexMAs = from.getComplexType[ComplexMAs]("complexMAs").toAgg
     val addressOpt = from.tryGetComplexType[TestAddress]("addressOpt").toAgg
     (arrayByte
       |@| blob
@@ -40,6 +42,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
       |@| primitiveVectorMAs
       |@| primitiveSetMAs
       |@| primitiveIterableMAs
+      |@| complexMAs
       |@| addressOpt)(TestObjectA.apply)
   }
 }
@@ -206,7 +209,22 @@ class PrimitiveIterableMAsRecomposer extends Recomposer[PrimitiveIterableMAs] {
   }
 }
 
-case class TestAddress(city: String, street: String) extends HasDefaultTypeDescriptor
+class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
+  val typeDescriptor = TypeDescriptor(classOf[ComplexMAs])
+  def decompose[TDimension <: RiftDimension](what: ComplexMAs)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into.addTypeDescriptor(typeDescriptor)
+      .bind(_.addComplexMA(new TestAddressDecomposer())("addresses1", what.addresses1))
+  }
+}
+
+class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
+  val typeDescriptor = TypeDescriptor(classOf[ComplexMAs])
+  def recompose(from: RematerializationArray): AlmValidation[ComplexMAs] = {
+    //val addresses1 = from.getCo[Set, String]("addresses1").toAgg
+   //(addresses1).map(ComplexMAs(List.empty))
+    ComplexMAs(List.empty).success
+  }
+}
 
 class TestAddressDecomposer extends Decomposer[TestAddress] {
   val typeDescriptor = TypeDescriptor(classOf[TestAddress])

@@ -48,6 +48,8 @@ case class PrimitiveIterableMAs(
   iterableBigDecimal: Iterable[BigDecimal],
   iterableDateTime: Iterable[DateTime])
 
+case class ComplexMAs(addresses1: List[TestAddress])  
+  
 case class TestObjectA(
   arrayByte: Array[Byte],
   blob: Array[Byte],
@@ -56,6 +58,7 @@ case class TestObjectA(
   primitiveVectorMAs: PrimitiveVectorMAs,
   primitiveSetMAs: PrimitiveSetMAs,
   primitiveIterableMAs: PrimitiveIterableMAs,
+  complexMAs: ComplexMAs,
   addressOpt: Option[TestAddress]) extends HasDefaultTypeDescriptor
 
 object TestObjectA {
@@ -99,6 +102,13 @@ object TestObjectA {
         iterableDouble = Iterable(1.0, 0.5, 0.2, 0.125),
         iterableBigDecimal = Iterable(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
         iterableDateTime = Iterable(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
+      complexMAs = ComplexMAs(TestAddress.someAddresses),
       addressOpt = Some(TestAddress("Berlin", "At the wall 89")))
 }
+
+case class TestAddress(city: String, street: String) extends HasDefaultTypeDescriptor
+object TestAddress {
+  val someAddresses = List(TestAddress("Hamburg", "Am Hafen"), TestAddress("New York", "Broadway"), TestAddress("Los Angeles ", "Sunset Boulevard"))
+}
+
 
