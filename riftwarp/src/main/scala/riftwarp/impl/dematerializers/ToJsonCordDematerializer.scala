@@ -103,7 +103,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     addPart(ident, mapString(value))
 
   private def addXmlPart(ident: String, value: _root_.scala.xml.Node): AlmValidation[ToJsonCordDematerializer] =
-    addPart(ident,  mapString(value.toString()))
+    addPart(ident, mapString(value.toString()))
 
   private def addComplexPart(ident: String, value: Cord): AlmValidation[ToJsonCordDematerializer] =
     addPart(ident, value)
@@ -180,13 +180,38 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
   def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y))
 
-  def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = 
+  def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     MAFuncs.mapV(ma)(x => decomposer.decompose(x)(ToJsonCordDematerializer()).bind(_.dematerialize)).bind(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
-        addPart(ident, dimCord.manifestation))
+      addPart(ident, dimCord.manifestation))
 
   def addOptionalComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMA(decomposer)(x, y))
+
+  def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
+    hasDecomposers.tryGetDecomposer[A] match {
+      case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
+      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.erasure.getName())).failure
+    }
+
+  def addOptionalComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
+    ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMAFixed(x, y))
+
+  def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = {
+    def mapWithDecomposerLookUp(toDecompose: AnyRef): AlmValidation[DimensionCord] =
+      hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
+        case Some(decomposer) =>
+          decomposer.decomposeRaw(toDecompose)(ToJsonCordDematerializer()).bind(_.dematerialize)
+        case None =>
+          UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.erasure.getName())).failure
+      }
+    MAFuncs.mapV(ma)(mapWithDecomposerLookUp).bind(complex =>
+      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
+      addPart(ident, dimCord.manifestation))
+  }
+
+  def addOptionalComplexMALoose[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
+    ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMALoose(x, y))
 
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
 

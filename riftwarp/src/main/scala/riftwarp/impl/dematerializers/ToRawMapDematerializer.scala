@@ -47,7 +47,6 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   }
 
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-    sys.error("")
     hasFunctionObjects.tryGetMAFunctions[M] match {
       case Some(fo) =>
         (ToMapDematerializer(state + (ident -> ma))).success
@@ -56,7 +55,6 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   }
 
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-    sys.error("")
     hasFunctionObjects.tryGetMAFunctions[M] match {
       case Some(fo) =>
         val mapped = fo.map(ma)(elem =>
@@ -66,6 +64,24 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
           .map(x => ToMapDematerializer(state + (ident -> x)))
       case None => UnspecifiedProblem("No function object  found for ident '%s' and M[_](%s[_])".format(ident, mM.erasure.getName())).failure
     }
+  }
+
+  def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] =
+    hasDecomposers.tryGetDecomposer[A] match {
+      case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
+      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.erasure.getName())).failure
+    }
+
+  def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
+    def mapWithDecomposerLookUp(toDecompose: AnyRef): AlmValidation[Map[String, Any]] =
+      hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
+        case Some(decomposer) =>
+          decomposer.decomposeRaw(toDecompose)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation))
+        case None =>
+          UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.erasure.getName())).failure
+      }
+    MAFuncs.mapV(ma)(mapWithDecomposerLookUp).bind(ma =>
+      (ToMapDematerializer(state + (ident -> ma))).success)
   }
 
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success

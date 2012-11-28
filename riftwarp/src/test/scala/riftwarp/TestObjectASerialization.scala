@@ -214,6 +214,8 @@ class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
   def decompose[TDimension <: RiftDimension](what: ComplexMAs)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .bind(_.addComplexMA(new TestAddressDecomposer())("addresses1", what.addresses1))
+      .bind(_.addComplexMAFixed("addresses2", what.addresses2))
+      .bind(_.addComplexMALoose("addresses3", what.addresses3))
   }
 }
 
@@ -222,7 +224,7 @@ class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
   def recompose(from: RematerializationArray): AlmValidation[ComplexMAs] = {
     //val addresses1 = from.getCo[Set, String]("addresses1").toAgg
    //(addresses1).map(ComplexMAs(List.empty))
-    ComplexMAs(List.empty).success
+    ComplexMAs(List.empty, Vector.empty, Set.empty).success
   }
 }
 
