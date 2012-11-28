@@ -27,7 +27,9 @@ object RiftWarpToolShed {
       def addMAFunctions[M[_]](fo: RegisterableMAFunctions[M]) { functionObjectRegistry.addMAFunctions[M](fo) }
       def tryGetMAFunctions[M[_]](implicit mM: Manifest[M[_]]) = functionObjectRegistry.tryGetMAFunctions[M]
       def addChannelFolder[A, B](fo: RegisterableChannelFolder[A, B]) = { functionObjectRegistry.addChannelFolder[A, B](fo) }
-      def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[Folder[A, B]] = functionObjectRegistry.tryGetChannelFolder[A,B](channel)
+      def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[Folder[A, B]] = functionObjectRegistry.tryGetChannelFolder[A, B](channel)
+      def addConvertsMAToNA[M[_], N[_]](converter: RegisterableConvertsMAToNA[M, N]) { functionObjectRegistry.addConvertsMAToNA[M, N](converter) }
+      def tryGetConvertsMAToNA[M[_], N[_]](implicit mM: Manifest[M[_]], mN: Manifest[N[_]]) = functionObjectRegistry.tryGetConvertsMAToNA
     }
   }
 

@@ -7,6 +7,7 @@ class UnsafeFunctionObjectRegistry extends HasFunctionObjects {
   import scala.collection.mutable._
   val functionObjects = HashMap[String, AnyRef]()
   val channelFolders = HashMap[String, AnyRef]()
+  val mAToNAConverters = HashMap[String, AnyRef]()
 
   def addMAFunctions[M[_]](fo: RegisterableMAFunctions[M]) {
     if(!functionObjects.contains(fo.tM.getName()))
@@ -25,6 +26,17 @@ class UnsafeFunctionObjectRegistry extends HasFunctionObjects {
   def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[Folder[A,B]] = { 
     val ident = "%s_%s_%s".format(channel.channelType, mA.erasure.getName(), mB.erasure.getName())
     channelFolders.get(ident).map(_.asInstanceOf[RegisterableChannelFolder[A, B]])
+  }
+
+  def addConvertsMAToNA[M[_], N[_]](converter: RegisterableConvertsMAToNA[M, N]) {
+    val ident = "%s_%s".format(converter.tM.getName(), converter.tN.getName())
+     if(!mAToNAConverters.contains(ident))
+      mAToNAConverters += (ident -> converter)
+  } 
+  
+  def tryGetConvertsMAToNA[M[_], N[_]](implicit mM: Manifest[M[_]], mN: Manifest[N[_]]): Option[ConvertsMAToNA[M, N]] = {
+    val ident = "%s_%s".format(mM.erasure.getName(), mN.erasure.getName())
+    mAToNAConverters.get(ident).map(_.asInstanceOf[ConvertsMAToNA[M, N]])
   }
 }
 
