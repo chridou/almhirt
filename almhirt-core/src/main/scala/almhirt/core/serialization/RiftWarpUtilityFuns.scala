@@ -1,7 +1,7 @@
 package almhirt.core.serialization
 
 object RiftWarpUtilityFuns {
-  def addRiftWarpRegistrations(riftWarp: almhirt.riftwarp.RiftWarp) {
+  def addRiftWarpRegistrations(riftWarp: riftwarp.RiftWarp) {
     riftWarp.barracks.addDecomposer(new MessageGroupingDecomposer())
     riftWarp.barracks.addDecomposer(new MessageHeaderDecomposer())
     riftWarp.barracks.addDecomposer(new MessageHeaderDecomposer())

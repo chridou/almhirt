@@ -7,8 +7,8 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain.DomainEvent
 import almhirt.environment.AlmhirtContext
-import almhirt.riftwarp.RiftJson
-import almhirt.riftwarp.DimensionCord
+import riftwarp.RiftJson
+import riftwarp.DimensionCord
 
 case class AnormEventLogEntry(id: UUID, aggId: UUID, aggVersion: Long, timestamp: DateTime, payload: scalaz.Cord)
 

@@ -6,7 +6,7 @@ import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain._
-import almhirt.riftwarp._
+import riftwarp._
 
 trait TestPersonEvent extends DomainEvent
 case class TestPersonCreated(id: UUID, aggId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent

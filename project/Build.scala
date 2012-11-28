@@ -139,8 +139,8 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpB
 
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common, riftwarp)
-  lazy val riftwarp = riftwarpProject(	name = "almhirt-riftwarp",
-                       			baseFile = file("almhirt-riftwarp")) dependsOn(common)
+  lazy val riftwarp = riftwarpProject(	name = "riftwarp",
+                       			baseFile = file("riftwarp")) dependsOn(common)
 
 
   lazy val docit = docitProject(	name = "almhirt-docit",

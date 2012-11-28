@@ -1,7 +1,7 @@
 package almhirt.core.serialization
 
 import almhirt.common._
-import almhirt.riftwarp._
+import riftwarp._
 import almhirt.domain.DomainEvent
 import almhirt.commanding.MutatorCommandStyle
 import almhirt.commanding.AggregateRootRef

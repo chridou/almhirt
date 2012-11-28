@@ -16,10 +16,10 @@ import almhirt.environment.AlmhirtContext
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._
-import almhirt.riftwarp.RiftJson
+import riftwarp.RiftJson
 import _root_.anorm._
-import almhirt.riftwarp.DimensionString
-import almhirt.riftwarp.DimensionString
+import riftwarp.DimensionString
+import riftwarp.DimensionString
 
 class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil

@@ -45,7 +45,7 @@ trait AlmhirtContext extends AlmhirtContextOps with Disposable {
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
   
-  def riftWarp: almhirt.riftwarp.RiftWarp
+  def riftWarp: riftwarp.RiftWarp
 
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) {
     messageHub.actor ! BroadcastMessageCmd(messageWithPayload(payload, metaData))
@@ -76,7 +76,7 @@ object AlmhirtContext {
 
     val hub = MessageHub("messageHub")
     
-    val theRiftWarp = almhirt.riftwarp.RiftWarp.unsafeWithDefaults
+    val theRiftWarp = riftwarp.RiftWarp.unsafeWithDefaults
     almhirt.core.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(theRiftWarp)
     
     for {
