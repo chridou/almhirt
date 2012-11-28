@@ -84,7 +84,38 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
       (ToMapDematerializer(state + (ident -> ma))).success)
   }
 
+  def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
+    def mapWithDecomposerLookUp(toDecompose: Any): AlmValidation[Any] =
+      boolean.fold(
+        isPrimitiveType(toDecompose),
+        toDecompose.success,
+        toDecompose match {
+          case toDecomposeAsAnyRef: AnyRef =>
+            option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
+              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation)),
+              UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
+          case x =>
+            UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
+        })
+    MAFuncs.mapV(ma)(mapWithDecomposerLookUp).map(ma =>
+      ToMapDematerializer(state + (ident -> ma)))
+  }
+
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
+
+  private def isPrimitiveType(what: Any): Boolean = {
+    what.isInstanceOf[String] ||
+      what.isInstanceOf[Boolean] ||
+      what.isInstanceOf[Byte] ||
+      what.isInstanceOf[Int] ||
+      what.isInstanceOf[Long] ||
+      what.isInstanceOf[BigInt] ||
+      what.isInstanceOf[Float] ||
+      what.isInstanceOf[Double] ||
+      what.isInstanceOf[BigDecimal] ||
+      what.isInstanceOf[org.joda.time.DateTime] ||
+      what.isInstanceOf[_root_.java.util.UUID]
+  }
 }
 
 object ToMapDematerializer extends DematerializerFactory[DimensionRawMap] {

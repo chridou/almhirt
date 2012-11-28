@@ -49,8 +49,35 @@ object ToJsonCordDematerializerFuns {
       (mapUuid).asInstanceOf[A => Cord].success
     else
       UnspecifiedProblem("No mapper found for %s".format(t.getName())).failure
-
   }
+
+  def mapperForAny(lookupFor: Any): AlmValidation[Any => Cord] = {
+    if (lookupFor.isInstanceOf[String])
+      mapperByType[String].map(mapper => (x: Any) => mapper(x.asInstanceOf[String]))
+    else if (lookupFor.isInstanceOf[Boolean])
+      mapperByType[Boolean].map(mapper => (x: Any) => mapper(x.asInstanceOf[Boolean]))
+    else if (lookupFor.isInstanceOf[Byte])
+      mapperByType[Byte].map(mapper => (x: Any) => mapper(x.asInstanceOf[Byte]))
+    else if (lookupFor.isInstanceOf[Int])
+      mapperByType[Int].map(mapper => (x: Any) => mapper(x.asInstanceOf[Int]))
+    else if (lookupFor.isInstanceOf[Long])
+      mapperByType[Long].map(mapper => (x: Any) => mapper(x.asInstanceOf[Long]))
+    else if (lookupFor.isInstanceOf[BigInt])
+      mapperByType[BigInt].map(mapper => (x: Any) => mapper(x.asInstanceOf[BigInt]))
+    else if (lookupFor.isInstanceOf[Float])
+      mapperByType[Float].map(mapper => (x: Any) => mapper(x.asInstanceOf[Float]))
+    else if (lookupFor.isInstanceOf[Double])
+      mapperByType[Double].map(mapper => (x: Any) => mapper(x.asInstanceOf[Double]))
+    else if (lookupFor.isInstanceOf[BigDecimal])
+      mapperByType[BigDecimal].map(mapper => (x: Any) => mapper(x.asInstanceOf[BigDecimal]))
+    else if (lookupFor.isInstanceOf[DateTime])
+      mapperByType[DateTime].map(mapper => (x: Any) => mapper(x.asInstanceOf[DateTime]))
+    else if (lookupFor.isInstanceOf[_root_.java.util.UUID])
+      mapperByType[_root_.java.util.UUID].map(mapper => (x: Any) => mapper(x.asInstanceOf[_root_.java.util.UUID]))
+    else
+      UnspecifiedProblem("No mapper found for %s".format(lookupFor.getClass.getName())).failure
+  }
+
 }
 
 class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
@@ -212,6 +239,29 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
 
   def addOptionalComplexMALoose[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMALoose(x, y))
+
+  def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = {
+    def mapWithDecomposerLookUp(toDecompose: Any): AlmValidation[DimensionCord] =
+      mapperForAny(toDecompose).fold(
+        _ =>
+          toDecompose match {
+            case toDecomposeAsAnyRef: AnyRef =>
+              option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
+                decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToJsonCordDematerializer()).bind(_.dematerialize),
+                UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
+            case x =>
+              UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
+          },
+        mbt =>
+          DimensionCord(mbt(toDecompose)).success)
+
+    MAFuncs.mapV(ma)(mapWithDecomposerLookUp).bind(complex =>
+      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
+      addPart(ident, dimCord.manifestation))
+  }
+
+  def addOptionalMA[M[_], A <: Any](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
+    ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addMA(x, y))
 
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
 

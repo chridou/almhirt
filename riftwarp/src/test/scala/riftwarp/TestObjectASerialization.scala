@@ -216,6 +216,7 @@ class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
       .bind(_.addComplexMA(new TestAddressDecomposer())("addresses1", what.addresses1))
       .bind(_.addComplexMAFixed("addresses2", what.addresses2))
       .bind(_.addComplexMALoose("addresses3", what.addresses3))
+      .bind(_.addMA("anything", what.anything))
   }
 }
 
@@ -224,7 +225,7 @@ class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
   def recompose(from: RematerializationArray): AlmValidation[ComplexMAs] = {
     //val addresses1 = from.getCo[Set, String]("addresses1").toAgg
    //(addresses1).map(ComplexMAs(List.empty))
-    ComplexMAs(List.empty, Vector.empty, Set.empty).success
+    ComplexMAs(List.empty, Vector.empty, Set.empty, Iterable.empty).success
   }
 }
 

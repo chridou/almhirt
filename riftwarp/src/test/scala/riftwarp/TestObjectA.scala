@@ -48,7 +48,11 @@ case class PrimitiveIterableMAs(
   iterableBigDecimal: Iterable[BigDecimal],
   iterableDateTime: Iterable[DateTime])
 
-case class ComplexMAs(addresses1: List[TestAddress], addresses2: Vector[TestAddress], addresses3: Set[TestAddress])  
+case class ComplexMAs(
+    addresses1: List[TestAddress], 
+    addresses2: Vector[TestAddress], 
+    addresses3: Set[TestAddress],
+    anything: Iterable[Any])  
   
 case class TestObjectA(
   arrayByte: Array[Byte],
@@ -102,7 +106,11 @@ object TestObjectA {
         iterableDouble = Iterable(1.0, 0.5, 0.2, 0.125),
         iterableBigDecimal = Iterable(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
         iterableDateTime = Iterable(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
-      complexMAs = ComplexMAs(TestAddress.someAddresses, Vector(TestAddress.someAddresses: _*), Set(TestAddress.someAddresses: _*)),
+      complexMAs = ComplexMAs(
+          TestAddress.someAddresses, 
+          Vector(TestAddress.someAddresses: _*), 
+          Set(TestAddress.someAddresses: _*),
+          Iterable(true, "hello", 1, 2L, 3.0, 3.0f, TestAddress("Somewhere", "here"))),
       addressOpt = Some(TestAddress("Berlin", "At the wall 89")))
 }
 
