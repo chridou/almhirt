@@ -81,7 +81,7 @@ trait TreeFunctionObject extends RegisterableMAFunctions[scalaz.Tree] {
   val hasLinearCharacteristics = false
 }
 
-object RegisterableToMADimensionFunctors {
+object RegisterableFunctionObjects {
   object listFunctionObject extends ListFunctionObject
   object vectorFunctionObject extends VectorFunctionObject
   object setFunctionObject extends SetFunctionObject

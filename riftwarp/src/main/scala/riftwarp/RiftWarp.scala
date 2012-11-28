@@ -77,13 +77,17 @@ object RiftWarp {
 
 
     import riftwarp.ma._
-    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.listFunctionObject)
-    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.vectorFunctionObject)
-    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.setFunctionObject)
-    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.iterableFunctionObject)
-    riftWarp.toolShed.addMAFunctions(RegisterableToMADimensionFunctors.treeFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.listFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.vectorFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.setFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.iterableFunctionObject)
+    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.treeFunctionObject)
     
     riftWarp.toolShed.addChannelFolder(JsonCordFolder)
+    
+    riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToIterableConverter)
+    riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToSetConverter)
+    riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToVectorConverter)
     
     import riftwarp.impl.rematerializers.simplema._
     import almhirt.almvalidation.funs._
