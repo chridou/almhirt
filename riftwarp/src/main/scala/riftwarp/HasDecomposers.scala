@@ -14,7 +14,12 @@ trait HasDecomposers {
       case htd: HasTypeDescriptor => tryGetDecomposer(htd.typeDescriptor)
       case x => tryGetDecomposer(TypeDescriptor(x.getClass()))
   }
-    
+
+  def getDecomposer[T <: AnyRef](implicit m: Manifest[T]): AlmValidation[Decomposer[T]] = 
+    option.cata(tryGetDecomposer[T](m))(
+        decomposer => decomposer.success, 
+        UnspecifiedProblem("No decomposer found for type '%s')".format(m.erasure.getName())).failure)
+  
  
   def addRawDecomposer(decomposer: RawDecomposer): Unit
   def addDecomposer(decomposer: Decomposer[_]): Unit

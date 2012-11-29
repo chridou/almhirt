@@ -1,5 +1,6 @@
 package riftwarp.impl.dematerializers
 
+import scalaz._, Scalaz._
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -87,7 +88,7 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
     def mapWithDecomposerLookUp(toDecompose: Any): AlmValidation[Any] =
       boolean.fold(
-        isPrimitiveType(toDecompose),
+        TypeHelpers.isPrimitiveValue(toDecompose),
         toDecompose.success,
         toDecompose match {
           case toDecomposeAsAnyRef: AnyRef =>
@@ -101,21 +102,34 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
       ToMapDematerializer(state + (ident -> ma)))
   }
 
+  def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] = {
+    (TypeHelpers.isPrimitiveType(mA.erasure), TypeHelpers.isPrimitiveType(mB.erasure)) match {
+      case (true, true) => ToMapDematerializer(state + (ident -> map)).success
+      case (false, true) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure
+      case (true, false) => UnspecifiedProblem("Could not create primitive map for %s: B(%s) is not a primitive type".format(ident, mB.erasure.getName())).failure
+      case (false, false) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
+    }
+  }
+
+  def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+      {
+        val validations =
+          aMap.toList.map {
+            case (a, b) => decomposer.decompose(b)(ToMapDematerializer()).bind(dematerializer =>
+              dematerializer.dematerialize.map(m => (a, m.manifestation)))
+          }.map(x => x.toAgg)
+        val sequenced = validations.sequence
+        sequenced.map(_.toMap).map(x => ToMapDematerializer(state + (ident -> x)))
+      },
+      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+
+  def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A,B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+    hasDecomposers.getDecomposer[B].bind(decomposer => addComplexMap[A,B](decomposer)(ident, aMap))
+      
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
 
-  private def isPrimitiveType(what: Any): Boolean = {
-    what.isInstanceOf[String] ||
-      what.isInstanceOf[Boolean] ||
-      what.isInstanceOf[Byte] ||
-      what.isInstanceOf[Int] ||
-      what.isInstanceOf[Long] ||
-      what.isInstanceOf[BigInt] ||
-      what.isInstanceOf[Float] ||
-      what.isInstanceOf[Double] ||
-      what.isInstanceOf[BigDecimal] ||
-      what.isInstanceOf[org.joda.time.DateTime] ||
-      what.isInstanceOf[_root_.java.util.UUID]
-  }
 }
 
 object ToMapDematerializer extends DematerializerFactory[DimensionRawMap] {
