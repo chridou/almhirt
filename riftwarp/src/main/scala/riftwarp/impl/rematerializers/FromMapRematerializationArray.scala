@@ -85,8 +85,28 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
 
   def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
     hasRecomposers.getRecomposer[A](TypeDescriptor(mA.erasure)).bind(recomposer =>
-      tryGetComplexMA[M,A](ident, recomposer))
-      
+      tryGetComplexMA[M, A](ident, recomposer))
+
+  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = {
+    option.cata(theMap.get(ident))(
+      mx =>
+        boolean.fold(
+          mM.erasure.isAssignableFrom(mx.getClass),
+          functionObjects.getMAFunctions[M].bind(fo =>
+            computeSafely {
+              val validations =
+                fo.map(mx.asInstanceOf[M[Map[String, Any]]])(elem =>
+                  FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(elem)).bind(remat =>
+                    remat.getTypeDescriptor.bind(typeDescriptor =>
+                      hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
+                        recomposer.recomposeRaw(remat).map(_.asInstanceOf[A])))))
+              val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
+              sequenced.map(Some(_))
+            }),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
+      None.success)
+  }
+
   def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
 }
 

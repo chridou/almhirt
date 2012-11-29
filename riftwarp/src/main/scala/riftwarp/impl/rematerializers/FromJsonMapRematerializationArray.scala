@@ -100,7 +100,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
     }
   }
 
-  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = 
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       elem =>
         boolean.fold(
@@ -124,7 +124,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
                 mx.asInstanceOf[List[Any]].map(elem =>
                   FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elem.asInstanceOf[Map[String, Any]])).bind(remat =>
                     recomposer.recompose(remat))).map(_.toAgg)
-              val sequenced =  validations.sequence.bind(converter.convert(_))
+              val sequenced = validations.sequence.bind(converter.convert(_))
               sequenced.map(x => Some(x))
             }),
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[Any]".format(ident)).failure),
@@ -132,8 +132,27 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
 
   def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
     hasRecomposers.getRecomposer[A](TypeDescriptor(mA.erasure)).bind(recomposer =>
-      tryGetComplexMA[M,A](ident, recomposer))
-      
+      tryGetComplexMA[M, A](ident, recomposer))
+
+  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+    option.cata(get(ident))(
+      mx =>
+        boolean.fold(
+          mx.isInstanceOf[List[_]],
+          functionObjects.getConvertsMAToNA[List, M].bind(converter =>
+            computeSafely {
+              val validations =
+                mx.asInstanceOf[List[Any]].map(elem =>
+                  FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elem.asInstanceOf[Map[String, Any]])).bind(remat =>
+                    remat.getTypeDescriptor.bind(typeDescriptor =>
+                      hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
+                        recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))).map(_.toAgg)
+              val sequenced = validations.sequence.bind(converter.convert(_))
+              sequenced.map(x => Some(x))
+            }),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[Any]".format(ident)).failure),
+      None.success)
+
   def tryGetTypeDescriptor =
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).bind(TypeDescriptor.parse(_)).map(Some(_)), None.success)
 }
