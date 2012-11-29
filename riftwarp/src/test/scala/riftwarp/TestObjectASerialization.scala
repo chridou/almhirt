@@ -223,9 +223,9 @@ class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
 class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
   val typeDescriptor = TypeDescriptor(classOf[ComplexMAs])
   def recompose(from: RematerializationArray): AlmValidation[ComplexMAs] = {
-    val addresses1 = from.getComplexMA[List, TestAddress]("addresses1", new TestAddressRecomposer).toAgg
-    val addresses2 = from.getComplexMA[Vector, TestAddress]("addresses2", new TestAddressRecomposer).toAgg
-    val addresses3 = from.getComplexMA[Set, TestAddress]("addresses3", new TestAddressRecomposer).toAgg
+    val addresses1 = from.getComplexMAFixed[List, TestAddress]("addresses1").toAgg
+    val addresses2 = from.getComplexMAFixed[Vector, TestAddress]("addresses2").toAgg
+    val addresses3 = from.getComplexMAFixed[Set, TestAddress]("addresses3").toAgg
    //(addresses1).map(ComplexMAs(List.empty))
     (addresses1
       |@| addresses2
