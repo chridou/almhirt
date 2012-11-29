@@ -19,7 +19,12 @@ trait HasDecomposers {
     option.cata(tryGetDecomposer[T](m))(
         decomposer => decomposer.success, 
         UnspecifiedProblem("No decomposer found for type '%s')".format(m.erasure.getName())).failure)
-  
+        
+   def getDecomposerForAny[T <: AnyRef](what: T): AlmValidation[Decomposer[T]] = 
+    option.cata(tryGetDecomposerForAny(what))(
+        decomposer => decomposer.asInstanceOf[Decomposer[T]].success, 
+        UnspecifiedProblem("No decomposer found for type '%s')".format(what.getClass().getName())).failure)
+ 
  
   def addRawDecomposer(decomposer: RawDecomposer): Unit
   def addDecomposer(decomposer: Decomposer[_]): Unit

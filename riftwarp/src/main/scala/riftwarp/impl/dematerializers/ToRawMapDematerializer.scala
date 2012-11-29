@@ -74,31 +74,12 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
     }
 
   def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-    def mapWithDecomposerLookUp(toDecompose: AnyRef): AlmValidation[Map[String, Any]] =
-      hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
-        case Some(decomposer) =>
-          decomposer.decomposeRaw(toDecompose)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation))
-        case None =>
-          UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.erasure.getName())).failure
-      }
-    MAFuncs.mapV(ma)(mapWithDecomposerLookUp).bind(ma =>
+    MAFuncs.mapV(ma)(mapWithComplexDecomposerLookUp(ident)).bind(ma =>
       (ToMapDematerializer(state + (ident -> ma))).success)
   }
 
   def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-    def mapWithDecomposerLookUp(toDecompose: Any): AlmValidation[Any] =
-      boolean.fold(
-        TypeHelpers.isPrimitiveValue(toDecompose),
-        toDecompose.success,
-        toDecompose match {
-          case toDecomposeAsAnyRef: AnyRef =>
-            option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
-              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation)),
-              UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
-          case x =>
-            UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
-        })
-    MAFuncs.mapV(ma)(mapWithDecomposerLookUp).map(ma =>
+    MAFuncs.mapV(ma)(mapWithPrimitiveAndComplexDecomposerLookUp(ident)).map(ma =>
       ToMapDematerializer(state + (ident -> ma)))
   }
 
@@ -125,10 +106,54 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
       },
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
 
-  def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A,B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
-    hasDecomposers.getDecomposer[B].bind(decomposer => addComplexMap[A,B](decomposer)(ident, aMap))
-      
+  def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+    hasDecomposers.getDecomposer[B].bind(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
+
+  def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+      {
+        val validations =
+          aMap.toList.map {
+            case (a, b) => mapWithComplexDecomposerLookUp(ident)(b).map(b => (a, b))
+          }.map(x => x.toAgg)
+        val sequenced = validations.sequence
+        sequenced.map(_.toMap).map(x => ToMapDematerializer(state + (ident -> x)))
+      },
+      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+
+  def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+          aMap.toList.map { case (a, b) => 
+            mapWithPrimitiveAndComplexDecomposerLookUp(ident)(b).map(m => 
+              (a, b))}.map(x => 
+                x.toAgg).sequence.map(_.toMap).map(x => 
+                  ToMapDematerializer(state + (ident -> x))),
+      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
+
+  private def mapWithComplexDecomposerLookUp(ident: String)(toDecompose: AnyRef): AlmValidation[Map[String, Any]] =
+    hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
+      case Some(decomposer) =>
+        decomposer.decomposeRaw(toDecompose)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation))
+      case None =>
+        UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass().getName())).failure
+    }
+
+  private def mapWithPrimitiveAndComplexDecomposerLookUp(ident: String)(toDecompose: Any): AlmValidation[Any] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveValue(toDecompose),
+      toDecompose.success,
+      toDecompose match {
+        case toDecomposeAsAnyRef: AnyRef =>
+          option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
+            decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation)),
+            UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
+        case x =>
+          UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
+      })
 
 }
 

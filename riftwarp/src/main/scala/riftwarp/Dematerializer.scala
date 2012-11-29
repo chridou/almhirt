@@ -78,7 +78,7 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
   def addOptionalComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Option[Map[A,B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
   def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A,B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
   def addOptionalComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Option[Map[A,B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
-  def addComplexMapLoose[A, B <: AnyRef](ident: String, maaMap: Map[A,B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
+  def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A,B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
   def addOptionalComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Option[Map[A,B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
   def addMap[A, B](ident: String, aMap: Map[A,B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
   def addOptionalMap[A, B](ident: String, aMap: Option[Map[A,B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
