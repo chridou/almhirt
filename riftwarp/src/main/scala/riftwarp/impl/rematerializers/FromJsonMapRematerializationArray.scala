@@ -1,7 +1,7 @@
 package riftwarp.impl.rematerializers
 
-import scalaz._, Scalaz._
 import scala.util.parsing.json._
+import scalaz._, Scalaz._
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -113,6 +113,23 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[_]".format(ident)).failure),
       None.success)
 
+  def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+    option.cata(get(ident))(
+      mx =>
+        boolean.fold(
+          mx.isInstanceOf[List[_]],
+          functionObjects.getConvertsMAToNA[List, M].bind(converter =>
+            computeSafely {
+              val validations =
+                mx.asInstanceOf[List[Any]].map(elem =>
+                  FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elem.asInstanceOf[Map[String, Any]])).bind(remat =>
+                    recomposer.recompose(remat))).map(_.toAgg)
+              val sequenced =  validations.sequence.bind(converter.convert(_))
+              sequenced.map(x => Some(x))
+            }),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[Any]".format(ident)).failure),
+      None.success)
+      
   def tryGetTypeDescriptor =
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).bind(TypeDescriptor.parse(_)).map(Some(_)), None.success)
 }

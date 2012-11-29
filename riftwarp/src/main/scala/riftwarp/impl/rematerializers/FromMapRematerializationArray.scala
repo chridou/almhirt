@@ -63,31 +63,26 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
     }
   }
 
-  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = 
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
     option.cata(theMap.get(ident))(almCast[M[A]](_).map(Some(_)), None.success)
-    
-  def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = 
+
+  def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
     option.cata(theMap.get(ident))(
       mx =>
         boolean.fold(
-          mx.getClass == mM.erasure,
+          mM.erasure.isAssignableFrom(mx.getClass),
           functionObjects.getMAFunctions[M].bind(fo =>
-            computeSafely(
-              fo.sequenceValidations(
-                fo.map(fo.map(mx.asInstanceOf[M[Map[String, Any]]])( elem =>
+            computeSafely {
+              val validations =
+                fo.map(mx.asInstanceOf[M[Map[String, Any]]])(elem =>
                   FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(elem)).bind(remat =>
-                    recomposer.recompose(remat)))(_.toAgg))))),            
-          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_]".format(ident)).failure),
+                    recomposer.recompose(remat)))
+              val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
+              sequenced.map(Some(_))
+            }),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
       None.success)
 
-    
-    //    option.cata(theMap.get(ident))(
-//        elem =>
-//          almCast[Map[String, Any]](elem).bind (elemAsMap =>
-//          	FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(elemAsMap)).bind(rematerializationArray =>
-//              recomposer.recompose(rematerializationArray)  )            ), 
-//        None.success)
-  
   def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
 }
 
@@ -95,7 +90,7 @@ object FromMapRematerializationArray extends RematerializationArrayFactory[Dimen
   val channel = RiftMap()
   val tDimension = classOf[DimensionRawMap].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupRiftStd()
-  
+
   def apply()(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializationArray = apply(Map.empty[String, Any])
   def apply(state: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializationArray = new FromMapRematerializationArray(state)
   def apply(state: DimensionRawMap)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializationArray = new FromMapRematerializationArray(state.manifestation)
