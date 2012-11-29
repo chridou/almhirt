@@ -226,10 +226,11 @@ class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
     val addresses1 = from.getComplexMALoose[List, TestAddress]("addresses1").toAgg
     val addresses2 = from.getComplexMALoose[Vector, TestAddress]("addresses2").toAgg
     val addresses3 = from.getComplexMALoose[Set, TestAddress]("addresses3").toAgg
-   //(addresses1).map(ComplexMAs(List.empty))
+    val anything = from.getMA[Iterable, Any]("anything").toAgg
     (addresses1
       |@| addresses2
-      |@| addresses3)(ComplexMAs(_, _, _, Iterable.empty))
+      |@| addresses3
+      |@| anything)(ComplexMAs(_, _, _, _))
   }
 }
 

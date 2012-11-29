@@ -11,27 +11,27 @@ import riftwarp.ma._
 
 object FromJsonMapRematerializationArrayFuns {
   def getRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Any => AlmValidation[A]] = {
-    if (mA.erasure == classOf[String])
+    if (mA.erasure.isAssignableFrom(classOf[String]))
       ((x: Any) => almCast[String](x)).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[Boolean])
+    else if (mA.erasure.isAssignableFrom(classOf[Boolean]))
       ((x: Any) => almCast[Boolean](x)).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[Byte])
+    else if (mA.erasure.isAssignableFrom(classOf[Byte]))
       ((x: Any) => almCast[Double](x).map(_.toByte)).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[Int])
+    else if (mA.erasure.isAssignableFrom(classOf[Int]))
       ((x: Any) => almCast[Double](x).map(_.toInt)).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[Long])
+    else if (mA.erasure.isAssignableFrom(classOf[Long]))
       ((x: Any) => almCast[Double](x).map(_.toLong)).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[BigInt])
+    else if (mA.erasure.isAssignableFrom(classOf[BigInt]))
       ((x: Any) => almCast[String](x).bind(parseBigIntAlm(_, key))).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[Float])
+    else if (mA.erasure.isAssignableFrom(classOf[Float]))
       ((x: Any) => almCast[Double](x).map(_.toFloat)).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[Double])
+    else if (mA.erasure.isAssignableFrom(classOf[Double]))
       ((x: Any) => almCast[Double](x)).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[BigDecimal])
+    else if (mA.erasure.isAssignableFrom(classOf[BigDecimal]))
       ((x: Any) => almCast[String](x).bind(parseDecimalAlm(_, key))).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[org.joda.time.DateTime])
+    else if (mA.erasure.isAssignableFrom(classOf[org.joda.time.DateTime]))
       ((x: Any) => almCast[String](x).bind(parseDateTimeAlm(_, key))).asInstanceOf[Any => AlmValidation[A]].success
-    else if (mA.erasure == classOf[_root_.java.util.UUID])
+    else if (mA.erasure.isAssignableFrom(classOf[_root_.java.util.UUID]))
       ((x: Any) => almCast[String](x).bind(parseUuidAlm(_, key))).asInstanceOf[Any => AlmValidation[A]].success
     else
       UnspecifiedProblem("No primitive rematerializer found for '%s'".format(mA.erasure.getName())).failure
@@ -152,6 +152,36 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
             }),
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[Any]".format(ident)).failure),
       None.success)
+
+  def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = {
+    def mapToA(what: Any): AlmValidation[A] =
+      getRematerializerFor[A](ident).fold(
+        prob =>
+          if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
+            computeSafely {
+            FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(what.asInstanceOf[Map[String, Any]])).bind(remat =>
+              remat.getTypeDescriptor.bind(typeDescriptor =>
+                hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
+                  recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))
+          }
+          else
+            UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure,
+        rematPrimitive =>
+          rematPrimitive(what))
+
+    option.cata(get(ident))(
+      mx =>
+        boolean.fold(
+          mM.erasure.isAssignableFrom(mx.getClass),
+          functionObjects.getMAFunctions[M].bind(fo =>
+            computeSafely {
+              val validations = fo.map(mx.asInstanceOf[M[Map[String, Any]]])(mapToA)
+              val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
+              sequenced.map(Some(_))
+            }),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
+      None.success)
+  }
 
   def tryGetTypeDescriptor =
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).bind(TypeDescriptor.parse(_)).map(Some(_)), None.success)

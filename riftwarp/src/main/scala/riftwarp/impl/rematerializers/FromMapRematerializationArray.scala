@@ -107,7 +107,50 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
       None.success)
   }
 
+  def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = {
+    def mapToA(what: Any): AlmValidation[A] =
+      if (isPrimitiveType(what))
+        what.asInstanceOf[A].success
+      else if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
+        computeSafely {
+          FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(what.asInstanceOf[Map[String, Any]])).bind(remat =>
+            remat.getTypeDescriptor.bind(typeDescriptor =>
+              hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
+                recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))
+        }
+      else
+        UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure
+
+    option.cata(theMap.get(ident))(
+      mx =>
+        boolean.fold(
+          mM.erasure.isAssignableFrom(mx.getClass),
+          functionObjects.getMAFunctions[M].bind(fo =>
+            computeSafely {
+              val validations = fo.map(mx.asInstanceOf[M[Map[String, Any]]])(mapToA)
+              val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
+              sequenced.map(Some(_))
+            }),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
+      None.success)
+  }
+
   def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
+
+  private def isPrimitiveType(what: Any): Boolean = {
+    what.isInstanceOf[String] ||
+      what.isInstanceOf[Boolean] ||
+      what.isInstanceOf[Byte] ||
+      what.isInstanceOf[Int] ||
+      what.isInstanceOf[Long] ||
+      what.isInstanceOf[BigInt] ||
+      what.isInstanceOf[Float] ||
+      what.isInstanceOf[Double] ||
+      what.isInstanceOf[BigDecimal] ||
+      what.isInstanceOf[org.joda.time.DateTime] ||
+      what.isInstanceOf[_root_.java.util.UUID]
+  }
+
 }
 
 object FromMapRematerializationArray extends RematerializationArrayFactory[DimensionRawMap] {

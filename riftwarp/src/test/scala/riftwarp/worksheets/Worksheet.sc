@@ -6,7 +6,7 @@ import riftwarp._
 import riftwarp.impl._
 
 object Worksheet {
-  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : riftwarp.RiftWarp = riftwarp.RiftWarp$$anon$1@48cb3966
+  val riftWarp = RiftWarp.unsafeWithDefaults      //> riftWarp  : riftwarp.RiftWarp = riftwarp.RiftWarp$$anon$1@2bb9b1ed
   riftWarp.barracks.addDecomposer(new TestObjectADecomposer())
   riftWarp.barracks.addRecomposer(new TestObjectARecomposer())
   riftWarp.barracks.addDecomposer(new TestAddressDecomposer())
@@ -25,25 +25,26 @@ object Worksheet {
   riftWarp.barracks.addDecomposer(new ComplexMAsDecomposer())
   riftWarp.barracks.addRecomposer(new ComplexMAsRecomposer())
 
-  val testObject = TestObjectA.pete               //> testObject  : riftwarp.TestObjectA = TestObjectA([B@4ff85c27,[B@3a6a2d75,Pr
+
+  val testObject = TestObjectA.pete               //> testObject  : riftwarp.TestObjectA = TestObjectA([B@63dfb24d,[B@73331074,Pr
                                                   //| imitiveTypes(I am Pete,true,127,-237823,-278234263,265876257682376587365863
                                                   //| 876528756875682765252520577305007209857025728132213242,1.3672322,1.36723223
-                                                  //| 50005,23761247614876823746.23846749182408,2012-11-29T14:11:34.074+01:00,d5b
-                                                  //| 46505-8861-4c1b-aad7-3080018cd139),PrimitiveListMAs(List(alpha, beta, gamma
+                                                  //| 50005,23761247614876823746.23846749182408,2012-11-29T14:58:34.739+01:00,bb5
+                                                  //| f3916-fa22-4d60-bd28-b4d8a0b8aeeb),PrimitiveListMAs(List(alpha, beta, gamma
                                                   //| , delta),List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),List(1.0, 0.5, 0.2, 0.125),Lis
-                                                  //| t(1.333333, 1.33333335, 1.6666666, 1.6666667),List(2012-11-29T15:11:34.168+
-                                                  //| 01:00, 2012-11-29T16:11:34.168+01:00, 2012-11-29T17:11:34.168+01:00, 2012-1
-                                                  //| 1-29T18:11:34.168+01:00)),PrimitiveVectorMAs(Vector(alpha, beta, gamma, del
+                                                  //| t(1.333333, 1.33333335, 1.6666666, 1.6666667),List(2012-11-29T15:58:34.817+
+                                                  //| 01:00, 2012-11-29T16:58:34.817+01:00, 2012-11-29T17:58:34.817+01:00, 2012-1
+                                                  //| 1-29T18:58:34.817+01:00)),PrimitiveVectorMAs(Vector(alpha, beta, gamma, del
                                                   //| ta),Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),Vector(1.0, 0.5, 0.2, 0.125),Vect
-                                                  //| or(1.333333, 1.33333335, 1.6666666, 1.6666667),Vector(2012-11-29T15:11:34.1
-                                                  //| 68+01:00, 2012-11-29T16:11:34.168+01:00, 2012-11-29T17:11:34.168+01:00, 201
-                                                  //| 2-11-29T18:11:34.168+01:00)),Some(PrimitiveSetMAs(Set(alpha, beta, gamma, d
+                                                  //| or(1.333333, 1.33333335, 1.6666666, 1.6666667),Vector(2012-11-29T15:58:34.8
+                                                  //| 17+01:00, 2012-11-29T16:58:34.817+01:00, 2012-11-29T17:58:34.817+01:00, 201
+                                                  //| 2-11-29T18:58:34.817+01:00)),Some(PrimitiveSetMAs(Set(alpha, beta, gamma, d
                                                   //| elta),Set(5, 10, 1, 6, 9, 2, 7, 3, 8, 4),Set(1.0, 0.5, 0.2, 0.125),Set(1.33
                                                   //| 3333, 1.33333335, 1.6666666, 1.6666667),None)),PrimitiveIterableMAs(List(al
                                                   //| pha, beta, gamma, delta),List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),List(1.0, 0.5,
                                                   //|  0.2, 0.125),List(1.333333, 1.33333335, 1.6666666, 1.6666667),List(2012-11-
-                                                  //| 29T15:11:34.184+01:00, 2012-11-29T16:11:34.184+01:00, 2012-11-29T17:11:34.1
-                                                  //| 84+01:00, 2012-11-29T18:11:34.184+01:00)),ComplexMAs(List(TestAddress(Hambu
+                                                  //| 29T15:58:34.848+01:00, 2012-11-29T16:58:34.848+01:00, 2012-11-29T17:58:34.8
+                                                  //| 48+01:00, 2012-11-29T18:58:34.848+01:00)),ComplexMAs(List(TestAddress(Hambu
                                                   //| rg,Am Hafen), TestAddress(New York,Broadway), TestAddress(Los Angeles ,Suns
                                                   //| et Boulevard)),Vector(TestAddress(Hamburg,Am Hafen), TestAddress(New York,B
                                                   //| roadway), TestAddress(Los Angeles ,Sunset Boulevard)),Set(TestAddress(Hambu
@@ -58,27 +59,27 @@ object Worksheet {
                                                   //| "int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756
                                                   //| 875682765252520577305007209857025728132213242","float":1.3672322034835815,"
                                                   //| double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dat
-                                                  //| eTime":"2012-11-29T14:11:34.074+01:00","uuid":"d5b46505-8861-4c1b-aad7-3080
-                                                  //| 018cd139"},"primitiveListMAs":{"riftwarptd":"riftwarp.PrimitiveListMAs","li
+                                                  //| eTime":"2012-11-29T14:58:34.739+01:00","uuid":"bb5f3916-fa22-4d60-bd28-b4d8
+                                                  //| a0b8aeeb"},"primitiveListMAs":{"riftwarptd":"riftwarp.PrimitiveListMAs","li
                                                   //| stString":["alpha","beta","gamma","delta"],"listInt":[1,2,3,4,5,6,7,8,9,10]
                                                   //| ,"listDouble":[1.0,0.5,0.2,0.125],"listBigDecimal":["1.333333","1.33333335"
-                                                  //| ,"1.6666666","1.6666667"],"listDateTime":["2012-11-29T15:11:34.168+01:00","
-                                                  //| 2012-11-29T16:11:34.168+01:00","2012-11-29T17:11:34.168+01:00","2012-11-29T
-                                                  //| 18:11:34.168+01:00"]},"primitiveVectorMAs":{"riftwarptd":"riftwarp.Primitiv
+                                                  //| ,"1.6666666","1.6666667"],"listDateTime":["2012-11-29T15:58:34.817+01:00","
+                                                  //| 2012-11-29T16:58:34.817+01:00","2012-11-29T17:58:34.817+01:00","2012-11-29T
+                                                  //| 18:58:34.817+01:00"]},"primitiveVectorMAs":{"riftwarptd":"riftwarp.Primitiv
                                                   //| eVectorMAs","vectorString":["alpha","beta","gamma","delta"],"vectorInt":[1,
                                                   //| 2,3,4,5,6,7,8,9,10],"vectorDouble":[1.0,0.5,0.2,0.125],"vectorBigDecimal":[
                                                   //| "1.333333","1.33333335","1.6666666","1.6666667"],"vectorDateTime":["2012-11
-                                                  //| -29T15:11:34.168+01:00","2012-11-29T16:11:34.168+01:00","2012-11-29T17:11:3
-                                                  //| 4.168+01:00","2012-11-29T18:11:34.168+01:00"]},"primitiveSetMAs":{"riftwarp
+                                                  //| -29T15:58:34.817+01:00","2012-11-29T16:58:34.817+01:00","2012-11-29T17:58:3
+                                                  //| 4.817+01:00","2012-11-29T18:58:34.817+01:00"]},"primitiveSetMAs":{"riftwarp
                                                   //| td":"riftwarp.PrimitiveSetMAs","setString":["alpha","beta","gamma","delta"]
-                                                  //| ,"setInt":[10,8,4,6,3,9,2,7,1,5],"setDouble":[1.0,0.5,0.2,0.125],"setBigDec
+                                                  //| ,"setInt":[3,5,10,8,7,9,6,4,1,2],"setDouble":[1.0,0.5,0.2,0.125],"setBigDec
                                                   //| imal":["1.333333","1.33333335","1.6666666","1.6666667"],"setDateTime":null}
                                                   //| ,"primitiveIterableMAs":{"riftwarptd":"riftwarp.PrimitiveIterableMAs","iter
                                                   //| ableString":["alpha","beta","gamma","delta"],"iterableInt":[1,2,3,4,5,6,7,8
                                                   //| ,9,10],"iterableDouble":[1.0,0.5,0.2,0.125],"iterableBigDecimal":["1.333333
                                                   //| ","1.33333335","1.6666666","1.6666667"],"iterableDateTime":["2012-11-29T15:
-                                                  //| 11:34.184+01:00","2012-11-29T16:11:34.184+01:00","2012-11-29T17:11:34.184+0
-                                                  //| 1:00","2012-11-29T18:11:34.184+01:00"]},"complexMAs":{"riftwarptd":"riftwar
+                                                  //| 58:34.848+01:00","2012-11-29T16:58:34.848+01:00","2012-11-29T17:58:34.848+0
+                                                  //| 1:00","2012-11-29T18:58:34.848+01:00"]},"complexMAs":{"riftwarptd":"riftwar
                                                   //| p.ComplexMAs","addresses1":[{"riftwarptd":"riftwarp.TestAddress","city":"Ha
                                                   //| mburg","street":"Am Hafen"},{"riftwarptd":"riftwarp.TestAddress","city":"Ne
                                                   //| w York","street":"Broadway"},{"riftwarptd":"riftwarp.TestAddress","city":"L
@@ -95,59 +96,62 @@ object Worksheet {
                                                   //|  89"}}))
    
  
-    
+   
   val backFromWarpV = riftWarp.receiveFromWarp[DimensionCord, TestObjectA](RiftJson())(warpStreamV.forceResult)
                                                   //> backFromWarpV  : almhirt.common.package.AlmValidation[riftwarp.TestObjectA]
-                                                  //|  = Success(TestObjectA([B@6a06047d,[B@3110e0ec,PrimitiveTypes(I am Pete,tru
+                                                  //|  = Success(TestObjectA([B@28533fc3,[B@717f2fe3,PrimitiveTypes(I am Pete,tru
                                                   //| e,127,-237823,-278234263,26587625768237658736586387652875687568276525252057
                                                   //| 7305007209857025728132213242,1.3672322,1.3672322350005,23761247614876823746
-                                                  //| .23846749182408,2012-11-29T14:11:34.074+01:00,d5b46505-8861-4c1b-aad7-30800
-                                                  //| 18cd139),PrimitiveListMAs(List(alpha, beta, gamma, delta),List(1, 2, 3, 4, 
+                                                  //| .23846749182408,2012-11-29T14:58:34.739+01:00,bb5f3916-fa22-4d60-bd28-b4d8a
+                                                  //| 0b8aeeb),PrimitiveListMAs(List(alpha, beta, gamma, delta),List(1, 2, 3, 4, 
                                                   //| 5, 6, 7, 8, 9, 10),List(1.0, 0.5, 0.2, 0.125),List(1.333333, 1.33333335, 1.
-                                                  //| 6666666, 1.6666667),List(2012-11-29T15:11:34.168+01:00, 2012-11-29T16:11:34
-                                                  //| .168+01:00, 2012-11-29T17:11:34.168+01:00, 2012-11-29T18:11:34.168+01:00)),
+                                                  //| 6666666, 1.6666667),List(2012-11-29T15:58:34.817+01:00, 2012-11-29T16:58:34
+                                                  //| .817+01:00, 2012-11-29T17:58:34.817+01:00, 2012-11-29T18:58:34.817+01:00)),
                                                   //| PrimitiveVectorMAs(Vector(alpha, beta, gamma, delta),Vector(1, 2, 3, 4, 5, 
                                                   //| 6, 7, 8, 9, 10),Vector(1.0, 0.5, 0.2, 0.125),Vector(1.333333, 1.33333335, 1
-                                                  //| .6666666, 1.6666667),Vector(2012-11-29T15:11:34.168+01:00, 2012-11-29T16:11
-                                                  //| :34.168+01:00, 2012-11-29T17:11:34.168+01:00, 2012-11-29T18:11:34.168+01:00
+                                                  //| .6666666, 1.6666667),Vector(2012-11-29T15:58:34.817+01:00, 2012-11-29T16:58
+                                                  //| :34.817+01:00, 2012-11-29T17:58:34.817+01:00, 2012-11-29T18:58:34.817+01:00
                                                   //| )),Some(PrimitiveSetMAs(Set(alpha, beta, gamma, delta),Set(5, 10, 1, 6, 9, 
                                                   //| 2, 7, 3, 8, 4),Set(1.0, 0.5, 0.2, 0.125),Set(1.333333, 1.33333335, 1.666666
                                                   //| 6, 1.6666667),None)),PrimitiveIterableMAs(Set(alpha, beta, gamma, delta),Se
                                                   //| t(5, 10, 1, 6, 9, 2, 7, 3, 8, 4),Set(1.0, 0.5, 0.2, 0.125),Set(1.333333, 1.
-                                                  //| 33333335, 1.6666666, 1.6666667),Set(2012-11-29T15:11:34.184+01:00, 2012-11-
-                                                  //| 29T16:11:34.184+01:00, 2012-11-29T17:11:34.184+01:00, 2012-11-29T18:11:34.1
-                                                  //| 84+01:00)),ComplexMAs(List(TestAddress(Hamburg,Am Hafen), TestAddress(New Y
+                                                  //| 33333335, 1.6666666, 1.6666667),Set(2012-11-29T15:58:34.848+01:00, 2012-11-
+                                                  //| 29T16:58:34.848+01:00, 2012-11-29T17:58:34.848+01:00, 2012-11-29T18:58:34.8
+                                                  //| 48+01:00)),ComplexMAs(List(TestAddress(Hamburg,Am Hafen), TestAddress(New Y
                                                   //| ork,Broadway), TestAddress(Los Angeles ,Sunset Boulevard)),Vector(TestAddre
                                                   //| ss(Hamburg,Am Hafen), TestAddress(New York,Broadway), TestAddress(Los Angel
                                                   //| es ,Sunset Boulevard)),Set(TestAddress(Hamburg,Am Hafen), TestAddress(New Y
-                                                  //| ork,Broadway), TestAddress(Los Angeles ,Sunset Boulevard)),List()),Some(Tes
-                                                  //| tAddress(Berlin,At the wall 89))))
+                                                  //| ork,Broadway), TestAddress(Los Angeles ,Sunset Boulevard)),List(true, hello
+                                                  //| , 1.0, 2.0, 3.0, 3.0, Map(riftwarptd -> riftwarp.TestAddress, city -> Somew
+                                                  //| here, street -> here))),Some(TestAddress(Berlin,At the wall 89))))
   
 
-  val backFromWarp = backFromWarpV.forceResult    //> backFromWarp  : riftwarp.TestObjectA = TestObjectA([B@6a06047d,[B@3110e0ec,
+  val backFromWarp = backFromWarpV.forceResult    //> backFromWarp  : riftwarp.TestObjectA = TestObjectA([B@28533fc3,[B@717f2fe3,
                                                   //| PrimitiveTypes(I am Pete,true,127,-237823,-278234263,2658762576823765873658
                                                   //| 63876528756875682765252520577305007209857025728132213242,1.3672322,1.367232
-                                                  //| 2350005,23761247614876823746.23846749182408,2012-11-29T14:11:34.074+01:00,d
-                                                  //| 5b46505-8861-4c1b-aad7-3080018cd139),PrimitiveListMAs(List(alpha, beta, gam
+                                                  //| 2350005,23761247614876823746.23846749182408,2012-11-29T14:58:34.739+01:00,b
+                                                  //| b5f3916-fa22-4d60-bd28-b4d8a0b8aeeb),PrimitiveListMAs(List(alpha, beta, gam
                                                   //| ma, delta),List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),List(1.0, 0.5, 0.2, 0.125),L
-                                                  //| ist(1.333333, 1.33333335, 1.6666666, 1.6666667),List(2012-11-29T15:11:34.16
-                                                  //| 8+01:00, 2012-11-29T16:11:34.168+01:00, 2012-11-29T17:11:34.168+01:00, 2012
-                                                  //| -11-29T18:11:34.168+01:00)),PrimitiveVectorMAs(Vector(alpha, beta, gamma, d
+                                                  //| ist(1.333333, 1.33333335, 1.6666666, 1.6666667),List(2012-11-29T15:58:34.81
+                                                  //| 7+01:00, 2012-11-29T16:58:34.817+01:00, 2012-11-29T17:58:34.817+01:00, 2012
+                                                  //| -11-29T18:58:34.817+01:00)),PrimitiveVectorMAs(Vector(alpha, beta, gamma, d
                                                   //| elta),Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),Vector(1.0, 0.5, 0.2, 0.125),Ve
-                                                  //| ctor(1.333333, 1.33333335, 1.6666666, 1.6666667),Vector(2012-11-29T15:11:34
-                                                  //| .168+01:00, 2012-11-29T16:11:34.168+01:00, 2012-11-29T17:11:34.168+01:00, 2
-                                                  //| 012-11-29T18:11:34.168+01:00)),Some(PrimitiveSetMAs(Set(alpha, beta, gamma,
+                                                  //| ctor(1.333333, 1.33333335, 1.6666666, 1.6666667),Vector(2012-11-29T15:58:34
+                                                  //| .817+01:00, 2012-11-29T16:58:34.817+01:00, 2012-11-29T17:58:34.817+01:00, 2
+                                                  //| 012-11-29T18:58:34.817+01:00)),Some(PrimitiveSetMAs(Set(alpha, beta, gamma,
                                                   //|  delta),Set(5, 10, 1, 6, 9, 2, 7, 3, 8, 4),Set(1.0, 0.5, 0.2, 0.125),Set(1.
                                                   //| 333333, 1.33333335, 1.6666666, 1.6666667),None)),PrimitiveIterableMAs(Set(a
                                                   //| lpha, beta, gamma, delta),Set(5, 10, 1, 6, 9, 2, 7, 3, 8, 4),Set(1.0, 0.5, 
                                                   //| 0.2, 0.125),Set(1.333333, 1.33333335, 1.6666666, 1.6666667),Set(2012-11-29T
-                                                  //| 15:11:34.184+01:00, 2012-11-29T16:11:34.184+01:00, 2012-11-29T17:11:34.184+
-                                                  //| 01:00, 2012-11-29T18:11:34.184+01:00)),ComplexMAs(List(TestAddress(Hamburg,
+                                                  //| 15:58:34.848+01:00, 2012-11-29T16:58:34.848+01:00, 2012-11-29T17:58:34.848+
+                                                  //| 01:00, 2012-11-29T18:58:34.848+01:00)),ComplexMAs(List(TestAddress(Hamburg,
                                                   //| Am Hafen), TestAddress(New York,Broadway), TestAddress(Los Angeles ,Sunset 
                                                   //| Boulevard)),Vector(TestAddress(Hamburg,Am Hafen), TestAddress(New York,Broa
                                                   //| dway), TestAddress(Los Angeles ,Sunset Boulevard)),Set(TestAddress(Hamburg,
                                                   //| Am Hafen), TestAddress(New York,Broadway), TestAddress(Los Angeles ,Sunset 
-                                                  //| Boulevard)),List()),Some(TestAddress(Berlin,At the wall 89)))
+                                                  //| Boulevard)),List(true, hello, 1.0, 2.0, 3.0, 3.0, Map(riftwarptd -> riftwar
+                                                  //| p.TestAddress, city -> Somewhere, street -> here))),Some(TestAddress(Berlin
+                                                  //| ,At the wall 89)))
 
   testObject == backFromWarp                      //> res0: Boolean = false
 
@@ -155,7 +159,7 @@ object Worksheet {
 
   riftWarp.prepareForWarp[DimensionRawMap](RiftMap())(testObject).bind(warpStream =>
     riftWarp.receiveFromWarp[DimensionRawMap, TestObjectA](RiftMap())(warpStream)).map(rearrived =>
-    rearrived == testObject)                      //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(false)
+    rearrived == testObject)                      //> res1: scalaz.Validation[almhirt.common.Problem,Boolean] = Success(true)
 
   riftWarp.prepareForWarp[DimensionCord](RiftJson())(testObject).bind(warpStream =>
     riftWarp.receiveFromWarp[DimensionCord, TestObjectA](RiftJson())(warpStream)).map(rearrived =>
