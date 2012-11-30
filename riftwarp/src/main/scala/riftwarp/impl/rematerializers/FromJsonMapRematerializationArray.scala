@@ -37,20 +37,22 @@ object FromJsonMapRematerializationArrayFuns {
       UnspecifiedProblem("No primitive rematerializer found for '%s'".format(mA.erasure.getName())).failure
   }
 
-  def createTuple[A](kv: Map[String, Any])(implicit m: Manifest[A]): AlmValidation[(A, Any)] = {
+  def createTuple[A](rematA: Any => AlmValidation[A])(kv: Map[String, Any])(implicit m: Manifest[A]): AlmValidation[(A, Any)] = {
     (kv.get("k"), kv.get("v")) match {
-      case (Some(k), Some(v)) => getRematerializerFor[A]("key").bind(remat => remat(k).map(k => (k, v)))
+      case (Some(k), Some(v)) => rematA(k).map(k => (k, v))
       case (None, Some(_)) => KeyNotFoundProblem("Can not create key value tuple because the key entry is missing").failure
       case (Some(_), None) => KeyNotFoundProblem("Can not create key value tuple because the value entry is missing").failure
       case (None, None) => KeyNotFoundProblem("Can not create key value tuple because bothe the key entry and the value entry are missing").failure
     }
   }
 
-  def createTuples[A](kvPairs: List[Any])(implicit m: Manifest[A]): AlmValidationAP[List[(A, Any)]] =
+  def createTuples[A](kvPairs: List[Any])(implicit m: Manifest[A]): AlmValidation[List[(A, Any)]] =
     computeSafely {
-      kvPairs.map(x => createTuple(x.asInstanceOf[Map[String, Any]])).map(_.toAgg).sequence
-    }.toAgg
-
+      getRematerializerFor[A]("key").bind(rematA =>
+        kvPairs.map(x => createTuple(rematA)(x.asInstanceOf[Map[String, Any]]))
+          .map(_.toAgg)
+          .sequence[({ type l[a] = scalaz.Validation[AggregateProblem, a] })#l, (A, Any)])
+    }
 }
 
 class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayBasedOnOptionGetters {
@@ -168,8 +170,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[Any]".format(ident)).failure),
       None.success)
 
-  def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = {
-
+  def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       mx =>
         boolean.fold(
@@ -182,7 +183,8 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
             }),
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
       None.success)
-  }
+
+  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
 
   def tryGetTypeDescriptor =
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).bind(TypeDescriptor.parse(_)).map(Some(_)), None.success)
