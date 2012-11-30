@@ -60,16 +60,16 @@ trait RematerializationArray {
   def getMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[M[A]]
   def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]]
 
-  def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
-  def tryGetPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
-  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
-  def tryGetComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
-  def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
-  def tryGetComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
-  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
-  def tryGetComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
-  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
-  def tryGetMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
+  def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
+  def tryGetPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
+  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
+  def tryGetComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
+  def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
+  def tryGetComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
+  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
+  def tryGetComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
+  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
+  def tryGetMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
   
   def getTypeDescriptor: AlmValidation[TypeDescriptor]
   def tryGetTypeDescriptor: AlmValidation[Option[TypeDescriptor]]
@@ -108,11 +108,11 @@ trait RematerializationArrayBasedOnOptionGetters extends RematerializationArray 
   def getComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetComplexMALoose[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetMA[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-//  def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetPrimitiveMap[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-//  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMap[A, B](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-//  def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapFixed[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-//  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapLoose[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-//  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetMap[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetPrimitiveMap[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMap[A, B](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapFixed[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapLoose[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetMap[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
   def getTypeDescriptor = tryGetTypeDescriptor.bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(TypeDescriptor.defaultKey), args = Map("key" -> TypeDescriptor.defaultKey)).failure))
 }

@@ -1,4 +1,9 @@
-package riftwarp.impl.dematerializers
+package riftwarp
+
+import java.util.UUID
+import org.joda.time.DateTime
+import java.util.UUID
+import org.joda.time.DateTime
 
 object TypeHelpers {
   def isPrimitiveType(toCheck: Class[_]): Boolean = {

@@ -7,6 +7,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.ma._
+import riftwarp.TypeHelpers
 
 class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToRawMapDematerializer(RiftMap(), ToolGroupRiftStd()) with NoneHasNoEffectDematerializationFunnel[DimensionRawMap] {
   def dematerialize: AlmValidation[DimensionRawMap] = DimensionRawMap(state).success

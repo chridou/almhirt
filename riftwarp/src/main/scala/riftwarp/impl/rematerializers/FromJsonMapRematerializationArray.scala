@@ -36,6 +36,21 @@ object FromJsonMapRematerializationArrayFuns {
     else
       UnspecifiedProblem("No primitive rematerializer found for '%s'".format(mA.erasure.getName())).failure
   }
+
+  def createTuple[A](kv: Map[String, Any])(implicit m: Manifest[A]): AlmValidation[(A, Any)] = {
+    (kv.get("k"), kv.get("v")) match {
+      case (Some(k), Some(v)) => getRematerializerFor[A]("key").bind(remat => remat(k).map(k => (k, v)))
+      case (None, Some(_)) => KeyNotFoundProblem("Can not create key value tuple because the key entry is missing").failure
+      case (Some(_), None) => KeyNotFoundProblem("Can not create key value tuple because the value entry is missing").failure
+      case (None, None) => KeyNotFoundProblem("Can not create key value tuple because bothe the key entry and the value entry are missing").failure
+    }
+  }
+
+  def createTuples[A](kvPairs: List[Any])(implicit m: Manifest[A]): AlmValidationAP[List[(A, Any)]] =
+    computeSafely {
+      kvPairs.map(x => createTuple(x.asInstanceOf[Map[String, Any]])).map(_.toAgg).sequence
+    }.toAgg
+
 }
 
 class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayBasedOnOptionGetters {
@@ -154,20 +169,6 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
       None.success)
 
   def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = {
-    def mapToA(what: Any): AlmValidation[A] =
-      getRematerializerFor[A](ident).fold(
-        prob =>
-          if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
-            computeSafely {
-            FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(what.asInstanceOf[Map[String, Any]])).bind(remat =>
-              remat.getTypeDescriptor.bind(typeDescriptor =>
-                hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
-                  recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))
-          }
-          else
-            UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure,
-        rematPrimitive =>
-          rematPrimitive(what))
 
     option.cata(get(ident))(
       mx =>
@@ -175,7 +176,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
           mM.erasure.isAssignableFrom(mx.getClass),
           functionObjects.getMAFunctions[M].bind(fo =>
             computeSafely {
-              val validations = fo.map(mx.asInstanceOf[M[Map[String, Any]]])(mapToA)
+              val validations = fo.map(mx.asInstanceOf[M[Map[String, Any]]])(mapToAny[A](ident))
               val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
               sequenced.map(Some(_))
             }),
@@ -185,6 +186,21 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
 
   def tryGetTypeDescriptor =
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).bind(TypeDescriptor.parse(_)).map(Some(_)), None.success)
+
+  private def mapToAny[A](ident: String)(what: Any)(implicit m: Manifest[A]): AlmValidation[A] =
+    getRematerializerFor[A](ident).fold(
+      prob =>
+        if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
+          computeSafely {
+          FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(what.asInstanceOf[Map[String, Any]])).bind(remat =>
+            remat.getTypeDescriptor.bind(typeDescriptor =>
+              hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
+                recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))
+        }
+        else
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure,
+      rematPrimitive =>
+        rematPrimitive(what))
 }
 
 object FromJsonMapRematerializationArray extends RematerializationArrayFactory[DimensionStdLibJsonMap] {

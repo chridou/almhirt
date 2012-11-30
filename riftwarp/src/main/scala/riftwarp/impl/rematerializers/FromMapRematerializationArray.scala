@@ -1,5 +1,6 @@
 package riftwarp.impl.rematerializers
 
+import scalaz._, Scalaz._
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -107,49 +108,95 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
       None.success)
   }
 
-  def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = {
-    def mapToA(what: Any): AlmValidation[A] =
-      if (isPrimitiveType(what))
-        what.asInstanceOf[A].success
-      else if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
-        computeSafely {
-          FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(what.asInstanceOf[Map[String, Any]])).bind(remat =>
-            remat.getTypeDescriptor.bind(typeDescriptor =>
-              hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
-                recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))
-        }
-      else
-        UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure
-
+  def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] = 
     option.cata(theMap.get(ident))(
       mx =>
         boolean.fold(
           mM.erasure.isAssignableFrom(mx.getClass),
           functionObjects.getMAFunctions[M].bind(fo =>
             computeSafely {
-              val validations = fo.map(mx.asInstanceOf[M[Map[String, Any]]])(mapToA)
+              val validations = fo.map(mx.asInstanceOf[M[Map[String, Any]]])(mapToAny[A](ident))
               val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
               sequenced.map(Some(_))
             }),
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
       None.success)
-  }
 
+  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    (TypeHelpers.isPrimitiveType(mA.erasure), TypeHelpers.isPrimitiveType(mB.erasure)) match {
+      case (true, true) => inTryCatch { theMap.get(ident).map(_.asInstanceOf[Map[A, B]]) }
+      case (false, true) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure
+      case (true, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: B(%s) is not a primitive type".format(ident, mB.erasure.getName())).failure
+      case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
+    }
+
+  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+      option.cata(theMap.get(ident))(
+        theMap =>
+          computeSafely {
+            theMap.asInstanceOf[Map[A, Map[String, AnyRef]]].map {
+              case (a, b) =>
+                recomposer.recompose(FromMapRematerializationArray(DimensionRawMap(b))).map(decomposed =>
+                  (a, decomposed)).toAgg
+            }.toList.sequence.map(items =>
+              items.toMap).map(Some(_))
+          },
+        None.success),
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+
+  def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    hasRecomposers.getRecomposer[B](TypeDescriptor(mB.erasure)).bind(recomposer => tryGetComplexMap[A, B](ident, recomposer))
+
+  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+      option.cata(theMap.get(ident))(
+        theMap =>
+          computeSafely {
+            theMap.asInstanceOf[Map[A, Map[String, AnyRef]]].map {
+              case (a, b) =>
+                val remat = FromMapRematerializationArray(DimensionRawMap(b))
+                remat.getTypeDescriptor.bind(td =>
+                  hasRecomposers.getRawRecomposerForAnyRef(td).bind(recomposer =>
+                    recomposer.recomposeRaw(remat).map(decomposed =>
+                      (a, decomposed.asInstanceOf[B])))).toAgg
+            }.toList.sequence.map(items =>
+              items.toMap).map(Some(_))
+          },
+        None.success),
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+
+  def tryGetMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+      option.cata(theMap.get(ident))(
+        theMap =>
+          computeSafely {
+            theMap.asInstanceOf[Map[A, Map[String, AnyRef]]].map {
+              case (a, b) =>
+                mapToAny[B](ident)(b).map(decomposed => (a, decomposed)).toAgg
+            }.toList.sequence.map(items =>
+              items.toMap).map(Some(_))
+          },
+        None.success),
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+      
   def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
 
-  private def isPrimitiveType(what: Any): Boolean = {
-    what.isInstanceOf[String] ||
-      what.isInstanceOf[Boolean] ||
-      what.isInstanceOf[Byte] ||
-      what.isInstanceOf[Int] ||
-      what.isInstanceOf[Long] ||
-      what.isInstanceOf[BigInt] ||
-      what.isInstanceOf[Float] ||
-      what.isInstanceOf[Double] ||
-      what.isInstanceOf[BigDecimal] ||
-      what.isInstanceOf[org.joda.time.DateTime] ||
-      what.isInstanceOf[_root_.java.util.UUID]
-  }
+  private def mapToAny[A](ident: String)(what: Any): AlmValidation[A] =
+    if (TypeHelpers.isPrimitiveValue(what))
+      what.asInstanceOf[A].success
+    else if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
+      computeSafely {
+        FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(what.asInstanceOf[Map[String, Any]])).bind(remat =>
+          remat.getTypeDescriptor.bind(typeDescriptor =>
+            hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
+              recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))
+      }
+    else
+      UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure
 
 }
 

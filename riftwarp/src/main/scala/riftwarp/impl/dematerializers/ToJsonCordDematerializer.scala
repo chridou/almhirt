@@ -10,6 +10,7 @@ import almhirt.almvalidation.kit._
 import almhirt.common._
 import riftwarp._
 import riftwarp.ma._
+import riftwarp.TypeHelpers
 
 object ToJsonCordDematerializerFuns {
   def launderString(str: String): Cord = Cord(str)
