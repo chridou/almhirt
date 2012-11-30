@@ -60,16 +60,16 @@ trait RematerializationArray {
   def getMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[M[A]]
   def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]]
 
-  def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
-  def tryGetPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
-  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
-  def tryGetComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
-  def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
-  def tryGetComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
-  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
-  def tryGetComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
-  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
-  def tryGetMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
+  def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
+  def tryGetPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
+  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
+  def tryGetComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
+  def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
+  def tryGetComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
+  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
+  def tryGetComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
+  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]] = sys.error("")
+  def tryGetMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = sys.error("")
   
   def getTypeDescriptor: AlmValidation[TypeDescriptor]
   def tryGetTypeDescriptor: AlmValidation[Option[TypeDescriptor]]
