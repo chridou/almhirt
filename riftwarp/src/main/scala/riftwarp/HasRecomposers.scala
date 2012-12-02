@@ -12,12 +12,6 @@ trait HasRecomposers {
         recomposer => recomposer.success, 
         UnspecifiedProblem("No raw recomposer found for type descriptor '%s')".format(typeDescriptor)).failure)
 
-  def getRawRecomposerForAnyRef(forWhat: AnyRef): AlmValidation[RawRecomposer] =
-    forWhat match {
-      case htd: HasTypeDescriptor => getRawRecomposer(htd.typeDescriptor)
-      case x => getRawRecomposer(TypeDescriptor(x.getClass()))
-  }
-
   def getRecomposer[T <: AnyRef](typeDescriptor: TypeDescriptor): AlmValidation[Recomposer[T]] =
     option.cata(tryGetRecomposer[T](typeDescriptor))(
         recomposer => recomposer.success, 

@@ -37,21 +37,21 @@ object FromJsonMapRematerializationArrayFuns {
       UnspecifiedProblem("No primitive rematerializer found for '%s'".format(mA.erasure.getName())).failure
   }
 
-  def createTuple[A](rematA: Any => AlmValidation[A])(kv: Map[String, Any])(implicit m: Manifest[A]): AlmValidation[(A, Any)] = {
+  def createTuple[A, B](rematA: Any => AlmValidation[A])(mapB: Any => AlmValidation[B])(kv: Map[String, Any])(implicit m: Manifest[A]): AlmValidation[(A, B)] = {
     (kv.get("k"), kv.get("v")) match {
-      case (Some(k), Some(v)) => rematA(k).map(k => (k, v))
+      case (Some(k), Some(v)) => rematA(k).bind(k => mapB(v).map(v => (k, v)))
       case (None, Some(_)) => KeyNotFoundProblem("Can not create key value tuple because the key entry is missing").failure
       case (Some(_), None) => KeyNotFoundProblem("Can not create key value tuple because the value entry is missing").failure
       case (None, None) => KeyNotFoundProblem("Can not create key value tuple because bothe the key entry and the value entry are missing").failure
     }
   }
 
-  def createTuples[A](kvPairs: List[Any])(implicit m: Manifest[A]): AlmValidation[List[(A, Any)]] =
+  def createTuples[A, B](mapB: Any => AlmValidation[B])(kvPairs: List[Any])(implicit m: Manifest[A]): AlmValidation[List[(A, B)]] =
     computeSafely {
       getRematerializerFor[A]("key").bind(rematA =>
-        kvPairs.map(x => createTuple(rematA)(x.asInstanceOf[Map[String, Any]]))
+        kvPairs.map(x => createTuple(rematA)(mapB)(x.asInstanceOf[Map[String, Any]]))
           .map(_.toAgg)
-          .sequence[({ type l[a] = scalaz.Validation[AggregateProblem, a] })#l, (A, Any)])
+          .sequence[({ type l[a] = scalaz.Validation[AggregateProblem, a] })#l, (A, B)])
     }
 }
 
@@ -184,8 +184,74 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
       None.success)
 
-  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
+  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    (TypeHelpers.isPrimitiveType(mA.erasure), TypeHelpers.isPrimitiveType(mB.erasure)) match {
+      case (true, true) =>
+        get(ident).map(any =>
+          computeSafely {
+            getRematerializerFor[B](ident).bind(rematB =>
+              createTuples[A, B](rematB)(any.asInstanceOf[List[Any]]).map(tuples =>
+                tuples.toMap.asInstanceOf[Map[A, B]]))
+          }).validationOut
+      case (false, true) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure
+      case (true, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: B(%s) is not a primitive type".format(ident, mB.erasure.getName())).failure
+      case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
+    }
 
+  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = {
+    def rematerialize(x: Any): AlmValidation[B] =
+      recomposer.recompose(FromMapRematerializationArray(DimensionRawMap(x.asInstanceOf[Map[String, Any]])))
+
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+      option.cata(get(ident))(
+        any =>
+          computeSafely {
+            createTuples[A, B](rematerialize)(any.asInstanceOf[List[Any]]).map(tuples =>
+              tuples.toMap.asInstanceOf[Map[A, B]])
+          }.map(Some(_)),
+        None.success),
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+  }
+
+  def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    hasRecomposers.getRecomposer[B](TypeDescriptor(mB.erasure)).bind(recomposer => tryGetComplexMap[A, B](ident, recomposer))
+
+  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = {
+    def rematerialize(x: Any): AlmValidation[B] = {
+      val remat = FromMapRematerializationArray(DimensionRawMap(x.asInstanceOf[Map[String, Any]]))
+      remat.getTypeDescriptor.bind(td =>
+        hasRecomposers.getRawRecomposer(td).bind(recomposer =>
+          recomposer.recomposeRaw(remat).map(_.asInstanceOf[B])))
+    }
+
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+      option.cata(get(ident))(
+        any =>
+          computeSafely {
+            createTuples[A, B](rematerialize)(any.asInstanceOf[List[Any]]).map(tuples =>
+              tuples.toMap.asInstanceOf[Map[A, B]])
+          }.map(Some(_)),
+        None.success),
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+  }
+  
+  def tryGetMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = {
+    def rematerialize(x: Any): AlmValidation[B] = mapToAny[B](ident)(x)
+
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.erasure),
+      option.cata(get(ident))(
+        any =>
+          computeSafely {
+            createTuples[A, B](rematerialize)(any.asInstanceOf[List[Any]]).map(tuples =>
+              tuples.toMap.asInstanceOf[Map[A, B]])
+          }.map(Some(_)),
+        None.success),
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+  }
+  
   def tryGetTypeDescriptor =
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).bind(TypeDescriptor.parse(_)).map(Some(_)), None.success)
 

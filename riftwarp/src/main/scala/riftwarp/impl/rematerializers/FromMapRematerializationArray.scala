@@ -159,7 +159,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any])(implicit hasRecomp
               case (a, b) =>
                 val remat = FromMapRematerializationArray(DimensionRawMap(b))
                 remat.getTypeDescriptor.bind(td =>
-                  hasRecomposers.getRawRecomposerForAnyRef(td).bind(recomposer =>
+                  hasRecomposers.getRawRecomposer(td).bind(recomposer =>
                     recomposer.recomposeRaw(remat).map(decomposed =>
                       (a, decomposed.asInstanceOf[B])))).toAgg
             }.toList.sequence.map(items =>
