@@ -1,5 +1,7 @@
 package riftwarp.ext.liftjson
 
-class FromLiftJsonAstRematerializationArray {
+import riftwarp._
+import riftwarp.ma._
+import net.liftweb.json._
 
-}
+class FromLiftJsonAstRematerializationArray

@@ -14,6 +14,7 @@ trait MAFunctions[M[_]] {
   def headOption[A](ma: M[A]): Option[A]
   def head[A](ma: M[A]): A
   def tail[A](ma: M[A]): M[A]
+  def toList[A](ma: M[A]): List[A] 
   def hasLinearCharacteristics: Boolean
 }
 
@@ -30,6 +31,7 @@ trait ListFunctionObject extends RegisterableMAFunctions[List] {
   def headOption[A](ma: List[A]) = ma.headOption
   def head[A](ma: List[A]) = ma.head
   def tail[A](ma: List[A]): List[A] = ma.tail
+  def toList[A](ma: List[A]) = ma 
   val hasLinearCharacteristics = true
 }
 
@@ -42,6 +44,7 @@ trait VectorFunctionObject extends RegisterableMAFunctions[Vector] {
   def headOption[A](ma: Vector[A]) = ma.headOption
   def head[A](ma: Vector[A]) = ma.head
   def tail[A](ma: Vector[A]): Vector[A] = ma.tail
+  def toList[A](ma: Vector[A]) = ma.toList  
   val hasLinearCharacteristics = true
 }
 
@@ -54,6 +57,7 @@ trait SetFunctionObject extends RegisterableMAFunctions[Set] {
   def headOption[A](ma: Set[A]) = ma.headOption
   def head[A](ma: Set[A]) = ma.head
   def tail[A](ma: Set[A]): Set[A] = ma.tail
+  def toList[A](ma: Set[A]) = ma.toList  
   val hasLinearCharacteristics = true
 }
 
@@ -66,6 +70,7 @@ trait IterableFunctionObject extends RegisterableMAFunctions[Iterable] {
   def headOption[A](ma: Iterable[A]) = ma.headOption
   def head[A](ma: Iterable[A]) = ma.head
   def tail[A](ma: Iterable[A]): Iterable[A] = ma.tail
+  def toList[A](ma: Iterable[A]) = ma.toList 
   val hasLinearCharacteristics = true
 }
 
@@ -78,6 +83,7 @@ trait TreeFunctionObject extends RegisterableMAFunctions[scalaz.Tree] {
   def headOption[A](ma: scalaz.Tree[A]) = sys.error("not implemented")
   def head[A](ma: scalaz.Tree[A]) = sys.error("not implemented")
   def tail[A](ma: scalaz.Tree[A]): scalaz.Tree[A] = sys.error("not implemented")
+  def toList[A](ma: scalaz.Tree[A]) = ma.toList 
   val hasLinearCharacteristics = false
 }
 
