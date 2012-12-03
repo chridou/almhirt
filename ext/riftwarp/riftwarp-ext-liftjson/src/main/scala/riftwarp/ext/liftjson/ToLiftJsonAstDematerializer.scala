@@ -2,6 +2,7 @@
 //
 //import org.joda.time.DateTime
 //import scalaz.syntax.validation._
+//import scalaz.std._
 //import almhirt.common._
 //import riftwarp._
 //import riftwarp.ma._
@@ -85,7 +86,7 @@
 //}
 //
 //
-//class ToLiftJsonAstDematerializer(state: List[JField])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[DimensionLiftJsonAst] {
+//class ToLiftJsonAstDematerializer(val state: List[JField])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[DimensionLiftJsonAst] {
 //  val channel = RiftJson()
 //  val tDimension = classOf[DimensionLiftJsonAst]
 //  val toolGroup = ToolGroupLiftJson()
@@ -93,7 +94,13 @@
 //  import LiftJsonAstDematerializerFuns._
 //  
 //  def dematerialize: AlmValidation[DimensionLiftJsonAst] = DimensionLiftJsonAst(JObject(state.reverse)).success
-//
+//  private def dematerializeInternal: JValue = JObject(state.reverse)
+//  private def getJValue(demat: Dematerializer[DimensionLiftJsonAst]) =
+//    demat.asInstanceOf[ToLiftJsonAstDematerializer].dematerializeInternal
+//  
+//  def addField(ident: String, value: JValue): ToLiftJsonAstDematerializer =
+//    ToLiftJsonAstDematerializer(JField(ident, value) :: state)
+//  
 //  def addString(ident: String, aValue: String) = ToLiftJsonAstDematerializer(JField(ident, mapString(aValue)) :: state).success
 //
 //  def addBoolean(ident: String, aValue: Boolean) = ToLiftJsonAstDematerializer(JField(ident, mapBoolean(aValue)) :: state).success
@@ -119,88 +126,94 @@
 //
 //  def addUuid(ident: String, aValue: _root_.java.util.UUID) = ToLiftJsonAstDematerializer(JField(ident, mapUuid(aValue)) :: state).success
 //
-//  def addJson(ident: String, aValue: String) = ToLiftJsonAstDematerializer(JField(ident, mapBoolean(aValue)) :: state).success
-//  def addXml(ident: String, aValue: scala.xml.Node) = ToLiftJsonAstDematerializer(JField(ident, mapString(aValue.toString)) :: state).success
+//  def addJson(ident: String, aValue: String) = 
+//    try {
+//      val parsed = parse(aValue)
+//      ToLiftJsonAstDematerializer(JField(ident, parsed) :: state).success
+//    } catch {
+//      case exn => ParsingProblem("Could not parse JSON for field '%s'".format(ident), input = Some(aValue), cause = Some(CauseIsThrowable(exn))).failure
+//    }
 //
-//  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToMapDematerializer] = {
-//    decomposer.decompose(aComplexType)(ToMapDematerializer()).bind(toEmbed =>
-//      toEmbed.asInstanceOf[ToMapDematerializer].dematerialize).map(theMapToEmbed =>
-//      ToMapDematerializer(state + (ident -> theMapToEmbed.manifestation)))
+// def addXml(ident: String, aValue: scala.xml.Node) = ToLiftJsonAstDematerializer(JField(ident, mapString(aValue.toString)) :: state).success
+//
+//  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToLiftJsonAstDematerializer] = {
+//    decomposer.decompose(aComplexType)(ToLiftJsonAstDematerializer()).map(toEmbed =>
+//      addField(ident, getJValue(toEmbed)))
 //  }
 //
-//  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[ToMapDematerializer] = {
+//  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[ToLiftJsonAstDematerializer] = {
 //    hasDecomposers.tryGetDecomposerForAny(aComplexType) match {
 //      case Some(decomposer) => addComplexType(decomposer)(ident, aComplexType)
 //      case None => UnspecifiedProblem("No decomposer found for ident '%s'".format(ident)).failure
 //    }
 //  }
 //
-//  def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit mU: Manifest[U]): AlmValidation[ToMapDematerializer] =
+//  def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit mU: Manifest[U]): AlmValidation[ToLiftJsonAstDematerializer] =
 //    hasDecomposers.getDecomposer[U].bind(decomposer => addComplexType(decomposer)(ident, aComplexType))
 //  
-//  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-//    hasFunctionObjects.tryGetMAFunctions[M] match {
-//      case Some(fo) =>
-//        (ToMapDematerializer(state + (ident -> ma))).success
-//      case None => UnspecifiedProblem("No function object  found for ident '%s' and M[_](%s[_])".format(ident, mM.erasure.getName())).failure
-//    }
-//  }
+//  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToLiftJsonAstDematerializer] = 
+//    primitiveMapperByType[A].bind(map =>
+//      MAFuncs.map(ma)(x => map(x)).bind(mcord =>
+//        MAFuncs.fold(this.channel)(mcord)(hasFunctionObjects, mM, manifest[JValue], manifest[JArray])).map(jarray =>
+//        addField(ident, jarray)))
 //
-//  def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-//    hasFunctionObjects.tryGetMAFunctions[M] match {
-//      case Some(fo) =>
-//        val mapped = fo.map(ma)(elem =>
-//          (decomposer.decompose(elem)(ToMapDematerializer()).bind(_.dematerialize).toAgg))
-//        fo.sequenceValidations(mapped)
-//          .map(x => fo.map(x)(_.manifestation))
-//          .map(x => ToMapDematerializer(state + (ident -> x)))
-//      case None => UnspecifiedProblem("No function object  found for ident '%s' and M[_](%s[_])".format(ident, mM.erasure.getName())).failure
-//    }
-//  }
+//  def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToLiftJsonAstDematerializer] = 
+//    MAFuncs.mapV(ma)(x => decomposer.decompose(x)(ToLiftJsonAstDematerializer()).map(x => getJValue(x))).bind(complex =>
+//      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[JValue], manifest[JArray])).map(jarray =>
+//      addField(ident, jarray))
 //
-//  def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] =
+//  def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToLiftJsonAstDematerializer] =
 //    hasDecomposers.tryGetDecomposer[A] match {
 //      case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
 //      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.erasure.getName())).failure
 //    }
 //
-//  def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-//    MAFuncs.mapV(ma)(mapWithComplexDecomposerLookUp(ident)).bind(ma =>
-//      (ToMapDematerializer(state + (ident -> ma))).success)
+//  def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToLiftJsonAstDematerializer] = {
+//    MAFuncs.mapV(ma)(mapWithComplexDecomposerLookUp(ident)).bind(complex =>
+//      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[JValue], manifest[JArray])).map(jarray =>
+//      addField(ident, jarray))
 //  }
 //
-//  def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
-//    MAFuncs.mapV(ma)(mapWithPrimitiveAndComplexDecomposerLookUp(ident)).map(ma =>
-//      ToMapDematerializer(state + (ident -> ma)))
+//  def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToLiftJsonAstDematerializer] = {
+//    MAFuncs.mapV(ma)(mapWithPrimitiveAndComplexDecomposerLookUp(ident)).bind(complex =>
+//      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[JValue], manifest[JArray])).map(jarray =>
+//      addField(ident, jarray))
 //  }
 //
-//  def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] = {
+//  def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToLiftJsonAstDematerializer] = {
 //    (TypeHelpers.isPrimitiveType(mA.erasure), TypeHelpers.isPrimitiveType(mB.erasure)) match {
-//      case (true, true) => ToMapDematerializer(state + (ident -> map)).success
+//      case (true, true) =>
+//        primitiveMapperByType[A].bind(mapA =>
+//          primitiveMapperByType[B].map(mapB =>
+//            aMap.map {
+//              case (a, b) =>
+//                (mapA(a), mapB(b))
+//            }).bind(items =>
+//            foldKeyValuePairs(items)).map(jarray =>
+//            addField(ident, jarray)))
 //      case (false, true) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure
 //      case (true, false) => UnspecifiedProblem("Could not create primitive map for %s: B(%s) is not a primitive type".format(ident, mB.erasure.getName())).failure
 //      case (false, false) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
 //    }
-//  }
 //
-//  def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+//  def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToLiftJsonAstDematerializer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.erasure),
-//      {
-//        val validations =
-//          aMap.toList.map {
-//            case (a, b) => decomposer.decompose(b)(ToMapDematerializer()).bind(dematerializer =>
-//              dematerializer.dematerialize.map(m => (a, m.manifestation)))
-//          }.map(x => x.toAgg)
-//        val sequenced = validations.sequence
-//        sequenced.map(_.toMap).map(x => ToMapDematerializer(state + (ident -> x)))
-//      },
-//      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+//      primitiveMapperByType[A].bind(mapA =>
+//        aMap.map {
+//          case (a, b) =>
+//            decomposer.decompose(b)(ToJsonCordDematerializer()).bind(demat =>
+//              demat.dematerialize.map(b =>
+//                (mapA(a), b.manifestation)))
+//        }.map(_.toAgg).toList.sequence.bind(sequenced =>
+//          foldKeyValuePairs(sequenced).bind(pairs =>
+//            addPart(ident, pairs.manifestation)))),
+//      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
 //
-//  def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+//  def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToLiftJsonAstDematerializer] =
 //    hasDecomposers.getDecomposer[B].bind(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
 //
-//  def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+//  def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToLiftJsonAstDematerializer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.erasure),
 //      {
@@ -213,7 +226,7 @@
 //      },
 //      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
 //
-//  def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+//  def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToLiftJsonAstDematerializer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.erasure),
 //          aMap.toList.map { case (a, b) => 
@@ -225,30 +238,30 @@
 //
 //  def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
 //
-//  private def mapWithComplexDecomposerLookUp(ident: String)(toDecompose: AnyRef): AlmValidation[Map[String, Any]] =
-//    hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
+//  private def mapWithComplexDecomposerLookUp(ident: String)(toDecompose: AnyRef): AlmValidation[JValue] =
+//    hasDecomposers.tryGetRawDecomposerForAny(toDecompose) match {
 //      case Some(decomposer) =>
-//        decomposer.decomposeRaw(toDecompose)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation))
+//        decomposer.decomposeRaw(toDecompose)(ToLiftJsonAstDematerializer()).map(x => JObject(x.asInstanceOf[ToLiftJsonAstDematerializer].state.reverse))
 //      case None =>
 //        UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass().getName())).failure
 //    }
 //
-//  private def mapWithPrimitiveAndComplexDecomposerLookUp(ident: String)(toDecompose: Any): AlmValidation[Any] =
+//  private def mapWithPrimitiveAndComplexDecomposerLookUp(ident: String)(toDecompose: Any): AlmValidation[JValue] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveValue(toDecompose),
-//      toDecompose.success,
+//      mapperForAny(toDecompose).map(mapper => mapper(toDecompose)),
 //      toDecompose match {
 //        case toDecomposeAsAnyRef: AnyRef =>
-//          option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
-//            decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation)),
-//            UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
+//          mapWithComplexDecomposerLookUp(ident)(toDecomposeAsAnyRef)
 //        case x =>
 //          UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
 //      })
 //  
 //}
 //
-//object ToLiftJsonAstDematerializer {
+//object ToLiftJsonAstDematerializer  extends DematerializerFactory[DimensionLiftJsonAst]{
 //  def apply(state: List[JField])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = new ToLiftJsonAstDematerializer(state)
 //  def apply()(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = apply(List.empty)
+//  def createDematerializer(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
+//    apply().success
 //}

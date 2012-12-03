@@ -139,7 +139,7 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
   def addTypeDescriptor(descriptor: TypeDescriptor) = (ToMapDematerializer(state + (TypeDescriptor.defaultKey -> descriptor))).success
 
   private def mapWithComplexDecomposerLookUp(ident: String)(toDecompose: AnyRef): AlmValidation[Map[String, Any]] =
-    hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
+    hasDecomposers.tryGetRawDecomposerForAny(toDecompose) match {
       case Some(decomposer) =>
         decomposer.decomposeRaw(toDecompose)(ToMapDematerializer()).bind(_.dematerialize.map(_.manifestation))
       case None =>
