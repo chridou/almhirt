@@ -48,6 +48,9 @@ class ToMapDematerializer(state: Map[String, Any])(implicit hasDecomposers: HasD
     }
   }
 
+  def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit mU: Manifest[U]): AlmValidation[ToMapDematerializer] =
+    hasDecomposers.getDecomposer[U].bind(decomposer => addComplexType(decomposer)(ident, aComplexType))
+  
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
     hasFunctionObjects.tryGetMAFunctions[M] match {
       case Some(fo) =>
