@@ -10,7 +10,7 @@ case class InvoiceSent(id: UUID, aggId: UUID, aggVersion: Long, timestamp: DateT
 case class InvoicePaid(id: UUID, aggId: UUID, aggVersion: Long, timestamp: DateTime = new DateTime) extends InvoiceEvent
 case class InvoiceReopened(id: UUID, aggId: UUID, aggVersion: Long, timestamp: DateTime = new DateTime) extends InvoiceEvent
 
-sealed abstract class Invoice extends AggregateRoot[Invoice, InvoiceEvent] {
+sealed abstract class Invoice extends AggregateRootWithHandlers[Invoice, InvoiceEvent] {
   def id: UUID
   def version: Long
   def total: BigDecimal

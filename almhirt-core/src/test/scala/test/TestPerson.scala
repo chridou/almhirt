@@ -8,7 +8,7 @@ import almhirt.eventlog._
 import java.util.UUID
 import org.joda.time.DateTime
 
-case class TestPerson(id: UUID, version: Long, name: String, address: Option[String], balance: Int) extends AggregateRoot[TestPerson, TestPersonEvent] {
+case class TestPerson(id: UUID, version: Long, name: String, address: Option[String], balance: Int) extends AggregateRootWithHandlers[TestPerson, TestPersonEvent] with AddsUpdateToAggregateRoot[TestPerson, TestPersonEvent]{
   def handlers = {
     case TestPersonNameChanged(_, _, _, newName, _) => copy(name = newName, version = this.version + 1)
     case TestPersonAddressAquired(_, _, _, aquiredAddress, _) => copy(address = Some(aquiredAddress), version = this.version + 1)

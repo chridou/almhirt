@@ -25,65 +25,25 @@ import almhirt.syntax.almvalidation._
  * All entities within the aggregate should only be accessible via the aggregate root. Only an aggregate root justifies a repository.
  */
 trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event]{
-  import almhirt.problem.ProblemDefaults._
   /** The unique id that gives the aggregate its identity */
   def id: UUID
   /** The monotonically growing version which is increased by one with each event generated via mutation. 
    * The minimum value is 1L */
   def version: Long
 
+}
+
+trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends AggregateRoot[AR, Event]{
+  import almhirt.problem.ProblemDefaults._
   /** Applies the event by calling the default handler after validating the event. */
   def applyEvent = {event: Event => applyValidated(event, handlers)}
   
   /** A [[scala.PartialFunction]] that takes an event and returns a modified AR according to the event.
    * This should be the standard handler. You can also create specialized handlers and invoke them via update(event, handler)
-   * The handler must increase the aggregate roots version
+   * The handler must increase the aggregate root's version
    */ 
   protected def handlers: PartialFunction[Event,AR] 
  
-  /** Apply the event by calling the given handler which modifies the aggregate root based on the event
-   * This method is usually used to call a specialized handler. 
-   * 
-   * @param event The event to apply the standard handler to
-   */
-  protected def update(event: Event, handler: Event => AR): UpdateRecorder[Event, AR] = {
-    try {
-      UpdateRecorder.accept(event, handler(event))
-    } catch {
-      case exn => UpdateRecorder.reject(defaultSystemProblem.withMessage("Could not execute an update").withCause(CauseIsThrowable(exn)))
-    }
-  }
-
-  /** Apply the event by calling the default handler defined by the protected abstract method 'handlers' 
-   * 
-   * @param event The event to apply the standard handler to
-   */
-  protected def update(event: Event): UpdateRecorder[Event, AR] = update(event, handlers)
-  
-  
-  /** Abort the update process
-   * 
-   * @param prob The reason for rejection as a problem
-   * @return A failed [[almhirt.domain.UpdateRecorder]]
-   */
-  protected def reject(prob: Problem): UpdateRecorder[Event, AR] = UpdateRecorder.reject(prob)
-
-   /** Abort the update process. Returns the default application problem
-   * 
-   * @param msg The reason for rejection as a message
-   * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem]] being the default application problem
-   */
-  protected def reject(msg: String): UpdateRecorder[Event, AR] = reject(defaultApplicationProblem.withMessage(msg))
-
-   /** Abort the update process. Returns a  BusinessRuleViolatedProblem
-   * 
-   * @param msg The reason for rejection as a message
-   * @param key A key for the operation/property mutation that failed
-   * @param severity The severity of the failure. Default is [[almhirt.validation.NoProblem]]
-   * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem.BusinessRuleViolatedProblem]] being the application problem
-   */
-  protected def rejectBusinessRuleViolated(msg: String, key: String, severity: Severity = NoProblem): UpdateRecorder[Event, AR] = reject(BusinessRuleViolatedProblem(msg, key, severity))
-
   /** Validates the event and then applies the handler
    * 
    * @param event The Event to validate and then apply
@@ -114,5 +74,14 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
   	else
   	  event.success
   }
+  
 }
+
+trait AddsUpdateToAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends UpdatesAggregateRoot[AR, Event] { ar: AggregateRootWithHandlers[AR, Event]  => 
+  /** Apply the event by calling the default handler defined by the protected abstract method 'handlers' 
+   * 
+   * @param event The event to apply the standard handler to
+   */
+  protected def update(event: Event): UpdateRecorder[Event, AR] = update(event, handlers)
+  }
 
