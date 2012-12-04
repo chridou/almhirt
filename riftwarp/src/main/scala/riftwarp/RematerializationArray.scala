@@ -44,30 +44,82 @@ trait RematerializationArray {
   def getXml(ident: String): AlmValidation[scala.xml.Node]
   def tryGetXml(ident: String): AlmValidation[Option[scala.xml.Node]]
 
+  /** Rematerialize the complex type given a recomposer
+   */
   def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]): AlmValidation[T]
   def tryGetComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]): AlmValidation[Option[T]]
+  /** Rematerialize the complex type and search for a recomposer
+   * 1) Check whether there is a typedescriptor in the dematerialized data
+   * 2) Use the type of T's erasure
+   */
   def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[T]
   def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]]
+  /** Rematerialize the complex type and search for a recomposer
+   * The recomposer is searched using T's erasure
+   */
+  def getComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[T]
+  def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]]
 
+  /** Rematerialize an M[_] of primitive types
+   * 
+   * Primitive types are  String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime and UUID */
   def getPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[M[A]]
+  /** Rematerialize an M[_] of complex types
+   * 
+   * Complex types are all types that are not String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime or UUID */
   def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]]
+  /** Rematerialize an M[_] of complex types using the given recomposer
+   * The recomposer is used for all elements of M
+   * 
+   * Complex types are all types that are not String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime or UUID */
   def getComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[M[A]]
   def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]]
+  /** Rematerialize an M[_] of complex types. The decomposer is searched by T's erasure
+   * The recomposer is used for all elements of M
+   * 
+   * Complex types are all types that are not String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime or UUID */
   def getComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[M[A]]
   def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]]
-  def getComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[M[A]]
-  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]]
+  /** Rematerialize an M[_] of complex types. 
+   * For each element of M search a recomposer by using its typedescriptor
+   * 
+   * Complex types are all types that are not String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime or UUID */
+  def getComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[M[A]]
+  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[Option[M[A]]]
+  /** Rematerialize an M[_] of any types. 
+   * Rematerializes a primitive type or looks up a recomposer by the elements typedescriptor
+   * 
+   * Complex types are all types that are not String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime or UUID */
   def getMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[M[A]]
   def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]]
 
+  /** Rematerialize a Map[A,B] where both A and B are primitive types
+   * 
+   * Primitive types are  String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime and UUID */
   def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
   def tryGetPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
-  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
-  def tryGetComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
+  /** Rematerialize a Map[A,B] where A is a primitive type and B is a complex type.
+   * Use the given recomposer to rematerialize Bs.
+   * 
+   * Primitive types are  String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime and UUID */
+  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Map[A, B]]
+  def tryGetComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]]
+  /** Rematerialize a Map[A,B] where A is a primitive type and B is a complex type.
+   * Use the erasure of B to find a recomposer for all elements.
+   * 
+   * Primitive types are  String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime and UUID */
   def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
   def tryGetComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
-  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
-  def tryGetComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
+  /** Rematerialize a Map[A,B] where A is a primitive type and B is a complex type.
+   * Lookup a typedescriptor for each element and find a suiting recomposer.
+   * 
+   * Primitive types are  String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime and UUID */
+  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Map[A, B]]
+  def tryGetComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]]
+  /** Rematerialize a Map[A,B] where A is a primitive type and B can be anything.
+   * Lookup a primitive rematerializer or a recomposer by the elements typedescriptor for each element.
+   * 
+   * Primitive types are  String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime and UUID */
   def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
   def tryGetMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
   
@@ -99,19 +151,20 @@ trait RematerializationArrayBasedOnOptionGetters extends RematerializationArray 
   def getJson(ident: String) = tryGetJson(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getXml(ident: String) = tryGetXml(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) = tryGetComplexType(ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexType(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) = tryGetComplexType[T](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexType[T](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexTypeFixed[T](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetPrimitiveMA[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetComplexMA[M, A](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetComplexMAFixed[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetComplexMALoose[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]) = tryGetComplexMALoose[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetMA[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetPrimitiveMap[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMap[A, B](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]) = tryGetComplexMap[A, B](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapFixed[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapLoose[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A]) = tryGetComplexMapLoose[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetMap[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
   def getTypeDescriptor = tryGetTypeDescriptor.bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(TypeDescriptor.defaultKey), args = Map("key" -> TypeDescriptor.defaultKey)).failure))

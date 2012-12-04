@@ -117,6 +117,23 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
     }
   }
 
+  def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] = {
+    get(ident) match {
+      case Some(elem) =>
+        almCast[Map[String, Any]](elem).bind { elemAsMap =>
+          FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elemAsMap)).bind { rematerializationArray =>
+            val td = TypeDescriptor(m.erasure)
+            hasRecomposers.tryGetRecomposer[T](td) match {
+              case Some(recomposer) => recomposer.recompose(rematerializationArray).map(Some(_))
+              case None => UnspecifiedProblem("No recomposer found for ident '%s' and type descriptor '%s'".format(ident, td)).failure
+            }
+          }
+        }
+      case None =>
+        None.success
+    }
+  }
+
   def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       elem =>
@@ -151,7 +168,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
     hasRecomposers.getRecomposer[A](TypeDescriptor(mA.erasure)).bind(recomposer =>
       tryGetComplexMA[M, A](ident, recomposer))
 
-  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       mx =>
         boolean.fold(
@@ -198,7 +215,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
       case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
     }
 
-  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = {
+  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Any): AlmValidation[B] =
       recomposer.recompose(FromMapRematerializationArray(DimensionRawMap(x.asInstanceOf[Map[String, Any]])))
 
@@ -217,7 +234,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
   def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
     hasRecomposers.getRecomposer[B](TypeDescriptor(mB.erasure)).bind(recomposer => tryGetComplexMap[A, B](ident, recomposer))
 
-  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = {
+  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Any): AlmValidation[B] = {
       val remat = FromMapRematerializationArray(DimensionRawMap(x.asInstanceOf[Map[String, Any]]))
       remat.getTypeDescriptor.bind(td =>
@@ -236,7 +253,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
         None.success),
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
   }
-  
+
   def tryGetMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Any): AlmValidation[B] = mapToAny[B](ident)(x)
 
@@ -251,7 +268,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
         None.success),
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
   }
-  
+
   def tryGetTypeDescriptor =
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).bind(TypeDescriptor.parse(_)).map(Some(_)), None.success)
 
