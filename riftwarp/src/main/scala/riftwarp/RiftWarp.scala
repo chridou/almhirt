@@ -81,16 +81,16 @@ trait RiftWarp {
 }
 
 object RiftWarp {
-  def apply(theBarracks: RiftWarpBarracks, theToolShed: RiftWarpToolShed): RiftWarp =
+  def apply(theBarracks: RiftWarpBarracks, theToolShed: RiftWarpToolShed, theConverters: HasDimensionConverters): RiftWarp =
     new RiftWarp {
       val barracks = theBarracks
       val toolShed = theToolShed
-      val converters = null
+      val converters = theConverters
     }
 
-  def unsafe(): RiftWarp = apply(RiftWarpBarracks.unsafe, RiftWarpToolShed.unsafe)
+  def unsafe(): RiftWarp = apply(RiftWarpBarracks.unsafe, RiftWarpToolShed.unsafe, new impl.UnsafeDimensionConverterRegistry)
   def unsafeWithDefaults(): RiftWarp = {
-    val riftWarp = apply(RiftWarpBarracks.unsafe, RiftWarpToolShed.unsafe)
+    val riftWarp = unsafe()
     initializeWithDefaults(riftWarp)
     riftWarp
   }
