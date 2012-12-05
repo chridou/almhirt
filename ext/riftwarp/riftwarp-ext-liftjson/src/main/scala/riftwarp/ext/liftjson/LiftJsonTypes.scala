@@ -50,3 +50,26 @@ object DimensionLiftJsonAstToNiceCord extends DimensionConverter[DimensionLiftJs
     DimensionNiceCord(pretty(render(source.manifestation))).success
 }
 
+object DimensionStringToLiftJsonAst extends DimensionConverter[DimensionString, DimensionLiftJsonAst] {
+  import scalaz.Cord
+  val tSource = classOf[DimensionString]
+  val tTarget = classOf[DimensionLiftJsonAst]
+  def convert(source: DimensionString): AlmValidation[DimensionLiftJsonAst] =
+    try{
+      DimensionLiftJsonAst(parse(source.manifestation)).success
+    } catch {
+      case exn => ParsingProblem("Could not parse JSON(LiftJSON-Parser)", input = Some(source.manifestation), cause = Some(CauseIsThrowable(exn))).failure
+    }
+}
+
+object DimensionCordToLiftJsonAst extends DimensionConverter[DimensionCord, DimensionLiftJsonAst] {
+  import scalaz.Cord
+  val tSource = classOf[DimensionCord]
+  val tTarget = classOf[DimensionLiftJsonAst]
+  def convert(source: DimensionCord): AlmValidation[DimensionLiftJsonAst] =
+    try{
+      DimensionLiftJsonAst(parse(source.manifestation.toString)).success
+    } catch {
+      case exn => ParsingProblem("Could not parse JSON(LiftJSON-Parser)", input = Some(source.manifestation.toString), cause = Some(CauseIsThrowable(exn))).failure
+    }
+}

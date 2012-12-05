@@ -35,6 +35,7 @@ object DimensionNiceCordToCord extends DimensionConverter[DimensionNiceCord, Dim
   def convert(source: DimensionNiceCord): AlmValidation[DimensionCord] =
     DimensionCord(source.manifestation).success
 }
+
 object DimensionConverterStringToCord extends DimensionConverter[DimensionString, DimensionCord] {
   import scalaz.Cord
   val tSource = classOf[DimensionString]
@@ -49,3 +50,22 @@ object DimensionConverterCordToString extends DimensionConverter[DimensionCord, 
   def convert(source: DimensionCord): AlmValidation[DimensionString] =
     DimensionString(source.manifestation.toString).success
 }
+
+// These have to be added manually
+
+object DimensionStringToNiceString extends DimensionConverter[DimensionString, DimensionNiceString] {
+  import scalaz.Cord
+  val tSource = classOf[DimensionString]
+  val tTarget = classOf[DimensionNiceString]
+  def convert(source: DimensionString): AlmValidation[DimensionNiceString] =
+    DimensionNiceString(source.manifestation).success
+}
+
+object DimensionCordToNiceCord extends DimensionConverter[DimensionCord, DimensionNiceCord] {
+  import scalaz.Cord
+  val tSource = classOf[DimensionCord]
+  val tTarget = classOf[DimensionNiceCord]
+  def convert(source: DimensionCord): AlmValidation[DimensionNiceCord] =
+    DimensionNiceCord(source.manifestation).success
+}
+

@@ -95,6 +95,11 @@ object RiftWarp {
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonMapRematerializationArray)
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonStringRematerializationArray)
     riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonCordRematerializationArray)
+    
+    riftWarp.converters.addConverter(DimensionNiceStringToString)
+    riftWarp.converters.addConverter(DimensionNiceCordToCord)
+    riftWarp.converters.addConverter(DimensionConverterStringToCord)
+    riftWarp.converters.addConverter(DimensionConverterCordToString)
 
     import riftwarp.ma._
     riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.listFunctionObject)
