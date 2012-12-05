@@ -323,3 +323,13 @@ object ToLiftJsonAstDematerializer extends DematerializerFactory[DimensionLiftJs
   def createDematerializer(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
     apply().success
 }
+
+//object ToLiftJsonStringDematerializer extends DematerializerFactory[DimensionLiftJsonAst] {
+//  val channel = RiftJson()
+//  val tDimension = classOf[DimensionString]
+//  val toolGroup = ToolGroupLiftJson()
+//  def apply(state: List[JField])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = new ToLiftJsonAstDematerializer(state)
+//  def apply()(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = apply(List.empty)
+//  def createDematerializer(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionString]] =
+//    apply().success
+//}

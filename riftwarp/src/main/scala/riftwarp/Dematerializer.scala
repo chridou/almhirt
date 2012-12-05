@@ -8,7 +8,7 @@ trait RawDematerializer {
   def channel: RiftChannel
   def tDimension: Class[_ <: RiftDimension]
   def toolGroup: ToolGroup
-  def dematerializeRaw: AlmValidation[AnyRef]
+  def dematerializeRaw: AlmValidation[RiftDimension]
 }
 
 trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
@@ -16,7 +16,7 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
    * Xml, Json, etc
    */
   def dematerialize: AlmValidation[TDimension]
-  def dematerializeRaw: AlmValidation[AnyRef] = dematerialize.map(_.asInstanceOf[AnyRef])
+  def dematerializeRaw: AlmValidation[RiftDimension] = dematerialize.map(_.asInstanceOf[RiftDimension])
 
   def addString(ident: String, aValue: String): AlmValidation[Dematerializer[TDimension]]
   def addOptionalString(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TDimension]]

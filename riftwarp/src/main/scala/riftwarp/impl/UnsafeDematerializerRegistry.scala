@@ -25,20 +25,20 @@ class UnsafeDematerializerRegistry extends HasDematerializers {
       channeltypeentry += (dimensionIdent -> factory)
   }
 
-  def tryGetDematerializerFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mD: Manifest[TDimension]): Option[DematerializerFactory[TDimension]] = {
-    val dimensionIdent = mD.erasure.getName
+  def tryGetDematerializerFactoryByType(tDimemsion: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = {
+    val dimensionIdent = tDimemsion.getName
     (toolGroup match {
       case None =>
         for {
           entry <- channelregistry.get(channel)
           dematerializer <- entry.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[DematerializerFactory[TDimension]]
+        } yield dematerializer.asInstanceOf[DematerializerFactory[RiftDimension]]
       case Some(toolGroup) =>
         for {
           toolentries <- toolregistry.get(toolGroup)
           channelEntries <- toolentries.get(channel)
           dematerializer <- channelEntries.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[DematerializerFactory[TDimension]]
+        } yield dematerializer.asInstanceOf[DematerializerFactory[RiftDimension]]
     })
   }
 }
