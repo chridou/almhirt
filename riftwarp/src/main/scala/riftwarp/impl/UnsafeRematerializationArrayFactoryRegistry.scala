@@ -25,20 +25,20 @@ class UnsafeRematerializationArrayFactoryRegistry extends HasRematerializationAr
       channeltypeentry += (identDim -> arrayFactory)
   }
 
-  def tryGetArrayFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mD: Manifest[TDimension]) = {
-    val dimensionIdent = mD.erasure.getName
+  def tryGetArrayFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None): Option[RematerializationArrayFactory[RiftDimension]] = {
+    val dimensionIdent = tDimension.getName
     (toolGroup match {
       case None =>
         for {
           entry <- channelregistry.get(channel)
           dematerializer <- entry.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[RematerializationArrayFactory[TDimension]]
+        } yield dematerializer.asInstanceOf[RematerializationArrayFactory[RiftDimension]]
       case Some(toolGroup) =>
         for {
           toolentries <- toolregistry.get(toolGroup)
           channelEntries <- toolentries.get(channel)
           dematerializer <- channelEntries.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[RematerializationArrayFactory[TDimension]]
+        } yield dematerializer.asInstanceOf[RematerializationArrayFactory[RiftDimension]]
     })
   }
 }
