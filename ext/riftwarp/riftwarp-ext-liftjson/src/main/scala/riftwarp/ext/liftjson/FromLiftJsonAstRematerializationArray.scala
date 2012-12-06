@@ -231,6 +231,9 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
               mapToAny[A](ident)(elem).toAgg).sequence[AlmValidationAP, A].bind(la =>
               converterToN.convert(la)))),
         UnspecifiedProblem("Only linear M[A]s supported").failure))
+        
+  def tryGetTypeDescriptor =
+    tryGetString(TypeDescriptor.defaultKey).bind(opt => opt.map(str => TypeDescriptor.parse(str)).validationOut)
 
   private def mapToAny[A](ident: String)(what: JValue)(implicit m: Manifest[A]): AlmValidation[A] =
     getRematerializerForPrimitive[A].fold(
