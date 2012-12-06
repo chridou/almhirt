@@ -23,7 +23,7 @@ object MAFuncs {
     option.cata(functions.tryGetMAFunctions[M])(
       fo => option.cata(functions.tryGetChannelFolder[A, B](channel))(
         folder => folder.fold(ma)(fo),
-        UnspecifiedProblem("No function folder found for A(%s) and B(%s)".format(mA.erasure.getName(), mA.erasure.getName())).failure),
+        UnspecifiedProblem("No function folder found for A(%s) and B(%s) on channel '%s'".format(mA.erasure.getName(), mB.erasure.getName(), channel.channelType)).failure),
       UnspecifiedProblem("No function object found for M[_](%s[_])".format(mM.erasure.getName())).failure)
   }
 }

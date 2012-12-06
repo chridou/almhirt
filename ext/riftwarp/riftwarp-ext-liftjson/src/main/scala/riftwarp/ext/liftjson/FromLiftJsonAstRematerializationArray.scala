@@ -66,24 +66,16 @@ object LiftJsonRematerializationFuns {
       UnspecifiedProblem("No primitive rematerializer found for '%s'".format(mA.erasure.getName())).failure
   }
 
-  def createTuple[A, B](rematA: (JValue, String) => AlmValidation[A])(mapB: Any => AlmValidation[B])(kv: JObject)(implicit m: Manifest[A]): AlmValidation[(A, B)] = {
+  def createTuple[A, B](rematA: (JValue, String) => AlmValidation[A])(mapB: (JValue, String) => AlmValidation[B])(kv: JObject)(implicit m: Manifest[A]): AlmValidation[(A, B)] = {
     val k = try { Some(kv \ "k") } catch { case exn => None }
     val v = try { Some(kv \ "v") } catch { case exn => None }
     (k, v) match {
-      case (Some(k), Some(v)) => rematA(k, "key").bind(k => mapB(v).map(v => (k, v)))
+      case (Some(k), Some(v)) => rematA(k, "key").bind(k => mapB(v, "aKey").map(v => (k, v)))
       case (None, Some(_)) => KeyNotFoundProblem("Can not create key value tuple because the key entry is missing").failure
       case (Some(_), None) => KeyNotFoundProblem("Can not create key value tuple because the value entry is missing").failure
       case (None, None) => KeyNotFoundProblem("Can not create key value tuple because bothe the key entry and the value entry are missing").failure
     }
   }
-
-  def createTuples[A, B](mapB: Any => AlmValidation[B])(kvPairs: List[JObject])(implicit m: Manifest[A]): AlmValidation[List[(A, B)]] =
-    computeSafely {
-      getRematerializerForPrimitive[A].bind(rematA =>
-        kvPairs.map(x => createTuple(rematA)(mapB)(x))
-          .map(_.toAgg)
-          .sequence[AlmValidationAP, (A, B)])
-    }
 }
 
 class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayBasedOnOptionGetters {
@@ -99,14 +91,16 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
       case exn => None.success
     }
 
-  private def tryGetJArraysListWithJObjectsAndMapThem[A, B](ident: String)(mapThem: List[JObject] => AlmValidation[Map[A, B]]): AlmValidation[Option[Map[A, B]]] =
+  private def tryGetJArraysAndCreateMap[A, B](ident: String)(mapB: (JValue, String) => AlmValidation[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
     try {
       jsonObj \ ident match {
         case JArray(arr) =>
-          arr.map {
-            case jo: JObject => jo.success[AggregateProblem]
-            case notAJObject => AggregateProblem("JObject required. Found a '%s'".format(notAJObject)).failure[JObject]
-          }.sequence[AlmValidationAP, JObject].bind(lObj => mapThem(lObj)).map(Some(_))
+          getRematerializerForPrimitive[A].bind(rematA =>
+            arr.map {
+              case jo: JObject => createTuple(rematA)(mapB)(jo).toAgg
+              case notAJObject => AggregateProblem("JObject required. Found a '%s'".format(notAJObject)).failure
+            }.sequence[AlmValidationAP, (A, B)].map(lObj =>
+              Some(lObj.toMap)))
         case something => UnspecifiedProblem("JArray required. Found a '%s'".format(something)).failure
       }
     } catch {
@@ -247,19 +241,32 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
         UnspecifiedProblem("Only linear M[A]s supported").failure))
 
   def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
-    tryGetJArraysListWithJObjects(ident).m
     (TypeHelpers.isPrimitiveType(mA.erasure), TypeHelpers.isPrimitiveType(mB.erasure)) match {
       case (true, true) =>
-        get(ident).map(any =>
-          computeSafely {
-            getRematerializerFor[B](ident).bind(rematB =>
-              createTuples[A, B](rematB)(any.asInstanceOf[List[Any]]).map(tuples =>
-                tuples.toMap.asInstanceOf[Map[A, B]]))
-          }).validationOut
+        getRematerializerForPrimitive[B].bind(remat =>
+          tryGetJArraysAndCreateMap[A, B](ident)(remat))
       case (false, true) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure
       case (true, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: B(%s) is not a primitive type".format(ident, mB.erasure.getName())).failure
       case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
     }
+
+  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
+    tryGetJArraysAndCreateMap[A, B](ident)((jValue, ident) =>
+      FromLiftJsonObjectRematerializationArray.fromJValue(jValue).bind(remat =>
+        recomposer.recompose(remat)))
+
+  def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    hasRecomposers.getRecomposer[B](TypeDescriptor(mB.erasure)).bind(recomposer => tryGetComplexMap[A, B](ident, recomposer))
+
+  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
+    tryGetJArraysAndCreateMap[A, B](ident)((jValue, ident) =>
+      FromLiftJsonObjectRematerializationArray.fromJValue(jValue).bind(remat =>
+        hasRecomposers.lookUpFromRematerializationArray(remat).bind(recomposer =>
+          recomposer.recomposeRaw(remat).map(_.asInstanceOf[B]))))
+
+  def tryGetMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    tryGetJArraysAndCreateMap[A, B](ident)((jValue, ident) =>
+      mapToAny[B](ident)(jValue))
 
   def tryGetTypeDescriptor =
     tryGetString(TypeDescriptor.defaultKey).bind(opt => opt.map(str => TypeDescriptor.parse(str)).validationOut)
@@ -275,11 +282,17 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
 
 }
 
-object FromLiftJsonObjectRematerializationArray {
+object FromLiftJsonObjectRematerializationArray  extends RematerializationArrayFactory[DimensionLiftJsonAst] {
+  val channel = RiftJson()
+  val tDimension = classOf[DimensionLiftJsonAst]
+  val toolGroup = ToolGroupLiftJson()
   def apply(jobject: JObject)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) = new FromLiftJsonObjectRematerializationArray(jobject)
   def fromJValue(jValue: JValue)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects): AlmValidation[FromLiftJsonObjectRematerializationArray] =
     jValue match {
       case jo: JObject => apply(jo).success
       case x => UnspecifiedProblem("Can only create a FromLiftJsonObjectRematerializationArray from JObject").failure
     }
+  def createRematerializationArray(from: DimensionLiftJsonAst)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromLiftJsonObjectRematerializationArray] =
+    fromJValue(from.manifestation)
+
 }

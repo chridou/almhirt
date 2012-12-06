@@ -14,9 +14,9 @@ trait RiftWarp {
   def lookUpDematerializerFactoryAndConverters[DimTarget <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mT: Manifest[DimTarget]): AlmValidation[(DematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
     def findDematerializerFactory(converters: List[RawDimensionConverter]): AlmValidation[(DematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
       converters match {
-        case Nil => UnspecifiedProblem("No DematerializerFactory converter found").failure
+        case Nil => UnspecifiedProblem("No DematerializerFactory found matching with a target type matching %s.".format(converters.mkString(", "))).failure
         case x :: xs =>
-          option.cata(toolShed.tryGetDematerializerFactoryByType(x.tTarget)(channel, toolGroup))(
+          option.cata(toolShed.tryGetDematerializerFactoryByType(x.tSource)(channel, toolGroup))(
             factory => (factory, x).success,
             findDematerializerFactory(xs))
       }
@@ -42,16 +42,16 @@ trait RiftWarp {
   def lookUpRematerializationArrayFactoryAndConverters[DimSource <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mS: Manifest[DimSource]): AlmValidation[(RematerializationArrayFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
     def findRematerializationArrayFactory(converters: List[RawDimensionConverter]): AlmValidation[(RematerializationArrayFactory[_ <: RiftDimension], RawDimensionConverter)] =
       converters match {
-        case Nil => UnspecifiedProblem("No RematerializationArrayFactory converter found").failure
+        case Nil => UnspecifiedProblem("No RematerializationArrayFactory or converter found").failure
         case x :: xs =>
-          option.cata(toolShed.tryGetArrayFactoryByType(x.tSource)(channel, toolGroup))(
+          option.cata(toolShed.tryGetArrayFactoryByType(x.tTarget)(channel, toolGroup))(
             factory => (factory, x).success,
             findRematerializationArrayFactory(xs))
       }
 
     option.cata(toolShed.tryGetArrayFactory[DimSource](channel, toolGroup))(
       some => (some, Nil).success,
-      findRematerializationArrayFactory(converters.getConvertersTo[DimSource]).map(tuple => (tuple._1, List(tuple._2))))
+      findRematerializationArrayFactory(converters.getConvertersFrom[DimSource]).map(tuple => (tuple._1, List(tuple._2))))
   }
 
   def getRematerializationFun[TSource <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mtarget: Manifest[T], mD: Manifest[TSource]): AlmValidation[TSource => AlmValidation[T]] =

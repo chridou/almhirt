@@ -15,7 +15,7 @@ object LiftJsonAstDematerializerFuns {
 
   val mapString = (value: String) => JString(value)
   val mapBoolean = (value: Boolean) => JBool(value)
-  val mapInt = (value: Long) => JInt(value)
+  val mapInt = (value: Int) => JInt(value)
   val mapBigInt = (value: BigInt) => JString(value.toString)
   val mapFloatingPoint = (value: Double) => JDouble(value)
   val mapBigDecimal = (value: BigDecimal) => JString(value.toString)
@@ -115,7 +115,7 @@ class ToLiftJsonAstDematerializer(val state: List[JField])(implicit hasDecompose
   def addOptionalByte(ident: String, anOptionalValue: Option[Byte]) = ifNoneAddNull(ident: String, anOptionalValue, addByte)
   def addInt(ident: String, aValue: Int) = ToLiftJsonAstDematerializer(JField(ident, mapInt(aValue)) :: state).success
   def addOptionalInt(ident: String, anOptionalValue: Option[Int]) = ifNoneAddNull(ident: String, anOptionalValue, addInt)
-  def addLong(ident: String, aValue: Long) = ToLiftJsonAstDematerializer(JField(ident, mapInt(aValue)) :: state).success
+  def addLong(ident: String, aValue: Long) = ToLiftJsonAstDematerializer(JField(ident, mapInt(aValue.toInt)) :: state).success
   def addOptionalLong(ident: String, anOptionalValue: Option[Long]) = ifNoneAddNull(ident: String, anOptionalValue, addLong)
   def addBigInt(ident: String, aValue: BigInt) = ToLiftJsonAstDematerializer(JField(ident, mapBigInt(aValue)) :: state).success
   def addOptionalBigInt(ident: String, anOptionalValue: Option[BigInt]) = ifNoneAddNull(ident: String, anOptionalValue, addBigInt)

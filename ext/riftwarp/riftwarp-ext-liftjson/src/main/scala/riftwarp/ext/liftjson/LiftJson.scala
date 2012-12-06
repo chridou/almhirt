@@ -9,6 +9,8 @@ object LiftJson {
 
   def register(to: RiftWarp, asDefaults: Boolean): AlmValidation[RiftWarp] = {
     to.toolShed.addDematerializerFactory(ToLiftJsonAstDematerializer, asDefaults)
+    to.toolShed.addArrayFactory(FromLiftJsonObjectRematerializationArray, asDefaults)
+    to.toolShed.addChannelFolder(LiftJsonFolder)
     registerConverters(to)
   }
 
