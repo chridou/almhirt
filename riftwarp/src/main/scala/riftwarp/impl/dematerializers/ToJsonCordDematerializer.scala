@@ -13,7 +13,41 @@ import riftwarp.ma._
 import riftwarp.TypeHelpers
 
 object ToJsonCordDematerializerFuns {
-  def launderString(str: String): Cord = Cord(str)
+  /*
+ * Parts of "launderString" are taken from Lift-JSON:
+ * 
+* Copyright 2009-2010 WorldWide Conferencing, LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+  def launderString(str: String): Cord = {
+    val buf = new StringBuilder
+    for (i <- 0 until str.length) {
+      val c = str.charAt(i)
+      buf.append(c match {
+        case '"' => "\\\""
+        case '\\' => "\\\\"
+        case '\b' => "\\b"
+        case '\f' => "\\f"
+        case '\n' => "\\n"
+        case '\r' => "\\r"
+        case '\t' => "\\t"
+        case c if ((c >= '\u0000' && c < '\u001f') || (c >= '\u0080' && c < '\u00a0') || (c >= '\u2000' && c < '\u2100')) => "\\u%04x".format(c: Int)
+        case c => c
+      })
+    }
+    buf.toString
+  }
 
   def mapStringLike(part: Cord): Cord = '\"' -: part :- '\"'
 
@@ -211,10 +245,10 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
 
   def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit mU: Manifest[U]): AlmValidation[ToJsonCordDematerializer] =
     hasDecomposers.getDecomposer[U].bind(decomposer => addComplexType(decomposer)(ident, aComplexType))
-  
+
   def addOptionalComplexTypeFixed[U <: AnyRef](ident: String, anOptionalComplexType: Option[U])(implicit mU: Manifest[U]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexTypeFixed(x, y))
-    
+
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     mapperByType[A].bind(map =>
       MAFuncs.map(ma)(x => DimensionCord(map(x))).bind(mcord =>
