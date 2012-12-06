@@ -99,6 +99,20 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
       case exn => None.success
     }
 
+  private def tryGetJArraysListWithJObjectsAndMapThem[A, B](ident: String)(mapThem: List[JObject] => AlmValidation[Map[A, B]]): AlmValidation[Option[Map[A, B]]] =
+    try {
+      jsonObj \ ident match {
+        case JArray(arr) =>
+          arr.map {
+            case jo: JObject => jo.success[AggregateProblem]
+            case notAJObject => AggregateProblem("JObject required. Found a '%s'".format(notAJObject)).failure[JObject]
+          }.sequence[AlmValidationAP, JObject].bind(lObj => mapThem(lObj)).map(Some(_))
+        case something => UnspecifiedProblem("JArray required. Found a '%s'".format(something)).failure
+      }
+    } catch {
+      case exn => None.success
+    }
+
   private def extractPrimitive[A](ident: String, extract: (JValue, String) => AlmValidation[A]): AlmValidation[Option[A]] =
     get(ident).bind(jvalueOpt =>
       option.cata(jvalueOpt)(
@@ -231,7 +245,22 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
               mapToAny[A](ident)(elem).toAgg).sequence[AlmValidationAP, A].bind(la =>
               converterToN.convert(la)))),
         UnspecifiedProblem("Only linear M[A]s supported").failure))
-        
+
+  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+    tryGetJArraysListWithJObjects(ident).m
+    (TypeHelpers.isPrimitiveType(mA.erasure), TypeHelpers.isPrimitiveType(mB.erasure)) match {
+      case (true, true) =>
+        get(ident).map(any =>
+          computeSafely {
+            getRematerializerFor[B](ident).bind(rematB =>
+              createTuples[A, B](rematB)(any.asInstanceOf[List[Any]]).map(tuples =>
+                tuples.toMap.asInstanceOf[Map[A, B]]))
+          }).validationOut
+      case (false, true) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure
+      case (true, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: B(%s) is not a primitive type".format(ident, mB.erasure.getName())).failure
+      case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
+    }
+
   def tryGetTypeDescriptor =
     tryGetString(TypeDescriptor.defaultKey).bind(opt => opt.map(str => TypeDescriptor.parse(str)).validationOut)
 
