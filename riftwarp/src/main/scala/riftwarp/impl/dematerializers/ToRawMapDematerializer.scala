@@ -10,7 +10,7 @@ import riftwarp.ma._
 import riftwarp.TypeHelpers
 
 class ToMapDematerializer(state: Map[String, Any], val path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToRawMapDematerializer(RiftMap(), ToolGroupRiftStd()) with NoneHasNoEffectDematerializationFunnel[DimensionRawMap] {
-  
+
   def dematerialize: AlmValidation[DimensionRawMap] = DimensionRawMap(state).success
 
   def addString(ident: String, aValue: String) = (ToMapDematerializer(state + (ident -> aValue), path)).success
@@ -27,6 +27,10 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String])(impli
   def addBigDecimal(ident: String, aValue: BigDecimal) = (ToMapDematerializer(state + (ident -> aValue), path)).success
 
   def addByteArray(ident: String, aValue: Array[Byte]) = (ToMapDematerializer(state + (ident -> aValue), path)).success
+  def addBase64String(ident: String, aValue: Array[Byte]) = {
+    val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
+    (ToMapDematerializer(state + (ident -> base64), path)).success
+  }
   def addBlob(ident: String, aValue: Array[Byte]) = (ToMapDematerializer(state + (ident -> aValue), path)).success
 
   def addDateTime(ident: String, aValue: org.joda.time.DateTime) = (ToMapDematerializer(state + (ident -> aValue), path)).success
@@ -154,7 +158,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String])(impli
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[Map[String, Any]] =
     hasDecomposers.tryGetRawDecomposerForAny(toDecompose) match {
       case Some(decomposer) =>
-        decomposer.decomposeRaw(toDecompose)(ToMapDematerializer(idx ::ident :: path)).bind(_.dematerialize.map(_.manifestation))
+        decomposer.decomposeRaw(toDecompose)(ToMapDematerializer(idx :: ident :: path)).bind(_.dematerialize.map(_.manifestation))
       case None =>
         UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass().getName())).failure
     }
@@ -166,7 +170,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String])(impli
       toDecompose match {
         case toDecomposeAsAnyRef: AnyRef =>
           option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
-            decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToMapDematerializer(idx ::ident :: path)).bind(_.dematerialize.map(_.manifestation)),
+            decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToMapDematerializer(idx :: ident :: path)).bind(_.dematerialize.map(_.manifestation)),
             UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
         case x =>
           UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure

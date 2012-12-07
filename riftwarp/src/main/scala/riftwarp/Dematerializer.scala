@@ -41,6 +41,8 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
   
   def addByteArray(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
+  def addBase64String(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalBase64String(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
   def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
 
@@ -105,6 +107,7 @@ trait NoneHasNoEffectDematerializationFunnel[TDimension <: RiftDimension] { dema
   def addOptionalBigDecimal(ident: String, anOptionalValue: Option[BigDecimal]) = option.cata(anOptionalValue)(addBigDecimal(ident, _), dematerializer.success)
   
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addByteArray(ident, _), dematerializer.success)
+  def addOptionalBase64String(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addBase64String(ident, _), dematerializer.success)
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addBlob(ident, _), dematerializer.success)
 
   def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]) = option.cata(anOptionalValue)(addDateTime(ident, _), dematerializer.success)

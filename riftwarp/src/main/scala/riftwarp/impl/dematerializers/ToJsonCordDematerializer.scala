@@ -208,6 +208,11 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String])(implicit has
 
   def addByteArray(ident: String, aValue: Array[Byte]) = addByteArrayPart(ident, aValue)
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArray)
+  def addBase64String(ident: String, aValue: Array[Byte]) = {
+    val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
+    addPart(ident, mapString(base64))
+  }
+  def addOptionalBase64String(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBase64String)
   def addBlob(ident: String, aValue: Array[Byte]) = {
     val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
     addPart(ident, mapString(theBlob))

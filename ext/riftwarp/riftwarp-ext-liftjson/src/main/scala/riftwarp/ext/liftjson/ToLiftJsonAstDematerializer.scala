@@ -132,6 +132,12 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
     addField(ident, JArray(aValue.map(v => JInt(v.toInt)).toList)).success
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArray)
 
+  def addBase64String(ident: String, aValue: Array[Byte]) = {
+    val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
+    addString(ident, base64)
+  }
+  def addOptionalBase64String(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBase64String)
+  
   def addBlob(ident: String, aValue: Array[Byte]) = {
     val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
     addField(ident, mapString(theBlob)).success
