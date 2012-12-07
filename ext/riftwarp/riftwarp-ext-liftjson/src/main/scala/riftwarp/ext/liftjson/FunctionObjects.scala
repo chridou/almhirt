@@ -15,10 +15,12 @@ trait LiftJsonFolder extends RegisterableChannelFolder[JValue, JArray] {
     if (funcObj.isEmpty(ma)) {
       JArray(List.empty).success
     } else {
-      if (funcObj.hasLinearCharacteristics) {
-        JArray(funcObj.toList(ma)).success
-      } else {
-        UnspecifiedProblem("Not yet supported").failure
+      funcObj match {
+        // Since it is automatically looked up, it should be the right thing...
+        case fo: LinearMAFunctions[M] =>
+          JArray(fo.toList(ma)).success
+        case x =>
+          UnspecifiedProblem("LiftJsonFolder:fold Not yet supported for '%s'".format(x)).failure
       }
     }
   }

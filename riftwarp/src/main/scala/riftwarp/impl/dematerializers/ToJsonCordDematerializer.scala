@@ -125,18 +125,18 @@ object ToJsonCordDematerializerFuns {
         folder.fold(items.map(x => createKeyValuePair(x)).seq)(fo)))
 }
 
-class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
+class ToJsonCordDematerializer(state: Cord, val path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
   import ToJsonCordDematerializerFuns._
-
+  
   def dematerialize = DimensionCord(('{' -: state :- '}')).success
 
   def addPart(ident: String, part: Cord): AlmValidation[ToJsonCordDematerializer] = {
     val fieldCord = '\"' + ident + "\":"
     val completeCord = fieldCord ++ part
     if (state.length == 0)
-      ToJsonCordDematerializer(completeCord).success
+      ToJsonCordDematerializer(completeCord, path).success
     else
-      ToJsonCordDematerializer((state :- ',') ++ completeCord).success
+      ToJsonCordDematerializer((state :- ',') ++ completeCord, path).success
   }
 
   private val nullCord = Cord("null")
@@ -226,7 +226,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = ifNoneAddNull(ident: String, anOptionalValue, addXml)
 
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToJsonCordDematerializer] = {
-    decomposer.decompose(aComplexType)(ToJsonCordDematerializer()).bind(toEmbed =>
+    decomposer.decompose(aComplexType)(ToJsonCordDematerializer(ident :: path)).bind(toEmbed =>
       toEmbed.asInstanceOf[ToJsonCordDematerializer].dematerialize).bind(json =>
       addComplexPart(ident, json.manifestation))
   }
@@ -259,7 +259,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y))
 
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
-    MAFuncs.mapV(ma)(x => decomposer.decompose(x)(ToJsonCordDematerializer()).bind(_.dematerialize)).bind(complex =>
+    MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(ToJsonCordDematerializer(idx :: ident :: path)).bind(_.dematerialize)).bind(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
       addPart(ident, dimCord.manifestation))
 
@@ -276,7 +276,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMAFixed(x, y))
 
   def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = {
-    MAFuncs.mapV(ma)(mapWithComplexDecomposerLookUp(ident)).bind(complex =>
+    MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).bind(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
       addPart(ident, dimCord.manifestation))
   }
@@ -285,7 +285,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMALoose(x, y))
 
   def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = {
-    MAFuncs.mapV(ma)(mapWithPrimitiveAndDecomposerLookUp(ident)).bind(complex =>
+    MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndDecomposerLookUp(idx, ident)(a)).bind(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
       addPart(ident, dimCord.manifestation))
   }
@@ -318,7 +318,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
       mapperByType[A].bind(mapA =>
         aMap.map {
           case (a, b) =>
-            decomposer.decompose(b)(ToJsonCordDematerializer()).bind(demat =>
+            decomposer.decompose(b)(ToJsonCordDematerializer("[" + a.toString + "]" :: ident :: path)).bind(demat =>
               demat.dematerialize.map(b =>
                 (mapA(a), b.manifestation)))
         }.map(_.toAgg).toList.sequence.bind(sequenced =>
@@ -341,7 +341,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
       mapperByType[A].bind(mapA =>
         aMap.map {
           case (a, b) =>
-            mapWithComplexDecomposerLookUp(ident)(b).map(b =>
+            mapWithComplexDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b =>
               (mapA(a), b.manifestation))
         }.map(_.toAgg).toList.sequence.bind(sequenced =>
           foldKeyValuePairs(sequenced).bind(pairs =>
@@ -357,7 +357,7 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
       mapperByType[A].bind(mapA =>
         aMap.map {
           case (a, b) =>
-            mapWithPrimitiveAndDecomposerLookUp(ident)(b).map(b =>
+            mapWithPrimitiveAndDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b =>
               (mapA(a), b.manifestation))
         }.map(_.toAgg).toList.sequence.bind(sequenced =>
           foldKeyValuePairs(sequenced).bind(pairs =>
@@ -369,21 +369,21 @@ class ToJsonCordDematerializer(state: Cord)(implicit hasDecomposers: HasDecompos
 
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
 
-  private def mapWithComplexDecomposerLookUp(ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
+  private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
     hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
       case Some(decomposer) =>
-        decomposer.decomposeRaw(toDecompose)(ToJsonCordDematerializer()).bind(_.dematerialize)
+        decomposer.decomposeRaw(toDecompose)(ToJsonCordDematerializer(idx :: ident :: path)).bind(_.dematerialize)
       case None =>
         UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass.getName())).failure
     }
 
-  def mapWithPrimitiveAndDecomposerLookUp(ident: String)(toDecompose: Any): AlmValidation[DimensionCord] =
+  def mapWithPrimitiveAndDecomposerLookUp(idx: String, ident: String)(toDecompose: Any): AlmValidation[DimensionCord] =
     mapperForAny(toDecompose).fold(
       _ =>
         toDecompose match {
           case toDecomposeAsAnyRef: AnyRef =>
             option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
-              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToJsonCordDematerializer()).bind(_.dematerialize),
+              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(ToJsonCordDematerializer(idx :: ident :: path)).bind(_.dematerialize),
               UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
           case x =>
             UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
@@ -397,7 +397,9 @@ object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord] {
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
   def apply()(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""))
-  def apply(state: Cord)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = new ToJsonCordDematerializer(state)
+  def apply(state: Cord)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(state, Nil)
+  def apply(path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""), path)
+  def apply(state: Cord, path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = new ToJsonCordDematerializer(state, path)
   def createDematerializer(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionCord]] =
     apply().success
 }

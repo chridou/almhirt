@@ -14,14 +14,16 @@ trait JsonCordFolder extends RegisterableChannelFolder[DimensionCord, DimensionC
     if (funcObj.isEmpty(ma)) {
       DimensionCord("[]").success
     } else {
-      if (funcObj.hasLinearCharacteristics) {
-        val head = funcObj.head(ma)
-        val tail = funcObj.tail(ma)
-        funcObj.fold(tail)(head)((acc, elem) => DimensionCord((acc.manifestation :- ',') ++ elem.manifestation))
-          .success
-          .map(x => DimensionCord('[' -: x.manifestation :- ']'))
-      } else {
-        UnspecifiedProblem("Not yet supported").failure
+      funcObj match {
+        // Since it is automatically looked up, it should be the right thing...
+        case fo: LinearMAFunctions[M] =>
+          val head = fo.head(ma)
+          val tail = fo.tail(ma)
+          funcObj.fold(tail)(head)((acc, elem) => DimensionCord((acc.manifestation :- ',') ++ elem.manifestation))
+            .success
+            .map(x => DimensionCord('[' -: x.manifestation :- ']'))
+        case _ =>
+          UnspecifiedProblem("Not yet supported").failure
       }
     }
   }
