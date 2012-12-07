@@ -154,7 +154,7 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
 
   def addOptionalJson(ident: String, anOptionalValue: Option[String]) = ifNoneAddNull(ident: String, anOptionalValue, addJson)
 
-  def addXml(ident: String, aValue: scala.xml.Node) = ToLiftJsonAstDematerializer(JField(ident, mapString(aValue.toString)) :: state).success
+  def addXml(ident: String, aValue: scala.xml.Node) = addField(ident, mapString(aValue.toString)).success
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = ifNoneAddNull(ident: String, anOptionalValue, addXml)
 
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToLiftJsonAstDematerializer] =
@@ -212,7 +212,7 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMALoose(x, y))
 
   def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToLiftJsonAstDematerializer] =
-    MAFuncs.mapV(ma)(((a, idx) => mapWithPrimitiveAndComplexDecomposerLookUp(idx, ident)(a)).bind(complex =>
+    MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndComplexDecomposerLookUp(idx, ident)(a)).bind(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[JValue], manifest[JArray])).map(jarray =>
       addField(ident, jarray))
 
@@ -243,7 +243,7 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
       primitiveMapperByType[A].map(mapA =>
         aMap.map {
           case (a, b) =>
-            decomposeWithDecomposer(decomposer)(b).map(jvalue =>
+            decomposeWithDecomposer("[" + a.toString + "]" :: ident :: Nil)(decomposer)(b).map(jvalue =>
               (mapA(a), jvalue)).toAgg
         }).bind(x =>
         x.toList.sequence[AlmValidationAP, (JValue, JValue)]).bind(items =>
@@ -266,7 +266,7 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
       primitiveMapperByType[A].bind(mapA =>
         aMap.toList.map {
           case (a, b) =>
-            mapWithComplexDecomposerLookUp(ident)(b).map(b => (mapA(a), b)).toAgg
+            mapWithComplexDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b => (mapA(a), b)).toAgg
         }.sequence.map(_.toMap).bind(items =>
           foldKeyValuePairs(items)).map(jarray =>
           addField(ident, jarray))),
@@ -281,7 +281,7 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
       primitiveMapperByType[A].bind(mapA =>
         aMap.toList.map {
           case (a, b) =>
-            mapWithPrimitiveAndComplexDecomposerLookUp(ident)(b).map(b => (mapA(a), b)).toAgg
+            mapWithPrimitiveAndComplexDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b => (mapA(a), b)).toAgg
         }.sequence.map(_.toMap).bind(items =>
           foldKeyValuePairs(items)).map(jarray =>
           addField(ident, jarray))),
@@ -319,7 +319,6 @@ object ToLiftJsonAstDematerializer extends DematerializerFactory[DimensionLiftJs
   val channel = RiftJson()
   val tDimension = classOf[DimensionLiftJsonAst]
   val toolGroup = ToolGroupLiftJson()
-  def apply(state: List[JField])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = apply(state, Nil)
   def apply(path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = apply(Nil, path)
   def apply(state: List[JField], path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = new ToLiftJsonAstDematerializer(state, path)
   def createDematerializer(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
