@@ -88,7 +88,6 @@ object LiftJsonAstDematerializerFuns {
 }
 
 class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[DimensionLiftJsonAst] {
-  println(path.mkString("/"))
   val channel = RiftJson()
   val tDimension = classOf[DimensionLiftJsonAst]
   val toolGroup = ToolGroupLiftJson()
