@@ -97,6 +97,7 @@ trait AlmValidationParseFunctions{
      } catch {
       case err => badData("Not a Base64 encoded String".format(toParse), key).failure[Array[Byte]]
     }
+
      
   def parseXmlAlm(toParse: String, key: String = "some value"): AlmValidationSBD[scala.xml.Node] =
     try {

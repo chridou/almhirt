@@ -31,7 +31,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String])(impli
     val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
     (ToMapDematerializer(state + (ident -> base64), path)).success
   }
-  def addBlob(ident: String, aValue: Array[Byte]) = (ToMapDematerializer(state + (ident -> aValue), path)).success
+  def addBlobEncoded(ident: String, aValue: Array[Byte]) = (ToMapDematerializer(state + (ident -> aValue), path)).success
 
   def addDateTime(ident: String, aValue: org.joda.time.DateTime) = (ToMapDematerializer(state + (ident -> aValue), path)).success
 
@@ -186,6 +186,6 @@ object ToMapDematerializer extends DematerializerFactory[DimensionRawMap] {
   def apply()(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapDematerializer = apply(Map.empty, Nil)
   def apply(path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapDematerializer = apply(Map.empty, path)
   def apply(state: Map[String, Any], path: List[String] = Nil)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapDematerializer = new ToMapDematerializer(state, path)
-  def createDematerializer(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionRawMap]] =
+  def createDematerializer(divertBlob: (Array[Byte], List[String]) => AlmValidation[RiftBlob])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionRawMap]] =
     apply().success
 }

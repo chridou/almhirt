@@ -41,6 +41,9 @@ object TypeDescriptor {
   def apply(clazz: Class[_]): TypeDescriptor = new TypeDescriptor(clazz.getName(), None, ";")
   def apply(clazz: Class[_], version: Int): TypeDescriptor = new TypeDescriptor(clazz.getName(), Some(version), ";")
 
+  def unapply(td: TypeDescriptor): Option[String] = Some(td.identifier)
+    
+  
   def parse(toParse: String): AlmValidation[TypeDescriptor] = parse(toParse, ";")
   def parse(toParse: String, versionDelim: String): AlmValidation[TypeDescriptor] = {
     val parts = toParse.split(versionDelim)

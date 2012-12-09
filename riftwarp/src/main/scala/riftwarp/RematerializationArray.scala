@@ -39,6 +39,9 @@ trait RematerializationArray {
   def getUuid(ident: String): AlmValidation[_root_.java.util.UUID]
   def tryGetUuid(ident: String): AlmValidation[Option[_root_.java.util.UUID]]
 
+  def getUri(ident: String): AlmValidation[_root_.java.net.URI]
+  def tryGetUri(ident: String): AlmValidation[Option[_root_.java.net.URI]]
+  
   def getJson(ident: String): AlmValidation[String]
   def tryGetJson(ident: String): AlmValidation[Option[String]]
   def getXml(ident: String): AlmValidation[scala.xml.Node]
