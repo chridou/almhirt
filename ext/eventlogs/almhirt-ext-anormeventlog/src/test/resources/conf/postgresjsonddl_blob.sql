@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS %tblname%_blobs
+(	id UUID PRIMARY KEY,
+	data BLOB NOT NULL);
