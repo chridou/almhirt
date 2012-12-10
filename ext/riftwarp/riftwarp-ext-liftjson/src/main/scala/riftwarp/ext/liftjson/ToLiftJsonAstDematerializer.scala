@@ -87,20 +87,22 @@ object LiftJsonAstDematerializerFuns {
         folder.fold(items.map(x => createKeyValuePair(x)).seq)(fo)))
 }
 
-class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[DimensionLiftJsonAst] {
+class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionLiftJsonAst](classOf[DimensionLiftJsonAst]) {
   val channel = RiftJson()
-  val tDimension = classOf[DimensionLiftJsonAst]
   val toolGroup = ToolGroupLiftJson()
 
   import LiftJsonAstDematerializerFuns._
 
+  protected def spawnNew(path: List[String]): AlmValidation[ToLiftJsonAstDematerializer] =
+    ToLiftJsonAstDematerializer.apply(path, divertBlob).success
+  
   def dematerialize: AlmValidation[DimensionLiftJsonAst] = DimensionLiftJsonAst(JObject(state.reverse)).success
   private def dematerializeInternal: JValue = JObject(state.reverse)
   private def getJValue(demat: Dematerializer[DimensionLiftJsonAst]) =
     demat.asInstanceOf[ToLiftJsonAstDematerializer].dematerializeInternal
 
   def addField(ident: String, value: JValue): ToLiftJsonAstDematerializer =
-    ToLiftJsonAstDematerializer(JField(ident, value) :: state, path)
+    ToLiftJsonAstDematerializer(JField(ident, value) :: state, path, divertBlob)
 
   def ifNoneAddNull[T](ident: String, valueOpt: Option[T], ifNotNull: (String, T) => AlmValidation[Dematerializer[DimensionLiftJsonAst]]): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
     option.cata(valueOpt)(ifNotNull(ident, _), addField(ident, JNull).success)
@@ -128,24 +130,27 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
   def addOptionalBigDecimal(ident: String, anOptionalValue: Option[BigDecimal]) = ifNoneAddNull(ident: String, anOptionalValue, addBigDecimal)
 
   def addByteArray(ident: String, aValue: Array[Byte]) =
-    addField(ident, JArray(aValue.map(v => JInt(v.toInt)).toList)).success
+  	addField(ident, JArray(aValue.map(v => JInt(v.toInt)).toList)).success
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArray)
-
-  def addBase64String(ident: String, aValue: Array[Byte]) = {
-    val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    addString(ident, base64)
-  }
-  def addOptionalBase64String(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBase64String)
+  def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]) = 
+    addString(ident, org.apache.commons.codec.binary.Base64.encodeBase64String(aValue))
+  def addOptionalBase64EncodedByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBase64EncodedByteArray)
+  def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]) = addBase64EncodedByteArray(ident, aValue)
+  def addOptionalByteArrayBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArrayBlobEncoded)
   
-  def addBlob(ident: String, aValue: Array[Byte]) = {
-    val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    addField(ident, mapString(theBlob)).success
-  }
+  def addBlob(ident: String, aValue: Array[Byte]) = 
+    getDematerializedBlob(ident, aValue).bind(blobDemat =>
+      blobDemat.dematerialize.bind(dim =>
+        addField(ident, dim.manifestation).success))
+        
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBlob)
 
   def addDateTime(ident: String, aValue: org.joda.time.DateTime) = addField(ident, mapDateTime(aValue)).success
   def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]) = ifNoneAddNull(ident: String, anOptionalValue, addDateTime)
 
+  def addUri(ident: String, aValue: _root_.java.net.URI) = addString(ident, aValue.toString())
+  def addOptionalUri(ident: String, anOptionalValue: Option[_root_.java.net.URI]) = ifNoneAddNull(ident: String, anOptionalValue, addUri)
+  
   def addUuid(ident: String, aValue: _root_.java.util.UUID) = addField(ident, mapUuid(aValue)).success
   def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]) = ifNoneAddNull(ident: String, anOptionalValue, addUuid)
 
@@ -168,19 +173,19 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
     ifNoneAddNull(ident: String, anOptionalComplexType, addComplexType(decomposer))
 
-  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[ToLiftJsonAstDematerializer] =
-    hasDecomposers.tryGetDecomposerForAny(aComplexType) match {
-      case Some(decomposer) => addComplexType(decomposer)(ident, aComplexType)
-      case None => UnspecifiedProblem("No decomposer found for ident '%s'".format(ident)).failure
-    }
-  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
-    ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexType(x, y))
-
   def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit mU: Manifest[U]): AlmValidation[ToLiftJsonAstDematerializer] =
-    hasDecomposers.getDecomposer[U].bind(decomposer => decomposeWithDecomposer(ident :: Nil)(decomposer)(aComplexType).map(jValue => addField(ident, jValue)))
+    hasDecomposers.getDecomposer[U].bind(decomposer => addComplexType(decomposer)(ident, aComplexType))
 
   def addOptionalComplexTypeFixed[U <: AnyRef](ident: String, anOptionalComplexType: Option[U])(implicit mU: Manifest[U]): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexTypeFixed(x, y))
+    
+  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[ToLiftJsonAstDematerializer] =
+    hasDecomposers.getDecomposerForAny(aComplexType).bind(decomposer =>
+      addComplexType(decomposer)(ident, aComplexType))
+      
+  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
+    ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexType(x, y))
+
 
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToLiftJsonAstDematerializer] =
     primitiveMapperByType[A].bind(map =>
@@ -200,10 +205,7 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMA(decomposer)(x, y))
 
   def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToLiftJsonAstDematerializer] =
-    hasDecomposers.tryGetDecomposer[A] match {
-      case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
-      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.erasure.getName())).failure
-    }
+    hasDecomposers.getDecomposer[A].bind(decomposer => addComplexMA(decomposer)(ident, ma))
 
   def addOptionalComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMAFixed(x, y))
@@ -298,15 +300,12 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
 
   private def decomposeWithDecomposer[T <: AnyRef](idxIdent: List[String])(decomposer: Decomposer[T])(what: T): AlmValidation[JValue] =
-    decomposer.decompose(what)(ToLiftJsonAstDematerializer(idxIdent ++ path)).map(demat => getJValue(demat))
+    decomposer.decompose(what)(ToLiftJsonAstDematerializer(idxIdent ++ path, divertBlob)).map(demat => getJValue(demat))
 
   private def mapWithComplexDecomposerLookUp(idx : String, ident: String)(toDecompose: AnyRef): AlmValidation[JValue] =
-    hasDecomposers.tryGetRawDecomposerForAny(toDecompose) match {
-      case Some(decomposer) =>
-        decomposer.decomposeRaw(toDecompose)(ToLiftJsonAstDematerializer(idx :: ident :: path)).map(x => JObject(x.asInstanceOf[ToLiftJsonAstDematerializer].state.reverse))
-      case None =>
-        UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass().getName())).failure
-    }
+    hasDecomposers.getRawDecomposerForAny(toDecompose).bind(decomposer =>
+      spawnNew(idx :: ident :: path).bind(freshDemat =>
+        decomposer.decomposeRaw(toDecompose)(freshDemat).map(x => JObject(x.asInstanceOf[ToLiftJsonAstDematerializer].state.reverse))))
 
   private def mapWithPrimitiveAndComplexDecomposerLookUp(idx : String, ident: String)(toDecompose: Any): AlmValidation[JValue] =
     boolean.fold(
@@ -324,8 +323,8 @@ object ToLiftJsonAstDematerializer extends DematerializerFactory[DimensionLiftJs
   val channel = RiftJson()
   val tDimension = classOf[DimensionLiftJsonAst]
   val toolGroup = ToolGroupLiftJson()
-  def apply(path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = apply(Nil, path)
-  def apply(state: List[JField], path: List[String])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = new ToLiftJsonAstDematerializer(state, path)
-  def createDematerializer(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
-    apply(Nil, Nil).success
+  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = apply(Nil, path, divertBlob)
+  def apply(state: List[JField], path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToLiftJsonAstDematerializer = new ToLiftJsonAstDematerializer(state, path, divertBlob)
+  def createDematerializer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionLiftJsonAst]] =
+    apply(Nil, Nil, divertBlob).success
 }
