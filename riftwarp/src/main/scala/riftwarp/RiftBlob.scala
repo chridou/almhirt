@@ -47,7 +47,7 @@ object RiftBlob {
     from.getTypeDescriptor.bind(td => 
       td match {
     	case TypeDescriptor("RiftBlobArrayValue") =>
-    	  from.getByteArray("data").map(RiftBlobArrayValue(_))
+    	  from.getByteArrayFromBlobEncoding("data").map(RiftBlobArrayValue(_))
     	case TypeDescriptor("RiftBlobRefFilePath") =>
     	  from.getString("path").map(RiftBlobRefFilePath(_))
     	case TypeDescriptor("RiftBlobRefByName") =>

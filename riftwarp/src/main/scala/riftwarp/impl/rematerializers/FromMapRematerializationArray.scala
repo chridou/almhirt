@@ -21,7 +21,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
       None.success)
 
   protected def spawnNew(from: Map[String, Any]): RematerializationArray =
-    FromJsonMapRematerializationArray(from, fetchBlobData)(hasRecomposers, functionObjects)
+    FromMapRematerializationArray(from, fetchBlobData)(hasRecomposers, functionObjects)
 
   def tryGetString(ident: String) = option.cata(theMap.get(ident))(almCast[String](_).map(Some(_)), None.success)
 
@@ -194,7 +194,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
         None.success),
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
 
-  def tryGetTypeDescriptor = option.cata(theMap.get(TypeDescriptor.defaultKey))(almCast[TypeDescriptor](_).map(Some(_)), None.success)
+  def tryGetTypeDescriptor = tryGetString(TypeDescriptor.defaultKey).bind(strOpt => strOpt.map(TypeDescriptor.parse(_)).validationOut)
 
   private def mapToAny[A](ident: String)(what: Any): AlmValidation[A] =
     if (TypeHelpers.isPrimitiveValue(what))
