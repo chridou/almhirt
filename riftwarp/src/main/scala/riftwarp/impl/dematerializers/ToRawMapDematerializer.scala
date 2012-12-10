@@ -83,8 +83,8 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
 
     hasFunctionObjects.tryGetMAFunctions[M] match {
       case Some(fo) =>
-        fo match {
-          case fo: LinearMAFunctions[M] =>
+        (fo: @unchecked) match {
+          case fo:  LinearMAFunctions[M] =>
             fo.sequenceValidations(fo.mapi(ma)((a, i) =>
               mapA(a, "[" + i.toString + "]"))).bind(x =>
               addValue(ident, x))

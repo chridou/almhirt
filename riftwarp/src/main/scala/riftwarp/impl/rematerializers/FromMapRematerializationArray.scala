@@ -12,7 +12,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
  import RecomposerFuns._
   protected def trySpawnNew(ident: String): AlmValidation[Option[RematerializationArray]] =
     option.cata(theMap.get(ident))(
-      s => s match {
+      s => (s: @unchecked) match {
         case aMap: Map[String, Any] =>
           Some(spawnNew(aMap)).success
         case x =>

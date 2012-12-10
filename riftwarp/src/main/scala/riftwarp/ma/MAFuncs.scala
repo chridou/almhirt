@@ -23,7 +23,7 @@ object MAFuncs {
   def mapi[M[_], A, B](ma: M[A])(map: (A, String) => B)(implicit functions: HasFunctionObjects, mM: Manifest[M[_]]): AlmValidation[M[B]] = {
     option.cata(functions.tryGetMAFunctions[M])(
       fo =>
-        fo match {
+        (fo: @unchecked) match {
           case fo: LinearMAFunctions[M] =>
             fo.mapi(ma)((a, i) => map(a, "["+i.toString+"]")).success
           case fo: NonLinearMAFunctions[M] =>
@@ -38,7 +38,7 @@ object MAFuncs {
   def mapiV[M[_], A, B](ma: M[A])(map: (A, String) => AlmValidation[B])(implicit functions: HasFunctionObjects, mM: Manifest[M[_]]): AlmValidation[M[B]] = {
     option.cata(functions.tryGetMAFunctions[M])(
       fo =>
-        fo match {
+        (fo: @unchecked) match {
           case fo: LinearMAFunctions[M] =>
             fo.sequenceValidations(fo.mapi(ma)((a, i) => map(a, "["+i.toString+"]").toAgg))
           case fo: NonLinearMAFunctions[M] =>

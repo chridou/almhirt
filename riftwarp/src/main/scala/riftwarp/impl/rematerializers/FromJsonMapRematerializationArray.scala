@@ -64,7 +64,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any], protected val
 
   protected def trySpawnNew(ident: String): AlmValidation[Option[RematerializationArray]] =
     option.cata(get(ident))(
-      s => s match {
+      s => (s: @unchecked) match {
         case aMap: Map[String, Any] =>
           Some(spawnNew(aMap)).success
         case x =>
