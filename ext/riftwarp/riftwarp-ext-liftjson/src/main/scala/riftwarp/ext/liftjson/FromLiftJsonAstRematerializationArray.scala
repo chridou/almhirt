@@ -78,19 +78,36 @@ object LiftJsonRematerializationFuns {
   }
 }
 
-class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayBasedOnOptionGetters {
+class FromLiftJsonObjectRematerializationArray(jsonObj: JObject, protected val fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayWithBlobBlobFetch with RematerializationArrayBasedOnOptionGetters {
   import LiftJsonRematerializationFuns._
-  private def get(key: String): AlmValidation[Option[JValue]] =
+  import RecomposerFuns._
+  private def get(ident: String): Option[JValue] =
     try {
-      jsonObj \ key match {
-        case JNothing => None.success
-        case JNull => None.success
-        case something => Some(something).success
+      jsonObj \ ident match {
+        case JNothing => None
+        case JNull => None
+        case something => Some(something)
       }
     } catch {
-      case exn => None.success
+      case exn => None
     }
 
+  protected def trySpawnNew(ident: String): AlmValidation[Option[RematerializationArray]] =
+    option.cata(get(ident))(
+      s => s match {
+        case jObject: JObject =>
+          Some(spawn(jObject)).success
+        case x =>
+          UnspecifiedProblem("Found a '%s' for ident %s but a JObject was required".format(x, ident)).failure
+      },
+      None.success)
+
+  protected def spawn(from: JObject): RematerializationArray =
+    FromLiftJsonObjectRematerializationArray(from, fetchBlobData)(hasRecomposers, functionObjects)
+
+  protected def spawnFromJValue(from: JValue): AlmValidation[RematerializationArray] =
+    FromLiftJsonObjectRematerializationArray.fromJValue(from, fetchBlobData)(hasRecomposers, functionObjects)
+    
   private def tryGetJArraysAndCreateMap[A, B](ident: String)(mapB: (JValue, String) => AlmValidation[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
     try {
       jsonObj \ ident match {
@@ -108,30 +125,27 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
     }
 
   private def extractPrimitive[A](ident: String, extract: (JValue, String) => AlmValidation[A]): AlmValidation[Option[A]] =
-    get(ident).bind(jvalueOpt =>
-      option.cata(jvalueOpt)(
-        s => extract(s, ident).map(Some(_)),
-        None.success))
+    option.cata(get(ident))(
+      s => extract(s, ident).map(Some(_)),
+      None.success)
 
   private def getComplexViaJObject[A <: AnyRef](ident: String)(mapToA: (JObject, String) => AlmValidation[A]): AlmValidation[Option[A]] =
-    get(ident).bind(jvalueOpt =>
-      option.cata(jvalueOpt)(
-        v =>
-          (v match {
-            case v: JObject => mapToA(v, ident)
-            case x => UnspecifiedProblem("'%s' is not a JObject. Cannot create a complex type".format(x)).failure
-          }).map(Some(_)),
-        None.success))
+    option.cata(get(ident))(
+      v =>
+        (v match {
+          case v: JObject => mapToA(v, ident)
+          case x => UnspecifiedProblem("'%s' is not a JObject. Cannot create a complex type".format(x)).failure
+        }).map(Some(_)),
+      None.success)
 
   private def getMAViaJArray[M[_], A](ident: String)(mapToMA: (JArray, String) => AlmValidation[M[A]]): AlmValidation[Option[M[A]]] =
-    get(ident).bind(jvalueOpt =>
-      option.cata(jvalueOpt)(
-        v =>
-          (v match {
-            case v: JArray => mapToMA(v, ident)
-            case x => UnspecifiedProblem("'%s' is not a JArray. Cannot create an M[A]".format(x)).failure
-          }).map(Some(_)),
-        None.success))
+    option.cata(get(ident))(
+      v =>
+        (v match {
+          case v: JArray => mapToMA(v, ident)
+          case x => UnspecifiedProblem("'%s' is not a JArray. Cannot create an M[A]".format(x)).failure
+        }).map(Some(_)),
+      None.success)
 
   def tryGetString(ident: String) = extractPrimitive(ident, extractString)
 
@@ -147,46 +161,48 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
   def tryGetBigDecimal(ident: String) = extractPrimitive(ident, extractBigDecimal)
 
   def tryGetByteArray(ident: String) =
-    get(ident).bind(jvalueOpt =>
-      option.cata(jvalueOpt)(
-        jvalue => jvalue match {
-          case JArray(aList) =>
-            aList.map(elem =>
-              extractByte(elem, ident).toAgg).sequence.map(l => Some(l.toArray))
-          case x =>
-            UnspecifiedProblem("Not a JArray").failure
-        },
-        None.success))
-
-  def tryGetBlob(ident: String) =
-    extractPrimitive(ident, (jvalue, ident) => extractString(jvalue, ident).bind(str => parseBase64Alm(str, ident)))
-
+    option.cata(get(ident))(
+      jvalue => jvalue match {
+        case JArray(aList) =>
+          aList.map(elem =>
+            extractByte(elem, ident).toAgg).sequence.map(l => Some(l.toArray))
+        case x =>
+          UnspecifiedProblem("Not a JArray").failure
+      },
+      None.success)
+  def tryGetByteArrayFromBase64Encoding(ident: String) =
+     extractPrimitive(ident, extractString).bind(strOpt => strOpt.map(str =>parseBase64Alm(str, ident)).validationOut)
+     
+  def tryGetByteArrayFromBlobEncoding(ident: String) = tryGetByteArrayFromBase64Encoding(ident)
+      
   def tryGetDateTime(ident: String) = extractPrimitive(ident, extractDateTime)
 
+  def tryGetUri(ident: String) = 
+    extractPrimitive(ident, extractString).bind(strOpt => strOpt.map(str =>parseUriAlm(str, ident)).validationOut)
+  
   def tryGetUuid(ident: String) = extractPrimitive(ident, extractUuid)
 
   def tryGetJson(ident: String) =
-    get(ident).map(jvalueOpt => jvalueOpt.map(jvalue => compact(render(jvalue))))
+    get(ident).map(jvalue => compact(render(jvalue))).success
 
   def tryGetXml(ident: String) =
     extractPrimitive(ident, (jvalue, ident) => extractString(jvalue, ident).bind(str => parseXmlAlm(str, ident)))
 
+   def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
+    tryGetRematerializedBlob(ident)
+    
   def tryGetComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) =
     getComplexViaJObject(ident)((jobject, ident) =>
-      recomposer.recompose(FromLiftJsonObjectRematerializationArray(jobject)))
-
-  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
-    getComplexViaJObject(ident)((jobject, ident) => {
-      val remat = FromLiftJsonObjectRematerializationArray(jobject)
-      hasRecomposers.lookUpFromRematerializationArray(remat, m.erasure).bind(recomposer =>
-        recomposer.recomposeRaw(remat).map(x => x.asInstanceOf[T]))
-    })
+      recomposer.recompose(spawn(jobject)))
 
   def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
     getComplexViaJObject(ident)((jobject, ident) => {
-      val remat = FromLiftJsonObjectRematerializationArray(jobject)
-      hasRecomposers.getRawRecomposer(m.erasure).bind(recomposer =>
-        recomposer.recomposeRaw(remat).map(x => x.asInstanceOf[T]))
+      recomposeWithLookedUpRawRecomposerFromTypeDescriptor(m.erasure)(spawn(jobject)).map(_.asInstanceOf[T])
+    })
+
+  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
+    getComplexViaJObject(ident)((jobject, ident) => {
+      recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawn(jobject), m.erasure).map(_.asInstanceOf[T])
     })
 
   def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
@@ -207,7 +223,7 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
         getMAViaJArray[M, A](ident)((jArray, ident) =>
           functionObjects.getConvertsMAToNA[List, M].bind(converterToN =>
             jArray.arr.map(elem =>
-              FromLiftJsonObjectRematerializationArray.fromJValue(elem).toAgg.bind(remat =>
+              spawnFromJValue(elem).toAgg.bind(remat =>
                 recomposer.recompose(remat).toAgg)).sequence[AlmValidationAP, A].bind(la =>
               converterToN.convert(la)))),
         UnspecifiedProblem("Only linear M[A]s supported").failure))
@@ -223,9 +239,9 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
         getMAViaJArray[M, A](ident)((jArray, ident) =>
           functionObjects.getConvertsMAToNA[List, M].bind(converterToN =>
             jArray.arr.map(elem =>
-              FromLiftJsonObjectRematerializationArray.fromJValue(elem).toAgg.bind(remat =>
-                hasRecomposers.lookUpFromRematerializationArray(remat).toAgg.bind(recomposer =>
-                  recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]).toAgg))).sequence[AlmValidationAP, A].bind(la =>
+              spawnFromJValue(elem).bind(freshRemat => 
+              recomposeWithLookedUpRawRecomposerFromRematerializationArray(freshRemat).map(_.asInstanceOf[A])).toAgg)
+              .sequence[AlmValidationAP, A].bind(la =>
               converterToN.convert(la)))),
         UnspecifiedProblem("Only linear M[A]s supported").failure))
 
@@ -252,7 +268,7 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
 
   def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
     tryGetJArraysAndCreateMap[A, B](ident)((jValue, ident) =>
-      FromLiftJsonObjectRematerializationArray.fromJValue(jValue).bind(remat =>
+      spawnFromJValue(jValue).bind(remat =>
         recomposer.recompose(remat)))
 
   def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
@@ -260,9 +276,8 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
 
   def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
     tryGetJArraysAndCreateMap[A, B](ident)((jValue, ident) =>
-      FromLiftJsonObjectRematerializationArray.fromJValue(jValue).bind(remat =>
-        hasRecomposers.lookUpFromRematerializationArray(remat).bind(recomposer =>
-          recomposer.recomposeRaw(remat).map(_.asInstanceOf[B]))))
+      spawnFromJValue(jValue).bind(remat =>
+        recomposeWithLookedUpRawRecomposerFromRematerializationArray(remat).map(_.asInstanceOf[B])))
 
   def tryGetMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
     tryGetJArraysAndCreateMap[A, B](ident)((jValue, ident) =>
@@ -274,25 +289,24 @@ class FromLiftJsonObjectRematerializationArray(jsonObj: JObject)(implicit hasRec
   private def mapToAny[A](ident: String)(what: JValue)(implicit m: Manifest[A]): AlmValidation[A] =
     getRematerializerForPrimitive[A].fold(
       prob =>
-        FromLiftJsonObjectRematerializationArray.fromJValue(what).bind(remat =>
-          hasRecomposers.lookUpFromRematerializationArray(remat, m.erasure).bind(recomposer =>
-            recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))),
+        spawnFromJValue(what).bind(remat =>
+          recomposeWithLookedUpRawRecomposerFromRematerializationArray(remat, m.erasure).map(_.asInstanceOf[A])),
       rematPrimitive =>
         rematPrimitive(what, ident))
 
 }
 
-object FromLiftJsonObjectRematerializationArray  extends RematerializationArrayFactory[DimensionLiftJsonAst] {
+object FromLiftJsonObjectRematerializationArray extends RematerializationArrayFactory[DimensionLiftJsonAst] {
   val channel = RiftJson()
   val tDimension = classOf[DimensionLiftJsonAst]
   val toolGroup = ToolGroupLiftJson()
-  def apply(jobject: JObject)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) = new FromLiftJsonObjectRematerializationArray(jobject)
-  def fromJValue(jValue: JValue)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects): AlmValidation[FromLiftJsonObjectRematerializationArray] =
+  def apply(jobject: JObject, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) = new FromLiftJsonObjectRematerializationArray(jobject, fetchBlobs)
+  def fromJValue(jValue: JValue, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects): AlmValidation[FromLiftJsonObjectRematerializationArray] =
     jValue match {
-      case jo: JObject => apply(jo).success
+      case jo: JObject => apply(jo, fetchBlobs).success
       case x => UnspecifiedProblem("Can only create a FromLiftJsonObjectRematerializationArray from JObject").failure
     }
-  def createRematerializationArray(from: DimensionLiftJsonAst)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromLiftJsonObjectRematerializationArray] =
-    fromJValue(from.manifestation)
+  def createRematerializationArray(from: DimensionLiftJsonAst, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromLiftJsonObjectRematerializationArray] =
+    fromJValue(from.manifestation, fetchBlobs)
 
 }
