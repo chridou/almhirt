@@ -55,10 +55,25 @@ object FromJsonMapRematerializationArrayFuns {
     }
 }
 
-class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayBasedOnOptionGetters {
+class FromJsonMapRematerializationArray(jsonMap: Map[String, Any], protected val fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayWithBlobBlobFetch with RematerializationArrayBasedOnOptionGetters {
   import FromJsonMapRematerializationArrayFuns._
+  import RecomposerFuns._
+
   private def get(key: String): Option[Any] =
     jsonMap.get(key).flatMap(v => if (v == null) None else Some(v))
+
+  protected def trySpawnNew(ident: String): AlmValidation[Option[RematerializationArray]] =
+    option.cata(get(ident))(
+      s => s match {
+        case aMap: Map[String, Any] =>
+          Some(spawnNew(aMap)).success
+        case x =>
+          UnspecifiedProblem("Found a '%s' for ident %s but a Map was required".format(x, ident)).failure
+      },
+      None.success)
+
+  protected def spawnNew(from: Map[String, Any]): RematerializationArray =
+    FromJsonMapRematerializationArray(from, fetchBlobData)(hasRecomposers, functionObjects)
 
   def tryGetString(ident: String) = option.cata(get(ident))(almCast[String](_).map(Some(_)), None.success)
 
@@ -75,64 +90,38 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
 
   def tryGetByteArray(ident: String) =
     option.cata(get(ident))(almCast[List[Double]](_).map(x => Some(x.toArray.map(_.toByte))), None.success)
-  def tryGetBlob(ident: String) =
+  def tryGetByteArrayFromBase64Encoding(ident: String) =
     option.cata(get(ident))(almCast[String](_).bind(parseBase64Alm(_, ident).map(Some(_))), None.success)
+  def tryGetByteArrayFromBlobEncoding(ident: String) = tryGetByteArrayFromBase64Encoding(ident)
 
   def tryGetDateTime(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseDateTimeAlm(_, ident)).map(Some(_)), None.success)
 
+  def tryGetUri(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseUriAlm(_, ident)).map(Some(_)), None.success)
+  
   def tryGetUuid(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseUuidAlm(_, ident)).map(Some(_)), None.success)
 
   def tryGetJson(ident: String) = option.cata(get(ident))(almCast[String](_).map(Some(_)), None.success)
   def tryGetXml(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseXmlAlm(_, ident)).map(Some(_)), None.success)
 
+  def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
+    tryGetRematerializedBlob(ident)
+
   def tryGetComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) =
-    get(ident) match {
-      case Some(elem) =>
-        almCast[Map[String, Any]](elem).bind { elemAsMap =>
-          FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elemAsMap)).bind(rematerializationArray =>
-            recomposer.recompose(rematerializationArray))
-        }.map(res =>
-          Some(res))
-      case None =>
-        None.success
-    }
+    trySpawnNew(ident).bind(rematOpt =>
+      option.cata(rematOpt)(
+        remat => recomposer.recompose(remat).map(Some(_)),
+        None.success))
 
-  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] = {
-    get(ident) match {
-      case Some(elem) =>
-        almCast[Map[String, Any]](elem).bind { elemAsMap =>
-          FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elemAsMap)).bind { rematerializationArray =>
-            rematerializationArray.tryGetTypeDescriptor.map {
-              case Some(td) => td
-              case None => TypeDescriptor(m.erasure)
-            }.bind(td =>
-              hasRecomposers.tryGetRecomposer[T](td) match {
-                case Some(recomposer) => recomposer.recompose(rematerializationArray)
-                case None => UnspecifiedProblem("No recomposer found for ident '%s' and type descriptor '%s'".format(ident, td)).failure
-              }).map(res => Some(res))
-          }
-        }
-      case None =>
-        None.success
-    }
-  }
+  def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
+    hasRecomposers.getRecomposer[T](m.erasure).bind(recomposer =>
+      tryGetComplexType[T](ident, recomposer))
 
-  def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] = {
-    get(ident) match {
-      case Some(elem) =>
-        almCast[Map[String, Any]](elem).bind { elemAsMap =>
-          FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elemAsMap)).bind { rematerializationArray =>
-            val td = TypeDescriptor(m.erasure)
-            hasRecomposers.tryGetRecomposer[T](td) match {
-              case Some(recomposer) => recomposer.recompose(rematerializationArray).map(Some(_))
-              case None => UnspecifiedProblem("No recomposer found for ident '%s' and type descriptor '%s'".format(ident, td)).failure
-            }
-          }
-        }
-      case None =>
-        None.success
-    }
-  }
+  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
+    trySpawnNew(ident).bind(rematOpt =>
+      option.cata(rematOpt)(
+        remat => hasRecomposers.lookUpFromRematerializationArray(remat, m.erasure).bind(recomposer =>
+          recomposer.recomposeRaw(remat).bind(x => almCast[T](x)).map(Some(_))),
+        None.success))
 
   def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
@@ -156,8 +145,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
             computeSafely {
               val validations =
                 mx.asInstanceOf[List[Any]].map(elem =>
-                  FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elem.asInstanceOf[Map[String, Any]])).bind(remat =>
-                    recomposer.recompose(remat))).map(_.toAgg)
+                  recomposer.recompose(spawnNew(elem.asInstanceOf[Map[String, Any]]))).map(_.toAgg)
               val sequenced = validations.sequence.bind(converter.convert(_))
               sequenced.map(x => Some(x))
             }),
@@ -177,10 +165,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
             computeSafely {
               val validations =
                 mx.asInstanceOf[List[Any]].map(elem =>
-                  FromJsonMapRematerializationArray.createRematerializationArray(DimensionStdLibJsonMap(elem.asInstanceOf[Map[String, Any]])).bind(remat =>
-                    remat.getTypeDescriptor.bind(typeDescriptor =>
-                      hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
-                        recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))).map(_.toAgg)
+                  recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawnNew(elem.asInstanceOf[Map[String, Any]])).map(_.asInstanceOf[A]).toAgg)
               val sequenced = validations.sequence.bind(converter.convert(_))
               sequenced.map(x => Some(x))
             }),
@@ -217,7 +202,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
 
   def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Any): AlmValidation[B] =
-      recomposer.recompose(FromMapRematerializationArray(DimensionRawMap(x.asInstanceOf[Map[String, Any]])))
+      recomposer.recompose(spawnNew(x.asInstanceOf[Map[String, Any]]))
 
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.erasure),
@@ -235,12 +220,8 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
     hasRecomposers.getRecomposer[B](TypeDescriptor(mB.erasure)).bind(recomposer => tryGetComplexMap[A, B](ident, recomposer))
 
   def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
-    def rematerialize(x: Any): AlmValidation[B] = {
-      val remat = FromMapRematerializationArray(DimensionRawMap(x.asInstanceOf[Map[String, Any]]))
-      remat.getTypeDescriptor.bind(td =>
-        hasRecomposers.getRawRecomposer(td).bind(recomposer =>
-          recomposer.recomposeRaw(remat).map(_.asInstanceOf[B])))
-    }
+    def rematerialize(x: Any): AlmValidation[B] =
+      recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawnNew(x.asInstanceOf[Map[String, Any]])).map(_.asInstanceOf[B])
 
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.erasure),
@@ -277,10 +258,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any])(implicit hasR
       prob =>
         if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
           computeSafely {
-          FromMapRematerializationArray.createRematerializationArray(DimensionRawMap(what.asInstanceOf[Map[String, Any]])).bind(remat =>
-            remat.getTypeDescriptor.bind(typeDescriptor =>
-              hasRecomposers.getRawRecomposer(typeDescriptor).bind(recomposer =>
-                recomposer.recomposeRaw(remat).map(_.asInstanceOf[A]))))
+          recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawnNew(what.asInstanceOf[Map[String, Any]]), m.erasure).map(_.asInstanceOf[A])
         }
         else
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure,
@@ -293,9 +271,9 @@ object FromJsonMapRematerializationArray extends RematerializationArrayFactory[D
   val tDimension = classOf[DimensionStdLibJsonMap].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
 
-  def apply(jsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromJsonMapRematerializationArray = new FromJsonMapRematerializationArray(jsonMap)
-  def apply(jsonMap: DimensionStdLibJsonMap)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromJsonMapRematerializationArray = new FromJsonMapRematerializationArray(jsonMap.manifestation)
-  def createRematerializationArray(from: DimensionStdLibJsonMap)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] = apply(from).success
+  def apply(jsonMap: Map[String, Any], fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromJsonMapRematerializationArray = new FromJsonMapRematerializationArray(jsonMap, fetchBlobs)(hasRecomposers, hasFunctionObject)
+  def apply(jsonMap: DimensionStdLibJsonMap, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromJsonMapRematerializationArray = apply(jsonMap.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
+  def createRematerializationArray(from: DimensionStdLibJsonMap, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] = apply(from, fetchBlobs)(hasRecomposers, hasFunctionObject).success
 }
 
 object FromJsonStringRematerializationArray extends RematerializationArrayFactory[DimensionString] {
@@ -303,17 +281,17 @@ object FromJsonStringRematerializationArray extends RematerializationArrayFactor
   val tDimension = classOf[DimensionString].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
 
-  def apply(json: String)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] = {
+  def apply(json: String, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] = {
     JSON.parseFull(json) match {
       case Some(map) =>
-        almCast[Map[String, Any]](map).map(FromJsonMapRematerializationArray(_))
+        almCast[Map[String, Any]](map).map(FromJsonMapRematerializationArray(_, fetchBlobs)(hasRecomposers, hasFunctionObject))
       case None =>
         ParsingProblem("Could not parse JSON", input = Some(json)).failure
     }
   }
-  def apply(json: DimensionString)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] = apply(json.manifestation)
-  def createRematerializationArray(from: DimensionString)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
-    apply(from)
+  def apply(json: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] = apply(json.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
+  def createRematerializationArray(from: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
+    apply(from, fetchBlobs)(hasRecomposers, hasFunctionObject)
 }
 
 import scalaz.Cord
@@ -322,10 +300,10 @@ object FromJsonCordRematerializationArray extends RematerializationArrayFactory[
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
 
-  def apply(json: Cord)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
-    FromJsonStringRematerializationArray.createRematerializationArray(DimensionString(json.toString))
-  def apply(json: DimensionCord)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
-    FromJsonStringRematerializationArray.createRematerializationArray(DimensionString(json.manifestation.toString))
-  def createRematerializationArray(from: DimensionCord)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
-    apply(from)
+  def apply(json: Cord, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
+    FromJsonStringRematerializationArray.createRematerializationArray(DimensionString(json.toString), fetchBlobs)(hasRecomposers, hasFunctionObject)
+  def apply(json: DimensionCord, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
+    FromJsonStringRematerializationArray.createRematerializationArray(DimensionString(json.manifestation.toString), fetchBlobs)(hasRecomposers, hasFunctionObject)
+  def createRematerializationArray(from: DimensionCord, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
+    apply(from, fetchBlobs)(hasRecomposers, hasFunctionObject)
 }

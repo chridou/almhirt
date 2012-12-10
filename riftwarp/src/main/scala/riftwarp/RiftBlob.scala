@@ -3,6 +3,7 @@ package riftwarp
 import scalaz.syntax.validation._
 import almhirt.common._
 
+
 sealed trait RiftBlob extends HasTypeDescriptor with CanDecomposeSelf
 
 trait RiftBlobValue extends RiftBlob {
@@ -42,7 +43,7 @@ case class RiftBlobRefByUri(uri : java.net.URI) extends RiftBlobReference {
 }
 
 object RiftBlob {
-  def decompose(from: RematerializationArray): AlmValidation[RiftBlob] =
+  def recompose(from: RematerializationArray): AlmValidation[RiftBlob] =
     from.getTypeDescriptor.bind(td => 
       td match {
     	case TypeDescriptor("RiftBlobArrayValue") =>

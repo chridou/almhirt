@@ -30,23 +30,29 @@ trait RematerializationArray {
 
   def getByteArray(ident: String): AlmValidation[Array[Byte]]
   def tryGetByteArray(ident: String): AlmValidation[Option[Array[Byte]]]
-  def getBlob(ident: String): AlmValidation[Array[Byte]]
-  def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]]
+  def getByteArrayFromBase64Encoding(ident: String): AlmValidation[Array[Byte]]
+  def tryGetByteArrayFromBase64Encoding(ident: String): AlmValidation[Option[Array[Byte]]]
+  def getByteArrayFromBlobEncoding(ident: String): AlmValidation[Array[Byte]]
+  def tryGetByteArrayFromBlobEncoding(ident: String): AlmValidation[Option[Array[Byte]]]
 
   def getDateTime(ident: String): AlmValidation[org.joda.time.DateTime]
   def tryGetDateTime(ident: String): AlmValidation[Option[org.joda.time.DateTime]]
 
+  def getUri(ident: String): AlmValidation[_root_.java.net.URI]
+  def tryGetUri(ident: String): AlmValidation[Option[_root_.java.net.URI]]
+
   def getUuid(ident: String): AlmValidation[_root_.java.util.UUID]
   def tryGetUuid(ident: String): AlmValidation[Option[_root_.java.util.UUID]]
 
-  def getUri(ident: String): AlmValidation[_root_.java.net.URI]
-  def tryGetUri(ident: String): AlmValidation[Option[_root_.java.net.URI]]
-  
+   
   def getJson(ident: String): AlmValidation[String]
   def tryGetJson(ident: String): AlmValidation[Option[String]]
   def getXml(ident: String): AlmValidation[scala.xml.Node]
   def tryGetXml(ident: String): AlmValidation[Option[scala.xml.Node]]
 
+  def getBlob(ident: String): AlmValidation[Array[Byte]]
+  def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]]
+  
   /** Rematerialize the complex type given a recomposer
    */
   def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]): AlmValidation[T]
@@ -130,6 +136,17 @@ trait RematerializationArray {
   def tryGetTypeDescriptor: AlmValidation[Option[TypeDescriptor]]
 }
 
+abstract class RematerializationArrayWithBlobBlobFetch extends RematerializationArray {
+  protected def fetchBlobData: BlobFetch
+  protected def trySpawnNew(ident: String): AlmValidation[Option[RematerializationArray]]
+  protected def tryGetRematerializedBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
+    trySpawnNew(ident).bind(rematOpt =>
+      option.cata(rematOpt)(
+       remat => RiftBlob.recompose(remat).bind(theBlob =>
+        fetchBlobData(theBlob).map(Some(_))),
+        None.success))
+}
+
 trait RematerializationArrayBasedOnOptionGetters extends RematerializationArray {
   def getString(ident: String) = tryGetString(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
@@ -145,15 +162,20 @@ trait RematerializationArrayBasedOnOptionGetters extends RematerializationArray 
   def getBigDecimal(ident: String) = tryGetBigDecimal(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getByteArray(ident: String) = tryGetByteArray(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getBlob(ident: String) = tryGetBlob(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getByteArrayFromBase64Encoding(ident: String) = tryGetByteArrayFromBase64Encoding(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getByteArrayFromBlobEncoding(ident: String) = tryGetByteArrayFromBlobEncoding(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getDateTime(ident: String) = tryGetDateTime(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+
+  def getUri(ident: String) = tryGetUri(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getUuid(ident: String) = tryGetUuid(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getJson(ident: String) = tryGetJson(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getXml(ident: String) = tryGetXml(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
+  def getBlob(ident: String) = tryGetBlob(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  
   def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) = tryGetComplexType[T](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexType[T](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexTypeFixed[T](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))

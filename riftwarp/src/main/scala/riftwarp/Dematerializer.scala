@@ -41,14 +41,11 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
   
   def addByteArray(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
-  def addBase64String(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalBase64String(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
+  def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalBase64EncodedByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
   def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalByteArrayBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
   
-  def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
-
   def addDateTime(ident: String, aValue: org.joda.time.DateTime): AlmValidation[Dematerializer[TDimension]]
   def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]): AlmValidation[Dematerializer[TDimension]]
 
@@ -63,6 +60,9 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
   def addXml(ident: String, aValue: scala.xml.Node): AlmValidation[Dematerializer[TDimension]]
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]): AlmValidation[Dematerializer[TDimension]]
 
+  def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
+  
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[Dematerializer[TDimension]]
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[TDimension]]
   def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[Dematerializer[TDimension]]
@@ -113,16 +113,20 @@ trait NoneHasNoEffectDematerializationFunnel[TDimension <: RiftDimension] { dema
   def addOptionalBigDecimal(ident: String, anOptionalValue: Option[BigDecimal]) = option.cata(anOptionalValue)(addBigDecimal(ident, _), dematerializer.success)
   
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addByteArray(ident, _), dematerializer.success)
-  def addOptionalBase64String(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addBase64String(ident, _), dematerializer.success)
+  def addOptionalBase64EncodedByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addBase64EncodedByteArray(ident, _), dematerializer.success)
   def addOptionalByteArrayBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addByteArrayBlobEncoded(ident, _), dematerializer.success)
 
   def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]) = option.cata(anOptionalValue)(addDateTime(ident, _), dematerializer.success)
+
+  def addOptionalUri(ident: String, anOptionalValue: Option[_root_.java.net.URI]) = option.cata(anOptionalValue)(addUri(ident, _), dematerializer.success)
   
   def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]) = option.cata(anOptionalValue)(addUuid(ident, _), dematerializer.success)
 
   def addOptionalJson(ident: String, anOptionalValue: Option[String]) = option.cata(anOptionalValue)(addJson(ident, _), dematerializer.success)
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = option.cata(anOptionalValue)(addXml(ident, _), dematerializer.success)
 
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addBlob(ident, _), dematerializer.success)
+  
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(decomposer)(ident, _), this.success)
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _), dematerializer.success)
   def addOptionalComplexTypeFixed[U <: AnyRef](ident: String, anOptionalComplexType: Option[U])(implicit mU: Manifest[U]) = option.cata(anOptionalComplexType)(addComplexTypeFixed(ident, _), dematerializer.success)
@@ -141,13 +145,13 @@ trait NoneHasNoEffectDematerializationFunnel[TDimension <: RiftDimension] { dema
 }
 
 abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension]) extends Dematerializer[TDimension]{
-  protected def divertBlob: (Array[Byte], List[String]) => AlmValidation[RiftBlob]
+  protected def divertBlob: BlobDivert
   protected def spawnNew(ident: String): AlmValidation[Dematerializer[TDimension]] = spawnNew(ident :: path)
   /** Creates a new instance of a dematerializer. It should respect divertBlob when creating the new instance.
    * 
    */
   protected def spawnNew(path: List[String]): AlmValidation[Dematerializer[TDimension]]
-  protected def getDematerializedBlob()(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]] =
+  protected def getDematerializedBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]] =
     spawnNew(ident).bind(demat =>
       divertBlob(aValue, ident :: path).bind(blob => 
         blob.decompose(demat)))

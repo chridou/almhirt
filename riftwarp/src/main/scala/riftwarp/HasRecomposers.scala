@@ -34,6 +34,9 @@ trait HasRecomposers {
   def lookUpFromRematerializationArray(remat: RematerializationArray): AlmValidation[RawRecomposer] =
     lookUpFromRematerializationArray(remat, None)
         
+  def decomposeWithLookedUpRawRecomposer(remat: RematerializationArray): AlmValidation[AnyRef] =
+    lookUpFromRematerializationArray(remat).bind(recomposer => recomposer.recomposeRaw(remat))
+    
   def addRawRecomposer(recomposer: RawRecomposer): Unit
   def addRecomposer(recomposer: Recomposer[_]): Unit
 }

@@ -125,7 +125,7 @@ object ToJsonCordDematerializerFuns {
         folder.fold(items.map(x => createKeyValuePair(x)).seq)(fo)))
 }
 
-class ToJsonCordDematerializer(state: Cord, val path: List[String], protected val divertBlob: (Array[Byte], List[String]) => AlmValidation[RiftBlob])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
+class ToJsonCordDematerializer(state: Cord, val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib) {
   import ToJsonCordDematerializerFuns._
   protected def spawnNew(path: List[String]): AlmValidation[ToJsonCordDematerializer] =
     ToJsonCordDematerializer.apply(path, divertBlob).success
@@ -210,20 +210,23 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
 
   def addByteArray(ident: String, aValue: Array[Byte]) = addByteArrayPart(ident, aValue)
   def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArray)
-  def addBase64String(ident: String, aValue: Array[Byte]) = {
+  def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]) = {
     val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
     addPart(ident, mapString(base64))
   }
-  def addOptionalBase64String(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBase64String)
-  def addBlobEncoded(ident: String, aValue: Array[Byte]) = {
+  def addOptionalBase64EncodedByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBase64EncodedByteArray)
+  def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]) = {
     val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
     addPart(ident, mapString(theBlob))
   }
-  def addOptionalBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBlobEncoded)
+  def addOptionalByteArrayBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArrayBlobEncoded)
 
   def addDateTime(ident: String, aValue: org.joda.time.DateTime) = addDateTimePart(ident, aValue)
   def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]) = ifNoneAddNull(ident: String, anOptionalValue, addDateTime)
 
+  def addUri(ident: String, aValue: _root_.java.net.URI) = addString(ident, aValue.toString())
+  def addOptionalUri(ident: String, anOptionalValue: Option[_root_.java.net.URI]) = ifNoneAddNull(ident: String, anOptionalValue, addUri)
+  
   def addUuid(ident: String, aValue: _root_.java.util.UUID) = addUuidPart(ident, aValue)
   def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]) = ifNoneAddNull(ident: String, anOptionalValue, addUuid)
 
@@ -232,6 +235,12 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   def addXml(ident: String, aValue: scala.xml.Node) = addXmlPart(ident, aValue)
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = ifNoneAddNull(ident: String, anOptionalValue, addXml)
 
+  def addBlob(ident: String, aValue: Array[Byte]) =
+    getDematerializedBlob(ident, aValue).bind(blobDemat =>
+      blobDemat.dematerialize.bind(dimCord =>
+        addComplexPart(ident, dimCord.manifestation)))
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBlob)
+  
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToJsonCordDematerializer] = {
     spawnNew(ident).bind(demat =>
       decomposer.decompose(aComplexType)(demat).bind(toEmbed =>
@@ -408,10 +417,10 @@ object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord] {
   val channel = RiftJson()
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
-  def apply(divertBlob: (Array[Byte], List[String]) => AlmValidation[RiftBlob])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""), divertBlob)
-  def apply(state: Cord, divertBlob: (Array[Byte], List[String]) => AlmValidation[RiftBlob])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(state, Nil, divertBlob)
-  def apply(path: List[String], divertBlob: (Array[Byte], List[String]) => AlmValidation[RiftBlob])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""), path, divertBlob)
-  def apply(state: Cord, path: List[String], divertBlob: (Array[Byte], List[String]) => AlmValidation[RiftBlob])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = new ToJsonCordDematerializer(state, path, divertBlob)
-  def createDematerializer(divertBlob: (Array[Byte], List[String]) => AlmValidation[RiftBlob])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[ToJsonCordDematerializer] =
+  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""), divertBlob)
+  def apply(state: Cord, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(state, Nil, divertBlob)
+  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""), path, divertBlob)
+  def apply(state: Cord, path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = new ToJsonCordDematerializer(state, path, divertBlob)
+  def createDematerializer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[ToJsonCordDematerializer] =
     apply(divertBlob).success
 }

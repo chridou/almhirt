@@ -76,6 +76,13 @@ trait AlmValidationParseFunctions{
       case err => badData("Not a valid DateTime: %s".format(toParse), key).failure[DateTime]
     }
 
+  def parseUriAlm(toParse: String, key: String = "some value"): AlmValidationSBD[java.net.URI] =
+    try {
+      java.net.URI.create(toParse).success
+     } catch {
+      case err => badData("Not a valid URI: %s".format(toParse), key).failure
+    }
+
   def parseUuidAlm(toParse: String, key: String = "some value"): AlmValidationSBD[UUID] =
     try {
       UUID.fromString(toParse).success[SingleBadDataProblem]
