@@ -34,6 +34,13 @@ case class RiftBlobRefByName(name: String) extends RiftBlobReference {
       demat.addString("name", name))
 }
 
+case class RiftBlobRefByUuid(uuid: java.util.UUID) extends RiftBlobReference {
+  val typeDescriptor = TypeDescriptor("RiftBlobRefByUuid")
+  def decompose[TDimension <: RiftDimension](implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+    into.addTypeDescriptor(this.typeDescriptor).bind(demat =>
+      demat.addUuid("uuid", uuid))
+}
+
 case class RiftBlobRefByUri(uri: java.net.URI) extends RiftBlobReference {
   val typeDescriptor = TypeDescriptor("RiftBlobRefByUri")
   def decompose[TDimension <: RiftDimension](implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
@@ -51,6 +58,8 @@ object RiftBlob {
           from.getString("path").map(RiftBlobRefFilePath(_))
         case TypeDescriptor("RiftBlobRefByName") =>
           from.getString("name").map(RiftBlobRefByName(_))
+        case TypeDescriptor("RiftBlobRefByUuid") =>
+          from.getUuid("uuid").map(RiftBlobRefByUuid(_))
         case TypeDescriptor("RiftBlobRefByUri") =>
           from.getUri("uri").map(RiftBlobRefByUri(_))
       })
