@@ -15,7 +15,7 @@ trait LiftJsonFolder extends RegisterableChannelFolder[JValue, JArray] {
     if (funcObj.isEmpty(ma)) {
       JArray(List.empty).success
     } else {
-      funcObj match {
+      (funcObj: @unchecked) match {
         // Since it is automatically looked up, it should be the right thing...
         case fo: LinearMAFunctions[M] =>
           JArray(fo.toList(ma)).success
