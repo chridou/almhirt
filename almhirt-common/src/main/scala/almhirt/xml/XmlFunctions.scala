@@ -24,6 +24,7 @@ import almhirt.syntax.almvalidation._
 trait XmlFunctions {
   import scala.xml.{XML, Node, Elem, NodeSeq}
   import scala.xml.XML
+  import almhirt.problem.all._
   
   def elems(elem: Elem): Seq[Elem] = 
     elem.child flatMap { (n: Node) => 
@@ -34,146 +35,126 @@ trait XmlFunctions {
 
   def elems(elem: Elem, label: String): Seq[Elem] = elems(elem) filter (_.label == label)
   
-  def xmlFromString(xmlString: String, key: String = "XML"): AlmValidationSBD[Elem] = {
+  def xmlFromString(xmlString: String, key: String = ""): AlmValidation[Elem] = {
     try {
-      XML.loadString(xmlString).successSBD
+      XML.loadString(xmlString).success
     } catch {
-      case err => SingleBadDataProblem("Could not parse xml: %s".format(err.getMessage), key = key, cause = Some(CauseIsThrowable(err))).failure[Elem]
+      case err => BadDataProblem("Could not parse xml: %s".format(err.getMessage), cause = Some(CauseIsThrowable(err))).failure[Elem]
     }
   }
   
-  def intFromXmlNode(node: Elem): AlmValidationSBD[Int] = 
+  def intFromXmlNode(node: Elem): AlmValidation[Int] = 
     notEmptyOrWhitespace(node.text, node.label) bind (ne => parseIntAlm(ne, node.label))
     
-  def longFromXmlNode(node: Elem): AlmValidationSBD[Long] = 
+  def longFromXmlNode(node: Elem): AlmValidation[Long] = 
     notEmptyOrWhitespace(node.text, node.label) bind (ne => parseLongAlm(ne, node.label))
   
-  def doubleFromXmlNode(node: Elem): AlmValidationSBD[Double] = 
+  def doubleFromXmlNode(node: Elem): AlmValidation[Double] = 
     notEmptyOrWhitespace(node.text, node.label) bind (ne => parseDoubleAlm(ne, node.label))
 
-  def floatFromXmlNode(node: Elem): AlmValidationSBD[Float] = 
+  def floatFromXmlNode(node: Elem): AlmValidation[Float] = 
    notEmptyOrWhitespace(node.text, node.label) bind (ne => parseFloatAlm(ne, node.label))
 
-  def decimalFromXmlNode(node: Elem): AlmValidationSBD[BigDecimal] =
+  def decimalFromXmlNode(node: Elem): AlmValidation[BigDecimal] =
    notEmptyOrWhitespace(node.text, node.label) bind (ne => parseDecimalAlm(ne, node.label))
 
-  def dateTimeFromXmlNode(node: Elem): AlmValidationSBD[DateTime] = 
+  def dateTimeFromXmlNode(node: Elem): AlmValidation[DateTime] = 
    notEmptyOrWhitespace(node.text, node.label) bind (ne => parseDateTimeAlm(ne, node.label))
 
-  def optionalIntXmlNode(node: Elem): AlmValidationSBD[Option[Int]] = 
+  def optionalIntXmlNode(node: Elem): AlmValidation[Option[Int]] = 
     if(node.text.trim.isEmpty) 
-      None.success[SingleBadDataProblem]
+      None.success[BadDataProblem]
     else 
-      intFromXmlNode(node) fold(_.failure, Some(_).successSBD)
+      intFromXmlNode(node) fold(_.failure, Some(_).success)
     
-  def optionalLongXmlNode(node: Elem): AlmValidationSBD[Option[Long]] = 
+  def optionalLongXmlNode(node: Elem): AlmValidation[Option[Long]] = 
     if(node.text.trim.isEmpty) 
-      None.success[SingleBadDataProblem] 
+      None.success[BadDataProblem] 
     else 
-      longFromXmlNode(node) fold (_.failure, Some(_).successSBD)
+      longFromXmlNode(node) fold (_.failure, Some(_).success)
   
-  def optionalDoubleXmlNode(node: Elem): AlmValidationSBD[Option[Double]] = 
+  def optionalDoubleXmlNode(node: Elem): AlmValidation[Option[Double]] = 
     if(node.text.trim.isEmpty) 
-      None.success[SingleBadDataProblem] 
+      None.success[BadDataProblem] 
     else 
-      doubleFromXmlNode(node) fold (_.failure, Some(_).successSBD)
+      doubleFromXmlNode(node) fold (_.failure, Some(_).success)
   
-  def optionalFloatXmlNode(node: Elem): AlmValidationSBD[Option[Float]] = 
+  def optionalFloatXmlNode(node: Elem): AlmValidation[Option[Float]] = 
     if(node.text.trim.isEmpty) 
-      None.success[SingleBadDataProblem] 
+      None.success[BadDataProblem] 
     else 
-      floatFromXmlNode(node) fold (_.failure, Some(_).successSBD)
+      floatFromXmlNode(node) fold (_.failure, Some(_).success)
   
-  def optionalDecimalXmlNode(node: Elem): AlmValidationSBD[Option[BigDecimal]] = 
+  def optionalDecimalXmlNode(node: Elem): AlmValidation[Option[BigDecimal]] = 
     if(node.text.trim.isEmpty) 
-      None.success[SingleBadDataProblem] 
+      None.success[BadDataProblem] 
     else 
-      decimalFromXmlNode(node) fold (_.failure, Some(_).successSBD)
+      decimalFromXmlNode(node) fold (_.failure, Some(_).success)
 
-  def optionalDateTimeXmlNode(node: Elem): AlmValidationSBD[Option[DateTime]] = 
+  def optionalDateTimeXmlNode(node: Elem): AlmValidation[Option[DateTime]] = 
     if(node.text.trim.isEmpty) 
-      None.success[SingleBadDataProblem] 
+      None.success[BadDataProblem] 
     else 
-      dateTimeFromXmlNode(node) fold (_.failure, Some(_).successSBD)
+      dateTimeFromXmlNode(node) fold (_.failure, Some(_).success)
   
-  def isBooleanSetTrue(elem: Elem): AlmValidationSBD[Boolean] = 
+  def isBooleanSetTrue(elem: Elem): AlmValidation[Boolean] = 
     if(elem.text.trim.isEmpty) 
-      false.success[SingleBadDataProblem] 
+      false.success[BadDataProblem] 
     else 
       parseBooleanAlm(elem.text, elem.label)
   
-  def firstChildNodeMandatory(node: Elem, label: String): AlmValidationSBD[Elem] = {
+  def firstChildNodeMandatory(node: Elem, label: String): AlmValidation[Elem] = {
     elems(node, label).toList match {
-      case Nil => SingleBadDataProblem("Element '%s' not found.".format(label), node.label).failure[Elem]
-      case l :: ls => l.successSBD
+      case Nil => 
+        BadDataProblem("Element '%s' not found.".format(label)).withIdentifier(label).failure[Elem]
+      case l :: ls => l.success
     }
   }
   
-  def mapOptionalFirstChild[T](node: Elem, label: String, compute: Elem => AlmValidationSBD[T]): AlmValidationSBD[Option[T]] =
+  def mapOptionalFirstChild[T](node: Elem, label: String, compute: Elem => AlmValidation[T]): AlmValidation[Option[T]] =
     elems(node, label).headOption match {
       case Some(t) => compute(t) map { r => Some(r) }
       case None => None.success
     }
 
-  def flatMapOptionalFirstChild[T](node: Elem, label: String, compute: Elem => AlmValidationSBD[Option[T]]): AlmValidationSBD[Option[T]] =
+  def flatMapOptionalFirstChild[T](node: Elem, label: String, compute: Elem => AlmValidation[Option[T]]): AlmValidation[Option[T]] =
     elems(node, label).headOption match {
       case Some(t) => compute(t)
       case None => None.success
     }
 
-  def stringFromChild(node: Elem, label: String): AlmValidationSBD[String] =
+  def stringFromChild(node: Elem, label: String): AlmValidation[String] =
     firstChildNodeMandatory(node, label)
     .bind {node => notEmptyOrWhitespace(node.text, label)}
 
-  def doubleFromChild(node: Elem, label: String): AlmValidationSBD[Double] =
+  def doubleFromChild(node: Elem, label: String): AlmValidation[Double] =
     firstChildNodeMandatory(node, label)
     .bind {node => parseDoubleAlm(node.text, label)}
 
-  def intFromChild(node: Elem, label: String): AlmValidationSBD[Int] =
+  def intFromChild(node: Elem, label: String): AlmValidation[Int] =
     firstChildNodeMandatory(node, label)
     .bind {node => parseIntAlm(node.text, label)}
 
-  def longFromChild(node: Elem, label: String): AlmValidationSBD[Long] =
+  def longFromChild(node: Elem, label: String): AlmValidation[Long] =
     firstChildNodeMandatory(node, label)
     .bind {node => parseLongAlm(node.text, label)}
   
-  private def emptyStringIsNone[T](str: String, compute: String => AlmValidationSBD[T]): AlmValidationSBD[Option[T]] =
+  private def emptyStringIsNone[T](str: String, compute: String => AlmValidation[T]): AlmValidation[Option[T]] =
     if(str.trim().isEmpty)
       None.success
     else
       compute(str) fold(_.failure, Some(_).success)
   
-  def stringOptionFromChild(node: Elem, label: String): AlmValidationSBD[Option[String]] =
+  def stringOptionFromChild(node: Elem, label: String): AlmValidation[Option[String]] =
     flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => s.success))
 
-  def doubleOptionFromChild(node: Elem, label: String): AlmValidationSBD[Option[Double]] =
+  def doubleOptionFromChild(node: Elem, label: String): AlmValidation[Option[Double]] =
     flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseDoubleAlm(s, label)))
 
-  def intOptionFromChild(node: Elem, label: String): AlmValidationSBD[Option[Int]] =
+  def intOptionFromChild(node: Elem, label: String): AlmValidation[Option[Int]] =
     flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseIntAlm(s, label)))
 
-  def longOptionFromChild(node: Elem, label: String): AlmValidationSBD[Option[Long]] =
+  def longOptionFromChild(node: Elem, label: String): AlmValidation[Option[Long]] =
     flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseLongAlm(s, label)))
-
-  def mapOptionalFirstChildM[T](node: Elem, label: String, compute: Elem => AlmValidationMBD[T]): AlmValidationMBD[Option[T]] =
-    elems(node, label).headOption match {
-      case Some(t) => compute(t) map { r => Some(r) }
-      case None => None.success
-    }
-
-  def mapChildren[T](node: Elem, label: String, map: Elem => AlmValidationMBD[T]): AlmValidationMBD[List[T]] = {
-    val validations: List[AlmValidationMBD[T]] =
-      elems(node, label).toList map {node =>
-        map(node) fold(_.prefixWithPath(List(label)).failure, _.success)}
-    validations.sequence
-  }
-  
-  def mapChildrenWithAttribute[T](node: Elem, label: String, attName: String, map: Elem => AlmValidationMBD[T]): AlmValidationMBD[List[(Option[String], T)]] = {
-    val validations: List[AlmValidationMBD[(Option[String], T)]] =
-      elems(node, label).toList map {node =>
-        val attValue = node.attribute(attName).headOption.map(_.text)
-        map(node) fold (_.prefixWithPath(List(label)).failure, (attValue, _).success)}
-    validations.sequence
-  }
 }
 

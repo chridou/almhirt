@@ -17,8 +17,9 @@ package almhirt.problem
 import almhirt.common._
 
 trait ProblemFunctions {
+  import ops._
   def badData(key: String, message: String) =
-    SingleBadDataProblem(message, key)
+    BadDataProblem(message).withIdentifier(key)
   def systemProblem(message: String, severity: Severity = Major, cause: Option[ProblemCause] = None, args: Map[String, Any] = Map()) =
     UnspecifiedProblem(message, severity, SystemProblem, args, cause)
   def applicationProblem(message: String, severity: Severity = Major, cause: Option[ProblemCause] = None, args: Map[String, Any] = Map()) =

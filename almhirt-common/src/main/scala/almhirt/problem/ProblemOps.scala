@@ -19,12 +19,12 @@ import scalaz.syntax.Ops
 import scalaz.NonEmptyList
 import almhirt.common._
 
-trait ProblemOps0 extends Ops[NonEmptyList[Problem]]{
+trait ProblemOps0 extends Ops[NonEmptyList[Problem]] {
   import inst._
-  
+
   def aggregate(msg: String): AggregateProblem = {
     val severity = self.map(_.severity).concatenate
-    if(self.list.exists(p => p.isSystemProblem))
+    if (self.list.exists(p => p.isSystemProblem))
       AggregateProblem(msg, severity = severity, category = SystemProblem, problems = self.list)
     else
       AggregateProblem(msg, severity = severity, category = ApplicationProblem, problems = self.list)
@@ -33,7 +33,19 @@ trait ProblemOps0 extends Ops[NonEmptyList[Problem]]{
   def aggregate(): AggregateProblem = aggregate("One or more problems. See causes.")
 }
 
+trait ProblemOps1[T <: Problem] extends Ops[T] {
+  def withIdentifier(ident: String): T =
+    if (ident.trim().isEmpty())
+      self
+    else
+      self.withArg("ident", ident).asInstanceOf[T]
+  
+  def toAggregate: AggregateProblem =
+    AggregateProblem(self.message, severity = self.severity, category = self.category, problems = self :: Nil)
+}
+
 trait ToProblemOps {
-  implicit def ToProblemOps0(a: NonEmptyList[Problem]) = new ProblemOps0{ def self = a }
+  implicit def ToProblemOps0(a: NonEmptyList[Problem]) = new ProblemOps0 { def self = a }
+  implicit def ToProblemOps1[T <: Problem](a: T) = new ProblemOps1[T] { def self = a }
 }
 

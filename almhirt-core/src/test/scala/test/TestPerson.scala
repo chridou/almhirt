@@ -1,6 +1,7 @@
 package test
 
 import almhirt.common._
+import almhirt.syntax.problem._
 import almhirt.domain._
 import almhirt.domain.impl._
 import almhirt.environment._
@@ -53,13 +54,13 @@ object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
 
   def apply(name: String) =
     if (name.isEmpty)
-      UpdateRecorder.reject(BusinessRuleViolatedProblem("Name must not be empty", "name", severity = Minor))
+      UpdateRecorder.reject(BusinessRuleViolatedProblem("Name must not be empty", severity = Minor).withIdentifier(name))
     else
       create(TestPersonCreated(UUID.randomUUID(), UUID.randomUUID, name))
 
   def apply(id: UUID, name: String) =
     if (name.isEmpty)
-      UpdateRecorder.reject(BusinessRuleViolatedProblem("Name must not be empty", "name", severity = Minor))
+      UpdateRecorder.reject(BusinessRuleViolatedProblem("Name must not be empty", severity = Minor).withIdentifier(name))
     else
       create(TestPersonCreated(UUID.randomUUID(), id, name))
 }

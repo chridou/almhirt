@@ -14,39 +14,37 @@
 */
 package almhirt.almvalidation
 
-import scalaz.{Validation, Success, Failure, ValidationNEL}
+import scalaz._
 import scalaz.syntax.validation._
 import org.joda.time.DateTime
 import almhirt.common._
 
 trait AlmValidationFunctions {
-  import almhirt.problem.ProblemDefaults._
-  
   def successAlm[T](x: T): AlmValidation[T] = x.success[Problem]
   
-  def inTryCatch[T](a: => T, defaultProblemType: Problem = defaultProblem): AlmValidation[T] = {
+  def inTryCatch[T](a: => T): AlmValidation[T] = {
     try {
       a.success[Problem]
     } catch {
-      case err => defaultProblemType.withMessage(err.getMessage).withCause(CauseIsThrowable(err)).failure[T]
+      case err => ExceptionCaughtProblem(err.getMessage, cause = Some(CauseIsThrowable(err))).failure
     }
   }
   
-  def computeSafely[T](a: => AlmValidation[T], defaultProblemType: Problem = defaultProblem): AlmValidation[T] = {
+  def computeSafely[T](a: => AlmValidation[T]): AlmValidation[T] = {
     try {
       a
     } catch {
-      case err => defaultProblemType.withMessage(err.getMessage).withCause(CauseIsThrowable(err)).failure[T]
+      case err => ExceptionCaughtProblem(err.getMessage, cause = Some(CauseIsThrowable(err))).failure
     }
   }
   
   def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
     if(cond) ().success else problem.failure[Unit]
   
-  def noneIsBadData[T](v: Option[T], message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
+  def noneIsBadData[T](v: Option[T], key: String = "unknown"): AlmValidation[T] =
     v match {
-      case Some(v) => v.success[SingleBadDataProblem]
-      case None => SingleBadDataProblem(message, key = key).failure[T]
+      case Some(that) => that.success[BadDataProblem]
+      case None => BadDataProblem("A value was required but None was supplied.").failure[T]
     }
   
   def noneIsNotFound[T](v: Option[T], message: String = "Not found"): AlmValidation[T] =

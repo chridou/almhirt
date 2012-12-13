@@ -21,6 +21,6 @@ import almhirt.common._
 
 object MessagingUtils {
   def patternMatchesTopic(pattern: String, topic: String): Boolean = true
-  def validateTopic(topic: String): AlmValidationSBD[Unit] = ().success
-  def validatePattern(pattern: String): AlmValidationSBD[Unit] = ().success
+  def validateTopic(topic: String): AlmValidation[Unit] = ().success
+  def validatePattern(pattern: String): AlmValidation[Unit] = ().success
 }

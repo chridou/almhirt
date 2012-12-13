@@ -34,7 +34,6 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
 }
 
 trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends AggregateRoot[AR, Event]{
-  import almhirt.problem.ProblemDefaults._
   /** Applies the event by calling the default handler after validating the event. */
   def applyEvent = {event: Event => applyValidated(event, handlers)}
   
@@ -56,7 +55,7 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
       	  handler(validated).success
       	} catch {
       		case err: MatchError => UnhandledDomainEventProblem("Unhandled event: %s".format(event.getClass.getName), event).failure
-      		case err => defaultSystemProblem.withMessage(err.getMessage()).failure
+      		case err => ExceptionCaughtProblem(err.getMessage()).failure
       	})
   }
   
@@ -68,7 +67,7 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
    */
   protected def validateEvent(event: Event): AlmValidation[Event] = {
   	if (event.aggId != this.id)
-  	  defaultApplicationProblem.withMessage("Ids do not match!").failure
+  	  UnspecifiedProblem("Ids do not match!").failure
   	else if(event.aggVersion != this.version)
   	  CollisionProblem("Conflict: Versions do not match. Targetted version is %d but the entity has version %d. The event was: %s".format(event.aggVersion, this.version, event.getClass().getName)).failure
   	else

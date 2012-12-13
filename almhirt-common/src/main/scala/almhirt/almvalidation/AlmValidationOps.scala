@@ -32,36 +32,32 @@ import almhirt.common._
  */
 trait AlmValidationOps0 extends Ops[String] {
   import funs._
-  def toIntAlm(key: String = "some value"): AlmValidationSBD[Int] = 
+  def toIntAlm(key: String = "some value"): AlmValidation[Int] = 
     parseIntAlm(self, key)
-  def toLongAlm(key: String = "some value"): AlmValidationSBD[Long] =  
+  def toLongAlm(key: String = "some value"): AlmValidation[Long] =  
     parseLongAlm(self, key)
-  def toDoubleAlm(key: String = "some value"): AlmValidationSBD[Double] =  
+  def toDoubleAlm(key: String = "some value"): AlmValidation[Double] =  
     parseDoubleAlm(self, key)
-  def toFloatAlm(key: String = "some value"): AlmValidationSBD[Float] =  
+  def toFloatAlm(key: String = "some value"): AlmValidation[Float] =  
     parseFloatAlm(self, key)
-  def toBooleanAlm(key: String = "some value"): AlmValidationSBD[Boolean] =  
+  def toBooleanAlm(key: String = "some value"): AlmValidation[Boolean] =  
     parseBooleanAlm(self, key)
-  def toDecimalAlm(key: String = "some value"): AlmValidationSBD[BigDecimal] =  
+  def toDecimalAlm(key: String = "some value"): AlmValidation[BigDecimal] =  
     parseDecimalAlm(self, key)
-  def toDateTimeAlm(key: String = "some value"): AlmValidationSBD[DateTime] =  
+  def toDateTimeAlm(key: String = "some value"): AlmValidation[DateTime] =  
     parseDateTimeAlm(self, key)
-  def toUuidAlm(key: String = "some value"): AlmValidationSBD[UUID] =  
+  def toUuidAlm(key: String = "some value"): AlmValidation[UUID] =  
     parseUuidAlm(self, key)
-  def toBytesFromBase64Alm(key: String = "some value"): AlmValidationSBD[Array[Byte]] =  
+  def toBytesFromBase64Alm(key: String = "some value"): AlmValidation[Array[Byte]] =  
     parseBase64Alm(self, key)
-  def notEmptyAlm(key: String = "some value"): AlmValidationSBD[String] =  
+  def notEmptyAlm(key: String = "some value"): AlmValidation[String] =  
     notEmpty(self, key)
-  def notEmptyOrWhitespaceAlm(key: String = "some value"): AlmValidationSBD[String] =  
+  def notEmptyOrWhitespaceAlm(key: String = "some value"): AlmValidation[String] =  
     notEmptyOrWhitespace(self, key)
 }
 
 trait AlmValidationOps1[T] extends Ops[T] {
   def successAlm(): AlmValidation[T] = self.success[Problem]  
-  def successSBD(): AlmValidationSBD[T] = self.success[SingleBadDataProblem]  
-  def successMBD(): AlmValidationMBD[T] = self.success[MultipleBadDataProblem]  
-  def successSM(): AlmValidationSM[T] = self.success[SingleMappingProblem]  
-  def successMM(): AlmValidationMM[T] = self.success[MultipleMappingProblem]  
 }
   
   
@@ -86,9 +82,8 @@ trait AlmValidationOps3[P, V] extends Ops[Validation[P,Option[V]]] {
 }
   
 trait AlmValidationOps4[T] extends Ops[Validation[String, T]] {
-  import almhirt.problem.ProblemDefaults._
-  def toAlmValidation(problemOnFail: Problem = defaultProblem): AlmValidation[T] =
-    self fold(problemOnFail.withMessage(_).failure[T], _.success[Problem])
+  def toAlmValidation(toProblem: String => Problem): AlmValidation[T] =
+    self fold(msg => toProblem(msg).failure[T], _.success[Problem])
 }
 
 trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
@@ -137,19 +132,13 @@ trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
 }
   
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
-  def noneIsBadData(message: String = "No value supplied", key: String = "unknown"): AlmValidationSBD[T] =
-    funs.noneIsBadData(self, message, key)
+  def noneIsBadData(key: String = "unknown"): AlmValidation[T] =
+    funs.noneIsBadData(self, key)
   def noneIsNotFound(message: String = "Not found"): AlmValidation[T] =
     funs.noneIsNotFound(self, message)
 }
   
-trait AlmValidationOps8[T] extends Ops[AlmValidationSBD[T]] {
-  def toMBD(): AlmValidationMBD[T] =
-    self fold (_.toMBD().failure[T], _.success)
-}
-
 trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
-  import almhirt.problem.ProblemDefaults._
   def toAgg(msg: String): AlmValidationAP[T] = 
     self fold (
         prob => 
@@ -164,9 +153,8 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
 }
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
-  import almhirt.problem.ProblemDefaults._
-  def fromExceptional(problemOnFail: Problem = defaultProblem): AlmValidation[T] = 
-    self fold (exn => problemOnFail.withMessage(exn.getMessage).withCause(CauseIsThrowable(exn)).failure[T], _.success)
+  def fromExceptional(): AlmValidation[T] = 
+    self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(CauseIsThrowable(exn))).failure[T], _.success)
 }
 
 trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
@@ -201,7 +189,7 @@ trait ToAlmValidationOps {
   implicit def FromvalidationProblemToAlmValidationOps5[P <: Problem, T](a: Validation[P, T]): AlmValidationOps5[P, T] = new AlmValidationOps5[P, T] { def self = a }
   implicit def FromFunOptToAlmValidationOps6[T,U](a: T => Option[U]): AlmValidationOps6[T,U]  = new AlmValidationOps6[T,U] { def self = a }
   implicit def FromOptionTOAlmAlmValidationOps7[T](a: Option[T]): AlmValidationOps7[T]= new AlmValidationOps7[T]{ def self = a }
-  implicit def FromBadDataProblemValidationToAlmValidationOps8[T](a: AlmValidationSBD[T]): AlmValidationOps8[T] = new AlmValidationOps8[T] { def self = a }
+//  implicit def FromBadDataProblemValidationToAlmValidationOps8[T](a: AlmValidationSBD[T]): AlmValidationOps8[T] = new AlmValidationOps8[T] { def self = a }
   implicit def FromAlmValidationToAlmValidationOps9[T](a: AlmValidation[T]): AlmValidationOps9[T] = new AlmValidationOps9[T] { def self = a }
   implicit def FromValidationToAlmValidationOps10[T](a: Validation[Throwable, T]): AlmValidationOps10[T] = new AlmValidationOps10[T]{ def self = a }
   implicit def FromListValidationToAlmValidationOps11[R](a: List[AlmValidation[R]]): AlmValidationOps11[R] = new AlmValidationOps11[R]{ def self = a }

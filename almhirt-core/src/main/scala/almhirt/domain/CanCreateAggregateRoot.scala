@@ -21,14 +21,13 @@ import almhirt.common._
 
 /** Functionality to create a new aggregate root */
 trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {
-  import almhirt.problem.ProblemDefaults._
   /** Applies the event and returns a new aggregate root from the event or a failure */
   def applyEvent = { event: Event =>
     try {
       creationHandler(event).success
     } catch {
-      case err: MatchError => defaultSystemProblem.withMessage("Unhandled creation event: %s".format(event.getClass.getName)).failure
-      case err => defaultSystemProblem.withMessage(err.getMessage()).failure
+      case err: MatchError => ExceptionCaughtProblem("Unhandled creation event: %s".format(event.getClass.getName)).failure
+      case err => ExceptionCaughtProblem(err.getMessage()).failure
     }
   }
 

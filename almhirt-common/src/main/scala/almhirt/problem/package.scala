@@ -19,6 +19,8 @@ package object problem {
 
   object funs  extends ProblemFunctions  
 
+  private [problem] object ops extends ToProblemOps  
+  
   object all 
      extends ProblemInstances with ProblemCategoryInstances with SeverityInstances 
      with ProblemFunctions with ToProblemOps  

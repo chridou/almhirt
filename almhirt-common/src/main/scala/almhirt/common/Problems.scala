@@ -34,6 +34,8 @@ case class AggregateProblem(message: String, severity: Severity = Major, categor
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+  def addProblem(anotherOne: Problem) = 
+     AggregateProblem(this.message, severity = this.severity and anotherOne.severity, category = this.category and anotherOne.category, problems = anotherOne :: this.problems)
 
   override def toString(): String = {
     val builder = baseInfo
@@ -47,6 +49,18 @@ case class AggregateProblem(message: String, severity: Severity = Major, categor
     builder.result
   }
 }
+
+/** Should be used in cause an attempt to register something somewhere failed.
+ */
+case class ExceptionCaughtProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = ExceptionCaughtProblem
+  def withMessage(newMessage: String) = copy(message = newMessage)
+  def withSeverity(severity: Severity) = copy(severity = severity)
+  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+}
+
 
 /** Should be used in cause an attempt to register something somewhere failed.
  */
@@ -163,57 +177,15 @@ case class PersistenceProblem(message: String, severity: Severity = Major, categ
 
 /** Some data structure couldn't be mapped from one to another. The key is giving the name of the field that caused the problem.
  */
-case class SingleMappingProblem(message: String, key: String = "unknown", category: ProblemCategory = SystemProblem, severity: Severity = Minor, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends MappingProblem with SingleKeyedProblem {
-  type T = SingleMappingProblem
+case class MappingProblem(message: String, category: ProblemCategory = SystemProblem, severity: Severity = Minor, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = MappingProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  def addTo(multipleMappingProblem: MultipleMappingProblem) = multipleMappingProblem.add(this)
-  def add(other: SingleMappingProblem) = toMultipleMappingProblem().add(other)
-  def toMultipleMappingProblem() = MultipleMappingProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
-  override def toString(): String = {
-    val builder = baseInfo
-    builder.append("Key: %s\n".format(key))
-    builder.result
-  }
 }
 
-/** Some data structure couldn't be mapped from one to another. The keysAndMessages is giving the names of the fields that caused the problems with the error messages.
- */
-case class MultipleMappingProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends MappingProblem with MultiKeyedProblem {
-  type T = MultipleMappingProblem
-  def withMessage(newMessage: String) = copy(message = newMessage)
-  def withSeverity(severity: Severity) = copy(severity = severity)
-  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
-  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
-  def withBadMapping(key: String, messageForKey: String): T =
-    keysAndMessages.get(key) match {
-      case Some(_) => withBadMapping(key + "_", messageForKey)
-      case None => copy(keysAndMessages = keysAndMessages + (key -> messageForKey))
-    }
-  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  def add(badMapping: SingleMappingProblem) = withBadMapping(badMapping.key, badMapping.message).withSeverity(severity and badMapping.severity)
-  def combineWith(other: MultipleMappingProblem) =
-    other.keysAndMessages.toSeq
-      .foldLeft(MultipleMappingProblem("Many bad mappings", Map.empty)) { case (state, (k, msg)) => state.withBadMapping(k, msg) }
-      .withSeverity(severity and other.severity)
-  def prefixWithPath(pathParts: List[String], sep: String = ".") = {
-    pathParts match {
-      case Nil => this
-      case _ =>
-        val path = pathParts.mkString(sep) + sep
-        copy(keysAndMessages = keysAndMessages.toSeq.map { case (k, m) => (path + k) -> m }.toMap)
-    }
-  }
-  override def toString(): String = {
-    val builder = baseInfo
-    builder.append("Keys and messages:\n")
-    keysAndMessages.foreach { case (k, m) => builder.append("%s->%s".format(k, m)) }
-    builder.result
-  }
-}
 
 /** Data couldn't be found. Use when looking for an entity or something similar. Do not use for a missing key in a map.
  */
@@ -270,64 +242,13 @@ case class ParsingProblem(message: String, input: Option[String], severity: Seve
 
 /** Some data is invalid. The key gives the context
  */
-case class SingleBadDataProblem(message: String, key: String = "unknown", severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BadDataProblem with SingleKeyedProblem {
-  type T = SingleBadDataProblem
+case class BadDataProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = BadDataProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  def addTo(multipleBadData: MultipleBadDataProblem) = multipleBadData.add(this)
-  def add(other: SingleBadDataProblem) = toMBD().add(other)
-  def toMBD() = MultipleBadDataProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity, cause = None)
-  def prefixWithPath(pathParts: List[String], sep: String = ".") = {
-    pathParts match {
-      case Nil => this
-      case _ =>
-        val path = pathParts.mkString(sep) + sep
-        copy(key = (path + sep + key))
-    }
-  }
-  override def toString(): String = {
-    val builder = baseInfo
-    builder.append("Key: %s\n".format(key))
-    builder.result
-  }
-}
-
-/** Some data is invalid. The keys give the contexts
- */
-case class MultipleBadDataProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BadDataProblem with MultiKeyedProblem {
-  type T = MultipleBadDataProblem
-  def withMessage(newMessage: String) = copy(message = newMessage)
-  def withSeverity(severity: Severity) = copy(severity = severity)
-  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
-  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
-  def withBadData(key: String, messageForKey: String): T =
-    keysAndMessages.get(key) match {
-      case Some(_) => withBadData(key + "_", messageForKey)
-      case None => copy(keysAndMessages = keysAndMessages + (key -> messageForKey))
-    }
-  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  def add(badData: SingleBadDataProblem) = withBadData(badData.key, badData.message).withSeverity(severity and badData.severity)
-  def combineWith(other: MultipleBadDataProblem) =
-    other.keysAndMessages.toSeq
-      .foldLeft(MultipleBadDataProblem("Multiple bad data", Map.empty)) { case (state, (k, msg)) => state.withBadData(k, msg) }
-      .withSeverity(severity and other.severity)
-  def prefixWithPath(pathParts: List[String], sep: String = ".") = {
-    pathParts match {
-      case Nil => this
-      case _ =>
-        val path = pathParts.mkString(sep) + sep
-        copy(keysAndMessages = keysAndMessages.toSeq.map { case (k, m) => (path + k) -> m }.toMap)
-    }
-  }
-  override def toString(): String = {
-    val builder = baseInfo
-    builder.append("Keys and messages:\n")
-    keysAndMessages.foreach { case (k, m) => builder.append("%s->%s".format(k, m)) }
-    builder.result
-  }
 }
 
 /** Something has been changed by someone else. Stale data etc..
@@ -383,57 +304,13 @@ case class OperationCancelledProblem(message: String, severity: Severity = Minor
 
 /** A rule on a process has been violated
  */
-case class BusinessRuleViolatedProblem(message: String, key: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BusinessRuleProblem with SingleKeyedProblem {
+case class BusinessRuleViolatedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = BusinessRuleViolatedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  def addTo(manyViolations: ManyBusinessRulesViolatedProblem) = manyViolations.add(this)
-  def add(other: BusinessRuleViolatedProblem) = toMBRV().add(other)
-  def toMBRV() = ManyBusinessRulesViolatedProblem("Multiple errors occured", keysAndMessages = Map(key -> message), severity = severity)
-  override def toString(): String = {
-    val builder = baseInfo
-    builder.append("Key: %s\n".format(key))
-    builder.result
-  }
-}
-
-/** Multiple rules on a process have been violated
- */
-case class ManyBusinessRulesViolatedProblem(message: String, keysAndMessages: Map[String, String], severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends BusinessRuleProblem with MultiKeyedProblem {
-  type T = ManyBusinessRulesViolatedProblem
-  def withMessage(newMessage: String) = copy(message = newMessage)
-  def withSeverity(severity: Severity) = copy(severity = severity)
-  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
-  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
-  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  def withViolation(key: String, messageForKey: String): T =
-    keysAndMessages.get(key) match {
-      case Some(_) => withViolation(key + "_", messageForKey)
-      case None => copy(keysAndMessages = keysAndMessages + (key -> messageForKey))
-    }
-  def add(violation: BusinessRuleViolatedProblem) = withViolation(violation.key, violation.message).withSeverity(severity and violation.severity)
-  def combineWith(other: ManyBusinessRulesViolatedProblem) =
-    other.keysAndMessages.toSeq
-      .foldLeft(ManyBusinessRulesViolatedProblem("Many business rules violated", Map.empty)) { case (state, (k, msg)) => state.withViolation(k, msg) }
-      .withSeverity(severity and other.severity)
-  def prefixWithPath(pathParts: List[String], sep: String = ".") = {
-    pathParts match {
-      case Nil => this
-      case _ =>
-        val path = pathParts.mkString(sep) + sep
-        copy(keysAndMessages = keysAndMessages.toSeq.map { case (k, m) => (path + k) -> m }.toMap)
-    }
-  }
-
-  override def toString(): String = {
-    val builder = baseInfo
-    builder.append("Keys and messages:\n")
-    keysAndMessages.foreach { case (k, m) => builder.append("%s->%s".format(k, m)) }
-    builder.result
-  }
 }
 
 /** This locale simply isn't supported. Store the not supported locale code in 'locale'.
