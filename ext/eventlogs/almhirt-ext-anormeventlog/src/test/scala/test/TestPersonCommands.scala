@@ -7,7 +7,7 @@ import almhirt.environment.AlmhirtContext
 import akka.dispatch.ExecutionContext
 import almhirt.domain.AggregateRootRepository
 
-trait TestPersonCommand extends DomainCommand
+trait TestPersonCommand extends BoundDomainCommand
 trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyle
 trait TestPersonMutatorCommand extends TestPersonCommand with MutatorCommandStyle
 
@@ -17,8 +17,7 @@ case class SetTestPersonAddress(target: AggregateRootRef, aquiredAddress: String
 case class MoveTestPerson(target: AggregateRootRef, newAddress: String) extends TestPersonMutatorCommand
 case class MoveBecauseOfMarriage(target: AggregateRootRef, newName: String, newAddress: String) extends TestPersonMutatorCommand
 
-
-trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends UnitOfWork[TestPerson, TestPersonEvent]
+trait TestPersonUnitOfWork[TCom <: TestPersonCommand] extends BoundUnitOfWork[TestPerson, TestPersonEvent]
 
 trait TestPersonCreatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with CreatorUnitOfWorkStyleFuture[TestPerson, TestPersonEvent, TCom]
 trait TestPersonMutatorUnitOfWork[TCom <: TestPersonCommand] extends TestPersonUnitOfWork[TCom] with MutatorUnitOfWorkStyleFuture[TestPerson, TestPersonEvent, TCom]

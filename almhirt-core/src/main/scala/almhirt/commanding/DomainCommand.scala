@@ -16,7 +16,9 @@ package almhirt.commanding
 
 import java.util.UUID
 
-trait DomainCommand {
+trait DomainCommand
+
+trait BoundDomainCommand extends DomainCommand {
   def aggRootRef: Option[AggregateRootRef]
   /**
    * The affected aggregate root
@@ -25,15 +27,17 @@ trait DomainCommand {
   def isCreator: Boolean
 }
 
-trait MutatorCommandStyle { self: DomainCommand =>
+trait MutatorCommandStyle { self: BoundDomainCommand =>
   def aggRootRef = Some(target)
   def target: AggregateRootRef
   val isMutator = true
   val isCreator = false
 }
 
-trait CreatorCommandStyle { self: DomainCommand =>
+trait CreatorCommandStyle { self: BoundDomainCommand =>
   def aggRootRef = None
   val isMutator = false
   val isCreator = true
 }
+
+trait FreestyleCommand extends DomainCommand
