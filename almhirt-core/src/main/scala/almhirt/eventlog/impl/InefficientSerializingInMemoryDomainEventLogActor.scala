@@ -30,7 +30,7 @@ import almhirt.eventlog._
 class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventLogFactory {
   def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
     val props =
-      SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new impl.InefficientSerializingInMemoryDomainEventLogActor()(ctx)))
+      SystemHelper.addDispatcherToProps(ctx.system.config)(ConfigPaths.eventlog, Props(new impl.InefficientSerializingInMemoryDomainEventLogActor()(ctx)))
     val actor = ctx.system.actorSystem.actorOf(props, "domainEventLog")
     new impl.DomainEventLogActorHull(actor)(ctx).success
   }

@@ -1,14 +1,17 @@
 package almhirt.core
 
 import almhirt.common._
-import almhirt.common.AlmFuture
 
 trait HasServices {
-  def getService[T <: AnyRef]: AlmFuture[T]
-  def awaitService[T <: AnyRef]: AlmValidation[T]
+  def getService[T <: AnyRef](implicit m: Manifest[T]): AlmValidation[T] =
+    getServiceByType(m.erasure.asInstanceOf[Class[_ <: AnyRef]]).map(_.asInstanceOf[T])
+    
+  def getServiceByType(clazz: Class[_ <: AnyRef]): AlmValidation[AnyRef]
 }
 
 trait CanRegisterServices {
-  def registerService[T <: AnyRef](service: T)(implicit m: Manifest[T]) = registerServiceByType(m.erasure, service)
-  def registerServiceByType(clazz: Class[_], service: AnyRef)
+  def registerService[TService <: AnyRef, TImpl <: TService](serviceImpl: TImpl)(implicit mService: Manifest[TService]) = registerServiceByType(mService.erasure.asInstanceOf[Class[_ <: AnyRef]], serviceImpl)
+  def registerServiceByType(clazz: Class[_ <: AnyRef], service: AnyRef)
 }
+
+trait ServiceRegistry extends HasServices with CanRegisterServices

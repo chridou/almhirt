@@ -73,6 +73,17 @@ case class RegistrationProblem(message: String, severity: Severity = Major, cate
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/** A service couldn't be found.
+ */
+case class ServiceNotFoundProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = ServiceNotFoundProblem
+  def withMessage(newMessage: String) = copy(message = newMessage)
+  def withSeverity(severity: Severity) = copy(severity = severity)
+  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+}
+
 /** A connection couldn't be established. Use for networking problems.
  */
 case class NoConnectionProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {

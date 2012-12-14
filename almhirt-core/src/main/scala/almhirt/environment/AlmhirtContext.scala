@@ -27,42 +27,24 @@ import almhirt.parts.HasRepositories
 import org.joda.time.DateTime
 import almhirt.util._
 import almhirt.common.AlmFuture
+import almhirt.core.impl.SimpleConcurrentServiceRegistry
+import riftwarp.RiftWarp
 
-trait AlmhirtContextOps {
-  def reportProblem(prob: Problem): Unit
-  def reportOperationState(opState: OperationState): Unit
-  def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String]): Unit
-  def getDateTime: DateTime
-  def getUuid: java.util.UUID
-  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty): Message[T]
-}
+//trait AlmhirtContextOps {
+//  def reportProblem(prob: Problem): Unit
+//  def reportOperationState(opState: OperationState): Unit
+//  def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String]): Unit
+//  def getDateTime: DateTime
+//  def getUuid: java.util.UUID
+//  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty): Message[T]
+//}
 
-trait AlmhirtContext extends AlmhirtContextOps with Disposable {
-  def config: Config
+trait AlmhirtContext extends Disposable {
   def system: AlmhirtSystem
   def messageHub: MessageHub
   def commandChannel: MessageChannel[CommandEnvelope]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
-  
-  def riftWarp: riftwarp.RiftWarp
-
-  def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) {
-    messageHub.actor ! BroadcastMessageCmd(messageWithPayload(payload, metaData))
-  }
-
-  def broadcastCommandEnvelope(cmdEnv: CommandEnvelope) { broadcast(cmdEnv) }
-  def reportOperationState(opState: OperationState) { broadcast(opState) }
-  def reportProblem(prob: Problem) { broadcast(prob) }
-
-  def getDateTime = system.getDateTime
-  def getUuid = system.generateUuid
-
-  def broadcastDomainEvent[T <: DomainEvent](event: T) { broadcast(event) }
-  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) = {
-    val header = MessageHeader(getUuid, None, metaData, getDateTime)
-    Message(header, payload)
-  }
 }
 
 object AlmhirtContext {
@@ -74,10 +56,13 @@ object AlmhirtContext {
     implicit val atMost = sys.mediumDuration
     implicit val executionContext = sys.futureDispatcher
 
+//    val serviceRegistry = new SimpleConcurrentServiceRegistry
+    
     val hub = MessageHub("messageHub")
     
-    val theRiftWarp = riftwarp.RiftWarp.unsafeWithDefaults
-    almhirt.core.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(theRiftWarp)
+//    val theRiftWarp = riftwarp.RiftWarp.unsafeWithDefaults
+//    almhirt.core.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(theRiftWarp)
+//    serviceRegistry.registerServiceByType(classOf[RiftWarp], theRiftWarp)
     
     for {
       cmdChannel <- hub.createMessageChannel[CommandEnvelope]("commandChannel")
@@ -91,8 +76,8 @@ object AlmhirtContext {
         val commandChannel = cmdChannel
         val problemChannel = probChannel
         val operationStateChannel = opStateChannel
-
-        val riftWarp = theRiftWarp
+        
+//        def getServiceByType(clazz: Class[_ <: AnyRef]): AlmValidation[AnyRef]
         
         def dispose = {
           messageHub.close
