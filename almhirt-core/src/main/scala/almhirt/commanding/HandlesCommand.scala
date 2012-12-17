@@ -8,6 +8,6 @@ import almhirt.util.TrackingTicket
 
 trait HandlesCommand {
   def commandType: Class[_ <: DomainCommand]
-  def handle(com: DomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[TrackingTicket]): Unit
+  def handle(com: DomainCommand, ticket: Option[TrackingTicket]): Unit
 }
 

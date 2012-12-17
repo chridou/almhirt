@@ -10,11 +10,12 @@ import almhirt.eventlog.DomainEventLog
 import almhirt.environment.AlmhirtContext
 import almhirt.util._
 import almhirt.common.AlmFuture
+import almhirt.environment.AlmhirtBaseOps
 
-abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirtContext: AlmhirtContext) extends Actor {
+abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], baseOps: AlmhirtBaseOps) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
-  implicit private def timeout = almhirtContext.system.mediumDuration
-  implicit private def futureContext = almhirtContext.system.futureDispatcher
+  implicit private def timeout = baseOps.mediumDuration
+  implicit private def futureContext = baseOps.futureDispatcher
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] =
     eventLog.getEvents(id)
@@ -30,16 +31,16 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
       })
       .onComplete(
         fail =>
-          updateFailedOperationState(almhirtContext, fail, ticket),
+          updateFailedOperationState(baseOps, fail, ticket),
         succ => {
-          ticket.foreach(t => almhirtContext.reportOperationState(Executed(t)))
-          succ.foreach(event => almhirtContext.broadcastDomainEvent(event))
+          ticket.foreach(t => baseOps.reportOperationState(Executed(t)))
+          succ.foreach(event => baseOps.broadcastDomainEvent(event))
         })
 
-  private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[TrackingTicket]) {
-    context.reportProblem(p)
+  private def updateFailedOperationState(baseOps: AlmhirtBaseOps, p: Problem, ticket: Option[TrackingTicket]) {
+    baseOps.reportProblem(p)
     ticket match {
-      case Some(t) => context.reportOperationState(NotExecuted(t, p))
+      case Some(t) => baseOps.reportOperationState(NotExecuted(t, p))
       case None => ()
     }
   }

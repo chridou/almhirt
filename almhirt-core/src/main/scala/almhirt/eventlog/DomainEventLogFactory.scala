@@ -1,8 +1,8 @@
 package almhirt.eventlog
 
 import almhirt.common._
-import almhirt.environment.AlmhirtContext
+import almhirt.environment._
 
 trait DomainEventLogFactory {
-  def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog]
+  def createDomainEventLog(baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog]
 }

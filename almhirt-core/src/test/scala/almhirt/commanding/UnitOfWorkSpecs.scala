@@ -7,16 +7,16 @@ import almhirt.syntax.almvalidation._
 import almhirt.environment._
 import almhirt.util._
 import test._
+import almhirt.parts.HasRepositories
 
-class UnitOfWorkSpecs extends Specification with AlmhirtEnvironmentTestKit {
+class UnitOfWorkSpecs extends Specification with AlmhirtTestKit {
   "A UnitOfWork(Creator) supplied with the required services" should {
     "create a new Person" in {
-      inTestEnvironment{
-        env =>
-          implicit val duration = env.context.system.mediumDuration
-          implicit val ctx = env.context
-          val id = env.getUuid
-          env.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
+      inTestAlmhirt{
+        almhirt =>
+          implicit val duration = almhirt.mediumDuration
+          val id = almhirt.getUuid
+          almhirt.getService[HasRepositories].forceResult.registerForAggregateRoot[TestPerson, TestPersonEvent](AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, env.eventLog))
           env.commandExecutor.addHandler(new NewTestPersonUnitOfWork())
           val reg = (env.context.problemChannel <-<* (prob => println(prob))).awaitResult.forceResult
           env.executeCommand(CommandEnvelope(NewTestPerson(id, "Betty"), Some("create a new Person")))

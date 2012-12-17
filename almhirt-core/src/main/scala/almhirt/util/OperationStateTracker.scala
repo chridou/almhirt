@@ -9,7 +9,7 @@ import almhirt.core._
 import almhirt.syntax.almfuture._
 import almhirt.syntax.almvalidation._
 import almhirt.messaging.MessageStream
-import almhirt.environment.AlmhirtContext
+import almhirt.environment._
 import almhirt.commanding.DomainCommand
 import almhirt.almakka.AlmActorLogging
 import almhirt.common.ActorBased
@@ -31,8 +31,8 @@ trait OperationStateTracker extends Disposable with ActorBased {
 
 object OperationStateTracker {
   import akka.actor._
-  def apply()(implicit context: AlmhirtContext): AlmValidation[OperationStateTracker] = {
-    val actor = context.system.actorSystem.actorOf(Props(new impl.OperationStateTrackerWithoutTimeoutActor), "operationStateTracker")
+  def apply()(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[OperationStateTracker] = {
+    val actor = system.actorSystem.actorOf(Props(new impl.OperationStateTrackerWithoutTimeoutActor), "operationStateTracker")
     new impl.OperationStateTrackerActorHull(actor).success
   }
 }

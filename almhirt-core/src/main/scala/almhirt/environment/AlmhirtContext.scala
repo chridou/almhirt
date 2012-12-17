@@ -29,20 +29,12 @@ import almhirt.util._
 import almhirt.common.AlmFuture
 import almhirt.core.impl.SimpleConcurrentServiceRegistry
 import riftwarp.RiftWarp
+import akka.dispatch.MessageDispatcher
 
-//trait AlmhirtContextOps {
-//  def reportProblem(prob: Problem): Unit
-//  def reportOperationState(opState: OperationState): Unit
-//  def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String]): Unit
-//  def getDateTime: DateTime
-//  def getUuid: java.util.UUID
-//  def messageWithPayload[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty): Message[T]
-//}
-
-trait AlmhirtContext extends Disposable {
-  def system: AlmhirtSystem
+trait AlmhirtContext extends AlmhirtBaseOps with CanCreateUuidsAndDateTimes with Disposable {
   def messageHub: MessageHub
   def commandChannel: MessageChannel[CommandEnvelope]
+  def domainEventsChannel: MessageChannel[DomainEvent]
   def problemChannel: MessageChannel[Problem]
   def operationStateChannel: MessageChannel[OperationState]
 }
@@ -56,35 +48,45 @@ object AlmhirtContext {
     implicit val atMost = sys.mediumDuration
     implicit val executionContext = sys.futureDispatcher
 
-//    val serviceRegistry = new SimpleConcurrentServiceRegistry
-    
     val hub = MessageHub("messageHub")
-    
-//    val theRiftWarp = riftwarp.RiftWarp.unsafeWithDefaults
-//    almhirt.core.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(theRiftWarp)
-//    serviceRegistry.registerServiceByType(classOf[RiftWarp], theRiftWarp)
-    
+
     for {
       cmdChannel <- hub.createMessageChannel[CommandEnvelope]("commandChannel")
+      domEventsChannel <- hub.createMessageChannel[DomainEvent]("domainEventsChannel")
       opStateChannel <- hub.createMessageChannel[OperationState]("operationStateChannel")
       probChannel <- hub.createMessageChannel[Problem]("problemChannel")
     } yield (
       new AlmhirtContext {
-        val config = sys.config
-        val system = sys
         val messageHub = hub
         val commandChannel = cmdChannel
         val problemChannel = probChannel
+        val domainEventsChannel = domEventsChannel
         val operationStateChannel = opStateChannel
-        
-//        def getServiceByType(clazz: Class[_ <: AnyRef]): AlmValidation[AnyRef]
-        
+
+        def reportProblem(prob: Problem) { broadcast(prob) }
+        def reportOperationState(opState: OperationState) { broadcast(opState) }
+        def broadcastDomainEvent(event: DomainEvent) { broadcast(event) }
+        def postCommand(comEnvelope: CommandEnvelope) { broadcast(comEnvelope) }
+        def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { messageHub.broadcast(createMessage(payload, metaData)) }
+        def createMessage[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty): Message[T] = {
+          val header = MessageHeader(sys.generateUuid, None, metaData, sys.getDateTime)
+          Message(header, payload)
+        }
+
+        val futureDispatcher = sys.futureDispatcher
+        def shortDuration = sys.shortDuration
+        def mediumDuration = sys.mediumDuration
+        def longDuration = sys.longDuration
+
+        def getDateTime = sys.getDateTime
+        def getUuid = sys.generateUuid
+
         def dispose = {
           messageHub.close
           cmdChannel.close
           opStateChannel.close
           probChannel.close
-          system.dispose
+          domEventsChannel.close
         }
       })
   }

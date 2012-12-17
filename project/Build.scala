@@ -59,6 +59,52 @@ trait CommonBuild {
   )
 }
 
+trait CoreBuild {
+  import Dependencies._
+  import Resolvers._
+  def coreProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += specs2,
+	  libraryDependencies += akka_testkit
+  )
+}
+
+trait CoreExtRiftwarpBuild {
+  import Dependencies._
+  import Resolvers._
+  def coreExtRiftWarpProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += specs2
+  )
+}
+
+trait AnormEventLogBuild {
+  import Dependencies._
+  import Resolvers._
+  def anormEventLogProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += "play" % "anorm_2.9.1" % "2.0.4",
+	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
+	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
+	  libraryDependencies += specs2
+  )
+}
+
 trait RiftWarpBuild {
   import Dependencies._
   import Resolvers._
@@ -101,38 +147,6 @@ trait DocItBuild {
   )
 }
 
-trait CoreBuild {
-  import Dependencies._
-  import Resolvers._
-  def coreProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2,
-	  libraryDependencies += akka_testkit
-  )
-}
-
-trait AnormEventLogBuild {
-  import Dependencies._
-  import Resolvers._
-  def anormEventLogProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += "play" % "anorm_2.9.1" % "2.0.4",
-	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
-	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
-	  libraryDependencies += specs2
-  )
-}
-
 /*
 trait UnfilteredBuild {
   import Dependencies._
@@ -146,7 +160,7 @@ trait UnfilteredBuild {
 }
 */
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with DocItBuild with AnormEventLogBuild {
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 	                        base = file(".")) aggregate(common, core, docit, anormEventLog, riftwarp, riftwarpExtLiftJson)
 	
@@ -155,6 +169,13 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpB
 
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common, riftwarp)
+
+  lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
+	                       		baseFile = file("./ext/core/almhirt-ext-core-riftwarp")) dependsOn(common, core, riftwarp)
+								
+
+  lazy val anormEventLog = anormEventLogProject(	name = "almhirt-ext-anormeventlog",
+                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(core)
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
@@ -166,8 +187,6 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with RiftWarpB
   lazy val docit = docitProject(	name = "almhirt-docit",
                        			baseFile = file("almhirt-docit")) dependsOn(common)
 
-  lazy val anormEventLog = anormEventLogProject(	name = "almhirt-ext-anormeventlog",
-                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(core)
 								
 /* lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
 	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)*/

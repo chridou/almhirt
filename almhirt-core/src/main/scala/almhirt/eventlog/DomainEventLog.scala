@@ -33,18 +33,17 @@ trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almh
 object DomainEventLog {
   import scalaz.syntax.validation._
   import akka.actor._
-  import almhirt.environment.AlmhirtContext
+  import almhirt.environment._
   import almhirt.eventlog.impl._
 
-  def apply()(implicit context: AlmhirtContext): AlmValidation[DomainEventLog] = unsafeInMemory()
+  def apply()(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = unsafeInMemory()
 
-  def unsafeInMemory()(implicit context: AlmhirtContext): AlmValidation[DomainEventLog] = {
-    val actor = context.system.actorSystem.actorOf(Props(new impl.InefficientSerializingInMemoryDomainEventLogActor), "domainEventLog")
-    new impl.DomainEventLogActorHull(actor).success
+  def unsafeInMemory()(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
+    new InefficientSerializingInMemoryDomainEventLogFactory().createDomainEventLog(baseOps, system)
   }
 
-  def devNull()(implicit context: AlmhirtContext): AlmValidation[DomainEventLog] = {
-    new DevNullEventLogFactory().createDomainEventLog(context)
+  def devNull()(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
+    new DevNullEventLogFactory().createDomainEventLog(baseOps, system)
   }
 
 }

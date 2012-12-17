@@ -11,24 +11,24 @@ import almhirt.almvalidation.funs.inTryCatch
 import almhirt.messaging._
 import almhirt.domain._
 import almhirt.parts.HasRepositories
-import almhirt.environment.AlmhirtContext
+import almhirt.environment._
 import almhirt.util._
 import almhirt.common.AlmFuture
 
 trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { self: BoundUnitOfWork[AR, TEvent] =>
-  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])]
-  def handleBoundCommand(com: BoundDomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[TrackingTicket]) {
+  protected def executeHandler(com: TCom): AlmFuture[(AR, List[TEvent])]
+  def handleBoundCommand(com: BoundDomainCommand, ticket: Option[TrackingTicket]) {
     if (com.isCreator) {
       val command = com.asInstanceOf[TCom]
-      repositories.getForAggregateRootByType(self.aggregateRootType).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]]).fold(
+      self.getRepository().fold(
         fail =>
           (),
         repo => {
-          executeHandler(command, context).fold(
+          executeHandler(command).fold(
             fail => {
-              context.problemChannel.post(Message.createWithUuid(fail))
+              baseOps.reportProblem(fail)
               ticket match {
-                case Some(t) => context.reportOperationState(NotExecuted(t, fail))
+                case Some(t) => baseOps.reportOperationState(NotExecuted(t, fail))
                 case None => ()
               }
             },
@@ -37,9 +37,9 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
         })
     } else {
       val p = ArgumentProblem("Not a creator command: %s".format(com.getClass.getName), severity = Major)
-      context.problemChannel.post(Message.createWithUuid(p))
+      baseOps.reportProblem(p)
       ticket match {
-        case Some(t) => context.reportOperationState(NotExecuted(t, p))
+        case Some(t) => baseOps.reportOperationState(NotExecuted(t, p))
         case None => ()
       }
     }
@@ -48,46 +48,49 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
 trait CreatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: BoundDomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: BoundUnitOfWork[AR, TEvent] =>
   def handler: CreatorCommandHandlerFuture[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com, context.system.futureDispatcher)
+  protected def executeHandler(com: TCom): AlmFuture[(AR, List[TEvent])] = handler(com)
 
 }
 trait CreatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: BoundDomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: BoundUnitOfWork[AR, TEvent] =>
   def handler: CreatorCommandHandler[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] =
-    AlmFuture(handler(com))(context.system.futureDispatcher)
+  protected def executeHandler(com: TCom): AlmFuture[(AR, List[TEvent])] =
+    AlmFuture(handler(com))(self.baseOps.futureDispatcher)
 }
 
 trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: BoundDomainCommand] { self: BoundUnitOfWork[AR, TEvent] =>
-  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])]
-  def handleBoundCommand(untypedcom: BoundDomainCommand, repositories: HasRepositories, context: AlmhirtContext, ticket: Option[TrackingTicket]) {
-    implicit val executionContext = context.system.futureDispatcher
+  protected def executeHandler(com: TCom, ar: AR): AlmFuture[(AR, List[TEvent])]
+  def handleBoundCommand(untypedcom: BoundDomainCommand, ticket: Option[TrackingTicket]) {
+    implicit val executionContext = self.baseOps.futureDispatcher
     val step1 =
       AlmFuture {
         checkCommandType(untypedcom).bind(com =>
           getIdAndVersion(com).map(idAndVersion =>
-            (com, idAndVersion)))
-      }.flatMap { case (com, idAndVersion) => getRepository(repositories).map(repo => (com, repo, idAndVersion)) }
+            (com, idAndVersion)).bind {
+            case (com, idAndVersion) =>
+              self.getRepository().map(repo => (com, repo, idAndVersion))
+          })
+      }
     val step2 =
       step1.flatMap {
         case (com, repository, (id, version)) =>
           getAggregateRoot(repository, id).mapV(ar =>
             checkArId(ar, id, com).bind(ar =>
               checkVersion(ar, version, com))).flatMap { ar =>
-            executeHandler(com, ar, context).map((repository, _))
+            executeHandler(com, ar).map((repository, _))
           }
       }
     step2.onComplete(
-      f => updateFailedOperationState(context, f, ticket),
+      f => updateFailedOperationState(self.baseOps, f, ticket),
       {
         case (repository, (ar, events)) =>
           repository.actor ! StoreAggregateRootCmd(ar, events, ticket)
       })
   }
 
-  private def updateFailedOperationState(context: AlmhirtContext, p: Problem, ticket: Option[TrackingTicket]) {
-    context.reportProblem(p)
+  private def updateFailedOperationState(baseOps: AlmhirtBaseOps, p: Problem, ticket: Option[TrackingTicket]) {
+    baseOps.reportProblem(p)
     ticket match {
-      case Some(t) => context.reportOperationState(NotExecuted(t, p))
+      case Some(t) => baseOps.reportOperationState(NotExecuted(t, p))
       case None => ()
     }
   }
@@ -108,13 +111,8 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
   private def checkVersion(ar: AR, version: Long, cmd: TCom): AlmValidation[AR] =
     boolean.fold(version == ar.version,
-        ar.success,
-        CollisionProblem("Refused to handle command: Versions do not match. Current version is '%d', targetted version is '%d'. The refused command is '%s'".format(ar.version, version, cmd), severity = Minor).failure)
-
-  private def getRepository(repositories: HasRepositories): AlmFuture[AggregateRootRepository[AR, TEvent]] =
-    repositories
-      .getForAggregateRootByType(self.aggregateRootType)
-      .mapV(x => inTryCatch(x.asInstanceOf[AggregateRootRepository[AR, TEvent]]))
+      ar.success,
+      CollisionProblem("Refused to handle command: Versions do not match. Current version is '%d', targetted version is '%d'. The refused command is '%s'".format(ar.version, version, cmd), severity = Minor).failure)
 
   private def getAggregateRoot(repository: AggregateRootRepository[AR, TEvent], id: UUID): AlmFuture[AR] =
     repository.get(id)
@@ -122,13 +120,13 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
 
 trait MutatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: BoundDomainCommand] extends MutatorUnitOfWorkStyle[AR, TEvent, TCom] { self: BoundUnitOfWork[AR, TEvent] =>
   def handler: MutatorCommandHandlerFuture[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] = handler(com, ar, context.system.futureDispatcher)
+  protected def executeHandler(com: TCom, ar: AR): AlmFuture[(AR, List[TEvent])] = handler(com, ar)
 
 }
 trait MutatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: BoundDomainCommand] extends MutatorUnitOfWorkStyle[AR, TEvent, TCom] { self: BoundUnitOfWork[AR, TEvent] =>
   def handler: MutatorCommandHandler[AR, TEvent, TCom]
   protected def executeHandler(com: TCom, ar: AR, context: AlmhirtContext): AlmFuture[(AR, List[TEvent])] =
-    AlmFuture(handler(com, ar))(context.system.futureDispatcher)
+    AlmFuture(handler(com, ar))(self.baseOps.futureDispatcher)
 }
 
 

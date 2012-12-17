@@ -21,27 +21,27 @@ import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
 import almhirt.messaging.Message
-import almhirt.environment.AlmhirtContext
+import almhirt.environment._
 import almhirt.environment.configuration._
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._
 
 class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventLogFactory {
-  def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
+  def createDomainEventLog(baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
     val props =
-      SystemHelper.addDispatcherToProps(ctx.system.config)(ConfigPaths.eventlog, Props(new impl.InefficientSerializingInMemoryDomainEventLogActor()(ctx)))
-    val actor = ctx.system.actorSystem.actorOf(props, "domainEventLog")
-    new impl.DomainEventLogActorHull(actor)(ctx).success
+      SystemHelper.addDispatcherToProps(system.config)(ConfigPaths.eventlog, Props(new InefficientSerializingInMemoryDomainEventLogActor(baseOps, system)))
+    val actor = system.actorSystem.actorOf(props, "domainEventLog")
+    new DomainEventLogActorHull(actor)(system).success
   }
 }
 
-class InefficientSerializingInMemoryDomainEventLogActor(implicit almhirtContext: AlmhirtContext) extends Actor {
+class InefficientSerializingInMemoryDomainEventLogActor(baseOps: AlmhirtBaseOps, system: AlmhirtSystem) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
   def receive: Receive = {
     case LogEventsQry(events, executionIdent) =>
       loggedEvents = loggedEvents ++ events
-      events.foreach(event => almhirtContext.broadcastDomainEvent(event))
+      events.foreach(event => baseOps.broadcastDomainEvent(event))
       sender ! CommittedDomainEventsRsp(events.success, executionIdent)
     case GetAllEventsQry(chunkSize, execIdent) =>
       sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)

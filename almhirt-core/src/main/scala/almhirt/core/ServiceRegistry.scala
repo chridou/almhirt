@@ -5,12 +5,12 @@ import almhirt.common._
 trait HasServices {
   def getService[T <: AnyRef](implicit m: Manifest[T]): AlmValidation[T] =
     getServiceByType(m.erasure.asInstanceOf[Class[_ <: AnyRef]]).map(_.asInstanceOf[T])
-    
+
   def getServiceByType(clazz: Class[_ <: AnyRef]): AlmValidation[AnyRef]
 }
 
 trait CanRegisterServices {
-  def registerService[TService <: AnyRef, TImpl <: TService](serviceImpl: TImpl)(implicit mService: Manifest[TService]) = registerServiceByType(mService.erasure.asInstanceOf[Class[_ <: AnyRef]], serviceImpl)
+  def registerService[TService <: AnyRef](serviceImpl: TService)(implicit mService: Manifest[TService]) = registerServiceByType(mService.erasure.asInstanceOf[Class[_ <: AnyRef]], serviceImpl)
   def registerServiceByType(clazz: Class[_ <: AnyRef], service: AnyRef)
 }
 

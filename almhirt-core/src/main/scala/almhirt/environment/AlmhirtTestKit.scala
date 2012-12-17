@@ -1,19 +1,22 @@
 package almhirt.environment
 
 import scalaz.syntax.validation._
-import akka.actor.ActorSystem
 import almhirt.common._
+import almhirt.syntax.almvalidation._
 import almhirt.core._
+import almhirt.environment.configuration.AlmhirtBootstrapper
 import com.typesafe.config._
 
 trait AlmhirtTestKit {
-  val environmentTestKit = new AlmhirtEnvironmentTestKit {}
   private val configText =
     """  
       akka {
 		loglevel = ERROR
       }
       almhirt {
+		bootstrapper { 
+          class = "almhirt.environment.configuration.impl.AlmhirtTestingBootstrapper" 
+        }
 		systemname = "almhirt-testing"
 		durations {
 		  short = 0.5
@@ -29,23 +32,15 @@ trait AlmhirtTestKit {
 
   def createTestAlmhirt(): Almhirt = createTestAlmhirt(defaultConf)
   def createTestAlmhirt(aConf: Config): Almhirt = {
-    val env = environmentTestKit.createTestEnvironment(aConf)
-    implicit val futureContext = env.context.system.futureDispatcher
-    val almhirt =
-      new Almhirt {
-        def environment = env
-        def getService[T <: AnyRef] = AlmFuture { OperationNotSupportedProblem("getService").failure }
-        def awaitService[T <: AnyRef] = OperationNotSupportedProblem("awaitService").failure
-        def dispose { env.dispose }
-      }
-    almhirt
+    AlmhirtBootstrapper.createFromConfig(aConf).bind(bootstrapper =>
+      AlmhirtBootstrapper.runStartupSequence(bootstrapper)).forceResult
   }
 
   def inTestAlmhirt[T](compute: Almhirt => T): T = inTestAlmhirt(compute, defaultConf)
   def inTestAlmhirt[T](compute: Almhirt => T, aConf: Config): T = {
     val almhirt = createTestAlmhirt(aConf)
     val res = compute(almhirt)
-    almhirt.dispose
+    almhirt.close
     res
   }
 }

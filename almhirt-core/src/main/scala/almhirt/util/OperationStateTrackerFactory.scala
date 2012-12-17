@@ -4,5 +4,5 @@ import almhirt.common._
 import almhirt.environment._
 
 trait OperationStateTrackerFactory {
-  def createOperationStateTracker(ctx: AlmhirtContext): AlmValidation[OperationStateTracker]
+  def createOperationStateTracker(baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[OperationStateTracker]
 }

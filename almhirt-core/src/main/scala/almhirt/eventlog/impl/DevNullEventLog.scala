@@ -23,7 +23,7 @@ import almhirt.common._
 import almhirt.messaging.Message
 import almhirt.core._
 import almhirt.almakka._
-import almhirt.environment.AlmhirtContext
+import almhirt.environment._
 import almhirt.environment.configuration._
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
@@ -31,15 +31,15 @@ import almhirt.eventlog._
 import almhirt.common.AlmFuture
 
 class DevNullEventLogFactory() extends DomainEventLogFactory {
-  def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
+  def createDomainEventLog(baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
     val props =
-      SystemHelper.addDispatcherToProps(ctx.system.config)(ConfigPaths.eventlog, Props(new impl.DevNullEventLogActor()(ctx)))
-    val actor = ctx.system.actorSystem.actorOf(props, "domainEventLog")
-    new impl.DomainEventLogActorHull(actor)(ctx).success
+      SystemHelper.addDispatcherToProps(system.config)(ConfigPaths.eventlog, Props(new DevNullEventLogActor()))
+    val actor = system.actorSystem.actorOf(props, "domainEventLog")
+    new DomainEventLogActorHull(actor)(system).success
   }
 }
 
-class DevNullEventLogActor(implicit almhirtContext: AlmhirtContext) extends Actor {
+class DevNullEventLogActor() extends Actor {
   def receive = {
     case LogEventsQry(events, _) =>
       sender ! CommittedDomainEventsRsp(events.success, None)

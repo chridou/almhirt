@@ -11,56 +11,33 @@ import almhirt.messaging._
 import almhirt.parts._
 import almhirt.environment._
 import almhirt.commanding._
-import almhirt.environment.AlmhirtEnvironment
 import almhirt.parts.CommandExecutor
 import almhirt.util._
 import almhirt.common.AlmFuture
 
 /**
  */
-class JustFireCommandExecutorActor(repositories: HasRepositories)(implicit context: AlmhirtContext) extends Actor {
-  private val handlers: collection.mutable.Map[String, HandlesCommand] = collection.mutable.HashMap.empty
-
-  private def addHandler(handler: HandlesCommand) {
-    handlers.put(handler.commandType.getName, handler)
-  }
-
-  private def removeHandlerByType(commandType: Class[_ <: DomainCommand]) {
-    handlers.remove(commandType.getName)
-  }
-
-  private def getHandlerByType(commandType: Class[_ <: DomainCommand]): AlmValidation[HandlesCommand] =
-    handlers.get(commandType.getName) match {
-      case Some(h) => h.success
-      case None => NotFoundProblem("No handler found for command %s".format(commandType.getName), severity = Major).failure
-    }
+class JustFireCommandExecutorActor(handlers: HasCommandHandlers, repositories: HasRepositories)(implicit baseOps: AlmhirtBaseOps) extends Actor {
 
   private def executeCommand(command: DomainCommand, ticket: Option[TrackingTicket]) {
-    ticket foreach { t => context.reportOperationState(InProcess(t)) }
-    getHandlerByType(command.getClass).fold(
+    ticket foreach { t => baseOps.reportOperationState(InProcess(t)) }
+    handlers.getHandlerByType(command.getClass).fold(
       fail => {
-        context.reportProblem(fail)
+        baseOps.reportProblem(fail)
         ticket match {
-          case Some(t) => context.reportOperationState(NotExecuted(t, fail))
+          case Some(t) => baseOps.reportOperationState(NotExecuted(t, fail))
           case None => ()
         }
       },
-      handler => handler.handle(command, repositories, context, ticket))
+      handler => handler.handle(command, ticket))
   }
 
   def receive: Receive = {
     case commandEnvelope: CommandEnvelope => executeCommand(commandEnvelope.command, commandEnvelope.ticket)
-    case AddCommandHandlerCmd(handler) => addHandler(handler)
-    case RemoveCommandHandlerCmd(commandType) => removeHandlerByType(commandType)
-    case GetCommandHandlerQry(commandType) => sender ! CommandHandlerRsp(getHandlerByType(commandType))
   }
 }
 
 class CommandExecutorActorHull(val actor: ActorRef, context: AlmhirtContext) extends CommandExecutor {
-  private implicit val executionContext = context.system.futureDispatcher
-  def addHandler(handler: HandlesCommand) { actor ! AddCommandHandlerCmd(handler) }
-  def removeHandlerByType(commandType: Class[_ <: DomainCommand]) { actor ! RemoveCommandHandlerCmd(commandType) }
-  def getHandlerByType(commandType: Class[_ <: DomainCommand])(implicit atMost: Duration): AlmFuture[HandlesCommand] =
-    (actor ? GetCommandHandlerQry(commandType))(atMost).mapTo[CommandHandlerRsp].map(_.handler)
+  private implicit val executionContext = context.futureDispatcher
   def executeCommand(commandEnvelope: CommandEnvelope) { actor ! commandEnvelope }
 }

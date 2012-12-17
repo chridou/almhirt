@@ -2,7 +2,7 @@ package almhirt.domain
 
 import almhirt.core._
 import almhirt.common._
-import almhirt.environment.AlmhirtContext
+import almhirt.environment._
 import almhirt.util.TrackingTicket
 import almhirt.common.ActorBased
 
@@ -20,17 +20,17 @@ object AggregateRootRepository {
   import almhirt.eventlog._
   import akka.actor._
   
-  def apply[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](actor: ActorRef)(implicit ctx: AlmhirtContext): AggregateRootRepository[AR, Event] = {
-    new AggregateRootRepositoryActorHull[AR, Event](actor, ctx) {}
+  def apply[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](actor: ActorRef)(implicit baseOps: AlmhirtBaseOps): AggregateRootRepository[AR, Event] = {
+    new AggregateRootRepositoryActorHull[AR, Event](actor, baseOps) {}
   }
 
-  def unsafe[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit ctx: AlmhirtContext): AggregateRootRepository[AR, Event] = {
-    val actor = ctx.system.actorSystem.actorOf(Props(new UnsafeAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, ctx) {}))
+  def unsafe[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AggregateRootRepository[AR, Event] = {
+    val actor = system.actorSystem.actorOf(Props(new UnsafeAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, baseOps) {}))
     apply(actor)
   }
   
-  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit ctx: AlmhirtContext): AggregateRootRepository[AR, Event] = {
-    val actor = ctx.system.actorSystem.actorOf(Props(new BlockingAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, ctx) {}))
+  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AggregateRootRepository[AR, Event] = {
+    val actor = system.actorSystem.actorOf(Props(new BlockingAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, baseOps) {}))
     apply(actor)
   }
   

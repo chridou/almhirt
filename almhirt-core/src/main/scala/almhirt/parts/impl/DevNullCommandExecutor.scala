@@ -11,10 +11,10 @@ import akka.util.Duration
 import almhirt.common.AlmFuture
 import almhirt.common.AlmPromise
 
-class DevNullCommandExecutor(implicit context: AlmhirtContext) extends CommandExecutor {
+class DevNullCommandExecutor(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem) extends CommandExecutor {
   import akka.actor._
-  private implicit val executionContext = context.system.futureDispatcher
-  val actor = context.system.actorSystem.actorOf(Props(new Actor { def receive: Receive = { case _ => () } }))
+  private implicit val executionContext = baseOps.futureDispatcher
+  val actor = system.actorSystem.actorOf(Props(new Actor { def receive: Receive = { case _ => () } }))
   def addHandler(handler: HandlesCommand) {}
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]) {}
   def getHandlerByType(commandType: Class[_ <: DomainCommand])(implicit atMost: Duration): AlmFuture[HandlesCommand] = AlmPromise.failed[HandlesCommand](NotFoundProblem("DevNullCommandHandlerRegistry has no commands"))
