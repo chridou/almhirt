@@ -10,13 +10,13 @@ class ConcurrentRepositoryRegistry extends HasRepositories {
 
   def getForAggregateRootByType(clazz: Class[_ <: AggregateRoot[_,_]]): AlmValidation[AnyRef] = {
     repos.get(clazz) match {
-      case null => ServiceNotFoundProblem("No implementation found for service '%s'".format(clazz.getName())).failure
+      case null => ServiceNotFoundProblem("No repository found for '%s'".format(clazz.getName())).failure
       case service => service.success
     }
     
   }
   def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: Manifest[AR]){
-    repos.put(m.asInstanceOf[Class[_<: AggregateRoot[AR, TEvent]]], repo)
+    repos.put(m.erasure.asInstanceOf[Class[_<: AggregateRoot[AR, TEvent]]], repo)
   }
 
 }

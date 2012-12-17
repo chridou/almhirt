@@ -6,11 +6,11 @@ import almhirt.syntax.almvalidation._
 import almhirt.environment._
 import test._
 
-class OperationStateTrackerSpecs extends Specification with AlmhirtContextTestKit {
+class OperationStateTrackerSpecs extends Specification with AlmhirtTestKit {
   private implicit val atMost = akka.util.Duration(2, "s")
   def withTrackerInTestContext[T](compute: OperationStateTracker => T) =
-      inTestContext { implicit ctx =>
-        val tracker = OperationStateTracker().forceResult
+      inTestAlmhirt { implicit ctx =>
+        val tracker = ctx.operationStateTracker
         compute(tracker)
       }
   

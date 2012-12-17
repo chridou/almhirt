@@ -13,8 +13,9 @@ class RepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
   implicit val duration = akka.util.Duration(1, "s")
   """The unsafe repository registry""" should {
     """be able to register a repository""" in {
-      inTestContext(implicit ctx => {
-        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, DomainEventLog.devNull()(ctx).forceResult)
+      inTestContext( implicit ctx => {
+        implicit val system = ctx.system 
+        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, DomainEventLog.devNull()(ctx, system).forceResult)
         val registry = HasRepositories().forceResult
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
         true
@@ -22,10 +23,11 @@ class RepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
     }
     """be able to register a repository and retrieve it""" in {
       inTestContext(implicit ctx => {
-        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, DomainEventLog.devNull()(ctx).forceResult)
+        implicit val system = ctx.system 
+        val repo = AggregateRootRepository.unsafe[TestPerson, TestPersonEvent](TestPerson, DomainEventLog.devNull()(ctx, system).forceResult)
         val registry = HasRepositories().forceResult
         registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
-        registry.getForAggregateRoot[TestPerson, TestPersonEvent].awaitResult.forceResult === repo
+        registry.getForAggregateRoot[TestPerson, TestPersonEvent].forceResult === repo
       })
     }
   }
