@@ -1,4 +1,4 @@
-package almhirt.eventlog.anorm
+package almhirt.ext.eventlog.anorm
 
 import java.util.Properties
 import scalaz.syntax.validation._
@@ -10,6 +10,7 @@ import almhirt.eventlog._
 import almhirt.environment.configuration._
 import almhirt.eventlog.impl.DomainEventLogActorHull
 import scala.io.Source
+import riftwarp.RiftWarp
 import com.typesafe.config._
 
 class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
@@ -28,11 +29,11 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
     }
   }
 
-  private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, ctx: AlmhirtContext): DomainEventLog = {
+  private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, riftWarp: RiftWarp, system: AlmhirtSystem): DomainEventLog = {
     val props =
-      SystemHelper.addDispatcherToProps(ctx.config)(ConfigPaths.eventlog, Props(new SerializingAnormJsonEventLogActor(settings)(ctx)))
-    val actor = ctx.system.actorSystem.actorOf(props, actorName)
-    val maxCallDuration = ConfigHelper.tryGetDuration(ctx.config)(ConfigPaths.eventlog+".maximum_direct_call_duration")
+      SystemHelper.addDispatcherToProps(system.config)(ConfigPaths.eventlog, Props(new SerializingAnormJsonEventLogActor(settings)(riftWarp, system)))
+    val actor = system.actorSystem.actorOf(props, actorName)
+    val maxCallDuration = ConfigHelper.tryGetDuration(system.config)(ConfigPaths.eventlog+".maximum_direct_call_duration")
     if (dropOnClose) {
       def dropTable() = {
         DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
@@ -42,16 +43,16 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
         }
         ()
       }
-      new DomainEventLogActorHull(actor, Some(() => dropTable()), maxCallDuration)(ctx)
+      new DomainEventLogActorHull(actor, Some(() => dropTable()), maxCallDuration)(system)
     } else {
-      new DomainEventLogActorHull(actor, None, None)(ctx)
+      new DomainEventLogActorHull(actor, None, None)(system)
     }
   }
 
-  def createDomainEventLog(ctx: AlmhirtContext): AlmValidation[DomainEventLog] = {
+  def createDomainEventLog(theAlmhirt: Almhirt, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
     val createSchemaFun: (AnormSettings, DbTemplate) => AlmValidation[AnormSettings] =
       ConfigHelper
-        .getBoolean(ctx.config)(ConfigPaths.eventlog + ".create_schema")
+        .getBoolean(system.config)(ConfigPaths.eventlog + ".create_schema")
         .fold(
           f => (settings, template) => settings.success,
           s => {
@@ -63,23 +64,23 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
 
           })
 
-    val dropOnClose = ConfigHelper.isBooleanSet(ctx.config)(ConfigPaths.eventlog + ".drop_on_close")
+    val dropOnClose = ConfigHelper.isBooleanSet(system.config)(ConfigPaths.eventlog + ".drop_on_close")
 
     val tableName = {
-      val baseName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".eventlogtable").getOrElse("eventlog")
-      if (ConfigHelper.isBooleanSet(ctx.config)(ConfigPaths.eventlog + ".randomize_tablename"))
+      val baseName = ConfigHelper.tryGetString(system.config)(ConfigPaths.eventlog + ".eventlogtable").getOrElse("eventlog")
+      if (ConfigHelper.isBooleanSet(system.config)(ConfigPaths.eventlog + ".randomize_tablename"))
         "%s_%s".format(baseName, _root_.scala.util.Random.nextInt.toString.replaceAll("-", "N"))
       else
         baseName
     }
 
     val dbTemplate = {
-      DbTemplate.tryGetTemplate(ctx.config) match {
+      DbTemplate.tryGetTemplate(system.config) match {
         case Some(template) =>
           template.success
         case None =>
-          ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".driver").map { driverName =>
-            val ddlPath = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".ddlpath")
+          ConfigHelper.getString(system.config)(ConfigPaths.eventlog + ".driver").map { driverName =>
+            val ddlPath = ConfigHelper.tryGetString(system.config)(ConfigPaths.eventlog + ".ddlpath")
             DbTemplate(driverName, ddlPath)
           }
       }
@@ -87,12 +88,13 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
 
     import collection.JavaConversions._
 
-    val actorName = ConfigHelper.tryGetString(ctx.config)(ConfigPaths.eventlog + ".actorname").getOrElse("domaineventlog")
-    ConfigHelper.getString(ctx.config)(ConfigPaths.eventlog + ".connection").bind(connection =>
+    val actorName = ConfigHelper.tryGetString(system.config)(ConfigPaths.eventlog + ".actorname").getOrElse("domaineventlog")
+    ConfigHelper.getString(system.config)(ConfigPaths.eventlog + ".connection").bind(connection =>
+      theAlmhirt.getService[RiftWarp].bind(riftWarp =>
       dbTemplate.bind(dbTemplate =>
         almhirt.almvalidation.funs.inTryCatch({ Class.forName(dbTemplate.driverName); () }).bind { _ =>
           val props =
-            ConfigHelper.tryGetSubConfig(ctx.config)(ConfigPaths.eventlog + ".properties") match {
+            ConfigHelper.tryGetSubConfig(system.config)(ConfigPaths.eventlog + ".properties") match {
               case Some(config) =>
                 config.entrySet()
                   .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
@@ -101,7 +103,7 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
             }
           val settings =
             AnormSettings(connection, props, tableName)
-          createSchemaFun(settings, dbTemplate).map(settings => createEventLog(settings, actorName, dropOnClose, ctx))
-        }))
+          createSchemaFun(settings, dbTemplate).map(settings => createEventLog(settings, actorName, dropOnClose, riftWarp, system))
+        })))
   }
 }

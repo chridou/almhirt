@@ -1,4 +1,4 @@
-package test
+package almhirt.ext.eventlog.anorm
 
 import almhirt.common._
 import almhirt.syntax.problem._
@@ -7,7 +7,6 @@ import almhirt.domain.impl._
 import almhirt.environment._
 import almhirt.eventlog._
 import java.util.UUID
-import org.joda.time.DateTime
 
 case class TestPerson(id: UUID, version: Long, name: String, address: Option[String], balance: Int) extends AggregateRootWithHandlers[TestPerson, TestPersonEvent] with AddsUpdateToAggregateRoot[TestPerson, TestPersonEvent]{
   def handlers = {

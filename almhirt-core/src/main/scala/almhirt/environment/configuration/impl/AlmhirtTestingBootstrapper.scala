@@ -38,7 +38,7 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
         def longDuration = aSystem.longDuration
 
         def getDateTime = aSystem.getDateTime
-        def getUuid = aSystem.generateUuid
+        def getUuid = aSystem.getUuid
 
         def close() { AlmhirtBootstrapper.runShutDownSequence(AlmhirtTestingBootstrapper.this) }
 

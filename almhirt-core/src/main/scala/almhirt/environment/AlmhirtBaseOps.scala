@@ -7,8 +7,9 @@ import almhirt.domain.DomainEvent
 import almhirt.messaging.Message
 import almhirt.commanding.CommandEnvelope
 import akka.dispatch.MessageDispatcher
+import almhirt.core.CanCreateUuidsAndDateTimes
 
-trait AlmhirtBaseOps {
+trait AlmhirtBaseOps extends CanCreateUuidsAndDateTimes {
   def reportProblem(prob: Problem): Unit
   def reportOperationState(opState: OperationState): Unit
   def broadcastDomainEvent(event: DomainEvent): Unit

@@ -26,13 +26,13 @@ object SystemHelper {
         }))
   }
 
-  def createEventLogFromFactory(ctx: AlmhirtContext, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
+  def createEventLogFromFactory(theAlmhirt: Almhirt, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
     ConfigHelper.getFactoryName(system.config)(ConfigPaths.eventlog).bind(factoryName =>
       inTryCatch(
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createDomainEventLog(baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] }]).bind(factory =>
-          factory.createDomainEventLog(ctx, system)))
+          .asInstanceOf[{ def createDomainEventLog(x: Almhirt, y: AlmhirtSystem): AlmValidation[DomainEventLog] }]).bind(factory =>
+          factory.createDomainEventLog(theAlmhirt, system)))
   }
 
 }

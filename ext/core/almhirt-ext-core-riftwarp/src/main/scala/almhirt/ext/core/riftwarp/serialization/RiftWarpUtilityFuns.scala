@@ -1,4 +1,4 @@
-package almhirt.core.serialization
+package almhirt.ext.core.riftwarp.serialization
 
 object RiftWarpUtilityFuns {
   def addRiftWarpRegistrations(riftWarp: riftwarp.RiftWarp) {

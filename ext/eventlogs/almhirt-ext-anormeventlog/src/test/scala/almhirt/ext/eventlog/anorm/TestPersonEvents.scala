@@ -1,8 +1,9 @@
-package test
+package almhirt.ext.eventlog.anorm
 
 import java.util.UUID
 import org.joda.time.DateTime
-import scalaz._, Scalaz._
+import scalaz._
+import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain._

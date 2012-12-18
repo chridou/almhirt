@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.26-SNAPSHOT"
+  val buildVersion      = "0.0.27-SNAPSHOT"
   val buildScalaVersion = "2.9.2"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -168,14 +168,14 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRi
                        			baseFile = file("almhirt-common"))
 
   lazy val core = coreProject(	name = "almhirt-core",
-	                       		baseFile = file("almhirt-core")) dependsOn(common, riftwarp)
+	                       		baseFile = file("almhirt-core")) dependsOn(common)
 
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
 	                       		baseFile = file("./ext/core/almhirt-ext-core-riftwarp")) dependsOn(common, core, riftwarp)
 								
 
   lazy val anormEventLog = anormEventLogProject(	name = "almhirt-ext-anormeventlog",
-                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(core)
+                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(core, riftwarp)
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)

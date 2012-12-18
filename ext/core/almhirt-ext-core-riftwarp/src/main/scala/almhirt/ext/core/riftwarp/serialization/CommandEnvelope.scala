@@ -1,12 +1,14 @@
-package almhirt.core.serialization
+package almhirt.ext.core.riftwarp.serialization
 
-import scalaz._, Scalaz._
+import scalaz._
+import scalaz.Scalaz._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import almhirt.commanding._
 import almhirt.util._
+import almhirt.commanding.CommandEnvelope
 
 class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
   val typeDescriptor = TypeDescriptor(classOf[CommandEnvelope], 1)

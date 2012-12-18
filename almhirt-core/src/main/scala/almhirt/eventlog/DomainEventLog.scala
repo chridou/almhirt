@@ -36,14 +36,14 @@ object DomainEventLog {
   import almhirt.environment._
   import almhirt.eventlog.impl._
 
-  def apply()(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = unsafeInMemory()
+  def apply()(implicit almhirt: Almhirt, system: AlmhirtSystem): AlmValidation[DomainEventLog] = unsafeInMemory()
 
   def unsafeInMemory()(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
-    new InefficientSerializingInMemoryDomainEventLogFactory().createDomainEventLog(baseOps, system)
+    new InefficientSerializingInMemoryDomainEventLogFactory().create(baseOps, system)
   }
 
-  def devNull()(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
-    new DevNullEventLogFactory().createDomainEventLog(baseOps, system)
+  def devNull()(implicit system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
+    new DevNullEventLogFactory().create(system)
   }
 
 }

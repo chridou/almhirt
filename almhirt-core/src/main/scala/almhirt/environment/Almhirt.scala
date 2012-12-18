@@ -11,7 +11,7 @@ import almhirt.messaging._
 import org.joda.time.DateTime
 import akka.dispatch.MessageDispatcher
 
-trait Almhirt extends AlmhirtBaseOps with CreatesMessageChannels with ServiceRegistry with CanCreateUuidsAndDateTimes with Closeable{
+trait Almhirt extends AlmhirtBaseOps with CreatesMessageChannels with ServiceRegistry with Closeable {
   def executeCommand(cmd: DomainCommand, ticket: Option[TrackingTicket]) { executeCommand(CommandEnvelope(cmd, ticket)) }
   def executeTrackedCommand(cmd: DomainCommand, ticket: TrackingTicket) { executeCommand(CommandEnvelope(cmd, Some(ticket))) }
   def executeUntrackedCommand(cmd: DomainCommand) { executeCommand(CommandEnvelope(cmd, None)) }

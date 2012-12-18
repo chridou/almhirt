@@ -1,4 +1,4 @@
-package almhirt.eventlog.anorm
+package almhirt.ext.eventlog.anorm
 
 import org.specs2.mutable._
 import scalaz.syntax.validation._
@@ -7,7 +7,6 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import almhirt.eventlog._
-import test._
 import almhirt.domain.DomainEvent
 
 class SerializingAnormJsonEventLogSpecs extends Specification with TestAlmhirtKit {
@@ -21,13 +20,13 @@ class SerializingAnormJsonEventLogSpecs extends Specification with TestAlmhirtKi
 
   val aggIdForEvent = java.util.UUID.randomUUID()
   private def withEmptyEventLog[T](f: (DomainEventLog, Almhirt) => T) =
-    inTestAlmhirt(almhirt => f(almhirt.environment.eventLog, almhirt))
+    inTestAlmhirt(almhirt => f(almhirt.eventLog, almhirt))
 
   val testEventA = TestPersonCreated(java.util.UUID.randomUUID(), java.util.UUID.randomUUID(), "testEventA", new org.joda.time.DateTime)
   private def withEventLogWithOneTestEventA[T](f: (DomainEventLog, Almhirt) => T) =
     inTestAlmhirt { almhirt =>
-      almhirt.environment.eventLog.storeEvents(List(testEventA)).awaitResult(Duration(1, "s")).forceResult
-      f(almhirt.environment.eventLog, almhirt)
+      almhirt.eventLog.storeEvents(List(testEventA)).awaitResult(Duration(1, "s")).forceResult
+      f(almhirt.eventLog, almhirt)
     }
 
   "An anorm SerializingAnormEventLog" should {

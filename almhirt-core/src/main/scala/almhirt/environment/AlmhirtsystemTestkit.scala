@@ -60,7 +60,7 @@ trait AlmhirtsystemTestkit {
       val shortDuration = conf.getDouble("almhirt.durations.short") seconds
       val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
       val longDuration = conf.getDouble("almhirt.durations.long") seconds
-      def generateUuid = uuidGen.generate
+      def getUuid = uuidGen.generate
       def dispose = actorSystem.shutdown
     }
   }

@@ -28,7 +28,6 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
     implicit val atMost = akka.util.Duration(5, "s")
     implicit val executionContext = system.futureDispatcher
 
-    super.registerComponents(almhirt, context, system).bind { _ =>
       inTryCatch {
         tracker = OperationStateTracker()(context, system).forceResult
         trackerRegistration =
@@ -54,11 +53,10 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
           .awaitResult
           .forceResult
         almhirt.registerService[CommandExecutor](cmdExecutor)
-        eventLog = SystemHelper.createEventLogFromFactory(context, system).forceResult
+        eventLog = SystemHelper.createEventLogFromFactory(almhirt, system).forceResult
         almhirt.registerService[DomainEventLog](eventLog)
         ().success
-      }
-    }
+      }.bind(_ => super.registerComponents(almhirt, context, system))
   }
 
   override def closing(): AlmValidation[Unit] = {

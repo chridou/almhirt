@@ -1,10 +1,7 @@
-package almhirt.core.serialization
+package almhirt.ext.core.riftwarp.serialization
 
 import almhirt.common._
 import riftwarp._
-import almhirt.domain.DomainEvent
-import almhirt.commanding.MutatorCommandStyle
-import almhirt.commanding.AggregateRootRef
 
 trait SerializationFuns {
 //  def serializeCommonDomainEventFields(event: DomainEvent, funnel: Dematerializer[_,_]): AlmValidation[Dematerializer[_,_]] =

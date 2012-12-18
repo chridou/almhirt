@@ -1,4 +1,4 @@
-package almhirt.eventlog.anorm
+package almhirt.ext.eventlog.anorm
 
 import java.sql.Connection
 import scalaz.syntax.validation._

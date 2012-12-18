@@ -52,7 +52,7 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
         def longDuration = system.longDuration
         
         def getDateTime = system.getDateTime
-        def getUuid = system.generateUuid
+        def getUuid = system.getUuid
 
         def close() { AlmhirtBootstrapper.runShutDownSequence(AlmhirtBaseBootstrapper.this) }
       }

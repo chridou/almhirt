@@ -1,3 +1,4 @@
+package almhirt.ext.eventlog.anorm;
 //package almhirt.eventlog.anorm
 //
 //import org.specs2.mutable._

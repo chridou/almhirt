@@ -1,6 +1,7 @@
-package almhirt.core.serialization
+package almhirt.ext.core.riftwarp.serialization
 
-import scalaz._, Scalaz._
+import scalaz._
+import scalaz.Scalaz._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._

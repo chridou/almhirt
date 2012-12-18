@@ -1,4 +1,4 @@
-package almhirt.eventlog.anorm
+package almhirt.ext.eventlog.anorm
 
 import java.util.UUID
 import java.util.Properties
@@ -20,8 +20,10 @@ import riftwarp.RiftJson
 import _root_.anorm._
 import riftwarp.DimensionString
 import riftwarp.DimensionString
+import almhirt.core.CanCreateUuidsAndDateTimes
+import riftwarp.RiftWarp
 
-class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhirtContext: AlmhirtContext) extends Actor {
+class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWarp: RiftWarp, uuidsAndTime: CanCreateUuidsAndDateTimes) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
 
   private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, channel, timestamp, payload) VALUES({id}, {aggId}, {aggVersion}, {channel}, {timestamp}, {payload})".format(settings.logTableName)
@@ -78,7 +80,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhir
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
           str.bind(x =>
-            almhirtContext.riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
+            riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
         }.map(_.toAgg).toList
       payloadsV.sequence
     }
@@ -92,7 +94,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit almhir
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
           str.bind(x =>
-            almhirtContext.riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
+            riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
         }.map(_.toAgg).toList
       payloadsV.sequence
     }

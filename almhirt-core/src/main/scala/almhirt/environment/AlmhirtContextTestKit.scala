@@ -30,7 +30,7 @@ class AlmhirtContextForTesting(context: AlmhirtContext, val system: AlmhirtSyste
   def longDuration = context.longDuration
 
   def getDateTime = system.getDateTime
-  def getUuid = system.generateUuid
+  def getUuid = system.getUuid
   
   def dispose = context.dispose
 }

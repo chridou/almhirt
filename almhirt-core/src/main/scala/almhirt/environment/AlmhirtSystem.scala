@@ -13,14 +13,14 @@ import almhirt.environment.configuration._
 
 
 /** Components and values needed to use Akka */
-trait AlmhirtSystem extends Disposable {
+trait AlmhirtSystem extends CanCreateUuidsAndDateTimes with Disposable {
   def config: Config
   def actorSystem: ActorSystem
   def futureDispatcher: MessageDispatcher
   def shortDuration: Duration
   def mediumDuration: Duration
   def longDuration: Duration
-  def generateUuid: java.util.UUID
+  def getUuid: java.util.UUID
   def getDateTime: DateTime = new DateTime()
 }
 
@@ -36,7 +36,7 @@ object AlmhirtSystem {
         val shortDuration = config.getDouble("almhirt.durations.short") seconds
         val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
         val longDuration = config.getDouble("almhirt.durations.long") seconds
-        def generateUuid = uuidGen.generate
+        def getUuid = uuidGen.generate
         def dispose = actorSystem.shutdown
       }
     ctx.success

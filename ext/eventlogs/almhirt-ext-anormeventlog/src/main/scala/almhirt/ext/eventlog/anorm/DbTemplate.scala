@@ -1,4 +1,4 @@
-package almhirt.eventlog.anorm
+package almhirt.ext.eventlog.anorm
 
 import almhirt.environment.configuration._
 import com.typesafe.config.Config

@@ -28,10 +28,9 @@ import org.joda.time.DateTime
 import almhirt.util._
 import almhirt.common.AlmFuture
 import almhirt.core.impl.SimpleConcurrentServiceRegistry
-import riftwarp.RiftWarp
 import akka.dispatch.MessageDispatcher
 
-trait AlmhirtContext extends AlmhirtBaseOps with CanCreateUuidsAndDateTimes with Disposable {
+trait AlmhirtContext extends AlmhirtBaseOps with Disposable {
   def messageHub: MessageHub
   def commandChannel: MessageChannel[CommandEnvelope]
   def domainEventsChannel: MessageChannel[DomainEvent]
@@ -69,7 +68,7 @@ object AlmhirtContext {
         def postCommand(comEnvelope: CommandEnvelope) { broadcast(comEnvelope) }
         def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { messageHub.broadcast(createMessage(payload, metaData)) }
         def createMessage[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty): Message[T] = {
-          val header = MessageHeader(sys.generateUuid, None, metaData, sys.getDateTime)
+          val header = MessageHeader(sys.getUuid, None, metaData, sys.getDateTime)
           Message(header, payload)
         }
 
@@ -79,7 +78,7 @@ object AlmhirtContext {
         def longDuration = sys.longDuration
 
         def getDateTime = sys.getDateTime
-        def getUuid = sys.generateUuid
+        def getUuid = sys.getUuid
 
         def dispose = {
           messageHub.close
