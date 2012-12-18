@@ -33,7 +33,7 @@ trait AlmhirtTestKit {
   def createTestAlmhirt(): AlmhirtForTesting = createTestAlmhirt(defaultConf)
   def createTestAlmhirt(aConf: Config): AlmhirtForTesting = {
     AlmhirtBootstrapper.createFromConfig(aConf).bind(bootstrapper =>
-      AlmhirtBootstrapper.runStartupSequence(bootstrapper)).onFailure(f => println(f)).forceResult.asInstanceOf[AlmhirtForTesting]
+      AlmhirtBootstrapper.runStartupSequence(bootstrapper)).forceResult.asInstanceOf[AlmhirtForTesting]
   }
 
   def inTestAlmhirt[T](compute: AlmhirtForTesting => T): T = inTestAlmhirt(compute, defaultConf)

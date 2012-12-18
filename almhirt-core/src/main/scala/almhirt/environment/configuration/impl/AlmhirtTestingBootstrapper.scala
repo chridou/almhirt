@@ -15,8 +15,8 @@ import almhirt.util.OperationStateTracker
 
 class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrapper(config) {
 
-  override def createAlmhirt(context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Almhirt] = {
-    super.createAlmhirt(context, system).map(almhirt =>
+  override def createAlmhirt(aContext: AlmhirtContext, aSystem: AlmhirtSystem): AlmValidation[Almhirt] = {
+    super.createAlmhirt(aContext, aSystem).map(almhirt =>
       new AlmhirtForTesting {
         def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]) = almhirt.createMessageChannel(name)
 
@@ -32,18 +32,18 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
         def registerServiceByType(clazz: Class[_ <: AnyRef], service: AnyRef) { almhirt.registerServiceByType(clazz, service) }
         def getServiceByType(clazz: Class[_ <: AnyRef]) = almhirt.getServiceByType(clazz)
 
-        def futureDispatcher = system.futureDispatcher
-        def shortDuration = system.shortDuration
-        def mediumDuration = system.mediumDuration
-        def longDuration = system.longDuration
+        def futureDispatcher = aSystem.futureDispatcher
+        def shortDuration = aSystem.shortDuration
+        def mediumDuration = aSystem.mediumDuration
+        def longDuration = aSystem.longDuration
 
-        def getDateTime = system.getDateTime
-        def getUuid = system.generateUuid
+        def getDateTime = aSystem.getDateTime
+        def getUuid = aSystem.generateUuid
 
         def close() { AlmhirtBootstrapper.runShutDownSequence(AlmhirtTestingBootstrapper.this) }
 
-        def system = system
-        def context = context
+        def system = aSystem
+        def context = aContext
         def repositories = almhirt.getService[HasRepositories].forceResult
         def hasCommandHandlers = almhirt.getService[HasCommandHandlers].forceResult
         def eventLog = almhirt.getService[DomainEventLog].forceResult

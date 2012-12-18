@@ -6,9 +6,7 @@
 //import almhirt._
 //import almhirt.almvalidation.kit._
 //import almhirt.eventlog.DomainEventLog
-//import almhirt.domain.impl.BasicAggregateRootRepository
 //import almhirt.environment.AlmhirtContextTestKit
-//import almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLog
 //import test._
 //
 //class BasicAggregateRootRepositorySpecs extends Specification with AlmhirtContextTestKit {

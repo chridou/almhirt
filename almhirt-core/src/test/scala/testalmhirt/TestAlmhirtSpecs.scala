@@ -10,7 +10,7 @@ class TestAlmhirtSpecs extends Specification with TestAlmhirtKit {
   private implicit val atMost = akka.util.Duration(2, "s")
   "The TestAlmhirt" should {
     "create and retrieve person" in {
-      inTestAlmhirt{almhirt =>
+      inTestAlmhirt { almhirt =>
         val id1 = almhirt.getUuid
         almhirt.executeTrackedCommand(NewTestPerson(id1, "Harry"), "1")
         almhirt.operationStateTracker.getResultFor("1").awaitResult
