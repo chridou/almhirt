@@ -21,7 +21,7 @@ object SystemHelper {
       ConfigHelper.getString(subConf)(ConfigPaths.bootstrapperClassName).bind(className =>
         inTryCatch {
           val constructor = Class.forName(className).getConstructors()(0)
-          val instance = constructor.newInstance(Array[AnyRef](config))
+          val instance = constructor.newInstance(config)
           instance.asInstanceOf[AlmhirtBootstrapper]
         }))
   }
