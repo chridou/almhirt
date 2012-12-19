@@ -47,8 +47,8 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
   def addJson(ident: String, aValue: String) = addValue(ident, aValue)
   def addXml(ident: String, aValue: scala.xml.Node) = addValue(ident, aValue)
 
-  def addBlob(ident: String, aValue: Array[Byte]) =
-    getDematerializedBlob(ident, aValue).bind(blobDemat =>
+  def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
+    getDematerializedBlob(ident, aValue, blobIdentifier).bind(blobDemat =>
       blobDemat.dematerialize.bind(dim =>
         addValue(ident, dim.manifestation)))
   

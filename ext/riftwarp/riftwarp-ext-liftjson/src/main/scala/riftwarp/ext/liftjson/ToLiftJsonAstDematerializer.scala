@@ -138,12 +138,13 @@ class ToLiftJsonAstDematerializer(val state: List[JField], val path: List[String
   def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]) = addBase64EncodedByteArray(ident, aValue)
   def addOptionalByteArrayBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addByteArrayBlobEncoded)
   
-  def addBlob(ident: String, aValue: Array[Byte]) = 
-    getDematerializedBlob(ident, aValue).bind(blobDemat =>
+  def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) = 
+    getDematerializedBlob(ident, aValue, blobIdentifier).bind(blobDemat =>
       blobDemat.dematerialize.bind(dim =>
         addField(ident, dim.manifestation).success))
         
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBlob)
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) = 
+    option.cata(anOptionalValue)(v => addBlob(ident, v, blobIdentifier), addField(ident, JNull).success)
 
   def addDateTime(ident: String, aValue: org.joda.time.DateTime) = addField(ident, mapDateTime(aValue)).success
   def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]) = ifNoneAddNull(ident: String, anOptionalValue, addDateTime)

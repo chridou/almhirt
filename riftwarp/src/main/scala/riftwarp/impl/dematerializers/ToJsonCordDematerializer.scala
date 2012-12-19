@@ -226,7 +226,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
 
   def addUri(ident: String, aValue: _root_.java.net.URI) = addString(ident, aValue.toString())
   def addOptionalUri(ident: String, anOptionalValue: Option[_root_.java.net.URI]) = ifNoneAddNull(ident: String, anOptionalValue, addUri)
-  
+
   def addUuid(ident: String, aValue: _root_.java.util.UUID) = addUuidPart(ident, aValue)
   def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]) = ifNoneAddNull(ident: String, anOptionalValue, addUuid)
 
@@ -235,12 +235,13 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   def addXml(ident: String, aValue: scala.xml.Node) = addXmlPart(ident, aValue)
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = ifNoneAddNull(ident: String, anOptionalValue, addXml)
 
-  def addBlob(ident: String, aValue: Array[Byte]) =
-    getDematerializedBlob(ident, aValue).bind(blobDemat =>
+  def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
+    getDematerializedBlob(ident, aValue, blobIdentifier).bind(blobDemat =>
       blobDemat.dematerialize.bind(dimCord =>
         addComplexPart(ident, dimCord.manifestation)))
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = ifNoneAddNull(ident: String, anOptionalValue, addBlob)
-  
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) =
+    option.cata(anOptionalValue)(v => addBlob(ident, v, blobIdentifier), addNonePart(ident))
+
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToJsonCordDematerializer] = {
     spawnNew(ident).bind(demat =>
       decomposer.decompose(aComplexType)(demat).bind(toEmbed =>

@@ -60,8 +60,14 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
   def addXml(ident: String, aValue: scala.xml.Node): AlmValidation[Dematerializer[TDimension]]
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]): AlmValidation[Dematerializer[TDimension]]
 
-  def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
+  def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, aValue, PropertyPath(ident :: path))
+  def addBlob(ident: String, aValue: Array[Byte], name: String): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, aValue, PropertyPathAndIdentifier(ident :: path, name))
+  def addBlob(ident: String, aValue: Array[Byte], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, aValue, PropertyPathAndIdentifiers(ident :: path, identifiers))
+  def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]] = addOptionalBlob(ident, anOptionalValue, PropertyPath(ident :: path))
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], name: String): AlmValidation[Dematerializer[TDimension]] = addOptionalBlob(ident, anOptionalValue, PropertyPathAndIdentifier(ident :: path, name))
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]] = addOptionalBlob(ident, anOptionalValue, PropertyPathAndIdentifiers(ident :: path, identifiers))
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]]
   
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[Dematerializer[TDimension]]
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[Dematerializer[TDimension]]
@@ -125,7 +131,7 @@ trait NoneHasNoEffectDematerializationFunnel[TDimension <: RiftDimension] { dema
   def addOptionalJson(ident: String, anOptionalValue: Option[String]) = option.cata(anOptionalValue)(addJson(ident, _), dematerializer.success)
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = option.cata(anOptionalValue)(addXml(ident, _), dematerializer.success)
 
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addBlob(ident, _), dematerializer.success)
+  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) = option.cata(anOptionalValue)(addBlob(ident, _, blobIdentifier), dematerializer.success)
   
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(decomposer)(ident, _), this.success)
   def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _), dematerializer.success)
@@ -151,9 +157,9 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
    * 
    */
   protected def spawnNew(path: List[String]): AlmValidation[Dematerializer[TDimension]]
-  protected def getDematerializedBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]] =
+  protected def getDematerializedBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]] =
     spawnNew(ident).bind(demat =>
-      divertBlob(aValue, ident :: path).bind(blob => 
+      divertBlob(aValue, blobIdentifier).bind(blob => 
         blob.decompose(demat)))
 		  
 }
