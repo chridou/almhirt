@@ -6,7 +6,7 @@ import almhirt.parts.HasCommandHandlers
 import almhirt.commanding._
 
 class ConcurrentCommandHandlerRegistry extends HasCommandHandlers {
-  private val registeredHandlers = new java.util.concurrent.ConcurrentHashMap[Class[_ <: DomainCommand], HandlesCommand]
+  private val registeredHandlers = new java.util.concurrent.ConcurrentHashMap[Class[_ <: DomainCommand], HandlesCommand](512)
 
   def addHandler(handler: HandlesCommand) {
     registeredHandlers.put(handler.commandType, handler)

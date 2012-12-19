@@ -6,7 +6,7 @@ import almhirt.domain._
 import almhirt.parts._
 
 class ConcurrentRepositoryRegistry extends HasRepositories {
-  private val repos = new java.util.concurrent.ConcurrentHashMap[Class[_ <: AggregateRoot[_,_]], AnyRef]
+  private val repos = new java.util.concurrent.ConcurrentHashMap[Class[_ <: AggregateRoot[_,_]], AnyRef](128)
 
   def getForAggregateRootByType(clazz: Class[_ <: AggregateRoot[_,_]]): AlmValidation[AnyRef] = {
     repos.get(clazz) match {

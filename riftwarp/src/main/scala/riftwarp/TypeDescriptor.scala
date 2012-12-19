@@ -5,7 +5,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.funs
 
-sealed class TypeDescriptor private (val identifier: String, val version: Option[Int], versionDelim: String) extends Equals {
+sealed class TypeDescriptor private (val identifier: String, val version: Option[Int]) extends Equals {
   private lazy val hash = {
     val prime = 41
     prime * (prime + identifier.hashCode) + version.hashCode
@@ -26,7 +26,7 @@ sealed class TypeDescriptor private (val identifier: String, val version: Option
 
   override def hashCode() = hash
 
-  override def toString() = toString(versionDelim)
+  override def toString() = toString(";")
   def toString(versionDelim: String) = {
     option.cata(version)(v => "%s%sv%d".format(identifier, versionDelim, v), identifier)
   }
@@ -35,11 +35,11 @@ sealed class TypeDescriptor private (val identifier: String, val version: Option
 object TypeDescriptor {
   val defaultKey = "riftwarptd"
 
-  def apply(name: String, version: Option[Int], versionDelim: String): TypeDescriptor = new TypeDescriptor(name, version, versionDelim)
-  def apply(name: String): TypeDescriptor = new TypeDescriptor(name, None, ";")
-  def apply(name: String, version: Int): TypeDescriptor = new TypeDescriptor(name, Some(version), ";")
-  def apply(clazz: Class[_]): TypeDescriptor = new TypeDescriptor(clazz.getName(), None, ";")
-  def apply(clazz: Class[_], version: Int): TypeDescriptor = new TypeDescriptor(clazz.getName(), Some(version), ";")
+  def apply(name: String, version: Option[Int]): TypeDescriptor = new TypeDescriptor(name, version)
+  def apply(name: String): TypeDescriptor = new TypeDescriptor(name, None)
+  def apply(name: String, version: Int): TypeDescriptor = new TypeDescriptor(name, Some(version))
+  def apply(clazz: Class[_]): TypeDescriptor = new TypeDescriptor(clazz.getName(), None)
+  def apply(clazz: Class[_], version: Int): TypeDescriptor = new TypeDescriptor(clazz.getName(), Some(version))
 
   def unapply(td: TypeDescriptor): Option[String] = Some(td.identifier)
     
@@ -49,10 +49,10 @@ object TypeDescriptor {
     val parts = toParse.split(versionDelim)
     parts match {
       case Array(name) =>
-        TypeDescriptor(name, None, versionDelim).success
+        TypeDescriptor(name, None).success
       case Array(name, version) =>
         val v = version.drop(1)
-        almhirt.almvalidation.funs.parseIntAlm(v, "version").map(v => TypeDescriptor(name, Some(v), versionDelim))
+        almhirt.almvalidation.funs.parseIntAlm(v, "version").map(v => TypeDescriptor(name, Some(v)))
       case _ =>
         ParsingProblem("Not a valid type descriptor format. The provided delimeter for name and version was '%s'".format(versionDelim), Some(toParse)).failure
     }

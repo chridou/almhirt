@@ -5,7 +5,7 @@ import almhirt.common._
 import almhirt.core.ServiceRegistry
 
 class SimpleConcurrentServiceRegistry extends ServiceRegistry {
-  private val registeredServices = new java.util.concurrent.ConcurrentHashMap[Class[_ <: AnyRef], AnyRef]
+  private val registeredServices = new java.util.concurrent.ConcurrentHashMap[Class[_ <: AnyRef], AnyRef](128)
 
   def registerServiceByType(clazz: Class[_ <: AnyRef], service: AnyRef) {
     registeredServices.put(clazz, service)

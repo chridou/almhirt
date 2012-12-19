@@ -21,4 +21,6 @@ object RiftWarpBarracks {
   }
 
   def unsafe(): RiftWarpBarracks = apply(new impl.UnsafeDecomposerRegistry(), new impl.UnsafeRecomposerRegistry())
+  def concurrent(): RiftWarpBarracks = apply(new impl.ConcurrentDecomposerRegistry(), new impl.ConcurrentRecomposerRegistry())
+  
 }

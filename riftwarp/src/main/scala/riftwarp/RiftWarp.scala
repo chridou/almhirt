@@ -94,6 +94,13 @@ object RiftWarp {
     riftWarp
   }
 
+  def concurrent(): RiftWarp = apply(RiftWarpBarracks.concurrent, RiftWarpToolShed.concurrent, new impl.ConcurrentDimensionConverterRegistry)
+  def concurrentWithDefaults(): RiftWarp = {
+    val riftWarp = concurrent()
+    initializeWithDefaults(riftWarp)
+    riftWarp
+  }
+  
   private def initializeWithDefaults(riftWarp: RiftWarp) {
     riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToMapDematerializer)
     riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToJsonCordDematerializer)

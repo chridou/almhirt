@@ -30,8 +30,10 @@ object RiftWarpToolShed {
     }
   }
 
-  def unsafe(): RiftWarpToolShed = {
-    val unsafeReRegistry = new impl.UnsafeRematerializationArrayFactoryRegistry
-    apply(new impl.UnsafeDematerializerRegistry, unsafeReRegistry, impl.UnsafeFunctionObjectRegistry())
-  }
+  def unsafe(): RiftWarpToolShed = 
+    apply(new impl.UnsafeDematerializerRegistry, new impl.UnsafeRematerializationArrayFactoryRegistry, impl.UnsafeFunctionObjectRegistry())
+  
+  def concurrent(): RiftWarpToolShed = 
+    apply(new impl.ConcurrentDematerializerRegistry, new impl.ConcurrentRematerializationArrayFactoryRegistry, impl.ConcurrentFunctionObjectRegistry())
+  
 }
