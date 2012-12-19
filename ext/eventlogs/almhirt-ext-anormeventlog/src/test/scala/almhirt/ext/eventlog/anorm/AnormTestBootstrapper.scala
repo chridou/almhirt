@@ -8,7 +8,7 @@ import riftwarp.RiftWarp
 
 class AnormTestBootstrapper(config: Config) extends AlmhirtTestingBootstrapper(config) {
   override def registerComponents(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit] = {
-    val riftwarp = RiftWarp.unsafeWithDefaults
+    val riftwarp = RiftWarp.concurrentWithDefaults
     val barracks = riftwarp.barracks
     
     barracks.addDecomposer(new TestPersonCreatedDecomposer)

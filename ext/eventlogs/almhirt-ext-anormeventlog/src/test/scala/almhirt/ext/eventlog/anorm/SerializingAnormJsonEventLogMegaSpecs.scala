@@ -1,5 +1,4 @@
-package almhirt.ext.eventlog.anorm;
-//package almhirt.eventlog.anorm
+//package almhirt.ext.eventlog.anorm;
 //
 //import org.specs2.mutable._
 //import scalaz.syntax.validation._
@@ -8,14 +7,13 @@ package almhirt.ext.eventlog.anorm;
 //import almhirt.almvalidation.kit._
 //import almhirt.environment._
 //import almhirt.eventlog._
-//import test._
 //import almhirt.domain.DomainEvent
 //
 //class SerializingAnormJsonEventLogMegaSpecs extends Specification with TestAlmhirtKit {
 //  val count = 10000
 //
 //  private def withEmptyEventLog[T](f: (DomainEventLog, Almhirt) => T) =
-//    inTestAlmhirt(almhirt => f(almhirt.environment.eventLog, almhirt))
+//    inTestAlmhirt(almhirt => f(almhirt.eventLog, almhirt))
 //
 //  "An anorm SerializingAnormEventLog" should {
 //    "accept %d events with the same aggId shuffled with %d other events and return the events for a specific aggId in the same order(getEvents(aggId))".format(count, count) in {
