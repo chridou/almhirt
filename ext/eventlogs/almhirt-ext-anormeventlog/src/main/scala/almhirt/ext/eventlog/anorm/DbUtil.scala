@@ -24,7 +24,7 @@ object DbUtil {
         res
       } catch {
         case exn =>
-          PersistenceProblem("Could not execute a db operation: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
+          PersistenceProblem("Could not complete an operation succesfully while using a db connection: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
       } finally {
         conn.close()
       }

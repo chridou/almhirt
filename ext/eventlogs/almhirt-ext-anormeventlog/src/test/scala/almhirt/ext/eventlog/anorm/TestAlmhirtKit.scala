@@ -14,8 +14,8 @@ import almhirt.environment.Almhirt
 import almhirt.parts.HasRepositories
 
 trait TestAlmhirtKit {
-  val testKit = new AlmhirtTestKit{}
-  
+  val testKit = new AlmhirtTestKit {}
+
   def createTestAlmhirt(): AlmhirtForTesting = {
     implicit val almhirt = testKit.createTestAlmhirt(ConfigFactory.load)
     implicit val system = almhirt.system
@@ -26,15 +26,16 @@ trait TestAlmhirtKit {
     almhirt.hasCommandHandlers.addHandler(new SetTestPersonAdressUnitOfWork)
     almhirt.hasCommandHandlers.addHandler(new MoveTestPersonNameUnitOfWork)
     almhirt.hasCommandHandlers.addHandler(new MoveBecauseOfMarriageUnitOfWork)
-    
-    
+
     almhirt
   }
-  
+
   def inTestAlmhirt[T](compute: AlmhirtForTesting => T) = {
     val almhirt = createTestAlmhirt()
-    val res = compute(almhirt)
-    almhirt.close
-    res
+    try {
+      compute(almhirt)
+    } finally {
+      almhirt.close
+    }
   }
 }

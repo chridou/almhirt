@@ -22,8 +22,9 @@ import riftwarp.DimensionString
 import riftwarp.DimensionString
 import almhirt.core.CanCreateUuidsAndDateTimes
 import riftwarp.RiftWarp
+import almhirt.almakka.AlmActorLogging
 
-class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWarp: RiftWarp, uuidsAndTime: CanCreateUuidsAndDateTimes) extends Actor {
+class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWarp: RiftWarp, uuidsAndTime: CanCreateUuidsAndDateTimes) extends Actor with AlmActorLogging {
   private var loggedEvents: List[DomainEvent] = Nil
 
   private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, channel, timestamp, payload) VALUES({id}, {aggId}, {aggVersion}, {channel}, {timestamp}, {payload})".format(settings.logTableName)
@@ -57,13 +58,13 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
             val cmd = SQL(cmdInsert).on("id" -> entry.id, "aggId" -> entry.aggId, "aggVersion" -> entry.aggVersion, "timestamp" -> timestamp, "channel" -> RiftJson().channelType, "payload" -> entry.payload.toString)
             cmd.executeInsert()
           }.flatten
-// This one has to be observed. Does insert always return 0 within a transaction?
-//          Tests show, that there was a row inserted.  
-//        if (rowsInserted.length == events.length)
-//          events.success
-//        else
-//          PersistenceProblem("Number of committed events(%d) does not match the number of events to store(%d)!".format(rowsInserted.length, events.length)).failure
-          events.success
+        // This one has to be observed. Does insert always return 0 within a transaction?
+        //          Tests show, that there was a row inserted.  
+        //        if (rowsInserted.length == events.length)
+        //          events.success
+        //        else
+        //          PersistenceProblem("Number of committed events(%d) does not match the number of events to store(%d)!".format(rowsInserted.length, events.length)).failure
+        events.success
       }))
   }
 
