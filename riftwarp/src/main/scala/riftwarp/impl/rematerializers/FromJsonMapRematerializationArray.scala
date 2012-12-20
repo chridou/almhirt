@@ -97,7 +97,7 @@ class FromJsonMapRematerializationArray(jsonMap: Map[String, Any], protected val
   def tryGetDateTime(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseDateTimeAlm(_, ident)).map(Some(_)), None.success)
 
   def tryGetUri(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseUriAlm(_, ident)).map(Some(_)), None.success)
-  
+
   def tryGetUuid(ident: String) = option.cata(get(ident))(almCast[String](_).bind(parseUuidAlm(_, ident)).map(Some(_)), None.success)
 
   def tryGetJson(ident: String) = option.cata(get(ident))(almCast[String](_).map(Some(_)), None.success)
@@ -282,13 +282,32 @@ object FromJsonStringRematerializationArray extends RematerializationArrayFactor
   val toolGroup = ToolGroupStdLib()
 
   def apply(json: String, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] = {
-    JSON.parseFull(json) match {
-      case Some(map) =>
-        almCast[Map[String, Any]](map).map(FromJsonMapRematerializationArray(_, fetchBlobs)(hasRecomposers, hasFunctionObject))
-      case None =>
-        ParsingProblem("Could not parse JSON", input = Some(json)).failure
+    def transformMap(m: Map[String, Any]) =
+      m.transform {
+        case (k, v) => resolveType(v)
+      }
+    
+    def resolveType(input: Any): Any = input match {
+      case JSONObject(data) => transformMap(data)
+      case JSONArray(data) => data.map(resolveType)
+      case x => x
+    }
+    // Always instantiate a new parser because the singleton from the standard library is not threadsafe!
+    val parser = new scala.util.parsing.json.Parser
+    parser.phrase(parser.root)(new parser.lexical.Scanner(json)) match {
+      case parser.Success(result, _) =>
+        result match {
+          case JSONObject(data) =>
+            FromJsonMapRematerializationArray(transformMap(data), fetchBlobs).success
+          case x =>
+            UnspecifiedProblem("'%s' is not valid for dematerializing. A Map[String, Any] is required".format(x)).failure
+        }
+
+      case parser.NoSuccess(msg, _) =>
+        ParsingProblem(msg, input = Some(json)).failure
     }
   }
+
   def apply(json: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] = apply(json.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
   def createRematerializationArray(from: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializationArray] =
     apply(from, fetchBlobs)(hasRecomposers, hasFunctionObject)
