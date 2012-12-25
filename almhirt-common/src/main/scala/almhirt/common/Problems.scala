@@ -186,6 +186,17 @@ case class PersistenceProblem(message: String, severity: Severity = Major, categ
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/** The operation is not supported
+ */
+case class NotSupportedProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = NotSupportedProblem
+  def withMessage(newMessage: String) = copy(message = newMessage)
+  def withSeverity(severity: Severity) = copy(severity = severity)
+  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+}
+
 /** Some data structure couldn't be mapped from one to another. The key is giving the name of the field that caused the problem.
  */
 case class MappingProblem(message: String, category: ProblemCategory = SystemProblem, severity: Severity = Minor, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
@@ -340,3 +351,4 @@ case class LocaleNotSupportedProblem(message: String, locale: String, severity: 
   }
 }
   
+

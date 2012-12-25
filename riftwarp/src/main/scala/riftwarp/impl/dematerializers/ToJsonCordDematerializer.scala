@@ -242,12 +242,12 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) =
     option.cata(anOptionalValue)(v => addBlob(ident, v, blobIdentifier), addNonePart(ident))
 
-  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToJsonCordDematerializer] = {
+  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToJsonCordDematerializer] =
     spawnNew(ident).bind(demat =>
       decomposer.decompose(aComplexType)(demat).bind(toEmbed =>
         toEmbed.asInstanceOf[ToJsonCordDematerializer].dematerialize).bind(json =>
         addComplexPart(ident, json.manifestation)))
-  }
+
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, anOptionalComplexType, addComplexType(decomposer))
 

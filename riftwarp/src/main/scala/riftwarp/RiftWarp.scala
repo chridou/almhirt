@@ -123,6 +123,7 @@ object RiftWarp {
     riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.treeFunctionObject)
 
     riftWarp.toolShed.addChannelFolder(JsonCordFolder)
+    riftWarp.toolShed.addChannelFolder(XmlElemFolder)
 
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToIterableConverter)
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToSetConverter)
