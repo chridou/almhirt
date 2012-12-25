@@ -10,12 +10,12 @@ trait RawDematerializer {
   def toolGroup: ToolGroup
   /** Path to the root */
   def path: List[String]
-  def dematerializeRaw: AlmValidation[RiftDimension]
+  def dematerializeRaw: RiftDimension
 }
 
 trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
-  def dematerialize: AlmValidation[TDimension]
-  def dematerializeRaw: AlmValidation[RiftDimension] = dematerialize.map(_.asInstanceOf[RiftDimension])
+  def dematerialize: TDimension
+  def dematerializeRaw: RiftDimension = dematerialize.asInstanceOf[RiftDimension]
 
   def addString(ident: String, aValue: String): AlmValidation[Dematerializer[TDimension]]
   def addOptionalString(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TDimension]]

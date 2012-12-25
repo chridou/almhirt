@@ -32,9 +32,8 @@ trait RiftWarp {
         barracks.getDecomposerForAny(what).bind(decomposer =>
           factoryAndConverters._1.createDematerializer(divertBlobs)(barracks, toolShed).bind(demat =>
             decomposer.decomposeRaw(what)(demat).bind(demat =>
-              demat.dematerializeRaw.bind(dimDemat =>
-                factoryAndConverters._2.foldLeft(dimDemat.success[Problem])((acc, converter) =>
-                  acc.fold(prob => prob.failure, dim => converter.convertRaw(dim))).map(_.asInstanceOf[TDimension]))))))
+                factoryAndConverters._2.foldLeft(demat.dematerializeRaw.success[Problem])((acc, converter) =>
+                  acc.fold(prob => prob.failure, dim => converter.convertRaw(dim))).map(_.asInstanceOf[TDimension])))))
 
   def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
     getDematerializationFun[TDimension](channel, toolGroup)(NoDivertBlobDivert).bind(fun => fun(what))

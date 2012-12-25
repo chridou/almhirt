@@ -130,7 +130,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   protected def spawnNew(path: List[String]): AlmValidation[ToJsonCordDematerializer] =
     ToJsonCordDematerializer.apply(path, divertBlob).success
 
-  def dematerialize = DimensionCord(('{' -: state :- '}')).success
+  def dematerialize = DimensionCord(('{' -: state :- '}'))
 
   def addPart(ident: String, part: Cord): AlmValidation[ToJsonCordDematerializer] = {
     val fieldCord = '\"' + ident + "\":"
@@ -237,16 +237,15 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
 
   def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
     getDematerializedBlob(ident, aValue, blobIdentifier).bind(blobDemat =>
-      blobDemat.dematerialize.bind(dimCord =>
-        addComplexPart(ident, dimCord.manifestation)))
+        addComplexPart(ident, blobDemat.dematerialize.manifestation))
+        
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) =
     option.cata(anOptionalValue)(v => addBlob(ident, v, blobIdentifier), addNonePart(ident))
 
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToJsonCordDematerializer] =
     spawnNew(ident).bind(demat =>
       decomposer.decompose(aComplexType)(demat).bind(toEmbed =>
-        toEmbed.asInstanceOf[ToJsonCordDematerializer].dematerialize).bind(json =>
-        addComplexPart(ident, json.manifestation)))
+        addComplexPart(ident, toEmbed.asInstanceOf[ToJsonCordDematerializer].dematerialize.manifestation)))
 
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, anOptionalComplexType, addComplexType(decomposer))
@@ -278,7 +277,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
 
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     spawnNew(ident).bind(demat =>
-      MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(demat).bind(_.dematerialize)).bind(complex =>
+      MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(demat).map(_.dematerialize)).bind(complex =>
         MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
         addPart(ident, dimCord.manifestation)))
 
@@ -338,9 +337,8 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
         aMap.map {
           case (a, b) =>
             spawnNew("[" + a.toString + "]" :: ident :: path).bind(freshDemat =>
-              decomposer.decompose(b)(freshDemat).bind(demat =>
-                demat.dematerialize.map(b =>
-                  (mapA(a), b.manifestation))))
+              decomposer.decompose(b)(freshDemat).map(demat =>
+                  (mapA(a), demat.dematerialize.manifestation)))
         }.map(_.toAgg).toList.sequence.bind(sequenced =>
           foldKeyValuePairs(sequenced).bind(pairs =>
             addPart(ident, pairs.manifestation)))),
@@ -393,7 +391,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
     hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
       case Some(decomposer) =>
         spawnNew(idx :: ident :: path).bind(freshDemat =>
-          decomposer.decomposeRaw(toDecompose)(freshDemat).bind(_.dematerialize))
+          decomposer.decomposeRaw(toDecompose)(freshDemat).map(_.dematerialize))
       case None =>
         UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass.getName())).failure
     }
@@ -405,7 +403,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
           case toDecomposeAsAnyRef: AnyRef =>
             spawnNew(idx :: ident :: path).bind(freshDemat =>
               option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
-                decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(freshDemat).bind(_.dematerialize),
+                decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(freshDemat).map(_.dematerialize),
                 UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure))
           case x =>
             UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure

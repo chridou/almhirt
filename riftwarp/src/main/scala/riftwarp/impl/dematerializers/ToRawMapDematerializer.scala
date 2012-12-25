@@ -13,7 +13,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
   protected def spawnNew(path: List[String]): AlmValidation[ToMapDematerializer] =
     ToMapDematerializer.apply(path, divertBlob).success
 
-  def dematerialize: AlmValidation[DimensionRawMap] = DimensionRawMap(state).success
+  def dematerialize: DimensionRawMap = DimensionRawMap(state)
 
   protected def addValue(ident: String, aValue: Any): AlmValidation[ToMapDematerializer] =
     (ToMapDematerializer(state + (ident -> aValue), path, divertBlob)).success
@@ -49,14 +49,12 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
 
   def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
     getDematerializedBlob(ident, aValue, blobIdentifier).bind(blobDemat =>
-      blobDemat.dematerialize.bind(dim =>
-        addValue(ident, dim.manifestation)))
-  
+      addValue(ident, blobDemat.dematerialize.manifestation))
+
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToMapDematerializer] = {
     spawnNew(ident).bind(demat =>
       decomposer.decompose(aComplexType)(demat).bind(toEmbed =>
-        toEmbed.asInstanceOf[ToMapDematerializer].dematerialize).bind(theMapToEmbed =>
-        addValue(ident, theMapToEmbed.manifestation)))
+        addValue(ident, toEmbed.asInstanceOf[ToMapDematerializer].dematerialize.manifestation)))
   }
 
   def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[ToMapDematerializer] = {
@@ -79,12 +77,12 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
     def mapA(a: A, idx: String): AlmValidationAP[Map[String, Any]] =
       spawnNew(idx :: ident :: path).bind(freshDemat =>
-        decomposer.decompose(a)(freshDemat).bind(_.dematerialize.map(_.manifestation))).toAgg
+        decomposer.decompose(a)(freshDemat).map(_.dematerialize.manifestation)).toAgg
 
     hasFunctionObjects.tryGetMAFunctions[M] match {
       case Some(fo) =>
         (fo: @unchecked) match {
-          case fo:  LinearMAFunctions[M] =>
+          case fo: LinearMAFunctions[M] =>
             fo.sequenceValidations(fo.mapi(ma)((a, i) =>
               mapA(a, "[" + i.toString + "]"))).bind(x =>
               addValue(ident, x))
@@ -132,8 +130,8 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
           aMap.toList.map {
             case (a, b) =>
               spawnNew("[" + a.toString + "]" :: ident :: path).bind(freshDemat =>
-                decomposer.decompose(b)(freshDemat).bind(dematerializer =>
-                  dematerializer.dematerialize.map(m => (a, m.manifestation))))
+                decomposer.decompose(b)(freshDemat).map(dematerializer =>
+                  (a, dematerializer.dematerialize.manifestation)))
           }.map(x => x.toAgg)
         val sequenced = validations.sequence
         sequenced.map(_.toMap).bind(x =>
@@ -176,7 +174,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
     hasDecomposers.tryGetRawDecomposerForAny(toDecompose) match {
       case Some(decomposer) =>
         spawnNew(idx :: ident :: path).bind(freshDemat =>
-          decomposer.decomposeRaw(toDecompose)(freshDemat).bind(_.dematerialize.map(_.manifestation)))
+          decomposer.decomposeRaw(toDecompose)(freshDemat).map(_.dematerialize.manifestation))
       case None =>
         UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass().getName())).failure
     }
@@ -189,7 +187,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
         case toDecomposeAsAnyRef: AnyRef =>
           hasDecomposers.getRawDecomposerForAny(toDecomposeAsAnyRef).bind(decomposer =>
             spawnNew(idx :: ident :: path).bind(freshDemat =>
-              decomposer.decomposeRaw(toDecomposeAsAnyRef)(freshDemat).bind(_.dematerialize.map(_.manifestation))))
+              decomposer.decomposeRaw(toDecomposeAsAnyRef)(freshDemat).map(_.dematerialize.manifestation)))
         case x =>
           UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
       })

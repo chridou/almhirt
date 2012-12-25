@@ -87,7 +87,6 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
   val toolGroup = ToolGroupRiftStd()
   val channel = RiftXml()
 
-  
   import ToXmlElemDematerializerFuns._
 
   protected def spawnNew(path: List[String]): AlmValidation[ToXmlElemDematerializer] =
@@ -104,7 +103,7 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
   def createPrimitiveElem(ident: String, value: String) = Elem(null, ident, Null, TopScope, Text(value))
   def wrapComplexElem(ident: String, complex: Elem) = Elem(null, ident, Null, TopScope, complex)
 
-  def dematerialize: AlmValidation[DimensionXmlElem] = DimensionXmlElem(asElem).success
+  def dematerialize: DimensionXmlElem = DimensionXmlElem(asElem)
 
   def addString(ident: String, aValue: String) = addElem(createPrimitiveElem(ident, aValue))
 
@@ -134,14 +133,12 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
 
   def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
     getDematerializedBlob(ident, aValue, blobIdentifier).bind(blobDemat =>
-      blobDemat.dematerialize.bind(elem =>
-        addElem(wrapComplexElem(ident, elem.manifestation))))
+      addElem(wrapComplexElem(ident, blobDemat.dematerialize.manifestation)))
 
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToXmlElemDematerializer] =
     spawnNew(ident).bind(demat =>
       decomposer.decompose(aComplexType)(demat).bind(toEmbed =>
-        toEmbed.dematerialize).bind(elem =>
-        addElem(wrapComplexElem(ident, elem.manifestation))))
+        addElem(wrapComplexElem(ident, toEmbed.dematerialize.manifestation))))
 
   def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit mU: Manifest[U]): AlmValidation[ToXmlElemDematerializer] =
     hasDecomposers.getDecomposer[U].bind(decomposer => addComplexType(decomposer)(ident, aComplexType))
@@ -161,7 +158,7 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
 
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
     spawnNew(ident).bind(demat =>
-      MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(demat).bind(_.dematerialize.map(_.manifestation))).bind(m =>
+      MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(demat).map(_.dematerialize.manifestation)).bind(m =>
         MAFuncs.fold(this.channel)(m)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem])).bind(elem =>
         addElem(wrapComplexElem(ident, elem))))
 
@@ -212,7 +209,7 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
 
   def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
     hasDecomposers.getDecomposer[B].bind(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
-      
+
   def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.erasure),
@@ -236,14 +233,14 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
           foldKeyValuePairs(items)).bind(elem =>
           addElem(wrapComplexElem(ident, elem)))),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
-      
+
   def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[ToXmlElemDematerializer] =
     new ToXmlElemDematerializer(state, path, divertBlob, Some(descriptor)).success
 
   private def decomposeWithDecomposer[T <: AnyRef](idxIdent: List[String])(decomposer: Decomposer[T])(what: T): AlmValidation[Elem] =
     spawnNew(idxIdent ++ path).bind(demat =>
-      decomposer.decompose(what)(demat).bind(demat =>
-        demat.dematerialize.map(_.manifestation)))
+      decomposer.decompose(what)(demat).map(demat =>
+        demat.dematerialize.manifestation))
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[Elem] =
     hasDecomposers.getRawDecomposerForAny(toDecompose).bind(decomposer =>
