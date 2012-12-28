@@ -14,6 +14,7 @@
 */
 package almhirt.almakka
 
+import scala.concurrent.ExecutionContext
 import akka.event._
 import almhirt.common._
 import almhirt.core._
@@ -41,7 +42,7 @@ trait AlmActorLogging extends CanLogProblems { self: akka.actor.Actor =>
 	    }
   }
   
-  
+  import language.implicitConversions
   implicit def almFuture2AlmValidationLoggingW[T](future: AlmFuture[T]): AlmFutureLoggingW[T]  = new AlmFutureLoggingW[T](future)
   /** Implicits to be used on a [[almhirt.concurrent.AlmFuture]] */
   final class AlmFutureLoggingW[T](future: AlmFuture[T]) {
@@ -49,11 +50,11 @@ trait AlmActorLogging extends CanLogProblems { self: akka.actor.Actor =>
      * 
      * @param minSeverity The minimum [[almhirt.validation.Severity]] the [[almhirt.validation.Problem]] contained in a Failure must have to be logged
      */
-    def logFailure(minSeverity: Severity): AlmFuture[T] = {
-       future.onFailure(logProblem(_, minSeverity))
+    def logFailure(minSeverity: Severity)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
+       future.withFailure(logProblem(_, minSeverity))
     }
     /** Log a [[almhirt.validation.Problem]] contained in case of a Failure */
-    def logFailure(): AlmFuture[T] = logFailure(NoProblem)
+    def logFailure()(implicit executionContext: ExecutionContext): AlmFuture[T] = logFailure(NoProblem)
   }
   
 }

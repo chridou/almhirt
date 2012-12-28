@@ -1,25 +1,23 @@
 package almhirt.environment
 
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.dispatch.MessageDispatcher
-import akka.util.duration.doubleToDurationDouble
-import akka.util.Duration
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 import org.joda.time.DateTime
 import almhirt.common._
 import almhirt.core._
 import almhirt.environment.configuration._
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 
 /** Components and values needed to use Akka */
-trait AlmhirtSystem extends CanCreateUuidsAndDateTimes with Disposable {
+trait AlmhirtSystem extends CanCreateUuidsAndDateTimes with HasExecutionContext with Disposable {
   def config: Config
   def actorSystem: ActorSystem
-  def futureDispatcher: MessageDispatcher
-  def shortDuration: Duration
-  def mediumDuration: Duration
-  def longDuration: Duration
+  def shortDuration: FiniteDuration
+  def mediumDuration: FiniteDuration
+  def longDuration: FiniteDuration
   def getUuid: java.util.UUID
   def getDateTime: DateTime = new DateTime()
 }
@@ -28,18 +26,21 @@ object AlmhirtSystem {
   def apply(config: Config): AlmValidation[AlmhirtSystem] = {
     import scalaz.syntax.validation._
     val uuidGen = new JavaUtilUuidGenerator()
-    val ctx =
+    for {
+      short <- ConfigHelper.getDuration(config)("almhirt.durations.short")
+      medium <- ConfigHelper.getDuration(config)("almhirt.durations.medium")
+      long <- ConfigHelper.getDuration(config)("almhirt.durations.long")
+    } yield
       new AlmhirtSystem {
         val config = ConfigFactory.load
         val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
-        val futureDispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherName(config)(ConfigPaths.futures))
-        val shortDuration = config.getDouble("almhirt.durations.short") seconds
-        val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
-        val longDuration = config.getDouble("almhirt.durations.long") seconds
+        val executionContext = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherName(config)(ConfigPaths.futures))
+        val shortDuration = short
+        val mediumDuration = medium
+        val longDuration = long
         def getUuid = uuidGen.generate
         def dispose = actorSystem.shutdown
       }
-    ctx.success
   }
-  def apply(): AlmValidation[AlmhirtSystem] = almhirt.almvalidation.funs.inTryCatch { ConfigFactory.load() }.bind(apply(_))
+  def apply(): AlmValidation[AlmhirtSystem] = almhirt.almvalidation.funs.inTryCatch { ConfigFactory.load() }.flatMap(apply(_))
 }

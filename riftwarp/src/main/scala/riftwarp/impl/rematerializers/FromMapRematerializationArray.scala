@@ -1,8 +1,10 @@
 package riftwarp.impl.rematerializers
 
+import language.higherKinds
+
 import scalaz._, Scalaz._
 import scalaz.std._
-import scalaz.syntax.validation._
+import scalaz.syntax.validation
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
@@ -38,7 +40,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
 
   def tryGetByteArray(ident: String) = option.cata(theMap.get(ident))(almCast[Array[Byte]](_).map(Some(_)), None.success)
   def tryGetByteArrayFromBase64Encoding(ident: String) =
-    option.cata(theMap.get(ident))(almCast[String](_).bind(parseBase64Alm(_, ident).map(Some(_))), None.success)
+    option.cata(theMap.get(ident))(almCast[String](_).flatMap(parseBase64Alm(_, ident).map(Some(_))), None.success)
   def tryGetByteArrayFromBlobEncoding(ident: String) = tryGetByteArray(ident)
 
   def tryGetDateTime(ident: String) = option.cata(theMap.get(ident))(almCast[org.joda.time.DateTime](_).map(Some(_)), None.success)
@@ -56,7 +58,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
   def tryGetComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) =
     theMap.get(ident) match {
       case Some(elem) =>
-        almCast[Map[String, Any]](elem).bind(elemAsMap =>
+        almCast[Map[String, Any]](elem).flatMap(elemAsMap =>
           recomposer.recompose(spawnNew(elemAsMap))).map(res =>
           Some(res))
       case None =>
@@ -66,8 +68,8 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
   def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] = 
     theMap.get(ident) match {
       case Some(elem) =>
-        almCast[Map[String, Any]](elem).bind ( elemAsMap =>
-          recomposeWithLookedUpRawRecomposerFromTypeDescriptor(TypeDescriptor(m.erasure))(spawnNew(elemAsMap)).map(_.asInstanceOf[T])).map(Some(_))
+        almCast[Map[String, Any]](elem).flatMap ( elemAsMap =>
+          recomposeWithLookedUpRawRecomposerFromTypeDescriptor(TypeDescriptor(m.runtimeClass))(spawnNew(elemAsMap)).map(_.asInstanceOf[T])).map(Some(_))
       case None =>
         None.success
     }
@@ -75,7 +77,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
   def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] = {
     theMap.get(ident) match {
       case Some(elem) =>
-        almCast[Map[String, Any]](elem).bind ( elemAsMap =>
+        almCast[Map[String, Any]](elem).flatMap ( elemAsMap =>
           recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawnNew(elemAsMap)).map(_.asInstanceOf[T])).map(Some(_))
       case None =>
         None.success
@@ -89,8 +91,8 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
     option.cata(theMap.get(ident))(
       mx =>
         boolean.fold(
-          mM.erasure.isAssignableFrom(mx.getClass),
-          functionObjects.getMAFunctions[M].bind(fo =>
+          mM.runtimeClass.isAssignableFrom(mx.getClass),
+          functionObjects.getMAFunctions[M].flatMap(fo =>
             computeSafely {
               val validations =
                 fo.map(mx.asInstanceOf[M[Map[String, Any]]])(elem =>
@@ -98,19 +100,19 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
               val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
               sequenced.map(Some(_))
             }),
-          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.runtimeClass.getName(), mx.getClass.getName())).failure),
       None.success)
 
   def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
-    hasRecomposers.getRecomposer[A](TypeDescriptor(mA.erasure)).bind(recomposer =>
+    hasRecomposers.getRecomposer[A](TypeDescriptor(mA.runtimeClass)).flatMap(recomposer =>
       tryGetComplexMA[M, A](ident, recomposer))
 
   def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[Option[M[A]]] = {
     option.cata(theMap.get(ident))(
       mx =>
         boolean.fold(
-          mM.erasure.isAssignableFrom(mx.getClass),
-          functionObjects.getMAFunctions[M].bind(fo =>
+          mM.runtimeClass.isAssignableFrom(mx.getClass),
+          functionObjects.getMAFunctions[M].flatMap(fo =>
             computeSafely {
               val validations =
                 fo.map(mx.asInstanceOf[M[Map[String, Any]]])(elem =>
@@ -118,7 +120,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
               val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
               sequenced.map(Some(_))
             }),
-          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.runtimeClass.getName(), mx.getClass.getName())).failure),
       None.success)
   }
 
@@ -126,27 +128,27 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
     option.cata(theMap.get(ident))(
       mx =>
         boolean.fold(
-          mM.erasure.isAssignableFrom(mx.getClass),
-          functionObjects.getMAFunctions[M].bind(fo =>
+          mM.runtimeClass.isAssignableFrom(mx.getClass),
+          functionObjects.getMAFunctions[M].flatMap(fo =>
             computeSafely {
               val validations = fo.map(mx.asInstanceOf[M[Map[String, Any]]])(mapToAny[A](ident))
               val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
               sequenced.map(Some(_))
             }),
-          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.erasure.getName(), mx.getClass.getName())).failure),
+          UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.runtimeClass.getName(), mx.getClass.getName())).failure),
       None.success)
 
   def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
-    (TypeHelpers.isPrimitiveType(mA.erasure), TypeHelpers.isPrimitiveType(mB.erasure)) match {
+    (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) => inTryCatch { theMap.get(ident).map(_.asInstanceOf[Map[A, B]]) }
-      case (false, true) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure
-      case (true, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: B(%s) is not a primitive type".format(ident, mB.erasure.getName())).failure
-      case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
+      case (false, true) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure
+      case (true, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: B(%s) is not a primitive type".format(ident, mB.runtimeClass.getName())).failure
+      case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.runtimeClass.getName(), mB.runtimeClass.getName())).failure
     }
 
   def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
     boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.erasure),
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
       option.cata(theMap.get(ident))(
         theMap =>
           computeSafely {
@@ -158,14 +160,14 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
               items.toMap).map(Some(_))
           },
         None.success),
-      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
   def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
-    hasRecomposers.getRecomposer[B](TypeDescriptor(mB.erasure)).bind(recomposer => tryGetComplexMap[A, B](ident, recomposer))
+    hasRecomposers.getRecomposer[B](TypeDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
 
   def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
     boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.erasure),
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
       option.cata(theMap.get(ident))(
         theMap =>
           computeSafely {
@@ -177,11 +179,11 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
               items.toMap).map(Some(_))
           },
         None.success),
-      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
   def tryGetMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
     boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.erasure),
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
       option.cata(theMap.get(ident))(
         theMap =>
           computeSafely {
@@ -192,9 +194,9 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
               items.toMap).map(Some(_))
           },
         None.success),
-      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+      UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  def tryGetTypeDescriptor = tryGetString(TypeDescriptor.defaultKey).bind(strOpt => strOpt.map(TypeDescriptor.parse(_)).validationOut)
+  def tryGetTypeDescriptor = tryGetString(TypeDescriptor.defaultKey).flatMap(strOpt => strOpt.map(TypeDescriptor.parse(_)).validationOut)
 
   private def mapToAny[A](ident: String)(what: Any): AlmValidation[A] =
     if (TypeHelpers.isPrimitiveValue(what))

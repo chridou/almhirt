@@ -4,7 +4,7 @@ import java.util.UUID
 import java.util.Properties
 import java.sql.{ DriverManager, Connection, Timestamp }
 import scalaz._, Scalaz._
-import scalaz.syntax.validation._
+import scalaz.syntax.validation
 import scalaz.std._
 import org.joda.time.DateTime
 import akka.actor._
@@ -17,12 +17,12 @@ import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._
 import riftwarp.RiftJson
-import _root_.anorm._
 import riftwarp.DimensionString
 import riftwarp.DimensionString
 import almhirt.core.CanCreateUuidsAndDateTimes
 import riftwarp.RiftWarp
 import almhirt.almakka.AlmActorLogging
+import _root_.anorm._
 
 class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWarp: RiftWarp, uuidsAndTime: CanCreateUuidsAndDateTimes) extends Actor with AlmActorLogging {
   private var loggedEvents: List[DomainEvent] = Nil
@@ -38,7 +38,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
     try {
       DriverManager.getConnection(settings.connection, settings.props).success
     } catch {
-      case exn => PersistenceProblem("Could not connect to %s".format(settings.connection), cause = Some(CauseIsThrowable(exn))).failure
+      case exn: Throwable => PersistenceProblem("Could not connect to %s".format(settings.connection), cause = Some(CauseIsThrowable(exn))).failure
     }
   }
 
@@ -50,7 +50,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
 
   private def storeEvents(events: List[DomainEvent]): AlmValidation[List[DomainEvent]] = {
     val entriesV = AnormEventLogEntry.fromDomainEvents(events)
-    entriesV.bind(entries =>
+    entriesV.flatMap(entries =>
       inTransaction(implicit conn => {
         val rowsInserted =
           entries.map { entry =>
@@ -80,7 +80,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
       val payloadsV =
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
-          str.bind(x =>
+          str.flatMap(x =>
             riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
         }.map(_.toAgg).toList
       payloadsV.sequence
@@ -94,7 +94,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
       val payloadsV =
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
-          str.bind(x =>
+          str.flatMap(x =>
             riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
         }.map(_.toAgg).toList
       payloadsV.sequence

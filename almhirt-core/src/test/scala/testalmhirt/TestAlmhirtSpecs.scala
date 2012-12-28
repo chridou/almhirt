@@ -1,13 +1,14 @@
 package testalmhirt
 
-import org.specs2.mutable._
+import scala.concurrent.duration.Duration
 import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
 import test._
+import org.specs2.mutable._
 
 class TestAlmhirtSpecs extends Specification with TestAlmhirtKit {
-  private implicit val atMost = akka.util.Duration(2, "s")
+  private implicit val atMost = Duration(2, "s")
   "The TestAlmhirt" should {
     "create and retrieve person" in {
       inTestAlmhirt { almhirt =>

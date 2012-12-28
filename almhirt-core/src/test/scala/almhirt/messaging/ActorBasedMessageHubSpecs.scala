@@ -1,17 +1,17 @@
 package almhirt.messaging
 
-import org.specs2.mutable._
+import scala.concurrent.duration._
 import akka.pattern._
-import akka.util.Duration
 import almhirt.syntax.almvalidation._
 import almhirt._
 import almhirt.almfuture.all._
 import almhirt.environment.AlmhirtsystemTestkit
 import scalaz._, Scalaz._
 import almhirt.environment.AlmhirtSystem
+import org.specs2.mutable._
 
 class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit {
-  implicit val atMost = akka.util.Duration(1, "s")
+  implicit val atMost = Duration(1, "s")
   private class A(val propa: Int)
   private class B(propa: Int, val propb: String) extends A(propa)
 
@@ -123,7 +123,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit 
   """A MessageHub with a created global channel of payload type String using actors directly""" should {
     """trigger a handler on the created channel when a String is broadcasted""" in {
       inTestSystem { ctx =>
-        implicit val executionContext = ctx.futureDispatcher
+        implicit val executionContext = ctx.executionContext
         val hub = getHub(ctx)
         val channel =
           (hub.actor ? CreateSubChannelQry("testChannel", MessagePredicate[String]))(atMost)
@@ -146,7 +146,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit 
     }
     """not trigger a handler on the created channel when a UUID is broadcasted""" in {
       inTestSystem { ctx =>
-        implicit val executionContext = ctx.futureDispatcher
+        implicit val executionContext = ctx.executionContext
         val hub = getHub(ctx)
         val channel =
           (hub.actor ? CreateSubChannelQry("testChannel", MessagePredicate[String]))(atMost)

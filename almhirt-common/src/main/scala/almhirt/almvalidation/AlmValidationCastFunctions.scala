@@ -8,6 +8,6 @@ trait AlmValidationCastFunctions {
     try {
       what.asInstanceOf[To].success
     } catch {
-      case exn => TypeCastProblem("Could not cast a type at runtime", cause = Some(CauseIsThrowable(exn))).failure
+      case exn: Throwable => TypeCastProblem("Could not cast a type at runtime", cause = Some(CauseIsThrowable(exn))).failure
     }
 }

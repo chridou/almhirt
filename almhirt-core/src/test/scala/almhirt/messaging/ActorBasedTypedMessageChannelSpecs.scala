@@ -1,19 +1,19 @@
 package almhirt.messaging
 
-import org.specs2.mutable._
-import akka.util.Duration
+import scala.concurrent.duration._
 import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.environment.AlmhirtsystemTestkit
 import scalaz._, Scalaz._
 import almhirt.environment.AlmhirtSystem
+import org.specs2.mutable._
 
 class ActorBasedTypedMessageChannelSpecs extends Specification with AlmhirtsystemTestkit {
   private class A(val propa: Int)
   private class B(propa: Int, val propb: String) extends A(propa)
   
   
-  implicit val atMost = akka.util.Duration(1, "s")
+  implicit val atMost = Duration(1, "s")
   implicit def getUUID = java.util.UUID.randomUUID()
   private def getChannel[T <: AnyRef](context: AlmhirtSystem)(implicit m: Manifest[T]): MessageChannel[T] = {
     MessageChannel[T]("testChannel")(context, m)

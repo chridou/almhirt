@@ -14,6 +14,8 @@
 */
 package almhirt.problem
 
+import scala.language.implicitConversions
+
 import scalaz.Scalaz.ToFoldableOps
 import scalaz.syntax.Ops
 import scalaz.NonEmptyList

@@ -1,6 +1,5 @@
 package almhirt.environment
 
-import akka.util.Duration
 import almhirt.core._
 import almhirt.common._
 import almhirt.environment._
@@ -9,7 +8,6 @@ import almhirt.domain._
 import almhirt.util._
 import almhirt.messaging._
 import org.joda.time.DateTime
-import akka.dispatch.MessageDispatcher
 
 trait Almhirt extends AlmhirtBaseOps with CreatesMessageChannels with ServiceRegistry with Closeable {
   def executeCommand(cmd: DomainCommand, ticket: Option[TrackingTicket]) { executeCommand(CommandEnvelope(cmd, ticket)) }

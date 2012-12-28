@@ -1,9 +1,9 @@
 package almhirt.util.impl
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.Duration._
 import scalaz.syntax.validation._
 import akka.actor._
-import akka.util.Duration
-import akka.util.duration._
 import akka.pattern._
 import almhirt.common._
 import almhirt.core._

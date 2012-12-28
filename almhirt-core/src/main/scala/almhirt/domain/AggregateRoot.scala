@@ -50,12 +50,12 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
    * @return The modified aggregate root or a failure
    */
   protected def applyValidated(event: Event, handler: PartialFunction[Event,AR]): DomainValidation[AR] = {
-    validateEvent(event) bind ( validated =>
+    validateEvent(event) flatMap ( validated =>
       	try {
       	  handler(validated).success
       	} catch {
       		case err: MatchError => UnhandledDomainEventProblem("Unhandled event: %s".format(event.getClass.getName), event).failure
-      		case err => ExceptionCaughtProblem(err.getMessage()).failure
+      		case err: Throwable => ExceptionCaughtProblem(err.getMessage()).failure
       	})
   }
   

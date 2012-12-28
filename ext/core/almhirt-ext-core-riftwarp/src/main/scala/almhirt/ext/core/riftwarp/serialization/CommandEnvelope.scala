@@ -15,8 +15,8 @@ class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
   def decompose[TDimension <: RiftDimension](what: CommandEnvelope)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
-      .bind(_.addComplexType("command", what.command))
-      .bind(_.addOptionalComplexType("ticket", what.ticket))
+      .flatMap(_.addComplexType("command", what.command))
+      .flatMap(_.addOptionalComplexType("ticket", what.ticket))
   }
 }
 

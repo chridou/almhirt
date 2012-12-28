@@ -1,5 +1,6 @@
 package almhirt.environment.configuration.impl
 
+import scala.concurrent.duration.FiniteDuration
 import com.typesafe.config.Config
 import almhirt.almvalidation.kit._
 import almhirt.environment._
@@ -18,7 +19,7 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
   override def createAlmhirt(aContext: AlmhirtContext, aSystem: AlmhirtSystem): AlmValidation[Almhirt] = {
     super.createAlmhirt(aContext, aSystem).map(almhirt =>
       new AlmhirtForTesting {
-        def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]) = almhirt.createMessageChannel(name)
+        def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]) = almhirt.createMessageChannel(name)
 
         def executeCommand(cmdEnv: CommandEnvelope) { almhirt.postCommand(cmdEnv) }
 
@@ -32,7 +33,7 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
         def registerServiceByType(clazz: Class[_ <: AnyRef], service: AnyRef) { almhirt.registerServiceByType(clazz, service) }
         def getServiceByType(clazz: Class[_ <: AnyRef]) = almhirt.getServiceByType(clazz)
 
-        def futureDispatcher = aSystem.futureDispatcher
+        def executionContext = aSystem.executionContext
         def shortDuration = aSystem.shortDuration
         def mediumDuration = aSystem.mediumDuration
         def longDuration = aSystem.longDuration

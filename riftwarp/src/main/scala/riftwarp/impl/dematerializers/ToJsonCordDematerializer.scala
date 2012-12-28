@@ -1,11 +1,13 @@
 package riftwarp.impl.dematerializers
 
+import language.higherKinds
+
 import org.joda.time.DateTime
 import scalaz._, Scalaz._
 import scalaz.Cord
 import scalaz.Cord._
 import scalaz.std._
-import scalaz.syntax.validation._
+import scalaz.syntax.validation
 import almhirt.almvalidation.kit._
 import almhirt.common._
 import riftwarp._
@@ -61,7 +63,7 @@ object ToJsonCordDematerializerFuns {
   val mapUuid = (value: _root_.java.util.UUID) => Cord(mapStringLike(value.toString))
 
   def mapperByType[A](implicit m: Manifest[A]): AlmValidation[A => Cord] = {
-    val t = m.erasure
+    val t = m.runtimeClass
     if (t == classOf[String])
       (mapString).asInstanceOf[A => Cord].success
     else if (t == classOf[Boolean])
@@ -120,8 +122,8 @@ object ToJsonCordDematerializerFuns {
   }
 
   def foldKeyValuePairs(items: scala.collection.immutable.Iterable[(Cord, Cord)])(implicit functionObjects: HasFunctionObjects): AlmValidation[DimensionCord] =
-    functionObjects.getChannelFolder[DimensionCord, DimensionCord](RiftJson()).bind(folder =>
-      functionObjects.getMAFunctions[scala.collection.immutable.Iterable].bind(fo =>
+    functionObjects.getChannelFolder[DimensionCord, DimensionCord](RiftJson()).flatMap(folder =>
+      functionObjects.getMAFunctions[scala.collection.immutable.Iterable].flatMap(fo =>
         folder.fold(items.map(x => createKeyValuePair(x)).seq)(fo)))
 }
 
@@ -236,15 +238,15 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = ifNoneAddNull(ident: String, anOptionalValue, addXml)
 
   def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
-    getDematerializedBlob(ident, aValue, blobIdentifier).bind(blobDemat =>
+    getDematerializedBlob(ident, aValue, blobIdentifier).flatMap(blobDemat =>
         addComplexPart(ident, blobDemat.dematerialize.manifestation))
         
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) =
     option.cata(anOptionalValue)(v => addBlob(ident, v, blobIdentifier), addNonePart(ident))
 
   def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToJsonCordDematerializer] =
-    spawnNew(ident).bind(demat =>
-      decomposer.decompose(aComplexType)(demat).bind(toEmbed =>
+    spawnNew(ident).flatMap(demat =>
+      decomposer.decompose(aComplexType)(demat).flatMap(toEmbed =>
         addComplexPart(ident, toEmbed.asInstanceOf[ToJsonCordDematerializer].dematerialize.manifestation)))
 
   def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]): AlmValidation[ToJsonCordDematerializer] =
@@ -261,24 +263,24 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexType(x, y))
 
   def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit mU: Manifest[U]): AlmValidation[ToJsonCordDematerializer] =
-    hasDecomposers.getDecomposer[U].bind(decomposer => addComplexType(decomposer)(ident, aComplexType))
+    hasDecomposers.getDecomposer[U].flatMap(decomposer => addComplexType(decomposer)(ident, aComplexType))
 
   def addOptionalComplexTypeFixed[U <: AnyRef](ident: String, anOptionalComplexType: Option[U])(implicit mU: Manifest[U]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, anOptionalComplexType, (x: String, y: U) => addComplexTypeFixed(x, y))
 
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
-    mapperByType[A].bind(map =>
-      MAFuncs.map(ma)(x => DimensionCord(map(x))).bind(mcord =>
-        MAFuncs.fold(this.channel)(mcord)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
+    mapperByType[A].flatMap(map =>
+      MAFuncs.map(ma)(x => DimensionCord(map(x))).flatMap(mcord =>
+        MAFuncs.fold(this.channel)(mcord)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).flatMap(dimCord =>
         addPart(ident, dimCord.manifestation)))
 
   def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addPrimitiveMA(x, y))
 
   def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
-    spawnNew(ident).bind(demat =>
-      MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(demat).map(_.dematerialize)).bind(complex =>
-        MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
+    spawnNew(ident).flatMap(demat =>
+      MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(demat).map(_.dematerialize)).flatMap(complex =>
+        MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).flatMap(dimCord =>
         addPart(ident, dimCord.manifestation)))
 
   def addOptionalComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
@@ -287,15 +289,15 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     hasDecomposers.tryGetDecomposer[A] match {
       case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
-      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.erasure.getName())).failure
+      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.runtimeClass.getName())).failure
     }
 
   def addOptionalComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMAFixed(x, y))
 
   def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = {
-    MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).bind(complex =>
-      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
+    MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
+      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).flatMap(dimCord =>
       addPart(ident, dimCord.manifestation))
   }
 
@@ -303,8 +305,8 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addComplexMALoose(x, y))
 
   def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = {
-    MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndDecomposerLookUp(idx, ident)(a)).bind(complex =>
-      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).bind(dimCord =>
+    MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
+      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).flatMap(dimCord =>
       addPart(ident, dimCord.manifestation))
   }
 
@@ -312,19 +314,19 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
     ifNoneAddNull(ident: String, ma, (x: String, y: M[A]) => addMA(x, y))
 
   def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
-    (TypeHelpers.isPrimitiveType(mA.erasure), TypeHelpers.isPrimitiveType(mB.erasure)) match {
+    (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) =>
-        mapperByType[A].bind(mapA =>
+        mapperByType[A].flatMap(mapA =>
           mapperByType[B].map(mapB =>
             aMap.map {
               case (a, b) =>
                 (mapA(a), mapB(b))
-            }).bind(items =>
-            foldKeyValuePairs(items)).bind(dimCord =>
+            }).flatMap(items =>
+            foldKeyValuePairs(items)).flatMap(dimCord =>
             addPart(ident, dimCord.manifestation)))
-      case (false, true) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure
-      case (true, false) => UnspecifiedProblem("Could not create primitive map for %s: B(%s) is not a primitive type".format(ident, mB.erasure.getName())).failure
-      case (false, false) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.erasure.getName(), mB.erasure.getName())).failure
+      case (false, true) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure
+      case (true, false) => UnspecifiedProblem("Could not create primitive map for %s: B(%s) is not a primitive type".format(ident, mB.runtimeClass.getName())).failure
+      case (false, false) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.runtimeClass.getName(), mB.runtimeClass.getName())).failure
     }
 
   def addOptionalPrimitiveMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
@@ -332,55 +334,55 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
 
   def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.erasure),
-      mapperByType[A].bind(mapA =>
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
+      mapperByType[A].flatMap(mapA =>
         aMap.map {
           case (a, b) =>
-            spawnNew("[" + a.toString + "]" :: ident :: path).bind(freshDemat =>
+            spawnNew("[" + a.toString + "]" :: ident :: path).flatMap(freshDemat =>
               decomposer.decompose(b)(freshDemat).map(demat =>
                   (mapA(a), demat.dematerialize.manifestation)))
-        }.map(_.toAgg).toList.sequence.bind(sequenced =>
-          foldKeyValuePairs(sequenced).bind(pairs =>
+        }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
+          foldKeyValuePairs(sequenced).flatMap(pairs =>
             addPart(ident, pairs.manifestation)))),
-      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
   def addOptionalComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, aMap, (x: String, y: Map[A, B]) => addComplexMap(decomposer)(x, y))
 
   def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
-    hasDecomposers.getDecomposer[B].bind(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
+    hasDecomposers.getDecomposer[B].flatMap(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
 
   def addOptionalComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, aMap, (x: String, y: Map[A, B]) => addComplexMapFixed(x, y))
 
   def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.erasure),
-      mapperByType[A].bind(mapA =>
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
+      mapperByType[A].flatMap(mapA =>
         aMap.map {
           case (a, b) =>
             mapWithComplexDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b =>
               (mapA(a), b.manifestation))
-        }.map(_.toAgg).toList.sequence.bind(sequenced =>
-          foldKeyValuePairs(sequenced).bind(pairs =>
+        }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
+          foldKeyValuePairs(sequenced).flatMap(pairs =>
             addPart(ident, pairs.manifestation)))),
-      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
   def addOptionalComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, aMap, (x: String, y: Map[A, B]) => addComplexMapLoose(x, y))
 
   def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.erasure),
-      mapperByType[A].bind(mapA =>
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
+      mapperByType[A].flatMap(mapA =>
         aMap.map {
           case (a, b) =>
             mapWithPrimitiveAndDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b =>
               (mapA(a), b.manifestation))
-        }.map(_.toAgg).toList.sequence.bind(sequenced =>
-          foldKeyValuePairs(sequenced).bind(pairs =>
+        }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
+          foldKeyValuePairs(sequenced).flatMap(pairs =>
             addPart(ident, pairs.manifestation)))),
-      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.erasure.getName())).failure)
+      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
   def addOptionalMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, aMap, (x: String, y: Map[A, B]) => addMap(x, y))
@@ -390,7 +392,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
     hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {
       case Some(decomposer) =>
-        spawnNew(idx :: ident :: path).bind(freshDemat =>
+        spawnNew(idx :: ident :: path).flatMap(freshDemat =>
           decomposer.decomposeRaw(toDecompose)(freshDemat).map(_.dematerialize))
       case None =>
         UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass.getName())).failure
@@ -401,7 +403,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       _ =>
         toDecompose match {
           case toDecomposeAsAnyRef: AnyRef =>
-            spawnNew(idx :: ident :: path).bind(freshDemat =>
+            spawnNew(idx :: ident :: path).flatMap(freshDemat =>
               option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
                 decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(freshDemat).map(_.dematerialize),
                 UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure))

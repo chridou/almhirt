@@ -16,7 +16,7 @@ trait DimensionConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension]
     try {
       convert(source.asInstanceOf[DimSource])
     } catch {
-      case exn => UnspecifiedProblem("Types do not match. I convert from '%s' to '%s', but you gave me a '%s'".format(tSource, tTarget, source.getClass.getName)).failure
+      case exn: Throwable => UnspecifiedProblem("Types do not match. I convert from '%s' to '%s', but you gave me a '%s'".format(tSource, tTarget, source.getClass.getName)).failure
     }
 }
 

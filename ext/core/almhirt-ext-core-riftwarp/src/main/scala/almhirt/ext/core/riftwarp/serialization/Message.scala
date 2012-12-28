@@ -2,7 +2,7 @@ package almhirt.ext.core.riftwarp.serialization
 
 import scalaz._
 import scalaz.Scalaz._
-import scalaz.syntax.validation._
+import scalaz.syntax.validation
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
@@ -14,9 +14,9 @@ class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
   def decompose[TDimension <: RiftDimension](what: MessageGrouping)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
-      .bind(_.addUuid("groupId", what.groupId))
-      .bind(_.addInt("seq", what.seq))
-      .bind(_.addBoolean("isLast", what.isLast))
+      .flatMap(_.addUuid("groupId", what.groupId))
+      .flatMap(_.addInt("seq", what.seq))
+      .flatMap(_.addBoolean("isLast", what.isLast))
   }
 }
 
@@ -34,10 +34,10 @@ class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
   def decompose[TDimension <: RiftDimension](what: MessageHeader)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
-      .bind(_.addUuid("id", what.id))
-      .bind(_.addOptionalComplexType("grouping", what.grouping))
+      .flatMap(_.addUuid("id", what.id))
+      .flatMap(_.addOptionalComplexType("grouping", what.grouping))
       //.bind(_.addOptionalComplexType("metaData", header.metaData))
-      .bind(_.addDateTime("timestamp", what.timestamp))
+      .flatMap(_.addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -57,8 +57,8 @@ class MessageDecomposer extends Decomposer[Message[AnyRef]] {
   def decompose[TDimension <: RiftDimension](what: Message[AnyRef])(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
-      .bind(_.addComplexType("header", what.header))
-      .bind(_.addComplexType("payload", what.payload))
+      .flatMap(_.addComplexType("header", what.header))
+      .flatMap(_.addComplexType("payload", what.payload))
   }
 }
 

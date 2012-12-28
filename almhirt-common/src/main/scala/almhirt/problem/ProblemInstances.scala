@@ -14,6 +14,8 @@
 */
 package almhirt.problem
 
+import scala.language.implicitConversions
+
 import almhirt.common._
 import scalaz.Show
 import scalaz.Semigroup

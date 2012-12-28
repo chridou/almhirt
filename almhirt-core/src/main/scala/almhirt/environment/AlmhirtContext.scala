@@ -40,12 +40,11 @@ trait AlmhirtContext extends AlmhirtBaseOps with Disposable {
 
 object AlmhirtContext {
   import akka.pattern._
-  import akka.util.Duration._
   import almhirt.syntax.almvalidation._
   import almhirt.almfuture.all._
   def apply()(implicit sys: AlmhirtSystem): AlmFuture[AlmhirtContext] = {
     implicit val atMost = sys.mediumDuration
-    implicit val executionContext = sys.futureDispatcher
+    implicit val executionContext = sys.executionContext
 
     val hub = MessageHub("messageHub")
 
@@ -72,7 +71,7 @@ object AlmhirtContext {
           Message(header, payload)
         }
 
-        val futureDispatcher = sys.futureDispatcher
+        val executionContext = sys.executionContext
         def shortDuration = sys.shortDuration
         def mediumDuration = sys.mediumDuration
         def longDuration = sys.longDuration

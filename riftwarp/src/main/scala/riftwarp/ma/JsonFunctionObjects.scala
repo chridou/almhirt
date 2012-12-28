@@ -1,5 +1,7 @@
 package riftwarp.ma
 
+import language.higherKinds
+
 import scalaz.Cord
 import scalaz.Cord._
 import scalaz.syntax.validation._

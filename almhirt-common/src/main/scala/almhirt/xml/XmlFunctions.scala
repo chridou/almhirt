@@ -39,27 +39,27 @@ trait XmlFunctions {
     try {
       XML.loadString(xmlString).success
     } catch {
-      case err => BadDataProblem("Could not parse xml: %s".format(err.getMessage), cause = Some(CauseIsThrowable(err))).failure[Elem]
+      case err: Throwable => BadDataProblem("Could not parse xml: %s".format(err.getMessage), cause = Some(CauseIsThrowable(err))).failure[Elem]
     }
   }
   
   def intFromXmlNode(node: Elem): AlmValidation[Int] = 
-    notEmptyOrWhitespace(node.text, node.label) bind (ne => parseIntAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseIntAlm(ne, node.label))
     
   def longFromXmlNode(node: Elem): AlmValidation[Long] = 
-    notEmptyOrWhitespace(node.text, node.label) bind (ne => parseLongAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseLongAlm(ne, node.label))
   
   def doubleFromXmlNode(node: Elem): AlmValidation[Double] = 
-    notEmptyOrWhitespace(node.text, node.label) bind (ne => parseDoubleAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseDoubleAlm(ne, node.label))
 
   def floatFromXmlNode(node: Elem): AlmValidation[Float] = 
-   notEmptyOrWhitespace(node.text, node.label) bind (ne => parseFloatAlm(ne, node.label))
+   notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseFloatAlm(ne, node.label))
 
   def decimalFromXmlNode(node: Elem): AlmValidation[BigDecimal] =
-   notEmptyOrWhitespace(node.text, node.label) bind (ne => parseDecimalAlm(ne, node.label))
+   notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseDecimalAlm(ne, node.label))
 
   def dateTimeFromXmlNode(node: Elem): AlmValidation[DateTime] = 
-   notEmptyOrWhitespace(node.text, node.label) bind (ne => parseDateTimeAlm(ne, node.label))
+   notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseDateTimeAlm(ne, node.label))
 
   def optionalIntXmlNode(node: Elem): AlmValidation[Option[Int]] = 
     if(node.text.trim.isEmpty) 
@@ -125,19 +125,19 @@ trait XmlFunctions {
 
   def stringFromChild(node: Elem, label: String): AlmValidation[String] =
     firstChildNodeMandatory(node, label)
-    .bind {node => notEmptyOrWhitespace(node.text, label)}
+    .flatMap {node => notEmptyOrWhitespace(node.text, label)}
 
   def doubleFromChild(node: Elem, label: String): AlmValidation[Double] =
     firstChildNodeMandatory(node, label)
-    .bind {node => parseDoubleAlm(node.text, label)}
+    .flatMap {node => parseDoubleAlm(node.text, label)}
 
   def intFromChild(node: Elem, label: String): AlmValidation[Int] =
     firstChildNodeMandatory(node, label)
-    .bind {node => parseIntAlm(node.text, label)}
+    .flatMap {node => parseIntAlm(node.text, label)}
 
   def longFromChild(node: Elem, label: String): AlmValidation[Long] =
     firstChildNodeMandatory(node, label)
-    .bind {node => parseLongAlm(node.text, label)}
+    .flatMap {node => parseLongAlm(node.text, label)}
   
   private def emptyStringIsNone[T](str: String, compute: String => AlmValidation[T]): AlmValidation[Option[T]] =
     if(str.trim().isEmpty)

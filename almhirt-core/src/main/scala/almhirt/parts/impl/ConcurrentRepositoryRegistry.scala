@@ -16,7 +16,7 @@ class ConcurrentRepositoryRegistry extends HasRepositories {
     
   }
   def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: Manifest[AR]){
-    repos.put(m.erasure.asInstanceOf[Class[_<: AggregateRoot[AR, TEvent]]], repo)
+    repos.put(m.runtimeClass.asInstanceOf[Class[_<: AggregateRoot[AR, TEvent]]], repo)
   }
 
 }

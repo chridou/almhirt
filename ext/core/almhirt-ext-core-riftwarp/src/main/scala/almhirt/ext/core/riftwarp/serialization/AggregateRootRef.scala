@@ -14,8 +14,8 @@ class AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
   def decompose[TDimension <: RiftDimension](what: AggregateRootRef)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
-      .bind(_.addUuid("id", what.id))
-      .bind(_.addLong("version", what.version))
+      .flatMap(_.addUuid("id", what.id))
+      .flatMap(_.addLong("version", what.version))
   }
 }
 

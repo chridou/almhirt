@@ -1,12 +1,13 @@
 package almhirt.environment
 
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import akka.util.duration._
 import almhirt._
+import almhirt.almvalidation.kit._
 import almhirt.core.JavaUtilUuidGenerator
+import almhirt.environment.configuration._
 import com.typesafe.config._
-import almhirt.environment.configuration.ConfigPaths
-import almhirt.environment.configuration.ConfigHelper
 
 trait AlmhirtsystemTestkit {
   private val configText =
@@ -19,9 +20,9 @@ trait AlmhirtsystemTestkit {
 		  almhirt {
 		  	systemname = "almhirt-testing"
 		  	durations {
-		  		short = 0.5
-		  		medium = 2.5
-		  		long = 10.0
+		  short = 500
+		  medium = 2500
+		  long = 10000
 		  	}
     messagehub {
       dispatchername = "almhirt.dispatchers.test-dispatcher"
@@ -53,18 +54,22 @@ trait AlmhirtsystemTestkit {
 
   def createTestSystem(conf: Config): AlmhirtSystem = {
     val uuidGen = new JavaUtilUuidGenerator()
-    new AlmhirtSystem {
+    (for {
+      short <- ConfigHelper.getDuration(conf)("almhirt.durations.short")
+      medium <- ConfigHelper.getDuration(conf)("almhirt.durations.medium")
+      long <- ConfigHelper.getDuration(conf)("almhirt.durations.long")
+    } yield new AlmhirtSystem {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
-      val futureDispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherName(config)(ConfigPaths.futures))
-      val shortDuration = conf.getDouble("almhirt.durations.short") seconds
-      val mediumDuration = conf.getDouble("almhirt.durations.medium") seconds
-      val longDuration = conf.getDouble("almhirt.durations.long") seconds
+      val executionContext = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherName(config)(ConfigPaths.futures))
+      val shortDuration = short
+      val mediumDuration = medium
+      val longDuration = long
       def getUuid = uuidGen.generate
       def dispose = actorSystem.shutdown
-    }
+    }).forceResult
   }
-  
+
   def createTestSystem(): AlmhirtSystem = createTestSystem(defaultConfig)
 
   def inTestSystem[T](compute: AlmhirtSystem => T): T = inTestSystem(defaultConfig, compute)

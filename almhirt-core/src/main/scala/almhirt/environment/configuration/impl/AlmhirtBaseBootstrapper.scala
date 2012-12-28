@@ -1,5 +1,6 @@
 package almhirt.environment.configuration.impl
 
+import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.environment._
@@ -7,8 +8,8 @@ import almhirt.core.impl.SimpleConcurrentServiceRegistry
 import almhirt.domain._
 import almhirt.commanding._
 import almhirt.util._
-import com.typesafe.config.Config
 import almhirt.environment.configuration.AlmhirtBootstrapper
+import com.typesafe.config.Config
 
 class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
   private var serviceRegistry = new SimpleConcurrentServiceRegistry
@@ -21,7 +22,7 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
 
   def createAlmhirtContext(system: AlmhirtSystem): AlmValidation[AlmhirtContext] = {
     this.system = system
-    AlmhirtContext()(system).awaitResult(akka.util.Duration(5, "s"))
+    AlmhirtContext()(system).awaitResult(FiniteDuration(5, "s"))
   }
 
   def wireChannels(context: AlmhirtContext): AlmValidation[AlmhirtContext] =
@@ -32,7 +33,7 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
 
     val almhirt =
       new Almhirt {
-        def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]) = context.messageHub.createMessageChannel(name)
+        def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]) = context.messageHub.createMessageChannel(name)
 
         def executeCommand(cmdEnv: CommandEnvelope) { context.postCommand(cmdEnv) }
 
@@ -46,7 +47,7 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
         def registerServiceByType(clazz: Class[_ <: AnyRef], service: AnyRef) { serviceRegistry.registerServiceByType(clazz, service) }
         def getServiceByType(clazz: Class[_ <: AnyRef]) = serviceRegistry.getServiceByType(clazz)
 
-        def futureDispatcher = system.futureDispatcher
+        def executionContext = system.executionContext
         def shortDuration = system.shortDuration
         def mediumDuration = system.mediumDuration
         def longDuration = system.longDuration

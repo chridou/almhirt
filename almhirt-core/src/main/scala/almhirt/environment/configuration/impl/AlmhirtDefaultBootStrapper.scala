@@ -1,5 +1,6 @@
 package almhirt.environment.configuration.impl
 
+import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -25,38 +26,38 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
 
   override def registerComponents(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit] = {
     import akka.pattern._
-    implicit val atMost = akka.util.Duration(5, "s")
-    implicit val executionContext = system.futureDispatcher
+    implicit val atMost = FiniteDuration(5, "s")
+    implicit val executionContext = system.executionContext
 
-      inTryCatch {
-        tracker = OperationStateTracker()(context, system).forceResult
-        trackerRegistration =
-          (context.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker.actor)))(atMost)
-            .mapTo[SubscriptionRsp]
-            .map(_.registration)
-            .toAlmFuture
-            .awaitResult
-            .forceResult
-        almhirt.registerService[OperationStateTracker](tracker)
-
-        repos = HasRepositories().forceResult
-        almhirt.registerService[HasRepositories](repos)
-
-        cmdHandlerRegistry = HasCommandHandlers()
-        almhirt.registerService[HasCommandHandlers](cmdHandlerRegistry)
-
-        cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos)(context, system).forceResult
-        cmdExecutorRegistration = (context.commandChannel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
+    inTryCatch {
+      tracker = OperationStateTracker()(context, system).forceResult
+      trackerRegistration =
+        (context.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker.actor)))(atMost)
           .mapTo[SubscriptionRsp]
           .map(_.registration)
           .toAlmFuture
           .awaitResult
           .forceResult
-        almhirt.registerService[CommandExecutor](cmdExecutor)
-        eventLog = SystemHelper.createEventLogFromFactory(almhirt, system).forceResult
-        almhirt.registerService[DomainEventLog](eventLog)
-        ().success
-      }.bind(_ => super.registerComponents(almhirt, context, system))
+      almhirt.registerService[OperationStateTracker](tracker)
+
+      repos = HasRepositories().forceResult
+      almhirt.registerService[HasRepositories](repos)
+
+      cmdHandlerRegistry = HasCommandHandlers()
+      almhirt.registerService[HasCommandHandlers](cmdHandlerRegistry)
+
+      cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos)(context, system).forceResult
+      cmdExecutorRegistration = (context.commandChannel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
+        .mapTo[SubscriptionRsp]
+        .map(_.registration)
+        .toAlmFuture
+        .awaitResult
+        .forceResult
+      almhirt.registerService[CommandExecutor](cmdExecutor)
+      eventLog = SystemHelper.createEventLogFromFactory(almhirt, system).forceResult
+      almhirt.registerService[DomainEventLog](eventLog)
+      ().success
+    }.flatMap(_ => super.registerComponents(almhirt, context, system))
   }
 
   override def closing(): AlmValidation[Unit] = {

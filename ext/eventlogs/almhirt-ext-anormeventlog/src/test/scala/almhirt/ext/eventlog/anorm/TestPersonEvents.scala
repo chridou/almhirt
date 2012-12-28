@@ -20,10 +20,10 @@ class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonCreated])
   def decompose[TDimension <: RiftDimension](what: TestPersonCreated)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
-      .bind(_.addUuid("id", what.id))
-      .bind(_.addUuid("aggId", what.aggId))
-      .bind(_.addString("name", what.name))
-      .bind(_.addDateTime("timestamp", what.timestamp))
+      .flatMap(_.addUuid("id", what.id))
+      .flatMap(_.addUuid("aggId", what.aggId))
+      .flatMap(_.addString("name", what.name))
+      .flatMap(_.addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -42,11 +42,11 @@ class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] 
   val typeDescriptor = TypeDescriptor(classOf[TestPersonNameChanged])
   def decompose[TDimension <: RiftDimension](what: TestPersonNameChanged)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
-      .bind(_.addUuid("id", what.id))
-      .bind(_.addUuid("aggId", what.aggId))
-      .bind(_.addLong("aggVersion", what.aggVersion))
-      .bind(_.addString("newName", what.newName))
-      .bind(_.addDateTime("timestamp", what.timestamp))
+      .flatMap(_.addUuid("id", what.id))
+      .flatMap(_.addUuid("aggId", what.aggId))
+      .flatMap(_.addLong("aggVersion", what.aggVersion))
+      .flatMap(_.addString("newName", what.newName))
+      .flatMap(_.addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -66,11 +66,11 @@ class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAqu
   val typeDescriptor = TypeDescriptor(classOf[TestPersonAddressAquired])
   def decompose[TDimension <: RiftDimension](what: TestPersonAddressAquired)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
-      .bind(_.addUuid("id", what.id))
-      .bind(_.addUuid("aggId", what.aggId))
-      .bind(_.addLong("aggVersion", what.aggVersion))
-      .bind(_.addString("aquiredAddress", what.aquiredAddress))
-      .bind(_.addDateTime("timestamp", what.timestamp))
+      .flatMap(_.addUuid("id", what.id))
+      .flatMap(_.addUuid("aggId", what.aggId))
+      .flatMap(_.addLong("aggVersion", what.aggVersion))
+      .flatMap(_.addString("aquiredAddress", what.aquiredAddress))
+      .flatMap(_.addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -90,11 +90,11 @@ class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonMoved])
   def decompose[TDimension <: RiftDimension](what: TestPersonMoved)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
-      .bind(_.addUuid("id", what.id))
-      .bind(_.addUuid("aggId", what.aggId))
-      .bind(_.addLong("aggVersion", what.aggVersion))
-      .bind(_.addString("newAddress", what.newAddress))
-      .bind(_.addDateTime("timestamp", what.timestamp))
+      .flatMap(_.addUuid("id", what.id))
+      .flatMap(_.addUuid("aggId", what.aggId))
+      .flatMap(_.addLong("aggVersion", what.aggVersion))
+      .flatMap(_.addString("newAddress", what.newAddress))
+      .flatMap(_.addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -114,10 +114,10 @@ class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledE
   val typeDescriptor = TypeDescriptor(classOf[TestPersonUnhandledEvent])
   def decompose[TDimension <: RiftDimension](what: TestPersonUnhandledEvent)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
-      .bind(_.addUuid("id", what.id))
-      .bind(_.addUuid("aggId", what.aggId))
-      .bind(_.addLong("aggVersion", what.aggVersion))
-      .bind(_.addDateTime("timestamp", what.timestamp))
+      .flatMap(_.addUuid("id", what.id))
+      .flatMap(_.addUuid("aggId", what.aggId))
+      .flatMap(_.addLong("aggVersion", what.aggVersion))
+      .flatMap(_.addDateTime("timestamp", what.timestamp))
   }
 }
 

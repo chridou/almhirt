@@ -1,5 +1,7 @@
 package riftwarp
 
+import language.higherKinds
+
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -140,57 +142,57 @@ abstract class RematerializationArrayWithBlobBlobFetch extends Rematerialization
   protected def fetchBlobData: BlobFetch
   protected def trySpawnNew(ident: String): AlmValidation[Option[RematerializationArray]]
   protected def tryGetRematerializedBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
-    trySpawnNew(ident).bind(rematOpt =>
+    trySpawnNew(ident).flatMap(rematOpt =>
       option.cata(rematOpt)(
-       remat => RiftBlob.recompose(remat).bind(theBlob =>
+       remat => RiftBlob.recompose(remat).flatMap(theBlob =>
         fetchBlobData(theBlob).map(Some(_))),
         None.success))
 }
 
 trait RematerializationArrayBasedOnOptionGetters extends RematerializationArray {
-  def getString(ident: String) = tryGetString(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getString(ident: String) = tryGetString(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getBoolean(ident: String) = tryGetBoolean(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getBoolean(ident: String) = tryGetBoolean(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getByte(ident: String) = tryGetByte(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getInt(ident: String) = tryGetInt(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getLong(ident: String) = tryGetLong(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getBigInt(ident: String) = tryGetBigInt(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getByte(ident: String) = tryGetByte(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getInt(ident: String) = tryGetInt(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getLong(ident: String) = tryGetLong(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getBigInt(ident: String) = tryGetBigInt(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getFloat(ident: String) = tryGetFloat(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getDouble(ident: String) = tryGetDouble(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getBigDecimal(ident: String) = tryGetBigDecimal(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getFloat(ident: String) = tryGetFloat(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getDouble(ident: String) = tryGetDouble(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getBigDecimal(ident: String) = tryGetBigDecimal(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getByteArray(ident: String) = tryGetByteArray(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getByteArrayFromBase64Encoding(ident: String) = tryGetByteArrayFromBase64Encoding(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getByteArrayFromBlobEncoding(ident: String) = tryGetByteArrayFromBlobEncoding(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getByteArray(ident: String) = tryGetByteArray(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getByteArrayFromBase64Encoding(ident: String) = tryGetByteArrayFromBase64Encoding(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getByteArrayFromBlobEncoding(ident: String) = tryGetByteArrayFromBlobEncoding(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getDateTime(ident: String) = tryGetDateTime(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getDateTime(ident: String) = tryGetDateTime(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getUri(ident: String) = tryGetUri(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getUri(ident: String) = tryGetUri(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getUuid(ident: String) = tryGetUuid(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getUuid(ident: String) = tryGetUuid(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getJson(ident: String) = tryGetJson(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getXml(ident: String) = tryGetXml(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getJson(ident: String) = tryGetJson(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getXml(ident: String) = tryGetXml(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getBlob(ident: String) = tryGetBlob(ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getBlob(ident: String) = tryGetBlob(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
-  def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) = tryGetComplexType[T](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexType[T](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexTypeFixed[T](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) = tryGetComplexType[T](ident, recomposer).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexType[T](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]) = tryGetComplexTypeFixed[T](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetPrimitiveMA[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetComplexMA[M, A](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetComplexMAFixed[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]) = tryGetComplexMALoose[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetMA[M, A](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetPrimitiveMA[M, A](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetComplexMA[M, A](ident, recomposer).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetComplexMAFixed[M, A](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]) = tryGetComplexMALoose[M, A](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]) = tryGetMA[M, A](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetPrimitiveMap[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]) = tryGetComplexMap[A, B](ident, recomposer).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapFixed[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A]) = tryGetComplexMapLoose[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetMap[A, B](ident).bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getPrimitiveMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetPrimitiveMap[A, B](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]) = tryGetComplexMap[A, B](ident, recomposer).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapFixed[A, B](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A]) = tryGetComplexMapLoose[A, B](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetMap[A, B](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
-  def getTypeDescriptor = tryGetTypeDescriptor.bind(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(TypeDescriptor.defaultKey), args = Map("key" -> TypeDescriptor.defaultKey)).failure))
+  def getTypeDescriptor = tryGetTypeDescriptor.flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(TypeDescriptor.defaultKey), args = Map("key" -> TypeDescriptor.defaultKey)).failure))
 }

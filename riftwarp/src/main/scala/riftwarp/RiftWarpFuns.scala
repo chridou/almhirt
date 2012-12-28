@@ -9,6 +9,6 @@ object RiftWarpFuns {
       demat.dematerialize)
 
   def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel)(warpStream: TDimension)(factory: RematerializationArrayFactory[TDimension], recomposer: Recomposer[T])(implicit hasRecomposers: HasRecomposers, hasFunctionObject: ma.HasFunctionObjects): AlmValidation[T] = {
-    factory.createRematerializationArray(warpStream).bind(array => recomposer.recompose(array))
+    factory.createRematerializationArray(warpStream).flatMap(array => recomposer.recompose(array))
   }
 }

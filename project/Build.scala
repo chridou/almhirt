@@ -3,18 +3,18 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.27-SNAPSHOT"
-  val buildScalaVersion = "2.9.2"
+  val buildVersion      = "0.0.28-SNAPSHOT"
+  val buildScalaVersion = "2.10.0"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
 	organization := buildOrganization,
     version      := buildVersion,
     scalaVersion := buildScalaVersion,
-    scalacOptions ++= Seq("-unchecked", "-deprecation"))
+    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"))
 }
 
 object Resolvers {
-  val sonatypeReleases = "Sonatype" at "http://oss.sonatype.org/content/repositories/releases/" 
+  val sonatypeReleases = "Sonatype" at "https://oss.sonatype.org/content/repositories/releases/" 
   val sonatypeSnapshots = "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/" 
   val typesafeRepo  = "Typesafe Repo"   at "http://repo.typesafe.com/typesafe/releases/"
   val typesafeSnapshot  = "Typesafe Snapshots Repository" at "http://repo.typesafe.com/typesafe/snapshots/"
@@ -25,21 +25,20 @@ object Resolvers {
 object Dependencies {
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0-M2" % "compile"
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0-M7" % "compile"
 	
-	lazy val akka_actor  = "com.typesafe.akka" % "akka-actor" % "2.0.3"
+	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % "2.1.0"
 
 //	lazy val slick  = "com.typesafe" %% "slick" % "0.11.2"
 
-	lazy val unfiltered = "net.databinder" %% "unfiltered-netty" % "0.6.3"
+	lazy val unfiltered = "net.databinder" %% "unfiltered-netty" % "0.6.4"
 
 	lazy val casbah  = "org.mongodb" %% "casbah" % "2.3.0"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
-	lazy val liftjson = "net.liftweb" %% "lift-json" % "2.5-M2" 
 	
-	lazy val specs2 = "org.specs2" %% "specs2" % "1.11" % "test"
-	lazy val akka_testkit = "com.typesafe.akka" % "akka-testkit" % "2.0.3" % "test"
+	lazy val specs2 = "org.specs2" %% "specs2" % "1.13" % "test"
+	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % "2.1.0" % "test"
 
 }
 
@@ -54,7 +53,6 @@ trait CommonBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += akka_actor,
 	  libraryDependencies += specs2
   )
 }
@@ -69,8 +67,9 @@ trait CoreBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2,
-	  libraryDependencies += akka_testkit
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += akka_testkit,
+	  libraryDependencies += specs2
   )
 }
 
@@ -98,7 +97,7 @@ trait AnormEventLogBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += "play" % "anorm_2.9.1" % "2.0.4",
+	  libraryDependencies += "play" %% "anorm" % "2.1-12142012",
 	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
 	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
 	  libraryDependencies += specs2
@@ -127,7 +126,7 @@ trait RiftWarpExtLiftJsonBuild {
   	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
-	  libraryDependencies += liftjson,
+	  libraryDependencies += "net.liftweb" %% "lift-json" % "2.5-M2",
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += specs2
@@ -162,7 +161,8 @@ trait UnfilteredBuild {
 
 object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
-	                        base = file(".")) aggregate(common, core, docit, anormEventLog, riftwarp, riftwarpExtLiftJson)
+				settings = BuildSettings.buildSettings,
+	                        base = file(".")) aggregate(common, core, anormEventLog, docit, riftwarp)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -180,8 +180,8 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRi
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
 
-  lazy val riftwarpExtLiftJson = riftwarpExtLiftJsonProject(	name = "riftwarp-ext-liftjson",
-                       			baseFile = file("./ext/riftwarp/riftwarp-ext-liftjson")) dependsOn(riftwarp)
+ // lazy val riftwarpExtLiftJson = riftwarpExtLiftJsonProject(	name = "riftwarp-ext-liftjson",
+ //                      			baseFile = file("./ext/riftwarp/riftwarp-ext-liftjson")) dependsOn(riftwarp)
 
 
   lazy val docit = docitProject(	name = "almhirt-docit",

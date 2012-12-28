@@ -1,6 +1,5 @@
 package almhirt
 
-import akka.dispatch.ExecutionContext
 import almhirt.common._
 import almhirt.core._
 import almhirt.domain._

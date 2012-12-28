@@ -1,5 +1,6 @@
 package almhirt.domain.impl
 
+import scala.concurrent.Future
 import scalaz._, Scalaz._
 import akka.actor._
 import akka.pattern._
@@ -16,7 +17,7 @@ import almhirt.common.AlmFuture
 
 abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](val actor: ActorRef, baseOps: AlmhirtBaseOps) extends AggregateRootRepository[AR, Event] with CanValidateAggregateRootsAgainstEvents[AR, Event] {
   implicit private def duration = baseOps.mediumDuration
-  implicit private def futureContext = baseOps.futureDispatcher
+  implicit private def futureContext = baseOps.executionContext
 
   def get(id: java.util.UUID): AlmFuture[AR] = 
     (actor ? GetAggregateRootQry(id))(duration)

@@ -16,32 +16,32 @@ object RecomposerFuns {
       UnspecifiedProblem("No recomposer found for type descriptor '%s')".format(typeDescriptor)).failure)
   
   def lookUpFromRematerializationArray(remat: RematerializationArray, backupDescriptor: Option[TypeDescriptor])(implicit hasRecomposers: HasRecomposers): AlmValidation[RawRecomposer] =
-    remat.tryGetTypeDescriptor.bind(tdOpt =>
+    remat.tryGetTypeDescriptor.flatMap(tdOpt =>
       option.cata(tdOpt)(
         s => s.success,
         option.cata(backupDescriptor)(
           backDescr => backDescr.success,
-          UnspecifiedProblem("Could not determine the required type").failure))).bind(td =>
+          UnspecifiedProblem("Could not determine the required type").failure))).flatMap(td =>
       hasRecomposers.getRawRecomposer(td))
 
   def lookUpFromRematerializationArray(remat: RematerializationArray, tBackup: Class[_])(implicit hasRecomposers: HasRecomposers): AlmValidation[RawRecomposer] =
     remat.tryGetTypeDescriptor.map(tdOpt =>
-      tdOpt.getOrElse(TypeDescriptor(tBackup))).bind(td =>
+      tdOpt.getOrElse(TypeDescriptor(tBackup))).flatMap(td =>
         hasRecomposers.getRawRecomposer(td))
 
   def lookUpFromRematerializationArray(remat: RematerializationArray)(implicit hasRecomposers: HasRecomposers): AlmValidation[RawRecomposer] =
     lookUpFromRematerializationArray(remat, None)
 
   def recomposeWithLookedUpRawRecomposerFromTypeDescriptor(descriptor: TypeDescriptor)(remat: RematerializationArray)(implicit hasRecomposers: HasRecomposers): AlmValidation[AnyRef] =
-    getRawRecomposer(descriptor).bind(recomposer => recomposer.recomposeRaw(remat))
+    getRawRecomposer(descriptor).flatMap(recomposer => recomposer.recomposeRaw(remat))
     
   def recomposeWithLookedUpRawRecomposerFromRematerializationArray(remat: RematerializationArray, backupDescriptor: Option[TypeDescriptor])(implicit hasRecomposers: HasRecomposers): AlmValidation[AnyRef] =
-    lookUpFromRematerializationArray(remat, backupDescriptor).bind(recomposer => recomposer.recomposeRaw(remat))
+    lookUpFromRematerializationArray(remat, backupDescriptor).flatMap(recomposer => recomposer.recomposeRaw(remat))
 
   def recomposeWithLookedUpRawRecomposerFromRematerializationArray(remat: RematerializationArray, tBackup: Class[_])(implicit hasRecomposers: HasRecomposers): AlmValidation[AnyRef] =
-    lookUpFromRematerializationArray(remat, tBackup).bind(recomposer => recomposer.recomposeRaw(remat))
+    lookUpFromRematerializationArray(remat, tBackup).flatMap(recomposer => recomposer.recomposeRaw(remat))
 
   def recomposeWithLookedUpRawRecomposerFromRematerializationArray(remat: RematerializationArray)(implicit hasRecomposers: HasRecomposers): AlmValidation[AnyRef] =
-    lookUpFromRematerializationArray(remat).bind(recomposer => recomposer.recomposeRaw(remat))
+    lookUpFromRematerializationArray(remat).flatMap(recomposer => recomposer.recomposeRaw(remat))
     
 }

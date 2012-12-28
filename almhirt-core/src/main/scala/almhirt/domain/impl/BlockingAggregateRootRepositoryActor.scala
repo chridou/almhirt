@@ -15,7 +15,7 @@ import almhirt.environment.AlmhirtBaseOps
 abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], baseOps: AlmhirtBaseOps) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
   implicit private def timeout = baseOps.mediumDuration
-  implicit private def futureContext = baseOps.futureDispatcher
+  implicit private def futureContext = baseOps.executionContext
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] =
     eventLog.getEvents(id)
@@ -29,13 +29,13 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
       validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture {
         case (ar, events) => eventLog.storeEvents(uncommittedEvents)
       })
-      .onComplete(
+      .andThen(
         fail =>
           updateFailedOperationState(baseOps, fail, ticket),
         succ => {
           ticket.foreach(t => baseOps.reportOperationState(Executed(t)))
           succ.foreach(event => baseOps.broadcastDomainEvent(event))
-        })
+        }).awaitResult
 
   private def updateFailedOperationState(baseOps: AlmhirtBaseOps, p: Problem, ticket: Option[TrackingTicket]) {
     baseOps.reportProblem(p)
@@ -50,6 +50,6 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
       val res = getFromEventLog(aggId).awaitResult
       sender ! AggregateRootFromRepositoryRsp[AR, Event](res)
     case StoreAggregateRootCmd(ar, uncommittedEvents, ticket) =>
-      storeToEventLog(ar.asInstanceOf[AR], uncommittedEvents.asInstanceOf[List[Event]], ticket).awaitResult
+      storeToEventLog(ar.asInstanceOf[AR], uncommittedEvents.asInstanceOf[List[Event]], ticket)
   }
 }

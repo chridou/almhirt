@@ -9,14 +9,14 @@ import almhirt.util._
 
 abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](val baseOps: AlmhirtBaseOps, val getRepository: () => AlmValidation[AggregateRootRepository[AR, TEvent]])(implicit m: Manifest[AR]) extends HandlesCommand {
   def this(almhirt: Almhirt)(implicit m: Manifest[AR]) = {
-    this(almhirt, () => almhirt.getService[HasRepositories].bind(hasRepos => hasRepos.getForAggregateRoot[AR, TEvent]))
+    this(almhirt, () => almhirt.getService[HasRepositories].flatMap(hasRepos => hasRepos.getForAggregateRoot[AR, TEvent]))
   }
 
   def this(baseOps: AlmhirtBaseOps, hasRepositories: HasRepositories)(implicit m: Manifest[AR]) = {
     this(baseOps, () => hasRepositories.getForAggregateRoot[AR, TEvent])
   }
   
-  val aggregateRootType = m.erasure.asInstanceOf[Class[AR]]
+  val aggregateRootType = m.runtimeClass.asInstanceOf[Class[AR]]
   def handle(com: DomainCommand, ticket: Option[TrackingTicket]) {
     com match {
       case bcmd: BoundDomainCommand => handleBoundCommand(bcmd, ticket)
@@ -29,7 +29,7 @@ abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: Domain
         }
     }
   }
-  def handleBoundCommand(com: BoundDomainCommand, ticket: Option[TrackingTicket]): Unit
+  protected def handleBoundCommand(com: BoundDomainCommand, ticket: Option[TrackingTicket]): Unit
 }
 
 

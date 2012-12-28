@@ -15,7 +15,7 @@ class AlmValidationSpecs extends Specification {
   
   "AlmValidation.parseIntAlm" should {
     "return a success of 1 when supplied with '1'" in {
-      (parseIntAlm("1")) must beEqualTo(1.success[BadDataProblem])
+      (parseIntAlm("1")) must beEqualTo(Success(1))
     }
     "return a failure when supplied with ' 1'" in {
       (parseIntAlm(" 1")).isFailure
@@ -27,7 +27,7 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.parseLongAlm" should {
     "return a success of 1 when supplied with '1'" in {
-      (parseIntAlm("1")) must beEqualTo(1L.success[BadDataProblem])
+      (parseIntAlm("1")) must beEqualTo(Success(1L))
     }
     "return a failure when supplied with ' 1'" in {
       (parseIntAlm(" 1")).isFailure
@@ -39,28 +39,28 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.parseDoubleAlm" should {
     "return a success of 1 when supplied with '1'" in {
-      (parseDoubleAlm("1")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm("1")) must beEqualTo(Success(1d))
     }
     "return a success of 1.1 when supplied with '1.1'" in {
-      (parseDoubleAlm("1.1")) must beEqualTo(1.1d.success[BadDataProblem])
+      (parseDoubleAlm("1.1")) must beEqualTo(Success(1.1d))
     }
     "return a success of 0.1 when supplied with '.1'" in {
-      (parseDoubleAlm("1.1")) must beEqualTo(1.1d.success[BadDataProblem])
+      (parseDoubleAlm(".1")) must beEqualTo(Success(0.1))
     }
     "return a success of 1 when supplied with '1 '" in {
-      (parseDoubleAlm("1 ")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm("1 ")) must beEqualTo(Success(1d))
     }
     "return a success of 1 when supplied with ' 1'" in {
-      (parseDoubleAlm(" 1")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm(" 1")) must beEqualTo(Success(1d))
     }
     "return a success of 1 when supplied with '1'" in {
-      (parseDoubleAlm("1 ")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm("1 ")) must beEqualTo(Success(1d))
     }
     "return a success of 1 when supplied with ' 1.0'" in {
-      (parseDoubleAlm(" 1.0")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm(" 1.0")) must beEqualTo(Success(1d))
     }
     "return a success of 1 when supplied with '1.0 '" in {
-      (parseDoubleAlm("1.0 ")) must beEqualTo(1d.success[BadDataProblem])
+      (parseDoubleAlm("1.0 ")) must beEqualTo(Success(1d))
     }
     "return a failure when supplied with ''" in {
       (parseIntAlm("")).isFailure
@@ -81,10 +81,10 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.failIfEmpty" should {
     """return a success of "x" when supplied with "x"""" in {
-      (notEmpty("x")) must beEqualTo("x".success[BadDataProblem])
+      (notEmpty("x")) must beEqualTo(Success("x"))
     }
     """return a success of " " when supplied with " """" in {
-      (notEmpty(" ")) must beEqualTo(" ".success[BadDataProblem])
+      (notEmpty(" ")) must beEqualTo(Success(" "))
     }
     """return a failure when supplied with "" """ in {
       (parseIntAlm("")).isFailure
@@ -93,7 +93,7 @@ class AlmValidationSpecs extends Specification {
 
   "AlmValidation.failIfEmptyOrWhitespace" should {
     """return a success of "x" when supplied with "x"""" in {
-      (notEmptyOrWhitespace("x")) must beEqualTo("x".success[BadDataProblem])
+      (notEmptyOrWhitespace("x")) must beEqualTo(Success("x"))
     }
     """return a failure when supplied with """"" in {
       (notEmptyOrWhitespace(" ")).isFailure
@@ -107,11 +107,11 @@ class AlmValidationSpecs extends Specification {
   
   """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in a "for comprehension"""" should {
     """add to 5 when A="2" and B="3"""" in {
-      val res = parseIntAlm("2").toAgg bind (x => parseIntAlm("3").toAgg.map(_ + x))
-      res must beEqualTo(5.success[AggregateProblem])
+      val res = parseIntAlm("2").toAgg flatMap (x => parseIntAlm("3").toAgg.map(_ + x))
+      res must beEqualTo(Success(5))
     }
     """be a Failure when A="x" and B="3"""" in {
-      val res = parseIntAlm("2").toAgg bind (_ => parseIntAlm("x").toAgg)
+      val res = parseIntAlm("2").toAgg flatMap (_ => parseIntAlm("x").toAgg)
       res.isFailure
     }
   }
@@ -121,7 +121,7 @@ class AlmValidationSpecs extends Specification {
       val a = "2".toIntAlm().toAgg
       val b = "3".toIntAlm().toAgg
 	  val res = (a |@| b)((a, b) => a + b)
-      res must beEqualTo(5.success[AggregateProblem])
+      res must beEqualTo(Success(5))
     }
     """be a Failue when A="x" and B="3"""" in {
       val a = "x".toIntAlm().toAgg

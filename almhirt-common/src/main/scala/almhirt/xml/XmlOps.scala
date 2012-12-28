@@ -14,6 +14,8 @@
 */
 package almhirt.xml
 
+import scala.language.implicitConversions
+
 import scala.xml.{Node, NodeSeq, Elem}
 import scalaz.Validation
 import scalaz.syntax.Ops

@@ -14,6 +14,8 @@
 */
 package almhirt.messaging
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import java.util.UUID
 import akka.actor._
 import akka.pattern._
@@ -26,7 +28,7 @@ import almhirt.messaging.impl.MessageHubActor
 import almhirt.environment.AlmhirtSystem
 import almhirt.environment.configuration.ConfigPaths
 import almhirt.environment.configuration.ConfigHelper
-import almhirt.common.ActorBased
+import almhirt.almakka.ActorBased
 import almhirt.common.AlmFuture
 
 trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable
@@ -43,11 +45,11 @@ object MessageHub {
         case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor].withDispatcher(dn), name = name)
       }
     actor ! UseAlmhirtSystemMessage(almhirtsystem)
-    apply(actor, almhirtsystem.futureDispatcher)
+    apply(actor, almhirtsystem.executionContext)
   }
 
   private class ActorBasedMessageHubImpl(val actor: ActorRef)(implicit futureExecutionContext: ExecutionContext) extends MessageHub {
-    def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
+    def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       (actor ? CreateSubChannelQry(name, MessagePredicate[TPayload]))(atMost)
         .mapTo[NewSubChannelRsp]
         .map(subchannel => subchannel.channel).mapToAlmFuture[ActorRef]

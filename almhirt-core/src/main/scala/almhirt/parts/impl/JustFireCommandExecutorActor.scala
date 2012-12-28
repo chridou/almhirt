@@ -1,9 +1,9 @@
 package almhirt.parts.impl
 
+import scala.concurrent.duration.Duration
 import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
-import akka.util.Duration
 import almhirt.common._
 import almhirt.core._
 import almhirt.almfuture.all._
@@ -38,6 +38,6 @@ class JustFireCommandExecutorActor(handlers: HasCommandHandlers, repositories: H
 }
 
 class CommandExecutorActorHull(val actor: ActorRef, context: AlmhirtContext) extends CommandExecutor {
-  private implicit val executionContext = context.futureDispatcher
+  private implicit val executionContext = context.executionContext
   def executeCommand(commandEnvelope: CommandEnvelope) { actor ! commandEnvelope }
 }

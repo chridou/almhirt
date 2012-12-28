@@ -19,9 +19,9 @@ trait AlmhirtTestKit {
         }
 		systemname = "almhirt-testing"
 		durations {
-		  short = 0.5
-		  medium = 2.5
-		  long = 10.0
+		  short = 500
+		  medium = 2500
+		  long = 10000
 		  }
 		  eventlog {
 		  	factory = "almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLogFactory"
@@ -32,7 +32,7 @@ trait AlmhirtTestKit {
 
   def createTestAlmhirt(): AlmhirtForTesting = createTestAlmhirt(defaultConf)
   def createTestAlmhirt(aConf: Config): AlmhirtForTesting = {
-    AlmhirtBootstrapper.createFromConfig(aConf).bind(bootstrapper =>
+    AlmhirtBootstrapper.createFromConfig(aConf).flatMap(bootstrapper =>
       AlmhirtBootstrapper.runStartupSequence(bootstrapper)).forceResult.asInstanceOf[AlmhirtForTesting]
   }
 

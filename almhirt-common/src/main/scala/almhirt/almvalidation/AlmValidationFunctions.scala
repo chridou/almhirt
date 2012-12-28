@@ -26,7 +26,7 @@ trait AlmValidationFunctions {
     try {
       a.success[Problem]
     } catch {
-      case err => ExceptionCaughtProblem(err.getMessage, cause = Some(CauseIsThrowable(err))).failure
+      case err: Throwable => ExceptionCaughtProblem(err.getMessage, cause = Some(CauseIsThrowable(err))).failure
     }
   }
   
@@ -34,7 +34,7 @@ trait AlmValidationFunctions {
     try {
       a
     } catch {
-      case err => ExceptionCaughtProblem(err.getMessage, cause = Some(CauseIsThrowable(err))).failure
+      case err: Throwable => ExceptionCaughtProblem(err.getMessage, cause = Some(CauseIsThrowable(err))).failure
     }
   }
   

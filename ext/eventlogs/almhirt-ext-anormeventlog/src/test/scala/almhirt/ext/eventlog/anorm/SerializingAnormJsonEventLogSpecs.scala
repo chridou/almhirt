@@ -1,13 +1,13 @@
 package almhirt.ext.eventlog.anorm
 
-import org.specs2.mutable._
+import scala.concurrent.duration._
 import scalaz.syntax.validation._
-import akka.util.Duration
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import almhirt.eventlog._
 import almhirt.domain.DomainEvent
+import org.specs2.mutable._
 
 class SerializingAnormJsonEventLogSpecs extends Specification with TestAlmhirtKit {
   "An anorm SerializingAnormEventLogFactory" should {

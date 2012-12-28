@@ -1,8 +1,9 @@
 package almhirt.environment
 
 import akka.actor.ActorSystem
-import akka.util.duration._
+import almhirt.syntax.almvalidation._
 import almhirt.core.JavaUtilUuidGenerator
+import almhirt.environment.configuration.ConfigHelper
 import com.typesafe.config._
 
 trait StandardAlmhirtsystemComponent extends AlmhirtsystemComponent {
@@ -13,12 +14,12 @@ trait StandardAlmhirtsystemComponent extends AlmhirtsystemComponent {
 
     val config = ConfigFactory.load
     val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
-    val futureDispatcher = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
+    val executionContext = actorSystem.dispatchers.lookup("almhirt.future-dispatcher")
     val messageStreamDispatcherName = Some("almhirt.messagestream-dispatcher")
     val messageHubDispatcherName = Some("almhirt.messagehub-dispatcher")
-    val shortDuration = config.getDouble("almhirt.durations.short") seconds
-    val mediumDuration = config.getDouble("almhirt.durations.medium") seconds
-    val longDuration = config.getDouble("almhirt.durations.long") seconds
+    val shortDuration = ConfigHelper.getDuration(config)("almhirt.durations.short").forceResult
+    val mediumDuration = ConfigHelper.getDuration(config)("almhirt.durations.medium").forceResult
+    val longDuration = ConfigHelper.getDuration(config)("almhirt.durations.long").forceResult
     def getUuid = uuidGen.generate
     def dispose = actorSystem.shutdown
   }

@@ -17,8 +17,8 @@ object SystemHelper {
   }
 
   def createBootstrapperFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] = {
-    ConfigHelper.getSubConfig(config)(ConfigPaths.bootstrapper).bind(subConf =>
-      ConfigHelper.getString(subConf)(ConfigPaths.bootstrapperClassName).bind(className =>
+    ConfigHelper.getSubConfig(config)(ConfigPaths.bootstrapper).flatMap(subConf =>
+      ConfigHelper.getString(subConf)(ConfigPaths.bootstrapperClassName).flatMap(className =>
         inTryCatch {
           val constructor = Class.forName(className).getConstructors()(0)
           val instance = constructor.newInstance(config)
@@ -27,12 +27,12 @@ object SystemHelper {
   }
 
   def createEventLogFromFactory(theAlmhirt: Almhirt, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
-    ConfigHelper.getFactoryName(system.config)(ConfigPaths.eventlog).bind(factoryName =>
+    import language.reflectiveCalls
+    ConfigHelper.getFactoryName(system.config)(ConfigPaths.eventlog).flatMap(factoryName =>
       inTryCatch(
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createDomainEventLog(x: Almhirt, y: AlmhirtSystem): AlmValidation[DomainEventLog] }]).bind(factory =>
+          .asInstanceOf[{ def createDomainEventLog(x: Almhirt, y: AlmhirtSystem): AlmValidation[DomainEventLog] }]).flatMap(factory =>
           factory.createDomainEventLog(theAlmhirt, system)))
   }
-
 }

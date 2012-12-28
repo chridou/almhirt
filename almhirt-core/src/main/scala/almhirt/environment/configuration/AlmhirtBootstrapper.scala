@@ -38,19 +38,19 @@ object AlmhirtBootstrapper {
     SystemHelper.createBootstrapperFromConfig(config)
 
   def runStartupSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[Almhirt] =
-    bootstrapper.createAlmhirtSystem().bind(system =>
-      bootstrapper.createAlmhirtContext(system).bind(context =>
-        bootstrapper.wireChannels(context).bind(context =>
-          bootstrapper.createAlmhirt(context, system).bind(almhirt =>
-          bootstrapper.registerChannels(almhirt, context, system).bind(_ =>
-            bootstrapper.registerComponents(almhirt, context, system).bind(_ =>
-              bootstrapper.registerServicesStage1(almhirt, context, system).bind(_ =>
-                bootstrapper.registerRepositories(almhirt, context, system).bind(_ =>
-                  bootstrapper.registerCommandHandlers(almhirt, context, system).bind(_ =>
+    bootstrapper.createAlmhirtSystem().flatMap(system =>
+      bootstrapper.createAlmhirtContext(system).flatMap(context =>
+        bootstrapper.wireChannels(context).flatMap(context =>
+          bootstrapper.createAlmhirt(context, system).flatMap(almhirt =>
+          bootstrapper.registerChannels(almhirt, context, system).flatMap(_ =>
+            bootstrapper.registerComponents(almhirt, context, system).flatMap(_ =>
+              bootstrapper.registerServicesStage1(almhirt, context, system).flatMap(_ =>
+                bootstrapper.registerRepositories(almhirt, context, system).flatMap(_ =>
+                  bootstrapper.registerCommandHandlers(almhirt, context, system).flatMap(_ =>
                     bootstrapper.registerServicesStage2(almhirt, context, system).map(_ => almhirt))))))))))
 
   def runShutDownSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[Unit] =
-    bootstrapper.beforeClosing().bind(_ =>
-      bootstrapper.closing().bind(_ =>
+    bootstrapper.beforeClosing().flatMap(_ =>
+      bootstrapper.closing().flatMap(_ =>
         bootstrapper.closed()))
 }

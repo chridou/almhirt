@@ -14,8 +14,9 @@
 */
 package almhirt.almfuture
 
-import akka.dispatch.Future
-import akka.dispatch.Promise
+import scala.language.implicitConversions
+
+import scala.concurrent.{Future, ExecutionContext}
 import scala.reflect.Manifest
 import scalaz.Scalaz.ToValidationV
 import scalaz.syntax.Ops
@@ -31,12 +32,12 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
    * 
    * @tparam T The success type in [[almhirt.validation.AlmValidation[T]]]
    */
-  def mapToAlmFuture[T](implicit m: Manifest[T], executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] = 
+  def mapToAlmFuture[T](implicit m: Manifest[T]): AlmFuture[T] = 
     new AlmFuture[T](self.mapTo[AlmValidation[T]])
 }
 
 trait AlmFutureOps1[T] extends Ops[Future[AlmValidation[T]]] {
-  def toAlmFuture(implicit executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] = 
+  def toAlmFuture: AlmFuture[T] = 
     new AlmFuture[T](self)
 }
 
@@ -47,9 +48,9 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
    * @param compute The function to execute async
    * @return The future containing the eventual result
    */
-  def continueAsync[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
+  def continueAsync[U](compute: T => AlmValidation[U])(implicit executor: ExecutionContext): AlmFuture[U] =
     self fold(
-      prob => new AlmFuture(Promise.successful(prob.failure)), 
+      prob => new AlmFuture(Future.successful(prob.failure)), 
       r => new AlmFuture(Future[AlmValidation[U]]{compute(r)}))
 
   /** In case of success start the given computation otherwise return the Failure 
@@ -57,14 +58,14 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
    * @param compute The function to execute async
    * @return The future containing the eventual result
    */
-  def |~> [U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
+  def |~> [U](compute: T => AlmValidation[U])(implicit executor: ExecutionContext): AlmFuture[U] =
     continueAsync[U](compute)(executor)
 
   /** In case of success start the given side effect otherwise return the Failure 
    * 
    * @param compute The side effect to execute async
    */
-  def doAsync(failure: Problem => Unit, sideEffect: T => Unit)(implicit executor: akka.dispatch.ExecutionContext): Unit =
+  def doAsync(failure: Problem => Unit, sideEffect: T => Unit)(implicit executor: ExecutionContext): Unit =
     self fold(
       prob => failure(prob), 
       r => executor.execute(new Runnable{def run() = sideEffect(r)}))
@@ -72,40 +73,40 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
    * 
    * @param compute The side effect to execute async
    */
-  def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit executor: akka.dispatch.ExecutionContext): Unit =
+  def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit executor: ExecutionContext): Unit =
     doAsync(failure, sideEffect)(executor)
 
   /** In case of a success: Execute the computation as an already computed result
    * 
    * @param compute The computation
    */
-  def continueWithPromise[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
+  def continueWithPromise[U](compute: T => AlmValidation[U]): AlmFuture[U] =
     self fold(
-      prob => new AlmFuture(Promise.successful(prob.failure)), 
-      r => new AlmFuture(Promise.successful(compute(r))))
+      prob => new AlmFuture(Future.successful(prob.failure)), 
+      r => new AlmFuture(Future.successful(compute(r))))
         
   /** Execute the computation as an already computed result
    * 
    * @param compute The computation
    */
-  def |->[U](compute: T => AlmValidation[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
-    continueWithPromise[U](compute)(executor)
+  def |->[U](compute: T => AlmValidation[U]): AlmFuture[U] =
+    continueWithPromise[U](compute)
     
   /** In case of a success: Start the given future
    * 
    * @param compute The computation which eventually returns a result
    */
-  def continueWithFuture[U](futureComputation: T => AlmFuture[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
+  def continueWithFuture[U](futureComputation: T => AlmFuture[U]): AlmFuture[U] =
     self fold(
-      prob => new AlmFuture(Promise.successful((prob.failure))), 
+      prob => new AlmFuture(Future.successful((prob.failure))), 
       r => futureComputation(r))
     
   /** In case of a success: Start the given future
    * 
    * @param compute The computation which eventually returns a result
    */
-  def |#>[U](future: T => AlmFuture[U])(implicit executor: akka.dispatch.ExecutionContext): AlmFuture[U] =
-    continueWithFuture[U](future)(executor)
+  def |#>[U](future: T => AlmFuture[U]): AlmFuture[U] =
+    continueWithFuture[U](future)
 }
 
 trait ToAlmFutureOps {

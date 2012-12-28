@@ -28,7 +28,7 @@ case class DomainEventsChunk(
   isLast: Boolean,
   events: AlmValidation[Iterable[DomainEvent]])
 
-trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almhirt.common.ActorBased with Closeable
+trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almhirt.almakka.ActorBased with Closeable
 
 object DomainEventLog {
   import scalaz.syntax.validation._

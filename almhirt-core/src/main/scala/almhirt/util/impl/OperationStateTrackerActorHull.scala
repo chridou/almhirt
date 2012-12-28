@@ -1,10 +1,11 @@
 package almhirt.util.impl
 
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Duration._
 import scalaz.syntax.validation._
 import akka.actor._
-import akka.util.Duration
-import akka.util.duration._
 import akka.pattern._
+import akka.util.Timeout._
 import almhirt.common._
 import almhirt.core._
 import almhirt.environment._
@@ -14,7 +15,7 @@ import almhirt.common.AlmFuture
 
 class OperationStateTrackerActorHull(val actor: ActorRef)(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem) extends OperationStateTracker {
 
-  implicit private def executionContext = baseOps.futureDispatcher
+  implicit private def executionContext = baseOps.executionContext
   implicit private def timeout = baseOps.mediumDuration
 
   private class ResponseActor extends Actor {
@@ -33,17 +34,17 @@ class OperationStateTrackerActorHull(val actor: ActorRef)(implicit baseOps: Almh
     actor ! opState
   }
 
-  def queryStateFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[Option[OperationState]] =
+  def queryStateFor(ticket: TrackingTicket)(implicit atMost: FiniteDuration): AlmFuture[Option[OperationState]] =
     (actor.ask(GetStateQry(ticket))(atMost)).mapTo[OperationStateRsp].map(_.state)
 
-  def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: Duration) {
+  def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: FiniteDuration) {
     actor ! RegisterResultCallbackCmd(ticket, callback, atMost)
   }
 
-  def getResultFor(ticket: TrackingTicket)(implicit atMost: Duration): AlmFuture[ResultOperationState] = {
+  def getResultFor(ticket: TrackingTicket)(implicit atMost: FiniteDuration): AlmFuture[ResultOperationState] = {
     val actor = system.actorSystem.actorOf(Props(new ResponseActor))
     val future = (actor.ask("getResponse")(atMost)).mapToAlmFuture[ResultOperationState]
-    onResult(ticket, resOpState => actor ! ResOpCmd(resOpState))(atMost)
+    onResult(ticket, (resOpState: AlmValidation[ResultOperationState]) => actor ! ResOpCmd(resOpState))(atMost)
     future
   }
 

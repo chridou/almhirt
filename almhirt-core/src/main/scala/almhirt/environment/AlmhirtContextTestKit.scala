@@ -2,7 +2,6 @@ package almhirt.environment
 
 import akka.actor.ActorSystem
 import akka.util.Timeout.durationToTimeout
-import akka.util.duration.doubleToDurationDouble
 import almhirt.common._
 import almhirt.commanding._
 import almhirt.domain.DomainEvent
@@ -23,7 +22,7 @@ class AlmhirtContextForTesting(context: AlmhirtContext, val system: AlmhirtSyste
   def postCommand(comEnvelope: CommandEnvelope) = context.postCommand(comEnvelope)
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) = context.broadcast(payload, metaData)
   def createMessage[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) = context.createMessage(payload, metaData)
-  def futureDispatcher = context.futureDispatcher
+  def executionContext = context.executionContext
 
   def shortDuration = context.shortDuration
   def mediumDuration = context.mediumDuration
@@ -45,9 +44,9 @@ trait AlmhirtContextTestKit {
       almhirt {
 		systemname = "almhirt-testing"
 		durations {
-		  short = 0.5
-		  medium = 2.5
-		  long = 10.0
+		  short = 500
+		  medium = 2500
+		  long = 10000
 		}
      }
     """

@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.environment._
 import almhirt.commanding.ExecutesCommands
 
-trait CommandExecutor extends ExecutesCommands with almhirt.common.ActorBased
+trait CommandExecutor extends ExecutesCommands with almhirt.almakka.ActorBased
 
 object CommandExecutor {
   import scalaz.syntax.validation._

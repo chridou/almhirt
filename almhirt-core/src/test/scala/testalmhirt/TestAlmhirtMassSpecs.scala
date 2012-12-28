@@ -1,7 +1,6 @@
 package testalmhirt
 
-import org.specs2.mutable._
-import akka.dispatch.{Await, Future}
+import scala.concurrent.duration.Duration
 import almhirt._
 import almhirt.almvalidation.kit._
 import almhirt.environment._
@@ -9,13 +8,14 @@ import test._
 import almhirt.almfuture.inst._
 import almhirt.common.AlmFuture
 import almhirt.commanding._
+import org.specs2.mutable._
 
 class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
-  private implicit val atMost = akka.util.Duration(2, "s")
+  private implicit val atMost = Duration(2, "s")
   "The TestAlmhirt" should {
     "create, modify and retrieve 100 persons when actions for all entities are processed as sequenced blocks (A)" in {
       inTestAlmhirt{almhirt =>
-    implicit val executor = almhirt.futureDispatcher
+    implicit val executor = almhirt.executionContext
     val idsAndNamesAndAdresses = Vector((for (i <- 0 to 0) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
 
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(NewTestPerson(x._2, x._3), "A insert%s".format(x._1.toString)))

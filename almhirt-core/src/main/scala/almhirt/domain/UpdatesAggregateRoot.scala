@@ -16,7 +16,7 @@ trait UpdatesAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent]
     try {
       UpdateRecorder.accept(event, handler(event))
     } catch {
-      case exn => UpdateRecorder.reject(ExceptionCaughtProblem("Could not execute an update").withCause(CauseIsThrowable(exn)))
+      case exn: Throwable => UpdateRecorder.reject(ExceptionCaughtProblem("Could not execute an update").withCause(CauseIsThrowable(exn)))
     }
   }
 

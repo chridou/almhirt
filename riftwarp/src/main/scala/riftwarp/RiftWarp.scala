@@ -4,7 +4,6 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.almvalidation.flatmap
 
 trait RiftWarp {
   def barracks: RiftWarpBarracks
@@ -29,17 +28,17 @@ trait RiftWarp {
   def getDematerializationFun[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(divertBlobs: BlobDivert)(implicit mD: Manifest[TDimension]): AlmValidation[(AnyRef) => AlmValidation[TDimension]] =
     lookUpDematerializerFactoryAndConverters[TDimension](channel, toolGroup).map(factoryAndConverters =>
       (what: AnyRef) =>
-        barracks.getDecomposerForAny(what).bind(decomposer =>
-          factoryAndConverters._1.createDematerializer(divertBlobs)(barracks, toolShed).bind(demat =>
-            decomposer.decomposeRaw(what)(demat).bind(demat =>
+        barracks.getDecomposerForAny(what).flatMap(decomposer =>
+          factoryAndConverters._1.createDematerializer(divertBlobs)(barracks, toolShed).flatMap(demat =>
+            decomposer.decomposeRaw(what)(demat).flatMap(demat =>
                 factoryAndConverters._2.foldLeft(demat.dematerializeRaw.success[Problem])((acc, converter) =>
                   acc.fold(prob => prob.failure, dim => converter.convertRaw(dim))).map(_.asInstanceOf[TDimension])))))
 
   def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
-    getDematerializationFun[TDimension](channel, toolGroup)(NoDivertBlobDivert).bind(fun => fun(what))
+    getDematerializationFun[TDimension](channel, toolGroup)(NoDivertBlobDivert).flatMap(fun => fun(what))
 
   def prepareForWarpWithBlobs[TDimension <: RiftDimension](divertBlobs: BlobDivert)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
-    getDematerializationFun[TDimension](channel, toolGroup)(divertBlobs).bind(fun => fun(what))
+    getDematerializationFun[TDimension](channel, toolGroup)(divertBlobs).flatMap(fun => fun(what))
     
   def lookUpRematerializationArrayFactoryAndConverters[DimSource <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mS: Manifest[DimSource]): AlmValidation[(RematerializationArrayFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
     def findRematerializationArrayFactory(converters: List[RawDimensionConverter]): AlmValidation[(RematerializationArrayFactory[_ <: RiftDimension], RawDimensionConverter)] =
@@ -60,21 +59,21 @@ trait RiftWarp {
     lookUpRematerializationArrayFactoryAndConverters[TSource](channel, toolGroup).map {
       case (arrayFactory, converters) =>
         (sourceDim: TSource) =>
-          converters.foldLeft[AlmValidation[RiftDimension]](sourceDim.success[Problem])((acc, conv) => acc.fold(prob => prob.failure, succ => conv.convertRaw(succ))).bind(dimRematSource =>
-            arrayFactory.createRematerializationArrayRaw(dimRematSource, blobFetch)(barracks, toolShed).bind(remat =>
-              remat.tryGetTypeDescriptor.bind(tdOpt => {
-                val td = tdOpt.getOrElse(TypeDescriptor(mtarget.erasure))
-                barracks.getRawRecomposer(td).bind(recomp =>
+          converters.foldLeft[AlmValidation[RiftDimension]](sourceDim.success[Problem])((acc, conv) => acc.fold(prob => prob.failure, succ => conv.convertRaw(succ))).flatMap(dimRematSource =>
+            arrayFactory.createRematerializationArrayRaw(dimRematSource, blobFetch)(barracks, toolShed).flatMap(remat =>
+              remat.tryGetTypeDescriptor.flatMap(tdOpt => {
+                val td = tdOpt.getOrElse(TypeDescriptor(mtarget.runtimeClass))
+                barracks.getRawRecomposer(td).flatMap(recomp =>
                   recomp.recomposeRaw(remat).map(res =>
                     res.asInstanceOf[T]))
               })))
     }
 
   def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mtarget: Manifest[T], mD: Manifest[TDimension]): AlmValidation[T] =
-    getRematerializationFun[TDimension, T](channel, toolGroup)(NoFetchBlobFetch).bind(fun => fun(warpStream))
+    getRematerializationFun[TDimension, T](channel, toolGroup)(NoFetchBlobFetch).flatMap(fun => fun(warpStream))
 
   def receiveFromWarpWithBlobs[TDimension <: RiftDimension, T <: AnyRef](blobFetch: BlobFetch)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mtarget: Manifest[T], mD: Manifest[TDimension]): AlmValidation[T] =
-    getRematerializationFun[TDimension, T](channel, toolGroup)(blobFetch).bind(fun => fun(warpStream))
+    getRematerializationFun[TDimension, T](channel, toolGroup)(blobFetch).flatMap(fun => fun(warpStream))
 
 }
 

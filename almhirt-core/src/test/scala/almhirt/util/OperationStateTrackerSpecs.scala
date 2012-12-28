@@ -1,13 +1,14 @@
 package almhirt.util
 
-import org.specs2.mutable._
+import scala.concurrent.duration.Duration
 import almhirt.common._
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
 import test._
+import org.specs2.mutable._
 
 class OperationStateTrackerSpecs extends Specification with AlmhirtTestKit {
-  private implicit val atMost = akka.util.Duration(2, "s")
+  private implicit val atMost = Duration(2, "s")
   def withTrackerInTestContext[T](compute: OperationStateTracker => T) =
       inTestAlmhirt { implicit ctx =>
         val tracker = ctx.operationStateTracker

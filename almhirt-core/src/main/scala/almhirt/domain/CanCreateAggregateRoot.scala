@@ -27,7 +27,7 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
       creationHandler(event).success
     } catch {
       case err: MatchError => ExceptionCaughtProblem("Unhandled creation event: %s".format(event.getClass.getName)).failure
-      case err => ExceptionCaughtProblem(err.getMessage()).failure
+      case err: Throwable => ExceptionCaughtProblem(err.getMessage()).failure
     }
   }
 
@@ -37,14 +37,14 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
       if(events.isEmpty || ar.isFailure)
         ar
       else {
-        val next = ar.bind(succ => succ.applyEvent(events.head))
+        val next = ar.flatMap(succ => succ.applyEvent(events.head))
         buildEventSourced(next, events.tail)
       }
     }
     if (history.isEmpty)
       EmptyCollectionProblem("At least one event is required to rebuild from history").failure
     else
-      applyEvent(history.head) bind (freshAR => buildEventSourced(freshAR.success, history.drop(1)))
+      applyEvent(history.head) flatMap (freshAR => buildEventSourced(freshAR.success, history.drop(1)))
   }
 
   /** Creates an UpdateRecorder from the creating event */

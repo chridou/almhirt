@@ -15,6 +15,8 @@
 package almhirt.almvalidation
 /** Implicits regarding [[almhirt.validation.AlmValidaion]] */
 
+import scala.language.implicitConversions
+
 import java.util.UUID
 import scalaz.{Validation, NonEmptyList}
 import scalaz.syntax.Ops
@@ -172,14 +174,6 @@ trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
   def aggregateProblems(): Validation[AggregateProblem, List[R]] = aggregateProblems("One or more problems occured. See problems.")
 }
 
-trait AlmValidationOps12[T] extends Ops[AlmValidation[T]] {
-  /** Wrap the validation into an [[almhirt.AlmMatcher]] */
-  def m(): AlmMatcher = 
-    self fold (f => AlmFailure(f), s => AlmSuccess[T](s))
-  def matchWith[U](pf: PartialFunction[AlmMatcher, U]): U = 
-    pf(self fold (f => AlmFailure(f), s => AlmSuccess[T](s)))
-}
-
 trait ToAlmValidationOps {
   implicit def FromStringToAlmValidationOps0(a: String): AlmValidationOps0 = new AlmValidationOps0{ def self = a }
   implicit def FromAnyToAlmValidationOps1[T](a: T): AlmValidationOps1[T] = new AlmValidationOps1[T]{ def self = a }
@@ -193,5 +187,4 @@ trait ToAlmValidationOps {
   implicit def FromAlmValidationToAlmValidationOps9[T](a: AlmValidation[T]): AlmValidationOps9[T] = new AlmValidationOps9[T] { def self = a }
   implicit def FromValidationToAlmValidationOps10[T](a: Validation[Throwable, T]): AlmValidationOps10[T] = new AlmValidationOps10[T]{ def self = a }
   implicit def FromListValidationToAlmValidationOps11[R](a: List[AlmValidation[R]]): AlmValidationOps11[R] = new AlmValidationOps11[R]{ def self = a }
-  implicit def FromListValidationToAlmValidationOps12[T](a: AlmValidation[T]): AlmValidationOps12[T] = new AlmValidationOps12[T]{ def self = a }
 }

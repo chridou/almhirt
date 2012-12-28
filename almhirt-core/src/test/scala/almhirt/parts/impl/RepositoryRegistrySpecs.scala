@@ -1,6 +1,6 @@
 package almhirt.parts.impl
 
-import org.specs2.mutable._
+import scala.concurrent.duration.Duration
 import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.domain._
@@ -8,9 +8,10 @@ import almhirt.environment.AlmhirtContextTestKit
 import almhirt.eventlog._
 import almhirt.parts.HasRepositories
 import test._
+import org.specs2.mutable._
 
 class RepositoryRegistrySpecs extends Specification with AlmhirtContextTestKit {
-  implicit val duration = akka.util.Duration(1, "s")
+  implicit val duration = Duration(1, "s")
   """The unsafe repository registry""" should {
     """be able to register a repository""" in {
       inTestContext( implicit ctx => {

@@ -1,5 +1,7 @@
 package riftwarp
 
+import language.higherKinds
+
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -14,6 +16,8 @@ trait RawDematerializer {
 }
 
 trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
+  import language.higherKinds
+  
   def dematerialize: TDimension
   def dematerializeRaw: RiftDimension = dematerialize.asInstanceOf[RiftDimension]
 
@@ -158,8 +162,8 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
    */
   protected def spawnNew(path: List[String]): AlmValidation[Dematerializer[TDimension]]
   protected def getDematerializedBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]] =
-    spawnNew(ident).bind(demat =>
-      divertBlob(aValue, blobIdentifier).bind(blob => 
+    spawnNew(ident).flatMap(demat =>
+      divertBlob(aValue, blobIdentifier).flatMap(blob => 
         blob.decompose(demat)))
 		  
 }

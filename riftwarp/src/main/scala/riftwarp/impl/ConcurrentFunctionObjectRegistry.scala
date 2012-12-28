@@ -1,5 +1,7 @@
 package riftwarp.impl
 
+import language.higherKinds
+
 import riftwarp._
 import riftwarp.ma._
 
@@ -15,7 +17,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
   }
 
   def tryGetMAFunctions[M[_]](implicit mM: Manifest[M[_]]): Option[MAFunctions[M]] =
-    functionObjects.get(mM.erasure.getName()) match {
+    functionObjects.get(mM.runtimeClass.getName()) match {
       case null => None
       case x => Some(x.asInstanceOf[MAFunctions[M]])
     }
@@ -27,7 +29,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
   }
 
   def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[Folder[A, B]] = {
-    val ident = "%s_%s_%s".format(channel.channelType, mA.erasure.getName(), mB.erasure.getName())
+    val ident = "%s_%s_%s".format(channel.channelType, mA.runtimeClass.getName(), mB.runtimeClass.getName())
     channelFolders.get(ident) match {
       case null => None
       case x => Some(x.asInstanceOf[RegisterableChannelFolder[A, B]])
@@ -44,7 +46,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
     if (mM == mN)
       Some(new IdentityMAToNAConverter[M].asInstanceOf[ConvertsMAToNA[M, N]])
     else {
-      val ident = "%s_%s".format(mM.erasure.getName(), mN.erasure.getName())
+      val ident = "%s_%s".format(mM.runtimeClass.getName(), mN.runtimeClass.getName())
       mAToNAConverters.get(ident) match {
         case null => None
         case x => Some(x.asInstanceOf[ConvertsMAToNA[M, N]])

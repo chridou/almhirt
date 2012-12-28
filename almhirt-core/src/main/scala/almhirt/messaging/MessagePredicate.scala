@@ -20,13 +20,13 @@ object MessagePredicate {
 
   private class TypeBasedMessagePredicate[TPayload <: AnyRef](implicit m: Manifest[TPayload]) extends MessagePredicate {
     def apply(message: Message[AnyRef]) = {
-      m.erasure.isAssignableFrom(message.payload.getClass())
+      m.runtimeClass.isAssignableFrom(message.payload.getClass())
     }
   }
 
   private class TypeBasedCustomMessagePredicate[TPayload <: AnyRef](isMatch: Message[TPayload] => Boolean)(implicit m: Manifest[TPayload]) extends MessagePredicate {
     def apply(message: Message[AnyRef]) = {
-     if (m.erasure.isAssignableFrom(message.payload.getClass()))
+     if (m.runtimeClass.isAssignableFrom(message.payload.getClass()))
         isMatch(message.asInstanceOf[Message[TPayload]])
       else
         false
@@ -35,7 +35,7 @@ object MessagePredicate {
 
   private class TypeBasedPayloadCustomMessagePredicate[TPayload <: AnyRef](isMatch: TPayload => Boolean)(implicit m: Manifest[TPayload]) extends MessagePredicate {
     def apply(message: Message[AnyRef]) = {
-      if (m.erasure.isAssignableFrom(message.payload.getClass()))
+      if (m.runtimeClass.isAssignableFrom(message.payload.getClass()))
         isMatch(message.payload.asInstanceOf[TPayload])
       else
         false

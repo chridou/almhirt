@@ -1,5 +1,7 @@
 package riftwarp.ma
 
+import language.higherKinds
+
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._

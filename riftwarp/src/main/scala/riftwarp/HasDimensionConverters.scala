@@ -10,7 +10,7 @@ trait HasDimensionConverters {
   def getConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension](implicit mS: Manifest[DimSource], mT: Manifest[DimTarget]): AlmValidation[DimensionConverter[DimSource, DimTarget]] =
     option.cata(tryGetConverter[DimSource, DimTarget])(
       converter => converter.success,
-      UnspecifiedProblem("No converter found for '%s' -> '%s')".format(mS.erasure.getName, mT.erasure.getName)).failure)
+      UnspecifiedProblem("No converter found for '%s' -> '%s')".format(mS.runtimeClass.getName, mT.runtimeClass.getName)).failure)
 
   def getConvertersFrom[DimSource <: RiftDimension](implicit mS: Manifest[DimSource]): List[DimensionConverter[DimSource, _]]
   def getConvertersTo[DimTarget <: RiftDimension](implicit mT: Manifest[DimTarget]): List[DimensionConverter[_, DimTarget]]

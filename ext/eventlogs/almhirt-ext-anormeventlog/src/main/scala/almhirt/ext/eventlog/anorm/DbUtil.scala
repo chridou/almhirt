@@ -6,24 +6,24 @@ import almhirt.common._
 import java.sql.DriverManager
 import java.util.Properties
 
-object DbUtil {
+private[anorm] object DbUtil {
   def getConnection(url: String, props: Properties) = {
     try {
       DriverManager.getConnection(url, props).success
     } catch {
-      case exn => PersistenceProblem("Could not connect to %s".format(url), cause = Some(CauseIsThrowable(exn))).failure
+      case exn: Throwable => PersistenceProblem("Could not connect to %s".format(url), cause = Some(CauseIsThrowable(exn))).failure
     }
   }
 
   def withConnection[T](getConnection: () => AlmValidation[Connection])(compute: Connection => AlmValidation[T]): AlmValidation[T] = {
     val connection = getConnection()
-    connection.bind(conn => {
+    connection.flatMap(conn => {
       try {
         val res = compute(conn)
         conn.close()
         res
       } catch {
-        case exn =>
+        case exn: Throwable =>
           PersistenceProblem("Could not complete an operation succesfully while using a db connection: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure
       } finally {
         conn.close()
@@ -56,7 +56,7 @@ object DbUtil {
         val res = compute(conn)
         res.fold(problem => { conn.rollback(); problem.failure }, succ => { conn.commit(); succ.success })
       } catch {
-        case exn =>
+        case exn: Throwable =>
           conn.rollback
           println(exn.getClass().getName())
           PersistenceProblem("Could not commit transaction. Rolled back: %s".format(exn.getMessage()), cause = Some(CauseIsThrowable(exn))).failure

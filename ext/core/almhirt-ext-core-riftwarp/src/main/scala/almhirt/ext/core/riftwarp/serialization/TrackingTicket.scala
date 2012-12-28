@@ -16,13 +16,13 @@ class TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
       case StringTrackingTicket(ident) =>
         into
           .addTypeDescriptor(this.typeDescriptor)
-          .bind(_.addString("type", "string"))
-          .bind(_.addString("ident", ident))
+          .flatMap(_.addString("type", "string"))
+          .flatMap(_.addString("ident", ident))
       case UuidTrackingTicket(ident) =>
         into
           .addTypeDescriptor(this.typeDescriptor)
-          .bind(_.addString("type", "uuid"))
-          .bind(_.addUuid("ident", ident))
+          .flatMap(_.addString("type", "uuid"))
+          .flatMap(_.addUuid("ident", ident))
     }
   }
 }
@@ -30,7 +30,7 @@ class TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
 class TrackingTicketRecomposer extends Recomposer[TrackingTicket] {
   val typeDescriptor = TypeDescriptor(classOf[TrackingTicket], 1)
   def recompose(from: RematerializationArray): AlmValidation[TrackingTicket] = {
-    from.getString("type").bind {
+    from.getString("type").flatMap {
       case "string" => from.getString("ident").map(StringTrackingTicket.apply)
       case "uuid" => from.getUuid("ident").map(UuidTrackingTicket.apply)
     }

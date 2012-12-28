@@ -1,5 +1,7 @@
 package riftwarp.ma
 
+import language.higherKinds
+
 import almhirt.common._
 
 trait ConvertsMAToNA[M[_], N[_]] {

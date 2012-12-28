@@ -14,8 +14,9 @@
 */
 package almhirt.messaging
 
+import scala.concurrent.duration.FiniteDuration
 import almhirt.common.AlmFuture
 
 trait CreatesMessageChannels {
-  def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: akka.util.Duration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]]
+  def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]]
 }

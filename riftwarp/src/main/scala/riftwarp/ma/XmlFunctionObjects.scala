@@ -1,5 +1,7 @@
 package riftwarp.ma
 
+import language.higherKinds
+
 import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
@@ -11,12 +13,12 @@ trait XmlElemFolder extends RegisterableChannelFolder[Elem, Elem] {
   val tB = classOf[Elem]
   def fold[M[_]](ma: M[Elem])(funcObj: MAFunctions[M]): AlmValidation[Elem] = {
     if (funcObj.isEmpty(ma)) {
-      Elem(null, "Elements", Null, TopScope).success
+      Elem(null, "Elements", Null, TopScope, true).success
     } else {
       funcObj match {
         // Since it is automatically looked up, it should be the right thing...
         case fo: LinearMAFunctions[M] =>
-          Elem(null, "Elements", Null, TopScope, fo.toList(ma): _*).success
+          Elem(null, "Elements", Null, TopScope, true, fo.toList(ma): _*).success
         case _ =>
           UnspecifiedProblem("Not yet supported").failure
       }

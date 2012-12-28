@@ -89,10 +89,10 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
     import collection.JavaConversions._
 
     val actorName = ConfigHelper.tryGetString(system.config)(ConfigPaths.eventlog + ".actorname").getOrElse("domaineventlog")
-    ConfigHelper.getString(system.config)(ConfigPaths.eventlog + ".connection").bind(connection =>
-      theAlmhirt.getService[RiftWarp].bind(riftWarp =>
-      dbTemplate.bind(dbTemplate =>
-        almhirt.almvalidation.funs.inTryCatch({ Class.forName(dbTemplate.driverName); () }).bind { _ =>
+    ConfigHelper.getString(system.config)(ConfigPaths.eventlog + ".connection").flatMap(connection =>
+      theAlmhirt.getService[RiftWarp].flatMap(riftWarp =>
+      dbTemplate.flatMap(dbTemplate =>
+        almhirt.almvalidation.funs.inTryCatch({ Class.forName(dbTemplate.driverName); () }).flatMap { _ =>
           val props =
             ConfigHelper.tryGetSubConfig(system.config)(ConfigPaths.eventlog + ".properties") match {
               case Some(config) =>

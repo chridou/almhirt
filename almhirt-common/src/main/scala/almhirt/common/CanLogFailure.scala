@@ -14,6 +14,8 @@
 */
 package almhirt.common
 
+import scala.language.implicitConversions
+
 trait CanLogProblems {
   def logProblem(prob: Problem, minSeverity: Severity): Unit
 

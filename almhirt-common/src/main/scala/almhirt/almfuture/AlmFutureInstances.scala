@@ -14,12 +14,14 @@
 */
 package almhirt.almfuture
 
-import akka.dispatch.Future
+import scala.language.implicitConversions
+
+import scala.concurrent.Future
 import almhirt.common._
 
 
 trait AlmFutureInstances {
   /** Turn this [[akka.dispatch.Future]] into an [[almhirt.concurrent.Future]] */
-  implicit def akkaFutureToAlmhirtFuture[T](akkaFuture: Future[AlmValidation[T]])(implicit executionContext: akka.dispatch.ExecutionContext): AlmFuture[T] =
+  implicit def akkaFutureToAlmhirtFuture[T](akkaFuture: Future[AlmValidation[T]]): AlmFuture[T] =
     new AlmFuture(akkaFuture)
 }
