@@ -67,8 +67,8 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
   protected def trySpawnNew(ident: String): AlmValidation[Option[Rematerializer]] =
     option.cata(get(ident))(
       s => (s: @unchecked) match {
-        case aMap: Map[String, Any] =>
-          Some(spawnNew(aMap)).success
+        case aMap: Map[_, _] =>
+          Some(spawnNew(aMap.asInstanceOf[Map[String, Any]])).success
         case x =>
           UnspecifiedProblem("Found a '%s' for ident %s but a Map was required".format(x, ident)).failure
       },
