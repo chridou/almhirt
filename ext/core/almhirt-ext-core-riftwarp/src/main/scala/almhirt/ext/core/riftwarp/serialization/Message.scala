@@ -22,7 +22,7 @@ class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
 
 class MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
   val typeDescriptor = TypeDescriptor(classOf[MessageGrouping], 1)
-  def recompose(from: RematerializationArray): AlmValidation[MessageGrouping] = {
+  def recompose(from: Rematerializer): AlmValidation[MessageGrouping] = {
     (from.getUuid("groupId").toAgg |@|
       from.getInt("seq").toAgg |@|
       from.getBoolean("isLast").toAgg)(MessageGrouping.apply)
@@ -43,7 +43,7 @@ class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
 
 class MessageHeaderRecomposer extends Recomposer[MessageHeader] {
   val typeDescriptor = TypeDescriptor(classOf[MessageHeader], 1)
-  def recompose(from: RematerializationArray): AlmValidation[MessageHeader] = {
+  def recompose(from: Rematerializer): AlmValidation[MessageHeader] = {
     (from.getUuid("id").toAgg |@|
       from.tryGetComplexType("grouping").toAgg |@|
       //from.getOptionalComplexType("metaData").toAgg |@| 
@@ -64,7 +64,7 @@ class MessageDecomposer extends Decomposer[Message[AnyRef]] {
 
 class MessageRecomposer extends Recomposer[Message[AnyRef]] {
   val typeDescriptor = TypeDescriptor(classOf[Message[AnyRef]], 1)
-  def recompose(from: RematerializationArray): AlmValidation[Message[AnyRef]] = {
+  def recompose(from: Rematerializer): AlmValidation[Message[AnyRef]] = {
     val header = from.getComplexType[MessageHeader]("header").toAgg
     val payload = from.getComplexType[AnyRef]("payload").toAgg
     (header |@| payload)(Message(_,_))

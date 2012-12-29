@@ -10,9 +10,9 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.ma._
 
-class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializationArrayWithBlobBlobFetch with RematerializationArrayBasedOnOptionGetters {
+class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializerWithBlobBlobFetch with RematerializerBasedOnOptionGetters {
  import RecomposerFuns._
-  protected def trySpawnNew(ident: String): AlmValidation[Option[RematerializationArray]] =
+  protected def trySpawnNew(ident: String): AlmValidation[Option[Rematerializer]] =
     option.cata(theMap.get(ident))(
       s => (s: @unchecked) match {
         case aMap: Map[String, Any] =>
@@ -22,8 +22,8 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
       },
       None.success)
 
-  protected def spawnNew(from: Map[String, Any]): RematerializationArray =
-    FromMapRematerializationArray(from, fetchBlobData)(hasRecomposers, functionObjects)
+  protected def spawnNew(from: Map[String, Any]): Rematerializer =
+    FromMapRematerializer(from, fetchBlobData)(hasRecomposers, functionObjects)
 
   def tryGetString(ident: String) = option.cata(theMap.get(ident))(almCast[String](_).map(Some(_)), None.success)
 
@@ -78,7 +78,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
     theMap.get(ident) match {
       case Some(elem) =>
         almCast[Map[String, Any]](elem).flatMap ( elemAsMap =>
-          recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawnNew(elemAsMap)).map(_.asInstanceOf[T])).map(Some(_))
+          recomposeWithLookedUpRawRecomposerFromRematerializer(spawnNew(elemAsMap)).map(_.asInstanceOf[T])).map(Some(_))
       case None =>
         None.success
     }
@@ -116,7 +116,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
             computeSafely {
               val validations =
                 fo.map(mx.asInstanceOf[M[Map[String, Any]]])(elem =>
-                  recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawnNew(elem)).map(_.asInstanceOf[A]))
+                  recomposeWithLookedUpRawRecomposerFromRematerializer(spawnNew(elem)).map(_.asInstanceOf[A]))
               val sequenced = fo.sequenceValidations(fo.map(validations)(_.toAgg))
               sequenced.map(Some(_))
             }),
@@ -173,7 +173,7 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
           computeSafely {
             theMap.asInstanceOf[Map[A, Map[String, AnyRef]]].map {
               case (a, b) =>
-                recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawnNew(b)).map(_.asInstanceOf[B]).map(decomposed =>
+                recomposeWithLookedUpRawRecomposerFromRematerializer(spawnNew(b)).map(_.asInstanceOf[B]).map(decomposed =>
                       (a, decomposed.asInstanceOf[B])).toAgg
             }.toList.sequence.map(items =>
               items.toMap).map(Some(_))
@@ -203,20 +203,20 @@ class FromMapRematerializationArray(theMap: Map[String, Any], protected val fetc
       what.asInstanceOf[A].success
     else if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
       computeSafely {
-      recomposeWithLookedUpRawRecomposerFromRematerializationArray(spawnNew(what.asInstanceOf[Map[String, Any]])).map(_.asInstanceOf[A])
+      recomposeWithLookedUpRawRecomposerFromRematerializer(spawnNew(what.asInstanceOf[Map[String, Any]])).map(_.asInstanceOf[A])
       }
     else
       UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure
 
 }
 
-object FromMapRematerializationArray extends RematerializationArrayFactory[DimensionRawMap] {
+object FromMapRematerializer extends RematerializerFactory[DimensionRawMap] {
   val channel = RiftMap()
   val tDimension = classOf[DimensionRawMap].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupRiftStd()
 
-  def apply(fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializationArray = apply(Map.empty[String, Any], fetchBlobs)
-  def apply(state: Map[String, Any], fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializationArray = new FromMapRematerializationArray(state, fetchBlobs)
-  def apply(state: DimensionRawMap, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializationArray = new FromMapRematerializationArray(state.manifestation, fetchBlobs)
-  def createRematerializationArray(from: DimensionRawMap, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[RematerializationArray] = apply(from, fetchBlobs).success
+  def apply(fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializer = apply(Map.empty[String, Any], fetchBlobs)
+  def apply(state: Map[String, Any], fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializer = new FromMapRematerializer(state, fetchBlobs)
+  def apply(state: DimensionRawMap, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): FromMapRematerializer = new FromMapRematerializer(state.manifestation, fetchBlobs)
+  def createRematerializer(from: DimensionRawMap, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromMapRematerializer] = apply(from, fetchBlobs).success
 }

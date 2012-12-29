@@ -7,7 +7,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 
 /** Extracts atoms from the other side */
-trait RematerializationArray {
+trait Rematerializer {
   def getString(ident: String): AlmValidation[String]
   def tryGetString(ident: String): AlmValidation[Option[String]]
 
@@ -138,9 +138,9 @@ trait RematerializationArray {
   def tryGetTypeDescriptor: AlmValidation[Option[TypeDescriptor]]
 }
 
-abstract class RematerializationArrayWithBlobBlobFetch extends RematerializationArray {
+abstract class RematerializerWithBlobBlobFetch extends Rematerializer {
   protected def fetchBlobData: BlobFetch
-  protected def trySpawnNew(ident: String): AlmValidation[Option[RematerializationArray]]
+  protected def trySpawnNew(ident: String): AlmValidation[Option[Rematerializer]]
   protected def tryGetRematerializedBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
     trySpawnNew(ident).flatMap(rematOpt =>
       option.cata(rematOpt)(
@@ -149,7 +149,7 @@ abstract class RematerializationArrayWithBlobBlobFetch extends Rematerialization
         None.success))
 }
 
-trait RematerializationArrayBasedOnOptionGetters extends RematerializationArray {
+trait RematerializerBasedOnOptionGetters extends Rematerializer {
   def getString(ident: String) = tryGetString(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
   def getBoolean(ident: String) = tryGetBoolean(ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))

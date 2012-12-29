@@ -50,7 +50,7 @@ case class RiftBlobRefByUri(uri: java.net.URI) extends RiftBlobReference {
 }
 
 object RiftBlob {
-  def recompose(from: RematerializationArray): AlmValidation[RiftBlob] =
+  def recompose(from: Rematerializer): AlmValidation[RiftBlob] =
     from.getTypeDescriptor.flatMap(td =>
       td match {
         case TypeDescriptor("RiftBlobArrayValue") =>

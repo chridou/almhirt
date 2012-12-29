@@ -25,7 +25,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
 
 class TestObjectARecomposer extends Recomposer[TestObjectA] {
   val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
-  def recompose(from: RematerializationArray): AlmValidation[TestObjectA] = {
+  def recompose(from: Rematerializer): AlmValidation[TestObjectA] = {
     val arrayByte = from.getByteArray("arrayByte").toAgg
     val blob = from.getBlob("blob").toAgg
     val primitiveTypes = from.getComplexType[PrimitiveTypes]("primitiveTypes").toAgg
@@ -67,7 +67,7 @@ class PrimitiveTypesDecomposer extends Decomposer[PrimitiveTypes] {
 
 class PrimitiveTypesRecomposer extends Recomposer[PrimitiveTypes] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveTypes])
-  def recompose(from: RematerializationArray): AlmValidation[PrimitiveTypes] = {
+  def recompose(from: Rematerializer): AlmValidation[PrimitiveTypes] = {
     val str = from.getString("str").toAgg
     val bool = from.getBoolean("bool").toAgg
     val byte = from.getByte("byte").toAgg
@@ -107,7 +107,7 @@ class PrimitiveListMAsDecomposer extends Decomposer[PrimitiveListMAs] {
 
 class PrimitiveListMAsRecomposer extends Recomposer[PrimitiveListMAs] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveListMAs])
-  def recompose(from: RematerializationArray): AlmValidation[PrimitiveListMAs] = {
+  def recompose(from: Rematerializer): AlmValidation[PrimitiveListMAs] = {
     val listString = from.getPrimitiveMA[List, String]("listString").toAgg
     val listInt = from.getPrimitiveMA[List, Int]("listInt").toAgg
     val listDouble = from.getPrimitiveMA[List, Double]("listDouble").toAgg
@@ -135,7 +135,7 @@ class PrimitiveVectorMAsDecomposer extends Decomposer[PrimitiveVectorMAs] {
 
 class PrimitiveVectorMAsRecomposer extends Recomposer[PrimitiveVectorMAs] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveVectorMAs])
-  def recompose(from: RematerializationArray): AlmValidation[PrimitiveVectorMAs] = {
+  def recompose(from: Rematerializer): AlmValidation[PrimitiveVectorMAs] = {
 
     val vectorString = from.getPrimitiveMA[Vector, String]("vectorString").toAgg
     val vectorInt = from.getPrimitiveMA[Vector, Int]("vectorInt").toAgg
@@ -164,7 +164,7 @@ class PrimitiveSetMAsDecomposer extends Decomposer[PrimitiveSetMAs] {
 
 class PrimitiveSetMAsRecomposer extends Recomposer[PrimitiveSetMAs] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveSetMAs])
-  def recompose(from: RematerializationArray): AlmValidation[PrimitiveSetMAs] = {
+  def recompose(from: Rematerializer): AlmValidation[PrimitiveSetMAs] = {
 
     val setString = from.getPrimitiveMA[Set, String]("setString").toAgg
     val setInt = from.getPrimitiveMA[Set, Int]("setInt").toAgg
@@ -193,7 +193,7 @@ class PrimitiveIterableMAsDecomposer extends Decomposer[PrimitiveIterableMAs] {
 
 class PrimitiveIterableMAsRecomposer extends Recomposer[PrimitiveIterableMAs] {
   val typeDescriptor = TypeDescriptor(classOf[PrimitiveIterableMAs])
-  def recompose(from: RematerializationArray): AlmValidation[PrimitiveIterableMAs] = {
+  def recompose(from: Rematerializer): AlmValidation[PrimitiveIterableMAs] = {
 
     val iterableString = from.getPrimitiveMA[Set, String]("iterableString").toAgg
     val iterableInt = from.getPrimitiveMA[Set, Int]("iterableInt").toAgg
@@ -221,7 +221,7 @@ class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
 
 class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
   val typeDescriptor = TypeDescriptor(classOf[ComplexMAs])
-  def recompose(from: RematerializationArray): AlmValidation[ComplexMAs] = {
+  def recompose(from: Rematerializer): AlmValidation[ComplexMAs] = {
     val addresses1 = from.getComplexMALoose[List, TestAddress]("addresses1").toAgg
     val addresses2 = from.getComplexMALoose[Vector, TestAddress]("addresses2").toAgg
     val addresses3 = from.getComplexMALoose[Set, TestAddress]("addresses3").toAgg
@@ -244,7 +244,7 @@ class TestAddressDecomposer extends Decomposer[TestAddress] {
 
 class TestAddressRecomposer extends Recomposer[TestAddress] {
   val typeDescriptor = TypeDescriptor(classOf[TestAddress])
-  def recompose(from: RematerializationArray): AlmValidation[TestAddress] = {
+  def recompose(from: Rematerializer): AlmValidation[TestAddress] = {
     val city = from.getString("city").toAgg
     val street = from.getString("street").toAgg
     (city |@| street)(TestAddress.apply)

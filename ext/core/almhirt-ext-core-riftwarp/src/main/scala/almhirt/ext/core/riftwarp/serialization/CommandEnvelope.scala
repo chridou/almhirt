@@ -22,7 +22,7 @@ class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
 
 class CommandEnvelopeRecomposer extends Recomposer[CommandEnvelope] {
   val typeDescriptor = TypeDescriptor(classOf[CommandEnvelope], 1)
-  def recompose(from: RematerializationArray): AlmValidation[CommandEnvelope] = {
+  def recompose(from: Rematerializer): AlmValidation[CommandEnvelope] = {
     val command = from.getComplexType[DomainCommand]("command").toAgg
     val ticket = from.tryGetComplexType[TrackingTicket]("ticket").toAgg
     (command |@| ticket)(CommandEnvelope.apply)

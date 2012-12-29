@@ -21,7 +21,7 @@ class AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
 
 class AggregateRootRefRecomposer extends Recomposer[AggregateRootRef] {
   val typeDescriptor = TypeDescriptor(classOf[AggregateRootRef], 1)
-  def recompose(from: RematerializationArray): AlmValidation[AggregateRootRef] = {
+  def recompose(from: Rematerializer): AlmValidation[AggregateRootRef] = {
     val id = from.getUuid("id").toAgg
     val version = from.getLong("version").toAgg
     (id |@| version)(AggregateRootRef.apply)

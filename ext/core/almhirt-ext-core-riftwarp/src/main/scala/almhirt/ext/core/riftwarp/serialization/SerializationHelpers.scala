@@ -12,7 +12,7 @@ trait SerializationFuns {
 }
 
 //trait DeserializationFuns {
-//  def deserializeCommonDomainEventFields(remArray: RematerializationArray,  event: DomainEvent, funnel: DematerializationFunnel): AlmValidation[DematerializationFunnel] =
+//  def deserializeCommonDomainEventFields(remArray: Rematerializer,  event: DomainEvent, funnel: DematerializationFunnel): AlmValidation[DematerializationFunnel] =
 //    funnel.addUuid("id", event.id).bind(f => f.addLong("version", event.version))
 //
 //  def deserializeCommonMutatorCommandFields(com: MutatorCommandStyle, funnel: DematerializationFunnel): AlmValidation[DematerializationFunnel] =

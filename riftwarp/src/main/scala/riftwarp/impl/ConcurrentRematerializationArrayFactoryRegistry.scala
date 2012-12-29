@@ -3,12 +3,12 @@ package riftwarp.impl
 import _root_.java.util.concurrent.ConcurrentHashMap
 import riftwarp._
 
-class ConcurrentRematerializationArrayFactoryRegistry extends HasRematerializationArrayFactories {
+class ConcurrentRematerializerFactoryRegistry extends HasRematerializerFactories {
   import scala.collection.mutable._
   private val toolregistry = new ConcurrentHashMap[ToolGroup, ConcurrentHashMap[RiftChannel, ConcurrentHashMap[String, AnyRef]]](16)
   private val channelregistry = new ConcurrentHashMap[RiftChannel, ConcurrentHashMap[String, AnyRef]](16)
 
-  def addArrayFactory(factory: RematerializationArrayFactory[_ <: RiftDimension], asChannelDefault: Boolean = false) {
+  def addRematerializerFactory(factory: RematerializerFactory[_ <: RiftDimension], asChannelDefault: Boolean = false) {
     synchronized {
       val dimensionIdent = factory.tDimension.getName()
 
@@ -28,7 +28,7 @@ class ConcurrentRematerializationArrayFactoryRegistry extends HasRematerializati
     }
   }
 
-  def tryGetArrayFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None): Option[RematerializationArrayFactory[RiftDimension]] = {
+  def tryGetRematerializerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None): Option[RematerializerFactory[RiftDimension]] = {
     val dimensionIdent = tDimension.getName
     toolGroup match {
       case None =>
@@ -36,7 +36,7 @@ class ConcurrentRematerializationArrayFactoryRegistry extends HasRematerializati
           case null => None
           case entry => entry.get(dimensionIdent) match {
             case null => None
-            case x => Some(x.asInstanceOf[RematerializationArrayFactory[RiftDimension]])
+            case x => Some(x.asInstanceOf[RematerializerFactory[RiftDimension]])
           }
         }
       case Some(toolGroup) =>
@@ -46,7 +46,7 @@ class ConcurrentRematerializationArrayFactoryRegistry extends HasRematerializati
             case null => None
             case channelEntries => channelEntries.get(dimensionIdent) match {
               case null => None
-              case x => Some(x.asInstanceOf[RematerializationArrayFactory[RiftDimension]])
+              case x => Some(x.asInstanceOf[RematerializerFactory[RiftDimension]])
             }
           }
         }

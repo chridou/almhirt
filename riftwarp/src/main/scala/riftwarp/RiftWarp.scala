@@ -40,27 +40,27 @@ trait RiftWarp {
   def prepareForWarpWithBlobs[TDimension <: RiftDimension](divertBlobs: BlobDivert)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
     getDematerializationFun[TDimension](channel, toolGroup)(divertBlobs).flatMap(fun => fun(what))
     
-  def lookUpRematerializationArrayFactoryAndConverters[DimSource <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mS: Manifest[DimSource]): AlmValidation[(RematerializationArrayFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
-    def findRematerializationArrayFactory(converters: List[RawDimensionConverter]): AlmValidation[(RematerializationArrayFactory[_ <: RiftDimension], RawDimensionConverter)] =
+  def lookUpRematerializerFactoryAndConverters[DimSource <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mS: Manifest[DimSource]): AlmValidation[(RematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
+    def findRematerializerFactory(converters: List[RawDimensionConverter]): AlmValidation[(RematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
       converters match {
-        case Nil => UnspecifiedProblem("No RematerializationArrayFactory or converter found").failure
+        case Nil => UnspecifiedProblem("No RematerializerFactory or converter found").failure
         case x :: xs =>
-          option.cata(toolShed.tryGetArrayFactoryByType(x.tTarget)(channel, toolGroup))(
+          option.cata(toolShed.tryGetRematerializerFactoryByType(x.tTarget)(channel, toolGroup))(
             factory => (factory, x).success,
-            findRematerializationArrayFactory(xs))
+            findRematerializerFactory(xs))
       }
 
-    option.cata(toolShed.tryGetArrayFactory[DimSource](channel, toolGroup))(
+    option.cata(toolShed.tryGetRematerializerFactory[DimSource](channel, toolGroup))(
       some => (some, Nil).success,
-      findRematerializationArrayFactory(converters.getConvertersFrom[DimSource]).map(tuple => (tuple._1, List(tuple._2))))
+      findRematerializerFactory(converters.getConvertersFrom[DimSource]).map(tuple => (tuple._1, List(tuple._2))))
   }
 
   def getRematerializationFun[TSource <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(blobFetch: BlobFetch)(implicit mtarget: Manifest[T], mD: Manifest[TSource]): AlmValidation[TSource => AlmValidation[T]] =
-    lookUpRematerializationArrayFactoryAndConverters[TSource](channel, toolGroup).map {
+    lookUpRematerializerFactoryAndConverters[TSource](channel, toolGroup).map {
       case (arrayFactory, converters) =>
         (sourceDim: TSource) =>
           converters.foldLeft[AlmValidation[RiftDimension]](sourceDim.success[Problem])((acc, conv) => acc.fold(prob => prob.failure, succ => conv.convertRaw(succ))).flatMap(dimRematSource =>
-            arrayFactory.createRematerializationArrayRaw(dimRematSource, blobFetch)(barracks, toolShed).flatMap(remat =>
+            arrayFactory.createRematerializerRaw(dimRematSource, blobFetch)(barracks, toolShed).flatMap(remat =>
               remat.tryGetTypeDescriptor.flatMap(tdOpt => {
                 val td = tdOpt.getOrElse(TypeDescriptor(mtarget.runtimeClass))
                 barracks.getRawRecomposer(td).flatMap(recomp =>
@@ -104,10 +104,10 @@ object RiftWarp {
     riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToJsonCordDematerializer)
     riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToXmlElemDematerializer)
 
-    riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromMapRematerializationArray)
-    riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonMapRematerializationArray)
-    riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonStringRematerializationArray)
-    riftWarp.toolShed.addArrayFactory(impl.rematerializers.FromJsonCordRematerializationArray)
+    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromMapRematerializer)
+    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonMapRematerializer)
+    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonStringRematerializer)
+    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonCordRematerializer)
     
     riftWarp.converters.addConverter(DimensionNiceStringToString)
     riftWarp.converters.addConverter(DimensionNiceCordToCord)

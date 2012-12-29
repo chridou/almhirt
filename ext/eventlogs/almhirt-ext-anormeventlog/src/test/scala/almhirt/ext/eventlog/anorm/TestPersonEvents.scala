@@ -29,7 +29,7 @@ class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] {
 
 class TestPersonCreatedRecomposer extends Recomposer[TestPersonCreated] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonCreated])
-  def recompose(from: RematerializationArray): AlmValidation[TestPersonCreated] = {
+  def recompose(from: Rematerializer): AlmValidation[TestPersonCreated] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
     val name = from.getString("name").toAgg
@@ -52,7 +52,7 @@ class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] 
 
 class TestPersonNameChangedRecomposer extends Recomposer[TestPersonNameChanged] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonNameChanged])
-  def recompose(from: RematerializationArray): AlmValidation[TestPersonNameChanged] = {
+  def recompose(from: Rematerializer): AlmValidation[TestPersonNameChanged] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
     val aggVersion = from.getLong("aggVersion").toAgg
@@ -76,7 +76,7 @@ class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAqu
 
 class TestPersonAddressAquiredRecomposer extends Recomposer[TestPersonAddressAquired] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonAddressAquired])
-  def recompose(from: RematerializationArray): AlmValidation[TestPersonAddressAquired] = {
+  def recompose(from: Rematerializer): AlmValidation[TestPersonAddressAquired] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
     val aggVersion = from.getLong("aggVersion").toAgg
@@ -100,7 +100,7 @@ class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] {
 
 class TestPersonMovedRecomposer extends Recomposer[TestPersonMoved] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonMoved])
-  def recompose(from: RematerializationArray): AlmValidation[TestPersonMoved] = {
+  def recompose(from: Rematerializer): AlmValidation[TestPersonMoved] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
     val aggVersion = from.getLong("aggVersion").toAgg
@@ -123,7 +123,7 @@ class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledE
 
 class TestPersonUnhandledEventRecomposer extends Recomposer[TestPersonUnhandledEvent] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonUnhandledEvent])
-  def recompose(from: RematerializationArray): AlmValidation[TestPersonUnhandledEvent] = {
+  def recompose(from: Rematerializer): AlmValidation[TestPersonUnhandledEvent] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
     val aggVersion = from.getLong("aggVersion").toAgg
