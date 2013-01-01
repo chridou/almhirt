@@ -52,7 +52,9 @@ object AlmhirtBootstrapper {
     } yield almhirt
 
   def runShutDownSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[Unit] =
-    bootstrapper.beforeClosing().flatMap(_ =>
-      bootstrapper.closing().flatMap(_ =>
-        bootstrapper.closed()))
+    for {
+      _ <- bootstrapper.beforeClosing()
+      _ <- bootstrapper.closing()
+      _ <- bootstrapper.closed()
+    } yield ()
 }
