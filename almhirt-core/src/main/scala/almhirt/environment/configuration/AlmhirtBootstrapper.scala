@@ -3,58 +3,42 @@ package almhirt.environment.configuration
 import almhirt.common._
 import almhirt.environment._
 import com.typesafe.config.Config
+import almhirt.core._
 
 trait AlmhirtBootstrapper {
-  def createAlmhirtSystem(): AlmValidation[AlmhirtSystem]
+  def createAlmhirtSystem(): AlmValidation[(AlmhirtSystem, CleanUpAction)]
 
-  def createAlmhirtContext(system: AlmhirtSystem): AlmValidation[AlmhirtContext]
+  def createServiceRegistry(system: AlmhirtSystem): (Option[ServiceRegistry], CleanUpAction)
 
-  def wireChannels(context: AlmhirtContext): AlmValidation[AlmhirtContext]
+  def createChannels(theServiceRegistry: Option[ServiceRegistry])(implicit system: AlmhirtSystem): AlmValidation[CleanUpAction]
 
-  def createAlmhirt(context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Almhirt]
+  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry])(implicit system: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)]
 
-  def registerChannels(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
+  def registerComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerComponents(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
+  def registerServicesStage1(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerServicesStage1(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
+  def registerRepositories(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerRepositories(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
+  def registerCommandHandlers(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerCommandHandlers(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
-
-  def registerServicesStage2(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
-
-  def beforeClosing(): AlmValidation[Unit]
-
-  def closing(): AlmValidation[Unit]
-
-  def closed(): AlmValidation[Unit]
-
+  def registerServicesStage2(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
 }
 
 object AlmhirtBootstrapper {
   def createFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] =
     SystemHelper.createBootstrapperFromConfig(config)
 
-  def runStartupSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[Almhirt] =
+  def runStartupSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[(Almhirt, CleanUpAction)] =
     for {
-      system <- bootstrapper.createAlmhirtSystem()
-      context <- bootstrapper.createAlmhirtContext(system)
-      context <- bootstrapper.wireChannels(context)
-      almhirt <- bootstrapper.createAlmhirt(context, system)
-      _ <- bootstrapper.registerChannels(almhirt, context, system)
-      _ <- bootstrapper.registerComponents(almhirt, context, system)
-      _ <- bootstrapper.registerServicesStage1(almhirt, context, system)
-      _ <- bootstrapper.registerRepositories(almhirt, context, system)
-      _ <- bootstrapper.registerCommandHandlers(almhirt, context, system)
-      _ <- bootstrapper.registerServicesStage2(almhirt, context, system)
-    } yield almhirt
-
-  def runShutDownSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[Unit] =
-    for {
-      _ <- bootstrapper.beforeClosing()
-      _ <- bootstrapper.closing()
-      _ <- bootstrapper.closed()
-    } yield ()
+      (system, cleanUp1) <- bootstrapper.createAlmhirtSystem()
+      (serviceRegistry, cleanUp2) <- scalaz.Success(bootstrapper.createServiceRegistry(system))
+      cleanUp3 <- bootstrapper.createChannels(serviceRegistry)(system)
+      (almhirt, cleanUp4) <- bootstrapper.createAlmhirt(serviceRegistry)(system)
+      cleanUp5 <- bootstrapper.registerComponents(almhirt)
+      cleanUp6 <- bootstrapper.registerServicesStage1(almhirt)
+      cleanUp7 <- bootstrapper.registerRepositories(almhirt)
+      cleanUp8 <- bootstrapper.registerCommandHandlers(almhirt)
+      cleanUp9 <- bootstrapper.registerServicesStage2(almhirt)
+    } yield (almhirt, () => { cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1() })
 }

@@ -19,7 +19,6 @@ class CommandChannelWrapper(toWrap: MessageChannel[CommandEnvelope]) extends Com
   def close = toWrap.close
 }
 
-
 trait DomainEventsChannel extends MessageChannel[DomainEvent]
 class DomainEventsChannelWrapper(toWrap: MessageChannel[DomainEvent]) extends DomainEventsChannel {
   def actor = toWrap.actor

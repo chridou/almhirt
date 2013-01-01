@@ -14,6 +14,7 @@ import almhirt.eventlog.DomainEventLog
 import almhirt.commanding.CommandEnvelope
 import almhirt.environment.configuration.SystemHelper
 import com.typesafe.config.Config
+import almhirt.environment.configuration.CleanUpAction
 
 class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper(config) {
   private var tracker: OperationStateTracker = null
@@ -24,13 +25,13 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
   private var cmdExecutorRegistration: RegistrationHolder = null
   private var eventLog: DomainEventLog = null
 
-  override def registerComponents(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit] = {
+  override def registerComponents(almhirt: Almhirt): AlmValidation[CleanUpAction] = {
     import akka.pattern._
     implicit val atMost = FiniteDuration(5, "s")
-    implicit val executionContext = system.executionContext
+    implicit val executionContext = almhirt.executionContext
 
     inTryCatch {
-      tracker = OperationStateTracker()(context, system).forceResult
+      tracker = OperationStateTracker()(almhirt, system).forceResult
       trackerRegistration =
         (context.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker.actor)))(atMost)
           .mapTo[SubscriptionRsp]
@@ -60,12 +61,5 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
     }.flatMap(_ => super.registerComponents(almhirt, context, system))
   }
 
-  override def closing(): AlmValidation[Unit] = {
-    trackerRegistration.dispose
-    tracker.dispose
-    cmdExecutorRegistration.dispose
-    eventLog.close
-    super.closing()
-  }
 
 }

@@ -1,5 +1,6 @@
 package almhirt.environment
 
+import scalaz.std._
 import almhirt.core._
 import almhirt.common._
 import almhirt.environment._
@@ -9,9 +10,15 @@ import almhirt.util._
 import almhirt.messaging._
 import org.joda.time.DateTime
 
-trait Almhirt extends AlmhirtBaseOps with CreatesMessageChannels with ServiceRegistry with Closeable {
-  def executeCommand(cmd: DomainCommand, ticket: Option[TrackingTicket]) { executeCommand(CommandEnvelope(cmd, ticket)) }
-  def executeTrackedCommand(cmd: DomainCommand, ticket: TrackingTicket) { executeCommand(CommandEnvelope(cmd, Some(ticket))) }
-  def executeUntrackedCommand(cmd: DomainCommand) { executeCommand(CommandEnvelope(cmd, None)) }
-  def executeCommand(cmdEnv: CommandEnvelope): Unit
+trait Almhirt extends AlmhirtBaseOps with CreatesMessageChannels with HasServices {
+  def system: AlmhirtSystem
+  def serviceRegistry: Option[ServiceRegistry]
+  def getServiceByType(clazz: Class[_ <: AnyRef]): AlmValidation[AnyRef] =
+    option.cata(serviceRegistry)(
+      sr => sr.getServiceByType(clazz),
+      scalaz.Failure(ServiceNotFoundProblem("There is no service registry. Maybe serviceRegistry == None?!")))
+  def createMessage[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) = {
+    val header = MessageHeader(system.getUuid, None, Map.empty, system.getDateTime)
+    Message(header, payload)
+  }
 }
