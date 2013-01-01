@@ -14,7 +14,7 @@ trait AlmhirtBootstrapper {
   def createAlmhirt(context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Almhirt]
 
   def registerChannels(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
-  
+
   def registerComponents(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
 
   def registerServicesStage1(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit]
@@ -34,20 +34,22 @@ trait AlmhirtBootstrapper {
 }
 
 object AlmhirtBootstrapper {
-  def createFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] = 
+  def createFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] =
     SystemHelper.createBootstrapperFromConfig(config)
 
   def runStartupSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[Almhirt] =
-    bootstrapper.createAlmhirtSystem().flatMap(system =>
-      bootstrapper.createAlmhirtContext(system).flatMap(context =>
-        bootstrapper.wireChannels(context).flatMap(context =>
-          bootstrapper.createAlmhirt(context, system).flatMap(almhirt =>
-          bootstrapper.registerChannels(almhirt, context, system).flatMap(_ =>
-            bootstrapper.registerComponents(almhirt, context, system).flatMap(_ =>
-              bootstrapper.registerServicesStage1(almhirt, context, system).flatMap(_ =>
-                bootstrapper.registerRepositories(almhirt, context, system).flatMap(_ =>
-                  bootstrapper.registerCommandHandlers(almhirt, context, system).flatMap(_ =>
-                    bootstrapper.registerServicesStage2(almhirt, context, system).map(_ => almhirt))))))))))
+    for {
+      system <- bootstrapper.createAlmhirtSystem()
+      context <- bootstrapper.createAlmhirtContext(system)
+      context <- bootstrapper.wireChannels(context)
+      almhirt <- bootstrapper.createAlmhirt(context, system)
+      _ <- bootstrapper.registerChannels(almhirt, context, system)
+      _ <- bootstrapper.registerComponents(almhirt, context, system)
+      _ <- bootstrapper.registerServicesStage1(almhirt, context, system)
+      _ <- bootstrapper.registerRepositories(almhirt, context, system)
+      _ <- bootstrapper.registerCommandHandlers(almhirt, context, system)
+      _ <- bootstrapper.registerServicesStage2(almhirt, context, system)
+    } yield almhirt
 
   def runShutDownSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[Unit] =
     bootstrapper.beforeClosing().flatMap(_ =>
