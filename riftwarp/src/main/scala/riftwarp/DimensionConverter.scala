@@ -51,6 +51,49 @@ object DimensionConverterCordToString extends DimensionConverter[DimensionCord, 
     DimensionString(source.manifestation.toString).success
 }
 
+object DimensionConverterStringToXmlElem extends DimensionConverter[DimensionString, DimensionXmlElem] {
+  val tSource = classOf[DimensionString]
+  val tTarget = classOf[DimensionXmlElem]
+  def convert(source: DimensionString): AlmValidation[DimensionXmlElem] =
+    almhirt.xml.funs.xmlFromString(source.manifestation, "DimensionString").map(DimensionXmlElem(_))
+}
+
+object DimensionConverterCordToXmlElem extends DimensionConverter[DimensionCord, DimensionXmlElem] {
+  val tSource = classOf[DimensionCord]
+  val tTarget = classOf[DimensionXmlElem]
+  def convert(source: DimensionCord): AlmValidation[DimensionXmlElem] =
+    almhirt.xml.funs.xmlFromString(source.manifestation.toString, "DimensionString").map(DimensionXmlElem(_))
+}
+
+object DimensionConverterXmlElemToString extends DimensionConverter[DimensionXmlElem, DimensionString] {
+  val tSource = classOf[DimensionXmlElem]
+  val tTarget = classOf[DimensionString]
+  def convert(source: DimensionXmlElem): AlmValidation[DimensionString] =
+    DimensionString(source.manifestation.toString).success
+}
+
+object DimensionConverterXmlElemToCord extends DimensionConverter[DimensionXmlElem, DimensionCord] {
+  val tSource = classOf[DimensionXmlElem]
+  val tTarget = classOf[DimensionCord]
+  def convert(source: DimensionXmlElem): AlmValidation[DimensionCord] =
+    DimensionCord(source.manifestation.toString).success
+}
+
+object DimensionConverterXmlElemToNiceString extends DimensionConverter[DimensionXmlElem, DimensionNiceString] {
+  val tSource = classOf[DimensionXmlElem]
+  val tTarget = classOf[DimensionNiceString]
+  def convert(source: DimensionXmlElem): AlmValidation[DimensionNiceString] =
+    DimensionNiceString(source.manifestation.buildString(false)).success
+}
+
+object DimensionConverterXmlElemToNiceCord extends DimensionConverter[DimensionXmlElem, DimensionNiceCord] {
+  val tSource = classOf[DimensionXmlElem]
+  val tTarget = classOf[DimensionNiceCord]
+  def convert(source: DimensionXmlElem): AlmValidation[DimensionNiceCord] =
+    DimensionNiceCord(source.manifestation.buildString(false)).success
+}
+
+
 // These have to be added manually
 
 object DimensionStringToNiceString extends DimensionConverter[DimensionString, DimensionNiceString] {

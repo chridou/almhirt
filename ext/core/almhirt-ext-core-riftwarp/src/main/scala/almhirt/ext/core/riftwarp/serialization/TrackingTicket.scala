@@ -11,7 +11,7 @@ import almhirt.util.StringTrackingTicket
 
 class TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
   val typeDescriptor = TypeDescriptor(classOf[TrackingTicket], 1)
-  def decompose[TDimension <: RiftDimension](what: TrackingTicket)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TrackingTicket)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
       case StringTrackingTicket(ident) =>
         into

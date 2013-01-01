@@ -11,10 +11,10 @@ import riftwarp._
 import riftwarp.ma._
 
 class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializerWithBlobBlobFetch with RematerializerBasedOnOptionGetters {
- import RecomposerFuns._
+  import funs.hasRecomposers._
   protected def trySpawnNew(ident: String): AlmValidation[Option[Rematerializer]] =
     option.cata(theMap.get(ident))(
-      s => (s: @unchecked) match {
+      s => s match {
        case aMap: Map[_, _] =>
           Some(spawnNew(aMap.asInstanceOf[Map[String, Any]])).success
         case x =>

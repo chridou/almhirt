@@ -349,6 +349,17 @@ case class LocaleNotSupportedProblem(message: String, locale: String, severity: 
     builder.append("Unsupported locale:%s\n".format(locale))
     builder.result
   }
+  
+/** An element was not present in some kind of collection
+ */
+case class ElementNotFoundProblem(message: String, locale: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = ElementNotFoundProblem
+  def withMessage(newMessage: String) = copy(message = newMessage)
+  def withSeverity(severity: Severity) = copy(severity = severity)
+  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+  }
 }
   
 

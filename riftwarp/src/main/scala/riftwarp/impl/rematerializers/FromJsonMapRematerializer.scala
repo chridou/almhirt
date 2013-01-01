@@ -11,8 +11,8 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.ma._
 
-object FromJsonMapRematerializerFuns {
-  def getRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Any => AlmValidation[A]] = {
+private[rematerializers] object FromJsonMapRematerializerFuns {
+  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Any => AlmValidation[A]] = {
     if (mA.runtimeClass.isAssignableFrom(classOf[String]))
       Success(((x: Any) => almCast[String](x)).asInstanceOf[Any => AlmValidation[A]])
     else if (mA.runtimeClass.isAssignableFrom(classOf[Boolean]))
@@ -35,10 +35,12 @@ object FromJsonMapRematerializerFuns {
       Success(((x: Any) => almCast[String](x).flatMap(parseDateTimeAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
     else if (mA.runtimeClass.isAssignableFrom(classOf[_root_.java.util.UUID]))
       Success(((x: Any) => almCast[String](x).flatMap(parseUuidAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
+    else if (mA.runtimeClass.isAssignableFrom(classOf[_root_.java.net.URI]))
+      Success(((x: Any) => almCast[String](x).flatMap(parseUriAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
     else
       Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(mA.runtimeClass.getName())))
   }
-
+  
   def createTuple[A, B](rematA: Any => AlmValidation[A])(mapB: Any => AlmValidation[B])(kv: Map[String, Any])(implicit m: Manifest[A]): AlmValidation[(A, B)] = {
     (kv.get("k"), kv.get("v")) match {
       case (Some(k), Some(v)) => rematA(k).flatMap(k => mapB(v).map(v => (k, v)))
@@ -50,7 +52,7 @@ object FromJsonMapRematerializerFuns {
 
   def createTuples[A, B](mapB: Any => AlmValidation[B])(kvPairs: List[Any])(implicit m: Manifest[A]): AlmValidation[List[(A, B)]] =
     computeSafely {
-      getRematerializerFor[A]("key").flatMap(rematA =>
+      getPrimitiveRematerializerFor[A]("key").flatMap(rematA =>
         kvPairs.map(x => createTuple(rematA)(mapB)(x.asInstanceOf[Map[String, Any]]))
           .map(_.toAgg)
           .sequence[({ type l[a] = scalaz.Validation[AggregateProblem, a] })#l, (A, B)])
@@ -59,14 +61,14 @@ object FromJsonMapRematerializerFuns {
 
 class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializerWithBlobBlobFetch with RematerializerBasedOnOptionGetters {
   import FromJsonMapRematerializerFuns._
-  import RecomposerFuns._
+  import funs.hasRecomposers._
 
   private def get(key: String): Option[Any] =
     jsonMap.get(key).flatMap(v => if (v == null) None else Some(v))
 
   protected def trySpawnNew(ident: String): AlmValidation[Option[Rematerializer]] =
     option.cata(get(ident))(
-      s => (s: @unchecked) match {
+      s => s match {
         case aMap: Map[_, _] =>
           Some(spawnNew(aMap.asInstanceOf[Map[String, Any]])).success
         case x =>
@@ -131,7 +133,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
         boolean.fold(
           elem.isInstanceOf[List[_]],
           functionObjects.getConvertsMAToNA[List, M].flatMap(converterToN =>
-            getRematerializerFor[A](ident).flatMap(rmForA =>
+            getPrimitiveRematerializerFor[A](ident).flatMap(rmForA =>
               almCast[List[Any]](elem).flatMap(lx =>
                 computeSafely(lx.map(rmForA(_).toAgg).sequence).flatMap(la =>
                   converterToN.convert[A](la)).map(Some(_))))),
@@ -193,7 +195,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
       case (true, true) =>
         get(ident).map(any =>
           computeSafely {
-            getRematerializerFor[B](ident).flatMap(rematB =>
+            getPrimitiveRematerializerFor[B](ident).flatMap(rematB =>
               createTuples[A, B](rematB)(any.asInstanceOf[List[Any]]).map(tuples =>
                 tuples.toMap.asInstanceOf[Map[A, B]]))
           }).validationOut
@@ -256,7 +258,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).flatMap(TypeDescriptor.parse(_)).map(Some(_)), Success(None))
 
   private def mapToAny[A](ident: String)(what: Any)(implicit m: Manifest[A]): AlmValidation[A] =
-    getRematerializerFor[A](ident).fold(
+    getPrimitiveRematerializerFor[A](ident).fold(
       prob =>
         if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
           computeSafely {

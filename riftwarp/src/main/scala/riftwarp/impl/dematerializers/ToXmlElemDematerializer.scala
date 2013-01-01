@@ -75,7 +75,7 @@ object ToXmlElemDematerializerFuns {
   }
 
   def createKeyValuePair(kv: (Elem, Elem)): Elem = {
-    Elem(null, "KeyValue", Null, TopScope, true, kv._1, kv._2)
+    Elem(null, "KeyValue", Null, TopScope, true, <k>{kv._1}</k>, <v>{kv._2}</v>)
   }
 
   def foldKeyValuePairs(items: scala.collection.immutable.Iterable[(Elem, Elem)])(implicit functionObjects: HasFunctionObjects): AlmValidation[Elem] =
@@ -172,12 +172,12 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
 
   def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
     MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
-      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem]).flatMap(elem =>
+      MAFuncs.fold(this.channel)(complex)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem]).flatMap(elem =>
         addElem(wrapComplexElem(ident, elem))))
 
   def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
     MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
-      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem]).flatMap(elem =>
+      MAFuncs.fold(this.channel)(complex)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem]).flatMap(elem =>
         addElem(wrapComplexElem(ident, elem))))
 
   def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =

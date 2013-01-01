@@ -12,7 +12,7 @@ import almhirt.commanding.CommandEnvelope
 
 class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
   val typeDescriptor = TypeDescriptor(classOf[CommandEnvelope], 1)
-  def decompose[TDimension <: RiftDimension](what: CommandEnvelope)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: CommandEnvelope)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .flatMap(_.addComplexType("command", what.command))

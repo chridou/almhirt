@@ -3,8 +3,9 @@ package riftwarp
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.almvalidation.funs._
 
-object RecomposerFuns {
+trait HasRecomposersFuns {
   def getRawRecomposer(typeDescriptor: TypeDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[RawRecomposer] =
     option.cata(hasRecomposers.tryGetRawRecomposer(typeDescriptor))(
       recomposer => recomposer.success,
@@ -43,5 +44,8 @@ object RecomposerFuns {
 
   def recomposeWithLookedUpRawRecomposerFromRematerializer(remat: Rematerializer)(implicit hasRecomposers: HasRecomposers): AlmValidation[AnyRef] =
     lookUpFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat))
+
+  def recomposeWithLookUpFromRematerializer[T <: AnyRef](remat: Rematerializer)(implicit hasRecomposers: HasRecomposers): AlmValidation[T] =
+    lookUpFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat).flatMap(almCast[T](_)))
     
 }

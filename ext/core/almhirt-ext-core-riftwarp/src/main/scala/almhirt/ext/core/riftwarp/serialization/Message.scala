@@ -11,7 +11,7 @@ import almhirt.messaging.MessageGrouping
 
 class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
   val typeDescriptor = TypeDescriptor(classOf[MessageGrouping], 1)
-  def decompose[TDimension <: RiftDimension](what: MessageGrouping)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: MessageGrouping)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .flatMap(_.addUuid("groupId", what.groupId))
@@ -31,7 +31,7 @@ class MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
 
 class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
   val typeDescriptor = TypeDescriptor(classOf[MessageHeader], 1)
-  def decompose[TDimension <: RiftDimension](what: MessageHeader)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: MessageHeader)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .flatMap(_.addUuid("id", what.id))
@@ -54,7 +54,7 @@ class MessageHeaderRecomposer extends Recomposer[MessageHeader] {
 
 class MessageDecomposer extends Decomposer[Message[AnyRef]] {
   val typeDescriptor = TypeDescriptor(classOf[Message[AnyRef]], 1)
-  def decompose[TDimension <: RiftDimension](what: Message[AnyRef])(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: Message[AnyRef])(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .flatMap(_.addComplexType("header", what.header))

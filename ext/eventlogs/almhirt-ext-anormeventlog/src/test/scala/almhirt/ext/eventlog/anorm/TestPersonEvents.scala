@@ -18,7 +18,7 @@ case class TestPersonUnhandledEvent(id: UUID,aggId: UUID, aggVersion: Long, time
 
 class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonCreated])
-  def decompose[TDimension <: RiftDimension](what: TestPersonCreated)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestPersonCreated)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
@@ -40,7 +40,7 @@ class TestPersonCreatedRecomposer extends Recomposer[TestPersonCreated] {
 
 class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonNameChanged])
-  def decompose[TDimension <: RiftDimension](what: TestPersonNameChanged)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestPersonNameChanged)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
@@ -64,7 +64,7 @@ class TestPersonNameChangedRecomposer extends Recomposer[TestPersonNameChanged] 
 
 class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAquired] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonAddressAquired])
-  def decompose[TDimension <: RiftDimension](what: TestPersonAddressAquired)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestPersonAddressAquired)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
@@ -88,7 +88,7 @@ class TestPersonAddressAquiredRecomposer extends Recomposer[TestPersonAddressAqu
 
 class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonMoved])
-  def decompose[TDimension <: RiftDimension](what: TestPersonMoved)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestPersonMoved)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
@@ -112,7 +112,7 @@ class TestPersonMovedRecomposer extends Recomposer[TestPersonMoved] {
 
 class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledEvent] {
   val typeDescriptor = TypeDescriptor(classOf[TestPersonUnhandledEvent])
-  def decompose[TDimension <: RiftDimension](what: TestPersonUnhandledEvent)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestPersonUnhandledEvent)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addTypeDescriptor(typeDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))

@@ -11,7 +11,7 @@ import almhirt.commanding.AggregateRootRef
 
 class AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
   val typeDescriptor = TypeDescriptor(classOf[AggregateRootRef], 1)
-  def decompose[TDimension <: RiftDimension](what: AggregateRootRef)(implicit into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: AggregateRootRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addTypeDescriptor(this.typeDescriptor)
       .flatMap(_.addUuid("id", what.id))

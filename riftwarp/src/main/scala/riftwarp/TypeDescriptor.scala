@@ -3,7 +3,7 @@ package riftwarp
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
-import almhirt.almvalidation.funs
+import almhirt.almvalidation.funs._
 
 sealed class TypeDescriptor private (val identifier: String, val version: Option[Int]) extends Equals {
   private lazy val hash = {
@@ -52,7 +52,7 @@ object TypeDescriptor {
         TypeDescriptor(name, None).success
       case Array(name, version) =>
         val v = version.drop(1)
-        almhirt.almvalidation.funs.parseIntAlm(v, "version").map(v => TypeDescriptor(name, Some(v)))
+        parseIntAlm(v, "version").map(v => TypeDescriptor(name, Some(v)))
       case _ =>
         ParsingProblem("Not a valid type descriptor format. The provided delimeter for name and version was '%s'".format(versionDelim), Some(toParse)).failure
     }

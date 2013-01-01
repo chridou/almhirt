@@ -108,11 +108,18 @@ object RiftWarp {
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonMapRematerializer)
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonStringRematerializer)
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonCordRematerializer)
+    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromXmlElemRematerializer)
     
     riftWarp.converters.addConverter(DimensionNiceStringToString)
     riftWarp.converters.addConverter(DimensionNiceCordToCord)
     riftWarp.converters.addConverter(DimensionConverterStringToCord)
     riftWarp.converters.addConverter(DimensionConverterCordToString)
+    riftWarp.converters.addConverter(DimensionConverterStringToXmlElem)
+    riftWarp.converters.addConverter(DimensionConverterCordToXmlElem)
+    riftWarp.converters.addConverter(DimensionConverterXmlElemToString)
+    riftWarp.converters.addConverter(DimensionConverterXmlElemToCord)
+    riftWarp.converters.addConverter(DimensionConverterXmlElemToNiceString)
+    riftWarp.converters.addConverter(DimensionConverterXmlElemToNiceCord)
 
     import riftwarp.ma._
     riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.listFunctionObject)
