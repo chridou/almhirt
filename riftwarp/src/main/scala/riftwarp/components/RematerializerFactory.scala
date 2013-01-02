@@ -1,6 +1,7 @@
-package riftwarp
+package riftwarp.components
 
 import almhirt.common._
+import riftwarp._
 
 trait RematerializerFactory[TDimension <: RiftDimension] {
   /**

@@ -1,4 +1,6 @@
-package riftwarp
+package riftwarp.components
+
+import riftwarp._
 
 trait HasTypeDescriptor {
   def typeDescriptor: TypeDescriptor

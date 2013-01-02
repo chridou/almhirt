@@ -12,7 +12,7 @@ import almhirt.almvalidation.kit._
 import almhirt.common._
 import riftwarp._
 import riftwarp.ma._
-import riftwarp.TypeHelpers
+import riftwarp.components._
 
 object ToJsonCordDematerializerFuns {
   /*

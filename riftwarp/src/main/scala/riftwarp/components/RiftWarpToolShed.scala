@@ -1,10 +1,11 @@
-package riftwarp
+package riftwarp.components
 
 import language.higherKinds
 
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import ma._
+import riftwarp._
+import riftwarp.ma._
 
 trait RiftWarpToolShed extends HasDematerializers with HasRematerializerFactories with HasFunctionObjects {
   def tryGetRematerializer[TDimension <: RiftDimension](from: TDimension)(channel: RiftChannel)(implicit hasRecomposers: HasRecomposers, hasRematerializerFactories: HasRematerializerFactories, hasFunctionObjects: HasFunctionObjects, mD: Manifest[TDimension]): AlmValidation[Option[Rematerializer]] =
@@ -32,10 +33,12 @@ object RiftWarpToolShed {
     }
   }
 
+  import riftwarp.impl._
+  
   def unsafe(): RiftWarpToolShed = 
-    apply(new impl.UnsafeDematerializerRegistry, new impl.UnsafeRematerializerFactoryRegistry, impl.UnsafeFunctionObjectRegistry())
+    apply(new UnsafeDematerializerRegistry, new UnsafeRematerializerFactoryRegistry, UnsafeFunctionObjectRegistry())
   
   def concurrent(): RiftWarpToolShed = 
-    apply(new impl.ConcurrentDematerializerRegistry, new impl.ConcurrentRematerializerFactoryRegistry, impl.ConcurrentFunctionObjectRegistry())
+    apply(new ConcurrentDematerializerRegistry, new ConcurrentRematerializerFactoryRegistry, ConcurrentFunctionObjectRegistry())
   
 }

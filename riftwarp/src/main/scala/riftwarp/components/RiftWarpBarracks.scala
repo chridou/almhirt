@@ -1,4 +1,6 @@
-package riftwarp
+package riftwarp.components
+
+import riftwarp._
 
 trait RiftWarpBarracks extends HasRecomposers with HasDecomposers
 
@@ -20,7 +22,9 @@ object RiftWarpBarracks {
     }
   }
 
-  def unsafe(): RiftWarpBarracks = apply(new impl.UnsafeDecomposerRegistry(), new impl.UnsafeRecomposerRegistry())
-  def concurrent(): RiftWarpBarracks = apply(new impl.ConcurrentDecomposerRegistry(), new impl.ConcurrentRecomposerRegistry())
+  import riftwarp.impl._
+  
+  def unsafe(): RiftWarpBarracks = apply(new UnsafeDecomposerRegistry(), new UnsafeRecomposerRegistry())
+  def concurrent(): RiftWarpBarracks = apply(new ConcurrentDecomposerRegistry(), new ConcurrentRecomposerRegistry())
   
 }

@@ -2,6 +2,7 @@ package riftwarp
 
 import scalaz.syntax.validation._
 import almhirt.common._
+import riftwarp.components._
 
 sealed trait RiftBlob extends HasTypeDescriptor with CanDecomposeSelf
 

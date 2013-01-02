@@ -1,4 +1,6 @@
-package riftwarp
+package riftwarp.components
+
+import riftwarp._
 
 trait HasDematerializers {
   def addDematerializerFactory(factory: DematerializerFactory[_ <: RiftDimension], asChannelDefault: Boolean = false)

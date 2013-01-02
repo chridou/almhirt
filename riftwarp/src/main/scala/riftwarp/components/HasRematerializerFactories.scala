@@ -1,4 +1,6 @@
-package riftwarp
+package riftwarp.components
+
+import riftwarp._
 
 trait HasRematerializerFactories {
   def addRematerializerFactory(arrayFactory: RematerializerFactory[_ <: RiftDimension], isChannelDefault: Boolean = false): Unit

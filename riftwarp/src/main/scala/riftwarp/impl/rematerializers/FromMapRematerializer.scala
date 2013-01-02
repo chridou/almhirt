@@ -9,6 +9,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.ma._
+import riftwarp.components._
 
 class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers, functionObjects: HasFunctionObjects) extends RematerializerWithBlobBlobFetch with RematerializerBasedOnOptionGetters {
   import funs.hasRecomposers._

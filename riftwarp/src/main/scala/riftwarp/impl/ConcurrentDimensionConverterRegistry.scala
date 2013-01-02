@@ -4,6 +4,7 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
+import riftwarp.components._
 
 class ConcurrentDimensionConverterRegistry extends HasDimensionConverters {
   private val converters = new _root_.java.util.concurrent.ConcurrentHashMap[String, RawDimensionConverter](512)

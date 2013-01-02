@@ -2,6 +2,7 @@ package riftwarp.impl
 
 import _root_.java.util.concurrent.ConcurrentHashMap
 import riftwarp._
+import riftwarp.components._
 
 class ConcurrentRematerializerFactoryRegistry extends HasRematerializerFactories {
   import scala.collection.mutable._

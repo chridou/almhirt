@@ -4,6 +4,7 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
+import riftwarp.components._
 
 class ConcurrentDecomposerRegistry extends HasDecomposers {
   private val decomposers = new _root_.java.util.concurrent.ConcurrentHashMap[TypeDescriptor, (RawDecomposer, Boolean)](512)

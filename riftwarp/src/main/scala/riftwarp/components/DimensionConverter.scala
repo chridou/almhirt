@@ -1,7 +1,8 @@
-package riftwarp
+package riftwarp.components
 
 import scalaz.syntax.validation._
 import almhirt.common._
+import riftwarp._
 
 trait RawDimensionConverter {
   def tSource: Class[_ <: RiftDimension]

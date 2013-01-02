@@ -6,6 +6,9 @@ import scalaz._, Scalaz._
 import almhirt.common.AlmValidation
 import java.util.UUID
 import org.joda.time.DateTime
+import riftwarp.components._
+import riftwarp.components._
+import riftwarp.components._
 
 class TestObjectADecomposer extends Decomposer[TestObjectA] {
   val typeDescriptor = TypeDescriptor(classOf[TestObjectA])

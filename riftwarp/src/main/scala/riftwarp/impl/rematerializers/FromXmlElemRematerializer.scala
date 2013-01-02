@@ -9,6 +9,7 @@ import almhirt.syntax.xml._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.ma._
+import riftwarp.components._
 
 private[rematerializers] object FromXmlElemRematerializerFuns {
   def getPrimitiveRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Elem => AlmValidation[A]] = {

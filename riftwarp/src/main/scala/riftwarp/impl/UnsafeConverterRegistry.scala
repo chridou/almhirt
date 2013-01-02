@@ -4,6 +4,7 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
+import riftwarp.components._
 
 class UnsafeDimensionConverterRegistry extends HasDimensionConverters {
   private var converters = Map.empty[String, RawDimensionConverter]

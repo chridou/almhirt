@@ -2,6 +2,7 @@ package riftwarp.impl
 
 import _root_.java.util.concurrent.ConcurrentHashMap
 import riftwarp._
+import riftwarp.components._
 
 class ConcurrentDematerializerRegistry extends HasDematerializers {
   private val toolregistry = new ConcurrentHashMap[ToolGroup, ConcurrentHashMap[RiftChannel, ConcurrentHashMap[String, AnyRef]]](16)

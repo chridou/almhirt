@@ -1,9 +1,10 @@
-package riftwarp
+package riftwarp.components
 
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.funs._
+import riftwarp._
 
 trait HasRecomposersFuns {
   def getRawRecomposer(typeDescriptor: TypeDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[RawRecomposer] =

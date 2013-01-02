@@ -1,8 +1,9 @@
-package riftwarp
+package riftwarp.components
 
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import riftwarp._
 
 trait HasDimensionConverters {
   def addConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension](converter: DimensionConverter[DimSource, DimTarget])

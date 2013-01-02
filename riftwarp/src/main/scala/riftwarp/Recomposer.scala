@@ -1,6 +1,7 @@
 package riftwarp
 
 import almhirt.common._
+import riftwarp.components._
 
 trait RawRecomposer extends HasTypeDescriptor {
   def recomposeRaw(from: Rematerializer): AlmValidation[AnyRef]

@@ -23,6 +23,7 @@ package object riftwarp {
   implicit def arrayByte2DimensionBinary(array: Array[Byte]): DimensionBinary = DimensionBinary(array)
   
   object funs {
+    import riftwarp.components._
     object hasRecomposers extends HasRecomposersFuns 
   }
 }

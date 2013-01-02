@@ -5,6 +5,7 @@ import language.higherKinds
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import riftwarp._
 
 trait RawDematerializer {
   def channel: RiftChannel

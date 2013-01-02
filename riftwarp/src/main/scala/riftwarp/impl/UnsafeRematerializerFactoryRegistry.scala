@@ -1,6 +1,7 @@
 package riftwarp.impl
 
 import riftwarp._
+import riftwarp.components._
 
 class UnsafeRematerializerFactoryRegistry extends HasRematerializerFactories {
   import scala.collection.mutable._

@@ -6,6 +6,7 @@ import scalaz._, Scalaz._
 import almhirt.common.AlmValidation
 import java.util.UUID
 import org.joda.time.DateTime
+import riftwarp.components._
 
 case class PrimitiveTypes(
   str: String,

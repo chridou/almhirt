@@ -3,6 +3,7 @@ package riftwarp.impl
 import scalaz.std._
 import almhirt.common._
 import riftwarp._
+import riftwarp.components._
 
 class ConcurrentRecomposerRegistry extends HasRecomposers {
   private val recomposers = new _root_.java.util.concurrent.ConcurrentHashMap[TypeDescriptor, (RawRecomposer, Boolean)](512)

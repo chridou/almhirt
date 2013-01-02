@@ -3,6 +3,7 @@ package riftwarp.impl
 import scalaz.std._
 import almhirt.common._
 import riftwarp._
+import riftwarp.components._
 
 class UnsafeRecomposerRegistry extends HasRecomposers {
   private var recomposers = Map.empty[TypeDescriptor, (RawRecomposer, Boolean)]

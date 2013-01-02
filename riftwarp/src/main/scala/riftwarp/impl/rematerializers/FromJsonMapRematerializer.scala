@@ -10,6 +10,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.ma._
+import riftwarp.components._
 
 private[rematerializers] object FromJsonMapRematerializerFuns {
   def getPrimitiveRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Any => AlmValidation[A]] = {

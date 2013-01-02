@@ -4,6 +4,7 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import riftwarp.components._
 
 trait RiftWarp {
   def barracks: RiftWarpBarracks

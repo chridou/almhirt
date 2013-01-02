@@ -2,6 +2,7 @@ package riftwarp.impl.dematerializers
 
 import language.higherKinds
 
+import scala.xml.{ Node => XmlNode, Elem, Text, TopScope, Null, UnprefixedAttribute }
 import org.joda.time.DateTime
 import scalaz._, Scalaz._
 import scalaz.Cord
@@ -12,9 +13,8 @@ import almhirt.almvalidation.kit._
 import almhirt.common._
 import riftwarp._
 import riftwarp.ma._
-import riftwarp.TypeHelpers
-import scala.xml.{ Node => XmlNode, Elem, Text, TopScope, Null, UnprefixedAttribute }
 import riftwarp.DimensionXmlElem
+import riftwarp.components._
 
 object ToXmlElemDematerializerFuns {
   def primitiveMapperByType[A](implicit m: Manifest[A]): AlmValidation[A => Elem] = {

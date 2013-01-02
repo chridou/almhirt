@@ -1,8 +1,9 @@
-package riftwarp
+package riftwarp.components
 
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import riftwarp._
 
 trait HasRecomposers {
   def tryGetRawRecomposer(typeDescriptor: TypeDescriptor): Option[RawRecomposer]
