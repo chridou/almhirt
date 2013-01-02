@@ -2,31 +2,42 @@ package almhirt.domain.impl
 
 import scalaz._, Scalaz._
 import akka.actor._
+import akka.pattern._
+import akka.util.Timeout._
 import almhirt.core._
 import almhirt.common._
-import almhirt.syntax.almfuture._
+import almhirt.almfuture.all._
 import almhirt.domain._
-import almhirt.eventlog.DomainEventLog
+import almhirt.eventlog._
 import almhirt.util._
 import almhirt.common.AlmFuture
 import almhirt.environment.Almhirt
 
-abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirt: Almhirt) extends Actor {
+abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event], almhirt: Almhirt) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
   implicit private def timeout = almhirt.mediumDuration
   implicit private def futureContext = almhirt.executionContext
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] =
-    eventLog.getEvents(id)
-      .map(e => e.map(_.asInstanceOf[Event]).toList)
+    (eventLog ? GetEventsQry(id))(timeout)
+      .mapTo[EventsForAggregateRootRsp]
+      .map(x => x.chunk.events)
+      .map(e => e.map(events => events.map(_.asInstanceOf[Event]).toList))
       .mapV(events =>
         if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
         else arFactory.rebuildFromHistory(events))
 
   private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]) =
-    eventLog.getRequiredNextEventVersion(ar.id).flatMap(nextRequiredEventVersion =>
+    (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout)
+      .mapTo[RequiredNextEventVersionRsp]
+      .map(x => x.nextVersion)
+      .toAlmFuture
+      .flatMap(nextRequiredEventVersion =>
       validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture {
-        case (ar, events) => eventLog.storeEvents(uncommittedEvents)
+        case (ar, events) => 
+          (eventLog ? LogEventsQry(events, None))(timeout)
+          .mapTo[CommittedDomainEventsRsp]
+          .map(_.events)
       })
       .andThen(
         fail =>

@@ -60,6 +60,14 @@ object ConfigHelper {
   def getFactoryName(config: Config)(path: String): AlmValidation[String] =
     getSubConfig(config)(path).flatMap(getString(_)("factory"))
 
+  def getActorName(config: Config)(path: String): AlmValidation[String] =
+    getSubConfig(config)(path).flatMap(getString(_)("name"))
+
+  def getActorNameOrDefault(default: String)(config: Config)(path: String): String =
+    getActorName(config: Config)(path: String).getOrElse(default)
+
+  def getEventLogActorName(config: Config): String = ConfigHelper.getActorNameOrDefault("EventLog")(config)(ConfigPaths.eventlog)
+    
   def lookUpDispatcher(system: ActorSystem)(name: Option[String]): akka.dispatch.MessageDispatcher = {
     name match {
       case Some(n) => system.dispatchers.lookup(n)

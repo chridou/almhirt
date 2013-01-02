@@ -40,5 +40,5 @@ object AlmhirtBootstrapper {
       cleanUp7 <- bootstrapper.registerRepositories(almhirt)
       cleanUp8 <- bootstrapper.registerCommandHandlers(almhirt)
       cleanUp9 <- bootstrapper.registerServicesStage2(almhirt)
-    } yield (almhirt, new ShutDown{ def shutDown() { cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1() } })
+    } yield (almhirt, new ShutDown{ def shutDown() { cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1(); system.actorSystem.awaitTermination } })
 }

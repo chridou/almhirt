@@ -28,7 +28,7 @@ case class DomainEventsChunk(
   isLast: Boolean,
   events: AlmValidation[Iterable[DomainEvent]])
 
-trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almhirt.almakka.ActorBased with Closeable
+trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almhirt.almakka.ActorBased
 
 object DomainEventLog {
   import scalaz.syntax.validation._
@@ -39,11 +39,11 @@ object DomainEventLog {
   def apply()(implicit almhirt: Almhirt, system: AlmhirtSystem): AlmValidation[DomainEventLog] = unsafeInMemory()
 
   def unsafeInMemory()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = {
-    new InefficientSerializingInMemoryDomainEventLogFactory().createDomainEventLog(almhirt)
+    new InefficientSerializingInMemoryDomainEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_))
   }
 
   def devNull()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = {
-    new DevNullEventLogFactory().createDomainEventLog(almhirt)
+    new DevNullEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_))
   }
 
 }

@@ -26,13 +26,14 @@ object SystemHelper {
         }))
   }
 
-  def createEventLogFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[DomainEventLog] = {
+  def createEventLogFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     import language.reflectiveCalls
     ConfigHelper.getFactoryName(theAlmhirt.system.config)(ConfigPaths.eventlog).flatMap(factoryName =>
       inTryCatch(
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createDomainEventLog(x: Almhirt): AlmValidation[DomainEventLog] }]).flatMap(factory =>
+          .asInstanceOf[{ def createDomainEventLog(x: Almhirt): AlmValidation[ActorRef] }]).flatMap(factory =>
           factory.createDomainEventLog(theAlmhirt)))
   }
+  
 }

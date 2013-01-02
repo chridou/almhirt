@@ -15,6 +15,7 @@ import almhirt.commanding.CommandEnvelope
 import almhirt.environment.configuration.SystemHelper
 import com.typesafe.config.Config
 import almhirt.environment.configuration.CleanUpAction
+import almhirt.eventlog.impl.DomainEventLogActorHull
 
 class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper(config) {
   private var tracker: OperationStateTracker = null
@@ -23,7 +24,6 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
   private var cmdHandlerRegistry: HasCommandHandlers = null
   private var cmdExecutor: CommandExecutor = null
   private var cmdExecutorRegistration: RegistrationHolder = null
-  private var eventLog: DomainEventLog = null
 
   override def registerComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] = {
     almhirt.serviceRegistry match {
@@ -60,12 +60,11 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
                 .awaitResult)
               .forceResult
           sr.registerService[CommandExecutor](cmdExecutor)
-          eventLog = SystemHelper.createEventLogFromFactory.forceResult
-          sr.registerService[DomainEventLog](eventLog)
+          val eventLogActor = SystemHelper.createEventLogFromFactory.forceResult
+          sr.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor))
           (() => {
             cmdExecutorRegistration.dispose
             trackerRegistration.dispose; tracker.dispose
-            eventLog.close
           })
         }.flatMap(cleanUp => super.registerComponents(almhirt).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
       case None => scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))

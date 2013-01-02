@@ -128,4 +128,6 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
       val res = getNextRequiredVersion(aggId)
       sender ! RequiredNextEventVersionRsp(aggId, res)
   }
+  
+  
 }

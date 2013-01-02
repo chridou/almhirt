@@ -16,7 +16,7 @@ package almhirt.eventlog.impl
 
 import java.util.UUID
 import scalaz.syntax.validation._
-import akka.actor.{ ActorRefFactory, Actor, Props }
+import akka.actor.{ ActorRefFactory, Actor, ActorRef, Props }
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
@@ -31,11 +31,12 @@ import almhirt.eventlog._
 import almhirt.common.AlmFuture
 
 class DevNullEventLogFactory() extends DomainEventLogFactory {
-  def createDomainEventLog(almhirt: Almhirt): AlmValidation[DomainEventLog] = {
+  def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     val props =
-      SystemHelper.addDispatcherToProps(almhirt.system.config)(ConfigPaths.eventlog, Props(new DevNullEventLogActor()))
-    val actor = almhirt.system.actorSystem.actorOf(props, "domainEventLog")
-    new DomainEventLogActorHull(actor)(almhirt).success
+      SystemHelper.addDispatcherToProps(theAlmhirt.system.config)(ConfigPaths.eventlog, Props(new DevNullEventLogActor()))
+    val name = ConfigHelper.getEventLogActorName(theAlmhirt.system.config)
+    val actor = theAlmhirt.system.actorSystem.actorOf(props, name)
+    actor.success
   }
 }
 

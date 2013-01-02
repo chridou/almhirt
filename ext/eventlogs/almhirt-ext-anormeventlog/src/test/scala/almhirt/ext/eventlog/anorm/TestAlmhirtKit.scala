@@ -19,7 +19,7 @@ trait TestAlmhirtKit {
   def createTestAlmhirt(): (AlmhirtForTesting, ShutDown) = {
     implicit val (almhirt, shutDown) = testKit.createTestAlmhirt(ConfigFactory.load)
     implicit val system = almhirt.system
-    val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent](TestPerson, almhirt.eventLog)
+    val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent](TestPerson, almhirt.eventLog.actor)
     almhirt.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](personRepository)
     almhirt.hasCommandHandlers.addHandler(new NewTestPersonUnitOfWork)
     almhirt.hasCommandHandlers.addHandler(new ChangeTestPersonNameUnitOfWork)

@@ -29,7 +29,7 @@ object AggregateRootRepository {
     apply(actor)
   }
   
-  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit almhirt: Almhirt): AggregateRootRepository[AR, Event] = {
+  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit almhirt: Almhirt): AggregateRootRepository[AR, Event] = {
     val actor = almhirt.system.actorSystem.actorOf(Props(new BlockingAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, almhirt) {}))
     apply(actor)
   }

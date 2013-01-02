@@ -10,14 +10,13 @@ import almhirt.almfuture.all._
 import almhirt.environment._
 import almhirt.domain._
 import almhirt.eventlog._
+import almhirt.environment.configuration._
 
-class DomainEventLogActorHull(val actor: ActorRef, onClose: () => Unit, maximumDirectCallDuration: FiniteDuration)(implicit theAlmhirt: Almhirt) extends DomainEventLog {
+class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: FiniteDuration)(implicit theAlmhirt: Almhirt) extends DomainEventLog {
   private implicit def executionContext = theAlmhirt.executionContext
 
-  def this(actor: ActorRef, onClose: Option[() => Unit], maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, onClose.getOrElse(() => ()), maximumDirectCallDuration.getOrElse(FiniteDuration(5, "seconds")))
-  def this(actor: ActorRef, onClose: () => Unit, maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, Some(onClose), maximumDirectCallDuration)
-  def this(actor: ActorRef, onClose: Option[() => Unit])(implicit theAlmhirt: Almhirt) = this(actor, onClose, None)
-  def this(actor: ActorRef)(implicit theAlmhirt: Almhirt) = this(actor, None, None)
+  def this(actor: ActorRef, maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, maximumDirectCallDuration.getOrElse(FiniteDuration(5, "seconds")))
+  def this(actor: ActorRef)(implicit theAlmhirt: Almhirt) = this(actor, None)
   
   def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None))(maximumDirectCallDuration).mapTo[CommittedDomainEventsRsp].map(_.events)
   def purgeEvents(aggRootId: java.util.UUID) = AlmFuture.successful{ Nil }
@@ -27,5 +26,11 @@ class DomainEventLogActorHull(val actor: ActorRef, onClose: () => Unit, maximumD
   def getEvents(id: UUID, fromVersion: Long) = (actor ? GetEventsFromQry(id, fromVersion))(maximumDirectCallDuration).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
   def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = (actor ? GetEventsFromToQry(id, fromVersion, toVersion))(maximumDirectCallDuration).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
   def getRequiredNextEventVersion(id: UUID): AlmFuture[Long] = (actor ? GetRequiredNextEventVersionQry(id))(maximumDirectCallDuration).mapTo[RequiredNextEventVersionRsp].map(x => x.nextVersion)
-  def close() { onClose() }
+}
+
+object DomainEventLogActorHull {
+  def apply(actor: ActorRef)(implicit theAlmhirt: Almhirt): DomainEventLog = {
+    val maxCallDuration = ConfigHelper.tryGetDuration(theAlmhirt.system.config)(ConfigPaths.eventlog+".maximum_direct_call_duration")
+    new DomainEventLogActorHull(actor, maxCallDuration)
+  }
 }

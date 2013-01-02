@@ -8,7 +8,6 @@ import almhirt.common._
 import almhirt.environment._
 import almhirt.eventlog._
 import almhirt.environment.configuration._
-import almhirt.eventlog.impl.DomainEventLogActorHull
 import scala.io.Source
 import riftwarp.RiftWarp
 import com.typesafe.config._
@@ -29,11 +28,10 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
     }
   }
 
-  private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, riftWarp: RiftWarp, theAlmhirt: Almhirt): DomainEventLog = {
+  private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, riftWarp: RiftWarp, theAlmhirt: Almhirt): ActorRef = {
     val props =
       SystemHelper.addDispatcherToProps(theAlmhirt.system.config)(ConfigPaths.eventlog, Props(new SerializingAnormJsonEventLogActor(settings)(riftWarp, theAlmhirt)))
     val actor = theAlmhirt.system.actorSystem.actorOf(props, actorName)
-    val maxCallDuration = ConfigHelper.tryGetDuration(theAlmhirt.system.config)(ConfigPaths.eventlog+".maximum_direct_call_duration")
     if (dropOnClose) {
       def dropTable() = {
         DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
@@ -43,13 +41,12 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
         }
         ()
       }
-      new DomainEventLogActorHull(actor, Some(() => dropTable()), maxCallDuration)(theAlmhirt)
-    } else {
-      new DomainEventLogActorHull(actor, None, None)(theAlmhirt)
+      theAlmhirt.system.actorSystem.registerOnTermination(dropOnClose)
     }
+    actor
   }
 
-  def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[DomainEventLog] = {
+  def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     val createSchemaFun: (AnormSettings, DbTemplate) => AlmValidation[AnormSettings] =
       ConfigHelper
         .getBoolean(theAlmhirt.system.config)(ConfigPaths.eventlog + ".create_schema")
@@ -88,7 +85,7 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
 
     import collection.JavaConversions._
 
-    val actorName = ConfigHelper.tryGetString(theAlmhirt.system.config)(ConfigPaths.eventlog + ".actorname").getOrElse("domaineventlog")
+    val actorName = ConfigHelper.getEventLogActorName(theAlmhirt.system.config)
     ConfigHelper.getString(theAlmhirt.system.config)(ConfigPaths.eventlog + ".connection").flatMap(connection =>
       theAlmhirt.getService[RiftWarp].flatMap(riftWarp =>
       dbTemplate.flatMap(dbTemplate =>
