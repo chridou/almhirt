@@ -56,7 +56,6 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
       case Some(sr) =>
         for {
           messageHub <- sr.getService[MessageHub]
-          commandChannel <- sr.getService[CommandChannel]
         } yield (new Almhirt {
           val system = theSystem
           
@@ -65,8 +64,9 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
           def reportProblem(prob: Problem) { broadcast(prob) }
           def reportOperationState(opState: OperationState) { broadcast(opState) }
           def broadcastDomainEvent(event: DomainEvent) { broadcast(event) }
-          def postCommand(comEnvelope: CommandEnvelope) { commandChannel.post(createMessage(comEnvelope)) }
-          def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { messageHub.broadcast(createMessage(payload, metaData)) }
+          def broadcastCommand(comEnvelope: CommandEnvelope) { broadcast(comEnvelope) }
+          def postCommand(comEnvelope: CommandEnvelope){ messageHub.actor ! PostMessageCmd(createMessage(comEnvelope)) }
+          def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { messageHub.actor ! BroadcastMessageCmd(createMessage(payload, metaData)) }
 
           val serviceRegistry = theServiceRegistry
 

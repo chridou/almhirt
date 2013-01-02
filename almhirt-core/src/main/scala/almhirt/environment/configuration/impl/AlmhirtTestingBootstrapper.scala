@@ -25,11 +25,12 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
 
           def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]) = almhirt.createMessageChannel(name)
 
-          def executeCommand(cmdEnv: CommandEnvelope) { almhirt.postCommand(cmdEnv) }
+          def executeCommand(cmdEnv: CommandEnvelope) { broadcastCommand(cmdEnv) }
 
           def reportProblem(prob: Problem) { almhirt.reportProblem(prob) }
           def reportOperationState(opState: OperationState) { almhirt.reportOperationState(opState) }
           def broadcastDomainEvent(event: DomainEvent) { almhirt.broadcastDomainEvent(event) }
+          def broadcastCommand(comEnvelope: CommandEnvelope) { almhirt.broadcastCommand(comEnvelope) }
           def postCommand(comEnvelope: CommandEnvelope) { almhirt.postCommand(comEnvelope) }
           def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { almhirt.broadcast(payload, metaData) }
 
@@ -39,7 +40,7 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
           def longDuration = almhirt.longDuration
 
           def serviceRegistry = almhirt.serviceRegistry
-          
+
           def getDateTime = almhirt.getDateTime
           def getUuid = almhirt.getUuid
 

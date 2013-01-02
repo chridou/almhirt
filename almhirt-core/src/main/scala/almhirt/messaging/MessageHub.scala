@@ -31,7 +31,9 @@ import almhirt.environment.configuration.ConfigHelper
 import almhirt.almakka.ActorBased
 import almhirt.common.AlmFuture
 
-trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable
+trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable{
+   def post(message: Message[AnyRef]): Unit
+}
 
 object MessageHub {
   def apply(actor: ActorRef, futureExecutionContext: ExecutionContext): MessageHub = {
@@ -57,6 +59,7 @@ object MessageHub {
     }
 
     def broadcast(message: Message[AnyRef], topic: Option[String]) = actor ! BroadcastMessageCmd(message)
+    def post(message: Message[AnyRef]) = actor ! PostMessageCmd(message)
 
     def close() {}
   }

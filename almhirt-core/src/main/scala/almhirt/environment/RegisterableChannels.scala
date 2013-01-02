@@ -13,7 +13,7 @@ trait CommandChannel extends MessageChannel[CommandEnvelope]
 class CommandChannelWrapper(toWrap: MessageChannel[CommandEnvelope]) extends CommandChannel {
   def actor = toWrap.actor
   def <-* (handler: Message[CommandEnvelope] => Unit, classifier: Message[CommandEnvelope] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
-  def post[U <: CommandEnvelope](message: Message[U]) = toWrap.post(message)
+  def post[U <: CommandEnvelope](message: Message[U]) = { println("xxxxxxxxxxxxxxxxxxxxxxx\n"+message);toWrap.post(message) }
   def createSubChannel[U <: CommandEnvelope](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: Manifest[U]) =
     toWrap.createSubChannel[U](name, classifier)
   def close = toWrap.close

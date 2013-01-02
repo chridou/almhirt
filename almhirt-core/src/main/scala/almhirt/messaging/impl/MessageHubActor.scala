@@ -12,23 +12,13 @@ import almhirt.environment.configuration.ConfigHelper
 class MessageHubActor extends Actor {
   private var almhirtsystem: Option[AlmhirtSystem] = None
 
-  private var subscriptions = Vector.empty[(UUID, MessagingSubscription)]
   private var subChannels = Vector.empty[(UUID, ActorRef, Message[AnyRef] => Boolean)]
 
   def receive = {
     case PostMessageCmd(message) =>
-      subscriptions.filter(_._2.predicate(message)).foreach(_._2.handler(message))
       subChannels.filter(_._3(message)).foreach(_._2 ! PostMessageCmd(message))
     case BroadcastMessageCmd(message) =>
-      subscriptions.filter(_._2.predicate(message)).foreach(_._2.handler(message))
       subChannels.filter(_._3(message)).foreach(_._2 ! PostMessageCmd(message))
-    case SubscribeQry(subscription) =>
-      val registrationToken = UUID.randomUUID
-      val registration = new RegistrationUUID { val ticket = registrationToken; def dispose { self ! Unsubscribe(ticket) } }
-      subscriptions = subscriptions :+ (registrationToken, subscription)
-      sender ! SubscriptionRsp(registration.success)
-    case Unsubscribe(token) =>
-      subscriptions = subscriptions.filterNot(_._1 == token)
     case CreateSubChannelQry(name, predicate) =>
       val registrationToken = UUID.randomUUID
       val registration = new RegistrationUUID { val ticket = registrationToken; def dispose { self ! UnsubscribeSubChannel(ticket) } }
