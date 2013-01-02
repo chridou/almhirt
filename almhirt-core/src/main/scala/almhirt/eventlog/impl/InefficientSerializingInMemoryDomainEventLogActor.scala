@@ -28,25 +28,21 @@ import almhirt.domain.DomainEvent
 import almhirt.eventlog._
 
 class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventLogFactory {
-  def createDomainEventLog(almhirt: Almhirt, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
-    create(almhirt, system)
-  }
-
-  def create(baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[DomainEventLog] = {
+  def createDomainEventLog(almhirt: Almhirt): AlmValidation[DomainEventLog] = {
     val props =
-      SystemHelper.addDispatcherToProps(system.config)(ConfigPaths.eventlog, Props(new InefficientSerializingInMemoryDomainEventLogActor(baseOps, system)))
-    val actor = system.actorSystem.actorOf(props, "domainEventLog")
-    new DomainEventLogActorHull(actor)(system).success
+      SystemHelper.addDispatcherToProps(almhirt.system.config)(ConfigPaths.eventlog, Props(new InefficientSerializingInMemoryDomainEventLogActor(almhirt)))
+    val actor = almhirt.system.actorSystem.actorOf(props, "domainEventLog")
+    new DomainEventLogActorHull(actor)(almhirt).success
   }
 
 }
 
-class InefficientSerializingInMemoryDomainEventLogActor(baseOps: AlmhirtBaseOps, system: AlmhirtSystem) extends Actor {
+class InefficientSerializingInMemoryDomainEventLogActor(thAlmhirt: Almhirt) extends Actor {
   private var loggedEvents: List[DomainEvent] = Nil
   def receive: Receive = {
     case LogEventsQry(events, executionIdent) =>
       loggedEvents = loggedEvents ++ events
-      events.foreach(event => baseOps.broadcastDomainEvent(event))
+      events.foreach(event => thAlmhirt.broadcastDomainEvent(event))
       sender ! CommittedDomainEventsRsp(events.success, executionIdent)
     case GetAllEventsQry(chunkSize, execIdent) =>
       sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)

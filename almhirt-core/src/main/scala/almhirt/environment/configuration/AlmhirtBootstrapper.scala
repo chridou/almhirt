@@ -8,28 +8,28 @@ import almhirt.core._
 trait AlmhirtBootstrapper {
   def createAlmhirtSystem(): AlmValidation[(AlmhirtSystem, CleanUpAction)]
 
-  def createServiceRegistry(system: AlmhirtSystem): (Option[ServiceRegistry], CleanUpAction)
+  def createServiceRegistry(theSystem: AlmhirtSystem): (Option[ServiceRegistry], CleanUpAction)
 
-  def createChannels(theServiceRegistry: Option[ServiceRegistry])(implicit system: AlmhirtSystem): AlmValidation[CleanUpAction]
+  def createChannels(theServiceRegistry: Option[ServiceRegistry])(implicit theSystem: AlmhirtSystem): AlmValidation[CleanUpAction]
 
-  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry])(implicit system: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)]
+  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry])(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)]
 
-  def registerComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
+  def registerComponents(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerServicesStage1(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
+  def registerServicesStage1(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerRepositories(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
+  def registerRepositories(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerCommandHandlers(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
+  def registerCommandHandlers(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerServicesStage2(implicit almhirt: Almhirt): AlmValidation[CleanUpAction]
+  def registerServicesStage2(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
 }
 
 object AlmhirtBootstrapper {
   def createFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] =
     SystemHelper.createBootstrapperFromConfig(config)
 
-  def runStartupSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[(Almhirt, CleanUpAction)] =
+  def runStartupSequence(bootstrapper: AlmhirtBootstrapper): AlmValidation[(Almhirt, ShutDown)] =
     for {
       (system, cleanUp1) <- bootstrapper.createAlmhirtSystem()
       (serviceRegistry, cleanUp2) <- scalaz.Success(bootstrapper.createServiceRegistry(system))
@@ -40,5 +40,5 @@ object AlmhirtBootstrapper {
       cleanUp7 <- bootstrapper.registerRepositories(almhirt)
       cleanUp8 <- bootstrapper.registerCommandHandlers(almhirt)
       cleanUp9 <- bootstrapper.registerServicesStage2(almhirt)
-    } yield (almhirt, () => { cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1() })
+    } yield (almhirt, new ShutDown{ def shutDown() { cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1() } })
 }

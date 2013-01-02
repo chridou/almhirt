@@ -43,7 +43,7 @@ trait RiftWarp {
   def lookUpRematerializerFactoryAndConverters[DimSource <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mS: Manifest[DimSource]): AlmValidation[(RematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
     def findRematerializerFactory(converters: List[RawDimensionConverter]): AlmValidation[(RematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
       converters match {
-        case Nil => UnspecifiedProblem("No RematerializerFactory or converter found").failure
+        case Nil => UnspecifiedProblem("No RematerializerFactory or converter found for channel '%s' from source '%s'".format(channel, mS.runtimeClass.getName)).failure
         case x :: xs =>
           option.cata(toolShed.tryGetRematerializerFactoryByType(x.tTarget)(channel, toolGroup))(
             factory => (factory, x).success,

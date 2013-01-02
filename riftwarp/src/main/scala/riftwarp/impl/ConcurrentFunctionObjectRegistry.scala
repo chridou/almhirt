@@ -12,7 +12,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
   val mAToNAConverters = new _root_.java.util.concurrent.ConcurrentHashMap[String, AnyRef]()
 
   def addMAFunctions[M[_]](fo: RegisterableMAFunctions[M]) {
-    if (!functionObjects.contains(fo.tM.getName()))
+    if (!functionObjects.containsKey(fo.tM.getName()))
       functionObjects.put(fo.tM.getName(), fo)
   }
 
@@ -24,7 +24,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
 
   def addChannelFolder[A, B](folder: RegisterableChannelFolder[A, B]) {
     val ident = "%s_%s_%s".format(folder.channel.channelType, folder.tA.getName(), folder.tB.getName())
-    if (!channelFolders.contains(ident))
+    if (!channelFolders.containsKey(ident))
       channelFolders.put(ident, folder)
   }
 
@@ -38,7 +38,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
 
   def addConvertsMAToNA[M[_], N[_]](converter: RegisterableConvertsMAToNA[M, N]) {
     val ident = "%s_%s".format(converter.tM.getName(), converter.tN.getName())
-    if (!mAToNAConverters.contains(ident))
+    if (!mAToNAConverters.containsKey(ident))
       mAToNAConverters.put(ident, converter)
   }
 

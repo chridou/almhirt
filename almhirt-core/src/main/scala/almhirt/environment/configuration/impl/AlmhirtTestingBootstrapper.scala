@@ -1,7 +1,6 @@
 package almhirt.environment.configuration.impl
 
 import scala.concurrent.duration.FiniteDuration
-import com.typesafe.config.Config
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import almhirt.common._
@@ -13,43 +12,42 @@ import almhirt.parts.HasRepositories
 import almhirt.parts.HasCommandHandlers
 import almhirt.eventlog.DomainEventLog
 import almhirt.util.OperationStateTracker
+import almhirt.core.ServiceRegistry
+import almhirt.environment.configuration.CleanUpAction
+import com.typesafe.config.Config
 
 class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrapper(config) {
+  override def createAlmhirt(theServiceRegistry: Option[ServiceRegistry])(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
+    super.createAlmhirt(theServiceRegistry).map {
+      case (almhirt, cleanUp) =>
+        (new AlmhirtForTesting {
+          def system = theSystem
 
-  override def createAlmhirt(aContext: AlmhirtContext, aSystem: AlmhirtSystem): AlmValidation[Almhirt] = {
-    super.createAlmhirt(aContext, aSystem).map(almhirt =>
-      new AlmhirtForTesting {
-        def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]) = almhirt.createMessageChannel(name)
+          def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]) = almhirt.createMessageChannel(name)
 
-        def executeCommand(cmdEnv: CommandEnvelope) { almhirt.postCommand(cmdEnv) }
+          def executeCommand(cmdEnv: CommandEnvelope) { almhirt.postCommand(cmdEnv) }
 
-        def reportProblem(prob: Problem) { almhirt.reportProblem(prob) }
-        def reportOperationState(opState: OperationState) { almhirt.reportOperationState(opState) }
-        def broadcastDomainEvent(event: DomainEvent) { almhirt.broadcastDomainEvent(event) }
-        def postCommand(comEnvelope: CommandEnvelope) { almhirt.postCommand(comEnvelope) }
-        def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { almhirt.broadcast(payload, metaData) }
-        def createMessage[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) = almhirt.createMessage(payload, metaData)
+          def reportProblem(prob: Problem) { almhirt.reportProblem(prob) }
+          def reportOperationState(opState: OperationState) { almhirt.reportOperationState(opState) }
+          def broadcastDomainEvent(event: DomainEvent) { almhirt.broadcastDomainEvent(event) }
+          def postCommand(comEnvelope: CommandEnvelope) { almhirt.postCommand(comEnvelope) }
+          def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { almhirt.broadcast(payload, metaData) }
 
-        def registerServiceByType(clazz: Class[_ <: AnyRef], service: AnyRef) { almhirt.registerServiceByType(clazz, service) }
-        def getServiceByType(clazz: Class[_ <: AnyRef]) = almhirt.getServiceByType(clazz)
+          def executionContext = almhirt.executionContext
+          def shortDuration = almhirt.shortDuration
+          def mediumDuration = almhirt.mediumDuration
+          def longDuration = almhirt.longDuration
 
-        def executionContext = aSystem.executionContext
-        def shortDuration = aSystem.shortDuration
-        def mediumDuration = aSystem.mediumDuration
-        def longDuration = aSystem.longDuration
+          def serviceRegistry = almhirt.serviceRegistry
+          
+          def getDateTime = almhirt.getDateTime
+          def getUuid = almhirt.getUuid
 
-        def getDateTime = aSystem.getDateTime
-        def getUuid = aSystem.getUuid
-
-        def close() { AlmhirtBootstrapper.runShutDownSequence(AlmhirtTestingBootstrapper.this) }
-
-        def system = aSystem
-        def context = aContext
-        def repositories = almhirt.getService[HasRepositories].forceResult
-        def hasCommandHandlers = almhirt.getService[HasCommandHandlers].forceResult
-        def eventLog = almhirt.getService[DomainEventLog].forceResult
-        def operationStateTracker = almhirt.getService[OperationStateTracker].forceResult
-      })
+          def repositories = almhirt.getService[HasRepositories].forceResult
+          def hasCommandHandlers = almhirt.getService[HasCommandHandlers].forceResult
+          def eventLog = almhirt.getService[DomainEventLog].forceResult
+          def operationStateTracker = almhirt.getService[OperationStateTracker].forceResult
+        }, cleanUp)
+    }
   }
-
 }

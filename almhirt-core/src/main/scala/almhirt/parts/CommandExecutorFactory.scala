@@ -4,5 +4,5 @@ import almhirt.common._
 import almhirt.environment._
 
 trait CommandExecutorFactory {
-  def createCommandExecutor(ctx: AlmhirtContext): AlmValidation[CommandExecutor]
+  def createCommandExecutor(almhirt: Almhirt): AlmValidation[CommandExecutor]
 }

@@ -25,41 +25,50 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
   private var cmdExecutorRegistration: RegistrationHolder = null
   private var eventLog: DomainEventLog = null
 
-  override def registerComponents(almhirt: Almhirt): AlmValidation[CleanUpAction] = {
-    import akka.pattern._
-    implicit val atMost = FiniteDuration(5, "s")
-    implicit val executionContext = almhirt.executionContext
+  override def registerComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] = {
+    almhirt.serviceRegistry match {
+      case Some(sr) =>
+        import akka.pattern._
+        implicit val atMost = FiniteDuration(5, "s")
+        implicit val executionContext = almhirt.executionContext
 
-    inTryCatch {
-      tracker = OperationStateTracker()(almhirt, system).forceResult
-      trackerRegistration =
-        (context.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker.actor)))(atMost)
-          .mapTo[SubscriptionRsp]
-          .map(_.registration)
-          .toAlmFuture
-          .awaitResult
-          .forceResult
-      almhirt.registerService[OperationStateTracker](tracker)
+        inTryCatch {
+          tracker = OperationStateTracker().forceResult
+          trackerRegistration =
+            almhirt.getService[OperationStateChannel].flatMap(channel =>
+              (channel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker.actor)))(atMost)
+                .mapTo[SubscriptionRsp]
+                .map(_.registration)
+                .toAlmFuture
+                .awaitResult)
+              .forceResult
+          sr.registerService[OperationStateTracker](tracker)
 
-      repos = HasRepositories().forceResult
-      almhirt.registerService[HasRepositories](repos)
+          repos = HasRepositories().forceResult
+          sr.registerService[HasRepositories](repos)
 
-      cmdHandlerRegistry = HasCommandHandlers()
-      almhirt.registerService[HasCommandHandlers](cmdHandlerRegistry)
+          cmdHandlerRegistry = HasCommandHandlers()
+          sr.registerService[HasCommandHandlers](cmdHandlerRegistry)
 
-      cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos)(context, system).forceResult
-      cmdExecutorRegistration = (context.commandChannel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
-        .mapTo[SubscriptionRsp]
-        .map(_.registration)
-        .toAlmFuture
-        .awaitResult
-        .forceResult
-      almhirt.registerService[CommandExecutor](cmdExecutor)
-      eventLog = SystemHelper.createEventLogFromFactory(almhirt, system).forceResult
-      almhirt.registerService[DomainEventLog](eventLog)
-      ().success
-    }.flatMap(_ => super.registerComponents(almhirt, context, system))
+          cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos).forceResult
+          cmdExecutorRegistration =
+            almhirt.getService[CommandChannel].flatMap(channel =>
+              (channel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
+                .mapTo[SubscriptionRsp]
+                .map(_.registration)
+                .toAlmFuture
+                .awaitResult)
+              .forceResult
+          sr.registerService[CommandExecutor](cmdExecutor)
+          eventLog = SystemHelper.createEventLogFromFactory.forceResult
+          sr.registerService[DomainEventLog](eventLog)
+          (() => {
+            cmdExecutorRegistration.dispose
+            trackerRegistration.dispose; tracker.dispose
+            eventLog.close
+          })
+        }.flatMap(cleanUp => super.registerComponents(almhirt).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
+      case None => scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))
+    }
   }
-
-
 }

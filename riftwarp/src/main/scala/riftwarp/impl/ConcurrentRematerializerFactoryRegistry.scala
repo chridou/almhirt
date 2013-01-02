@@ -12,18 +12,18 @@ class ConcurrentRematerializerFactoryRegistry extends HasRematerializerFactories
     synchronized {
       val dimensionIdent = factory.tDimension.getName()
 
-      if (!toolregistry.contains(factory.toolGroup))
+      if (!toolregistry.containsKey(factory.toolGroup))
         toolregistry.put(factory.toolGroup, new ConcurrentHashMap[RiftChannel, ConcurrentHashMap[String, AnyRef]](16))
       val tooltypeentry = toolregistry.get(factory.toolGroup)
-      if (!tooltypeentry.contains(factory.channel))
+      if (!tooltypeentry.containsKey(factory.channel))
         tooltypeentry.put(factory.channel, new ConcurrentHashMap[String, AnyRef](16))
       val channelEntry = tooltypeentry.get(factory.channel)
       channelEntry.put(dimensionIdent, factory.asInstanceOf[AnyRef])
 
-      if (!channelregistry.contains(factory.channel))
+      if (!channelregistry.containsKey(factory.channel))
         channelregistry.put(factory.channel, new ConcurrentHashMap[String, AnyRef](32))
       val channeltypeentry = channelregistry.get(factory.channel)
-      if (asChannelDefault || !channeltypeentry.contains(dimensionIdent))
+      if (asChannelDefault || !channeltypeentry.containsKey(dimensionIdent))
         channeltypeentry.put(dimensionIdent, factory)
     }
   }

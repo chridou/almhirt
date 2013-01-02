@@ -5,25 +5,31 @@ import almhirt.environment.configuration.impl.AlmhirtTestingBootstrapper
 import almhirt.environment._
 import almhirt.common._
 import riftwarp.RiftWarp
+import almhirt.environment.configuration.CleanUpAction
 
 class AnormTestBootstrapper(config: Config) extends AlmhirtTestingBootstrapper(config) {
-  override def registerComponents(almhirt: Almhirt, context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[Unit] = {
-    val riftwarp = RiftWarp.concurrentWithDefaults
-    val barracks = riftwarp.barracks
-    
-    barracks.addDecomposer(new TestPersonCreatedDecomposer)
-    barracks.addDecomposer(new TestPersonNameChangedDecomposer)
-    barracks.addDecomposer(new TestPersonAddressAquiredDecomposer)
-    barracks.addDecomposer(new TestPersonMovedDecomposer)
-    barracks.addDecomposer(new TestPersonUnhandledEventDecomposer)
+  override def registerComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] = {
+    almhirt.serviceRegistry match {
+      case Some(sr) =>
+        val riftwarp = RiftWarp.concurrentWithDefaults
+        val barracks = riftwarp.barracks
 
-    barracks.addRecomposer(new TestPersonCreatedRecomposer)
-    barracks.addRecomposer(new TestPersonNameChangedRecomposer)
-    barracks.addRecomposer(new TestPersonAddressAquiredRecomposer)
-    barracks.addRecomposer(new TestPersonMovedRecomposer)
-    barracks.addRecomposer(new TestPersonUnhandledEventRecomposer)
+        barracks.addDecomposer(new TestPersonCreatedDecomposer)
+        barracks.addDecomposer(new TestPersonNameChangedDecomposer)
+        barracks.addDecomposer(new TestPersonAddressAquiredDecomposer)
+        barracks.addDecomposer(new TestPersonMovedDecomposer)
+        barracks.addDecomposer(new TestPersonUnhandledEventDecomposer)
 
-    almhirt.registerService[RiftWarp](riftwarp)
-    super.registerComponents(almhirt, context, system)
+        barracks.addRecomposer(new TestPersonCreatedRecomposer)
+        barracks.addRecomposer(new TestPersonNameChangedRecomposer)
+        barracks.addRecomposer(new TestPersonAddressAquiredRecomposer)
+        barracks.addRecomposer(new TestPersonMovedRecomposer)
+        barracks.addRecomposer(new TestPersonUnhandledEventRecomposer)
+
+        sr.registerService[RiftWarp](riftwarp)
+        super.registerComponents(almhirt)
+      case None =>
+        scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))
+    }
   }
 }

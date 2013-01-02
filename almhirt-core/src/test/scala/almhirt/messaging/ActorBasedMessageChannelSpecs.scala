@@ -1,7 +1,6 @@
 package almhirt.messaging
 
 import scala.concurrent.duration._
-import almhirt.environment.AlmhirtContextTestKit
 import almhirt.syntax.almvalidation._
 import almhirt.environment.AlmhirtsystemTestkit
 import almhirt.environment.AlmhirtSystem

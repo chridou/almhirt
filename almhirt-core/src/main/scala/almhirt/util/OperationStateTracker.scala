@@ -31,8 +31,8 @@ trait OperationStateTracker extends Disposable with ActorBased {
 
 object OperationStateTracker {
   import akka.actor._
-  def apply()(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[OperationStateTracker] = {
-    val actor = system.actorSystem.actorOf(Props(new impl.OperationStateTrackerWithoutTimeoutActor), "operationStateTracker")
+  def apply()(implicit almhirt: Almhirt): AlmValidation[OperationStateTracker] = {
+    val actor = almhirt.system.actorSystem.actorOf(Props(new impl.OperationStateTrackerWithoutTimeoutActor), "operationStateTracker")
     new impl.OperationStateTrackerActorHull(actor).success
   }
 }

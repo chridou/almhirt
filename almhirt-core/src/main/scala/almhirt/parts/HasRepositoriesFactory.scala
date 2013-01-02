@@ -4,5 +4,5 @@ import almhirt.common._
 import almhirt.environment._
 
 trait RepositoryRegistryFactory {
-  def createRepositoryRegistry(ctx: AlmhirtContext): AlmValidation[HasRepositories]
+  def createRepositoryRegistry(almhirt: Almhirt): AlmValidation[HasRepositories]
 }

@@ -16,8 +16,8 @@ import almhirt.parts.HasRepositories
 trait TestAlmhirtKit {
   val testKit = new AlmhirtTestKit {}
 
-  def createTestAlmhirt(): AlmhirtForTesting = {
-    implicit val almhirt = testKit.createTestAlmhirt(ConfigFactory.load)
+  def createTestAlmhirt(): (AlmhirtForTesting, ShutDown) = {
+    implicit val (almhirt, shutDown) = testKit.createTestAlmhirt(ConfigFactory.load)
     implicit val system = almhirt.system
     val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent](TestPerson, almhirt.eventLog)
     almhirt.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](personRepository)
@@ -26,16 +26,16 @@ trait TestAlmhirtKit {
     almhirt.hasCommandHandlers.addHandler(new SetTestPersonAdressUnitOfWork)
     almhirt.hasCommandHandlers.addHandler(new MoveTestPersonNameUnitOfWork)
     almhirt.hasCommandHandlers.addHandler(new MoveBecauseOfMarriageUnitOfWork)
-
-    almhirt
+    
+    (almhirt, shutDown)
   }
 
   def inTestAlmhirt[T](compute: AlmhirtForTesting => T) = {
-    val almhirt = createTestAlmhirt()
+    val (almhirt, shutDown) = createTestAlmhirt()
     try {
       compute(almhirt)
     } finally {
-      almhirt.close
+      shutDown.shutDown
     }
   }
 }

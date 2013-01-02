@@ -37,7 +37,7 @@ class JustFireCommandExecutorActor(handlers: HasCommandHandlers, repositories: H
   }
 }
 
-class CommandExecutorActorHull(val actor: ActorRef, context: AlmhirtContext) extends CommandExecutor {
-  private implicit val executionContext = context.executionContext
+class CommandExecutorActorHull(val actor: ActorRef)(implicit almhirt: Almhirt) extends CommandExecutor {
+  private implicit val executionContext = almhirt.executionContext
   def executeCommand(commandEnvelope: CommandEnvelope) { actor ! commandEnvelope }
 }

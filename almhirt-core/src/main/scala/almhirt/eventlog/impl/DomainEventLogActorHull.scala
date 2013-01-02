@@ -11,13 +11,13 @@ import almhirt.environment._
 import almhirt.domain._
 import almhirt.eventlog._
 
-class DomainEventLogActorHull(val actor: ActorRef, onClose: () => Unit, maximumDirectCallDuration: FiniteDuration)(implicit system: AlmhirtSystem) extends DomainEventLog {
-  private implicit def executionContext = system.executionContext
+class DomainEventLogActorHull(val actor: ActorRef, onClose: () => Unit, maximumDirectCallDuration: FiniteDuration)(implicit theAlmhirt: Almhirt) extends DomainEventLog {
+  private implicit def executionContext = theAlmhirt.executionContext
 
-  def this(actor: ActorRef, onClose: Option[() => Unit], maximumDirectCallDuration: Option[FiniteDuration])(implicit system: AlmhirtSystem) = this(actor, onClose.getOrElse(() => ()), maximumDirectCallDuration.getOrElse(FiniteDuration(5, "seconds")))
-  def this(actor: ActorRef, onClose: () => Unit, maximumDirectCallDuration: Option[FiniteDuration])(implicit system: AlmhirtSystem) = this(actor, Some(onClose), maximumDirectCallDuration)
-  def this(actor: ActorRef, onClose: Option[() => Unit])(implicit system: AlmhirtSystem) = this(actor, onClose, None)
-  def this(actor: ActorRef)(implicit system: AlmhirtSystem) = this(actor, None, None)
+  def this(actor: ActorRef, onClose: Option[() => Unit], maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, onClose.getOrElse(() => ()), maximumDirectCallDuration.getOrElse(FiniteDuration(5, "seconds")))
+  def this(actor: ActorRef, onClose: () => Unit, maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, Some(onClose), maximumDirectCallDuration)
+  def this(actor: ActorRef, onClose: Option[() => Unit])(implicit theAlmhirt: Almhirt) = this(actor, onClose, None)
+  def this(actor: ActorRef)(implicit theAlmhirt: Almhirt) = this(actor, None, None)
   
   def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None))(maximumDirectCallDuration).mapTo[CommittedDomainEventsRsp].map(_.events)
   def purgeEvents(aggRootId: java.util.UUID) = AlmFuture.successful{ Nil }

@@ -7,15 +7,14 @@ import almhirt.common._
 import almhirt.syntax.almfuture._
 import almhirt.domain._
 import almhirt.eventlog.DomainEventLog
-import almhirt.environment.AlmhirtContext
 import almhirt.util._
 import almhirt.common.AlmFuture
-import almhirt.environment.AlmhirtBaseOps
+import almhirt.environment.Almhirt
 
-abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], baseOps: AlmhirtBaseOps) extends Actor {
+abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirt: Almhirt) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
-  implicit private def timeout = baseOps.mediumDuration
-  implicit private def futureContext = baseOps.executionContext
+  implicit private def timeout = almhirt.mediumDuration
+  implicit private def futureContext = almhirt.executionContext
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] =
     eventLog.getEvents(id)
@@ -31,16 +30,16 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
       })
       .andThen(
         fail =>
-          updateFailedOperationState(baseOps, fail, ticket),
+          updateFailedOperationState(almhirt, fail, ticket),
         succ => {
-          ticket.foreach(t => baseOps.reportOperationState(Executed(t)))
-          succ.foreach(event => baseOps.broadcastDomainEvent(event))
+          ticket.foreach(t => almhirt.reportOperationState(Executed(t)))
+          succ.foreach(event => almhirt.broadcastDomainEvent(event))
         }).awaitResult
 
-  private def updateFailedOperationState(baseOps: AlmhirtBaseOps, p: Problem, ticket: Option[TrackingTicket]) {
-    baseOps.reportProblem(p)
+  private def updateFailedOperationState(almhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
+    almhirt.reportProblem(p)
     ticket match {
-      case Some(t) => baseOps.reportOperationState(NotExecuted(t, p))
+      case Some(t) => almhirt.reportOperationState(NotExecuted(t, p))
       case None => ()
     }
   }

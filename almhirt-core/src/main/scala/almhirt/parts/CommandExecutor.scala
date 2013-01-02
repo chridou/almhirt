@@ -9,9 +9,9 @@ trait CommandExecutor extends ExecutesCommands with almhirt.almakka.ActorBased
 object CommandExecutor {
   import scalaz.syntax.validation._
   import akka.actor._
-  def apply(hasCommandHandlers: HasCommandHandlers, repositories: HasRepositories)(implicit context: AlmhirtContext, system: AlmhirtSystem): AlmValidation[CommandExecutor] = {
-    val actor = system.actorSystem.actorOf(Props(new impl.JustFireCommandExecutorActor(hasCommandHandlers, repositories)), "CommandExecutor")
-    new impl.CommandExecutorActorHull(actor, context).success
+  def apply(hasCommandHandlers: HasCommandHandlers, repositories: HasRepositories)(implicit almhirt: Almhirt): AlmValidation[CommandExecutor] = {
+    val actor = almhirt.system.actorSystem.actorOf(Props(new impl.JustFireCommandExecutorActor(hasCommandHandlers, repositories)), "CommandExecutor")
+    new impl.CommandExecutorActorHull(actor).success
   }
 }
 

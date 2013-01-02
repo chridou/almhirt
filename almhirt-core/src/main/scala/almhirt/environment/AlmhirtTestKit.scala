@@ -30,17 +30,17 @@ trait AlmhirtTestKit {
     """
   val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 
-  def createTestAlmhirt(): AlmhirtForTesting = createTestAlmhirt(defaultConf)
-  def createTestAlmhirt(aConf: Config): AlmhirtForTesting = {
+  def createTestAlmhirt(): (AlmhirtForTesting, ShutDown) = createTestAlmhirt(defaultConf)
+  def createTestAlmhirt(aConf: Config): (AlmhirtForTesting, ShutDown) = {
     AlmhirtBootstrapper.createFromConfig(aConf).flatMap(bootstrapper =>
-      AlmhirtBootstrapper.runStartupSequence(bootstrapper)).forceResult.asInstanceOf[AlmhirtForTesting]
+      AlmhirtBootstrapper.runStartupSequence(bootstrapper)).map{case (almhirt, shutDown) => (almhirt.asInstanceOf[AlmhirtForTesting], shutDown)}.forceResult
   }
 
   def inTestAlmhirt[T](compute: AlmhirtForTesting => T): T = inTestAlmhirt(compute, defaultConf)
   def inTestAlmhirt[T](compute: AlmhirtForTesting => T, aConf: Config): T = {
-    val almhirt = createTestAlmhirt(aConf)
+    val (almhirt, shutDown) = createTestAlmhirt(aConf)
     val res = compute(almhirt)
-    almhirt.close
+    shutDown.shutDown
     res
   }
 }

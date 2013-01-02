@@ -12,7 +12,6 @@ import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.environment.AlmhirtContext
 import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._

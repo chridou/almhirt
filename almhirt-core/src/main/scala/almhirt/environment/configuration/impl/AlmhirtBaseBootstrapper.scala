@@ -51,13 +51,15 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
     }
   }
 
-  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry])(implicit system: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
+  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry])(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
     theServiceRegistry match {
       case Some(sr) =>
         for {
           messageHub <- sr.getService[MessageHub]
           commandChannel <- sr.getService[CommandChannel]
         } yield (new Almhirt {
+          val system = theSystem
+          
           def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]) = messageHub.createMessageChannel(name)
 
           def reportProblem(prob: Problem) { broadcast(prob) }

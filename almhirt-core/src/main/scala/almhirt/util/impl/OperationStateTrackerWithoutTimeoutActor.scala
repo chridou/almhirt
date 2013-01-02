@@ -15,7 +15,7 @@ import almhirt.environment._
 import almhirt.commanding.DomainCommand
 import almhirt.almakka.AlmActorLogging
 
-class OperationStateTrackerWithoutTimeoutActor(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem) extends Actor with AlmActorLogging {
+class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with AlmActorLogging {
   val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
   val collectedResults = collection.mutable.HashMap.empty[TrackingTicket, ResultOperationState]
   val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[AlmValidation[ResultOperationState] => Unit]]

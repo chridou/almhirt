@@ -13,10 +13,10 @@ import almhirt.almfuture.all._
 import almhirt.util._
 import almhirt.common.AlmFuture
 
-class OperationStateTrackerActorHull(val actor: ActorRef)(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem) extends OperationStateTracker {
+class OperationStateTrackerActorHull(val actor: ActorRef)(implicit almhirt: Almhirt) extends OperationStateTracker {
 
-  implicit private def executionContext = baseOps.executionContext
-  implicit private def timeout = baseOps.mediumDuration
+  implicit private def executionContext = almhirt.executionContext
+  implicit private def timeout = almhirt.mediumDuration
 
   private class ResponseActor extends Actor {
     private var receiver: ActorRef = null
@@ -42,11 +42,11 @@ class OperationStateTrackerActorHull(val actor: ActorRef)(implicit baseOps: Almh
   }
 
   def getResultFor(ticket: TrackingTicket)(implicit atMost: FiniteDuration): AlmFuture[ResultOperationState] = {
-    val actor = system.actorSystem.actorOf(Props(new ResponseActor))
+    val actor = almhirt.system.actorSystem.actorOf(Props(new ResponseActor))
     val future = (actor.ask("getResponse")(atMost)).mapToAlmFuture[ResultOperationState]
     onResult(ticket, (resOpState: AlmValidation[ResultOperationState]) => actor ! ResOpCmd(resOpState))(atMost)
     future
   }
 
-  def dispose() = { system.actorSystem.stop(actor) }
+  def dispose() = { almhirt.system.actorSystem.stop(actor) }
 }

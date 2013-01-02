@@ -13,14 +13,18 @@ class ConcurrentDimensionConverterRegistry extends HasDimensionConverters {
   def addConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension](converter: DimensionConverter[DimSource, DimTarget]) {
     val ident = converter.tSource.getName()+converter.tTarget.getName()
     converters.put(ident, converter)
-    if(!convertersBySource.contains(converter.tSource.getName()))
+    if(!convertersBySource.containsKey(converter.tSource.getName()))
       convertersBySource.put(converter.tSource.getName(), converter :: Nil)
-    else
-      convertersBySource.put(converter.tSource.getName(), converter :: convertersBySource.get(converter.tSource.getName()))
-    if(!convertersByTarget.contains(converter.tTarget.getName()))
+    else {
+      val current = convertersBySource.get(converter.tSource.getName())
+      convertersBySource.put(converter.tSource.getName(), converter :: current)
+    }
+    if(!convertersByTarget.containsKey(converter.tTarget.getName())) 
       convertersByTarget.put(converter.tTarget.getName(), converter :: Nil)
-    else
-      convertersByTarget.put(converter.tTarget.getName(), converter :: convertersByTarget.get(converter.tTarget.getName()))
+    else {
+      val current = convertersByTarget.get(converter.tTarget.getName())
+      convertersByTarget.put(converter.tTarget.getName(), converter :: current)
+    }
   }
 
   def tryGetConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension](implicit mS: Manifest[DimSource], mT: Manifest[DimTarget]): Option[DimensionConverter[DimSource, DimTarget]] =

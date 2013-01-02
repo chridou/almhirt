@@ -3,7 +3,6 @@ package almhirt.parts
 import akka.actor._
 import almhirt.common._
 import almhirt.domain._
-import almhirt.environment.AlmhirtContext
 import almhirt.common.AlmFuture
 import almhirt.parts.impl.ConcurrentRepositoryRegistry
 

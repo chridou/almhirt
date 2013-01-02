@@ -24,13 +24,13 @@ object AggregateRootRepository {
     new AggregateRootRepositoryActorHull[AR, Event](actor, baseOps) {}
   }
 
-  def unsafe[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AggregateRootRepository[AR, Event] = {
-    val actor = system.actorSystem.actorOf(Props(new UnsafeAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, baseOps) {}))
+  def unsafe[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit almhirt: Almhirt): AggregateRootRepository[AR, Event] = {
+    val actor = almhirt.system.actorSystem.actorOf(Props(new UnsafeAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, almhirt) {}))
     apply(actor)
   }
   
-  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AggregateRootRepository[AR, Event] = {
-    val actor = system.actorSystem.actorOf(Props(new BlockingAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, baseOps) {}))
+  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit almhirt: Almhirt): AggregateRootRepository[AR, Event] = {
+    val actor = almhirt.system.actorSystem.actorOf(Props(new BlockingAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, almhirt) {}))
     apply(actor)
   }
   

@@ -7,13 +7,13 @@ import almhirt.environment._
 import almhirt.messaging.Message
 import almhirt.util._
 
-abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](val baseOps: AlmhirtBaseOps, val getRepository: () => AlmValidation[AggregateRootRepository[AR, TEvent]])(implicit m: Manifest[AR]) extends HandlesCommand {
+abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](protected val almhirt: Almhirt, val getRepository: () => AlmValidation[AggregateRootRepository[AR, TEvent]])(implicit m: Manifest[AR]) extends HandlesCommand {
   def this(almhirt: Almhirt)(implicit m: Manifest[AR]) = {
     this(almhirt, () => almhirt.getService[HasRepositories].flatMap(hasRepos => hasRepos.getForAggregateRoot[AR, TEvent]))
   }
 
-  def this(baseOps: AlmhirtBaseOps, hasRepositories: HasRepositories)(implicit m: Manifest[AR]) = {
-    this(baseOps, () => hasRepositories.getForAggregateRoot[AR, TEvent])
+  def this(almhirt: Almhirt, hasRepositories: HasRepositories)(implicit m: Manifest[AR]) = {
+    this(almhirt, () => hasRepositories.getForAggregateRoot[AR, TEvent])
   }
   
   val aggregateRootType = m.runtimeClass.asInstanceOf[Class[AR]]
@@ -22,9 +22,9 @@ abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: Domain
       case bcmd: BoundDomainCommand => handleBoundCommand(bcmd, ticket)
       case wrongType =>
         val p = ArgumentProblem("Not a BoundDomainCommand: %s".format(wrongType.getClass.getName), severity = Major)
-        baseOps.reportProblem(p)
+        almhirt.reportProblem(p)
         ticket match {
-          case Some(t) => baseOps.reportOperationState(NotExecuted(t, p))
+          case Some(t) => almhirt.reportOperationState(NotExecuted(t, p))
           case None => ()
         }
     }
