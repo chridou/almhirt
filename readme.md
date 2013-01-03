@@ -34,5 +34,5 @@ Absolutely yes!
 
 Almhirt is available under the [Apache license, version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
 
-Copyright 2012 Christian Douven
+Copyright 2012,2013 Christian Douven
 
