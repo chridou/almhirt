@@ -26,9 +26,13 @@ trait AlmhirtTestKit {
 		  eventlog {
 		  	factory = "almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLogFactory"
 		  }
-      operationstate {
-        factory = "almhirt.util.impl.OperationStateTrackerWithoutTimeoutFactory"
-    }
+        operationstate {
+          factory = "almhirt.util.impl.OperationStateTrackerWithoutTimeoutFactory"
+        }
+        commandendpoint {
+          factory = "almhirt.util.impl.CommandEndpointWithUuidTicketsFactory"
+          mode = post
+        }
 	  }
     """
   val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
@@ -36,7 +40,7 @@ trait AlmhirtTestKit {
   def createTestAlmhirt(): (AlmhirtForTesting, ShutDown) = createTestAlmhirt(defaultConf)
   def createTestAlmhirt(aConf: Config): (AlmhirtForTesting, ShutDown) = {
     AlmhirtBootstrapper.createFromConfig(aConf).flatMap(bootstrapper =>
-      AlmhirtBootstrapper.runStartupSequence(bootstrapper)).map{case (almhirt, shutDown) => (almhirt.asInstanceOf[AlmhirtForTesting], shutDown)}.forceResult
+      AlmhirtBootstrapper.runStartupSequence(bootstrapper)).map { case (almhirt, shutDown) => (almhirt.asInstanceOf[AlmhirtForTesting], shutDown) }.forceResult
   }
 
   def inTestAlmhirt[T](compute: AlmhirtForTesting => T): T = inTestAlmhirt(compute, defaultConf)

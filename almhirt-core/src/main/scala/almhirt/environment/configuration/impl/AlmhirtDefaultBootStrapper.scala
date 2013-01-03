@@ -69,6 +69,11 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
             val eventLogActor = SystemHelper.createEventLogFromFactory.forceResult
             sr.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor))
           }
+          ConfigHelper.ifSubConfigExists(config)(ConfigPaths.commandEndpoint) { _ =>
+            val endpoint = SystemHelper.createCommandEndpointFromFactory.forceResult
+            sr.registerService[CommandEndpoint](endpoint)
+          }
+
           (() => {
             cmdExecutorRegistration.dispose
             trackerRegistration.dispose

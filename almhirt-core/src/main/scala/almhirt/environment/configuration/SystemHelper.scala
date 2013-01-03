@@ -7,6 +7,7 @@ import almhirt.almvalidation.funs._
 import almhirt.eventlog._
 import almhirt.environment._
 import almhirt.common.AlmValidation
+import almhirt.util.CommandEndpoint
 
 object SystemHelper {
   def addDispatcherToProps(config: Config)(props: Props): Props = {
@@ -44,12 +45,27 @@ object SystemHelper {
     for {
       opStateConfig <- ConfigHelper.operationState.getConfig(theAlmhirt.system.config)
       factoryName <- ConfigHelper.shared.getFactoryName(opStateConfig)
-      factory <- inTryCatch{
+      factory <- inTryCatch {
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createOperationStateTracker(x: Almhirt): AlmValidation[ActorRef] }]}
+          .asInstanceOf[{ def createOperationStateTracker(x: Almhirt): AlmValidation[ActorRef] }]
+      }
       tracker <- factory.createOperationStateTracker(theAlmhirt)
     } yield tracker
   }
-  
+
+  def createCommandEndpointFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] = {
+    import language.reflectiveCalls
+    for {
+      endpointConfig <- ConfigHelper.commandEnpoint.getConfig(theAlmhirt.system.config)
+      factoryName <- ConfigHelper.shared.getFactoryName(endpointConfig)
+      factory <- inTryCatch {
+        Class.forName(factoryName)
+          .newInstance()
+          .asInstanceOf[{ def createCommandEndpoint(theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] }]
+      }
+      endpoint <- factory.createCommandEndpoint(theAlmhirt)
+    } yield endpoint
+  }
+
 }
