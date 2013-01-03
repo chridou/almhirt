@@ -83,6 +83,12 @@ object ConfigHelper {
     def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)
   }
 
+  object commandEnpoint {
+    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.commandEndpoint)
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.commandEndpoint)
+    def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)
+  }
+  
   object shared {
     def tryGetFactoryName(config: Config): Option[String] = ConfigHelper.tryGetString(config)(ConfigItems.factory)
     def getFactoryName(config: Config): AlmValidation[String] = ConfigHelper.getString(config)(ConfigItems.factory)

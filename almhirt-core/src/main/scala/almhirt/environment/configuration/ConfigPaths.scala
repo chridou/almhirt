@@ -2,14 +2,16 @@ package almhirt.environment.configuration
 
 object ConfigPaths {
   val bootstrapper = "almhirt.bootstrapper"
-
   val messagehub = "almhirt.messagehub"
   val messagechannels = "almhirt.messagechannels"
   val eventlog = "almhirt.eventlog"
   val commandexecutor = "almhirt.commandexecutor"
   val repositories = "almhirt.repositories"
   val operationState = "almhirt.operationstate"
+  val commandEndpoint = "almhirt.commandendpoint"
+    
   val futures = "almhirt.futures"
+
 }
 
 object ConfigItems {
