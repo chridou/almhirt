@@ -22,7 +22,7 @@ case class GetStateQry(ticket: TrackingTicket) extends OperationStateTrackerCmd
 trait OperationStateTrackerRsp
 case class OperationStateRsp(ticket: TrackingTicket, state: AlmValidation[Option[OperationState]])
 
-trait OperationStateTracker extends Disposable with ActorBased {
+trait OperationStateTracker extends ActorBased {
   def updateState(opState: OperationState): Unit
   def queryStateFor(ticket: TrackingTicket)(implicit atMost: FiniteDuration): AlmFuture[Option[OperationState]]
   def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: FiniteDuration): Unit

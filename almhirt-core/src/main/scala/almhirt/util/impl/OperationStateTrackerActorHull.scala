@@ -14,7 +14,6 @@ import almhirt.util._
 import almhirt.common.AlmFuture
 
 class OperationStateTrackerActorHull(val actor: ActorRef)(implicit almhirt: Almhirt) extends OperationStateTracker {
-
   implicit private def executionContext = almhirt.executionContext
   implicit private def timeout = almhirt.mediumDuration
 
@@ -47,6 +46,9 @@ class OperationStateTrackerActorHull(val actor: ActorRef)(implicit almhirt: Almh
     onResult(ticket, (resOpState: AlmValidation[ResultOperationState]) => actor ! ResOpCmd(resOpState))(atMost)
     future
   }
+}
 
-  def dispose() = { almhirt.system.actorSystem.stop(actor) }
+object OperationStateTrackerActorHull {
+  def apply(actor: ActorRef)(implicit almhirt: Almhirt): OperationStateTrackerActorHull =
+    new OperationStateTrackerActorHull(actor)
 }

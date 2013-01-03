@@ -26,7 +26,7 @@ class MessageHubActor extends Actor {
         almhirtsystem match {
           case None => context.actorOf(Props[MessageChannelActor], name = name)
           case Some(sys) =>
-            ConfigHelper.tryGetDispatcherName(sys.config)(ConfigPaths.messagechannels) match {
+            ConfigHelper.tryGetDispatcherNameFromRootConfig(sys.config)(ConfigPaths.messagechannels) match {
               case None => context.actorOf(Props[MessageChannelActor], name = name)
               case Some(dn) => context.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
             }

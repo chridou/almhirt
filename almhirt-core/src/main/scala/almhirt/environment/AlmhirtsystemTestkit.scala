@@ -61,7 +61,7 @@ trait AlmhirtsystemTestkit {
     } yield new AlmhirtSystem {
       val config = conf
       val actorSystem = ActorSystem(conf.getString("almhirt.systemname"), conf)
-      val executionContext = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherName(config)(ConfigPaths.futures))
+      val executionContext = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherNameFromRootConfig(config)(ConfigPaths.futures))
       val shortDuration = short
       val mediumDuration = medium
       val longDuration = long

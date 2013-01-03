@@ -42,7 +42,7 @@ object MessageHub {
 
   def apply(name: String)(implicit almhirtsystem: AlmhirtSystem): MessageHub = {
     val actor =
-      ConfigHelper.tryGetDispatcherName(almhirtsystem.config)(ConfigPaths.messagehub) match {
+      ConfigHelper.tryGetDispatcherNameFromRootConfig(almhirtsystem.config)(ConfigPaths.messagehub) match {
         case None => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor], name = name)
         case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor].withDispatcher(dn), name = name)
       }

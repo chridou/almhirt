@@ -11,5 +11,5 @@ object DbTemplate {
     "postgres-json" -> DbTemplate("org.postgresql.Driver", Some("/conf/postgresjsonddl.sql")))
 
   def tryGetTemplate(config: Config): Option[DbTemplate] =
-    ConfigHelper.tryGetString(config)(ConfigPaths.eventlog + ".dbtemplate").flatMap(templates.get(_))
+    ConfigHelper.tryGetString(config)("dbtemplate").flatMap(templates.get(_))
 }

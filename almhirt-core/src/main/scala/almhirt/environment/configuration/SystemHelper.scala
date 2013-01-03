@@ -9,8 +9,8 @@ import almhirt.environment._
 import almhirt.common.AlmValidation
 
 object SystemHelper {
-  def addDispatcherToProps(config: Config)(path: String, props: Props): Props = {
-    ConfigHelper.tryGetDispatcherName(config)(path) match {
+  def addDispatcherToProps(config: Config)(props: Props): Props = {
+    ConfigHelper.tryGetString(config)(ConfigItems.dispatchername) match {
       case None => props
       case Some(dn) => props.withDispatcher(dn)
     }
@@ -18,7 +18,7 @@ object SystemHelper {
 
   def createBootstrapperFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] = {
     ConfigHelper.getSubConfig(config)(ConfigPaths.bootstrapper).flatMap(subConf =>
-      ConfigHelper.getString(subConf)(ConfigPaths.bootstrapperClassName).flatMap(className =>
+      ConfigHelper.getString(subConf)(ConfigItems.className).flatMap(className =>
         inTryCatch {
           val constructor = Class.forName(className).getConstructors()(0)
           val instance = constructor.newInstance(config)
@@ -28,12 +28,15 @@ object SystemHelper {
 
   def createEventLogFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     import language.reflectiveCalls
-    ConfigHelper.getFactoryName(theAlmhirt.system.config)(ConfigPaths.eventlog).flatMap(factoryName =>
-      inTryCatch(
+    for {
+      eventLogConfig <- ConfigHelper.eventLog.getConfig(theAlmhirt.system.config)
+      factoryName <- ConfigHelper.shared.getFactoryName(eventLogConfig)
+      factory <- inTryCatch(
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createDomainEventLog(x: Almhirt): AlmValidation[ActorRef] }]).flatMap(factory =>
-          factory.createDomainEventLog(theAlmhirt)))
+          .asInstanceOf[{ def createDomainEventLog(x: Almhirt): AlmValidation[ActorRef] }])
+      eventLog <- factory.createDomainEventLog(theAlmhirt)
+    } yield eventLog
   }
-  
+
 }

@@ -32,11 +32,12 @@ import almhirt.common.AlmFuture
 
 class DevNullEventLogFactory() extends DomainEventLogFactory {
   def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    val props =
-      SystemHelper.addDispatcherToProps(theAlmhirt.system.config)(ConfigPaths.eventlog, Props(new DevNullEventLogActor()))
-    val name = ConfigHelper.getEventLogActorName(theAlmhirt.system.config)
-    val actor = theAlmhirt.system.actorSystem.actorOf(props, name)
-    actor.success
+    ConfigHelper.eventLog.getConfig(theAlmhirt.system.config).map { subConfig =>
+      val name = ConfigHelper.eventLog.getActorName(subConfig)
+      val props =
+        SystemHelper.addDispatcherToProps(subConfig)(Props(new DevNullEventLogActor()))
+      theAlmhirt.system.actorSystem.actorOf(props, name)
+    }
   }
 }
 

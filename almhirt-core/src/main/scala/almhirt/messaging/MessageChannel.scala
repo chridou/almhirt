@@ -41,7 +41,7 @@ object MessageChannel {
 
   def apply[T <: AnyRef](name: String)(implicit almhirtsystem: AlmhirtSystem, m: Manifest[T]): MessageChannel[T] = {
     val actor =
-      ConfigHelper.tryGetDispatcherName(almhirtsystem.config)(ConfigPaths.messagechannels) match {
+      ConfigHelper.tryGetDispatcherNameFromRootConfig(almhirtsystem.config)(ConfigPaths.messagechannels) match {
         case None => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor], name = name)
         case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
       }

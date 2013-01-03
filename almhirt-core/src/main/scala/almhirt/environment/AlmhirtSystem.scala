@@ -34,7 +34,7 @@ object AlmhirtSystem {
       new AlmhirtSystem {
         val config = ConfigFactory.load
         val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
-        val executionContext = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherName(config)(ConfigPaths.futures))
+        val executionContext = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherNameFromRootConfig(config)(ConfigPaths.futures))
         val shortDuration = short
         val mediumDuration = medium
         val longDuration = long

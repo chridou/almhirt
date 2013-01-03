@@ -25,6 +25,10 @@ object ConfigHelper {
     option.cata(tryGetString(config)(path))(_.success, KeyNotFoundProblem("String not found: %s".format(path), args = Map("key" -> path)).failure)
   }
 
+  def getStringOrDefault(default: => String)(config: Config)(path: String): String = {
+    tryGetString(config)(path).getOrElse(default)
+  }
+  
   def getBoolean(config: Config)(path: String): AlmValidation[Boolean] =
     almhirt.almvalidation.funs.inTryCatch(config.getBoolean(path))
 
@@ -54,19 +58,25 @@ object ConfigHelper {
   def getSubConfig(config: Config)(path: String): AlmValidation[Config] =
     option.cata(tryGetSubConfig(config)(path))(_.success, KeyNotFoundProblem("SubConfig not found: %s".format(path), args = Map("key" -> path)).failure)
 
-  def tryGetDispatcherName(config: Config)(path: String): Option[String] =
+  def tryGetDispatcherNameFromRootConfig(config: Config)(path: String): Option[String] =
     tryGetSubConfig(config)(path).flatMap(tryGetString(_)("dispatchername"))
 
-  def getFactoryName(config: Config)(path: String): AlmValidation[String] =
-    getSubConfig(config)(path).flatMap(getString(_)("factory"))
+  object eventLog {
+    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.eventlog) 
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog) 
+    def getActorName(eventlogConfig: Config): String = ConfigHelper.getStringOrDefault("EventLog")(eventlogConfig)(ConfigItems.actorName)
+  }
 
-  def getActorName(config: Config)(path: String): AlmValidation[String] =
-    getSubConfig(config)(path).flatMap(getString(_)("name"))
-
-  def getActorNameOrDefault(default: String)(config: Config)(path: String): String =
-    getActorName(config: Config)(path: String).getOrElse(default)
-
-  def getEventLogActorName(config: Config): String = ConfigHelper.getActorNameOrDefault("EventLog")(config)(ConfigPaths.eventlog)
+  object operationState {
+    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.operationState) 
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.operationState) 
+    def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)
+  }
+  
+  object shared {
+    def tryGetFactoryName(config: Config): Option[String] = ConfigHelper.tryGetString(config)(ConfigItems.factory)
+    def getFactoryName(config: Config): AlmValidation[String] = ConfigHelper.getString(config)(ConfigItems.factory)
+  }
     
   def lookUpDispatcher(system: ActorSystem)(name: Option[String]): akka.dispatch.MessageDispatcher = {
     name match {

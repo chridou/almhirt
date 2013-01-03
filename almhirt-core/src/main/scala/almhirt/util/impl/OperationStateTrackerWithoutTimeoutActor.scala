@@ -72,3 +72,9 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
   override def postRestart(reason: Throwable) {}
   override def postStop() {}
 }
+
+//class OperationStateTrackerWithoutActorFactory extends OperationStateTrackerFactory {
+//  def createOperationStateTracker(almhirt: Almhirt): AlmValidation[ActorRef] = {
+//    
+//  }
+//}

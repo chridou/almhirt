@@ -1,8 +1,9 @@
 package almhirt.util
 
+import akka.actor.ActorRef
 import almhirt.common._
 import almhirt.environment._
 
 trait OperationStateTrackerFactory {
-  def createOperationStateTracker(baseOps: AlmhirtBaseOps, system: AlmhirtSystem): AlmValidation[OperationStateTracker]
+  def createOperationStateTracker(almhirt: Almhirt): AlmValidation[ActorRef]
 }

@@ -64,7 +64,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
           sr.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor))
           (() => {
             cmdExecutorRegistration.dispose
-            trackerRegistration.dispose; tracker.dispose
+            trackerRegistration.dispose
           })
         }.flatMap(cleanUp => super.registerComponents(almhirt).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
       case None => scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))
