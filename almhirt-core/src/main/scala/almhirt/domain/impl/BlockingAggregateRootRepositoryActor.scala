@@ -24,8 +24,10 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
       .map(x => x.chunk.events)
       .map(e => e.map(events => events.map(_.asInstanceOf[Event]).toList))
       .mapV(events =>
-        if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
-        else arFactory.rebuildFromHistory(events))
+        if (events.isEmpty) 
+          NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
+        else 
+          arFactory.rebuildFromHistory(events))
 
   private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]) =
     (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout)
