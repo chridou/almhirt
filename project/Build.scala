@@ -146,7 +146,7 @@ trait DocItBuild {
   )
 }
 
-/*
+
 trait UnfilteredBuild {
   import Dependencies._
   import Resolvers._
@@ -157,9 +157,8 @@ trait UnfilteredBuild {
   	  resolvers += sonatypeReleases)
   
 }
-*/
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with DocItBuild {
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with UnfilteredBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings,
 	                        base = file(".")) aggregate(common, core, anormEventLog, docit, riftwarp)
@@ -188,8 +187,8 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRi
                        			baseFile = file("almhirt-docit")) dependsOn(common)
 
 								
-/* lazy val unfiltered = unfilteredProject(	name = "almhirt-unfiltered",
-	                       				baseFile = file("almhirt-unfiltered")) dependsOn(common)*/
+// lazy val unfiltered = unfilteredProject(	name = "almhirt-ext-common-unfiltered",
+//	                       				baseFile = file("./ext/common/almhirt-ext-common-unfiltered")) dependsOn(common, riftwarp)
 
 										
 }
