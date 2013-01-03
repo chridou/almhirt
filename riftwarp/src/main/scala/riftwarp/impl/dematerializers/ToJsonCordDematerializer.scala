@@ -387,6 +387,22 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   def addOptionalMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, aMap, (x: String, y: Map[A, B]) => addMap(x, y))
 
+  def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
+      mapperByType[A].flatMap(mapA =>
+        aMap.map {
+          case (a, b) =>
+            mapWithPrimitiveAndDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b =>
+              (mapA(a), b.manifestation))
+        }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
+          foldKeyValuePairs(sequenced).flatMap(pairs =>
+            addPart(ident, pairs.manifestation)))),
+      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
+
+  def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
+    ifNoneAddNull(ident: String, aMap, (x: String, y: Map[A, B]) => addMapSkippingUnknownValues(x, y))
+    
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =

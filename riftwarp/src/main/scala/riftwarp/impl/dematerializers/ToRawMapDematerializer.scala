@@ -171,6 +171,18 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
         addValue(ident, x)),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
+  def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
+      aMap.toList.map {
+        case (a, b) =>
+          mapWithPrimitiveAndComplexDecomposerLookUp("[" + a.toString + "]", ident)(b).map(m =>
+            (a, b))
+      }.map(x =>
+        x.toAgg).sequence.map(_.toMap).flatMap(x =>
+        addValue(ident, x)),
+      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
+      
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[Map[String, Any]] =

@@ -32,7 +32,7 @@ final case class MessageGrouping(groupId: UUID, seq: Int, isLast: Boolean)
  * metaData: Any meta data that can be serialized into a String. Key-value pairs
  * topic: An optional topic for messaging scenarios
  */
-final case class MessageHeader(id: UUID, grouping: Option[MessageGrouping], metaData: Map[String, String], timestamp: DateTime)
+final case class MessageHeader(id: UUID, grouping: Option[MessageGrouping], metaData: Map[String, Any], timestamp: DateTime)
 
 /** A message with a payload */
 final case class Message[+TPayload <: AnyRef](header: MessageHeader, payload: TPayload) {

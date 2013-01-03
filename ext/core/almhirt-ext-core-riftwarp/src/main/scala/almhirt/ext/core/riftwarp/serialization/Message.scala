@@ -36,7 +36,7 @@ class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
       .addTypeDescriptor(this.typeDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addOptionalComplexType("grouping", what.grouping))
-      //.bind(_.addOptionalComplexType("metaData", header.metaData))
+      .flatMap(_.addMapSkippingUnknownValues("metaData", what.metaData))
       .flatMap(_.addDateTime("timestamp", what.timestamp))
   }
 }
@@ -46,8 +46,7 @@ class MessageHeaderRecomposer extends Recomposer[MessageHeader] {
   def recompose(from: Rematerializer): AlmValidation[MessageHeader] = {
     (from.getUuid("id").toAgg |@|
       from.tryGetComplexType("grouping").toAgg |@|
-      //from.getOptionalComplexType("metaData").toAgg |@| 
-      Map.empty[String, String].success[Problem].toAgg |@|
+      from.getMap[String, Object]("metaData").toAgg |@| 
       from.getDateTime("timestamp").toAgg)(MessageHeader.apply)
   }
 }

@@ -236,6 +236,18 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
           addElem(wrapComplexElem(ident, elem)))),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
+  def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
+    boolean.fold(
+      TypeHelpers.isPrimitiveType(mA.runtimeClass),
+      primitiveMapperByType[A].flatMap(mapA =>
+        aMap.toList.map {
+          case (a, b) =>
+            mapWithPrimitiveAndComplexDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b => (mapA(a), b)).toAgg
+        }.sequence.map(_.toMap).flatMap(items =>
+          foldKeyValuePairs(items)).flatMap(elem =>
+          addElem(wrapComplexElem(ident, elem)))),
+      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
+      
   def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[ToXmlElemDematerializer] =
     new ToXmlElemDematerializer(state, path, divertBlob, Some(descriptor)).success
 

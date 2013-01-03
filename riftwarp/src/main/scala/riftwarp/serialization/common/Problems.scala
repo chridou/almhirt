@@ -16,7 +16,7 @@ object Problems {
           next <- next.addString("message", problem.message)
           next <- next.addString("severity", problem.severity.toString())
           next <- next.addString("category", problem.category.toString())
-          next <- next.addMap[String, Any]("args", problem.args)
+          next <- next.addMapSkippingUnknownValues[String, Any]("args", problem.args)
           next <- option.cata(problem.cause)(
             cause => cause match {
               case CauseIsThrowable(_) => next.success
