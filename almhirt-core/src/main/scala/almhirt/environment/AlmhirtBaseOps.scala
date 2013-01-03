@@ -14,8 +14,6 @@ trait AlmhirtBaseOps extends CanCreateUuidsAndDateTimes with HasExecutionContext
   def reportProblem(prob: Problem): Unit
   def reportOperationState(opState: OperationState): Unit
   def broadcastDomainEvent(event: DomainEvent): Unit
-  def broadcastCommand(comEnvelope: CommandEnvelope): Unit
-  def postCommand(comEnvelope: CommandEnvelope): Unit
   def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty): Unit
   def createMessage[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty): Message[T]
   

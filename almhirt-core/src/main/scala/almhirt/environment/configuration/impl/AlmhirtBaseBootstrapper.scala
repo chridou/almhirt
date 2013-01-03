@@ -64,8 +64,6 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
           def reportProblem(prob: Problem) { broadcast(prob) }
           def reportOperationState(opState: OperationState) { broadcast(opState) }
           def broadcastDomainEvent(event: DomainEvent) { broadcast(event) }
-          def broadcastCommand(comEnvelope: CommandEnvelope) { broadcast(comEnvelope) }
-          def postCommand(comEnvelope: CommandEnvelope){ messageHub.actor ! PostMessageCmd(createMessage(comEnvelope)) }
           def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { messageHub.actor ! BroadcastMessageCmd(createMessage(payload, metaData)) }
 
           val serviceRegistry = theServiceRegistry
