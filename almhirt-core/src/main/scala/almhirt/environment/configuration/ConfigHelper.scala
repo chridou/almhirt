@@ -10,14 +10,18 @@ import almhirt.common._
 
 object ConfigHelper {
   def tryGetString(config: Config)(path: String): Option[String] = {
-    config.getString(path) match {
-      case null => None
-      case "" => None
-      case str =>
-        if (str.toLowerCase().equals("none"))
-          None
-        else
-          Some(str)
+    try {
+      config.getString(path) match {
+        case null => None
+        case "" => None
+        case str =>
+          if (str.toLowerCase().equals("none"))
+            None
+          else
+            Some(str)
+      }
+    } catch {
+      case exn: Throwable => None
     }
   }
 
@@ -28,7 +32,7 @@ object ConfigHelper {
   def getStringOrDefault(default: => String)(config: Config)(path: String): String = {
     tryGetString(config)(path).getOrElse(default)
   }
-  
+
   def getBoolean(config: Config)(path: String): AlmValidation[Boolean] =
     almhirt.almvalidation.funs.inTryCatch(config.getBoolean(path))
 
@@ -58,26 +62,32 @@ object ConfigHelper {
   def getSubConfig(config: Config)(path: String): AlmValidation[Config] =
     option.cata(tryGetSubConfig(config)(path))(_.success, KeyNotFoundProblem("SubConfig not found: %s".format(path), args = Map("key" -> path)).failure)
 
+  def ifSubConfigExists(config: Config)(path: String)(action: Config => Unit) {
+    option.cata(tryGetSubConfig(config)(path))(
+      subConfig => action(subConfig),
+      ())
+  }
+
   def tryGetDispatcherNameFromRootConfig(config: Config)(path: String): Option[String] =
     tryGetSubConfig(config)(path).flatMap(tryGetString(_)("dispatchername"))
 
   object eventLog {
-    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.eventlog) 
-    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog) 
+    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.eventlog)
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog)
     def getActorName(eventlogConfig: Config): String = ConfigHelper.getStringOrDefault("EventLog")(eventlogConfig)(ConfigItems.actorName)
   }
 
   object operationState {
-    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.operationState) 
-    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.operationState) 
+    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.operationState)
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.operationState)
     def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)
   }
-  
+
   object shared {
     def tryGetFactoryName(config: Config): Option[String] = ConfigHelper.tryGetString(config)(ConfigItems.factory)
     def getFactoryName(config: Config): AlmValidation[String] = ConfigHelper.getString(config)(ConfigItems.factory)
   }
-    
+
   def lookUpDispatcher(system: ActorSystem)(name: Option[String]): akka.dispatch.MessageDispatcher = {
     name match {
       case Some(n) => system.dispatchers.lookup(n)

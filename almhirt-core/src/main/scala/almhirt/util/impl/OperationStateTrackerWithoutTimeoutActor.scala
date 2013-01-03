@@ -14,6 +14,8 @@ import almhirt.messaging.MessageStream
 import almhirt.environment._
 import almhirt.commanding.DomainCommand
 import almhirt.almakka.AlmActorLogging
+import almhirt.environment.configuration.ConfigHelper
+import almhirt.environment.configuration.SystemHelper
 
 class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with AlmActorLogging {
   val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
@@ -67,14 +69,15 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
       else
         sender ! OperationStateRsp(ticket, None.success)
   }
-
-  override def preStart() {}
-  override def postRestart(reason: Throwable) {}
-  override def postStop() {}
 }
 
-//class OperationStateTrackerWithoutActorFactory extends OperationStateTrackerFactory {
-//  def createOperationStateTracker(almhirt: Almhirt): AlmValidation[ActorRef] = {
-//    
-//  }
-//}
+class OperationStateTrackerWithoutTimeoutFactory extends OperationStateTrackerFactory {
+  def createOperationStateTracker(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+    ConfigHelper.operationState.getConfig(theAlmhirt.system.config).map { subConfig =>
+      val name = ConfigHelper.operationState.getActorName(subConfig)
+      val props =
+        SystemHelper.addDispatcherToProps(subConfig)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
+      theAlmhirt.system.actorSystem.actorOf(props, name)
+    }
+  }
+}

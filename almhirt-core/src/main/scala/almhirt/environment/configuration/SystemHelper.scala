@@ -39,4 +39,17 @@ object SystemHelper {
     } yield eventLog
   }
 
+  def createOperationStateTrackerFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+    import language.reflectiveCalls
+    for {
+      opStateConfig <- ConfigHelper.operationState.getConfig(theAlmhirt.system.config)
+      factoryName <- ConfigHelper.shared.getFactoryName(opStateConfig)
+      factory <- inTryCatch{
+        Class.forName(factoryName)
+          .newInstance()
+          .asInstanceOf[{ def createOperationStateTracker(x: Almhirt): AlmValidation[ActorRef] }]}
+      tracker <- factory.createOperationStateTracker(theAlmhirt)
+    } yield tracker
+  }
+  
 }

@@ -26,6 +26,9 @@ trait AlmhirtTestKit {
 		  eventlog {
 		  	factory = "almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLogFactory"
 		  }
+      operationstate {
+        factory = "almhirt.util.impl.OperationStateTrackerWithoutTimeoutFactory"
+    }
 	  }
     """
   val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
