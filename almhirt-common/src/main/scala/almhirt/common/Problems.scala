@@ -199,7 +199,7 @@ case class NotSupportedProblem(message: String, severity: Severity = Major, cate
 
 /** Some data structure couldn't be mapped from one to another. The key is giving the name of the field that caused the problem.
  */
-case class MappingProblem(message: String, category: ProblemCategory = SystemProblem, severity: Severity = Minor, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class MappingProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = MappingProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -244,22 +244,14 @@ case class ConstraintViolatedProblem(message: String, severity: Severity = Minor
 
 /** A text couldn't be parsed. Usually used for failures when parsing DSLs
  */
-case class ParsingProblem(message: String, input: Option[String], severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class ParsingProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ParsingProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def withInput(input: String) = withArg("input", input)
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  override def toString(): String = {
-    val builder = baseInfo
-    input.foreach(inp => {
-      builder.append("Input:\n")
-      builder.append("%s".format(inp))
-      builder.append("\n")
-    })
-    builder.result
-  }
 }
 
 /** Some data is invalid. The key gives the context
@@ -337,22 +329,18 @@ case class BusinessRuleViolatedProblem(message: String, severity: Severity = Min
 
 /** This locale simply isn't supported. Store the not supported locale code in 'locale'.
  */
-case class LocaleNotSupportedProblem(message: String, locale: String, severity: Severity = NoProblem, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class LocaleNotSupportedProblem(message: String, severity: Severity = NoProblem, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = LocaleNotSupportedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def withUnsupportedLocale(locale: String) = withArg("unsupportedLocale", locale)
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  override def toString(): String = {
-    val builder = baseInfo
-    builder.append("Unsupported locale:%s\n".format(locale))
-    builder.result
-  }
   
 /** An element was not present in some kind of collection
  */
-case class ElementNotFoundProblem(message: String, locale: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class ElementNotFoundProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ElementNotFoundProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)

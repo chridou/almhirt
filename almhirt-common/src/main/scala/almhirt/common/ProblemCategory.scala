@@ -25,3 +25,12 @@ sealed trait ProblemCategory{
 
 case object SystemProblem extends ProblemCategory
 case object ApplicationProblem extends ProblemCategory
+
+object ProblemCategory {
+  def fromString(str: String): AlmValidation[ProblemCategory] =
+    str.toLowerCase() match {
+      case "systemproblem" => scalaz.Success(SystemProblem)
+      case "applicationproblem" => scalaz.Success(ApplicationProblem)
+      case x => scalaz.Failure(BadDataProblem("'%s' is not a problem category".format(x)))
+    }
+}

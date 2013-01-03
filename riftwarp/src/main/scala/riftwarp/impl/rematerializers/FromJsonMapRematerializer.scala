@@ -309,7 +309,7 @@ object FromJsonStringRematerializer extends RematerializerFactory[DimensionStrin
         }
 
       case parser.NoSuccess(msg, _) =>
-        ParsingProblem(msg, input = Some(json)).failure
+        ParsingProblem(msg).withInput(json).failure
     }
   }
 

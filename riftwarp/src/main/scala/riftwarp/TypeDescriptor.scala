@@ -54,7 +54,7 @@ object TypeDescriptor {
         val v = version.drop(1)
         parseIntAlm(v, "version").map(v => TypeDescriptor(name, Some(v)))
       case _ =>
-        ParsingProblem("Not a valid type descriptor format. The provided delimeter for name and version was '%s'".format(versionDelim), Some(toParse)).failure
+        ParsingProblem("Not a valid type descriptor format. The provided delimeter for name and version was '%s'".format(versionDelim)).withInput(toParse).failure
     }
   }
 

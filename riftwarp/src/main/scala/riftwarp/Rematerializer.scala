@@ -132,7 +132,7 @@ trait Rematerializer {
    * Lookup a primitive rematerializer or a recomposer by the elements typedescriptor for each element.
    * 
    * Primitive types are  String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime and UUID */
-  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
+  def getMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Map[A, B]]
   def tryGetMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]]
   
   def getTypeDescriptor: AlmValidation[TypeDescriptor]
@@ -193,7 +193,7 @@ trait RematerializerBasedOnOptionGetters extends Rematerializer {
   def getComplexMap[A,B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]) = tryGetComplexMap[A, B](ident, recomposer).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexMapFixed[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetComplexMapFixed[A, B](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexMapLoose[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A]) = tryGetComplexMapLoose[A, B](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
-  def getMap[A,B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetMap[A, B](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getMap[A,B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]) = tryGetMap[A, B](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   
   def getTypeDescriptor = tryGetTypeDescriptor.flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(TypeDescriptor.defaultKey), args = Map("key" -> TypeDescriptor.defaultKey)).failure))
 }

@@ -135,5 +135,7 @@ object RiftWarp {
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToIterableConverter)
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToSetConverter)
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToVectorConverter)
+    
+    serialization.common.Problems.registerAllCommonProblems(riftWarp)
   }
 }
