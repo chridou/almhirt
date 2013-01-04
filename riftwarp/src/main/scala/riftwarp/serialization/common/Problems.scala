@@ -6,10 +6,10 @@ import almhirt.common._
 import riftwarp._
 
 object Problems {
-  def createDefaultRawDecomposer(aTypeDescriptor: TypeDescriptor): RawDecomposer = {
-    new RawDecomposer {
+  def createDefaultDecomposer[T <: Problem](aTypeDescriptor: TypeDescriptor): Decomposer[T] = {
+    new Decomposer[T] {
       val typeDescriptor = aTypeDescriptor
-      def decomposeRaw[TDimension <: RiftDimension](what: AnyRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+      def decompose[TDimension <: RiftDimension](what: T)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
         for {
           problem <- almhirt.almvalidation.funs.almCast[Problem](what)
           next <- into.addTypeDescriptor(typeDescriptor)
@@ -28,7 +28,7 @@ object Problems {
   }
 
   def createAggregateProblemDecomposer(aTypeDescriptor: TypeDescriptor): Decomposer[AggregateProblem] = {
-    val inner = createDefaultRawDecomposer(aTypeDescriptor)
+    val inner = createDefaultDecomposer[Problem](aTypeDescriptor)
     new Decomposer[AggregateProblem] {
       val typeDescriptor = aTypeDescriptor
       def decompose[TDimension <: RiftDimension](what: AggregateProblem)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
@@ -41,7 +41,7 @@ object Problems {
     }
   }
 
-  type DefaultProblemCreator = ((String, Severity, ProblemCategory, Map[String, Any], Option[ProblemCause])) => Problem
+  type DefaultProblemCreator[T <: Problem] = ((String, Severity, ProblemCategory, Map[String, Any], Option[ProblemCause])) => T
   
   private def recomposeBaseFields(from: Rematerializer): AlmValidation[(String, Severity, ProblemCategory, Map[String, Any], Option[ProblemCause])] = {
     for {
@@ -53,11 +53,11 @@ object Problems {
     } yield (message, severity, category, args, cause)
   }
 
-  def createDefaultRawRecomposer(aTypeDescriptor: TypeDescriptor, creator: DefaultProblemCreator): RawRecomposer = {
-    new RawRecomposer {
+  def createDefaultRecomposer[T <: Problem](aTypeDescriptor: TypeDescriptor, creator: DefaultProblemCreator[T]): Recomposer[T] = {
+    new Recomposer[T] {
       val typeDescriptor = aTypeDescriptor
-      def recomposeRaw(from: Rematerializer): AlmValidation[Problem] = {
-        recomposeBaseFields(from).map(x => creator(x))
+      def recompose(from: Rematerializer): AlmValidation[T] = {
+        recomposeBaseFields(from).map(x => creator(x).asInstanceOf[T])
       }
     }
   }
@@ -73,50 +73,49 @@ object Problems {
       }
     }
   
-  case class DefaultProblemDef(typeDescriptor: TypeDescriptor, creator: DefaultProblemCreator)
-  val allCommonProblemDefs: List[DefaultProblemDef] =
-    DefaultProblemDef(TypeDescriptor(classOf[Problem].getName), UnspecifiedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[UnspecifiedProblem].getName), UnspecifiedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[ExceptionCaughtProblem].getName), ExceptionCaughtProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[RegistrationProblem].getName), RegistrationProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[ServiceNotFoundProblem].getName), ServiceNotFoundProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[NoConnectionProblem].getName), NoConnectionProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[OperationTimedOutProblem].getName), OperationTimedOutProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[OperationAbortedProblem].getName), OperationAbortedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[IllegalOperationProblem].getName), IllegalOperationProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[OperationNotSupportedProblem].getName), OperationNotSupportedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[ArgumentProblem].getName), ArgumentProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[EmptyCollectionProblem].getName), EmptyCollectionProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[TypeCastProblem].getName), TypeCastProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[PersistenceProblem].getName), PersistenceProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[NotSupportedProblem].getName), NotSupportedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[MappingProblem].getName), MappingProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[NotFoundProblem].getName), NotFoundProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[KeyNotFoundProblem].getName), KeyNotFoundProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[ConstraintViolatedProblem].getName), ConstraintViolatedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[ParsingProblem].getName), ParsingProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[BadDataProblem].getName), BadDataProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[CollisionProblem].getName), CollisionProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[NotAuthorizedProblem].getName), NotAuthorizedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[NotAuthenticatedProblem].getName), NotAuthenticatedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[AlreadyExistsProblem].getName), AlreadyExistsProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[OperationCancelledProblem].getName), OperationCancelledProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[BusinessRuleViolatedProblem].getName), BusinessRuleViolatedProblem.tupled) :: 
-    DefaultProblemDef(TypeDescriptor(classOf[LocaleNotSupportedProblem].getName), LocaleNotSupportedProblem.tupled) :: 
-    //DefaultProblemDef(TypeDescriptor(classOf[ElementNotFoundProblem].getName), ElementNotFoundProblem.tupled) :: 
-    Nil
-    
-    def registerAllDefaults(riftwarp: RiftWarp) {
-      allCommonProblemDefs.foreach{pd =>
-        val rawDecomposer = createDefaultRawDecomposer(pd.typeDescriptor) 
-        riftwarp.barracks.addRawDecomposer(rawDecomposer)
-        val rawRecomposer = createDefaultRawRecomposer(pd.typeDescriptor, pd.creator) 
-        riftwarp.barracks.addRawRecomposer(rawRecomposer)
-      }
+  def createDefaultDecomposerAndRecomposer[T <: Problem](typeDescriptor: TypeDescriptor, creator: DefaultProblemCreator[T]) =
+    (createDefaultDecomposer[T](typeDescriptor), createDefaultRecomposer[T](typeDescriptor, creator))
+  
+  def createAndRegisterDefaultDecomposerAndRecomposer[T <: Problem](riftwarp: RiftWarp)(typeDescriptor: TypeDescriptor, creator: DefaultProblemCreator[T]) {
+    val (decomposer, recomposer) = createDefaultDecomposerAndRecomposer(typeDescriptor, creator)
+    riftwarp.barracks.addDecomposer(decomposer)
+    riftwarp.barracks.addRecomposer(recomposer)
+  }  
+
+  def createAndRegisterAllDefaultDecomposersAndRecomposers(riftwarp: RiftWarp) {
+    createAndRegisterDefaultDecomposerAndRecomposer[Problem](riftwarp)(TypeDescriptor(classOf[Problem].getName), UnspecifiedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[UnspecifiedProblem](riftwarp)(TypeDescriptor(classOf[UnspecifiedProblem].getName), UnspecifiedProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[ExceptionCaughtProblem](riftwarp)(TypeDescriptor(classOf[ExceptionCaughtProblem].getName), ExceptionCaughtProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[RegistrationProblem](riftwarp)(TypeDescriptor(classOf[RegistrationProblem].getName), RegistrationProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[ServiceNotFoundProblem](riftwarp)(TypeDescriptor(classOf[ServiceNotFoundProblem].getName), ServiceNotFoundProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[NoConnectionProblem](riftwarp)(TypeDescriptor(classOf[NoConnectionProblem].getName), NoConnectionProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[OperationTimedOutProblem](riftwarp)(TypeDescriptor(classOf[OperationTimedOutProblem].getName), OperationTimedOutProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[OperationAbortedProblem](riftwarp)(TypeDescriptor(classOf[OperationAbortedProblem].getName), OperationAbortedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[IllegalOperationProblem](riftwarp)(TypeDescriptor(classOf[IllegalOperationProblem].getName), IllegalOperationProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[OperationNotSupportedProblem](riftwarp)(TypeDescriptor(classOf[OperationNotSupportedProblem].getName), OperationNotSupportedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[ArgumentProblem](riftwarp)(TypeDescriptor(classOf[ArgumentProblem].getName), ArgumentProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[EmptyCollectionProblem](riftwarp)(TypeDescriptor(classOf[EmptyCollectionProblem].getName), EmptyCollectionProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[TypeCastProblem](riftwarp)(TypeDescriptor(classOf[TypeCastProblem].getName), TypeCastProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[PersistenceProblem](riftwarp)(TypeDescriptor(classOf[PersistenceProblem].getName), PersistenceProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[NotSupportedProblem](riftwarp)(TypeDescriptor(classOf[NotSupportedProblem].getName), NotSupportedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[MappingProblem](riftwarp)(TypeDescriptor(classOf[MappingProblem].getName), MappingProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[NotFoundProblem](riftwarp)(TypeDescriptor(classOf[NotFoundProblem].getName), NotFoundProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[KeyNotFoundProblem](riftwarp)(TypeDescriptor(classOf[KeyNotFoundProblem].getName), KeyNotFoundProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[ConstraintViolatedProblem](riftwarp)(TypeDescriptor(classOf[ConstraintViolatedProblem].getName), ConstraintViolatedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[ParsingProblem](riftwarp)(TypeDescriptor(classOf[ParsingProblem].getName), ParsingProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[BadDataProblem](riftwarp)(TypeDescriptor(classOf[BadDataProblem].getName), BadDataProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[CollisionProblem](riftwarp)(TypeDescriptor(classOf[CollisionProblem].getName), CollisionProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[NotAuthorizedProblem](riftwarp)(TypeDescriptor(classOf[NotAuthorizedProblem].getName), NotAuthorizedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[NotAuthenticatedProblem](riftwarp)(TypeDescriptor(classOf[NotAuthenticatedProblem].getName), NotAuthenticatedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[AlreadyExistsProblem](riftwarp)(TypeDescriptor(classOf[AlreadyExistsProblem].getName), AlreadyExistsProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[OperationCancelledProblem](riftwarp)(TypeDescriptor(classOf[OperationCancelledProblem].getName), OperationCancelledProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[BusinessRuleViolatedProblem](riftwarp)(TypeDescriptor(classOf[BusinessRuleViolatedProblem].getName), BusinessRuleViolatedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[LocaleNotSupportedProblem](riftwarp)(TypeDescriptor(classOf[LocaleNotSupportedProblem].getName), LocaleNotSupportedProblem.tupled) 
+    //createAndRegisterDefaultDecomposerAndRecomposer[ElementNotFoundProblem](riftwarp)(TypeDescriptor(classOf[ElementNotFoundProblem].getName), LocaleNotSupportedProblem.tupled) 
   }
-      
-    def registerAllCommonProblems(riftwarp: RiftWarp) {
-      registerAllDefaults(riftwarp)
+  
+  def registerAllCommonProblems(riftwarp: RiftWarp) {
+      createAndRegisterAllDefaultDecomposersAndRecomposers(riftwarp)
       riftwarp.barracks.addDecomposer(createAggregateProblemDecomposer(TypeDescriptor(classOf[AggregateProblem].getName)))
       riftwarp.barracks.addRecomposer(createAggregateProblemRecomposer(TypeDescriptor(classOf[AggregateProblem].getName)))
     }
