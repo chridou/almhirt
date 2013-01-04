@@ -2,13 +2,23 @@ package riftwarp
 
 
 trait RiftChannel {
-  /** Unique identifier of a channel. Should be its common symbol for a HTTP content-type, if exists(like "json", "xml"...)
+  /** Unique identifier of a channel(like "json", "xml"...)
    * 
-   * MAY NOT BE LONGER THAN 16 CHARS
+   * CONTRACT: MAY NOT BE LONGER THAN 16 CHARS
    */
   def channelType: String
+  /** The HTTP content type 
+   * 
+   */
   def httpContentType: Option[String]
+  /** The HTTP content type to append when a TypeDescriptor is used to create a content type  
+   * 
+   */
   def httpContentTypeExt: Option[String]
+  /** More symbols for lookup  
+   * 
+   */
+  def moreLookUpSymbols: List[String]
 
   def canEqual(other: Any) = {
     other.isInstanceOf[riftwarp.RiftChannel]
@@ -33,6 +43,7 @@ class RiftMap() extends RiftChannel {
   val channelType = "map"
   val httpContentType = None
   val httpContentTypeExt = None
+  val moreLookUpSymbols = Nil
 }
 object RiftMap {
   private val theInstance = new RiftMap()
@@ -43,6 +54,7 @@ class RiftJson() extends RiftChannel {
   val channelType = "json"
   val httpContentType = Some("json")
   val httpContentTypeExt = Some("text/x-json")
+  val moreLookUpSymbols = Nil
 }
 object RiftJson {
   private val theInstance = new RiftJson()
@@ -53,6 +65,7 @@ class RiftBson() extends RiftChannel {
   val channelType = "bson"
   val httpContentType = None
   val httpContentTypeExt = None
+  val moreLookUpSymbols = Nil
 }
 object RiftBson {
   private val theInstance = new RiftBson()
@@ -63,6 +76,7 @@ class RiftXml() extends RiftChannel {
   val channelType = "xml"
   val httpContentType = Some("xml")
   val httpContentTypeExt = Some("text/xml")
+  val moreLookUpSymbols = Nil
 }
 object RiftXml {
   private val theInstance = new RiftXml()
@@ -73,6 +87,7 @@ class RiftMessagePack() extends RiftChannel {
   val channelType = "msgpack"
   val httpContentType = None
   val httpContentTypeExt = None
+  val moreLookUpSymbols = Nil
 }
 object RiftMessagePack {
   private val theInstance = new RiftMessagePack()
@@ -83,6 +98,7 @@ class RiftProtocolBuffers() extends RiftChannel {
   val channelType = "protobuf"
   val httpContentType = None
   val httpContentTypeExt = None
+  val moreLookUpSymbols = Nil
 }
 object RiftProtocolBuffers {
   private val theInstance = new RiftProtocolBuffers()
@@ -93,6 +109,7 @@ class RiftThrift() extends RiftChannel {
   val channelType = "thrift"
   val httpContentType = None
   val httpContentTypeExt = None
+  val moreLookUpSymbols = Nil
 }
 object RiftThrift {
   private val theInstance = new RiftThrift()
@@ -103,6 +120,7 @@ class RiftYaml() extends RiftChannel {
   val channelType = "yaml"
   val httpContentType = None
   val httpContentTypeExt = None
+  val moreLookUpSymbols = Nil
 }
 object RiftYaml {
   private val theInstance = new RiftYaml()

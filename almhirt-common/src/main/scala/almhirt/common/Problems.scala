@@ -24,7 +24,8 @@ case class UnspecifiedProblem(message: String, severity: Severity = Major, categ
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** Multiple problems that occurred during an operation under the hood of one aggregating problem.
+/**
+ * Multiple problems that occurred during an operation under the hood of one aggregating problem.
  * The cause property is usually None
  */
 case class AggregateProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None, problems: List[Problem] = Nil) extends Problem {
@@ -34,8 +35,8 @@ case class AggregateProblem(message: String, severity: Severity = Major, categor
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  def addProblem(anotherOne: Problem) = 
-     AggregateProblem(this.message, severity = this.severity and anotherOne.severity, category = this.category and anotherOne.category, problems = anotherOne :: this.problems)
+  def addProblem(anotherOne: Problem) =
+    AggregateProblem(this.message, severity = this.severity and anotherOne.severity, category = this.category and anotherOne.category, problems = anotherOne :: this.problems)
 
   override def toString(): String = {
     val builder = baseInfo
@@ -50,7 +51,8 @@ case class AggregateProblem(message: String, severity: Severity = Major, categor
   }
 }
 
-/** Should be used in cause an attempt to register something somewhere failed.
+/**
+ * Should be used in cause an attempt to register something somewhere failed.
  */
 case class ExceptionCaughtProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ExceptionCaughtProblem
@@ -61,8 +63,8 @@ case class ExceptionCaughtProblem(message: String, severity: Severity = Major, c
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-
-/** Should be used in cause an attempt to register something somewhere failed.
+/**
+ * Should be used in cause an attempt to register something somewhere failed.
  */
 case class RegistrationProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = RegistrationProblem
@@ -73,7 +75,8 @@ case class RegistrationProblem(message: String, severity: Severity = Major, cate
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** A service couldn't be found.
+/**
+ * A service couldn't be found.
  */
 case class ServiceNotFoundProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ServiceNotFoundProblem
@@ -84,7 +87,8 @@ case class ServiceNotFoundProblem(message: String, severity: Severity = Major, c
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** A connection couldn't be established. Use for networking problems.
+/**
+ * A connection couldn't be established. Use for networking problems.
  */
 case class NoConnectionProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = NoConnectionProblem
@@ -95,7 +99,8 @@ case class NoConnectionProblem(message: String, severity: Severity = Major, cate
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** An arbitrary operation timed out.
+/**
+ * An arbitrary operation timed out.
  * Especially useful in conjunction with futures.
  */
 case class OperationTimedOutProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
@@ -107,7 +112,8 @@ case class OperationTimedOutProblem(message: String, severity: Severity = Major,
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** An arbitrary operation has been aborted by the system.
+/**
+ * An arbitrary operation has been aborted by the system.
  * Not intended to be used in case a user pressed the cancel button.
  * For cancelled operations use [almhirt.OperationCancelledProblem]
  */
@@ -120,7 +126,8 @@ case class OperationAbortedProblem(message: String, severity: Severity = Major, 
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** The operation was not allowed in the current state/context
+/**
+ * The operation was not allowed in the current state/context
  */
 case class IllegalOperationProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = IllegalOperationProblem
@@ -131,7 +138,8 @@ case class IllegalOperationProblem(message: String, severity: Severity = Major, 
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** The operation was not allowed in the current state/context
+/**
+ * The operation was not allowed in the current state/context
  */
 case class OperationNotSupportedProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = OperationNotSupportedProblem
@@ -142,7 +150,8 @@ case class OperationNotSupportedProblem(message: String, severity: Severity = Ma
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** An argument violating the operations contract has been passed
+/**
+ * An argument violating the operations contract has been passed
  */
 case class ArgumentProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ArgumentProblem
@@ -153,7 +162,8 @@ case class ArgumentProblem(message: String, severity: Severity = Major, category
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** A collection is empty but at least one element was required
+/**
+ * A collection is empty but at least one element was required
  */
 case class EmptyCollectionProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = EmptyCollectionProblem
@@ -164,7 +174,8 @@ case class EmptyCollectionProblem(message: String, severity: Severity = Minor, c
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** As instanceOf failed
+/**
+ * As instanceOf failed
  */
 case class TypeCastProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = TypeCastProblem
@@ -175,7 +186,8 @@ case class TypeCastProblem(message: String, severity: Severity = Major, category
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** There is a problem with the persistent store. This problem is more of technical nature and thus by default a system problem.
+/**
+ * There is a problem with the persistent store. This problem is more of technical nature and thus by default a system problem.
  */
 case class PersistenceProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = PersistenceProblem
@@ -186,7 +198,8 @@ case class PersistenceProblem(message: String, severity: Severity = Major, categ
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** The operation is not supported
+/**
+ * The operation is not supported
  */
 case class NotSupportedProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = NotSupportedProblem
@@ -197,7 +210,8 @@ case class NotSupportedProblem(message: String, severity: Severity = Major, cate
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** Some data structure couldn't be mapped from one to another. The key is giving the name of the field that caused the problem.
+/**
+ * Some data structure couldn't be mapped from one to another. The key is giving the name of the field that caused the problem.
  */
 case class MappingProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = MappingProblem
@@ -208,8 +222,8 @@ case class MappingProblem(message: String, severity: Severity = Minor, category:
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-
-/** Data couldn't be found. Use when looking for an entity or something similar. Do not use for a missing key in a map.
+/**
+ * Data couldn't be found. Use when looking for an entity or something similar. Do not use for a missing key in a map.
  */
 case class NotFoundProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = NotFoundProblem
@@ -220,7 +234,8 @@ case class NotFoundProblem(message: String, severity: Severity = Minor, category
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** The map or dictionary doesn't contain the given key.
+/**
+ * The map or dictionary doesn't contain the given key.
  */
 case class KeyNotFoundProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = KeyNotFoundProblem
@@ -231,7 +246,8 @@ case class KeyNotFoundProblem(message: String, severity: Severity = Minor, categ
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** A constraint on an operation has been violated by a user(or a client).
+/**
+ * A constraint on an operation has been violated by a user(or a client).
  */
 case class ConstraintViolatedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ConstraintViolatedProblem
@@ -242,7 +258,8 @@ case class ConstraintViolatedProblem(message: String, severity: Severity = Minor
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** A text couldn't be parsed. Usually used for failures when parsing DSLs
+/**
+ * A text couldn't be parsed. Usually used for failures when parsing DSLs
  */
 case class ParsingProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ParsingProblem
@@ -254,7 +271,8 @@ case class ParsingProblem(message: String, severity: Severity = Minor, category:
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** Some data is invalid. The key gives the context
+/**
+ * Some data is invalid. The key gives the context
  */
 case class BadDataProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = BadDataProblem
@@ -265,7 +283,8 @@ case class BadDataProblem(message: String, severity: Severity = Minor, category:
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** Something has been changed by someone else. Stale data etc..
+/**
+ * Something has been changed by someone else. Stale data etc..
  */
 case class CollisionProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = CollisionProblem
@@ -294,7 +313,8 @@ case class NotAuthenticatedProblem(message: String, severity: Severity = Minor, 
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** Something has already been created. Don't try again...
+/**
+ * Something has already been created. Don't try again...
  */
 case class AlreadyExistsProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = AlreadyExistsProblem
@@ -305,7 +325,8 @@ case class AlreadyExistsProblem(message: String, severity: Severity = Minor, cat
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** Some external stimulus has cancelled an operation
+/**
+ * Some external stimulus has cancelled an operation
  */
 case class OperationCancelledProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = OperationCancelledProblem
@@ -316,7 +337,8 @@ case class OperationCancelledProblem(message: String, severity: Severity = Minor
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** A rule on a process has been violated
+/**
+ * A rule on a process has been violated
  */
 case class BusinessRuleViolatedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = BusinessRuleViolatedProblem
@@ -327,7 +349,8 @@ case class BusinessRuleViolatedProblem(message: String, severity: Severity = Min
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-/** This locale simply isn't supported. Store the not supported locale code in 'locale'.
+/**
+ * This locale simply isn't supported. Store the not supported locale code in 'locale'.
  */
 case class LocaleNotSupportedProblem(message: String, severity: Severity = NoProblem, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = LocaleNotSupportedProblem
@@ -337,8 +360,10 @@ case class LocaleNotSupportedProblem(message: String, severity: Severity = NoPro
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
   def withUnsupportedLocale(locale: String) = withArg("unsupportedLocale", locale)
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  
-/** An element was not present in some kind of collection
+}
+
+/**
+ * An element was not present in some kind of collection
  */
 case class ElementNotFoundProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = ElementNotFoundProblem
@@ -347,7 +372,7 @@ case class ElementNotFoundProblem(message: String, severity: Severity = Minor, c
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))
   def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
-  }
 }
+
   
 

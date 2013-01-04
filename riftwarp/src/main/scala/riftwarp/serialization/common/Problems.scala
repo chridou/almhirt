@@ -111,7 +111,7 @@ object Problems {
     createAndRegisterDefaultDecomposerAndRecomposer[OperationCancelledProblem](riftwarp)(TypeDescriptor(classOf[OperationCancelledProblem].getName), OperationCancelledProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[BusinessRuleViolatedProblem](riftwarp)(TypeDescriptor(classOf[BusinessRuleViolatedProblem].getName), BusinessRuleViolatedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[LocaleNotSupportedProblem](riftwarp)(TypeDescriptor(classOf[LocaleNotSupportedProblem].getName), LocaleNotSupportedProblem.tupled) 
-    //createAndRegisterDefaultDecomposerAndRecomposer[ElementNotFoundProblem](riftwarp)(TypeDescriptor(classOf[ElementNotFoundProblem].getName), LocaleNotSupportedProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[ElementNotFoundProblem](riftwarp)(TypeDescriptor(classOf[ElementNotFoundProblem].getName), ElementNotFoundProblem.tupled) 
   }
   
   def registerAllCommonProblems(riftwarp: RiftWarp) {
