@@ -11,21 +11,22 @@ class UnsafeChannelRegistry extends ChannelRegistry {
   private val httpChannels = collection.mutable.HashMap[String, RiftChannel]()
 
   def memoizeChannel(channel: RiftChannel) {
-    channels += (channel.channelType -> channel)
-    (List(channel.httpContentType, channel.httpContentTypeExt).flatten ++ channel.moreLookUpSymbols).foreach(x =>
-      httpChannels += (x -> channel))
+    channels += (channel.channelType.toLowerCase() -> channel)
+    (List(channel.httpContentType, channel.httpContentTypeExt).flatten ++ channel.moreLookUpSymbols)
+      .map(x => x.toLowerCase())
+      .foreach(x => httpChannels += (x -> channel))
   }
   def getChannel(ident: String): AlmValidation[RiftChannel] =
-    option.cata(channels.get(ident))(
+    option.cata(channels.get(ident.toLowerCase()))(
       found => found.success,
       ElementNotFoundProblem("No channel found for '%s'".format(ident)).failure)
 
   def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftChannel] =
-    option.cata(httpChannels.get(contentType))(
+    option.cata(httpChannels.get(contentType.toLowerCase))(
       found => found.success,
       ElementNotFoundProblem("No channel found for content type '%s'".format(contentType)).failure)
 }
 
-object UnsafeChannelRegistry{
+object UnsafeChannelRegistry {
   def apply() = new UnsafeChannelRegistry
 }
