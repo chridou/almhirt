@@ -1,0 +1,5 @@
+package riftwarp
+
+object RiftWarpHttpFuns {
+
+}
