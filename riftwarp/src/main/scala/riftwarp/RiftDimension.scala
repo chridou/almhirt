@@ -4,11 +4,19 @@ trait RiftDimension {
   def manifestation: Any
 }
 
-case class DimensionString(manifestation: String) extends RiftDimension
-case class DimensionNiceString(manifestation: String) extends RiftDimension
+trait RiftStringBasedDimension extends RiftDimension {
+  def manifestation: String
+}
+
+trait RiftByteArrayBasedDimension extends RiftDimension {
+  def manifestation: Array[Byte]
+}
+
+case class DimensionString(manifestation: String) extends RiftStringBasedDimension
+case class DimensionNiceString(manifestation: String) extends RiftStringBasedDimension
 case class DimensionCord(manifestation: scalaz.Cord) extends RiftDimension
 case class DimensionNiceCord(manifestation: scalaz.Cord) extends RiftDimension
-case class DimensionBinary(manifestation: Array[Byte]) extends RiftDimension
+case class DimensionBinary(manifestation: Array[Byte]) extends RiftByteArrayBasedDimension
 case class DimensionRawMap(manifestation: Map[String, Any]) extends RiftDimension
 case class DimensionStdLibJsonMap(manifestation: Map[String, Any]) extends RiftDimension
 case class DimensionListAny(manifestation: List[Any]) extends RiftDimension
