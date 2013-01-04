@@ -32,19 +32,30 @@ object RiftWarpHttpFuns {
     } yield RiftHttpStringResponse(dematerialized, contentExt.create(decomposer.typeDescriptor))
   }
 
-  def createStringResponseWorkflow[TStringDimension <: RiftStringBasedDimension](onSuccess: RiftHttpStringResponse => Unit)(launderProblem: Problem => Problem)(onFailure: RiftHttpStringResponse => Unit)(onRiftWarpProblem: (RiftWarpProblem) => Unit)(implicit riftWarp: RiftWarp, mDim: Manifest[TStringDimension]): HttpResponseWorkflow = {
-    def handleObjectSerializationFailure(prob: Problem, channel: RiftChannel) = {
-      val launderedProb =
-        prob match {
-          case p: RiftWarpProblem =>
-            onRiftWarpProblem(p)
-            launderProblem(p)
-          case p =>
-            launderProblem(p)
-        }
-      createStringResponse[TStringDimension](channel, None)(prob)(riftWarp, mDim).fold(
-        prob => (),
-        onFailure)
+  /** Creates a function of type [[riftwarp.HttpResponseWorkflow[T]]] that can serialize an AnyRef and create a response based on the result.
+   * 
+   * @Tparams
+   * TStringDimension The target [[riftwarp.RiftDimension]] that manifests as a String
+   * TResult The type of the result returned by onSuccess and onFailure. This can also be Unit in case you call some kind of callback for responding
+   * 
+   * @params 
+   * onSuccess A Function that is passed a [[riftwarp.RiftHttpStringResponse]]. It returnes a result of type TResult which may be Unit. A call of this function ends the workflow
+   * launderProblem Takes a problem and can transform it to another problem(for security reasons) and returns the appropriate HTTP-Status
+   * onFailure Creates the response based on the given HTTP status code and the given [[riftwarp.RiftHttpStringResponse]]
+   * reportProblem Anytime a problem occures this function gets called with the problem. Useful for logging etc.
+   * 
+   * @return Usually the a response that can be further processed.  
+   */
+  def createStringResponseWorkflow[TStringDimension <: RiftStringBasedDimension, TResult](onSuccess: RiftHttpStringResponse => TResult)(launderProblem: Problem => (Problem, Int))(onFailure: (Int, RiftHttpStringResponse) => TResult)(reportProblem: Problem => Unit)(implicit riftWarp: RiftWarp, mDim: Manifest[TStringDimension]): HttpResponseWorkflow[TResult] = {
+    def handleObjectSerializationFailure(originalProblem: Problem, channel: RiftChannel): TResult = {
+      reportProblem(originalProblem)
+      val (launderedProblem, statusCode) = launderProblem(originalProblem)
+      createStringResponse[TStringDimension](channel, None)(launderedProblem)(riftWarp, mDim).fold(
+        prob => {
+          reportProblem(prob)
+          onFailure(statusCode, RiftHttpStringResponse(DimensionString(launderedProblem.toString), "text/plain"))
+        },
+        rsp => onFailure(statusCode, rsp))
     }
 
     (channel: RiftChannel) =>

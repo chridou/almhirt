@@ -5,7 +5,10 @@ package object riftwarp {
   type BlobDivert = (Array[Byte], RiftBlobIdentifier) => AlmValidation[RiftBlob] 
   type BlobFetch = (RiftBlob) => AlmValidation[Array[Byte]] 
 
-  type HttpResponseWorkflow = RiftChannel => AnyRef => Unit
+  /**
+   * A function that serializes an AnyRef and returns a response or handles errors and creates an error response for the error that occurred when serializing 
+   */
+  type HttpResponseWorkflow[T] = RiftChannel => AnyRef => T
   
   val NoDivertBlobDivert: BlobDivert = (arr: Array[Byte], path: RiftBlobIdentifier) => RiftBlobArrayValue(arr).success
   val NoFetchBlobFetch: BlobFetch = {
