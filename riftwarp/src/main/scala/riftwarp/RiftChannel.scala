@@ -1,5 +1,7 @@
 package riftwarp
 
+import riftwarp.components.MemoizesChannels
+
 
 trait RiftChannel {
   /** Unique identifier of a channel(like "json", "xml"...)
@@ -105,27 +107,27 @@ object RiftProtocolBuffers {
   def apply() = theInstance
 }
 
-class RiftThrift() extends RiftChannel {
-  val channelType = "thrift"
-  val httpContentType = None
-  val httpContentTypeExt = None
-  val moreLookUpSymbols = Nil
-}
-object RiftThrift {
-  private val theInstance = new RiftThrift()
-  def apply() = theInstance
-}
-
-class RiftYaml() extends RiftChannel {
-  val channelType = "yaml"
-  val httpContentType = None
-  val httpContentTypeExt = None
-  val moreLookUpSymbols = Nil
-}
-object RiftYaml {
-  private val theInstance = new RiftYaml()
-  def apply() = theInstance
-}
+//class RiftThrift() extends RiftChannel {
+//  val channelType = "thrift"
+//  val httpContentType = None
+//  val httpContentTypeExt = None
+//  val moreLookUpSymbols = Nil
+//}
+//object RiftThrift {
+//  private val theInstance = new RiftThrift()
+//  def apply() = theInstance
+//}
+//
+//class RiftYaml() extends RiftChannel {
+//  val channelType = "yaml"
+//  val httpContentType = None
+//  val httpContentTypeExt = None
+//  val moreLookUpSymbols = Nil
+//}
+//object RiftYaml {
+//  private val theInstance = new RiftYaml()
+//  def apply() = theInstance
+//}
 
 object RiftChannel {
   val Map = RiftMap()
@@ -134,6 +136,15 @@ object RiftChannel {
   val Xml = RiftXml()
   val MessagePack = RiftMessagePack()
   val Protobuf = RiftProtocolBuffers()
-  val Thrift = RiftThrift()
-  val Yaml = RiftYaml()
+//  val Thrift = RiftThrift()
+//  val Yaml = RiftYaml()
+  
+  def register(memoizer:MemoizesChannels) {
+    memoizer.memoizeChannel(Map)
+    memoizer.memoizeChannel(Json)
+    memoizer.memoizeChannel(Bson)
+    memoizer.memoizeChannel(Xml)
+    memoizer.memoizeChannel(MessagePack)
+    memoizer.memoizeChannel(Protobuf)
+  }
 }

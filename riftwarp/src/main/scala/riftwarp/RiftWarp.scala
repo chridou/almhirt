@@ -10,6 +10,7 @@ trait RiftWarp {
   def barracks: RiftWarpBarracks
   def toolShed: RiftWarpToolShed
   def converters: HasDimensionConverters
+  def channels: ChannelRegistry
 
   def lookUpDematerializerFactoryAndConverters[DimTarget <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mT: Manifest[DimTarget]): AlmValidation[(DematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
     def findDematerializerFactory(converters: List[RawDimensionConverter]): AlmValidation[(DematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
@@ -79,21 +80,22 @@ trait RiftWarp {
 }
 
 object RiftWarp {
-  def apply(theBarracks: RiftWarpBarracks, theToolShed: RiftWarpToolShed, theConverters: HasDimensionConverters): RiftWarp =
+  def apply(theBarracks: RiftWarpBarracks, theToolShed: RiftWarpToolShed, theConverters: HasDimensionConverters, theChannels: ChannelRegistry): RiftWarp =
     new RiftWarp {
       val barracks = theBarracks
       val toolShed = theToolShed
       val converters = theConverters
+      val channels = theChannels
     }
 
-  def unsafe(): RiftWarp = apply(RiftWarpBarracks.unsafe, RiftWarpToolShed.unsafe, new impl.UnsafeDimensionConverterRegistry)
+  def unsafe(): RiftWarp = apply(RiftWarpBarracks.unsafe, RiftWarpToolShed.unsafe, new impl.UnsafeDimensionConverterRegistry, impl.UnsafeChannelRegistry())
   def unsafeWithDefaults(): RiftWarp = {
     val riftWarp = unsafe()
     initializeWithDefaults(riftWarp)
     riftWarp
   }
 
-  def concurrent(): RiftWarp = apply(RiftWarpBarracks.concurrent, RiftWarpToolShed.concurrent, new impl.ConcurrentDimensionConverterRegistry)
+  def concurrent(): RiftWarp = apply(RiftWarpBarracks.concurrent, RiftWarpToolShed.concurrent, new impl.ConcurrentDimensionConverterRegistry, impl.ConcurrentChannelRegistry())
   def concurrentWithDefaults(): RiftWarp = {
     val riftWarp = concurrent()
     initializeWithDefaults(riftWarp)
@@ -137,5 +139,7 @@ object RiftWarp {
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToVectorConverter)
     
     serialization.common.Problems.registerAllCommonProblems(riftWarp)
+    
+    RiftChannel.register(riftWarp.channels)
   }
 }
