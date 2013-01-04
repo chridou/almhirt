@@ -99,7 +99,8 @@ object Problems {
     createAndRegisterDefaultDecomposerAndRecomposer[PersistenceProblem](riftwarp)(TypeDescriptor(classOf[PersistenceProblem].getName), PersistenceProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[NotSupportedProblem](riftwarp)(TypeDescriptor(classOf[NotSupportedProblem].getName), NotSupportedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[MappingProblem](riftwarp)(TypeDescriptor(classOf[MappingProblem].getName), MappingProblem.tupled)
-    createAndRegisterDefaultDecomposerAndRecomposer[NotFoundProblem](riftwarp)(TypeDescriptor(classOf[NotFoundProblem].getName), NotFoundProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[MappingProblem](riftwarp)(TypeDescriptor(classOf[MappingProblem].getName), MappingProblem.tupled)
+    createAndRegisterDefaultDecomposerAndRecomposer[SerializationProblem](riftwarp)(TypeDescriptor(classOf[SerializationProblem].getName), SerializationProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[KeyNotFoundProblem](riftwarp)(TypeDescriptor(classOf[KeyNotFoundProblem].getName), KeyNotFoundProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[ConstraintViolatedProblem](riftwarp)(TypeDescriptor(classOf[ConstraintViolatedProblem].getName), ConstraintViolatedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[ParsingProblem](riftwarp)(TypeDescriptor(classOf[ParsingProblem].getName), ParsingProblem.tupled)
@@ -112,6 +113,8 @@ object Problems {
     createAndRegisterDefaultDecomposerAndRecomposer[BusinessRuleViolatedProblem](riftwarp)(TypeDescriptor(classOf[BusinessRuleViolatedProblem].getName), BusinessRuleViolatedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[LocaleNotSupportedProblem](riftwarp)(TypeDescriptor(classOf[LocaleNotSupportedProblem].getName), LocaleNotSupportedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[ElementNotFoundProblem](riftwarp)(TypeDescriptor(classOf[ElementNotFoundProblem].getName), ElementNotFoundProblem.tupled) 
+
+    createAndRegisterDefaultDecomposerAndRecomposer[RiftWarpProblem](riftwarp)(TypeDescriptor(classOf[RiftWarpProblem].getName), RiftWarpProblem.tupled) 
   }
   
   def registerAllCommonProblems(riftwarp: RiftWarp) {
