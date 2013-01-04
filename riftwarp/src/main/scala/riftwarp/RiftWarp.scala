@@ -12,35 +12,17 @@ trait RiftWarp {
   def converters: HasDimensionConverters
   def channels: ChannelRegistry
 
-  def lookUpDematerializerFactoryAndConverters[DimTarget <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mT: Manifest[DimTarget]): AlmValidation[(DematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
-    def findDematerializerFactory(converters: List[RawDimensionConverter]): AlmValidation[(DematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
-      converters match {
-        case Nil => UnspecifiedProblem("No DematerializerFactory found matching with a target type matching %s.".format(converters.mkString(", "))).failure
-        case x :: xs =>
-          option.cata(toolShed.tryGetDematerializerFactoryByType(x.tSource)(channel, toolGroup))(
-            factory => (factory, x).success,
-            findDematerializerFactory(xs))
-      }
 
-    option.cata(toolShed.tryGetDematerializerFactory[DimTarget](channel))(
-      some => (some, Nil).success,
-      findDematerializerFactory(converters.getConvertersTo[DimTarget]).map(tuple => (tuple._1, List(tuple._2))))
-  }
-
-  def getDematerializationFun[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(divertBlobs: BlobDivert)(implicit mD: Manifest[TDimension]): AlmValidation[(AnyRef) => AlmValidation[TDimension]] =
-    lookUpDematerializerFactoryAndConverters[TDimension](channel, toolGroup).map(factoryAndConverters =>
-      (what: AnyRef) =>
-        barracks.getDecomposerForAny(what).flatMap(decomposer =>
-          factoryAndConverters._1.createDematerializer(divertBlobs)(barracks, toolShed).flatMap(demat =>
-            decomposer.decomposeRaw(what)(demat).flatMap(demat =>
-                factoryAndConverters._2.foldLeft(demat.dematerializeRaw.success[Problem])((acc, converter) =>
-                  acc.fold(prob => prob.failure, dim => converter.convertRaw(dim))).map(_.asInstanceOf[TDimension])))))
 
   def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
-    getDematerializationFun[TDimension](channel, toolGroup)(NoDivertBlobDivert).flatMap(fun => fun(what))
+    barracks.getDecomposerForAny[AnyRef](what).flatMap(decomposer =>
+      RiftWarpFuns.getDematerializationFun[TDimension, AnyRef](channel, toolGroup)(NoDivertBlobDivert)(this, m).flatMap(fun => 
+        fun(what, decomposer)))
 
   def prepareForWarpWithBlobs[TDimension <: RiftDimension](divertBlobs: BlobDivert)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
-    getDematerializationFun[TDimension](channel, toolGroup)(divertBlobs).flatMap(fun => fun(what))
+    barracks.getDecomposerForAny[AnyRef](what).flatMap(decomposer =>
+      RiftWarpFuns.getDematerializationFun[TDimension, AnyRef](channel, toolGroup)(divertBlobs)(this, m).flatMap(fun => 
+        fun(what, decomposer)))
     
   def lookUpRematerializerFactoryAndConverters[DimSource <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mS: Manifest[DimSource]): AlmValidation[(RematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
     def findRematerializerFactory(converters: List[RawDimensionConverter]): AlmValidation[(RematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
