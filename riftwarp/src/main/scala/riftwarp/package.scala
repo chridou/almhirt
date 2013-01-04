@@ -5,6 +5,8 @@ package object riftwarp {
   type BlobDivert = (Array[Byte], RiftBlobIdentifier) => AlmValidation[RiftBlob] 
   type BlobFetch = (RiftBlob) => AlmValidation[Array[Byte]] 
 
+  type HttpResponseWorkflow = RiftChannel => AnyRef => Unit
+  
   val NoDivertBlobDivert: BlobDivert = (arr: Array[Byte], path: RiftBlobIdentifier) => RiftBlobArrayValue(arr).success
   val NoFetchBlobFetch: BlobFetch = {
     case RiftBlobArrayValue(arr) => arr.success 

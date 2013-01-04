@@ -41,6 +41,17 @@ trait RiftChannel {
   
 }
 
+class RiftText() extends RiftChannel {
+  val channelType = "text"
+  val httpContentType = Some("text/plain")
+  val httpContentTypeExt = None
+  val moreLookUpSymbols = Nil
+}
+object RiftText {
+  private val theInstance = new RiftText()
+  def apply() = theInstance
+}
+
 class RiftMap() extends RiftChannel {
   val channelType = "map"
   val httpContentType = None
@@ -130,6 +141,7 @@ object RiftProtocolBuffers {
 //}
 
 object RiftChannel {
+  val Text = RiftText()
   val Map = RiftMap()
   val Json = RiftJson()
   val Bson = RiftBson()
@@ -140,6 +152,7 @@ object RiftChannel {
 //  val Yaml = RiftYaml()
   
   def register(memoizer:MemoizesChannels) {
+    memoizer.memoizeChannel(Text)
     memoizer.memoizeChannel(Map)
     memoizer.memoizeChannel(Json)
     memoizer.memoizeChannel(Bson)
