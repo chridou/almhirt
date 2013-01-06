@@ -35,6 +35,16 @@ object RiftWarpHttpFuns {
 
   /** Creates a function of type [[riftwarp.HttpResponseWorkflow[T]]] that can serialize an AnyRef and create a response based on the result.
    * 
+   * The workflow(the returned function):
+   * 1) Try to serialize the given data
+   * 2) In case of success: Call onSuccess which ends the workflow.
+   * 3) In case of a problem: Call reportProblem. Do some logging etc
+   * 4) Call launderProblem to map the problem and create a HTTP status code
+   * 5) Try to deserialize the problem from step 3.
+   * 6) If the problem could be serialized, call onFailure given the serialized problem and the HTTP status code. The workflow ends.
+   * 7) If serializing the problem fails, call onProblem with the problem caused by serializing the problem from step 3
+   * 8) Call onProblem with a text/plain response created by calling toString on the problem of step 3. The workflow ends.
+   * 
    * @Tparams
    * TStringDimension The target [[riftwarp.RiftDimension]] that manifests as a String
    * TResult The type of the result returned by onSuccess and onFailure. This can also be Unit in case you call some kind of callback for responding
