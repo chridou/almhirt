@@ -3,6 +3,7 @@ package riftwarp
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.http._
 
 sealed trait RiftHttpResponse
 case class RiftHttpStringResponse(dim: RiftStringBasedDimension, contentType: String) extends RiftHttpResponse
@@ -46,7 +47,7 @@ object RiftWarpHttpFuns {
    * 
    * @return Usually the a response that can be further processed.  
    */
-  def createStringResponseWorkflow[TStringDimension <: RiftStringBasedDimension, TResult](onSuccess: RiftHttpStringResponse => TResult)(launderProblem: Problem => (Problem, Int))(onFailure: (Int, RiftHttpStringResponse) => TResult)(reportProblem: Problem => Unit)(implicit riftWarp: RiftWarp, mDim: Manifest[TStringDimension]): HttpResponseWorkflow[TResult] = {
+  def createStringResponseWorkflow[TStringDimension <: RiftStringBasedDimension, TResult](onSuccess: RiftHttpStringResponse => TResult)(launderProblem: Problem => (Problem, HttpError))(onFailure: (HttpError, RiftHttpStringResponse) => TResult)(reportProblem: Problem => Unit)(implicit riftWarp: RiftWarp, mDim: Manifest[TStringDimension]): HttpResponseWorkflow[TResult] = {
     def handleObjectSerializationFailure(originalProblem: Problem, channel: RiftChannel): TResult = {
       reportProblem(originalProblem)
       val (launderedProblem, statusCode) = launderProblem(originalProblem)
