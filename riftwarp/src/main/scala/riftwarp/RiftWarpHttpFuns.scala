@@ -50,7 +50,7 @@ object RiftWarpHttpFuns {
    * TResult The type of the result returned by onSuccess and onFailure. This can also be Unit in case you call some kind of callback for responding
    * 
    * @params 
-   * onSuccess A Function that is passed a [[riftwarp.RiftHttpStringResponse]]. It returnes a result of type TResult which may be Unit. A call of this function ends the workflow
+   * onSuccess A Function that is passed a [[riftwarp.RiftHttpStringResponse]]. It returns a result of type TResult which may be Unit. A call of this function ends the workflow
    * launderProblem Takes a problem and can transform it to another problem(for security reasons) and returns the appropriate HTTP-Status
    * onFailure Creates the response based on the given HTTP status code and the given [[riftwarp.RiftHttpStringResponse]]
    * reportProblem Anytime a problem occures this function gets called with the problem. Useful for logging etc.
