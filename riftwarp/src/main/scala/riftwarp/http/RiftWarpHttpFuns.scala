@@ -131,14 +131,11 @@ object RiftWarpHttpFuns {
   def extractChannelAndTypeDescriptor(contentType: String): AlmValidation[(String, Option[TypeDescriptor])] =
     sys.error("")
     
-//  def handleIncomingStringContent[TStringDimension <: RiftStringBasedDimension, TResult](contentType: String, data: TStringDimension)(implicit riftwarp: RiftWarp): AlmValidation[TResult] =
-//    for 
-//
-//  def handleIncomingBinaryContent[TBinaryDimension <: RiftByteArrayBasedDimension, TResult](contentType: String, data: TBinaryDimension)(implicit riftwarp: RiftWarp): AlmValidation[TResult] =
-//    for {
-//      (httpContentType, Option[TypeDescriptor]) <- extractChannelAndTypeDescriptor(contentType)
-//      channel <- riftWarp.lookUpFromHttpContentType(httpContentType)
-//      dematerialize <- 
-//    }
-//    
+  def transformIncomingContent[TDimension <: RiftDimension, TResult <: AnyRef](contentType: String, data: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
+    for {
+      (httpContentType, tdOption) <- extractChannelAndTypeDescriptor(contentType)
+      channel <- riftWarp.channels.lookUpFromHttpContentType(httpContentType)
+      dematerialize <- RiftWarpFuns.getRecomposeFun[TDimension, TResult](channel, None)(riftWarp.barracks.lookUpFromRematerializer[TResult])(NoFetchBlobFetch)
+      dematerialized <- dematerialize(data)
+    } yield dematerialized
 }

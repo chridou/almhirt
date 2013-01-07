@@ -1,15 +1,13 @@
 package almhirt.http
 
-trait HttpResponseStatusCode {
-  def code: Int
-}
+sealed trait HttpResponseStatusCode { def code: Int }
 
-trait HttpInformational extends HttpResponseStatusCode
+sealed trait HttpInformational extends HttpResponseStatusCode
 object Http_100_Continue extends HttpInformational { val code = 100 }
 object Http_101_SwitchingProtocols extends HttpInformational { val code = 101 }
 object Http_102_Processing extends HttpInformational { val code = 102 }
 
-trait HttpSuccess extends HttpResponseStatusCode
+sealed trait HttpSuccess extends HttpResponseStatusCode
 object Http_200_OK extends HttpSuccess { val code = 200 }
 object Http_201_Created extends HttpSuccess { val code = 201 }
 object Http_202_Accepted extends HttpSuccess { val code = 202 }
@@ -22,7 +20,7 @@ object Http_208_Already_Reported extends HttpSuccess { val code = 208 }
 object Http_226_IM_Used extends HttpSuccess { val code = 226 }
 object Http_230_Authentication_Successful extends HttpSuccess { val code = 230 }
 
-trait HttpRedirection extends HttpResponseStatusCode
+sealed trait HttpRedirection extends HttpResponseStatusCode
 object Http_300_Multiple_Choices extends HttpRedirection { val code = 300 }
 object Http_301_Moved_Permanently extends HttpRedirection { val code = 301 }
 object Http_302_Found extends HttpRedirection { val code = 302 }
@@ -33,9 +31,9 @@ object Http_306_Switch_Proxy extends HttpRedirection { val code = 306 }
 object Http_307_Temporary_Redirect extends HttpRedirection { val code = 307 }
 object Http_308_Permanent_Redirect extends HttpRedirection { val code = 308 }
 
-trait HttpError extends HttpResponseStatusCode
+sealed trait HttpError extends HttpResponseStatusCode
 
-trait HttpClientError extends HttpError
+sealed trait HttpClientError extends HttpError
 object Http_400_Bad_Request extends HttpClientError { val code = 400 }
 object Http_401_Unauthorized extends HttpClientError { val code = 401 }
 object Http_402_Payment_Required extends HttpClientError { val code = 402 }
@@ -62,7 +60,7 @@ object Http_428_Precondition_Required extends HttpClientError { val code = 428 }
 object Http_429_Too_Many_Requests extends HttpClientError { val code = 429 }
 object Http_431_Request_Header_Fields_Too_Large extends HttpClientError { val code = 431 }
 
-trait HttpServerError extends HttpError
+sealed trait HttpServerError extends HttpError
 object Http_500_Internal_Server_Error extends HttpServerError { val code = 500 }
 object Http_501_Not_Implemented extends HttpServerError { val code = 501 }
 object Http_502_Bad_Gateway extends HttpServerError { val code = 502 }
