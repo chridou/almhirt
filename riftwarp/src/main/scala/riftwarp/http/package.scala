@@ -11,5 +11,6 @@ package object http {
   sealed trait RiftHttpResponse
   case class RiftHttpStringResponse(dim: RiftStringBasedDimension, contentType: String) extends RiftHttpResponse
   case class RiftHttpBinaryResponse(dim: RiftByteArrayBasedDimension, contentType: String) extends RiftHttpResponse
+  case object RiftHttpNoContentResponse extends RiftHttpResponse
 
 }
