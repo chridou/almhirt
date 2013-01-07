@@ -10,7 +10,7 @@ It's goal is to help building immutable domain models, avoid exceptional code pa
 
 ## What's the motivation?
 
-Dive into scala and build something that might be useful. 
+Dive into Scala and build something that might be useful. 
 
 ## Is this all new?
 
