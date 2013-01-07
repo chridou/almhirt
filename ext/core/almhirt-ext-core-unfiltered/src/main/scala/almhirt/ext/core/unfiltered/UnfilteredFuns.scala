@@ -9,10 +9,11 @@ import riftwarp._
 import riftwarp.http.RiftWarpHttpFuns
 
 object UnfilteredFuns {
-  def getContentType(req: HttpRequest[ReceivedMessage]): AlmValidation[String] =
+  def getContentType(req: HttpRequest[Any]): AlmValidation[String] =
     RequestContentType(req).noneIsBadData("ContentType")
+
     
-  def dataByChannel(req: HttpRequest[ReceivedMessage])(channel: RiftChannel): AlmValidation[RiftDimension] = {
+  def dataByChannel(req: HttpRequest[Any])(channel: RiftChannel): AlmValidation[RiftDimension] = {
     channel match {
       case ch: RiftText => NotSupportedProblem("Channel RiftText").failure
       case ch: RiftMap => NotSupportedProblem("Channel RiftMap").failure
@@ -25,7 +26,7 @@ object UnfilteredFuns {
     }
   }
   
-  def transformContent[TResult <: AnyRef](req: HttpRequest[ReceivedMessage])(implicit mTarget: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
+  def transformContent[TResult <: AnyRef](req: HttpRequest[Any])(implicit mTarget: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
     for {
       contentType <- getContentType(req)
       result <- RiftWarpHttpFuns.transformIncomingContent[TResult](dataByChannel(req))(contentType)

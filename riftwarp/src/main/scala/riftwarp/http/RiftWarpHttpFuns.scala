@@ -127,6 +127,25 @@ object RiftWarpHttpFuns {
           onSuccess)
       }
   }
+
+  def createResponseWorkflow[TInput <: AnyRef, TResult](onSuccess: RiftHttpStringResponse => TResult)(launderProblem: Problem => (Problem, HttpError))(onFailure: (HttpError, RiftHttpStringResponse) => TResult)(reportProblem: Problem => Unit)(implicit riftWarp: RiftWarp): HttpResponseWorkflow[TResult] = {
+    def handleObjectSerializationFailure(originalProblem: Problem, channel: RiftChannel): TResult = {
+      reportProblem(originalProblem)
+      val (launderedProblem, statusCode) = launderProblem(originalProblem)
+      createStringResponse[TStringDimension](channel, None)(launderedProblem)(riftWarp, mDim).fold(
+        prob => {
+          reportProblem(prob)
+          onFailure(statusCode, RiftHttpStringResponse(DimensionString(launderedProblem.toString), "text/plain"))
+        },
+        rsp => onFailure(statusCode, rsp))
+    }
+    (channel: RiftChannel) =>
+      (what: TInput) => {
+        createStringResponse[TStringDimension](channel, None)(what)(riftWarp, mDim).fold(
+          prob => handleObjectSerializationFailure(prob, channel),
+          onSuccess)
+      }
+  }
   
   def extractChannelAndTypeDescriptor(contentType: String): AlmValidation[(String, Option[TypeDescriptor])] =
     sys.error("")
