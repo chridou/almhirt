@@ -7,9 +7,9 @@ import riftwarp._
 import riftwarp.components._
 
 class ConcurrentDimensionConverterRegistry extends HasDimensionConverters {
-  private val converters = new _root_.java.util.concurrent.ConcurrentHashMap[String, RawDimensionConverter](512)
-  private val convertersBySource = new _root_.java.util.concurrent.ConcurrentHashMap[String, List[RawDimensionConverter]](512)
-  private val convertersByTarget = new _root_.java.util.concurrent.ConcurrentHashMap[String, List[RawDimensionConverter]](512)
+  private val converters = new _root_.java.util.concurrent.ConcurrentHashMap[String, RawDimensionConverter](128)
+  private val convertersBySource = new _root_.java.util.concurrent.ConcurrentHashMap[String, List[RawDimensionConverter]](256)
+  private val convertersByTarget = new _root_.java.util.concurrent.ConcurrentHashMap[String, List[RawDimensionConverter]](256)
 
   def addConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension](converter: DimensionConverter[DimSource, DimTarget]) {
     val ident = converter.tSource.getName()+converter.tTarget.getName()
@@ -34,15 +34,15 @@ class ConcurrentDimensionConverterRegistry extends HasDimensionConverters {
       case x => Some(x.asInstanceOf[DimensionConverter[DimSource, DimTarget]])
    }
 
-  def getConvertersFromDimType(tSource: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]] =
+  def getConvertersFromByDimType(tSource: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]] =
     convertersBySource.get(tSource) match {
       case null => Nil
       case x => x.asInstanceOf[List[DimensionConverter[_, _]]]
    }
     
-  def getConvertersTo[DimTarget <: RiftDimension](implicit mT: Manifest[DimTarget]): List[DimensionConverter[_, DimTarget]] =
-    convertersByTarget.get(mT.runtimeClass.getName()) match {
+  def getConvertersToByDimType(tTarget: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]] =
+    convertersByTarget.get(tTarget.getName()) match {
       case null => Nil
-      case x => x.asInstanceOf[List[DimensionConverter[_, DimTarget]]]
+      case x => x.asInstanceOf[List[DimensionConverter[_, _]]]
    }
 }

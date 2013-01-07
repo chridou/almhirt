@@ -21,7 +21,7 @@ trait RiftChannel {
    * 
    */
   def moreLookUpSymbols: List[String]
-
+  
   def canEqual(other: Any) = {
     other.isInstanceOf[riftwarp.RiftChannel]
   }
@@ -41,11 +41,16 @@ trait RiftChannel {
   
 }
 
-class RiftText() extends RiftChannel {
+trait RiftHttpChannel{
+  def httpDimensionType(nice: Boolean): Class[_ <: RiftDimension]
+}
+
+class RiftText() extends RiftChannel with RiftHttpChannel {
   val channelType = "text"
   val httpContentType = Some("text/plain")
   val httpContentTypeExt = None
   val moreLookUpSymbols = Nil
+  def httpDimensionType(nice: Boolean ) = classOf[DimensionString]
 }
 object RiftText {
   private val theInstance = new RiftText()
@@ -63,11 +68,12 @@ object RiftMap {
   def apply() = theInstance
 }
 
-class RiftJson() extends RiftChannel {
+class RiftJson() extends RiftChannel with RiftHttpChannel {
   val channelType = "json"
   val httpContentType = Some("json")
   val httpContentTypeExt = Some("text/x-json")
   val moreLookUpSymbols = Nil
+  def httpDimensionType(nice: Boolean ) = if(nice) classOf[DimensionNiceString] else classOf[DimensionString]
 }
 object RiftJson {
   private val theInstance = new RiftJson()
@@ -85,22 +91,25 @@ object RiftBson {
   def apply() = theInstance
 }
 
-class RiftXml() extends RiftChannel {
+class RiftXml() extends RiftChannel with RiftHttpChannel {
   val channelType = "xml"
   val httpContentType = Some("xml")
   val httpContentTypeExt = Some("text/xml")
   val moreLookUpSymbols = Nil
+  def httpDimensionType(nice: Boolean ) = 
+    if(nice) classOf[DimensionNiceString] else classOf[DimensionString]
 }
 object RiftXml {
   private val theInstance = new RiftXml()
   def apply() = theInstance
 }
 
-class RiftMessagePack() extends RiftChannel {
+class RiftMessagePack() extends RiftChannel with RiftHttpChannel {
   val channelType = "msgpack"
   val httpContentType = None
   val httpContentTypeExt = None
   val moreLookUpSymbols = Nil
+  def httpDimensionType(nice: Boolean) = classOf[DimensionString]
 }
 object RiftMessagePack {
   private val theInstance = new RiftMessagePack()
@@ -112,6 +121,7 @@ class RiftProtocolBuffers() extends RiftChannel {
   val httpContentType = None
   val httpContentTypeExt = None
   val moreLookUpSymbols = Nil
+  def preferredDimensionType(nice: Boolean ) = None
 }
 object RiftProtocolBuffers {
   private val theInstance = new RiftProtocolBuffers()

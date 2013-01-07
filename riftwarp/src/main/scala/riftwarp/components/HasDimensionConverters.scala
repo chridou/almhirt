@@ -13,8 +13,11 @@ trait HasDimensionConverters {
       converter => converter.success,
       UnspecifiedProblem("No converter found for '%s' -> '%s')".format(mS.runtimeClass.getName, mT.runtimeClass.getName)).failure)
 
-  def getConvertersFromDimType(tSource: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]]
+  def getConvertersFromByDimType(tSource: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]]
   def getConvertersFrom[DimSource <: RiftDimension](implicit mS: Manifest[DimSource]): List[DimensionConverter[DimSource, _]] =
-    getConvertersFromDimType(mS.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]]).map(_.asInstanceOf[DimensionConverter[DimSource, _]])
-  def getConvertersTo[DimTarget <: RiftDimension](implicit mT: Manifest[DimTarget]): List[DimensionConverter[_, DimTarget]]
+    getConvertersFromByDimType(mS.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]]).map(_.asInstanceOf[DimensionConverter[DimSource, _]])
+  def getConvertersToByDimType(tTarget: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]]
+  def getConvertersTo[DimTarget <: RiftDimension](implicit mT: Manifest[DimTarget]): List[DimensionConverter[_, DimTarget]] =
+    getConvertersToByDimType(mT.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]]).map(_.asInstanceOf[DimensionConverter[_, DimTarget]])
+    
 }

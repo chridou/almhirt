@@ -14,12 +14,12 @@ trait RiftWarp {
 
   def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
     barracks.getDecomposerForAny[AnyRef](what).flatMap(decomposer =>
-      RiftWarpFuns.getDematerializationFun[TDimension, AnyRef](channel, toolGroup)(NoDivertBlobDivert)(this, m).flatMap(fun => 
+      RiftWarpFuns.getDematerializationFun[AnyRef, TDimension](channel, toolGroup)(NoDivertBlobDivert)(this, m).flatMap(fun => 
         fun(what, decomposer)))
 
   def prepareForWarpWithBlobs[TDimension <: RiftDimension](divertBlobs: BlobDivert)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
     barracks.getDecomposerForAny[AnyRef](what).flatMap(decomposer =>
-      RiftWarpFuns.getDematerializationFun[TDimension, AnyRef](channel, toolGroup)(divertBlobs)(this, m).flatMap(fun => 
+      RiftWarpFuns.getDematerializationFun[AnyRef, TDimension](channel, toolGroup)(divertBlobs)(this, m).flatMap(fun => 
         fun(what, decomposer)))
 
   def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] =

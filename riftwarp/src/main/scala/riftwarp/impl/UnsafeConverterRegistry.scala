@@ -27,9 +27,9 @@ class UnsafeDimensionConverterRegistry extends HasDimensionConverters {
   def tryGetConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension](implicit mS: Manifest[DimSource], mT: Manifest[DimTarget]): Option[DimensionConverter[DimSource, DimTarget]] =
     converters.get(mS.runtimeClass.getName()+mT.runtimeClass.getName()).map(_.asInstanceOf[DimensionConverter[DimSource, DimTarget]])
 
-  def getConvertersFromDimType(tSource: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]] =
+  def getConvertersFromByDimType(tSource: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]] =
     convertersBySource.get(tSource.getName()).map(_.asInstanceOf[List[DimensionConverter[_, _]]]).getOrElse(Nil)
     
-  def getConvertersTo[DimTarget <: RiftDimension](implicit mT: Manifest[DimTarget]): List[DimensionConverter[_, DimTarget]] =
-    convertersByTarget.get(mT.runtimeClass.getName()).map(_.asInstanceOf[List[DimensionConverter[_, DimTarget]]]).getOrElse(Nil)
+  def getConvertersToByDimType(tTarget: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]] =
+    convertersByTarget.get(tTarget.getName()).map(_.asInstanceOf[List[DimensionConverter[_, _]]]).getOrElse(Nil)
 }
