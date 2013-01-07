@@ -6,12 +6,13 @@ import almhirt.syntax.almvalidation._
 import unfiltered.request._
 import unfiltered.netty.ReceivedMessage
 import riftwarp._
+import riftwarp.http.RiftWarpHttpFuns
 
 object UnfilteredFuns {
   def getContentType(req: HttpRequest[ReceivedMessage]): AlmValidation[String] =
     RequestContentType(req).noneIsBadData("ContentType")
     
-  def dataByChannel(channel: RiftChannel)(req: HttpRequest[ReceivedMessage]): AlmValidation[RiftDimension] = {
+  def dataByChannel(req: HttpRequest[ReceivedMessage])(channel: RiftChannel): AlmValidation[RiftDimension] = {
     channel match {
       case ch: RiftText => NotSupportedProblem("Channel RiftText").failure
       case ch: RiftMap => NotSupportedProblem("Channel RiftMap").failure
@@ -23,4 +24,10 @@ object UnfilteredFuns {
       case x => NotSupportedProblem("Channel '%s'".format(x.getClass())).failure
     }
   }
+  
+  def transformContent[TResult <: AnyRef](req: HttpRequest[ReceivedMessage])(implicit mTarget: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
+    for {
+      contentType <- getContentType(req)
+      result <- RiftWarpHttpFuns.transformIncomingContent[TResult](dataByChannel(req))(contentType)
+    } yield result
 }
