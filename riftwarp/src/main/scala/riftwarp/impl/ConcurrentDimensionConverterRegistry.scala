@@ -34,10 +34,10 @@ class ConcurrentDimensionConverterRegistry extends HasDimensionConverters {
       case x => Some(x.asInstanceOf[DimensionConverter[DimSource, DimTarget]])
    }
 
-  def getConvertersFrom[DimSource <: RiftDimension](implicit mS: Manifest[DimSource]): List[DimensionConverter[DimSource, _]] =
-    convertersBySource.get(mS.runtimeClass.getName()) match {
+  def getConvertersFromDimType(tSource: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]] =
+    convertersBySource.get(tSource) match {
       case null => Nil
-      case x => x.asInstanceOf[List[DimensionConverter[DimSource, _]]]
+      case x => x.asInstanceOf[List[DimensionConverter[_, _]]]
    }
     
   def getConvertersTo[DimTarget <: RiftDimension](implicit mT: Manifest[DimTarget]): List[DimensionConverter[_, DimTarget]] =

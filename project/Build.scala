@@ -31,10 +31,6 @@ object Dependencies {
 
 //	lazy val slick  = "com.typesafe" %% "slick" % "0.11.2"
 
-	lazy val unfiltered = "net.databinder" %% "unfiltered-netty" % "0.6.4"
-
-	lazy val casbah  = "org.mongodb" %% "casbah" % "2.3.0"
-
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 	
 	lazy val specs2 = "org.specs2" %% "specs2" % "1.13" % "test"
@@ -152,7 +148,7 @@ trait UnfilteredBuild {
   import Resolvers._
   def unfilteredProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += unfiltered,
+	  libraryDependencies += "net.databinder" %% "unfiltered-netty" % "0.6.5",
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases)
   
@@ -161,7 +157,7 @@ trait UnfilteredBuild {
 object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with UnfilteredBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings,
-	                        base = file(".")) aggregate(common, core, anormEventLog, docit, riftwarp)
+	                        base = file(".")) aggregate(common, core, anormEventLog, docit, riftwarp, unfiltered)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -187,8 +183,8 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRi
                        			baseFile = file("almhirt-docit")) dependsOn(common)
 
 								
-// lazy val unfiltered = unfilteredProject(	name = "almhirt-ext-common-unfiltered",
-//	                       				baseFile = file("./ext/common/almhirt-ext-common-unfiltered")) dependsOn(common, riftwarp)
+ lazy val unfiltered = unfilteredProject(	name = "almhirt-ext-core-unfiltered",
+	                       				baseFile = file("./ext/core/almhirt-ext-core-unfiltered")) dependsOn(core, riftwarp)
 
 										
 }

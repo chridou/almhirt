@@ -138,4 +138,14 @@ object RiftWarpHttpFuns {
       dematerialize <- RiftWarpFuns.getRecomposeFun[TDimension, TResult](channel, None)(riftWarp.barracks.lookUpFromRematerializer[TResult])(NoFetchBlobFetch)
       dematerialized <- dematerialize(data)
     } yield dematerialized
+
+  def transformIncomingContent[TResult <: AnyRef](getData: RiftChannel => AlmValidation[RiftDimension])(contentType: String)(implicit mTarget: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
+    for {
+      (httpContentType, tdOption) <- extractChannelAndTypeDescriptor(contentType)
+      channel <- riftWarp.channels.lookUpFromHttpContentType(httpContentType)
+      data <- getData(channel)
+      dematerialize <- RiftWarpFuns.getRecomposeFun[TResult](channel, data.getClass(), None)(riftWarp.barracks.lookUpFromRematerializer[TResult])(NoFetchBlobFetch)
+      dematerialized <- dematerialize(data)
+    } yield dematerialized
 }
+
