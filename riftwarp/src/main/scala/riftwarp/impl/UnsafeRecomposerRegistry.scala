@@ -13,8 +13,10 @@ class UnsafeRecomposerRegistry extends HasRecomposers {
 
   def tryGetRecomposer[T <: AnyRef](typeDescriptor: TypeDescriptor): Option[Recomposer[T]] =
     recomposers.get(typeDescriptor).flatMap {
-      case (desc, isTyped) =>
-        boolean.fold(isTyped, Some(desc.asInstanceOf[Recomposer[T]]), None)
+      case (desc, true) =>
+       Some(desc.asInstanceOf[Recomposer[T]])
+      case (desc, false) =>
+        Some(new EnrichedRawRecomposer[T](desc))
     }
 
   def addRawRecomposer(recomposer: RawRecomposer) { recomposers = recomposers + (recomposer.typeDescriptor -> (recomposer, false)) }

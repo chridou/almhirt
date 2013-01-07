@@ -145,7 +145,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
 
   def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
     spawnNewForIdentAndThenMap(ident, remat =>
-      hasRecomposers.lookUpFromRematerializer(remat, m.runtimeClass).flatMap(recomposer =>
+      hasRecomposers.lookUpFromRematerializer(remat, Some(m.runtimeClass)).flatMap(recomposer =>
         recomposer.recomposeRaw(remat).flatMap(x => almCast[T](x))))
 
   def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =

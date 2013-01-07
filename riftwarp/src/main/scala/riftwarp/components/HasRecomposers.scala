@@ -18,7 +18,7 @@ trait HasRecomposers {
       recomposer => recomposer.success,
       UnspecifiedProblem("No recomposer found for type descriptor '%s')".format(typeDescriptor)).failure)
 
-  def lookUpFromRematerializer(remat: Rematerializer, backupDescriptor: Option[TypeDescriptor]): AlmValidation[RawRecomposer] =
+  def lookUpRawFromRematerializer(remat: Rematerializer, backupDescriptor: Option[TypeDescriptor]): AlmValidation[RawRecomposer] =
     remat.tryGetTypeDescriptor.flatMap(tdOpt =>
       option.cata(tdOpt)(
         s => s.success,
@@ -27,17 +27,27 @@ trait HasRecomposers {
           UnspecifiedProblem("Could not determine the required type").failure))).flatMap(td =>
       getRawRecomposer(td))
 
-  def lookUpFromRematerializer(remat: Rematerializer, tBackup: Class[_]): AlmValidation[RawRecomposer] =
+  def lookUpRawFromRematerializer(remat: Rematerializer, tBackup: Class[_]): AlmValidation[RawRecomposer] =
     remat.tryGetTypeDescriptor.map(tdOpt =>
       tdOpt.getOrElse(TypeDescriptor(tBackup))).flatMap(td =>
-        getRawRecomposer(td))
+      getRawRecomposer(td))
 
-  def lookUpFromRematerializer(remat: Rematerializer): AlmValidation[RawRecomposer] =
-    lookUpFromRematerializer(remat, None)
-        
-  def decomposeWithLookedUpRawRecomposer(remat: Rematerializer): AlmValidation[AnyRef] =
-    lookUpFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat))
-    
+  def lookUpRawFromRematerializer(remat: Rematerializer): AlmValidation[RawRecomposer] =
+    lookUpRawFromRematerializer(remat, None)
+
+  def decomposeRawWithLookedUpRawRecomposer(remat: Rematerializer): AlmValidation[AnyRef] =
+    lookUpRawFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat))
+
+  def lookUpFromRematerializer[T <: AnyRef](remat: Rematerializer, tBackup: Option[Class[_]])(implicit mTarget: Manifest[T]): AlmValidation[Recomposer[T]] =
+    remat.tryGetTypeDescriptor.fold(
+      prob => prob.failure,
+      succ =>
+        option.cata(succ)(
+          td => getRecomposer[T](td),
+          option.cata(tBackup)(
+            clazz => getRecomposer[T](TypeDescriptor(clazz)),
+            UnspecifiedProblem("Could extract the require TypeDescriptor").failure)))
+
   def addRawRecomposer(recomposer: RawRecomposer): Unit
   def addRecomposer(recomposer: Recomposer[_]): Unit
 }

@@ -124,7 +124,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
   def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
     trySpawnNew(ident).flatMap(rematOpt =>
       option.cata(rematOpt)(
-        remat => hasRecomposers.lookUpFromRematerializer(remat, m.runtimeClass).flatMap(recomposer =>
+        remat => hasRecomposers.lookUpFromRematerializer(remat, Some(m.runtimeClass)).flatMap(recomposer =>
           recomposer.recomposeRaw(remat).flatMap(x => almCast[T](x)).map(Some(_))),
         None.success))
 
