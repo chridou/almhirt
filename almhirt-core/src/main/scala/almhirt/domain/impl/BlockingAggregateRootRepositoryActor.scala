@@ -16,12 +16,13 @@ import almhirt.environment.Almhirt
 abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event], almhirt: Almhirt) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
   implicit private def timeout = almhirt.mediumDuration
-  implicit private def futureContext = almhirt.executionContext
+  implicit private val hasExecutionContext = almhirt
+  implicit private val executionContext = hasExecutionContext.executionContext
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] =
     (eventLog ? GetEventsQry(id))(timeout)
       .mapTo[EventsForAggregateRootRsp]
-      .map(x => x.chunk.events)
+      .map(x => x.chunk.events)(hasExecutionContext.executionContext)
       .map(e => e.map(events => events.map(_.asInstanceOf[Event]).toList))
       .mapV(events =>
         if (events.isEmpty) 

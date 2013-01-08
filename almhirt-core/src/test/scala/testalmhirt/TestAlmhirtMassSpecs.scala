@@ -14,8 +14,7 @@ class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
   private implicit val atMost = Duration(2, "s")
   "The TestAlmhirt" should {
     "create, modify and retrieve 100 persons when actions for all entities are processed as sequenced blocks (A)" in {
-      inTestAlmhirt{almhirt =>
-    implicit val executor = almhirt.executionContext
+      inTestAlmhirt{implicit almhirt =>
     val idsAndNamesAndAdresses = Vector((for (i <- 1 to 100) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
 
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(NewTestPerson(x._2, x._3), "A insert%s".format(x._1.toString)))

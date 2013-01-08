@@ -14,7 +14,9 @@
 */
 package almhirt
 
+import language.implicitConversions
 import scalaz.Validation
+import scala.concurrent.ExecutionContext
 
 /** Classes and traits needed at other places*/
 package object common {
@@ -25,5 +27,7 @@ package object common {
 //  type AlmValidationSBD[+α] = ({type λ[α] = Validation[SingleBadDataProblem, α]})#λ[α]
 //  type AlmValidationMBD[+α] = ({type λ[α] = Validation[MultipleBadDataProblem, α]})#λ[α]
   type AlmValidation[+α] = Validation[Problem, α]
-  type AlmValidationAP[+α] = Validation[AggregateProblem, α]    
+  type AlmValidationAP[+α] = Validation[AggregateProblem, α]  
+  
+  implicit def hasExecutionContext2ExecutionContext(hasExecutionContext: HasExecutionContext): ExecutionContext = hasExecutionContext.executionContext
 }

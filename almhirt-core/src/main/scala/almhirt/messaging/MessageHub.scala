@@ -36,8 +36,8 @@ trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with A
 }
 
 object MessageHub {
-  def apply(actor: ActorRef, futureExecutionContext: ExecutionContext): MessageHub = {
-    new ActorBasedMessageHubImpl(actor)(futureExecutionContext)
+  def apply(actor: ActorRef, hasExecutionContext: HasExecutionContext): MessageHub = {
+    new ActorBasedMessageHubImpl(actor)(hasExecutionContext)
   }
 
   def apply(name: String)(implicit almhirtsystem: AlmhirtSystem): MessageHub = {
@@ -47,15 +47,15 @@ object MessageHub {
         case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor].withDispatcher(dn), name = name)
       }
     actor ! UseAlmhirtSystemMessage(almhirtsystem)
-    apply(actor, almhirtsystem.executionContext)
+    apply(actor, almhirtsystem)
   }
 
-  private class ActorBasedMessageHubImpl(val actor: ActorRef)(implicit futureExecutionContext: ExecutionContext) extends MessageHub {
+  private class ActorBasedMessageHubImpl(val actor: ActorRef)(implicit hasExecutionContext: HasExecutionContext) extends MessageHub {
     def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       (actor ? CreateSubChannelQry(name, MessagePredicate[TPayload]))(atMost)
         .mapTo[NewSubChannelRsp]
-        .map(subchannel => subchannel.channel).mapToAlmFuture[ActorRef]
-        .map(newActor => MessageChannel[TPayload](newActor, futureExecutionContext))
+        .map(subchannel => subchannel.channel)(hasExecutionContext).mapToAlmFuture[ActorRef]
+        .map(newActor => MessageChannel[TPayload](newActor, hasExecutionContext))
     }
 
     def broadcast(message: Message[AnyRef], topic: Option[String]) = actor ! BroadcastMessageCmd(message)

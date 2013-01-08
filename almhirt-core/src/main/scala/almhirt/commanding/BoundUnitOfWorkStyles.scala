@@ -18,15 +18,15 @@ import almhirt.common.AlmFuture
 trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { 
   protected def getRepository(): AlmValidation[AggregateRootRepository[AR, TEvent]]
   /** This effectively executes the command handler which must return a future */
-  protected def executeHandler(com: TCom, theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])]
-  def handleBoundCommand(com: BoundDomainCommand, ticket: Option[TrackingTicket], theAlmhirt: Almhirt) {
+  protected def executeHandler(com: TCom)(implicit theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])]
+  def handleBoundCommand(com: BoundDomainCommand, ticket: Option[TrackingTicket])(implicit theAlmhirt: Almhirt) {
     if (com.isCreator) {
       val command = com.asInstanceOf[TCom]
       getRepository().fold(
         fail =>
           (),
         repo => {
-          executeHandler(command, theAlmhirt).fold(
+          executeHandler(command).fold(
             fail => {
               theAlmhirt.reportProblem(fail)
               ticket match {
@@ -35,7 +35,7 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
               }
             },
             succ =>
-              repo.actor ! StoreAggregateRootCmd(succ._1, succ._2, ticket))(theAlmhirt.executionContext)
+              repo.actor ! StoreAggregateRootCmd(succ._1, succ._2, ticket))
         })
     } else {
       val p = ArgumentProblem("Not a creator command: %s".format(com.getClass.getName), severity = Major)
@@ -52,22 +52,22 @@ trait CreatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: Do
   def handler: CreatorCommandHandlerFuture[AR, TEvent, TCom]
   /** Call the handler which itself creates the required future
    */
-  protected def executeHandler(com: TCom, theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] = handler(com, theAlmhirt)
+  protected def executeHandler(com: TCom)(implicit theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] = handler(com, theAlmhirt)
 
 }
 trait CreatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: BoundDomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: BoundUnitOfWork[AR, TEvent] =>
   def handler: CreatorCommandHandler[AR, TEvent, TCom]
   /** Call the handler which creates a validation. Wrap the handler into a future
    */
-  protected def executeHandler(com: TCom, theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] =
-    AlmFuture(handler(com, theAlmhirt))(theAlmhirt.executionContext)
+  protected def executeHandler(com: TCom)(implicit theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] =
+    AlmFuture(handler(com, theAlmhirt))
 }
 
 trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: BoundDomainCommand] { 
   protected def getRepository(): AlmValidation[AggregateRootRepository[AR, TEvent]]
   /** This effectively executes the command handler which must return a future */
-  protected def executeHandler(com: TCom, ar: AR, theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])]
-  def handleBoundCommand(untypedcom: BoundDomainCommand, ticket: Option[TrackingTicket], theAlmhirt: Almhirt) {
+  protected def executeHandler(com: TCom, ar: AR)(implicit theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])]
+  def handleBoundCommand(untypedcom: BoundDomainCommand, ticket: Option[TrackingTicket])(implicit theAlmhirt: Almhirt) {
     implicit val executionContext = theAlmhirt.executionContext
     val step1 =
       AlmFuture {
@@ -84,7 +84,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
           getAggregateRoot(repository, id).mapV(ar =>
             checkArId(ar, id, com).flatMap(ar =>
               checkVersion(ar, version, com))).flatMap { ar =>
-            executeHandler(com, ar, theAlmhirt).map((repository, _))
+            executeHandler(com, ar).map((repository, _))
           }
       }
     step2.onComplete(
@@ -130,7 +130,7 @@ trait MutatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: Do
   /** Call the handler which itself creates the required future
    */
   def handler: MutatorCommandHandlerFuture[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, ar: AR, theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] = handler(com, ar, theAlmhirt)
+  protected def executeHandler(com: TCom, ar: AR)(implicit theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] = handler(com, ar, theAlmhirt)
 
 }
 
@@ -138,8 +138,8 @@ trait MutatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <
   /** Call the handler which creates a validation. Wrap the handler into a future
    */
   def handler: MutatorCommandHandler[AR, TEvent, TCom]
-  protected def executeHandler(com: TCom, ar: AR, theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] =
-    AlmFuture(handler(com, ar, theAlmhirt))(theAlmhirt.executionContext)
+  protected def executeHandler(com: TCom, ar: AR)(implicit theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] =
+    AlmFuture(handler(com, ar, theAlmhirt))
 }
 
 

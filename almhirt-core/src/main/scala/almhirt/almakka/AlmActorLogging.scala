@@ -50,11 +50,11 @@ trait AlmActorLogging extends CanLogProblems { self: akka.actor.Actor =>
      * 
      * @param minSeverity The minimum [[almhirt.validation.Severity]] the [[almhirt.validation.Problem]] contained in a Failure must have to be logged
      */
-    def logFailure(minSeverity: Severity)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
+    def logFailure(minSeverity: Severity)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = {
        future.withFailure(logProblem(_, minSeverity))
     }
     /** Log a [[almhirt.validation.Problem]] contained in case of a Failure */
-    def logFailure()(implicit executionContext: ExecutionContext): AlmFuture[T] = logFailure(NoProblem)
+    def logFailure()(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = logFailure(NoProblem)
   }
   
 }

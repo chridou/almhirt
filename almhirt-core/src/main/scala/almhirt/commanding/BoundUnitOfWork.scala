@@ -21,7 +21,7 @@ abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: Domain
   val aggregateRootType = m.runtimeClass.asInstanceOf[Class[AR]]
   def handle(com: DomainCommand, ticket: Option[TrackingTicket]) {
     com match {
-      case bcmd: BoundDomainCommand => handleBoundCommand(bcmd, ticket, theAlmhirt)
+      case bcmd: BoundDomainCommand => handleBoundCommand(bcmd, ticket)(theAlmhirt)
       case wrongType =>
         val p = ArgumentProblem("Not a BoundDomainCommand: %s".format(wrongType.getClass.getName), severity = Major)
         theAlmhirt.reportProblem(p)
@@ -34,7 +34,7 @@ abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: Domain
   
   /** handle delegates to this operation if the submitted command is a [[almhirt.commanding.BoundDomainCommand]]
    */
-  protected def handleBoundCommand(com: BoundDomainCommand, ticket: Option[TrackingTicket], theAlmhirt: Almhirt): Unit
+  protected def handleBoundCommand(com: BoundDomainCommand, ticket: Option[TrackingTicket])(implicit theAlmhirt: Almhirt): Unit
 }
 
 object BoundUnitOfWork {

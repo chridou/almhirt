@@ -48,33 +48,33 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
    * @param compute The function to execute async
    * @return The future containing the eventual result
    */
-  def continueAsync[U](compute: T => AlmValidation[U])(implicit executor: ExecutionContext): AlmFuture[U] =
+  def continueAsync[U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[U] =
     self fold(
       prob => new AlmFuture(Future.successful(prob.failure)), 
-      r => new AlmFuture(Future[AlmValidation[U]]{compute(r)}))
+      r => new AlmFuture(Future[AlmValidation[U]]{compute(r)}(hasExecutionContext.executionContext)))
 
   /** In case of success start the given computation otherwise return the Failure 
    * 
    * @param compute The function to execute async
    * @return The future containing the eventual result
    */
-  def |~> [U](compute: T => AlmValidation[U])(implicit executor: ExecutionContext): AlmFuture[U] =
-    continueAsync[U](compute)(executor)
+  def |~> [U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[U] =
+    continueAsync[U](compute)
 
   /** In case of success start the given side effect otherwise return the Failure 
    * 
    * @param compute The side effect to execute async
    */
-  def doAsync(failure: Problem => Unit, sideEffect: T => Unit)(implicit executor: ExecutionContext): Unit =
+  def doAsync(failure: Problem => Unit, sideEffect: T => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit =
     self fold(
       prob => failure(prob), 
-      r => executor.execute(new Runnable{def run() = sideEffect(r)}))
+      r => hasExecutionContext.executionContext.execute(new Runnable{def run() = sideEffect(r)}))
   /** In case of success start the given side effect otherwise return the Failure 
    * 
    * @param compute The side effect to execute async
    */
-  def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit executor: ExecutionContext): Unit =
-    doAsync(failure, sideEffect)(executor)
+  def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit =
+    doAsync(failure, sideEffect)
 
   /** In case of a success: Execute the computation as an already computed result
    * 

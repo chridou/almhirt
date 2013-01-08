@@ -35,8 +35,8 @@ import almhirt.common.AlmFuture
 trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T] with ActorBased
 
 object MessageChannel {
-  def apply[T <: AnyRef](actor: ActorRef, futureExecutionContext: ExecutionContext)(implicit m: Manifest[T]): MessageChannel[T] = {
-    new ActorBasedMessageChannelImpl[T](actor)(futureExecutionContext, m)
+  def apply[T <: AnyRef](actor: ActorRef, hasExecutionContext: HasExecutionContext)(implicit m: Manifest[T]): MessageChannel[T] = {
+    new ActorBasedMessageChannelImpl[T](actor)(hasExecutionContext, m)
   }
 
   def apply[T <: AnyRef](name: String)(implicit almhirtsystem: AlmhirtSystem, m: Manifest[T]): MessageChannel[T] = {
@@ -46,23 +46,23 @@ object MessageChannel {
         case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
       }
     actor ! UseAlmhirtSystemMessage(almhirtsystem)
-    apply[T](actor, almhirtsystem.executionContext)(m)
+    apply[T](actor, almhirtsystem)(m)
   }
 
-  class ActorBasedMessageChannelImpl[T <: AnyRef](val actor: ActorRef)(implicit futureExecutionContext: ExecutionContext, m: Manifest[T]) extends MessageChannel[T] {
+  class ActorBasedMessageChannelImpl[T <: AnyRef](val actor: ActorRef)(implicit hasExecutionContext: HasExecutionContext, m: Manifest[T]) extends MessageChannel[T] {
     def <-*(handler: Message[T] => Unit, classifier: Message[T] => Boolean)(implicit atMost: FiniteDuration): AlmFuture[RegistrationHolder] = {
       val filter = MessagePredicate[T](classifier)
       def wrappedHandler(message: Message[AnyRef]): Unit =
         handler(message.asInstanceOf[Message[T]])
-      (actor ? SubscribeQry(new MessagingSubscription { val predicate = filter; val handler = wrappedHandler _ }))(atMost).mapTo[SubscriptionRsp].map(_.registration)
+      (actor ? SubscribeQry(new MessagingSubscription { val predicate = filter; val handler = wrappedHandler _ }))(atMost).mapTo[SubscriptionRsp].map(_.registration)(hasExecutionContext)
     }
 
     def createSubChannel[TPayload <: T](name: String, classifier: Message[TPayload] => Boolean)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       val filter = MessagePredicate[TPayload](classifier)
       (actor ? CreateSubChannelQry(name, filter))(atMost)
         .mapTo[NewSubChannelRsp]
-        .map(subchannel => subchannel.channel).mapToAlmFuture[ActorRef]
-        .map(newActor => MessageChannel[TPayload](newActor, futureExecutionContext))
+        .map(subchannel => subchannel.channel)(hasExecutionContext).mapToAlmFuture[ActorRef]
+        .map(newActor => MessageChannel[TPayload](newActor, hasExecutionContext))
     }
 
     def post[U <: T](message: Message[U]) = actor ! PostMessageCmd(message)
