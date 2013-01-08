@@ -13,7 +13,7 @@ case object Careful extends HttpClientTrustLevel
  */
 case object Paranoid extends HttpClientTrustLevel
 
-trait ProblemLaundry extends PartialFunction[Problem, (Problem, HttpResponseStatusCode)] {
+trait ProblemLaundry extends PartialFunction[Problem, (Problem, HttpError)] {
   def trustLevel: HttpClientTrustLevel
 }
 

@@ -1,5 +1,6 @@
 package almhirt.ext.core.unfiltered
 
+import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.syntax.almvalidation._
@@ -13,7 +14,7 @@ object UnfilteredFuns {
   def getContentType(req: HttpRequest[Any]): AlmValidation[String] =
     RequestContentType(req).noneIsBadData("ContentType")
 
-  def dataByChannel(req: HttpRequest[Any])(channel: RiftChannel): AlmValidation[RiftDimension] = {
+  def dataByChannel(channel: RiftChannel with RiftHttpChannel)(req: HttpRequest[Any]): AlmValidation[RiftHttpDimension] = {
     channel match {
       case ch: RiftText => NotSupportedProblem("Channel RiftText").failure
       case ch: RiftMap => NotSupportedProblem("Channel RiftMap").failure
@@ -26,25 +27,30 @@ object UnfilteredFuns {
     }
   }
 
-  def transformContent[TResult <: AnyRef](req: HttpRequest[Any])(implicit mTarget: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
+  def transformContent[TResult <: AnyRef](req: HttpRequest[Any])(implicit mResult: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
     for {
-      contentType <- getContentType(req)
-      result <- RiftWarpHttpFuns.transformIncomingContent[TResult](dataByChannel(req))(contentType)
+      reqContentType <- getContentType(req)
+      (channel, typeDescriptor) <- RiftWarpHttpFuns.extractChannelAndTypeDescriptor(reqContentType)
+      data <- dataByChannel(channel)(req)
+      result <- {
+        val td = option.cata(typeDescriptor)(td => td, TypeDescriptor(mResult.runtimeClass))
+        RiftWarpHttpFuns.transformIncomingContent[TResult](channel, Some(td), data)
+      }
     } yield result
 
   def createSuccessResponse(successStatus: almhirt.http.HttpSuccess, response: RiftHttpResponse): ResponseFunction[Any] = {
     response match {
       case RiftHttpNoContentResponse => Status(successStatus.code) ~> NoContent
-      case RiftHttpStringResponse(dim, contentType) => Status(successStatus.code) ~> ResponseString(dim.manifestation) ~> ContentType(contentType)
-      case RiftHttpBinaryResponse(dim, contentType) => Status(successStatus.code) ~> ResponseBytes(dim.manifestation) ~> ContentType(contentType)
+      case RiftHttpStringResponse(content, contentType) => Status(successStatus.code) ~> ResponseString(content) ~> ContentType(contentType)
+      case RiftHttpBinaryResponse(content, contentType) => Status(successStatus.code) ~> ResponseBytes(content) ~> ContentType(contentType)
     }
   }
 
   def createErrorResponse(errorStatus: almhirt.http.HttpError, response: RiftHttpResponse): ResponseFunction[Any] = {
     response match {
       case RiftHttpNoContentResponse => Status(errorStatus.code) ~> NoContent
-      case RiftHttpStringResponse(dim, contentType) => Status(errorStatus.code) ~> ResponseString(dim.manifestation) ~> ContentType(contentType)
-      case RiftHttpBinaryResponse(dim, contentType) => Status(errorStatus.code) ~> ResponseBytes(dim.manifestation) ~> ContentType(contentType)
+      case RiftHttpStringResponse(content, contentType) => Status(errorStatus.code) ~> ResponseString(content) ~> ContentType(contentType)
+      case RiftHttpBinaryResponse(content, contentType) => Status(errorStatus.code) ~> ResponseBytes(content) ~> ContentType(contentType)
     }
   }
 

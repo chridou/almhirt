@@ -60,20 +60,20 @@ object RiftWarpFuns {
     lookUpRematerializerFactoryAndConverters(channel,  mS.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)
   }
   
-  def getRecomposeFun[T <: AnyRef](channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer, Option[Class[_]]) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit mTarget: Manifest[T], riftWarp: RiftWarp): AlmValidation[RiftDimension => AlmValidation[T]] = {
+  def getRecomposeFun[T <: AnyRef](channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit mTarget: Manifest[T], riftWarp: RiftWarp): AlmValidation[RiftDimension => AlmValidation[T]] = {
     lookUpRematerializerFactoryAndConverters(channel, tDimension, toolGroup).map {
       case (arrayFactory, converters) =>
         (sourceDim: RiftDimension) =>
           for {
             sourceDimForRematerializer <- converters.foldLeft[AlmValidation[RiftDimension]](sourceDim.success[Problem])((acc, conv) => acc.fold(prob => prob.failure, succ => conv.convertRaw(succ)))
             rematerializer <- arrayFactory.createRematerializerRaw(sourceDimForRematerializer, blobFetch)(riftWarp.barracks, riftWarp.toolShed)
-            recomposer <- getRecomposer(rematerializer, Some(mTarget.runtimeClass))
+            recomposer <- getRecomposer(rematerializer)
             recomposed <- recomposer.recompose(rematerializer)
           } yield recomposed
     }
   }
   
-  def getRecomposeFun[TSource <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer, Option[Class[_]]) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit mD: Manifest[TSource], mTarget: Manifest[T], riftWarp: RiftWarp): AlmValidation[(TSource) => AlmValidation[T]] = {
+  def getRecomposeFun[TSource <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit mD: Manifest[TSource], mTarget: Manifest[T], riftWarp: RiftWarp): AlmValidation[(TSource) => AlmValidation[T]] = {
     getRecomposeFun(channel, mD.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)(getRecomposer)(blobFetch)
   }
   

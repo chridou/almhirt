@@ -27,27 +27,22 @@ trait HasRecomposers {
           UnspecifiedProblem("Could not determine the required type").failure))).flatMap(td =>
       getRawRecomposer(td))
 
-  def lookUpRawFromRematerializer(remat: Rematerializer, tBackup: Class[_]): AlmValidation[RawRecomposer] =
-    remat.tryGetTypeDescriptor.map(tdOpt =>
-      tdOpt.getOrElse(TypeDescriptor(tBackup))).flatMap(td =>
-      getRawRecomposer(td))
-
   def lookUpRawFromRematerializer(remat: Rematerializer): AlmValidation[RawRecomposer] =
     lookUpRawFromRematerializer(remat, None)
 
   def decomposeRawWithLookedUpRawRecomposer(remat: Rematerializer): AlmValidation[AnyRef] =
     lookUpRawFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat))
 
-  def lookUpFromRematerializer[T <: AnyRef](remat: Rematerializer, tBackup: Option[Class[_]])(implicit mTarget: Manifest[T]): AlmValidation[Recomposer[T]] =
+  def lookUpFromRematerializer[T <: AnyRef](remat: Rematerializer, backupDescriptor: Option[TypeDescriptor])(implicit mTarget: Manifest[T]): AlmValidation[Recomposer[T]] =
     remat.tryGetTypeDescriptor.fold(
       prob => prob.failure,
       succ =>
         option.cata(succ)(
           td => getRecomposer[T](td),
-          option.cata(tBackup)(
-            clazz => getRecomposer[T](TypeDescriptor(clazz)),
+          option.cata(backupDescriptor)(
+            td => getRecomposer[T](td),
             UnspecifiedProblem("Could extract the require TypeDescriptor").failure)))
-
+    
   def addRawRecomposer(recomposer: RawRecomposer): Unit
   def addRecomposer(recomposer: Recomposer[_]): Unit
 }

@@ -15,5 +15,5 @@ trait Recomposer[T] extends RawRecomposer {
 
 class EnrichedRawRecomposer[T](raw: RawRecomposer) extends Recomposer[T] {
   val typeDescriptor = raw.typeDescriptor
-  def recompose(from: Rematerializer) = raw.recomposeRaw(from).map(_.asInstanceOf[T])
+  def recompose(from: Rematerializer) = raw.recomposeRaw(from).flatMap(almhirt.almvalidation.funs.almCast[T](_))
 }

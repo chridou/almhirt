@@ -9,11 +9,15 @@ import unfiltered.request._
 import unfiltered.response._
 import riftwarp.http.RiftWarpHttpFuns
 import riftwarp.RiftWarp
+import almhirt.http.impl.JustForTestingProblemLaundry
 
-class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], getRiftWarp: () => AlmValidation[RiftWarp], theAlmhirt: Almhirt) extends ForwardsCommandsFromHttpRequest {
+class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], riftWarp: RiftWarp, theAlmhirt: Almhirt) extends ForwardsCommandsFromHttpRequest {
+  protected def launderProblem = JustForTestingProblemLaundry
   protected def extractCommand(req: HttpRequest[Any]) =
-    getRiftWarp().flatMap(riftWarp => UnfilteredFuns.transformContent[DomainCommand](req)(manifest[DomainCommand], riftWarp))
+  	UnfilteredFuns.transformContent[DomainCommand](req)(manifest[DomainCommand], riftWarp)
 
+  val createWorkFlow = RiftWarpHttpFuns.createResponseWorkflow[Unit](riftWarp)(launderProblem)(theAlmhirt.reportProblem)(true)_
+    
   def forward(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) {
     (  for {
         endpoint <- getEndpoint()

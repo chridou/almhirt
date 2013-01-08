@@ -22,17 +22,21 @@ trait RiftWarp {
       RiftWarpFuns.getDematerializationFun[AnyRef, TDimension](channel, toolGroup)(divertBlobs)(this, m).flatMap(fun => 
         fun(what, decomposer)))
 
-  def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] =
+  def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] = {
+    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(TypeDescriptor(mTarget.runtimeClass)))
     for {
-      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(barracks.lookUpFromRematerializer[T])(NoFetchBlobFetch)(mD, mTarget, this)
+      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(NoFetchBlobFetch)(mD, mTarget, this)
       recomposed <- recomposeFun(warpStream)
     } yield recomposed
+  }
 
-  def receiveFromWarpWithBlobs[TDimension <: RiftDimension, T <: AnyRef](blobFetch: BlobFetch)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] =
+  def receiveFromWarpWithBlobs[TDimension <: RiftDimension, T <: AnyRef](blobFetch: BlobFetch)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] = {
+    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(TypeDescriptor(mTarget.runtimeClass)))
     for {
-      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(barracks.lookUpFromRematerializer[T])(blobFetch)(mD, mTarget, this)
+      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(blobFetch)(mD, mTarget, this)
       recomposed <- recomposeFun(warpStream)
     } yield recomposed
+  }
 
 }
 

@@ -4,7 +4,7 @@ trait RiftDimension {
   def manifestation: Any
 }
 
-trait RiftHttpDimension
+trait RiftHttpDimension extends RiftDimension
 
 trait RiftStringBasedDimension extends RiftDimension {
   def manifestation: String

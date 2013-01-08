@@ -9,8 +9,8 @@ package object http {
   type HttpResponseWorkflow[T] = RiftChannel with RiftHttpChannel => AnyRef => T
 
   sealed trait RiftHttpResponse
-  case class RiftHttpStringResponse(dim: RiftStringBasedDimension, contentType: String) extends RiftHttpResponse
-  case class RiftHttpBinaryResponse(dim: RiftByteArrayBasedDimension, contentType: String) extends RiftHttpResponse
+  case class RiftHttpStringResponse(content: String, contentType: String) extends RiftHttpResponse
+  case class RiftHttpBinaryResponse(content: Array[Byte], contentType: String) extends RiftHttpResponse
   case object RiftHttpNoContentResponse extends RiftHttpResponse
 
 }
