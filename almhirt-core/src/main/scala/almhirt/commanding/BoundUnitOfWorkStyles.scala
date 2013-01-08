@@ -52,9 +52,9 @@ trait CreatorUnitOfWorkStyleFuture[AR <: AggregateRoot[AR, TEvent], TEvent <: Do
   def handler: CreatorCommandHandlerFuture[AR, TEvent, TCom]
   /** Call the handler which itself creates the required future
    */
-  protected def executeHandler(com: TCom)(implicit theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] = handler(com, theAlmhirt)
-
+  protected def executeHandler(com: TCom)(implicit theAlmhirt: Almhirt): AlmFuture[(AR, List[TEvent])] = handler(com,theAlmhirt)
 }
+
 trait CreatorUnitOfWorkStyleValidation[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: BoundDomainCommand] extends CreatorUnitOfWorkStyle[AR, TEvent, TCom] { self: BoundUnitOfWork[AR, TEvent] =>
   def handler: CreatorCommandHandler[AR, TEvent, TCom]
   /** Call the handler which creates a validation. Wrap the handler into a future
