@@ -15,11 +15,11 @@ trait TestAlmhirtKit {
     implicit val system = almhirt.system
     val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent](TestPerson, almhirt.eventLog.actor)
     almhirt.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](personRepository)
-    almhirt.hasCommandHandlers.addHandler(new NewTestPersonUnitOfWork)
-    almhirt.hasCommandHandlers.addHandler(new ChangeTestPersonNameUnitOfWork)
-    almhirt.hasCommandHandlers.addHandler(new SetTestPersonAdressUnitOfWork)
-    almhirt.hasCommandHandlers.addHandler(new MoveTestPersonNameUnitOfWork)
-    almhirt.hasCommandHandlers.addHandler(new MoveBecauseOfMarriageUnitOfWork)
+    almhirt.hasCommandHandlers.addHandler(TestPersonHandlerFactory.newTestPersonUnitOfWork)
+    almhirt.hasCommandHandlers.addHandler(TestPersonHandlerFactory.changeTestPersonNameUnitOfWork)
+    almhirt.hasCommandHandlers.addHandler(TestPersonHandlerFactory.setTestPersonAdressUnitOfWork)
+    almhirt.hasCommandHandlers.addHandler(TestPersonHandlerFactory.moveTestPersonNameUnitOfWork)
+    almhirt.hasCommandHandlers.addHandler(TestPersonHandlerFactory.moveBecauseOfMarriageUnitOfWork)
 
     //    val barracks = ctx.riftWarp.barracks
     //    
