@@ -23,6 +23,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .flatMap(_.addComplexType("primitiveIterableMAs", what.primitiveIterableMAs))
       .flatMap(_.addComplexType("complexMAs", what.complexMAs))
       .flatMap(_.addComplexType("primitiveMaps", what.primitiveMaps))
+      .flatMap(_.addComplexType("complexMaps", what.complexMaps))
       .flatMap(_.addOptionalComplexType("addressOpt", what.addressOpt))
   }
 }
@@ -40,8 +41,9 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
       primitiveIterableMAs <- from.getComplexType[PrimitiveIterableMAs]("primitiveIterableMAs")
       complexMAs <- from.getComplexType[ComplexMAs]("complexMAs")
       primitiveMaps <- from.getComplexType[PrimitiveMaps]("primitiveMaps")
+      complexMaps <- from.getComplexType[ComplexMaps]("complexMaps")
       addressOpt <- from.tryGetComplexType[TestAddress]("addressOpt")
-    } yield TestObjectA(arrayByte,blob,primitiveTypes,primitiveListMAs,primitiveVectorMAs,primitiveSetMAs,primitiveIterableMAs,complexMAs,primitiveMaps,addressOpt)
+    } yield TestObjectA(arrayByte,blob,primitiveTypes,primitiveListMAs,primitiveVectorMAs,primitiveSetMAs,primitiveIterableMAs,complexMAs,primitiveMaps, complexMaps,addressOpt)
   }
 }
 
@@ -251,7 +253,25 @@ class PrimitiveMapsRecomposer extends Recomposer[PrimitiveMaps] {
   }
 }
  
+class ComplexMapsDecomposer extends Decomposer[ComplexMaps] {
+  val typeDescriptor = TypeDescriptor(classOf[ComplexMaps])
+  def decompose[TDimension <: RiftDimension](what: ComplexMaps)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into.addTypeDescriptor(typeDescriptor)
+      .flatMap(_.addComplexMapFixed("mapIntTestAddress1", what.mapIntTestAddress1))
+      .flatMap(_.addMap("mapIntAny", what.mapIntAny))
+      .flatMap(_.addMapSkippingUnknownValues("mapStringAnyWithUnknown", what.mapStringAnyWithUnknown))
+  }
+}
 
+class ComplexMapsRecomposer extends Recomposer[ComplexMaps] {
+  val typeDescriptor = TypeDescriptor(classOf[ComplexMaps])
+  def recompose(from: Rematerializer): AlmValidation[ComplexMaps] = {
+    val mapIntTestAddress1 = from.getComplexMapFixed[Int, TestAddress]("mapIntTestAddress1").toAgg
+    val mapIntAny = from.getComplexMapLoose[Int, AnyRef]("mapIntAny").toAgg
+    val mapStringAnyWithUnknown = from.getMap[String, Any]("mapStringAnyWithUnknown").toAgg
+    (mapIntTestAddress1 |@| mapIntAny |@| mapStringAnyWithUnknown)(ComplexMaps.apply)
+  }
+}
 class TestAddressDecomposer extends Decomposer[TestAddress] {
   val typeDescriptor = TypeDescriptor(classOf[TestAddress])
   def decompose[TDimension <: RiftDimension](what: TestAddress)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {

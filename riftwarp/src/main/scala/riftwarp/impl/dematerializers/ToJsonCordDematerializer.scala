@@ -239,8 +239,8 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
 
   def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
     getDematerializedBlob(ident, aValue, blobIdentifier).flatMap(blobDemat =>
-        addComplexPart(ident, blobDemat.dematerialize.manifestation))
-        
+      addComplexPart(ident, blobDemat.dematerialize.manifestation))
+
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) =
     option.cata(anOptionalValue)(v => addBlob(ident, v, blobIdentifier), addNonePart(ident))
 
@@ -340,7 +340,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
           case (a, b) =>
             spawnNew("[" + a.toString + "]" :: ident :: path).flatMap(freshDemat =>
               decomposer.decompose(b)(freshDemat).map(demat =>
-                  (mapA(a), demat.dematerialize.manifestation)))
+                (mapA(a), demat.dematerialize.manifestation)))
         }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
           foldKeyValuePairs(sequenced).flatMap(pairs =>
             addPart(ident, pairs.manifestation)))),
@@ -393,16 +393,16 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       mapperByType[A].flatMap(mapA =>
         aMap.map {
           case (a, b) =>
-            mapWithPrimitiveAndDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b =>
-              (mapA(a), b.manifestation))
+            mapForgivingWithPrimitiveAndDecomposerLookUp("[" + a.toString + "]", ident)(b)
+              .map(b => (mapA(a), b))
         }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
-          foldKeyValuePairs(sequenced).flatMap(pairs =>
+          foldKeyValuePairs(sequenced.filter(_._2.isDefined).map(x => (x._1, x._2.get.manifestation))).flatMap(pairs =>
             addPart(ident, pairs.manifestation)))),
       UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
   def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, aMap, (x: String, y: Map[A, B]) => addMapSkippingUnknownValues(x, y))
-    
+
   def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
@@ -428,6 +428,22 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
         },
       mbt =>
         DimensionCord(mbt(toDecompose)).success)
+
+  def mapForgivingWithPrimitiveAndDecomposerLookUp(idx: String, ident: String)(toDecompose: Any): AlmValidation[Option[DimensionCord]] =
+    mapperForAny(toDecompose).fold(
+      _ =>
+        toDecompose match {
+          case toDecomposeAsAnyRef: AnyRef =>
+            spawnNew(idx :: ident :: path).flatMap(freshDemat =>
+              option.cata(hasDecomposers.tryGetRawDecomposer(toDecomposeAsAnyRef.getClass))(
+                decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(freshDemat).map(x => Some(x.dematerialize)),
+                None.success))
+          case x =>
+            None.success
+        },
+      mbt =>
+        Some(DimensionCord(mbt(toDecompose))).success)
+
 }
 
 object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord] {

@@ -12,36 +12,54 @@ import riftwarp._
 import riftwarp.ma._
 import riftwarp.components._
 
+
 private[rematerializers] object FromJsonMapRematerializerFuns {
-  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Any => AlmValidation[A]] = {
-    if (mA.runtimeClass.isAssignableFrom(classOf[String]))
+  def getPrimitiveRematerializer[A](key: String, clazz: Class[_]): AlmValidation[Any => AlmValidation[A]] = {
+    if (clazz == classOf[String])
       Success(((x: Any) => almCast[String](x)).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[Boolean]))
+    else if (clazz == classOf[_root_.java.lang.String])
+      Success(((x: Any) => almCast[_root_.java.lang.String](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Boolean])
       Success(((x: Any) => almCast[Boolean](x)).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[Byte]))
+    else if (clazz == classOf[_root_.java.lang.Boolean])
+      Success(((x: Any) => almCast[_root_.java.lang.Boolean](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Byte])
       Success(((x: Any) => almCast[Double](x).map(_.toByte)).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[Int]))
+    else if (clazz == classOf[_root_.java.lang.Byte])
+      Success(((x: Any) => almCast[Double](x).map(_.toByte)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Int])
       Success(((x: Any) => almCast[Double](x).map(_.toInt)).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[Long]))
+    else if (clazz == classOf[_root_.java.lang.Integer])
+      Success(((x: Any) => almCast[Double](x).map(_.toInt)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Long])
       Success(((x: Any) => almCast[Double](x).map(_.toLong)).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[BigInt]))
+    else if (clazz == classOf[_root_.java.lang.Long])
+      Success(((x: Any) => almCast[Double](x).map(_.toLong)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[BigInt])
       Success(((x: Any) => almCast[String](x).flatMap(parseBigIntAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[Float]))
+    else if (clazz == classOf[Float])
       Success(((x: Any) => almCast[Double](x).map(_.toFloat)).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[Double]))
+    else if (clazz == classOf[_root_.java.lang.Float])
+      Success(((x: Any) => almCast[Double](x).map(_.toFloat)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Double])
       Success(((x: Any) => almCast[Double](x)).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[BigDecimal]))
+    else if (clazz == classOf[_root_.java.lang.Double])
+      Success(((x: Any) => almCast[Double](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[BigDecimal])
       Success(((x: Any) => almCast[String](x).flatMap(parseDecimalAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[org.joda.time.DateTime]))
+    else if (clazz == classOf[org.joda.time.DateTime])
       Success(((x: Any) => almCast[String](x).flatMap(parseDateTimeAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[_root_.java.util.UUID]))
+    else if (clazz == classOf[_root_.java.util.UUID])
       Success(((x: Any) => almCast[String](x).flatMap(parseUuidAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
-    else if (mA.runtimeClass.isAssignableFrom(classOf[_root_.java.net.URI]))
+    else if (clazz == classOf[_root_.java.net.URI])
       Success(((x: Any) => almCast[String](x).flatMap(parseUriAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
     else
-      Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(mA.runtimeClass.getName())))
+      Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(clazz.getName())))
   }
   
+  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Any => AlmValidation[A]] = 
+    getPrimitiveRematerializer[A](key, mA.runtimeClass)
+
   def createTuple[A, B](rematA: Any => AlmValidation[A])(mapB: Any => AlmValidation[B])(kv: Map[String, Any])(implicit m: Manifest[A]): AlmValidation[(A, B)] = {
     (kv.get("k"), kv.get("v")) match {
       case (Some(k), Some(v)) => rematA(k).flatMap(k => mapB(v).map(v => (k, v)))
@@ -259,7 +277,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
     option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).flatMap(TypeDescriptor.parse(_)).map(Some(_)), Success(None))
 
   private def mapToAny[A](ident: String)(what: Any)(implicit m: Manifest[A]): AlmValidation[A] =
-    getPrimitiveRematerializerFor[A](ident).fold(
+    getPrimitiveRematerializer[A](ident, what.getClass).fold(
       prob =>
         if (classOf[Map[_, _]].isAssignableFrom(what.getClass))
           computeSafely {
@@ -269,6 +287,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is neither a primitive type nor a decomposer could be found. I was trying to decompose '%s'".format(ident, what.getClass.getName())).failure,
       rematPrimitive =>
         rematPrimitive(what))
+
 }
 
 object FromJsonMapRematerializer extends RematerializerFactory[DimensionStdLibJsonMap] {
@@ -291,7 +310,7 @@ object FromJsonStringRematerializer extends RematerializerFactory[DimensionStrin
       m.transform {
         case (k, v) => resolveType(v)
       }
-    
+
     def resolveType(input: Any): Any = input match {
       case JSONObject(data) => transformMap(data)
       case JSONArray(data) => data.map(resolveType)

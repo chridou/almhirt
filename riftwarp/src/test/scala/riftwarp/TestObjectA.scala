@@ -8,6 +8,8 @@ import java.util.UUID
 import org.joda.time.DateTime
 import riftwarp.components._
 
+case class UnknownObject(what: Any)
+
 case class PrimitiveTypes(
   str: String,
   bool: Boolean,
@@ -60,6 +62,11 @@ case class PrimitiveMaps(
   mapStringInt: Map[String, Int],
   mapUuidDateTime: Map[UUID, DateTime])
 
+case class ComplexMaps(
+  mapIntTestAddress1: Map[Int, TestAddress],
+  mapIntAny: Map[Int, AnyRef],
+  mapStringAnyWithUnknown: Map[String, Any])
+  
 case class TestObjectA(
   arrayByte: Array[Byte],
   blob: Array[Byte],
@@ -70,6 +77,7 @@ case class TestObjectA(
   primitiveIterableMAs: PrimitiveIterableMAs,
   complexMAs: ComplexMAs,
   primitiveMaps: PrimitiveMaps,
+  complexMaps: ComplexMaps,
   addressOpt: Option[TestAddress]) extends HasDefaultTypeDescriptor
 
 object TestObjectA {
@@ -124,6 +132,10 @@ object TestObjectA {
         Map(1 -> 10, 2 -> 20, 3 -> 30, 4 -> 40),
         Map("a" -> 1, "b" -> 2, "a" -> 1, "c" -> 3),
         Map(UUID.randomUUID() -> DateTime.now(), UUID.randomUUID() -> DateTime.now().plusDays(1), UUID.randomUUID() -> DateTime.now().plusDays(2))), 
+      complexMaps = ComplexMaps(
+        TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
+        TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
+        TestAddress.someAddresses.zipWithIndex.map(x => (x._2.toString, x._1)).toMap + ("unknownType" -> UnknownObject(1))+ ("unspecifiedProblem" -> UnspecifiedProblem("Test", args = Map("arg1" -> 95))) +  ("x" -> UUID.randomUUID()) + ("y" -> UUID.randomUUID()) + ("z" -> DateTime.now())), 
       addressOpt = Some(TestAddress("Berlin", "At the wall 89")))
 }
 
