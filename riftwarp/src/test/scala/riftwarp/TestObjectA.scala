@@ -50,11 +50,16 @@ case class PrimitiveIterableMAs(
   iterableDateTime: Iterable[DateTime])
 
 case class ComplexMAs(
-    addresses1: List[TestAddress], 
-    addresses2: Vector[TestAddress], 
-    addresses3: Set[TestAddress],
-    anything: Iterable[Any])  
-  
+  addresses1: List[TestAddress],
+  addresses2: Vector[TestAddress],
+  addresses3: Set[TestAddress],
+  anything: Iterable[Any])
+
+case class PrimitiveMaps(
+  mapIntInt: Map[Int, Int],
+  mapStringInt: Map[String, Int],
+  mapUuidDateTime: Map[UUID, DateTime])
+
 case class TestObjectA(
   arrayByte: Array[Byte],
   blob: Array[Byte],
@@ -64,6 +69,7 @@ case class TestObjectA(
   primitiveSetMAs: Option[PrimitiveSetMAs],
   primitiveIterableMAs: PrimitiveIterableMAs,
   complexMAs: ComplexMAs,
+  primitiveMaps: PrimitiveMaps,
   addressOpt: Option[TestAddress]) extends HasDefaultTypeDescriptor
 
 object TestObjectA {
@@ -101,8 +107,8 @@ object TestObjectA {
         setDouble = Set(1.0, 0.5, 0.2, 0.125),
         setBigDecimal = Set(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
         setDateTime = None)),
-//        setDateTime = Some(Set(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))))),
-//      primitiveSetMAs = None,
+      //        setDateTime = Some(Set(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))))),
+      //      primitiveSetMAs = None,
       primitiveIterableMAs = PrimitiveIterableMAs(
         iterableString = Iterable("alpha", "beta", "gamma", "delta"),
         iterableInt = Iterable(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
@@ -110,10 +116,14 @@ object TestObjectA {
         iterableBigDecimal = Iterable(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
         iterableDateTime = Iterable(new DateTime().plusHours(1), new DateTime().plusHours(2), new DateTime().plusHours(3), new DateTime().plusHours(4))),
       complexMAs = ComplexMAs(
-          TestAddress.someAddresses, 
-          Vector(TestAddress.someAddresses: _*), 
-          Set(TestAddress.someAddresses: _*),
-          Iterable(true, "hello", 1, 2L, 3.0, 3.0f, TestAddress("Somewhere", "here"))),
+        TestAddress.someAddresses,
+        Vector(TestAddress.someAddresses: _*),
+        Set(TestAddress.someAddresses: _*),
+        Iterable(true, "hello", 1, 2L, 3.0, 3.0f, TestAddress("Somewhere", "here"))),
+      primitiveMaps = PrimitiveMaps(
+        Map(1 -> 10, 2 -> 20, 3 -> 30, 4 -> 40),
+        Map("a" -> 1, "b" -> 2, "a" -> 1, "c" -> 3),
+        Map(UUID.randomUUID() -> DateTime.now(), UUID.randomUUID() -> DateTime.now().plusDays(1), UUID.randomUUID() -> DateTime.now().plusDays(2))), 
       addressOpt = Some(TestAddress("Berlin", "At the wall 89")))
 }
 

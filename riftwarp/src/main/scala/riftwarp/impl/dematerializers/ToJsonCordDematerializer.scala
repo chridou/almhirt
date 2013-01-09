@@ -118,12 +118,12 @@ object ToJsonCordDematerializerFuns {
   }
 
   def createKeyValuePair(kv: (Cord, Cord)): DimensionCord = {
-    DimensionCord((Cord("{\"k\":") ++ kv._1 :- ':') ++ kv._2 :- '}')
+    DimensionCord((Cord("{\"k\":") ++ kv._1 ++ ",\"v\":" ++ kv._2 ++ "}"))
   }
 
-  def foldKeyValuePairs(items: scala.collection.immutable.Iterable[(Cord, Cord)])(implicit functionObjects: HasFunctionObjects): AlmValidation[DimensionCord] =
+  def foldKeyValuePairs(items: scala.Iterable[(Cord, Cord)])(implicit functionObjects: HasFunctionObjects): AlmValidation[DimensionCord] =
     functionObjects.getChannelFolder[DimensionCord, DimensionCord](RiftJson()).flatMap(folder =>
-      functionObjects.getMAFunctions[scala.collection.immutable.Iterable].flatMap(fo =>
+      functionObjects.getMAFunctions[scala.collection.Iterable].flatMap(fo =>
         folder.fold(items.map(x => createKeyValuePair(x)).seq)(fo)))
 }
 

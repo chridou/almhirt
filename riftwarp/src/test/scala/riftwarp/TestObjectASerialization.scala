@@ -22,6 +22,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .flatMap(_.addOptionalComplexType("primitiveSetMAs", what.primitiveSetMAs))
       .flatMap(_.addComplexType("primitiveIterableMAs", what.primitiveIterableMAs))
       .flatMap(_.addComplexType("complexMAs", what.complexMAs))
+      .flatMap(_.addComplexType("primitiveMaps", what.primitiveMaps))
       .flatMap(_.addOptionalComplexType("addressOpt", what.addressOpt))
   }
 }
@@ -29,24 +30,18 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
 class TestObjectARecomposer extends Recomposer[TestObjectA] {
   val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
   def recompose(from: Rematerializer): AlmValidation[TestObjectA] = {
-    val arrayByte = from.getByteArray("arrayByte").toAgg
-    val blob = from.getBlob("blob").toAgg
-    val primitiveTypes = from.getComplexType[PrimitiveTypes]("primitiveTypes").toAgg
-    val primitiveListMAs = from.getComplexType[PrimitiveListMAs]("primitiveListMAs").toAgg
-    val primitiveVectorMAs = from.getComplexType[PrimitiveVectorMAs]("primitiveVectorMAs").toAgg
-    val primitiveSetMAs = from.tryGetComplexType[PrimitiveSetMAs]("primitiveSetMAs").toAgg
-    val primitiveIterableMAs = from.getComplexType[PrimitiveIterableMAs]("primitiveIterableMAs").toAgg
-    val complexMAs = from.getComplexType[ComplexMAs]("complexMAs").toAgg
-    val addressOpt = from.tryGetComplexType[TestAddress]("addressOpt").toAgg
-    (arrayByte
-      |@| blob
-      |@| primitiveTypes
-      |@| primitiveListMAs
-      |@| primitiveVectorMAs
-      |@| primitiveSetMAs
-      |@| primitiveIterableMAs
-      |@| complexMAs
-      |@| addressOpt)(TestObjectA.apply)
+    for {
+      arrayByte <- from.getByteArray("arrayByte")
+      blob <- from.getBlob("blob")
+      primitiveTypes <- from.getComplexType[PrimitiveTypes]("primitiveTypes")
+      primitiveListMAs <- from.getComplexType[PrimitiveListMAs]("primitiveListMAs")
+      primitiveVectorMAs <- from.getComplexType[PrimitiveVectorMAs]("primitiveVectorMAs")
+      primitiveSetMAs <- from.tryGetComplexType[PrimitiveSetMAs]("primitiveSetMAs")
+      primitiveIterableMAs <- from.getComplexType[PrimitiveIterableMAs]("primitiveIterableMAs")
+      complexMAs <- from.getComplexType[ComplexMAs]("complexMAs")
+      primitiveMaps <- from.getComplexType[PrimitiveMaps]("primitiveMaps")
+      addressOpt <- from.tryGetComplexType[TestAddress]("addressOpt")
+    } yield TestObjectA(arrayByte,blob,primitiveTypes,primitiveListMAs,primitiveVectorMAs,primitiveSetMAs,primitiveIterableMAs,complexMAs,primitiveMaps,addressOpt)
   }
 }
 
@@ -235,6 +230,27 @@ class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
       |@| anything)(ComplexMAs(_, _, _, _))
   }
 }
+
+class PrimitiveMapsDecomposer extends Decomposer[PrimitiveMaps] {
+  val typeDescriptor = TypeDescriptor(classOf[PrimitiveMaps])
+  def decompose[TDimension <: RiftDimension](what: PrimitiveMaps)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into.addTypeDescriptor(typeDescriptor)
+      .flatMap(_.addPrimitiveMap("mapIntInt", what.mapIntInt))
+      .flatMap(_.addPrimitiveMap("mapStringInt", what.mapStringInt))
+      .flatMap(_.addPrimitiveMap("mapUuidDateTime", what.mapUuidDateTime))
+  }
+}
+
+class PrimitiveMapsRecomposer extends Recomposer[PrimitiveMaps] {
+  val typeDescriptor = TypeDescriptor(classOf[PrimitiveMaps])
+  def recompose(from: Rematerializer): AlmValidation[PrimitiveMaps] = {
+    val mapIntInt = from.getPrimitiveMap[Int, Int]("mapIntInt").toAgg
+    val mapStringInt = from.getPrimitiveMap[String, Int]("mapStringInt").toAgg
+    val mapUuidDateTime = from.getPrimitiveMap[UUID, DateTime]("mapUuidDateTime").toAgg
+    (mapIntInt |@| mapStringInt |@| mapUuidDateTime)(PrimitiveMaps.apply)
+  }
+}
+ 
 
 class TestAddressDecomposer extends Decomposer[TestAddress] {
   val typeDescriptor = TypeDescriptor(classOf[TestAddress])
