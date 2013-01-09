@@ -154,7 +154,18 @@ trait UnfilteredBuild {
   
 }
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with UnfilteredBuild with DocItBuild {
+trait AppBuild {
+  import Dependencies._
+  import Resolvers._
+  def appProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  libraryDependencies += "org.clapper" %% "argot" % "1.0.0" % "compile",
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases)
+  
+}
+
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with UnfilteredBuild with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings,
 	                        base = file(".")) aggregate(common, core, anormEventLog, docit, riftwarp, unfiltered)
@@ -186,5 +197,6 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRi
  lazy val unfiltered = unfilteredProject(	name = "almhirt-ext-core-unfiltered",
 	                       				baseFile = file("./ext/core/almhirt-ext-core-unfiltered")) dependsOn(core, riftwarp)
 
-										
+ lazy val app = appProject(	name = "almhirt-app",
+	                       	baseFile = file("almhirt-app")) dependsOn(core)										
 }
