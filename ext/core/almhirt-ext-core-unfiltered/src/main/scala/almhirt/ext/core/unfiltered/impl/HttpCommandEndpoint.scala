@@ -5,24 +5,28 @@ import almhirt.environment.Almhirt
 import almhirt.commanding.DomainCommand
 import almhirt.util.CommandEndpoint
 import almhirt.ext.core.unfiltered._
+import riftwarp._
+import riftwarp.http.RiftWarpHttpFuns
 import unfiltered.request._
 import unfiltered.response._
-import riftwarp.http.RiftWarpHttpFuns
-import riftwarp.RiftWarp
 import almhirt.http.impl.JustForTestingProblemLaundry
 
 class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], riftWarp: RiftWarp, theAlmhirt: Almhirt) extends ForwardsCommandsFromHttpRequest {
+  private val nice = true
   protected def launderProblem = JustForTestingProblemLaundry
-  protected def extractCommand(req: HttpRequest[Any]) =
-  	UnfilteredFuns.transformContent[DomainCommand](req)(manifest[DomainCommand], riftWarp)
+  protected def extractCommand(req: HttpRequest[Any], channel: RiftChannel with RiftHttpChannel) =
+  	UnfilteredFuns.transformContent[DomainCommand](req, Some(channel), None)(manifest[DomainCommand], riftWarp)
 
-  val createWorkFlow = RiftWarpHttpFuns.createResponseWorkflow[Unit](riftWarp)(launderProblem)(theAlmhirt.reportProblem)(true)_
-    
+  val createWorkFlow = RiftWarpHttpFuns.createResponseWorkflow[Unit](riftWarp)(launderProblem)(theAlmhirt.reportProblem)(nice)_
+  val problemHandler = RiftWarpHttpFuns.createProblemHandler[Unit](riftWarp)(theAlmhirt.reportProblem)(nice)
+  
   def forward(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) {
     (  for {
+        reqContentType <- UnfilteredFuns.getContentType(req)
+        (channel, typeDescriptor) <- RiftWarpHttpFuns.extractChannelAndTypeDescriptor(reqContentType)
         endpoint <- getEndpoint()
-        command <- extractCommand(req)
-      } yield (endpoint, command)).fold(
+        command <- extractCommand(req, channel)
+      } yield (endpoint, command, channel)).fold(
       prob => (),
       endpointAndCmd => {
         endpointAndCmd._1.execute(endpointAndCmd._2)

@@ -27,10 +27,14 @@ object UnfilteredFuns {
     }
   }
 
-  def transformContent[TResult <: AnyRef](req: HttpRequest[Any])(implicit mResult: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
+  def transformContent[TResult <: AnyRef](req: HttpRequest[Any], aChannel: Option[RiftChannel with RiftHttpChannel], aTypeDescriptor: Option[TypeDescriptor])(implicit mResult: Manifest[TResult], riftWarp: RiftWarp): AlmValidation[TResult] =
     for {
-      reqContentType <- getContentType(req)
-      (channel, typeDescriptor) <- RiftWarpHttpFuns.extractChannelAndTypeDescriptor(reqContentType)
+      (channel, typeDescriptor) <- (aChannel, aTypeDescriptor) match {
+        case (Some(ch), Some(td)) => (ch, Some(td)).success
+        case (Some(ch), None) => getContentType(req).flatMap(RiftWarpHttpFuns.extractChannelAndTypeDescriptor(_).map(x => (ch, x._2)))
+        case (None, Some(td)) => getContentType(req).flatMap(RiftWarpHttpFuns.extractChannelAndTypeDescriptor(_).map(x => (x._1, Some(td))))
+        case _ => getContentType(req).flatMap(RiftWarpHttpFuns.extractChannelAndTypeDescriptor(_))
+      }
       data <- dataByChannel(channel)(req)
       result <- {
         val td = option.cata(typeDescriptor)(td => td, TypeDescriptor(mResult.runtimeClass))

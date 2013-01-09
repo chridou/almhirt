@@ -37,9 +37,9 @@ object RiftWarpHttpFuns {
     } yield response
   }
 
-  def respondProblem[T](riftWarp: RiftWarp)(reportProblem: Problem => Unit)(responder: (HttpError, RiftHttpResponse) => T)(nice: Boolean): (RiftChannel with RiftHttpChannel) => (HttpError, Problem) => T =
+  def createProblemHandler[T](riftWarp: RiftWarp)(reportProblem: Problem => Unit)(nice: Boolean): (RiftChannel with RiftHttpChannel) => (HttpError, Problem, (HttpError, RiftHttpResponse) => T) => T =
     (channel: RiftChannel with RiftHttpChannel) =>
-      (errorCode: HttpError, problem: Problem) =>
+      (errorCode: HttpError, problem: Problem, responder: (HttpError, RiftHttpResponse) => T) =>
          createHttpResponse(channel, nice, None)(problem)(riftWarp).fold(
              fail => {
                reportProblem(fail)
