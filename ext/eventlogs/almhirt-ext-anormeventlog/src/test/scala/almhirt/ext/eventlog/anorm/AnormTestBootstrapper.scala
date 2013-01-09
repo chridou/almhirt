@@ -8,7 +8,7 @@ import riftwarp.RiftWarp
 import almhirt.environment.configuration.CleanUpAction
 
 class AnormTestBootstrapper(config: Config) extends AlmhirtTestingBootstrapper(config) {
-  override def registerComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] = {
+  override def createCoreComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] = {
     almhirt.serviceRegistry match {
       case Some(sr) =>
         val riftwarp = RiftWarp.concurrentWithDefaults
@@ -27,7 +27,7 @@ class AnormTestBootstrapper(config: Config) extends AlmhirtTestingBootstrapper(c
         barracks.addRecomposer(new TestPersonUnhandledEventRecomposer)
 
         sr.registerService[RiftWarp](riftwarp)
-        super.registerComponents(almhirt)
+        super.createCoreComponents(almhirt)
       case None =>
         scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))
     }

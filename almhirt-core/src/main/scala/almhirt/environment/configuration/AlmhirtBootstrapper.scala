@@ -14,15 +14,21 @@ trait AlmhirtBootstrapper {
 
   def createAlmhirt(theServiceRegistry: Option[ServiceRegistry])(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)]
 
-  def registerComponents(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
+  def createCoreComponents(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerServicesStage1(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
-
+  def initializeCoreComponents(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
+  
   def registerRepositories(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
 
   def registerCommandHandlers(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
+  
+  def registerAndInitializeMoreComponents(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
 
-  def registerServicesStage2(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
+  def prepareGateways(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
+  
+  def registerAndInitializeAuxServices(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction]
+
+  def cleanUpTemps(implicit theAlmhirt: Almhirt): AlmValidation[Unit]
 }
 
 object AlmhirtBootstrapper {
@@ -35,10 +41,13 @@ object AlmhirtBootstrapper {
       (serviceRegistry, cleanUp2) <- scalaz.Success(bootstrapper.createServiceRegistry(system))
       cleanUp3 <- bootstrapper.createChannels(serviceRegistry)(system)
       (almhirt, cleanUp4) <- bootstrapper.createAlmhirt(serviceRegistry)(system)
-      cleanUp5 <- bootstrapper.registerComponents(almhirt)
-      cleanUp6 <- bootstrapper.registerServicesStage1(almhirt)
+      cleanUp5 <- bootstrapper.createCoreComponents(almhirt)
+      cleanUp6 <- bootstrapper.initializeCoreComponents(almhirt)
       cleanUp7 <- bootstrapper.registerRepositories(almhirt)
       cleanUp8 <- bootstrapper.registerCommandHandlers(almhirt)
-      cleanUp9 <- bootstrapper.registerServicesStage2(almhirt)
-    } yield (almhirt, new ShutDown{ def shutDown() { cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1(); system.actorSystem.awaitTermination } })
+      cleanUp9 <- bootstrapper.registerAndInitializeMoreComponents(almhirt)
+      cleanUp10 <- bootstrapper.prepareGateways(almhirt)
+      cleanUp11 <- bootstrapper.registerAndInitializeAuxServices(almhirt)
+      _ <- bootstrapper.cleanUpTemps(almhirt)
+    } yield (almhirt, new ShutDown{ def shutDown() { cleanUp11(); cleanUp10(); cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1(); system.actorSystem.awaitTermination } })
 }

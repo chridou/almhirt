@@ -80,18 +80,28 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
     }
   }
 
-  def registerComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
+  def createCoreComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
     (() => ()).success
-
-  def registerServicesStage1(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
+    
+  def initializeCoreComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
     (() => ()).success
 
   def registerRepositories(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
     (() => ()).success
-
+    
   def registerCommandHandlers(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
     (() => ()).success
 
-  def registerServicesStage2(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
+  def registerAndInitializeMoreComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
     (() => ()).success
+    
+  def prepareGateways(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
+    (() => ()).success
+
+  def registerAndInitializeAuxServices(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] =
+    (() => ()).success
+
+  def cleanUpTemps(implicit almhirt: Almhirt): AlmValidation[Unit] =
+    ().success
+    
 }

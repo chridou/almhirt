@@ -27,7 +27,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
   private var cmdExecutor: CommandExecutor = null
   private var cmdExecutorRegistration: RegistrationHolder = null
 
-  override def registerComponents(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction] = {
+  override def createCoreComponents(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction] = {
     val config = theAlmhirt.system.config
     theAlmhirt.serviceRegistry match {
       case Some(sr) =>
@@ -78,7 +78,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
             cmdExecutorRegistration.dispose
             trackerRegistration.dispose
           })
-        }.flatMap(cleanUp => super.registerComponents(theAlmhirt).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
+        }.flatMap(cleanUp => super.createCoreComponents(theAlmhirt).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
       case None => scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))
     }
   }
