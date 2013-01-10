@@ -36,18 +36,25 @@ trait ProblemOps0 extends Ops[NonEmptyList[Problem]] {
 }
 
 trait ProblemOps1[T <: Problem] extends Ops[T] {
-  def withIdentifier(ident: String): T =
-    if (ident.trim().isEmpty())
-      self
-    else
-      self.withArg("ident", ident).asInstanceOf[T]
   
   def toAggregate: AggregateProblem =
     AggregateProblem(self.message, severity = self.severity, category = self.category, problems = self :: Nil)
 }
 
+trait ProblemOps2[T <: Problem] extends Ops[T] {
+  def withIdentifier(ident: String): T =
+    if (ident.trim().isEmpty())
+      self
+    else
+      self.withArg("ident", ident).asInstanceOf[T]
+
+  def markLogged(): T = self.withArg("isLogged", true).asInstanceOf[T]
+  def isLogged(): Boolean = self.args.contains("isLogged") && self.args("isLogged") == true
+}
+
 trait ToProblemOps {
   implicit def ToProblemOps0(a: NonEmptyList[Problem]) = new ProblemOps0 { def self = a }
   implicit def ToProblemOps1[T <: Problem](a: T) = new ProblemOps1[T] { def self = a }
+  implicit def ToProblemOps2[T <: Problem](a: T) = new ProblemOps2[T] { def self = a }
 }
 
