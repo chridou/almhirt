@@ -34,7 +34,16 @@ class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], rif
   }
 
   def forwardTracked(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) {
-
+    (  for {
+        reqContentType <- UnfilteredFuns.getContentType(req)
+        (channel, typeDescriptor) <- RiftWarpHttpFuns.extractChannelAndTypeDescriptor(reqContentType)
+        endpoint <- getEndpoint()
+        command <- extractCommand(req, channel)
+      } yield (endpoint, command, channel)).fold(
+      prob => (),
+      endpointAndCmd => {
+        endpointAndCmd._1.execute(endpointAndCmd._2)
+        responder.respond(Accepted ~> NoContent)})
   }
 
   def forwardWithResultResponse(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) {

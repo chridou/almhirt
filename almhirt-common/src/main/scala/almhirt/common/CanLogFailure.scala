@@ -39,7 +39,7 @@ trait CanLogProblems {
     def log(minSeverity: Severity): T = logProblem(prob, minSeverity)
 
     /** Log a [[almhirt.validation.Problem]] */
-    def log() : T = logProblem(prob, NoProblem)
+    def log(): T = logProblem(prob, NoProblem)
 
   }
 
@@ -56,5 +56,10 @@ trait CanLogProblems {
     /** Log a [[almhirt.validation.Problem]] contained in a Failure */
     def logFailure(): AlmValidation[T] = logFailure(NoProblem)
   }
+}
 
+trait LogsProblemsTagged extends CanLogProblems {
+  def logTag: String
+  override def logProblem[T <: Problem](prob: T, minSeverity: Severity): T =
+    super.logProblem(prob.setTag(logTag), minSeverity)
 }

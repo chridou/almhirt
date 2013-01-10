@@ -17,7 +17,8 @@ import almhirt.almakka.AlmActorLogging
 import almhirt.environment.configuration.ConfigHelper
 import almhirt.environment.configuration.SystemHelper
 
-class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with CanLogProblems with AlmActorLogging {
+class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with LogsProblemsTagged with AlmActorLogging {
+  val logTag = "OperationStateTracker"
   val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
   val collectedResults = collection.mutable.HashMap.empty[TrackingTicket, ResultOperationState]
   val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[ActorRef]]
