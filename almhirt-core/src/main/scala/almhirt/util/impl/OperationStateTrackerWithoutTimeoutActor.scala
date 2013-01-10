@@ -36,7 +36,7 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
             }
           }
         case resState: ResultOperationState =>
-          if (!collectedInProcess.contains(resState.ticket))
+            if (!collectedInProcess.contains(resState.ticket))
             log.warning("ResultState received but no InProcess state for ticket %s".format(resState.ticket))
           else
             collectedInProcess -= resState.ticket
@@ -46,7 +46,7 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
           } else {
             collectedResults += (resState.ticket -> resState)
             if (resultCallbacks.contains(resState.ticket)) {
-              resultCallbacks(resState.ticket).foreach(replyTo => OperationStateResultRsp(resState.ticket, resState.success))
+              resultCallbacks(resState.ticket).foreach(_ ! OperationStateResultRsp(resState.ticket, resState.success))
               resultCallbacks - resState.ticket
             }
           }

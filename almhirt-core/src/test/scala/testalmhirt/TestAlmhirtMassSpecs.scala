@@ -20,16 +20,16 @@ class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(NewTestPerson(x._2, x._3), "A insert%s".format(x._1.toString)))
     val insertStatesFutures = idsAndNamesAndAdresses.map(x => almhirt.operationStateTracker.getResultFor("A insert%s".format(x._1.toString)))
     val insertStatesRes = AlmFuture.sequence(insertStatesFutures).awaitResult
-    if(insertStatesRes.isFailure) println("TestAlmhirtMassSpecs:"+insertStatesRes)
+    if(insertStatesRes.isFailure) println("TestAlmhirtMassSpecs(INSERT):"+insertStatesRes)
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(SetTestPersonAddress(AggregateRootRef(x._2, 1), x._4), "A setaddress%s".format(x._1.toString)))
     val update1StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.operationStateTracker.getResultFor("A setaddress%s".format(x._1.toString)))
     val update1StatesRes = AlmFuture.sequence(update1StatesFutures).awaitResult
-    if(update1StatesRes.isFailure) println("TestAlmhirtMassSpecs:"+update1StatesRes)
+    if(update1StatesRes.isFailure) println("TestAlmhirtMassSpecs(UPDATE1):"+update1StatesRes)
 
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(ChangeTestPersonName(AggregateRootRef(x._2, 2), "new%s".format(x._3)), "A updatename%s".format(x._1.toString)))
     val update2StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.operationStateTracker.getResultFor("A updatename%s".format(x._1.toString)))
     val update2StatesRes = AlmFuture.sequence(update2StatesFutures).awaitResult
-    if(update2StatesRes.isFailure) println("TestAlmhirtMassSpecs:"+update2StatesRes)
+    if(update2StatesRes.isFailure) println("TestAlmhirtMassSpecs(UPDATE2):"+update2StatesRes)
     update2StatesRes.map { updateStates =>
       updateStates.foreach(x => x fold (f => println(f), succ => ()))
       updateStates
