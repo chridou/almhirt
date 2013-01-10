@@ -4,26 +4,21 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.syntax.almvalidation._
+import almhirt.http.HttpError
+import riftwarp._
+import riftwarp.http._
 import unfiltered.request._
 import unfiltered.response._
 import unfiltered.netty.ReceivedMessage
-import riftwarp._
-import riftwarp.http._
 
 object UnfilteredFuns {
   def getContentType(req: HttpRequest[Any]): AlmValidation[String] =
     RequestContentType(req).noneIsBadData("ContentType")
 
-  def dataByChannel(channel: RiftChannel with RiftHttpChannel)(req: HttpRequest[Any]): AlmValidation[RiftHttpDimension] = {
-    channel match {
-      case ch: RiftText => NotSupportedProblem("Channel RiftText").failure
-      case ch: RiftMap => NotSupportedProblem("Channel RiftMap").failure
-      case ch: RiftJson => DimensionString(new String(Body.bytes(req), "UTF-8")).success
-      case ch: RiftBson => NotSupportedProblem("Channel RiftBson").failure
-      case ch: RiftXml => DimensionString(new String(Body.bytes(req), "UTF-8")).success
-      case ch: RiftMessagePack => NotSupportedProblem("Channel RiftMessagePack").failure
-      case ch: RiftProtocolBuffers => NotSupportedProblem("Channel RiftProtocolBuffers").failure
-      case x => NotSupportedProblem("Channel '%s'".format(x.getClass())).failure
+  def dataByRequestType(reqType: HttpRequestDataType, req: HttpRequest[Any]): AlmValidation[RiftDimension with RiftHttpDimension] = {
+    reqType match {
+      case StringDataRequest => DimensionString(new String(Body.bytes(req), "UTF-8")).success
+      case BinaryDataRequest => DimensionBinary(Body.bytes(req)).success
     }
   }
 
@@ -35,7 +30,8 @@ object UnfilteredFuns {
         case (None, Some(td)) => getContentType(req).flatMap(RiftWarpHttpFuns.extractChannelAndTypeDescriptor(_).map(x => (x._1, Some(td))))
         case _ => getContentType(req).flatMap(RiftWarpHttpFuns.extractChannelAndTypeDescriptor(_))
       }
-      data <- dataByChannel(channel)(req)
+      reqRequestDataType <- RiftWarpHttpFuns.getRequiredRequestDataType(channel)
+      data <- dataByRequestType(reqRequestDataType, req)
       result <- {
         val td = option.cata(typeDescriptor)(td => td, TypeDescriptor(mResult.runtimeClass))
         RiftWarpHttpFuns.transformIncomingContent[TResult](channel, Some(td), data)
@@ -56,6 +52,16 @@ object UnfilteredFuns {
       case RiftHttpStringResponse(content, contentType) => Status(errorStatus.code) ~> ResponseString(content) ~> ContentType(contentType)
       case RiftHttpBinaryResponse(content, contentType) => Status(errorStatus.code) ~> ResponseBytes(content) ~> ContentType(contentType)
     }
+  }
+
+  def withRequest(riftWarp: RiftWarp)(nice: Boolean)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) {
+    def respondError(httpError: HttpError, response: RiftHttpResponse) = responder.respond(createErrorResponse(httpError, response))
+    def getRequestBody(reqType: HttpRequestDataType) = dataByRequestType(reqType, req)
+    def getContentType() = option.cata(RequestContentType(req))(_.success, BadDataProblem("No content type specified").failure)
+    def compute(channel: RiftChannel with RiftHttpChannel, typedDescriptor: Option[TypeDescriptor], data: RiftDimension with RiftHttpDimension) {
+      sys.error("")
+    }
+    RiftWarpHttpFuns.withRequest[Unit](riftWarp)(nice)(launderProblem)(reportProblem)(respondError)(getContentType)(getRequestBody)(compute)
   }
 
 }
