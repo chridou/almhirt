@@ -57,7 +57,7 @@ object SystemHelper {
   def createCommandEndpointFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] = {
     import language.reflectiveCalls
     for {
-      endpointConfig <- ConfigHelper.commandEnpoint.getConfig(theAlmhirt.system.config)
+      endpointConfig <- ConfigHelper.commandEndpoint.getConfig(theAlmhirt.system.config)
       factoryName <- ConfigHelper.shared.getFactoryName(endpointConfig)
       factory <- inTryCatch {
         Class.forName(factoryName)

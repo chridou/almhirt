@@ -9,7 +9,6 @@ import almhirt.common.AlmValidation
 import almhirt.common.UnspecifiedProblem
 
 trait CommandEndpointForwardMode
-
 case object BroadcastCommandOnMessageHub extends CommandEndpointForwardMode
 case object PostCommandOnMessageHub extends CommandEndpointForwardMode
 case object PostCommandOnCommandChannel extends CommandEndpointForwardMode
@@ -30,6 +29,12 @@ trait CommandEndpoint {
   def execute(cmd: DomainCommand): Unit
   def executeTracked(cmd: DomainCommand): TrackingTicket
   def executeWithCallback(atMost: FiniteDuration)(cmd: DomainCommand, callback: AlmValidation[ResultOperationState] => Unit): Unit
+}
+
+object CommandEndpoint {
+  def apply(theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] = {
+    new impl.CommandEndpointWithUuidTicketsFactory().createCommandEndpoint(theAlmhirt)
+  }
 }
 
 trait CommandEndpointFactory {

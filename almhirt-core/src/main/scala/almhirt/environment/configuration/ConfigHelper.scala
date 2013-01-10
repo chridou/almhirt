@@ -83,7 +83,7 @@ object ConfigHelper {
     def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)
   }
 
-  object commandEnpoint {
+  object commandEndpoint {
     def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.commandEndpoint)
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.commandEndpoint)
     def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)

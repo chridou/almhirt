@@ -11,7 +11,7 @@ import almhirt.commanding._
 import org.specs2.mutable._
 
 class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
-  private implicit val atMost = Duration(2, "s")
+  private implicit val atMost = Duration(5, "s")
   "The TestAlmhirt" should {
     "create, modify and retrieve 100 persons when actions for all entities are processed as sequenced blocks (A)" in {
       inTestAlmhirt{implicit almhirt =>

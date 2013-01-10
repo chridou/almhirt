@@ -20,7 +20,7 @@ import almhirt.environment.configuration.SystemHelper
 class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with CanLogProblems with AlmActorLogging {
   val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
   val collectedResults = collection.mutable.HashMap.empty[TrackingTicket, ResultOperationState]
-  val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[AlmValidation[ResultOperationState] => Unit]]
+  val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[ActorRef]]
 
   def receive: Receive = {
     case opState: OperationState =>
@@ -46,19 +46,19 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
           } else {
             collectedResults += (resState.ticket -> resState)
             if (resultCallbacks.contains(resState.ticket)) {
-              resultCallbacks(resState.ticket).foreach(callback => callback(resState.success))
+              resultCallbacks(resState.ticket).foreach(replyTo => OperationStateResultRsp(resState.ticket, resState.success))
               resultCallbacks - resState.ticket
             }
           }
       }
-    case RegisterResultCallbackCmd(ticket, callback, _) =>
+    case RegisterResultCallbackQry(ticket, replyTo, _) =>
       if (collectedResults.contains(ticket)) {
-        callback(collectedResults(ticket).success)
+        replyTo ! OperationStateResultRsp(ticket, collectedResults(ticket).success)
       } else {
         if (resultCallbacks.contains(ticket))
-          resultCallbacks += (ticket -> (callback :: resultCallbacks(ticket)))
+          resultCallbacks += (ticket -> (replyTo :: resultCallbacks(ticket)))
         else
-          resultCallbacks += (ticket -> List(callback))
+          resultCallbacks += (ticket -> List(replyTo))
       }
 
     case GetStateQry(ticket) =>
