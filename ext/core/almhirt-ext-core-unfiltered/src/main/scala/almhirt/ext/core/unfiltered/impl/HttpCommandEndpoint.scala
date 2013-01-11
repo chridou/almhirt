@@ -11,6 +11,7 @@ import riftwarp._
 import riftwarp.http.RiftWarpHttpFuns
 import unfiltered.request._
 import unfiltered.response._
+import almhirt.util.TrackingTicket
 
 class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], riftWarp: RiftWarp, theAlmhirt: Almhirt) extends ForwardsCommandsFromHttpRequest {
   private val nice = true
@@ -18,10 +19,10 @@ class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], rif
   protected def respondProblem(prob: Problem, errorCode: HttpError, channel: RiftChannel with RiftHttpChannel, responder: unfiltered.Async.Responder[Any]) =
     UnfilteredFuns.respondProblem(riftWarp)(theAlmhirt.reportProblem)(nice)(prob, errorCode, channel, responder)
 
+  protected def withRequest = UnfilteredFuns.withRequest(riftWarp)(nice)(launderProblem)(theAlmhirt.reportProblem)_
+  protected val responseWorkflow = UnfilteredFuns.createResponseWorkflow(riftWarp)(launderProblem)(theAlmhirt.reportProblem)(nice)
   protected def extractCommand(channel: RiftChannel with RiftHttpChannel, typeDescriptor: Option[TypeDescriptor], data: RiftDimension with RiftHttpDimension) =
     RiftWarpHttpFuns.transformIncomingContent[DomainCommand](riftWarp)(channel, typeDescriptor, data)
-  
-  protected def withRequest = UnfilteredFuns.withRequest(riftWarp)(nice)(launderProblem)(theAlmhirt.reportProblem)_
 
   protected def forwardHandler = withRequest((channel, typeDescriptor, data, responder) =>
     (for {
@@ -35,23 +36,38 @@ class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], rif
           responder.respond(Accepted ~> NoContent)
       }))
 
+  protected def forwardTrackedHandler = withRequest((channel, typeDescriptor, data, responder) =>
+    (for {
+      endpoint <- getEndpoint()
+      command <- extractCommand(channel, typeDescriptor, data)
+    } yield (endpoint, command)).fold(
+      prob => respondProblem(prob, Http_400_Bad_Request, channel, responder),
+      {
+        case (endpoint, command) =>
+          val ticket = endpoint.executeTracked(command)
+          responseWorkflow(channel, ticket, Http_200_OK, responder)
+      }))
+
+  protected def forwardWithResultResponseHandler = withRequest((channel, typeDescriptor, data, responder) =>
+    (for {
+      endpoint <- getEndpoint()
+      command <- extractCommand(channel, typeDescriptor, data)
+    } yield (endpoint, command)).fold(
+      prob => respondProblem(prob, Http_400_Bad_Request, channel, responder),
+      {
+        case (endpoint, command) =>
+          endpoint.executeWithCallback(theAlmhirt.longDuration)(command, result => {
+            result.fold(
+              fail => {
+                val (prob, status) = launderProblem(fail)
+                respondProblem(prob, status, channel, responder)},
+              succ => responseWorkflow(channel, succ, Http_200_OK, responder))
+          })
+      }))
+
   def forward(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) { forwardHandler(req, responder) }
 
-  def forwardTracked(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) {
-    (  for {
-        reqContentType <- UnfilteredFuns.getContentType(req)
-        (channel, typeDescriptor) <- RiftWarpHttpFuns.extractChannelAndTypeDescriptor(reqContentType)
-        endpoint <- getEndpoint()
-        command <- extractCommand(req, channel)
-      } yield (endpoint, command, channel)).fold(
-      prob => (),
-      endpointAndCmd => {
-        endpointAndCmd._1.execute(endpointAndCmd._2)
-        responder.respond(Accepted ~> NoContent)})
-  }
+  def forwardTracked(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) { forwardTrackedHandler(req, responder) }
 
-  def forwardWithResultResponse(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) {
-
-  }
-
+  def forwardWithResultResponse(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) { forwardWithResultResponseHandler(req, responder) }
 }
