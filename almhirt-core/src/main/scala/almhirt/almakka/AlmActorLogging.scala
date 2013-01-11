@@ -25,10 +25,10 @@ import almhirt.common.AlmFuture
  * 
  * Log by calling the implicit on a [[almhirt.validation.AlmValidation]]
  */
-trait AlmActorLogging extends CanLogProblems { self: akka.actor.Actor =>
+trait AlmActorLogging { self: akka.actor.Actor with CanLogProblems =>
   val log = Logging(context.system, this)
   
-  def logProblem(prob: Problem, minSeverity: Severity) {
+  protected def writeProblemToLog(prob: Problem, minSeverity: Severity) {
     if(prob.severity >= minSeverity)
 	  prob.severity match {
 	    case NoProblem =>

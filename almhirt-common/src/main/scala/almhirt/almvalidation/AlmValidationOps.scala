@@ -139,7 +139,7 @@ trait AlmValidationOps7[T] extends Ops[Option[T]] {
   def noneIsNotFound(message: String = "Not found"): AlmValidation[T] =
     funs.noneIsNotFound(self, message)
 }
-  
+
 trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
   def toAgg(msg: String): AlmValidationAP[T] = 
     self fold (

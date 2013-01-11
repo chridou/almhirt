@@ -23,7 +23,7 @@ import riftwarp.RiftWarp
 import almhirt.almakka.AlmActorLogging
 import _root_.anorm._
 
-class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWarp: RiftWarp, uuidsAndTime: CanCreateUuidsAndDateTimes) extends Actor with AlmActorLogging {
+class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWarp: RiftWarp, uuidsAndTime: CanCreateUuidsAndDateTimes) extends Actor with CanLogProblems with AlmActorLogging {
   private var loggedEvents: List[DomainEvent] = Nil
 
   private val cmdInsert = "INSERT INTO %s(id, aggId, aggVersion, channel, timestamp, payload) VALUES({id}, {aggId}, {aggVersion}, {channel}, {timestamp}, {payload})".format(settings.logTableName)
