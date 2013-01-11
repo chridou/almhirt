@@ -20,4 +20,6 @@ trait AlmhirtBaseOps extends CanCreateUuidsAndDateTimes with HasExecutionContext
   def shortDuration: FiniteDuration
   def mediumDuration: FiniteDuration
   def longDuration: FiniteDuration
+  
+  def log: akka.event.LoggingAdapter
 }

@@ -19,6 +19,7 @@ import almhirt.eventlog.impl.DomainEventLogActorHull
 import almhirt.environment.configuration.ConfigHelper
 import almhirt.environment.configuration.ConfigPaths
 import almhirt.util.impl.OperationStateTrackerActorHull
+import ch.qos.logback.classic.Logger
 
 class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper(config) {
   private var trackerRegistration: RegistrationHolder = null
@@ -27,7 +28,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
   private var cmdExecutor: CommandExecutor = null
   private var cmdExecutorRegistration: RegistrationHolder = null
 
-  override def createCoreComponents(implicit theAlmhirt: Almhirt): AlmValidation[CleanUpAction] = {
+  override def createCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction] = {
     val config = theAlmhirt.system.config
     theAlmhirt.serviceRegistry match {
       case Some(sr) =>
@@ -78,7 +79,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
             cmdExecutorRegistration.dispose
             trackerRegistration.dispose
           })
-        }.flatMap(cleanUp => super.createCoreComponents(theAlmhirt).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
+        }.flatMap(cleanUp => super.createCoreComponents(theAlmhirt, startUpLogger).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
       case None => scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))
     }
   }

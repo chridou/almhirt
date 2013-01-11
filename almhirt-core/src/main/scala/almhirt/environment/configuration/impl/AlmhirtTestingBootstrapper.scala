@@ -15,10 +15,11 @@ import almhirt.util.OperationStateTracker
 import almhirt.core.ServiceRegistry
 import almhirt.environment.configuration.CleanUpAction
 import com.typesafe.config.Config
+import ch.qos.logback.classic.Logger
 
 class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrapper(config) {
-  override def createAlmhirt(theServiceRegistry: Option[ServiceRegistry])(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
-    super.createAlmhirt(theServiceRegistry).map {
+  override def createAlmhirt(theServiceRegistry: Option[ServiceRegistry], startUpLogger: Logger)(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
+    super.createAlmhirt(theServiceRegistry, startUpLogger).map {
       case (almhirt, cleanUp) =>
         (new AlmhirtForTesting {
           def system = theSystem
