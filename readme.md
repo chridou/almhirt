@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/chridou/almhirt.png)](http://travis-ci.org/chridou/almhirt)
+
 # Almhirt
 
 Warning! This project is still in an early phase! Everything is subject to change! 
