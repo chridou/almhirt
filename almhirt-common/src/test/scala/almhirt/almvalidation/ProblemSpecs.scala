@@ -9,7 +9,7 @@ class ProblemSpecs extends Specification with almhirt.problem.ProblemInstances {
   val bdpA = BadDataProblem("Message A", Minor).toAggregate
   val bdpB = BadDataProblem("Message B", Major).toAggregate
   
-  "A MultipleBadDataError having added an already contained key with a different message" should {
+  "An AggregateProblem having added a BadDataProblem" should {
     "keep the severity when a BadDataObject with lower severity is added" in {
       (bdpA addProblem bdpB).addProblem(BadDataProblem("Message C", Minor).toAggregate)
       .severity must beEqualTo((bdpA addProblem bdpB).severity)
