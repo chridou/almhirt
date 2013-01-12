@@ -1,11 +1,13 @@
 package almhirt.environment
 
 import scalaz.syntax.validation._
+import akka.event.NoLogging
 import almhirt.common._
 import almhirt.syntax.almvalidation._
 import almhirt.core._
 import almhirt.environment.configuration.AlmhirtBootstrapper
 import com.typesafe.config._
+import almhirt.environment.configuration.impl.LogBackLoggingAdapter
 
 trait AlmhirtTestKit {
   private val configText =
@@ -40,7 +42,7 @@ trait AlmhirtTestKit {
   def createTestAlmhirt(): (AlmhirtForTesting, ShutDown) = createTestAlmhirt(defaultConf)
   def createTestAlmhirt(aConf: Config): (AlmhirtForTesting, ShutDown) = {
     AlmhirtBootstrapper.createFromConfig(aConf).flatMap(bootstrapper =>
-      AlmhirtBootstrapper.runStartupSequence(bootstrapper)).map { case (almhirt, shutDown) => (almhirt.asInstanceOf[AlmhirtForTesting], shutDown) }.forceResult
+      AlmhirtBootstrapper.runStartupSequence(bootstrapper, NoLogging)).map { case (almhirt, shutDown) => (almhirt.asInstanceOf[AlmhirtForTesting], shutDown) }.forceResult
   }
 
   def inTestAlmhirt[T](compute: AlmhirtForTesting => T): T = inTestAlmhirt(compute, defaultConf)

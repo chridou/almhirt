@@ -1,42 +1,42 @@
 package almhirt.environment.configuration
 
+import akka.event.LoggingAdapter
 import almhirt.common._
 import almhirt.environment._
 import almhirt.core._
 import com.typesafe.config.Config
-import ch.qos.logback.classic.Logger
 
 trait AlmhirtBootstrapper {
-  def createAlmhirtSystem(startUpLogger: Logger): AlmValidation[(AlmhirtSystem, CleanUpAction)]
+  def createAlmhirtSystem(startUpLogger: LoggingAdapter): AlmValidation[(AlmhirtSystem, CleanUpAction)]
 
-  def createServiceRegistry(theSystem: AlmhirtSystem, startUpLogger: Logger): (Option[ServiceRegistry], CleanUpAction)
+  def createServiceRegistry(theSystem: AlmhirtSystem, startUpLogger: LoggingAdapter): (Option[ServiceRegistry], CleanUpAction)
 
-  def createChannels(theServiceRegistry: Option[ServiceRegistry], startUpLogger: Logger)(implicit theSystem: AlmhirtSystem): AlmValidation[CleanUpAction]
+  def createChannels(theServiceRegistry: Option[ServiceRegistry], startUpLogger: LoggingAdapter)(implicit theSystem: AlmhirtSystem): AlmValidation[CleanUpAction]
 
-  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry], startUpLogger: Logger)(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)]
+  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry], startUpLogger: LoggingAdapter)(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)]
 
-  def createCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction]
+  def createCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
 
-  def initializeCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction]
+  def initializeCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
   
-  def registerRepositories(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction]
+  def registerRepositories(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
 
-  def registerCommandHandlers(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction]
+  def registerCommandHandlers(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
   
-  def registerAndInitializeMoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction]
+  def registerAndInitializeMoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
 
-  def prepareGateways(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction]
+  def prepareGateways(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
   
-  def registerAndInitializeAuxServices(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction]
+  def registerAndInitializeAuxServices(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
 
-  def cleanUpTemps(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[Unit]
+  def cleanUpTemps(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[Unit]
 }
 
 object AlmhirtBootstrapper {
   def createFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] =
     SystemHelper.createBootstrapperFromConfig(config)
 
-  def runStartupSequence(bootstrapper: AlmhirtBootstrapper, startUpLogger: Logger): AlmValidation[(Almhirt, ShutDown)] =
+  def runStartupSequence(bootstrapper: AlmhirtBootstrapper, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, ShutDown)] =
     for {
       (system, cleanUp1) <- bootstrapper.createAlmhirtSystem(startUpLogger)
       (serviceRegistry, cleanUp2) <- scalaz.Success(bootstrapper.createServiceRegistry(system, startUpLogger))

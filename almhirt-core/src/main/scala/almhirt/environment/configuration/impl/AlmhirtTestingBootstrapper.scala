@@ -1,6 +1,7 @@
 package almhirt.environment.configuration.impl
 
 import scala.concurrent.duration.FiniteDuration
+import akka.event.LoggingAdapter
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import almhirt.common._
@@ -15,10 +16,9 @@ import almhirt.util.OperationStateTracker
 import almhirt.core.ServiceRegistry
 import almhirt.environment.configuration.CleanUpAction
 import com.typesafe.config.Config
-import ch.qos.logback.classic.Logger
 
 class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrapper(config) {
-  override def createAlmhirt(theServiceRegistry: Option[ServiceRegistry], startUpLogger: Logger)(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
+  override def createAlmhirt(theServiceRegistry: Option[ServiceRegistry], startUpLogger: LoggingAdapter)(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
     super.createAlmhirt(theServiceRegistry, startUpLogger).map {
       case (almhirt, cleanUp) =>
         (new AlmhirtForTesting {
@@ -47,6 +47,8 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
           def hasCommandHandlers = almhirt.getService[HasCommandHandlers].forceResult
           def eventLog = almhirt.getService[DomainEventLog].forceResult
           def operationStateTracker = almhirt.getService[OperationStateTracker].forceResult
+          
+          def log = almhirt.log
         }, cleanUp)
     }
   }

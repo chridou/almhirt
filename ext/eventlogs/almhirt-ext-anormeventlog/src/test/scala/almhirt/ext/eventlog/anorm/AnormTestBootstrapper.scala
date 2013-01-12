@@ -1,14 +1,15 @@
 package almhirt.ext.eventlog.anorm
 
-import com.typesafe.config.Config
+import akka.event.LoggingAdapter
+import almhirt.common._
 import almhirt.environment.configuration.impl.AlmhirtTestingBootstrapper
 import almhirt.environment._
-import almhirt.common._
-import riftwarp.RiftWarp
 import almhirt.environment.configuration.CleanUpAction
+import riftwarp.RiftWarp
+import com.typesafe.config.Config
 
 class AnormTestBootstrapper(config: Config) extends AlmhirtTestingBootstrapper(config) {
-  override def createCoreComponents(implicit almhirt: Almhirt): AlmValidation[CleanUpAction] = {
+  override def createCoreComponents(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
     almhirt.serviceRegistry match {
       case Some(sr) =>
         val riftwarp = RiftWarp.concurrentWithDefaults
@@ -27,7 +28,7 @@ class AnormTestBootstrapper(config: Config) extends AlmhirtTestingBootstrapper(c
         barracks.addRecomposer(new TestPersonUnhandledEventRecomposer)
 
         sr.registerService[RiftWarp](riftwarp)
-        super.createCoreComponents(almhirt)
+        super.createCoreComponents(almhirt, startUpLogger)
       case None =>
         scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))
     }

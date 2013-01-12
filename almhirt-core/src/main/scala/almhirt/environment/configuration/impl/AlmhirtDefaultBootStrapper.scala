@@ -2,6 +2,7 @@ package almhirt.environment.configuration.impl
 
 import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
+import akka.event.LoggingAdapter
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
@@ -19,7 +20,6 @@ import almhirt.eventlog.impl.DomainEventLogActorHull
 import almhirt.environment.configuration.ConfigHelper
 import almhirt.environment.configuration.ConfigPaths
 import almhirt.util.impl.OperationStateTrackerActorHull
-import ch.qos.logback.classic.Logger
 
 class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper(config) {
   private var trackerRegistration: RegistrationHolder = null
@@ -28,7 +28,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
   private var cmdExecutor: CommandExecutor = null
   private var cmdExecutorRegistration: RegistrationHolder = null
 
-  override def createCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: Logger): AlmValidation[CleanUpAction] = {
+  override def createCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
     val config = theAlmhirt.system.config
     theAlmhirt.serviceRegistry match {
       case Some(sr) =>

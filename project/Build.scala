@@ -33,7 +33,7 @@ object Dependencies {
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.0" % "runtime"
+        lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "compile"
 
 	
 	lazy val specs2 = "org.specs2" %% "specs2" % "1.13" % "test"
