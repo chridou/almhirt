@@ -1,0 +1,12 @@
+language: scala
+scala:
+  - 2.10.0
+jdk:
+  - oraclejdk7
+branches:
+  only:
+    - master
+notifications:
+  email:
+    recipients:
+      - ch.douven@web.de
