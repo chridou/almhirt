@@ -158,6 +158,17 @@ trait UnfilteredBuild {
   
 }
 
+trait ClientDispatchBuild {
+  import Dependencies._
+  import Resolvers._
+  def clientDispatchProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  libraryDependencies += "net.databinder.dispatch" %% "dispatch-core" % "0.9.5",
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases)
+  
+}
+
 trait AppBuild {
   import Dependencies._
   import Resolvers._
@@ -169,10 +180,10 @@ trait AppBuild {
   
 }
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with UnfilteredBuild with AppBuild with DocItBuild {
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with UnfilteredBuild with ClientDispatchBuild with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings,
-	                        base = file(".")) aggregate(common, core, anormEventLog, docit, riftwarp, unfiltered)
+	                        base = file(".")) aggregate(common, core, anormEventLog, docit, riftwarp, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -200,6 +211,10 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRi
 								
  lazy val unfiltered = unfilteredProject(	name = "almhirt-ext-core-unfiltered",
 	                       				baseFile = file("./ext/core/almhirt-ext-core-unfiltered")) dependsOn(core, riftwarp)
+
+ lazy val clientDispatch = clientDispatchProject(	name = "almhirt-ext-client-dispatch",
+	                       				baseFile = file("./ext/client/almhirt-ext-client-dispatch")) dependsOn(core, riftwarp)
+
 
  lazy val app = appProject(	name = "almhirt-app",
 	                       	baseFile = file("almhirt-app")) dependsOn(core)										
