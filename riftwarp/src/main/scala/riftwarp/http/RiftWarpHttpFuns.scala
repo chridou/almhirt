@@ -12,25 +12,28 @@ object RiftWarpHttpFuns {
   def extractContentType(rawContent: String): AlmValidation[HttpContentType] =
     HttpContentType.parse(rawContent)
 
-  def transformIncomingContent[TResult <: AnyRef](riftWarp: RiftWarp)(contentType: HttpContentType, content: RiftHttpDimension)(implicit mResult: Manifest[TResult]): AlmValidation[TResult] = {
+  def transformContent[TResult <: AnyRef](riftWarp: RiftWarp)(content: RiftHttpDataWithContent)(implicit mResult: Manifest[TResult]): AlmValidation[TResult] = {
+    val contentType = content.contentType
     val td = option.cata(contentType.tryGetTypeDescriptor)(td => td, TypeDescriptor(mResult.runtimeClass))
     for {
-      dematerialize <- RiftWarpFuns.getRecomposeFun[TResult](contentType.channel, content.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[TResult](remat, Some(td)))(NoFetchBlobFetch)(mResult, riftWarp)
-      dematerialized <- dematerialize(content)
+      data <- content.toRiftDimension
+      dematerialize <- RiftWarpFuns.getRecomposeFun[TResult](contentType.channel, data.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[TResult](remat, Some(td)))(NoFetchBlobFetch)(mResult, riftWarp)
+      dematerialized <- dematerialize(data)
     } yield dematerialized
   }
-
-  def withRequest[TResult](riftWarp: RiftWarp)(nice: Boolean)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(onBadRequest: (HttpError, RiftHttpData) => TResult)(getContentType: () => AlmValidation[String])(getBody: RiftHttpChannel => AlmValidation[RiftDimension with RiftHttpDimension])(compute: (HttpContentType, RiftDimension with RiftHttpDimension) => TResult): TResult =
+  
+  def withRequest[TResult](riftWarp: RiftWarp)(nice: Boolean)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(onBadRequest: (HttpError, RiftHttpData) => TResult)(getContentType: () => AlmValidation[String])(getBody: RiftHttpChannel => AlmValidation[RiftHttpDimension])(compute: (HttpContentTypeWithChannel, RiftHttpDimension) => TResult): TResult =
     getContentType().flatMap(rawContent =>
       extractContentType(rawContent)).fold(
       fail => onBadRequest(Http_400_Bad_Request, RiftHttpStringData(HttpContentType.PlainText, launderProblem(fail)._1.toString())),
       contentType =>
           (for {
-            body <- getBody(contentType.channel)
+            channel <- contentType.getChannel
+            body <- getBody(channel)
           } yield body).fold(
             fail => {
               val (problem, _) = launderProblem(fail)
-              val resp = createHttpProblemResponse(riftWarp)(reportProblem)(contentType.channel, nice, None)(problem)
+              val resp = createHttpProblemResponse(riftWarp)(reportProblem)(contentType.tryGetChannel, nice, None)(problem)
               onBadRequest(Http_400_Bad_Request, resp)
             },
             body => compute(contentType, body)))
@@ -49,9 +52,10 @@ object RiftWarpHttpFuns {
     } yield response
   }
 
-  def createHttpProblemResponse(riftWarp: RiftWarp)(reportProblem: Problem => Unit)(channel: RiftHttpChannel, nice: Boolean, contentExtOverride: Option[String] = None)(what: Problem): RiftHttpData = {
+  def createHttpProblemResponse(riftWarp: RiftWarp)(reportProblem: Problem => Unit)(channelOpt: Option[RiftHttpChannel], nice: Boolean, contentExtOverride: Option[String] = None)(what: Problem): RiftHttpData = {
     (for {
       decomposer <- riftWarp.barracks.getDecomposerForAny[Problem](what)
+      channel <- option.cata(channelOpt)(some, none)
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun[Problem](channel, channel.httpDimensionType(nice), None)(NoDivertBlobDivert)(riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
       contentType <- HttpContentType( decomposer.typeDescriptor, channel, Map.empty[String, String]).success
