@@ -5,23 +5,28 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp.components.ChannelRegistry
 import riftwarp.RiftChannel
+import riftwarp.RiftHttpChannel
+import riftwarp.RiftHttpChannel
 
 class UnsafeChannelRegistry extends ChannelRegistry {
   private val channels = collection.mutable.HashMap[String, RiftChannel]()
-  private val httpChannels = collection.mutable.HashMap[String, RiftChannel]()
+  private val httpChannels = collection.mutable.HashMap[String, RiftChannel with RiftHttpChannel]()
 
   def memoizeChannel(channel: RiftChannel) {
-    channels += (channel.channelType.toLowerCase() -> channel)
-    (List(channel.httpContentType, channel.httpContentTypeExt).flatten ++ channel.moreLookUpSymbols)
-      .map(x => x.toLowerCase())
-      .foreach(x => httpChannels += (x -> channel))
+    (channel.channelType :: channel.moreLookUpSymbols).map(_.toLowerCase()).foreach(x => channels += (x -> channel))
+    channel match {
+      case http: RiftHttpChannel => 
+        List(http.httpContentType, http.httpContentTypeExt).map(_.toLowerCase()).foreach(x => httpChannels += (x -> http))
+      case _ => ()
+    }
   }
+
   def getChannel(ident: String): AlmValidation[RiftChannel] =
     option.cata(channels.get(ident.toLowerCase()))(
       found => found.success,
       ElementNotFoundProblem("No channel found for '%s'".format(ident)).failure)
 
-  def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftChannel] =
+  def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftChannel with RiftHttpChannel] =
     option.cata(httpChannels.get(contentType.toLowerCase))(
       found => found.success,
       ElementNotFoundProblem("No channel found for content type '%s'".format(contentType)).failure)

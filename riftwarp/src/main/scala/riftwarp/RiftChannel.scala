@@ -9,14 +9,6 @@ trait RiftChannel {
    * CONTRACT: MAY NOT BE LONGER THAN 16 CHARS
    */
   def channelType: String
-  /** The HTTP content type 
-   * 
-   */
-  def httpContentType: Option[String]
-  /** The HTTP content type to append when a TypeDescriptor is used to create a content type  
-   * 
-   */
-  def httpContentTypeExt: Option[String]
   /** More symbols for lookup  
    * 
    */
@@ -41,14 +33,22 @@ trait RiftChannel {
   
 }
 
-trait RiftHttpChannel{
+trait RiftHttpChannel {
+  /** The HTTP content type 
+   * 
+   */
+  def httpContentType: String
+  /** The HTTP content type to append when a TypeDescriptor is used to create a content type  
+   * 
+   */
+  def httpContentTypeExt: String
   def httpDimensionType(nice: Boolean): Class[_ <: RiftDimension]
 }
 
 class RiftText() extends RiftChannel with RiftHttpChannel {
   val channelType = "text"
-  val httpContentType = Some("text/plain")
-  val httpContentTypeExt = None
+  val httpContentType = "text/plain"
+  val httpContentTypeExt = "text"
   val moreLookUpSymbols = Nil
   def httpDimensionType(nice: Boolean ) = classOf[DimensionString]
 }
@@ -70,8 +70,8 @@ object RiftMap {
 
 class RiftJson() extends RiftChannel with RiftHttpChannel {
   val channelType = "json"
-  val httpContentType = Some("json")
-  val httpContentTypeExt = Some("text/x-json")
+  val httpContentType = "text/x-json"
+  val httpContentTypeExt = "json"
   val moreLookUpSymbols = Nil
   def httpDimensionType(nice: Boolean ) = if(nice) classOf[DimensionNiceString] else classOf[DimensionString]
 }
@@ -93,8 +93,8 @@ object RiftBson {
 
 class RiftXml() extends RiftChannel with RiftHttpChannel {
   val channelType = "xml"
-  val httpContentType = Some("xml")
-  val httpContentTypeExt = Some("text/xml")
+  val httpContentType = "text/xml"
+  val httpContentTypeExt = "xml"
   val moreLookUpSymbols = Nil
   def httpDimensionType(nice: Boolean ) = 
     if(nice) classOf[DimensionNiceString] else classOf[DimensionString]
@@ -106,8 +106,8 @@ object RiftXml {
 
 class RiftMessagePack() extends RiftChannel with RiftHttpChannel {
   val channelType = "msgpack"
-  val httpContentType = None
-  val httpContentTypeExt = None
+  val httpContentType = "x-pack"
+  val httpContentTypeExt = "pack"
   val moreLookUpSymbols = Nil
   def httpDimensionType(nice: Boolean) = classOf[DimensionString]
 }
