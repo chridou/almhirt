@@ -38,8 +38,11 @@ object DispatchFuns {
    */
   def awaitResponseData(req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[(almhirt.http.HttpStatusCode, RiftHttpData)] = {
     AlmFuture {
-      val data = Http(req).map(resp => getHttpData(resp)).either
-      sys.error("")
+      val data = 
+        Http(req)
+        .map(resp => getHttpData(resp))
+        .onComplete(x => x.fold(exn => ExceptionCaughtProblem("An exception has been caught", cause = Some(CauseIsThrowable(exn))).failure, v => v))
+      data()
     }
   }
 }
