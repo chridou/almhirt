@@ -13,47 +13,47 @@ import unfiltered.netty.ReceivedMessage
 import almhirt.http.HttpSuccess
 
 object UnfilteredFuns {
-  def dataByRequestType(reqType: HttpRequestDataType, req: HttpRequest[Any]): AlmValidation[RiftDimension with RiftHttpDimension] = {
-    reqType match {
-      case StringDataRequest => DimensionString(new String(Body.bytes(req), "UTF-8")).success
-      case BinaryDataRequest => DimensionBinary(Body.bytes(req)).success
+  def dataByChannel(channel: RiftHttpChannel, req: HttpRequest[Any]): AlmValidation[RiftDimension with RiftHttpDimension] = {
+    channel.httpBodyType match {
+      case StringBodyType => DimensionString(new String(Body.bytes(req), "UTF-8")).success
+      case BinaryBodyType => DimensionBinary(Body.bytes(req)).success
     }
   }
 
-  def createSuccessResponse(successStatus: almhirt.http.HttpSuccess, response: RiftHttpResponse): ResponseFunction[Any] = {
+  def createSuccessResponse(successStatus: almhirt.http.HttpSuccess, response: RiftHttpData): ResponseFunction[Any] = {
     response match {
-      case RiftHttpNoContentResponse => Status(successStatus.code) ~> NoContent
-      case RiftHttpStringResponse(contentType, content) => Status(successStatus.code) ~> ResponseString(content) ~> ContentType(contentType.headerValue)
-      case RiftHttpBinaryResponse(contentType, content) => Status(successStatus.code) ~> ResponseBytes(content) ~> ContentType(contentType.headerValue)
+      case RiftHttpNoContentData => Status(successStatus.code) ~> NoContent
+      case RiftHttpStringData(contentType, content) => Status(successStatus.code) ~> ResponseString(content) ~> ContentType(contentType.headerValue)
+      case RiftHttpBinaryData(contentType, content) => Status(successStatus.code) ~> ResponseBytes(content) ~> ContentType(contentType.headerValue)
     }
   }
 
-  def createErrorResponse(errorStatus: almhirt.http.HttpError, response: RiftHttpResponse): ResponseFunction[Any] = {
+  def createErrorResponse(errorStatus: almhirt.http.HttpError, response: RiftHttpData): ResponseFunction[Any] = {
     response match {
-      case RiftHttpNoContentResponse => Status(errorStatus.code) ~> NoContent
-      case RiftHttpStringResponse(contentType, content) => Status(errorStatus.code) ~> ResponseString(content) ~> ContentType(contentType.headerValue)
-      case RiftHttpBinaryResponse(contentType, content) => Status(errorStatus.code) ~> ResponseBytes(content) ~> ContentType(contentType.headerValue)
+      case RiftHttpNoContentData => Status(errorStatus.code) ~> NoContent
+      case RiftHttpStringData(contentType, content) => Status(errorStatus.code) ~> ResponseString(content) ~> ContentType(contentType.headerValue)
+      case RiftHttpBinaryData(contentType, content) => Status(errorStatus.code) ~> ResponseBytes(content) ~> ContentType(contentType.headerValue)
     }
   }
 
-  def respondProblem(riftWarp: RiftWarp)(reportProblem: Problem => Unit)(nice: Boolean)(prob: Problem, errorCode: HttpError, channel: RiftChannel with RiftHttpChannel, responder: unfiltered.Async.Responder[Any]) {
+  def respondProblem(riftWarp: RiftWarp)(reportProblem: Problem => Unit)(nice: Boolean)(prob: Problem, errorCode: HttpError, channel: RiftHttpChannel, responder: unfiltered.Async.Responder[Any]) {
     val resp = RiftWarpHttpFuns.createHttpProblemResponse(riftWarp)(reportProblem)(channel, nice, None)(prob)
     val respFun = createErrorResponse(errorCode, resp)
     responder.respond(respFun)
   }
 
   def withRequest(riftWarp: RiftWarp)(nice: Boolean)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(compute: (HttpContentType, RiftDimension with RiftHttpDimension, unfiltered.Async.Responder[Any]) => Unit)(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) {
-    def respondError(httpError: HttpError, response: RiftHttpResponse) = responder.respond(createErrorResponse(httpError, response))
-    def getRequestBody(reqType: HttpRequestDataType) = dataByRequestType(reqType, req)
+    def respondError(httpError: HttpError, response: RiftHttpData) = responder.respond(createErrorResponse(httpError, response))
+    def getRequestBody(channel: RiftHttpChannel) = dataByChannel(channel, req)
     def getContentType() = RequestContentType(req).noneIsBadData("ContentType")
     RiftWarpHttpFuns.withRequest[Unit](riftWarp)(nice)(launderProblem)(reportProblem)(respondError)(getContentType)(getRequestBody)((contentType, dim) => compute(contentType, dim, responder))
   }
 
-  def createResponseWorkflow(riftWarp: RiftWarp)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(nice: Boolean): (RiftChannel with RiftHttpChannel, AnyRef, HttpSuccess, unfiltered.Async.Responder[Any]) => Unit = {
-    (channel: RiftChannel with RiftHttpChannel, what: AnyRef, successCode: HttpSuccess, responder: unfiltered.Async.Responder[Any]) =>
+  def createResponseWorkflow(riftWarp: RiftWarp)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(nice: Boolean): (RiftHttpChannel, AnyRef, HttpSuccess, unfiltered.Async.Responder[Any]) => Unit = {
+    (channel: RiftHttpChannel, what: AnyRef, successCode: HttpSuccess, responder: unfiltered.Async.Responder[Any]) =>
       {
-        def onSuccess(successCode: HttpSuccess, resp: RiftHttpResponse) { responder.respond(createSuccessResponse(successCode, resp)) }
-        def onFailure(errorCode: HttpError, resp: RiftHttpResponse) { responder.respond(createErrorResponse(errorCode, resp)) }
+        def onSuccess(successCode: HttpSuccess, resp: RiftHttpData) { responder.respond(createSuccessResponse(successCode, resp)) }
+        def onFailure(errorCode: HttpError, resp: RiftHttpData) { responder.respond(createErrorResponse(errorCode, resp)) }
         RiftWarpHttpFuns.createResponseWorkflow[Unit](riftWarp)(launderProblem)(reportProblem)(nice)(onSuccess)(onFailure)(channel)(what, successCode)
       }
   }

@@ -16,7 +16,7 @@ import almhirt.util.TrackingTicket
 class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], riftWarp: RiftWarp, theAlmhirt: Almhirt) extends ForwardsCommandsFromHttpRequest {
   private val nice = true
   protected def launderProblem = JustForTestingProblemLaundry
-  protected def respondProblem(prob: Problem, errorCode: HttpError, channel: RiftChannel with RiftHttpChannel, responder: unfiltered.Async.Responder[Any]) =
+  protected def respondProblem(prob: Problem, errorCode: HttpError, channel: RiftHttpChannel, responder: unfiltered.Async.Responder[Any]) =
     UnfilteredFuns.respondProblem(riftWarp)(theAlmhirt.reportProblem)(nice)(prob, errorCode, channel, responder)
 
   protected def withRequest = UnfilteredFuns.withRequest(riftWarp)(nice)(launderProblem)(theAlmhirt.reportProblem)_

@@ -5,5 +5,5 @@ import riftwarp._
 
 trait KnowsChannels {
   def getChannel(ident: String): AlmValidation[RiftChannel]
-  def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftChannel with RiftHttpChannel] 
+  def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftHttpChannel] 
 }

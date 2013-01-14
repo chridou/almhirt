@@ -8,7 +8,7 @@ import riftwarp._
 
 class ConcurrentChannelRegistry extends ChannelRegistry {
   private val channels = new _root_.java.util.concurrent.ConcurrentHashMap[String, RiftChannel](64)
-  private val httpChannels = new _root_.java.util.concurrent.ConcurrentHashMap[String, RiftChannel with RiftHttpChannel](128)
+  private val httpChannels = new _root_.java.util.concurrent.ConcurrentHashMap[String, RiftHttpChannel](128)
 
   def memoizeChannel(channel: RiftChannel) {
     (channel.channelType :: channel.moreLookUpSymbols).map(_.toLowerCase()).foreach(x => channels.put(x, channel))
@@ -24,7 +24,7 @@ class ConcurrentChannelRegistry extends ChannelRegistry {
       case channel => channel.success
     }
 
-  def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftChannel with RiftHttpChannel] =
+  def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftHttpChannel] =
     httpChannels.get(contentType.toLowerCase()) match {
       case null => ElementNotFoundProblem("No channel found for content type '%s'".format(contentType)).failure
       case channel => channel.success

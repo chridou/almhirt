@@ -7,24 +7,8 @@ import almhirt.http._
 import riftwarp._
 import riftwarp.RiftStringBasedDimension
 
-sealed trait HttpRequestDataType
-object BinaryDataRequest extends HttpRequestDataType
-object StringDataRequest extends HttpRequestDataType
 
 object RiftWarpHttpFuns {
-  def getRequiredRequestDataType(channel: RiftChannel with RiftHttpChannel): AlmValidation[HttpRequestDataType] = {
-    channel match {
-      case ch: RiftText => NotSupportedProblem("Channel RiftText").failure
-      case ch: RiftMap => NotSupportedProblem("Channel RiftMap").failure
-      case ch: RiftJson => StringDataRequest.success
-      case ch: RiftBson => NotSupportedProblem("Channel RiftBson").failure
-      case ch: RiftXml => StringDataRequest.success
-      case ch: RiftMessagePack => NotSupportedProblem("Channel RiftMessagePack").failure
-      case ch: RiftProtocolBuffers => NotSupportedProblem("Channel RiftProtocolBuffers").failure
-      case x => NotSupportedProblem("Channel '%s'".format(x.getClass())).failure
-    }
-  }
-
   def extractContentType(rawContent: String): AlmValidation[HttpContentType] =
     HttpContentType.parse(rawContent)
 
@@ -36,14 +20,13 @@ object RiftWarpHttpFuns {
     } yield dematerialized
   }
 
-  def withRequest[TResult](riftWarp: RiftWarp)(nice: Boolean)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(onBadRequest: (HttpError, RiftHttpResponse) => TResult)(getContentType: () => AlmValidation[String])(getBody: HttpRequestDataType => AlmValidation[RiftDimension with RiftHttpDimension])(compute: (HttpContentType, RiftDimension with RiftHttpDimension) => TResult): TResult =
+  def withRequest[TResult](riftWarp: RiftWarp)(nice: Boolean)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(onBadRequest: (HttpError, RiftHttpData) => TResult)(getContentType: () => AlmValidation[String])(getBody: RiftHttpChannel => AlmValidation[RiftDimension with RiftHttpDimension])(compute: (HttpContentType, RiftDimension with RiftHttpDimension) => TResult): TResult =
     getContentType().flatMap(rawContent =>
       extractContentType(rawContent)).fold(
-      fail => onBadRequest(Http_400_Bad_Request, RiftHttpStringResponse(HttpContentType.PlainText, launderProblem(fail)._1.toString())),
+      fail => onBadRequest(Http_400_Bad_Request, RiftHttpStringData(HttpContentType.PlainText, launderProblem(fail)._1.toString())),
       contentType =>
           (for {
-            requestDataType <- getRequiredRequestDataType(contentType.channel)
-            body <- getBody(requestDataType)
+            body <- getBody(contentType.channel)
           } yield body).fold(
             fail => {
               val (problem, _) = launderProblem(fail)
@@ -52,46 +35,46 @@ object RiftWarpHttpFuns {
             },
             body => compute(contentType, body)))
 
-  def createHttpResponse(riftWarp: RiftWarp)(channel: RiftChannel with RiftHttpChannel, nice: Boolean, contentExtOverride: Option[String] = None)(what: AnyRef): AlmValidation[RiftHttpResponse] = {
+  def createHttpData(riftWarp: RiftWarp)(channel: RiftHttpChannel, nice: Boolean, contentExtOverride: Option[String] = None)(what: AnyRef): AlmValidation[RiftHttpData] = {
     for {
       decomposer <- riftWarp.barracks.getDecomposerForAny(what)
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun[AnyRef](channel, channel.httpDimensionType(nice), None)(NoDivertBlobDivert)(riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
       contentType <- HttpContentType(decomposer.typeDescriptor, channel, Map.empty[String, String]).success
       response <- dematerialized match {
-        case dim: RiftStringBasedDimension => RiftHttpStringResponse(contentType, dim.manifestation).success
-        case dim: RiftByteArrayBasedDimension => RiftHttpBinaryResponse(contentType, dim.manifestation).success
+        case dim: RiftStringBasedDimension => RiftHttpStringData(contentType, dim.manifestation).success
+        case dim: RiftByteArrayBasedDimension => RiftHttpBinaryData(contentType, dim.manifestation).success
         case x => UnspecifiedProblem("Not a valid HTTP-Dimension: %s".format(x.getClass().getName())).failure
       }
     } yield response
   }
 
-  def createHttpProblemResponse(riftWarp: RiftWarp)(reportProblem: Problem => Unit)(channel: RiftChannel with RiftHttpChannel, nice: Boolean, contentExtOverride: Option[String] = None)(what: Problem): RiftHttpResponse = {
+  def createHttpProblemResponse(riftWarp: RiftWarp)(reportProblem: Problem => Unit)(channel: RiftHttpChannel, nice: Boolean, contentExtOverride: Option[String] = None)(what: Problem): RiftHttpData = {
     (for {
       decomposer <- riftWarp.barracks.getDecomposerForAny[Problem](what)
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun[Problem](channel, channel.httpDimensionType(nice), None)(NoDivertBlobDivert)(riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
       contentType <- HttpContentType( decomposer.typeDescriptor, channel, Map.empty[String, String]).success
       response <- dematerialized match {
-        case dim: RiftStringBasedDimension => RiftHttpStringResponse(contentType, dim.manifestation).success
-        case dim: RiftByteArrayBasedDimension => RiftHttpBinaryResponse(contentType, dim.manifestation).success
+        case dim: RiftStringBasedDimension => RiftHttpStringData(contentType, dim.manifestation).success
+        case dim: RiftByteArrayBasedDimension => RiftHttpBinaryData(contentType, dim.manifestation).success
         case x => UnspecifiedProblem("Not a valid HTTP-Dimension: %s".format(x.getClass().getName())).failure
       }
     } yield response).fold(
       prob => {
         reportProblem(prob)
-        RiftHttpStringResponse(HttpContentType.PlainText, what.toString())
+        RiftHttpStringData(HttpContentType.PlainText, what.toString())
       },
       succ => succ)
   }
 
-  def createProblemHandler[T](riftWarp: RiftWarp)(nice: Boolean)(reportProblem: Problem => Unit): (RiftChannel with RiftHttpChannel) => (HttpError, Problem, (HttpError, RiftHttpResponse) => T) => T =
-    (channel: RiftChannel with RiftHttpChannel) =>
-      (errorCode: HttpError, problem: Problem, responder: (HttpError, RiftHttpResponse) => T) =>
-        createHttpResponse(riftWarp)(channel, nice, None)(problem).fold(
+  def createProblemHandler[T](riftWarp: RiftWarp)(nice: Boolean)(reportProblem: Problem => Unit): (RiftHttpChannel) => (HttpError, Problem, (HttpError, RiftHttpData) => T) => T =
+    (channel: RiftHttpChannel) =>
+      (errorCode: HttpError, problem: Problem, responder: (HttpError, RiftHttpData) => T) =>
+        createHttpData(riftWarp)(channel, nice, None)(problem).fold(
           fail => {
             reportProblem(fail)
-            responder(errorCode, RiftHttpStringResponse(HttpContentType.PlainText, problem.toString))
+            responder(errorCode, RiftHttpStringData(HttpContentType.PlainText, problem.toString))
           },
           succ => responder(errorCode, succ))
 
@@ -121,10 +104,10 @@ object RiftWarpHttpFuns {
    *
    * @return Usually the a response that can be further processed.
    */
-  def createResponseWorkflow[TResult](riftWarp: RiftWarp)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(nice: Boolean)(onSuccess: (HttpSuccess, RiftHttpResponse) => TResult)(onFailure: (HttpError, RiftHttpResponse) => TResult): HttpResponseWorkflow[TResult] = {
-    (channel: RiftChannel with RiftHttpChannel) =>
+  def createResponseWorkflow[TResult](riftWarp: RiftWarp)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(nice: Boolean)(onSuccess: (HttpSuccess, RiftHttpData) => TResult)(onFailure: (HttpError, RiftHttpData) => TResult): HttpResponseWorkflow[TResult] = {
+    (channel: RiftHttpChannel) =>
       (what: AnyRef, successCode: HttpSuccess) => {
-        createHttpResponse(riftWarp)(channel, nice, None)(what).fold(
+        createHttpData(riftWarp)(channel, nice, None)(what).fold(
           prob => {
             val (problem, code) = launderProblem(prob)
             val resp = createHttpProblemResponse(riftWarp)(reportProblem)(channel, nice, None)(prob)

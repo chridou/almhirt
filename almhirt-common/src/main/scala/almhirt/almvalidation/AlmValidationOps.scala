@@ -159,7 +159,12 @@ trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
     self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(CauseIsThrowable(exn))).failure[T], _.success)
 }
 
-trait AlmValidationOps11[R] extends Ops[List[AlmValidation[R]]] {
+trait AlmValidationOps11[T] extends Ops[Either[Throwable, T]] {
+  def toAlmValidation(): AlmValidation[T] = 
+    self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(CauseIsThrowable(exn))).failure[T], _.success)
+}
+
+trait AlmValidationOps12[R] extends Ops[List[AlmValidation[R]]] {
   import almhirt.syntax.problem._
   import almhirt.syntax.almvalidation._
   def aggregateProblems(msg: String): Validation[AggregateProblem, List[R]] = {
@@ -186,5 +191,5 @@ trait ToAlmValidationOps {
 //  implicit def FromBadDataProblemValidationToAlmValidationOps8[T](a: AlmValidationSBD[T]): AlmValidationOps8[T] = new AlmValidationOps8[T] { def self = a }
   implicit def FromAlmValidationToAlmValidationOps9[T](a: AlmValidation[T]): AlmValidationOps9[T] = new AlmValidationOps9[T] { def self = a }
   implicit def FromValidationToAlmValidationOps10[T](a: Validation[Throwable, T]): AlmValidationOps10[T] = new AlmValidationOps10[T]{ def self = a }
-  implicit def FromListValidationToAlmValidationOps11[R](a: List[AlmValidation[R]]): AlmValidationOps11[R] = new AlmValidationOps11[R]{ def self = a }
+  implicit def FromListValidationToAlmValidationOps12[R](a: List[AlmValidation[R]]): AlmValidationOps12[R] = new AlmValidationOps12[R]{ def self = a }
 }
