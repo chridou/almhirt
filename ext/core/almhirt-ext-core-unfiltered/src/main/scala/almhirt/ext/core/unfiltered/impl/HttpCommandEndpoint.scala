@@ -1,5 +1,6 @@
 package almhirt.ext.core.unfiltered.impl
 
+import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.environment.Almhirt
 import almhirt.commanding.DomainCommand
@@ -14,39 +15,15 @@ import unfiltered.response._
 import almhirt.util.TrackingTicket
 
 class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], riftWarp: RiftWarp, theAlmhirt: Almhirt) extends ForwardsCommandsFromHttpRequest {
-  private val nice = true
-  protected def launderProblem = JustForTestingProblemLaundry
-  protected def respondProblem(prob: Problem, errorCode: HttpError, channel: RiftHttpChannel, responder: unfiltered.Async.Responder[Any]) =
-    UnfilteredFuns.respondProblem(riftWarp)(theAlmhirt.reportProblem)(nice)(prob, errorCode, channel, responder)
+  implicit def hasExecutionContext = theAlmhirt
+  val settings = RiftWarpHttpFuns.RiftHttpFunsSettings(riftWarp, true, JustForTestingProblemLaundry, theAlmhirt.reportProblem, RiftChannel.Json)
 
-  protected def withRequest = UnfilteredFuns.withRequest(riftWarp)(nice)(launderProblem)(theAlmhirt.reportProblem)_
-  protected val responseWorkflow = UnfilteredFuns.createResponseWorkflow(riftWarp)(launderProblem)(theAlmhirt.reportProblem)(nice)
-  protected def extractCommand(contentType: HttpContentType, data: RiftDimension with RiftHttpDimension) =
-    RiftWarpHttpFuns.transformIncomingContent[DomainCommand](riftWarp)(contentType, data)
+  protected def processRequest[TResp <: AnyRef](okStatus: HttpSuccess, computeResponse: (DomainCommand, CommandEndpoint) => AlmValidation[Option[TResp]])(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) =
+    UnfilteredFuns.processRequest[DomainCommand, TResp](settings, okStatus, cmd => getEndpoint().flatMap(endPoint => computeResponse(cmd, endPoint)), req, responder)
 
-  protected def forwardHandler = withRequest((contentType, data, responder) =>
-    (for {
-      endpoint <- getEndpoint()
-      command <- extractCommand(contentType, data)
-    } yield (endpoint, command)).fold(
-      prob => respondProblem(prob, Http_400_Bad_Request, contentType.channel, responder),
-      {
-        case (endpoint, command) =>
-          endpoint.execute(command)
-          responder.respond(Accepted ~> NoContent)
-      }))
+  protected def forwardHandler = processRequest[AnyRef](Http_202_Accepted, (cmd, endpoint) => {endpoint.execute(cmd); scalaz.Success(None)})_
 
-  protected def forwardTrackedHandler = withRequest((contentType, data, responder) =>
-    (for {
-      endpoint <- getEndpoint()
-      command <- extractCommand(contentType, data)
-    } yield (endpoint, command)).fold(
-      prob => respondProblem(prob, Http_400_Bad_Request, contentType.channel, responder),
-      {
-        case (endpoint, command) =>
-          val ticket = endpoint.executeTracked(command)
-          responseWorkflow(contentType.channel, ticket, Http_200_OK, responder)
-      }))
+  protected def forwardTrackedHandler = processRequest[TrackingTicket](Http_202_Accepted, (cmd, endpoint) => Some(endpoint.executeTracked(cmd)).success)_
 
   protected def forwardWithResultResponseHandler = withRequest((contentType, data, responder) =>
     (for {
@@ -60,7 +37,8 @@ class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], rif
             result.fold(
               fail => {
                 val (prob, status) = launderProblem(fail)
-                respondProblem(prob, status, contentType.channel, responder)},
+                respondProblem(prob, status, contentType.channel, responder)
+              },
               succ => responseWorkflow(contentType.channel, succ, Http_200_OK, responder))
           })
       }))

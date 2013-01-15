@@ -44,7 +44,7 @@ trait RiftHttpChannel extends RiftChannel {
    */
   def httpContentTypeExt: String
   def httpDimensionType(nice: Boolean): Class[_ <: RiftDimension]
-  def httpBodyType: HttpBodyType
+  def httpBodyType: RiftHttpBodyType
 }
 
 class RiftText() extends RiftHttpChannel {
@@ -52,7 +52,7 @@ class RiftText() extends RiftHttpChannel {
   val httpContentType = "text/plain"
   val httpContentTypeExt = "text"
   val moreLookUpSymbols = Nil
-  val httpBodyType = StringBodyType
+  val httpBodyType = RiftStringBodyType
   def httpDimensionType(nice: Boolean ) = classOf[DimensionString]
 }
 object RiftText {
@@ -76,7 +76,7 @@ class RiftJson() extends RiftHttpChannel {
   val httpContentType = "text/x-json"
   val httpContentTypeExt = "json"
   val moreLookUpSymbols = Nil
-  val httpBodyType = StringBodyType
+  val httpBodyType = RiftStringBodyType
   def httpDimensionType(nice: Boolean ) = if(nice) classOf[DimensionNiceString] else classOf[DimensionString]
 }
 object RiftJson {
@@ -100,7 +100,7 @@ class RiftXml() extends RiftHttpChannel {
   val httpContentType = "text/xml"
   val httpContentTypeExt = "xml"
   val moreLookUpSymbols = Nil
-  val httpBodyType = StringBodyType
+  val httpBodyType = RiftStringBodyType
   def httpDimensionType(nice: Boolean ) = 
     if(nice) classOf[DimensionNiceString] else classOf[DimensionString]
 }
@@ -114,7 +114,7 @@ class RiftMessagePack() extends RiftHttpChannel {
   val httpContentType = "x-pack"
   val httpContentTypeExt = "pack"
   val moreLookUpSymbols = Nil
-  val httpBodyType = StringBodyType
+  val httpBodyType = RiftStringBodyType
   def httpDimensionType(nice: Boolean) = classOf[DimensionString]
 }
 object RiftMessagePack {

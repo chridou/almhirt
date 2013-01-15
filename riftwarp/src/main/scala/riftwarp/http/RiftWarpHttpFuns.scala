@@ -7,118 +7,174 @@ import almhirt.http._
 import riftwarp._
 import riftwarp.RiftStringBasedDimension
 
-
 object RiftWarpHttpFuns {
-  def extractContentType(rawContent: String): AlmValidation[HttpContentType] =
-    HttpContentType.parse(rawContent)
+  case class RiftHttpFunsSettings(
+    riftWarp: RiftWarp,
+    nice: Boolean,
+    launderProblem: Problem => (Problem, HttpError),
+    reportProblem: Problem => Unit,
+    defaultChannel: RiftHttpChannel)
 
-  def transformContent[TResult <: AnyRef](riftWarp: RiftWarp)(content: RiftHttpDataWithContent)(implicit mResult: Manifest[TResult]): AlmValidation[TResult] = {
+  def createHttpDataFromRequest(getContentType: () => Option[String], getBody: RiftHttpBodyType => AlmValidation[RiftHttpBody]): AlmValidation[RiftHttpData] =
+    for {
+      contentType <- option.cata(getContentType())(ct => RiftHttpContentType.parse(ct), RiftHttpNoContentContentType.success)
+      data <- contentType match {
+        case RiftHttpNoContentContentType =>
+          RiftHttpNoContentData.success
+        case withChannel: RiftHttpContentTypeWithChannel =>
+          getBody(withChannel.channel.httpBodyType).flatMap(_.toHttpData(contentType))
+      }
+    } yield data
+
+  def transformHttpData[To <: AnyRef](riftWarp: RiftWarp)(content: RiftHttpDataWithContent)(implicit mResult: Manifest[To]): AlmValidation[To] = {
     val contentType = content.contentType
     val td = option.cata(contentType.tryGetTypeDescriptor)(td => td, TypeDescriptor(mResult.runtimeClass))
     for {
       data <- content.toRiftDimension
-      dematerialize <- RiftWarpFuns.getRecomposeFun[TResult](contentType.channel, data.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[TResult](remat, Some(td)))(NoFetchBlobFetch)(mResult, riftWarp)
+      dematerialize <- RiftWarpFuns.getRecomposeFun[To](contentType.channel, data.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[To](remat, Some(td)))(NoFetchBlobFetch)(mResult, riftWarp)
       dematerialized <- dematerialize(data)
     } yield dematerialized
   }
-  
-  def withRequest[TResult](riftWarp: RiftWarp)(nice: Boolean)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(onBadRequest: (HttpError, RiftHttpData) => TResult)(getContentType: () => AlmValidation[String])(getBody: RiftHttpChannel => AlmValidation[RiftHttpDimension])(compute: (HttpContentTypeWithChannel, RiftHttpDimension) => TResult): TResult =
-    getContentType().flatMap(rawContent =>
-      extractContentType(rawContent)).fold(
-      fail => onBadRequest(Http_400_Bad_Request, RiftHttpStringData(HttpContentType.PlainText, launderProblem(fail)._1.toString())),
-      contentType =>
-          (for {
-            channel <- contentType.getChannel
-            body <- getBody(channel)
-          } yield body).fold(
-            fail => {
-              val (problem, _) = launderProblem(fail)
-              val resp = createHttpProblemResponse(riftWarp)(reportProblem)(contentType.tryGetChannel, nice, None)(problem)
-              onBadRequest(Http_400_Bad_Request, resp)
-            },
-            body => compute(contentType, body)))
 
-  def createHttpData(riftWarp: RiftWarp)(channel: RiftHttpChannel, nice: Boolean, contentExtOverride: Option[String] = None)(what: AnyRef): AlmValidation[RiftHttpData] = {
-    for {
-      decomposer <- riftWarp.barracks.getDecomposerForAny(what)
-      dematerialzeFun <- RiftWarpFuns.getDematerializationFun[AnyRef](channel, channel.httpDimensionType(nice), None)(NoDivertBlobDivert)(riftWarp)
-      dematerialized <- dematerialzeFun(what, decomposer)
-      contentType <- HttpContentType(decomposer.typeDescriptor, channel, Map.empty[String, String]).success
-      response <- dematerialized match {
-        case dim: RiftStringBasedDimension => RiftHttpStringData(contentType, dim.manifestation).success
-        case dim: RiftByteArrayBasedDimension => RiftHttpBinaryData(contentType, dim.manifestation).success
-        case x => UnspecifiedProblem("Not a valid HTTP-Dimension: %s".format(x.getClass().getName())).failure
-      }
-    } yield response
-  }
-
-  def createHttpProblemResponse(riftWarp: RiftWarp)(reportProblem: Problem => Unit)(channelOpt: Option[RiftHttpChannel], nice: Boolean, contentExtOverride: Option[String] = None)(what: Problem): RiftHttpData = {
+  def createHttpProblemResponseData(settings: RiftHttpFunsSettings)(what: Problem, optReqChannel: Option[RiftHttpChannel]): RiftHttpDataWithContent = {
     (for {
-      decomposer <- riftWarp.barracks.getDecomposerForAny[Problem](what)
-      channel <- option.cata(channelOpt)(some, none)
-      dematerialzeFun <- RiftWarpFuns.getDematerializationFun[Problem](channel, channel.httpDimensionType(nice), None)(NoDivertBlobDivert)(riftWarp)
+      decomposer <- settings.riftWarp.barracks.getDecomposerForAny[Problem](what)
+      channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
+      dematerialzeFun <- RiftWarpFuns.getDematerializationFun[Problem](channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
-      contentType <- HttpContentType( decomposer.typeDescriptor, channel, Map.empty[String, String]).success
-      response <- dematerialized match {
-        case dim: RiftStringBasedDimension => RiftHttpStringData(contentType, dim.manifestation).success
-        case dim: RiftByteArrayBasedDimension => RiftHttpBinaryData(contentType, dim.manifestation).success
-        case x => UnspecifiedProblem("Not a valid HTTP-Dimension: %s".format(x.getClass().getName())).failure
-      }
+      contentType <- RiftHttpContentType(decomposer.typeDescriptor, channel, Map.empty[String, String]).success
+      response <- dematerialized.toHttpData(contentType)
     } yield response).fold(
       prob => {
-        reportProblem(prob)
-        RiftHttpStringData(HttpContentType.PlainText, what.toString())
+        settings.reportProblem(prob)
+        RiftHttpDataWithContent(RiftHttpContentType.PlainText, RiftStringBody(what.toString()))
       },
-      succ => succ)
+      identity)
   }
 
-  def createProblemHandler[T](riftWarp: RiftWarp)(nice: Boolean)(reportProblem: Problem => Unit): (RiftHttpChannel) => (HttpError, Problem, (HttpError, RiftHttpData) => T) => T =
-    (channel: RiftHttpChannel) =>
-      (errorCode: HttpError, problem: Problem, responder: (HttpError, RiftHttpData) => T) =>
-        createHttpData(riftWarp)(channel, nice, None)(problem).fold(
-          fail => {
-            reportProblem(fail)
-            responder(errorCode, RiftHttpStringData(HttpContentType.PlainText, problem.toString))
-          },
-          succ => responder(errorCode, succ))
+  def createHttpResponseData[TResp <: AnyRef](settings: RiftHttpFunsSettings)(what: TResp, optReqChannel: Option[RiftHttpChannel]): AlmValidation[RiftHttpDataWithContent] =
+    for {
+      decomposer <- settings.riftWarp.barracks.getDecomposerForAny[TResp](what)
+      channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
+      dematerialzeFun <- RiftWarpFuns.getDematerializationFun[TResp](channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
+      dematerialized <- dematerialzeFun(what, decomposer)
+      contentType <- RiftHttpContentType(decomposer.typeDescriptor, channel, Map.empty[String, String]).success
+      response <- dematerialized.toHttpData(contentType)
+    } yield response
 
-  /**
-   * Creates a function of type [[riftwarp.HttpResponseWorkflow[T]]] that can serialize an AnyRef and create a response based on the result.
-   *
-   * The workflow(the returned function):
-   * 1) Try to serialize the given data
-   * 2) In case of success: Call onSuccess which ends the workflow.
-   * 3) In case of a problem: Call reportProblem. Do some logging etc
-   * 4) Call launderProblem to map the problem and create a HTTP status code
-   * 5) Try to deserialize the problem from step 3.
-   * 6) If the problem could be serialized, call onFailure given the serialized problem and the HTTP status code. The workflow ends.
-   * 7) If serializing the problem fails, call onProblem with the problem caused by serializing the problem from step 3
-   * 8) Call onFailure with a text/plain response created by calling toString on the problem of step 3. The workflow ends.
-   *
-   * @Tparams
-   * TStringDimension The target [[riftwarp.RiftDimension]] that manifests as a String
-   * TResult The type of the result returned by onSuccess and onFailure. This can also be Unit in case you call some kind of callback for responding
-   *
-   * @params
-   * nice If possible, create a nice response
-   * onSuccess A Function that is passed a [[riftwarp.http.RiftHttpResponse]]. It returns a result of type TResult which may be Unit. A call of this function ends the workflow
-   * launderProblem Takes a problem and can transform it to another problem(for security reasons) and returns the appropriate HTTP-Status
-   * onFailure Creates the response based on the given HTTP status code and the given [[riftwarp.RiftHttpResponse]]
-   * reportProblem Anytime a problem occurs this function gets called with the problem. Useful for logging etc.
-   *
-   * @return Usually the a response that can be further processed.
-   */
-  def createResponseWorkflow[TResult](riftWarp: RiftWarp)(launderProblem: Problem => (Problem, HttpError))(reportProblem: Problem => Unit)(nice: Boolean)(onSuccess: (HttpSuccess, RiftHttpData) => TResult)(onFailure: (HttpError, RiftHttpData) => TResult): HttpResponseWorkflow[TResult] = {
-    (channel: RiftHttpChannel) =>
-      (what: AnyRef, successCode: HttpSuccess) => {
-        createHttpData(riftWarp)(channel, nice, None)(what).fold(
-          prob => {
-            val (problem, code) = launderProblem(prob)
-            val resp = createHttpProblemResponse(riftWarp)(reportProblem)(channel, nice, None)(prob)
-            onFailure(code, resp)
-          },
-          succ => onSuccess(successCode, succ))
-      }
+  def withRequestData[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => RiftHttpResponse)(implicit mEntity: Manifest[TEntity]): RiftHttpResponse =
+    transformHttpData[TEntity](settings.riftWarp)(httpData).fold(
+      fail => {
+        settings.reportProblem(fail)
+        val (prob, code) = settings.launderProblem(fail)
+        RiftHttpResponse(code, createHttpProblemResponseData(settings)(prob, httpData.contentType.tryGetChannel))
+      },
+      succ => computeResponse(succ))
+
+  def withRequest[TEntity <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], computeResponse: (TEntity) => RiftHttpResponse)(implicit mEntity: Manifest[TEntity]): RiftHttpResponse =
+    getHttpData().fold(
+      fail => {
+        val (prob, code) = settings.launderProblem(fail)
+        RiftHttpResponse(Http_400_Bad_Request, createHttpProblemResponseData(settings)(prob, None))
+      },
+      succ =>
+        succ match {
+          case RiftHttpNoContentData =>
+            RiftHttpResponse(Http_400_Bad_Request, RiftHttpNoContentData)
+          case RiftHttpDataWithContent(contentType, body) =>
+            withRequestData(settings, RiftHttpDataWithContent(contentType, body), computeResponse)
+        })
+
+  def withRequestDataOnFuture[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => AlmFuture[RiftHttpResponse])(implicit mEntity: Manifest[TEntity]): AlmFuture[RiftHttpResponse] =
+    transformHttpData[TEntity](settings.riftWarp)(httpData).fold(
+      fail => {
+        settings.reportProblem(fail)
+        val (prob, code) = settings.launderProblem(fail)
+        AlmFuture.successful(RiftHttpResponse(code, createHttpProblemResponseData(settings)(prob, httpData.contentType.tryGetChannel)))
+      },
+      succ => computeResponse(succ))
+
+  def withRequestOnFuture[TEntity <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], computeResponse: (TEntity) => AlmFuture[RiftHttpResponse])(implicit mEntity: Manifest[TEntity]): AlmFuture[RiftHttpResponse] =
+    getHttpData().fold(
+      fail => {
+        val (prob, code) = settings.launderProblem(fail)
+        AlmFuture.successful(RiftHttpResponse(Http_400_Bad_Request, createHttpProblemResponseData(settings)(prob, None)))
+      },
+      succ =>
+        succ match {
+          case RiftHttpNoContentData =>
+            AlmFuture.successful(RiftHttpResponse(Http_400_Bad_Request, RiftHttpNoContentData))
+          case RiftHttpDataWithContent(contentType, body) =>
+            withRequestDataOnFuture(settings, RiftHttpDataWithContent(contentType, body), computeResponse)
+        })
+
+  def respond[TResp <: AnyRef](settings: RiftHttpFunsSettings)(okStatus: HttpSuccess, channel: RiftHttpChannel)(computeResponseValue: () => AlmValidation[Option[TResp]]): RiftHttpResponse =
+    computeResponseValue().fold(
+      fail => {
+        settings.reportProblem(fail)
+        val (prob, code) = settings.launderProblem(fail)
+        RiftHttpResponse(code, createHttpProblemResponseData(settings)(prob, Some(channel)))
+      },
+      resultOpt =>
+        option.cata(resultOpt)(
+          result =>
+            createHttpResponseData[TResp](settings)(result, Some(channel)).fold(
+              fail => {
+                settings.reportProblem(fail)
+                val (prob, code) = settings.launderProblem(fail)
+                RiftHttpResponse(code, createHttpProblemResponseData(settings)(prob, Some(channel)))
+              },
+              succ => RiftHttpResponse(okStatus, succ)),
+          RiftHttpResponse(okStatus, RiftHttpNoContentData)))
+
+  def respondOnFuture[TResp <: AnyRef](settings: RiftHttpFunsSettings, okStatus: HttpSuccess, channel: RiftHttpChannel, computeResponseValue: () => AlmFuture[Option[TResp]])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[RiftHttpResponse] =
+    computeResponseValue().fold(
+      fail => {
+        settings.reportProblem(fail)
+        val (prob, code) = settings.launderProblem(fail)
+        RiftHttpResponse(code, createHttpProblemResponseData(settings)(prob, Some(channel)))
+      },
+      resultOpt =>
+        option.cata(resultOpt)(
+          result =>
+            createHttpResponseData[TResp](settings)(result, Some(channel)).fold(
+              fail => {
+                settings.reportProblem(fail)
+                val (prob, code) = settings.launderProblem(fail)
+                RiftHttpResponse(code, createHttpProblemResponseData(settings)(prob, Some(channel)))
+              },
+              succ => RiftHttpResponse(okStatus, succ)),
+          RiftHttpResponse(okStatus, RiftHttpNoContentData)))
+
+  def processRequest[TReq <: AnyRef, TResp <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], okStatus: HttpSuccess, computeResponse: TReq => AlmValidation[Option[TResp]])(implicit mReq: Manifest[TReq]): RiftHttpResponse =
+    getHttpData().fold(
+      fail => {
+        val (prob, code) = settings.launderProblem(fail)
+        RiftHttpResponse(Http_400_Bad_Request, createHttpProblemResponseData(settings)(prob, None))
+      },
+      httpData => withRequest[TReq](settings, () => httpData.success, req => {
+        val channel = httpData.contentType.tryGetChannel.getOrElse(settings.defaultChannel)
+        respond[TResp](settings)(okStatus, channel)(() => computeResponse(req))
+      }))
+
+  def processRequestRespondOnFuture[TReq <: AnyRef, TResp <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], okStatus: HttpSuccess, computeResponse: TReq => AlmFuture[Option[TResp]])(implicit mReq: Manifest[TReq], hasExecutionContext: HasExecutionContext): AlmFuture[RiftHttpResponse] =
+    getHttpData().fold(
+      fail => {
+        val (prob, code) = settings.launderProblem(fail)
+        AlmFuture.successful(RiftHttpResponse(Http_400_Bad_Request, createHttpProblemResponseData(settings)(prob, None)))
+      },
+      httpData => withRequestOnFuture[TReq](settings, () => httpData.success, req => {
+        val channel = httpData.contentType.tryGetChannel.getOrElse(settings.defaultChannel)
+        respondOnFuture[TResp](settings, okStatus, channel, () => computeResponse(req))
+      }))
+
+  def futureResponder(settings: RiftHttpFunsSettings, responder: RiftHttpResponse => Unit, futureRes: AlmFuture[RiftHttpResponse])(implicit hasExecutionContext: HasExecutionContext) {
+    futureRes.onComplete(
+      fail => {
+        val (prob, code) = settings.launderProblem(fail)
+        responder(RiftHttpResponse(Http_400_Bad_Request, createHttpProblemResponseData(settings)(prob, None)))
+      },
+      succ => responder(succ))
   }
 }
 

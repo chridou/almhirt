@@ -5,7 +5,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
 
-sealed trait HttpContentType {
+sealed trait RiftHttpContentType {
   def tryGetHeaderValue: Option[String]
   def tryGetChannel: Option[RiftHttpChannel]
   def tryGetTypeDescriptor: Option[TypeDescriptor]
@@ -16,26 +16,26 @@ sealed trait HttpContentType {
   def getTypeDescriptor: AlmValidation[TypeDescriptor] = option.cata(tryGetTypeDescriptor)(v => v.success, ElementNotFoundProblem("TypeDescriptor").failure)
 }
 
-case object HttpNoContentContentType extends HttpContentType {
+case object RiftHttpNoContentContentType extends RiftHttpContentType {
   val tryGetHeaderValue = None
   val tryGetChannel = None
-  val args = Map.empty
+  val args = Map.empty[String, String]
   val tryGetTypeDescriptor = None
 }
 
-sealed trait HttpContentTypeWithChannel extends HttpContentType {
+sealed trait RiftHttpContentTypeWithChannel extends RiftHttpContentType {
   def channel: RiftHttpChannel
   def headerValue: String
 }
 
-case class HttpChannelContentType(channel: RiftHttpChannel, args: Map[String, String] = Map()) extends HttpContentTypeWithChannel {
+case class RiftHttpChannelContentType(channel: RiftHttpChannel, args: Map[String, String] = Map()) extends RiftHttpContentTypeWithChannel {
   val headerValue = (channel.httpContentType :: (args.map { case (k, v) => k + "=" + v }.toList)).mkString(";")
   def tryGetHeaderValue = Some(headerValue)
   def tryGetChannel = Some(channel)
   val tryGetTypeDescriptor = None
 }
 
-case class HttpQualifiedContentType(typeDescriptor: TypeDescriptor, channel: RiftHttpChannel, args: Map[String, String] = Map()) extends HttpContentTypeWithChannel {
+case class RiftHttpQualifiedContentType(typeDescriptor: TypeDescriptor, channel: RiftHttpChannel, args: Map[String, String] = Map()) extends RiftHttpContentTypeWithChannel {
   def headerValue = {
     val typeStr = "vnd." + typeDescriptor.identifier + "+" + channel.httpContentTypeExt
     val protocol = option.cata(typeDescriptor.version)(v => typeStr + ";version=" + v, typeStr)
@@ -46,20 +46,20 @@ case class HttpQualifiedContentType(typeDescriptor: TypeDescriptor, channel: Rif
   val tryGetTypeDescriptor = Some(typeDescriptor)
 }
 
-object HttpContentType {
-  def apply(): HttpContentType = HttpNoContentContentType
+object RiftHttpContentType {
+  def apply(): RiftHttpContentType = RiftHttpNoContentContentType
 
-  def apply(channel: RiftHttpChannel, args: Map[String, String]): HttpContentType =
-    HttpChannelContentType(channel, args)
-  def apply(typeDescriptor: TypeDescriptor, channel: RiftHttpChannel, args: Map[String, String]): HttpContentType =
-    HttpQualifiedContentType(typeDescriptor, channel, args)
-  def apply(clazz: Class[_], version: Int, channel: RiftHttpChannel, args: Map[String, String]): HttpContentType =
-    HttpQualifiedContentType(TypeDescriptor(clazz, version), channel, args)
-  def apply(clazz: Class[_], channel: RiftHttpChannel, args: Map[String, String]): HttpContentType =
-    HttpQualifiedContentType(TypeDescriptor(clazz), channel, args)
+  def apply(channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpChannelContentType(channel, args)
+  def apply(typeDescriptor: TypeDescriptor, channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(typeDescriptor, channel, args)
+  def apply(clazz: Class[_], version: Int, channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(TypeDescriptor(clazz, version), channel, args)
+  def apply(clazz: Class[_], channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(TypeDescriptor(clazz), channel, args)
 
-  val PlainText = HttpChannelContentType(RiftChannel.Text)
+  val PlainText = RiftHttpChannelContentType(RiftChannel.Text)
 
-  def parse(rawContent: String): AlmValidation[HttpContentType] =
+  def parse(rawContent: String): AlmValidation[RiftHttpContentType] =
     sys.error("")
 }

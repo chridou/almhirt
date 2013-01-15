@@ -1,5 +1,5 @@
 package riftwarp.http
 
-sealed trait HttpBodyType
-object BinaryBodyType extends HttpBodyType
-object StringBodyType extends HttpBodyType
+sealed trait RiftHttpBodyType
+object RiftBinaryBodyType extends RiftHttpBodyType
+object RiftStringBodyType extends RiftHttpBodyType

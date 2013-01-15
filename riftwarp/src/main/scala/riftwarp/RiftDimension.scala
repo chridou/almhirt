@@ -1,5 +1,6 @@
 package riftwarp
 
+
 trait RiftDimension {
   def manifestation: Any
 }
@@ -36,4 +37,18 @@ object RiftDimension {
   def listAny(v: List[Any]) = DimensionListAny(v)
   def xmlElem(v: scala.xml.Elem) = DimensionXmlElem(v)
   def any(v: Any) = DimensionAny(v)
+
+  
+  implicit class RiftDimensionOps2(dim: RiftDimension) {
+    import scalaz.syntax.validation._
+    import almhirt.common._
+    import riftwarp.http._
+    def toHttpData(contentType: RiftHttpContentTypeWithChannel): AlmValidation[RiftHttpDataWithContent] =
+      dim match {
+        case stringBased: RiftStringBasedDimension => RiftHttpDataWithContent(contentType, RiftStringBody(stringBased.manifestation)).success
+        case binaryBased: RiftByteArrayBasedDimension => RiftHttpDataWithContent(contentType, RiftBinaryBody(binaryBased.manifestation)).success
+        case x => UnspecifiedProblem("Not a valid HTTP-Dimension: %s".format(x.getClass().getName())).failure
+      }
+  }
+  
 }
