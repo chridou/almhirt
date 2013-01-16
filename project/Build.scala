@@ -104,10 +104,10 @@ trait AnormEventLogBuild {
   )
 }
 
-trait SlickEventLogBuild {
+trait CoreExtSlickBuild {
   import Dependencies._
   import Resolvers._
-  def slickEventLogProject(name: String, baseFile: java.io.File) = 
+  def slickExtProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
@@ -197,10 +197,10 @@ trait AppBuild {
   
 }
 
-object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with SlickEventLogBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with UnfilteredBuild with ClientDispatchBuild with AppBuild with DocItBuild {
+object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRiftwarpBuild with AnormEventLogBuild with CoreExtSlickBuild with RiftWarpBuild with RiftWarpExtLiftJsonBuild with UnfilteredBuild with ClientDispatchBuild with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings,
-	                        base = file(".")) aggregate(common, core, anormEventLog, slickEventLog, docit, riftwarp, unfiltered, clientDispatch)
+	                        base = file(".")) aggregate(common, core, anormEventLog, slickExtensions, docit, riftwarp, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -215,8 +215,8 @@ object AlmHirtBuild extends Build with CommonBuild with CoreBuild with CoreExtRi
   lazy val anormEventLog = anormEventLogProject(	name = "almhirt-ext-anormeventlog",
                        			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(core, riftwarp)
 
-  lazy val slickEventLog = slickEventLogProject(	name = "almhirt-ext-eventlog-slick",
-                       			baseFile = file("./ext/eventlogs/almhirt-ext-eventlog-slick")) dependsOn(core, riftwarp)
+  lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
+                       			baseFile = file("./ext/core/almhirt-ext-core-slick")) dependsOn(core, riftwarp)
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
