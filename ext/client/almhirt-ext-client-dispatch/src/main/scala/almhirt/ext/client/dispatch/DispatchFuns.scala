@@ -65,7 +65,7 @@ object DispatchFuns {
     }
   }
 
-  def getResponseResult[T <: AnyRef](settings: RiftHttpFunsSettings, response: RiftHttpResponse, req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
+  def getResponseResult[T <: AnyRef](settings: RiftHttpFunsSettings, req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     for {
       respData <- awaitResponseData(req)
       result <- transformResponse[T](settings)(respData)

@@ -16,7 +16,7 @@ import dispatch._
  * Currently blocking....
  */
 class DispatchCommandDispatcher(endpointUris: CommandEndpointUris, settings: RiftHttpFunsSettings)(implicit theAlmhirt: Almhirt) extends CommandDispatcher {
-  def dispatch(cmd: DomainCommand): AlmFuture[Unit] = {
+  def dispatch(cmd: DomainCommand): AlmFuture[Unit] =
     for {
       request <- AlmFuture {
         for {
@@ -25,14 +25,31 @@ class DispatchCommandDispatcher(endpointUris: CommandEndpointUris, settings: Rif
         } yield req
       }
       respData <- DispatchFuns.awaitResponseData(request)
-      res <- 
-        respData match {
+      res <- respData match {
         case RiftHttpResponse(Http_202_Accepted, _) => AlmFuture.successful(())
         case RiftHttpResponse(_, data) => DispatchFuns.transformResponse[AnyRef](settings)(respData)
       }
     } yield ()
-  }
 
-  def dispatchTracked(cmd: DomainCommand): AlmFuture[TrackingTicket] = sys.error("")
-  def dispatchAndGetState(cmd: DomainCommand): AlmFuture[ResultOperationState] = sys.error("")
+  def dispatchTracked(cmd: DomainCommand): AlmFuture[TrackingTicket] =
+    for {
+      request <- AlmFuture {
+        for {
+          riftWarp <- theAlmhirt.getService[RiftWarp]
+          req <- DispatchFuns.configureRequest(settings)(cmd, None, url(endpointUris.executeTracked.toString()).PUT)
+        } yield req
+      }
+      result <- DispatchFuns.getResponseResult[TrackingTicket](settings, request)
+    } yield result
+
+  def dispatchAndGetState(cmd: DomainCommand): AlmFuture[ResultOperationState] =
+    for {
+      request <- AlmFuture {
+        for {
+          riftWarp <- theAlmhirt.getService[RiftWarp]
+          req <- DispatchFuns.configureRequest(settings)(cmd, None, url(endpointUris.executeAndResult.toString()).PUT)
+        } yield req
+      }
+      result <- DispatchFuns.getResponseResult[ResultOperationState](settings, request)
+    } yield result
 }
