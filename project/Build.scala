@@ -245,7 +245,7 @@ object AlmHirtBuild extends Build
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/core/almhirt-ext-core-slick")) dependsOn(core, riftwarp)
 
-  lazy val activateExtensions = slickExtProject(	name = "almhirt-ext-core-activate",
+  lazy val activateExtensions = activateExtProject(	name = "almhirt-ext-core-activate",
                        			baseFile = file("./ext/core/almhirt-ext-core-activate")) dependsOn(core, riftwarp)
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
