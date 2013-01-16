@@ -11,7 +11,7 @@ case class RiftHttpDataWithContent(contentType: RiftHttpContentTypeWithChannel, 
 
 object RiftHttpData {
   implicit class RiftHttpDataOps1(data: RiftHttpData) {
-    def toRiftDimension(): AlmValidation[RiftDimension] =
+    def toRiftDimension(): AlmValidation[RiftHttpDimension] =
       data match {
         case RiftHttpDataWithContent(_, RiftStringBody(content)) => DimensionString(content).success
         case RiftHttpDataWithContent(_, RiftBinaryBody(content)) => DimensionBinary(content).success

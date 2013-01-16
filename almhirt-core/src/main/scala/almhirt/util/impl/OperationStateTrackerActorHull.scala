@@ -14,40 +14,21 @@ import almhirt.util._
 import almhirt.common.AlmFuture
 import almhirt.almakka.ActorBased
 
-class OperationStateTrackerActorHull(val actor: ActorRef)(implicit almhirt: Almhirt) extends OperationStateTracker with ActorBased {
+class OperationStateTrackerActorHull(private val operationStateTracker: ActorRef)(implicit almhirt: Almhirt) extends OperationStateTracker with ActorBased {
+  val actor = operationStateTracker
   implicit private def executionContext = almhirt.executionContext
   implicit private def timeout = almhirt.mediumDuration
 
-  private class ResponseActor(callback: AlmValidation[ResultOperationState] => Unit) extends Actor {
-    private var receiver: ActorRef = null
-    def receive: Receive = {
-      case OperationStateResultRsp(ticket, state) =>
-        callback(state)
-        if(receiver != null) receiver ! state
-        context.stop(self)
-      case "getResponse" =>
-        receiver = sender
-    }
-  }
-  private case class ResOpCmd(res: AlmValidation[ResultOperationState])
-
   def updateState(opState: OperationState) {
-    actor ! opState
+    operationStateTracker ! opState
   }
 
-  def queryStateFor(ticket: TrackingTicket)(implicit atMost: FiniteDuration): AlmFuture[Option[OperationState]] =
-    (actor.ask(GetStateQry(ticket))(atMost)).mapTo[OperationStateRsp].map(_.state)
+  def queryStateFor(atMost: FiniteDuration)(ticket: TrackingTicket): AlmFuture[Option[OperationState]] =
+    (operationStateTracker.ask(GetStateQry(ticket))(atMost)).mapTo[OperationStateRsp].map(_.state)
 
-  def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: FiniteDuration) {
-    val replyTo = almhirt.system.actorSystem.actorOf(Props(new ResponseActor(callback)))
-    actor ! RegisterResultCallbackQry(ticket, replyTo, atMost)
-  }
-
-  def getResultFor(ticket: TrackingTicket)(implicit atMost: FiniteDuration): AlmFuture[ResultOperationState] = {
-    val replyTo = almhirt.system.actorSystem.actorOf(Props(new ResponseActor(_ => ())))
-    val future = (replyTo ? "getResponse")(atMost).mapToAlmFuture[ResultOperationState]
-    actor ! RegisterResultCallbackQry(ticket, replyTo, atMost)
-    future
+  def getResultFor(atMost: FiniteDuration)(ticket: TrackingTicket): AlmFuture[ResultOperationState] = {
+    val future = (operationStateTracker ? RegisterResultCallbackQry(ticket, atMost))(atMost)
+    future.mapToSuccessfulAlmFuture[OperationStateResultRsp].mapV(x => x.state)
   }
 }
 

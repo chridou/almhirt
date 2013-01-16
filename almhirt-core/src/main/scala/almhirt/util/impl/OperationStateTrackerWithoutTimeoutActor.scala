@@ -52,14 +52,14 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
             }
           }
       }
-    case RegisterResultCallbackQry(ticket, replyTo, _) =>
+    case RegisterResultCallbackQry(ticket, atMost) =>
       if (collectedResults.contains(ticket)) {
-        replyTo ! OperationStateResultRsp(ticket, collectedResults(ticket).success)
+        sender ! OperationStateResultRsp(ticket, collectedResults(ticket).success)
       } else {
         if (resultCallbacks.contains(ticket))
-          resultCallbacks += (ticket -> (replyTo :: resultCallbacks(ticket)))
+          resultCallbacks += (ticket -> (sender :: resultCallbacks(ticket)))
         else
-          resultCallbacks += (ticket -> List(replyTo))
+          resultCallbacks += (ticket -> List(sender))
       }
 
     case GetStateQry(ticket) =>

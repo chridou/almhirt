@@ -109,8 +109,21 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
     continueWithFuture[U](future)
 }
 
+trait AlmFutureOps3[T] extends Ops[Future[T]] {
+  def toSuccessfulAlmFuture(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = 
+    new AlmFuture[T](self.map(_.success)(hasExecutionContext.executionContext))
+}
+
+trait AlmFutureOps4 extends Ops[Future[Any]] {
+  def mapToSuccessfulAlmFuture[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
+    new AlmFuture[T](self.mapTo[T].map(_.success)(hasExecutionContext.executionContext))
+}
+
+
 trait ToAlmFutureOps {
   implicit def FromAkkaFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 {def self = a }
   implicit def FromAkkaFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] {def self = a }
   implicit def FromAlmValidationToAlmFutureOps2[T](a: AlmValidation[T]): AlmFutureOps2[T] = new AlmFutureOps2[T]{def self = a }
+  implicit def FromAlmValidationToAlmFutureOps3[T](a: Future[T]): AlmFutureOps3[T] = new AlmFutureOps3[T]{def self = a }
+  implicit def FromAlmValidationToAlmFutureOps4[T](a: Future[Any]): AlmFutureOps4 = new AlmFutureOps4{def self = a }
 }

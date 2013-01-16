@@ -14,7 +14,7 @@ class TestAlmhirtSpecs extends Specification with TestAlmhirtKit {
       inTestAlmhirt { almhirt =>
         val id1 = almhirt.getUuid
         almhirt.executeTrackedCommand(NewTestPerson(id1, "Harry"), "1")
-        almhirt.operationStateTracker.getResultFor("1").awaitResult
+        almhirt.operationStateTracker.getResultFor(atMost)("1").awaitResult
         almhirt.repositories.getForAggregateRoot[TestPerson, TestPersonEvent]
           .forceResult
           .get(id1)

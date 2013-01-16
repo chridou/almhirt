@@ -15,19 +15,22 @@ class TestAlmhirtMassSpecs extends Specification with TestAlmhirtKit {
   "The TestAlmhirt" should {
     "create, modify and retrieve 100 persons when actions for all entities are processed as sequenced blocks (A)" in {
       inTestAlmhirt{implicit almhirt =>
+
+    val getResultFor = almhirt.operationStateTracker.getResultFor(atMost)_
+        
     val idsAndNamesAndAdresses = Vector((for (i <- 1 to 100) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
 
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(NewTestPerson(x._2, x._3), "A insert%s".format(x._1.toString)))
-    val insertStatesFutures = idsAndNamesAndAdresses.map(x => almhirt.operationStateTracker.getResultFor("A insert%s".format(x._1.toString)))
+    val insertStatesFutures = idsAndNamesAndAdresses.map(x => getResultFor("A insert%s".format(x._1.toString)))
     val insertStatesRes = AlmFuture.sequence(insertStatesFutures).awaitResult
     if(insertStatesRes.isFailure) println("TestAlmhirtMassSpecs(INSERT):"+insertStatesRes)
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(SetTestPersonAddress(AggregateRootRef(x._2, 1), x._4), "A setaddress%s".format(x._1.toString)))
-    val update1StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.operationStateTracker.getResultFor("A setaddress%s".format(x._1.toString)))
+    val update1StatesFutures = idsAndNamesAndAdresses.map(x => getResultFor("A setaddress%s".format(x._1.toString)))
     val update1StatesRes = AlmFuture.sequence(update1StatesFutures).awaitResult
     if(update1StatesRes.isFailure) println("TestAlmhirtMassSpecs(UPDATE1):"+update1StatesRes)
 
     idsAndNamesAndAdresses.foreach(x => almhirt.executeTrackedCommand(ChangeTestPersonName(AggregateRootRef(x._2, 2), "new%s".format(x._3)), "A updatename%s".format(x._1.toString)))
-    val update2StatesFutures = idsAndNamesAndAdresses.map(x => almhirt.operationStateTracker.getResultFor("A updatename%s".format(x._1.toString)))
+    val update2StatesFutures = idsAndNamesAndAdresses.map(x => getResultFor("A updatename%s".format(x._1.toString)))
     val update2StatesRes = AlmFuture.sequence(update2StatesFutures).awaitResult
     if(update2StatesRes.isFailure) println("TestAlmhirtMassSpecs(UPDATE2):"+update2StatesRes)
     update2StatesRes.map { updateStates =>

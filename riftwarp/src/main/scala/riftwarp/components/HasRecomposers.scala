@@ -35,14 +35,15 @@ trait HasRecomposers {
 
   def lookUpFromRematerializer[T <: AnyRef](remat: Rematerializer, backupDescriptor: Option[TypeDescriptor])(implicit mTarget: Manifest[T]): AlmValidation[Recomposer[T]] =
     remat.tryGetTypeDescriptor.fold(
-      prob => prob.failure,
+      prob =>
+        prob.failure,
       succ =>
         option.cata(succ)(
           td => getRecomposer[T](td),
           option.cata(backupDescriptor)(
             td => getRecomposer[T](td),
-            UnspecifiedProblem("Could extract the require TypeDescriptor").failure)))
-    
+            getRecomposer[T](TypeDescriptor(mTarget.runtimeClass)))))
+
   def addRawRecomposer(recomposer: RawRecomposer): Unit
   def addRecomposer(recomposer: Recomposer[_]): Unit
 }

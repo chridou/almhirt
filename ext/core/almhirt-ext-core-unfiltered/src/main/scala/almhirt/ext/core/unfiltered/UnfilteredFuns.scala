@@ -44,4 +44,10 @@ object UnfilteredFuns {
     val respFun = createResponseFunction(resp)
     responder.respond(respFun)
   }
+  
+  def processRequestRespondOnFuture[TReq <: AnyRef, TResp <: AnyRef](settings: RiftWarpHttpFuns.RiftHttpFunsSettings, okStatus: HttpSuccess, computeResponse: TReq => AlmFuture[Option[TResp]], req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any])(implicit mReq: Manifest[TReq], hasExecutor: HasExecutionContext) {
+    val resp = RiftWarpHttpFuns.processRequestRespondOnFuture[TReq, TResp](settings, createGetHttpDataFromRequest(req), okStatus, computeResponse)
+    RiftWarpHttpFuns.futureResponder(settings, http => responder.respond(createResponseFunction(http)), resp)
+  }
+  
 }

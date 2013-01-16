@@ -31,9 +31,9 @@ object RiftWarpHttpFuns {
     val td = option.cata(contentType.tryGetTypeDescriptor)(td => td, TypeDescriptor(mResult.runtimeClass))
     for {
       data <- content.toRiftDimension
-      dematerialize <- RiftWarpFuns.getRecomposeFun[To](contentType.channel, data.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[To](remat, Some(td)))(NoFetchBlobFetch)(mResult, riftWarp)
-      dematerialized <- dematerialize(data)
-    } yield dematerialized
+      recompose <- RiftWarpFuns.getRecomposeFun[To](contentType.channel, data.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[To](remat, Some(td)))(NoFetchBlobFetch)(mResult, riftWarp)
+      recomposed <- recompose(data)
+    } yield recomposed
   }
 
   def createHttpProblemResponseData(settings: RiftHttpFunsSettings)(what: Problem, optReqChannel: Option[RiftHttpChannel]): RiftHttpDataWithContent = {
@@ -52,7 +52,7 @@ object RiftWarpHttpFuns {
       identity)
   }
 
-  def createHttpResponseData[TResp <: AnyRef](settings: RiftHttpFunsSettings)(what: TResp, optReqChannel: Option[RiftHttpChannel]): AlmValidation[RiftHttpDataWithContent] =
+  def createHttpData[TResp <: AnyRef](settings: RiftHttpFunsSettings)(what: TResp, optReqChannel: Option[RiftHttpChannel]): AlmValidation[RiftHttpDataWithContent] =
     for {
       decomposer <- settings.riftWarp.barracks.getDecomposerForAny[TResp](what)
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
@@ -118,7 +118,7 @@ object RiftWarpHttpFuns {
       resultOpt =>
         option.cata(resultOpt)(
           result =>
-            createHttpResponseData[TResp](settings)(result, Some(channel)).fold(
+            createHttpData[TResp](settings)(result, Some(channel)).fold(
               fail => {
                 settings.reportProblem(fail)
                 val (prob, code) = settings.launderProblem(fail)
@@ -137,7 +137,7 @@ object RiftWarpHttpFuns {
       resultOpt =>
         option.cata(resultOpt)(
           result =>
-            createHttpResponseData[TResp](settings)(result, Some(channel)).fold(
+            createHttpData[TResp](settings)(result, Some(channel)).fold(
               fail => {
                 settings.reportProblem(fail)
                 val (prob, code) = settings.launderProblem(fail)

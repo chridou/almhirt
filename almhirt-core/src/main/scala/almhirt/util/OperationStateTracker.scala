@@ -17,7 +17,7 @@ import almhirt.almakka.ActorBased
 import almhirt.common.AlmFuture
 
 trait OperationStateTrackerCmd
-case class RegisterResultCallbackQry(ticket: TrackingTicket, replyTo: ActorRef, atMost: FiniteDuration) extends OperationStateTrackerCmd
+case class RegisterResultCallbackQry(ticket: TrackingTicket, atMost: FiniteDuration) extends OperationStateTrackerCmd
 case class GetStateQry(ticket: TrackingTicket) extends OperationStateTrackerCmd
 
 trait OperationStateTrackerRsp
@@ -26,9 +26,8 @@ case class OperationStateResultRsp(ticket: TrackingTicket, state: AlmValidation[
 
 trait OperationStateTracker {
   def updateState(opState: OperationState): Unit
-  def queryStateFor(ticket: TrackingTicket)(implicit atMost: FiniteDuration): AlmFuture[Option[OperationState]]
-  def onResult(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit)(implicit atMost: FiniteDuration): Unit
-  def getResultFor(ticket: TrackingTicket)(implicit atMost: FiniteDuration): AlmFuture[ResultOperationState]
+  def queryStateFor(within: FiniteDuration)(ticket: TrackingTicket): AlmFuture[Option[OperationState]]
+  def getResultFor(within: FiniteDuration)(ticket: TrackingTicket): AlmFuture[ResultOperationState]
 }
 
 object OperationStateTracker {

@@ -28,7 +28,7 @@ object CommandEndpointForwardMode {
 trait CommandEndpoint {
   def execute(cmd: DomainCommand): Unit
   def executeTracked(cmd: DomainCommand): TrackingTicket
-  def executeWithCallback(atMost: FiniteDuration)(cmd: DomainCommand, callback: AlmValidation[ResultOperationState] => Unit): Unit
+  def executeWithResult(atMost: FiniteDuration)(cmd: DomainCommand): AlmFuture[ResultOperationState]
 }
 
 object CommandEndpoint {
