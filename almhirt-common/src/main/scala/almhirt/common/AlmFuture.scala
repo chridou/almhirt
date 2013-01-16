@@ -91,9 +91,6 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
   def isCompleted = underlying.isCompleted
 
-  @deprecated("Use awaitResult", "0.0.1")
-  def result(implicit atMost: Duration): AlmValidation[R] = awaitResult
-
   def awaitResult(implicit atMost: Duration): AlmValidation[R] =
     try {
       Await.result(underlying, atMost)
@@ -112,9 +109,6 @@ object AlmFuture {
   import scala.language.higherKinds
   
   def apply[T](compute: => AlmValidation[T])(implicit hasExecutionContext: HasExecutionContext) = new AlmFuture[T](Future { compute }(hasExecutionContext.executionContext))
-
-  @deprecated("Use apply", "0.0.1")
-  def future[T](compute: => AlmValidation[T])(implicit hasExecutionContext: HasExecutionContext) = apply(compute)(hasExecutionContext)
 
   def sequenceAkka[A, M[_] <: Traversable[_]](in: M[AlmFuture[A]])(implicit cbf: CanBuildFrom[M[AlmFuture[A]], AlmValidation[A], M[AlmValidation[A]]], hasExecutionContext: HasExecutionContext): Future[M[AlmValidation[A]]] = {
     implicit val executionContext = hasExecutionContext.executionContext
