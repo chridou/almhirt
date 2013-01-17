@@ -23,6 +23,8 @@ object Resolvers {
 }
 
 object Dependencies {
+	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % "2.10.0"
+
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0-M7" % "compile"
@@ -143,10 +145,24 @@ trait RiftWarpBuild {
   def riftwarpProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sonatypeReleases,
+	  libraryDependencies += scala_reflect,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
-	  libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.10.0",
+	  libraryDependencies += scalaz,
+	  libraryDependencies += specs2
+  )
+}
+
+trait RiftWarpAutomaticBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpAutomaticProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += specs2
   )
@@ -222,13 +238,14 @@ object AlmHirtBuild extends Build
 	with CoreExtSlickBuild 
 	with CoreExtActivateBuild 
 	with RiftWarpBuild 
+	with RiftWarpAutomaticBuild 
 	with RiftWarpExtLiftJsonBuild 
 	with UnfilteredBuild 
 	with ClientDispatchBuild 
 	with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings,
-	                        base = file(".")) aggregate(common, core, anormEventLog, slickExtensions, activateExtensions, docit, riftwarp, unfiltered, clientDispatch)
+	                        base = file(".")) aggregate(common, core, anormEventLog, slickExtensions, activateExtensions, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -251,6 +268,9 @@ object AlmHirtBuild extends Build
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
+
+  lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
+                       			baseFile = file("./ext/riftwarp/riftwarp-automatic")) dependsOn(common, riftwarp)
 
  // lazy val riftwarpExtLiftJson = riftwarpExtLiftJsonProject(	name = "riftwarp-ext-liftjson",
  //                      			baseFile = file("./ext/riftwarp/riftwarp-ext-liftjson")) dependsOn(riftwarp)
