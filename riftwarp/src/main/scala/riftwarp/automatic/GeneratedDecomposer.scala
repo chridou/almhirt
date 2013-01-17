@@ -7,11 +7,13 @@ import almhirt.common._
 import riftwarp._
 
 trait GeneratedDecomposer[TToDecompose <: AnyRef] extends Decomposer[TToDecompose] {
-  def decompose[TDimension <: RiftDimension](what: TToDecompose)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = uncurried[TDimension](what, into)
-  private def uncurried[TDimension <: RiftDimension](what: TToDecompose, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = 
-    macro GeneratedDecomposerImpl.decompose[TToDecompose, TDimension]
+  def decompose[TDimension <: RiftDimension](what: TToDecompose)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = decomposeUncurried[TToDecompose, TDimension](what, into)
+  private def decomposeUncurried[TTWhat <: AnyRef, TTDimension <: RiftDimension](what: TTWhat, into: Dematerializer[TTDimension]): AlmValidation[Dematerializer[TTDimension]] = 
+    macro GeneratedDecomposerImpl.decomposeUncurried[TTWhat, TTDimension]
 }
 
 object GeneratedDecomposerImpl {
-  def decompose[TToDecompose <: AnyRef: c.TypeTag, TDimension <: RiftDimension: c.TypeTag](c: Context)(what: c.Expr[TToDecompose], into: c.Expr[TDimension]): c.Expr[(TToDecompose, Dematerializer[TDimension]) => AlmValidation[Dematerializer[TDimension]]] = ???
+  def decomposeUncurried[TTWhat <: AnyRef: c.WeakTypeTag, TTDimension <: RiftDimension: c.WeakTypeTag](c: Context)(what: c.Expr[TTWhat], into: c.Expr[Dematerializer[TTDimension]]): c.Expr[AlmValidation[Dematerializer[TTDimension]]] = {
+    ???
+    }
 }
