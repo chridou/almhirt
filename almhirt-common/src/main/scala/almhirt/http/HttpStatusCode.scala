@@ -1,7 +1,6 @@
 package almhirt.http
 
-import almhirt.common.AlmValidation
-import almhirt.common.ElementNotFoundProblem
+import almhirt.common._
 
 sealed trait HttpStatusCode { def code: Int }
 
@@ -86,7 +85,7 @@ object HttpStatusCode {
   def getCode(code: Int): AlmValidation[HttpStatusCode] =
     option.cata(tryGetCode(code))(
       cd => cd.success,
-      ElementNotFoundProblem("No HTTP status code with numeric representation of '%d' found.".format(code)).failure)
+      NoSuchElementProblem("No HTTP status code with numeric representation of '%d' found.".format(code)).failure)
 
   private val byCode = List(
     Http_100_Continue,

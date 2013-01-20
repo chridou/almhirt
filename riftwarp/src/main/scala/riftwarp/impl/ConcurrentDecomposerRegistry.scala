@@ -7,21 +7,19 @@ import riftwarp._
 import riftwarp.components._
 
 class ConcurrentDecomposerRegistry extends HasDecomposers {
-  private val decomposers = new _root_.java.util.concurrent.ConcurrentHashMap[RiftDescriptor, (RawDecomposer, Boolean)](512)
+  private val decomposers = new _root_.java.util.concurrent.ConcurrentHashMap[RiftDescriptor, Decomposer[_]](512)
 
-  def tryGetRawDecomposer(riftDescriptor: RiftDescriptor) =
+//  def getRawDecomposer(riftDescriptor: RiftDescriptor): AlmValidation[RawDecomposer] =
+//    decomposers.get(riftDescriptor) match {
+//      case null => KeyNotFoundProblem(s"No (Raw-)Decomposer found for $riftDescriptor").failure
+//      case x => x.success
+//    }
+
+  def getDecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): AlmValidation[Decomposer[T]] =
     decomposers.get(riftDescriptor) match {
-      case null => None
-      case x => Some(x._1)
+      case null => KeyNotFoundProblem(s"No Decomposer found for  $riftDescriptor").failure
+      case x => x.asInstanceOf[Decomposer[T]].success
     }
 
-  def tryGetDecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): Option[Decomposer[T]] =
-    decomposers.get(riftDescriptor) match {
-      case null => None
-      case (desc, true) => Some(desc.asInstanceOf[Decomposer[T]])
-      case _ => None
-    }
-
-  def addRawDecomposer(decomposer: RawDecomposer) { decomposers.put(decomposer.riftDescriptor, (decomposer, false)) }
-  def addDecomposer(decomposer: Decomposer[_]) { decomposers.put(decomposer.riftDescriptor, (decomposer.asInstanceOf[RawDecomposer], true)) }
+  def addDecomposer(decomposer: Decomposer[_]) { decomposers.put(decomposer.riftDescriptor, decomposer) }
 }

@@ -376,10 +376,10 @@ case class LocaleNotSupportedProblem(message: String, severity: Severity = NoPro
 }
 
 /**
- * An element was not present in some kind of collection
+ * An expected element was not present in some kind of collection
  */
-case class ElementNotFoundProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
-  type T = ElementNotFoundProblem
+case class NoSuchElementProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = NoSuchElementProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))

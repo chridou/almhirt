@@ -5,6 +5,9 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.funs._
 
+/**
+ * A tag used for looking up a Decomposer or Recomposer.
+ */
 sealed class RiftDescriptor private (val identifier: String, val version: Option[Int]) extends Equals {
   private lazy val hash = {
     val prime = 41

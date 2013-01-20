@@ -24,12 +24,12 @@ class UnsafeChannelRegistry extends ChannelRegistry {
   def getChannel(ident: String): AlmValidation[RiftChannel] =
     option.cata(channels.get(ident.toLowerCase()))(
       found => found.success,
-      ElementNotFoundProblem("No channel found for '%s'".format(ident)).failure)
+      KeyNotFoundProblem(s"No channel found for '$ident'").failure)
 
   def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftHttpChannel] =
     option.cata(httpChannels.get(contentType.toLowerCase))(
       found => found.success,
-      ElementNotFoundProblem("No channel found for content type '%s'".format(contentType)).failure)
+      KeyNotFoundProblem(s"No channel found for content type '$contentType'").failure)
 }
 
 object UnsafeChannelRegistry {

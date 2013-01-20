@@ -20,13 +20,13 @@ class ConcurrentChannelRegistry extends ChannelRegistry {
   }
   def getChannel(ident: String): AlmValidation[RiftChannel] =
     channels.get(ident.toLowerCase()) match {
-      case null => ElementNotFoundProblem("No channel found for '%s'".format(ident)).failure
+      case null => KeyNotFoundProblem("No channel found for '%s'".format(ident)).failure
       case channel => channel.success
     }
 
   def lookUpFromHttpContentType(contentType: String): AlmValidation[RiftHttpChannel] =
     httpChannels.get(contentType.toLowerCase()) match {
-      case null => ElementNotFoundProblem("No channel found for content type '%s'".format(contentType)).failure
+      case null => KeyNotFoundProblem("No channel found for content type '%s'".format(contentType)).failure
       case channel => channel.success
     }
 }
