@@ -7,29 +7,29 @@ import riftwarp._
 import almhirt.util._
 
 class CommandActionDecomposer extends Decomposer[CommandAction] {
-  val typeDescriptor = TypeDescriptor(classOf[CommandAction], 1)
+  val riftDescriptor = RiftDescriptor(classOf[CommandAction], 1)
   def decompose[TDimension <: RiftDimension](what: CommandAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
       case CreateAction(id) =>
         into
-          .addTypeDescriptor(this.typeDescriptor)
+          .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "create"))
           .flatMap(_.addUuid("id", id))
       case UpdateAction(id) =>
         into
-          .addTypeDescriptor(this.typeDescriptor)
+          .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "update"))
           .flatMap(_.addUuid("id", id))
       case UnspecifiedAction =>
         into
-          .addTypeDescriptor(this.typeDescriptor)
+          .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "unspecified"))
     }
   }
 }
 
 class CommandActionRecomposer extends Recomposer[CommandAction] {
-  val typeDescriptor = TypeDescriptor(classOf[CommandAction], 1)
+  val riftDescriptor = RiftDescriptor(classOf[CommandAction], 1)
   def recompose(from: Rematerializer): AlmValidation[CommandAction] = {
     from.getString("type").flatMap {
       case "create" => 
@@ -45,23 +45,23 @@ class CommandActionRecomposer extends Recomposer[CommandAction] {
 }
 
 class OperationStateDecomposer extends Decomposer[OperationState] {
-  val typeDescriptor = TypeDescriptor(classOf[OperationState], 1)
+  val riftDescriptor = RiftDescriptor(classOf[OperationState], 1)
   def decompose[TDimension <: RiftDimension](what: OperationState)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
       case InProcess(ticket) =>
         into
-          .addTypeDescriptor(this.typeDescriptor)
+          .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "inProcess"))
           .flatMap(_.addComplexTypeFixed[TrackingTicket]("ticket", ticket))
       case Executed(ticket, action) =>
         into
-          .addTypeDescriptor(this.typeDescriptor)
+          .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "executed"))
           .flatMap(_.addComplexTypeFixed[TrackingTicket]("ticket", ticket))
           .flatMap(_.addComplexTypeFixed[CommandAction]("action", action))
       case NotExecuted(ticket, problem) =>
         into
-          .addTypeDescriptor(this.typeDescriptor)
+          .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "notExecuted"))
           .flatMap(_.addComplexTypeFixed[TrackingTicket]("ticket", ticket))
           .flatMap(_.addComplexType[Problem]("action", problem))
@@ -72,7 +72,7 @@ class OperationStateDecomposer extends Decomposer[OperationState] {
 }
 
 class OperationStateRecomposer extends Recomposer[OperationState] {
-  val typeDescriptor = TypeDescriptor(classOf[OperationState], 1)
+  val riftDescriptor = RiftDescriptor(classOf[OperationState], 1)
   def recompose(from: Rematerializer): AlmValidation[OperationState] = {
     from.getString("type").flatMap {
       case "inProcess" => 

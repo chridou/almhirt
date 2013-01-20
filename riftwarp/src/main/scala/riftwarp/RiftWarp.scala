@@ -23,7 +23,7 @@ trait RiftWarp {
         fun(what, decomposer)))
 
   def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] = {
-    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(TypeDescriptor(mTarget.runtimeClass)))
+    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(mTarget.runtimeClass)))
     for {
       recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(NoFetchBlobFetch)(mD, mTarget, this)
       recomposed <- recomposeFun(warpStream)
@@ -31,7 +31,7 @@ trait RiftWarp {
   }
 
   def receiveFromWarpWithBlobs[TDimension <: RiftDimension, T <: AnyRef](blobFetch: BlobFetch)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] = {
-    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(TypeDescriptor(mTarget.runtimeClass)))
+    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(mTarget.runtimeClass)))
     for {
       recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(blobFetch)(mD, mTarget, this)
       recomposed <- recomposeFun(warpStream)

@@ -3,7 +3,7 @@ package riftwarp
 import almhirt.common._
 import riftwarp.components._
 
-trait RawRecomposer extends HasTypeDescriptor {
+trait RawRecomposer extends HasRiftDescriptor {
   def recomposeRaw(from: Rematerializer): AlmValidation[AnyRef]
 }
 
@@ -14,6 +14,6 @@ trait Recomposer[T] extends RawRecomposer {
 }
 
 class EnrichedRawRecomposer[T](raw: RawRecomposer) extends Recomposer[T] {
-  val typeDescriptor = raw.typeDescriptor
+  val riftDescriptor = raw.riftDescriptor
   def recompose(from: Rematerializer) = raw.recomposeRaw(from).flatMap(almhirt.almvalidation.funs.almCast[T](_))
 }

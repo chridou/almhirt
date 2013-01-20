@@ -10,10 +10,10 @@ import almhirt.messaging._
 import almhirt.messaging.MessageGrouping
 
 class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
-  val typeDescriptor = TypeDescriptor(classOf[MessageGrouping], 1)
+  val riftDescriptor = RiftDescriptor(classOf[MessageGrouping], 1)
   def decompose[TDimension <: RiftDimension](what: MessageGrouping)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
-      .addTypeDescriptor(this.typeDescriptor)
+      .addRiftDescriptor(this.riftDescriptor)
       .flatMap(_.addUuid("groupId", what.groupId))
       .flatMap(_.addInt("seq", what.seq))
       .flatMap(_.addBoolean("isLast", what.isLast))
@@ -21,7 +21,7 @@ class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
 }
 
 class MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
-  val typeDescriptor = TypeDescriptor(classOf[MessageGrouping], 1)
+  val riftDescriptor = RiftDescriptor(classOf[MessageGrouping], 1)
   def recompose(from: Rematerializer): AlmValidation[MessageGrouping] = {
     (from.getUuid("groupId").toAgg |@|
       from.getInt("seq").toAgg |@|
@@ -30,10 +30,10 @@ class MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
 }
 
 class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
-  val typeDescriptor = TypeDescriptor(classOf[MessageHeader], 1)
+  val riftDescriptor = RiftDescriptor(classOf[MessageHeader], 1)
   def decompose[TDimension <: RiftDimension](what: MessageHeader)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
-      .addTypeDescriptor(this.typeDescriptor)
+      .addRiftDescriptor(this.riftDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addOptionalComplexType("grouping", what.grouping))
       .flatMap(_.addMapSkippingUnknownValues("metaData", what.metaData))
@@ -42,7 +42,7 @@ class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
 }
 
 class MessageHeaderRecomposer extends Recomposer[MessageHeader] {
-  val typeDescriptor = TypeDescriptor(classOf[MessageHeader], 1)
+  val riftDescriptor = RiftDescriptor(classOf[MessageHeader], 1)
   def recompose(from: Rematerializer): AlmValidation[MessageHeader] = {
     (from.getUuid("id").toAgg |@|
       from.tryGetComplexType("grouping").toAgg |@|
@@ -52,17 +52,17 @@ class MessageHeaderRecomposer extends Recomposer[MessageHeader] {
 }
 
 class MessageDecomposer extends Decomposer[Message[AnyRef]] {
-  val typeDescriptor = TypeDescriptor(classOf[Message[AnyRef]], 1)
+  val riftDescriptor = RiftDescriptor(classOf[Message[AnyRef]], 1)
   def decompose[TDimension <: RiftDimension](what: Message[AnyRef])(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
-      .addTypeDescriptor(this.typeDescriptor)
+      .addRiftDescriptor(this.riftDescriptor)
       .flatMap(_.addComplexType("header", what.header))
       .flatMap(_.addComplexType("payload", what.payload))
   }
 }
 
 class MessageRecomposer extends Recomposer[Message[AnyRef]] {
-  val typeDescriptor = TypeDescriptor(classOf[Message[AnyRef]], 1)
+  val riftDescriptor = RiftDescriptor(classOf[Message[AnyRef]], 1)
   def recompose(from: Rematerializer): AlmValidation[Message[AnyRef]] = {
     val header = from.getComplexType[MessageHeader]("header").toAgg
     val payload = from.getComplexType[AnyRef]("payload").toAgg

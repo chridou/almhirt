@@ -105,7 +105,7 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
   def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A,B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
   def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A,B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Dematerializer[TDimension]] 
   
-  def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[Dematerializer[TDimension]]
+  def addRiftDescriptor(descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
    
   def fail(prob: Problem): AlmValidation[Dematerializer[TDimension]] = prob.failure
   

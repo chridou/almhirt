@@ -403,7 +403,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
     ifNoneAddNull(ident: String, aMap, (x: String, y: Map[A, B]) => addMapSkippingUnknownValues(x, y))
 
-  def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
+  def addRiftDescriptor(descriptor: RiftDescriptor) = addString(RiftDescriptor.defaultKey, descriptor.toString)
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
     hasDecomposers.tryGetRawDecomposer(toDecompose.getClass) match {

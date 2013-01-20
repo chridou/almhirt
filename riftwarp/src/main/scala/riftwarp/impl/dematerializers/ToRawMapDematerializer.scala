@@ -183,7 +183,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
         addValue(ident, x)),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
       
-  def addTypeDescriptor(descriptor: TypeDescriptor) = addString(TypeDescriptor.defaultKey, descriptor.toString)
+  def addRiftDescriptor(descriptor: RiftDescriptor) = addString(RiftDescriptor.defaultKey, descriptor.toString)
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[Map[String, Any]] =
     hasDecomposers.tryGetRawDecomposerForAny(toDecompose) match {

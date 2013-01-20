@@ -6,19 +6,19 @@ import riftwarp._
 import riftwarp.components._
 
 class UnsafeRecomposerRegistry extends HasRecomposers {
-  private var recomposers = Map.empty[TypeDescriptor, (RawRecomposer, Boolean)]
+  private var recomposers = Map.empty[RiftDescriptor, (RawRecomposer, Boolean)]
 
-  def tryGetRawRecomposer(typeDescriptor: TypeDescriptor) =
-    recomposers.get(typeDescriptor).map(_._1)
+  def tryGetRawRecomposer(riftDescriptor: RiftDescriptor) =
+    recomposers.get(riftDescriptor).map(_._1)
 
-  def tryGetRecomposer[T <: AnyRef](typeDescriptor: TypeDescriptor): Option[Recomposer[T]] =
-    recomposers.get(typeDescriptor).flatMap {
+  def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): Option[Recomposer[T]] =
+    recomposers.get(riftDescriptor).flatMap {
       case (desc, true) =>
        Some(desc.asInstanceOf[Recomposer[T]])
       case (desc, false) =>
         Some(new EnrichedRawRecomposer[T](desc))
     }
 
-  def addRawRecomposer(recomposer: RawRecomposer) { recomposers = recomposers + (recomposer.typeDescriptor -> (recomposer, false)) }
-  def addRecomposer(recomposer: Recomposer[_]) { recomposers = recomposers + (recomposer.typeDescriptor -> (recomposer.asInstanceOf[RawRecomposer], true)) }
+  def addRawRecomposer(recomposer: RawRecomposer) { recomposers = recomposers + (recomposer.riftDescriptor -> (recomposer, false)) }
+  def addRecomposer(recomposer: Recomposer[_]) { recomposers = recomposers + (recomposer.riftDescriptor -> (recomposer.asInstanceOf[RawRecomposer], true)) }
 }

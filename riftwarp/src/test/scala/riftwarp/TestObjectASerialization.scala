@@ -11,9 +11,9 @@ import riftwarp.components._
 import riftwarp.components._
 
 class TestObjectADecomposer extends Decomposer[TestObjectA] {
-  val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
+  val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
   def decompose[TDimension <: RiftDimension](what: TestObjectA)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addByteArray("arrayByte", what.arrayByte))
       .flatMap(_.addBlob("blob", what.blob))
       .flatMap(_.addComplexType("primitiveTypes", what.primitiveTypes))
@@ -29,7 +29,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
 }
 
 class TestObjectARecomposer extends Recomposer[TestObjectA] {
-  val typeDescriptor = TypeDescriptor(classOf[TestObjectA])
+  val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
   def recompose(from: Rematerializer): AlmValidation[TestObjectA] = {
     for {
       arrayByte <- from.getByteArray("arrayByte")
@@ -48,9 +48,9 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
 }
 
 class PrimitiveTypesDecomposer extends Decomposer[PrimitiveTypes] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveTypes])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
   def decompose[TDimension <: RiftDimension](what: PrimitiveTypes)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addString("str", what.str))
       .flatMap(_.addBoolean("bool", what.bool))
       .flatMap(_.addByte("byte", what.byte))
@@ -66,7 +66,7 @@ class PrimitiveTypesDecomposer extends Decomposer[PrimitiveTypes] {
 }
 
 class PrimitiveTypesRecomposer extends Recomposer[PrimitiveTypes] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveTypes])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
   def recompose(from: Rematerializer): AlmValidation[PrimitiveTypes] = {
     val str = from.getString("str").toAgg
     val bool = from.getBoolean("bool").toAgg
@@ -94,9 +94,9 @@ class PrimitiveTypesRecomposer extends Recomposer[PrimitiveTypes] {
 }
 
 class PrimitiveListMAsDecomposer extends Decomposer[PrimitiveListMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveListMAs])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
   def decompose[TDimension <: RiftDimension](what: PrimitiveListMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addPrimitiveMA("listString", what.listString))
       .flatMap(_.addPrimitiveMA("listInt", what.listInt))
       .flatMap(_.addPrimitiveMA("listDouble", what.listDouble))
@@ -106,7 +106,7 @@ class PrimitiveListMAsDecomposer extends Decomposer[PrimitiveListMAs] {
 }
 
 class PrimitiveListMAsRecomposer extends Recomposer[PrimitiveListMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveListMAs])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
   def recompose(from: Rematerializer): AlmValidation[PrimitiveListMAs] = {
     val listString = from.getPrimitiveMA[List, String]("listString").toAgg
     val listInt = from.getPrimitiveMA[List, Int]("listInt").toAgg
@@ -122,9 +122,9 @@ class PrimitiveListMAsRecomposer extends Recomposer[PrimitiveListMAs] {
 }
 
 class PrimitiveVectorMAsDecomposer extends Decomposer[PrimitiveVectorMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveVectorMAs])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveVectorMAs])
   def decompose[TDimension <: RiftDimension](what: PrimitiveVectorMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addPrimitiveMA("vectorString", what.vectorString))
       .flatMap(_.addPrimitiveMA("vectorInt", what.vectorInt))
       .flatMap(_.addPrimitiveMA("vectorDouble", what.vectorDouble))
@@ -134,7 +134,7 @@ class PrimitiveVectorMAsDecomposer extends Decomposer[PrimitiveVectorMAs] {
 }
 
 class PrimitiveVectorMAsRecomposer extends Recomposer[PrimitiveVectorMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveVectorMAs])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveVectorMAs])
   def recompose(from: Rematerializer): AlmValidation[PrimitiveVectorMAs] = {
 
     val vectorString = from.getPrimitiveMA[Vector, String]("vectorString").toAgg
@@ -151,9 +151,9 @@ class PrimitiveVectorMAsRecomposer extends Recomposer[PrimitiveVectorMAs] {
 }
 
 class PrimitiveSetMAsDecomposer extends Decomposer[PrimitiveSetMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveSetMAs])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveSetMAs])
   def decompose[TDimension <: RiftDimension](what: PrimitiveSetMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addPrimitiveMA("setString", what.setString))
       .flatMap(_.addPrimitiveMA("setInt", what.setInt))
       .flatMap(_.addPrimitiveMA("setDouble", what.setDouble))
@@ -163,7 +163,7 @@ class PrimitiveSetMAsDecomposer extends Decomposer[PrimitiveSetMAs] {
 }
 
 class PrimitiveSetMAsRecomposer extends Recomposer[PrimitiveSetMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveSetMAs])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveSetMAs])
   def recompose(from: Rematerializer): AlmValidation[PrimitiveSetMAs] = {
 
     val setString = from.getPrimitiveMA[Set, String]("setString").toAgg
@@ -180,9 +180,9 @@ class PrimitiveSetMAsRecomposer extends Recomposer[PrimitiveSetMAs] {
 }
 
 class PrimitiveIterableMAsDecomposer extends Decomposer[PrimitiveIterableMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveIterableMAs])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveIterableMAs])
   def decompose[TDimension <: RiftDimension](what: PrimitiveIterableMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addPrimitiveMA("iterableString", what.iterableString))
       .flatMap(_.addPrimitiveMA("iterableInt", what.iterableInt))
       .flatMap(_.addPrimitiveMA("iterableDouble", what.iterableDouble))
@@ -192,7 +192,7 @@ class PrimitiveIterableMAsDecomposer extends Decomposer[PrimitiveIterableMAs] {
 }
 
 class PrimitiveIterableMAsRecomposer extends Recomposer[PrimitiveIterableMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveIterableMAs])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveIterableMAs])
   def recompose(from: Rematerializer): AlmValidation[PrimitiveIterableMAs] = {
 
     val iterableString = from.getPrimitiveMA[Set, String]("iterableString").toAgg
@@ -209,9 +209,9 @@ class PrimitiveIterableMAsRecomposer extends Recomposer[PrimitiveIterableMAs] {
 }
 
 class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[ComplexMAs])
+  val riftDescriptor = RiftDescriptor(classOf[ComplexMAs])
   def decompose[TDimension <: RiftDimension](what: ComplexMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addComplexMA(new TestAddressDecomposer())("addresses1", what.addresses1))
       .flatMap(_.addComplexMAFixed("addresses2", what.addresses2))
       .flatMap(_.addComplexMALoose("addresses3", what.addresses3))
@@ -220,7 +220,7 @@ class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
 }
 
 class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
-  val typeDescriptor = TypeDescriptor(classOf[ComplexMAs])
+  val riftDescriptor = RiftDescriptor(classOf[ComplexMAs])
   def recompose(from: Rematerializer): AlmValidation[ComplexMAs] = {
     val addresses1 = from.getComplexMALoose[List, TestAddress]("addresses1").toAgg
     val addresses2 = from.getComplexMALoose[Vector, TestAddress]("addresses2").toAgg
@@ -234,9 +234,9 @@ class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
 }
 
 class PrimitiveMapsDecomposer extends Decomposer[PrimitiveMaps] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveMaps])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveMaps])
   def decompose[TDimension <: RiftDimension](what: PrimitiveMaps)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addPrimitiveMap("mapIntInt", what.mapIntInt))
       .flatMap(_.addPrimitiveMap("mapStringInt", what.mapStringInt))
       .flatMap(_.addPrimitiveMap("mapUuidDateTime", what.mapUuidDateTime))
@@ -244,7 +244,7 @@ class PrimitiveMapsDecomposer extends Decomposer[PrimitiveMaps] {
 }
 
 class PrimitiveMapsRecomposer extends Recomposer[PrimitiveMaps] {
-  val typeDescriptor = TypeDescriptor(classOf[PrimitiveMaps])
+  val riftDescriptor = RiftDescriptor(classOf[PrimitiveMaps])
   def recompose(from: Rematerializer): AlmValidation[PrimitiveMaps] = {
     val mapIntInt = from.getPrimitiveMap[Int, Int]("mapIntInt").toAgg
     val mapStringInt = from.getPrimitiveMap[String, Int]("mapStringInt").toAgg
@@ -254,9 +254,9 @@ class PrimitiveMapsRecomposer extends Recomposer[PrimitiveMaps] {
 }
  
 class ComplexMapsDecomposer extends Decomposer[ComplexMaps] {
-  val typeDescriptor = TypeDescriptor(classOf[ComplexMaps])
+  val riftDescriptor = RiftDescriptor(classOf[ComplexMaps])
   def decompose[TDimension <: RiftDimension](what: ComplexMaps)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addComplexMapFixed("mapIntTestAddress1", what.mapIntTestAddress1))
       .flatMap(_.addMap("mapIntAny", what.mapIntAny))
       .flatMap(_.addMapSkippingUnknownValues("mapStringAnyWithUnknown", what.mapStringAnyWithUnknown))
@@ -264,7 +264,7 @@ class ComplexMapsDecomposer extends Decomposer[ComplexMaps] {
 }
 
 class ComplexMapsRecomposer extends Recomposer[ComplexMaps] {
-  val typeDescriptor = TypeDescriptor(classOf[ComplexMaps])
+  val riftDescriptor = RiftDescriptor(classOf[ComplexMaps])
   def recompose(from: Rematerializer): AlmValidation[ComplexMaps] = {
     val mapIntTestAddress1 = from.getComplexMapFixed[Int, TestAddress]("mapIntTestAddress1").toAgg
     val mapIntAny = from.getComplexMapLoose[Int, AnyRef]("mapIntAny").toAgg
@@ -273,16 +273,16 @@ class ComplexMapsRecomposer extends Recomposer[ComplexMaps] {
   }
 }
 class TestAddressDecomposer extends Decomposer[TestAddress] {
-  val typeDescriptor = TypeDescriptor(classOf[TestAddress])
+  val riftDescriptor = RiftDescriptor(classOf[TestAddress])
   def decompose[TDimension <: RiftDimension](what: TestAddress)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addString("city", what.city))
       .flatMap(_.addString("street", what.street))
   }
 }
 
 class TestAddressRecomposer extends Recomposer[TestAddress] {
-  val typeDescriptor = TypeDescriptor(classOf[TestAddress])
+  val riftDescriptor = RiftDescriptor(classOf[TestAddress])
   def recompose(from: Rematerializer): AlmValidation[TestAddress] = {
     val city = from.getString("city").toAgg
     val street = from.getString("street").toAgg

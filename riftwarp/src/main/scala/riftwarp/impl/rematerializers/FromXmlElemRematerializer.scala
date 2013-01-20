@@ -168,7 +168,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
           None.success)))
 
   def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
-    hasRecomposers.getRecomposer[A](TypeDescriptor(mA.runtimeClass)).flatMap(recomposer =>
+    hasRecomposers.getRecomposer[A](RiftDescriptor(mA.runtimeClass)).flatMap(recomposer =>
       tryGetComplexMA[M, A](ident, recomposer))
 
   def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[Option[M[A]]] =
@@ -214,7 +214,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
   }
 
   def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
-    hasRecomposers.getRecomposer[B](TypeDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
+    hasRecomposers.getRecomposer[B](RiftDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
 
   def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Elem): AlmValidation[B] = recomposeWithLookUpFromRematerializer(spawnNew(x))
@@ -238,8 +238,8 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
   }
 
-  def tryGetTypeDescriptor =
-    (stillInWarp \\ "@typedescriptor").headOption.map(node => TypeDescriptor.parse(node.text)).validationOut
+  def tryGetRiftDescriptor =
+    (stillInWarp \\ "@riftDescriptor").headOption.map(node => RiftDescriptor.parse(node.text)).validationOut
 
   private def mapToAny[A](ident: String)(what: Elem)(implicit m: Manifest[A]): AlmValidation[A] =
     getPrimitiveRematerializerFor[A](ident).fold(

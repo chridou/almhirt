@@ -4,18 +4,18 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp.components._
 
-sealed trait RiftBlob extends HasTypeDescriptor with CanDecomposeSelf
+sealed trait RiftBlob extends HasRiftDescriptor with CanDecomposeSelf
 
 trait RiftBlobValue extends RiftBlob {
   def dataAsArray: AlmValidation[Array[Byte]]
 }
 
 case class RiftBlobArrayValue(val data: Array[Byte]) extends RiftBlobValue {
-  val typeDescriptor = TypeDescriptor("RiftBlobArrayValue")
+  val riftDescriptor = RiftDescriptor("RiftBlobArrayValue")
   val dataAsArray = data.success
 
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addTypeDescriptor(this.typeDescriptor).flatMap(demat =>
+    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
       demat.addByteArrayBlobEncoded("data", data))
 }
 
@@ -23,46 +23,46 @@ case class RiftBlobArrayValue(val data: Array[Byte]) extends RiftBlobValue {
 trait RiftBlobReference extends RiftBlob
 
 case class RiftBlobRefFilePath(path: String) extends RiftBlobReference {
-  val typeDescriptor = TypeDescriptor("RiftBlobRefFilePath")
+  val riftDescriptor = RiftDescriptor("RiftBlobRefFilePath")
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addTypeDescriptor(this.typeDescriptor).flatMap(demat =>
+    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
       demat.addString("path", path))
 }
 
 case class RiftBlobRefByName(name: String) extends RiftBlobReference {
-  val typeDescriptor = TypeDescriptor("RiftBlobRefByName")
+  val riftDescriptor = RiftDescriptor("RiftBlobRefByName")
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addTypeDescriptor(this.typeDescriptor).flatMap(demat =>
+    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
       demat.addString("name", name))
 }
 
 case class RiftBlobRefByUuid(uuid: java.util.UUID) extends RiftBlobReference {
-  val typeDescriptor = TypeDescriptor("RiftBlobRefByUuid")
+  val riftDescriptor = RiftDescriptor("RiftBlobRefByUuid")
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addTypeDescriptor(this.typeDescriptor).flatMap(demat =>
+    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
       demat.addUuid("uuid", uuid))
 }
 
 case class RiftBlobRefByUri(uri: java.net.URI) extends RiftBlobReference {
-  val typeDescriptor = TypeDescriptor("RiftBlobRefByUri")
+  val riftDescriptor = RiftDescriptor("RiftBlobRefByUri")
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addTypeDescriptor(this.typeDescriptor).flatMap(demat =>
+    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
       demat.addUri("uri", uri))
 }
 
 object RiftBlob {
   def recompose(from: Rematerializer): AlmValidation[RiftBlob] =
-    from.getTypeDescriptor.flatMap(td =>
+    from.getRiftDescriptor.flatMap(td =>
       td match {
-        case TypeDescriptor("RiftBlobArrayValue") =>
+        case RiftDescriptor("RiftBlobArrayValue") =>
           from.getByteArrayFromBlobEncoding("data").map(RiftBlobArrayValue(_))
-        case TypeDescriptor("RiftBlobRefFilePath") =>
+        case RiftDescriptor("RiftBlobRefFilePath") =>
           from.getString("path").map(RiftBlobRefFilePath(_))
-        case TypeDescriptor("RiftBlobRefByName") =>
+        case RiftDescriptor("RiftBlobRefByName") =>
           from.getString("name").map(RiftBlobRefByName(_))
-        case TypeDescriptor("RiftBlobRefByUuid") =>
+        case RiftDescriptor("RiftBlobRefByUuid") =>
           from.getUuid("uuid").map(RiftBlobRefByUuid(_))
-        case TypeDescriptor("RiftBlobRefByUri") =>
+        case RiftDescriptor("RiftBlobRefByUri") =>
           from.getUri("uri").map(RiftBlobRefByUri(_))
       })
 }

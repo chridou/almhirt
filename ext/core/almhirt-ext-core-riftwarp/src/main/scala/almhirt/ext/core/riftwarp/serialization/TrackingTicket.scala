@@ -10,17 +10,17 @@ import almhirt.util._
 import almhirt.util.StringTrackingTicket
 
 class TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
-  val typeDescriptor = TypeDescriptor(classOf[TrackingTicket], 1)
+  val riftDescriptor = RiftDescriptor(classOf[TrackingTicket], 1)
   def decompose[TDimension <: RiftDimension](what: TrackingTicket)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
       case StringTrackingTicket(ident) =>
         into
-          .addTypeDescriptor(this.typeDescriptor)
+          .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "string"))
           .flatMap(_.addString("ident", ident))
       case UuidTrackingTicket(ident) =>
         into
-          .addTypeDescriptor(this.typeDescriptor)
+          .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "uuid"))
           .flatMap(_.addUuid("ident", ident))
     }
@@ -28,7 +28,7 @@ class TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
 }
 
 class TrackingTicketRecomposer extends Recomposer[TrackingTicket] {
-  val typeDescriptor = TypeDescriptor(classOf[TrackingTicket], 1)
+  val riftDescriptor = RiftDescriptor(classOf[TrackingTicket], 1)
   def recompose(from: Rematerializer): AlmValidation[TrackingTicket] = {
     from.getString("type").flatMap {
       case "string" => from.getString("ident").map(StringTrackingTicket.apply)

@@ -10,13 +10,13 @@ case class RiftHttpResponse(statusCode: HttpStatusCode, data: RiftHttpData)
 
 object RiftHttpResponse {
   implicit class RiftHttpResponseOps(response: RiftHttpResponse) {
-    def explode(): AlmValidation[(HttpStatusCode, RiftHttpChannel, Option[TypeDescriptor], RiftHttpDimension)] =
+    def explode(): AlmValidation[(HttpStatusCode, RiftHttpChannel, Option[RiftDescriptor], RiftHttpDimension)] =
       response.data match {
         case RiftHttpNoContentData =>
           BadDataProblem(s"No content. Status: ${response.statusCode.code}").failure
         case data @ RiftHttpDataWithContent(contentType, body) =>
           data.toRiftDimension.map(dim =>
-            (response.statusCode, contentType.channel, contentType.tryGetTypeDescriptor, dim))
+            (response.statusCode, contentType.channel, contentType.tryGetRiftDescriptor, dim))
       }
   }
 }

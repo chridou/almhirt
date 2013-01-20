@@ -3,7 +3,7 @@ package riftwarp
 import almhirt.common._
 import riftwarp.components._
 
-trait RawDecomposer extends HasTypeDescriptor {
+trait RawDecomposer extends HasRiftDescriptor {
   def decomposeRaw[TDimension <: RiftDimension](what: AnyRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] 
 }
 

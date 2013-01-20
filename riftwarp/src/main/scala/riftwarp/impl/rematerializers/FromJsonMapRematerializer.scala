@@ -176,7 +176,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
       None.success)
 
   def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
-    hasRecomposers.getRecomposer[A](TypeDescriptor(mA.runtimeClass)).flatMap(recomposer =>
+    hasRecomposers.getRecomposer[A](RiftDescriptor(mA.runtimeClass)).flatMap(recomposer =>
       tryGetComplexMA[M, A](ident, recomposer))
 
   def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[Option[M[A]]] =
@@ -240,7 +240,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
   }
 
   def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
-    hasRecomposers.getRecomposer[B](TypeDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
+    hasRecomposers.getRecomposer[B](RiftDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
 
   def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Any): AlmValidation[B] =
@@ -273,8 +273,8 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
   }
 
-  def tryGetTypeDescriptor =
-    option.cata(get(TypeDescriptor.defaultKey))(almCast[String](_).flatMap(TypeDescriptor.parse(_)).map(Some(_)), Success(None))
+  def tryGetRiftDescriptor =
+    option.cata(get(RiftDescriptor.defaultKey))(almCast[String](_).flatMap(RiftDescriptor.parse(_)).map(Some(_)), Success(None))
 
   private def mapToAny[A](ident: String)(what: Any)(implicit m: Manifest[A]): AlmValidation[A] =
     getPrimitiveRematerializer[A](ident, what.getClass).fold(

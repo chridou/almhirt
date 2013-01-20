@@ -39,7 +39,7 @@ trait RiftHttpChannel extends RiftChannel {
    * 
    */
   def httpContentType: String
-  /** The HTTP content type to append when a TypeDescriptor is used to create a content type  
+  /** The HTTP content type to append when a RiftDescriptor is used to create a content type  
    * 
    */
   def httpContentTypeExt: String

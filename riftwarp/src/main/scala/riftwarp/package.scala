@@ -14,10 +14,10 @@ package object riftwarp {
   
   import language.implicitConversions
   
-  implicit def string2TypeDescriptor(descriptor: String): TypeDescriptor = TypeDescriptor(descriptor)
-  implicit def class2TypeDescriptor(clazz: Class[_]): TypeDescriptor = TypeDescriptor(clazz.getName())
-  implicit def uuid2TypeDescriptor(uuid: java.util.UUID): TypeDescriptor = TypeDescriptor(uuid.toString())
-  implicit def long2TypeDescriptor(id: Long): TypeDescriptor = TypeDescriptor(id.toString())
+  implicit def string2RiftDescriptor(descriptor: String): RiftDescriptor = RiftDescriptor(descriptor)
+  implicit def class2RiftDescriptor(clazz: Class[_]): RiftDescriptor = RiftDescriptor(clazz.getName())
+  implicit def uuid2RiftDescriptor(uuid: java.util.UUID): RiftDescriptor = RiftDescriptor(uuid.toString())
+  implicit def long2RiftDescriptor(id: Long): RiftDescriptor = RiftDescriptor(id.toString())
   
   implicit def string2DimensionString(str: String): DimensionString = DimensionString(str)
   implicit def cord2DimensionCord(cord: scalaz.Cord): DimensionCord = DimensionCord(cord)

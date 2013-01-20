@@ -22,7 +22,7 @@ object GeneratedDecomposerImpl {
       tWhat.members
         .filter(m => m.isTerm && !m.isMethod && m.isPublic)
         .map(sym => sym.asTerm.getter)
-        .filterNot(getter => getter == NoSymbol /*|| getter.name. == "typeDescriptor"*/).toSeq: _*)
+        .filterNot(getter => getter == NoSymbol /*|| getter.name. == "riftDescriptor"*/).toSeq: _*)
 
     // private def getPri
     ???

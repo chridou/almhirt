@@ -70,7 +70,7 @@ class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobDat
     theMap.get(ident) match {
       case Some(elem) =>
         almCast[Map[String, Any]](elem).flatMap ( elemAsMap =>
-          recomposeWithLookedUpRawRecomposerFromTypeDescriptor(TypeDescriptor(m.runtimeClass))(spawnNew(elemAsMap)).map(_.asInstanceOf[T])).map(Some(_))
+          recomposeWithLookedUpRawRecomposerFromRiftDescriptor(RiftDescriptor(m.runtimeClass))(spawnNew(elemAsMap)).map(_.asInstanceOf[T])).map(Some(_))
       case None =>
         None.success
     }
@@ -105,7 +105,7 @@ class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobDat
       None.success)
 
   def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
-    hasRecomposers.getRecomposer[A](TypeDescriptor(mA.runtimeClass)).flatMap(recomposer =>
+    hasRecomposers.getRecomposer[A](RiftDescriptor(mA.runtimeClass)).flatMap(recomposer =>
       tryGetComplexMA[M, A](ident, recomposer))
 
   def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[Option[M[A]]] = {
@@ -164,7 +164,7 @@ class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobDat
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
   def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
-    hasRecomposers.getRecomposer[B](TypeDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
+    hasRecomposers.getRecomposer[B](RiftDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
 
   def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] =
     boolean.fold(
@@ -197,7 +197,7 @@ class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobDat
         None.success),
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  def tryGetTypeDescriptor = tryGetString(TypeDescriptor.defaultKey).flatMap(strOpt => strOpt.map(TypeDescriptor.parse(_)).validationOut)
+  def tryGetRiftDescriptor = tryGetString(RiftDescriptor.defaultKey).flatMap(strOpt => strOpt.map(RiftDescriptor.parse(_)).validationOut)
 
   private def mapToAny[A](ident: String)(what: Any): AlmValidation[A] =
     if (TypeHelpers.isPrimitiveValue(what))

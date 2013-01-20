@@ -2,10 +2,10 @@ package riftwarp.components
 
 import riftwarp._
 
-trait HasTypeDescriptor {
-  def typeDescriptor: TypeDescriptor
+trait HasRiftDescriptor {
+  def riftDescriptor: RiftDescriptor
 }
 
-trait HasDefaultTypeDescriptor extends HasTypeDescriptor {
-  val typeDescriptor = TypeDescriptor(this.getClass().getName())
+trait HasDefaultRiftDescriptor extends HasRiftDescriptor {
+  val riftDescriptor = RiftDescriptor(this.getClass().getName())
 }

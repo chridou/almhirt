@@ -10,17 +10,17 @@ import almhirt.commanding._
 import almhirt.commanding.AggregateRootRef
 
 class AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
-  val typeDescriptor = TypeDescriptor(classOf[AggregateRootRef], 1)
+  val riftDescriptor = RiftDescriptor(classOf[AggregateRootRef], 1)
   def decompose[TDimension <: RiftDimension](what: AggregateRootRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
-      .addTypeDescriptor(this.typeDescriptor)
+      .addRiftDescriptor(this.riftDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addLong("version", what.version))
   }
 }
 
 class AggregateRootRefRecomposer extends Recomposer[AggregateRootRef] {
-  val typeDescriptor = TypeDescriptor(classOf[AggregateRootRef], 1)
+  val riftDescriptor = RiftDescriptor(classOf[AggregateRootRef], 1)
   def recompose(from: Rematerializer): AlmValidation[AggregateRootRef] = {
     val id = from.getUuid("id").toAgg
     val version = from.getLong("version").toAgg

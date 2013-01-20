@@ -5,11 +5,11 @@ import almhirt.common._
 import riftwarp._
 
 trait GeneratedDecomposer[TToDecompose <: AnyRef] extends Decomposer[TToDecompose] {
-  def addTypeDescriptor: Boolean
+  def addRiftDescriptor: Boolean
   def decompose[TDimension <: RiftDimension](what: TToDecompose)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = { 
     def decomposeUncurried(what: TToDecompose, into: Dematerializer[TDimension]) = GeneratedDecomposerImpl.decomposeUncurried[TToDecompose, TDimension](what, into)
-    if(addTypeDescriptor)
-      into.addTypeDescriptor(this.typeDescriptor).flatMap(demat => decomposeUncurried(what, demat))
+    if(addRiftDescriptor)
+      into.addRiftDescriptor(this.riftDescriptor).flatMap(demat => decomposeUncurried(what, demat))
     else
       decomposeUncurried(what, into)
   }

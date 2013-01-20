@@ -78,7 +78,7 @@ case class TestObjectA(
   complexMAs: ComplexMAs,
   primitiveMaps: PrimitiveMaps,
   complexMaps: ComplexMaps,
-  addressOpt: Option[TestAddress]) extends HasDefaultTypeDescriptor
+  addressOpt: Option[TestAddress]) extends HasDefaultRiftDescriptor
 
 object TestObjectA {
   val pete: TestObjectA =
@@ -139,7 +139,7 @@ object TestObjectA {
       addressOpt = Some(TestAddress("Berlin", "At the wall 89")))
 }
 
-case class TestAddress(city: String, street: String) extends HasDefaultTypeDescriptor
+case class TestAddress(city: String, street: String) extends HasDefaultRiftDescriptor
 object TestAddress {
   val someAddresses = List(TestAddress("Hamburg", "Am Hafen"), TestAddress("New York", "Broadway"), TestAddress("Los Angeles ", "Sunset Boulevard"))
 }

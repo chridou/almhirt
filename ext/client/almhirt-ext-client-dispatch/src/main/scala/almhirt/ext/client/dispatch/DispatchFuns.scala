@@ -51,9 +51,9 @@ object DispatchFuns {
   def transformResponse[T <: AnyRef](settings: RiftHttpFunsSettings)(response: RiftHttpResponse): AlmFuture[T] = {
     AlmFuture.promise {
       for {
-        (statusCode, channel, typeDescriptor, dim) <- response.explode
+        (statusCode, channel, riftDescriptor, dim) <- response.explode
         recompose <- {
-          def getRecomposer(remat: Rematerializer) = settings.riftWarp.barracks.lookUpFromRematerializer[AnyRef](remat, typeDescriptor)
+          def getRecomposer(remat: Rematerializer) = settings.riftWarp.barracks.lookUpFromRematerializer[AnyRef](remat, riftDescriptor)
           RiftWarpFuns.getRecomposeFun[AnyRef](channel, dim.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(getRecomposer)(NoFetchBlobFetch)(manifest[AnyRef], settings.riftWarp)
         }
         recomposed <- recompose(dim)

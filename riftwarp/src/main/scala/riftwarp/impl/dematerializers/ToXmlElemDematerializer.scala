@@ -85,7 +85,7 @@ object ToXmlElemDematerializerFuns {
 
 }
 
-class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], protected val divertBlob: BlobDivert, typeDescriptor: Option[TypeDescriptor])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionXmlElem](classOf[DimensionXmlElem]) with NoneHasNoEffectDematerializationFunnel[DimensionXmlElem] {
+class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], protected val divertBlob: BlobDivert, riftDescriptor: Option[RiftDescriptor])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionXmlElem](classOf[DimensionXmlElem]) with NoneHasNoEffectDematerializationFunnel[DimensionXmlElem] {
   val toolGroup = ToolGroupRiftStd()
   val channel = RiftXml()
 
@@ -95,12 +95,12 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
     ToXmlElemDematerializer.apply(path, divertBlob).success
 
   protected def asElem(): Elem =
-    option.cata(typeDescriptor)(
-      td => Elem(null, td.unqualifiedName, new UnprefixedAttribute("typedescriptor", td.toString, Null), TopScope, true, state: _*),
+    option.cata(riftDescriptor)(
+      td => Elem(null, td.unqualifiedName, new UnprefixedAttribute("riftDescriptor", td.toString, Null), TopScope, true, state: _*),
       Elem(null, "Element", Null, TopScope, true, state: _*))
 
   private def addElem(elem: Elem): AlmValidation[ToXmlElemDematerializer] =
-    new ToXmlElemDematerializer(state :+ elem, path, divertBlob, typeDescriptor).success
+    new ToXmlElemDematerializer(state :+ elem, path, divertBlob, riftDescriptor).success
 
   def createPrimitiveElem(ident: String, value: String) = Elem(null, ident, Null, TopScope, true, Text(value))
   def wrapComplexElem(ident: String, complex: Elem) = Elem(null, ident, Null, TopScope, true, complex)
@@ -248,7 +248,7 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
           addElem(wrapComplexElem(ident, elem)))),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
       
-  def addTypeDescriptor(descriptor: TypeDescriptor): AlmValidation[ToXmlElemDematerializer] =
+  def addRiftDescriptor(descriptor: RiftDescriptor): AlmValidation[ToXmlElemDematerializer] =
     new ToXmlElemDematerializer(state, path, divertBlob, Some(descriptor)).success
 
   private def decomposeWithDecomposer[T <: AnyRef](idxIdent: List[String])(decomposer: Decomposer[T])(what: T): AlmValidation[Elem] =

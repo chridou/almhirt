@@ -28,7 +28,7 @@ object RiftWarpHttpFuns {
 
   def transformHttpData[To <: AnyRef](riftWarp: RiftWarp)(content: RiftHttpDataWithContent)(implicit mResult: Manifest[To]): AlmValidation[To] = {
     val contentType = content.contentType
-    val td = option.cata(contentType.tryGetTypeDescriptor)(td => td, TypeDescriptor(mResult.runtimeClass))
+    val td = option.cata(contentType.tryGetRiftDescriptor)(td => td, RiftDescriptor(mResult.runtimeClass))
     for {
       data <- content.toRiftDimension
       recompose <- RiftWarpFuns.getRecomposeFun[To](contentType.channel, data.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[To](remat, Some(td)))(NoFetchBlobFetch)(mResult, riftWarp)
@@ -42,7 +42,7 @@ object RiftWarpHttpFuns {
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun[Problem](channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
-      contentType <- RiftHttpContentType(decomposer.typeDescriptor, channel, Map.empty[String, String]).success
+      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
       response <- dematerialized.toHttpData(contentType)
     } yield response).fold(
       prob => {
@@ -58,7 +58,7 @@ object RiftWarpHttpFuns {
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun[TResp](channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
-      contentType <- RiftHttpContentType(decomposer.typeDescriptor, channel, Map.empty[String, String]).success
+      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
       response <- dematerialized.toHttpData(contentType)
     } yield response
 

@@ -6,20 +6,20 @@ import almhirt.common._
 import riftwarp._
 
 trait HasDecomposers {
-  def tryGetRawDecomposer(typeDescriptor: TypeDescriptor): Option[RawDecomposer]
+  def tryGetRawDecomposer(riftDescriptor: RiftDescriptor): Option[RawDecomposer]
   def tryGetRawDecomposerForAny(what: AnyRef): Option[RawDecomposer] =
     what match {
-      case htd: HasTypeDescriptor => tryGetRawDecomposer(htd.typeDescriptor)
-      case x => tryGetRawDecomposer(TypeDescriptor(x.getClass()))
+      case htd: HasRiftDescriptor => tryGetRawDecomposer(htd.riftDescriptor)
+      case x => tryGetRawDecomposer(RiftDescriptor(x.getClass()))
     }
 
-  def tryGetDecomposer[T <: AnyRef](typeDescriptor: TypeDescriptor): Option[Decomposer[T]]
+  def tryGetDecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): Option[Decomposer[T]]
   def tryGetDecomposer[T <: AnyRef](implicit m: Manifest[T]): Option[Decomposer[T]] = tryGetDecomposer(m.runtimeClass)
-  def tryGetDecomposerFor[T <: HasTypeDescriptor](what: T): Option[Decomposer[T]] = tryGetDecomposer[T](what.typeDescriptor)
+  def tryGetDecomposerFor[T <: HasRiftDescriptor](what: T): Option[Decomposer[T]] = tryGetDecomposer[T](what.riftDescriptor)
   def tryGetDecomposerForAny[T <: AnyRef](what: T): Option[Decomposer[T]] =
     what match {
-      case htd: HasTypeDescriptor => tryGetDecomposer(htd.typeDescriptor)
-      case x => tryGetDecomposer(TypeDescriptor(x.getClass()))
+      case htd: HasRiftDescriptor => tryGetDecomposer(htd.riftDescriptor)
+      case x => tryGetDecomposer(RiftDescriptor(x.getClass()))
     }
 
   def getDecomposer[T <: AnyRef](implicit m: Manifest[T]): AlmValidation[Decomposer[T]] =

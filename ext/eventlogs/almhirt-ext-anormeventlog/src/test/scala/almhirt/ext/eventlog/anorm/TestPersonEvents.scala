@@ -17,9 +17,9 @@ case class TestPersonMoved(id: UUID,aggId: UUID, aggVersion: Long, newAddress: S
 case class TestPersonUnhandledEvent(id: UUID,aggId: UUID, aggVersion: Long, timestamp: DateTime = DateTime.now) extends TestPersonEvent
 
 class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonCreated])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
   def decompose[TDimension <: RiftDimension](what: TestPersonCreated)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
       .flatMap(_.addString("name", what.name))
@@ -28,7 +28,7 @@ class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] {
 }
 
 class TestPersonCreatedRecomposer extends Recomposer[TestPersonCreated] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonCreated])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
   def recompose(from: Rematerializer): AlmValidation[TestPersonCreated] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
@@ -39,9 +39,9 @@ class TestPersonCreatedRecomposer extends Recomposer[TestPersonCreated] {
 }
 
 class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonNameChanged])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
   def decompose[TDimension <: RiftDimension](what: TestPersonNameChanged)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
       .flatMap(_.addLong("aggVersion", what.aggVersion))
@@ -51,7 +51,7 @@ class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] 
 }
 
 class TestPersonNameChangedRecomposer extends Recomposer[TestPersonNameChanged] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonNameChanged])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
   def recompose(from: Rematerializer): AlmValidation[TestPersonNameChanged] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
@@ -63,9 +63,9 @@ class TestPersonNameChangedRecomposer extends Recomposer[TestPersonNameChanged] 
 }
 
 class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAquired] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonAddressAquired])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
   def decompose[TDimension <: RiftDimension](what: TestPersonAddressAquired)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
       .flatMap(_.addLong("aggVersion", what.aggVersion))
@@ -75,7 +75,7 @@ class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAqu
 }
 
 class TestPersonAddressAquiredRecomposer extends Recomposer[TestPersonAddressAquired] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonAddressAquired])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
   def recompose(from: Rematerializer): AlmValidation[TestPersonAddressAquired] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
@@ -87,9 +87,9 @@ class TestPersonAddressAquiredRecomposer extends Recomposer[TestPersonAddressAqu
 }
 
 class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonMoved])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
   def decompose[TDimension <: RiftDimension](what: TestPersonMoved)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
       .flatMap(_.addLong("aggVersion", what.aggVersion))
@@ -99,7 +99,7 @@ class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] {
 }
 
 class TestPersonMovedRecomposer extends Recomposer[TestPersonMoved] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonMoved])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
   def recompose(from: Rematerializer): AlmValidation[TestPersonMoved] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
@@ -111,9 +111,9 @@ class TestPersonMovedRecomposer extends Recomposer[TestPersonMoved] {
 }
 
 class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledEvent] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonUnhandledEvent])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
   def decompose[TDimension <: RiftDimension](what: TestPersonUnhandledEvent)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addTypeDescriptor(typeDescriptor)
+    into.addRiftDescriptor(riftDescriptor)
       .flatMap(_.addUuid("id", what.id))
       .flatMap(_.addUuid("aggId", what.aggId))
       .flatMap(_.addLong("aggVersion", what.aggVersion))
@@ -122,7 +122,7 @@ class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledE
 }
 
 class TestPersonUnhandledEventRecomposer extends Recomposer[TestPersonUnhandledEvent] {
-  val typeDescriptor = TypeDescriptor(classOf[TestPersonUnhandledEvent])
+  val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
   def recompose(from: Rematerializer): AlmValidation[TestPersonUnhandledEvent] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
