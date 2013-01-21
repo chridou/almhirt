@@ -19,7 +19,7 @@ trait RawDematerializer {
   def dematerializeRaw: RiftDimension
 }
 
-trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
+trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   import language.higherKinds
 
   def dematerialize: TDimension
