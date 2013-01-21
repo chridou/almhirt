@@ -47,7 +47,7 @@ object RiftDimension {
       dim match {
         case stringBased: RiftStringBasedDimension => RiftHttpDataWithContent(contentType, RiftStringBody(stringBased.manifestation)).success
         case binaryBased: RiftByteArrayBasedDimension => RiftHttpDataWithContent(contentType, RiftBinaryBody(binaryBased.manifestation)).success
-        case x => UnspecifiedProblem("Not a valid HTTP-Dimension: %s".format(x.getClass().getName())).failure
+        case x => UnspecifiedProblem(s"Not a valid HTTP-Dimension: ${x.getClass().getName()}").failure
       }
   }
   
