@@ -9,6 +9,7 @@ object ConfigPaths {
   val repositories = "almhirt.repositories"
   val operationState = "almhirt.operationstate"
   val commandEndpoint = "almhirt.commandendpoint"
+  val commandDispatcher = "almhirt.client.commanddispatcher"
     
   val futures = "almhirt.futures"
 

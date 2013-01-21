@@ -68,4 +68,18 @@ object SystemHelper {
     } yield endpoint
   }
 
+  def createCommandDispatcherFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] = {
+    import language.reflectiveCalls
+    for {
+      dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theAlmhirt.system.config)
+      factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
+      factory <- inTryCatch {
+        Class.forName(factoryName)
+          .newInstance()
+          .asInstanceOf[{ def createCommandDispatcher(theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] }]
+      }
+      dispatcher <- factory.createCommandDispatcher(theAlmhirt)
+    } yield dispatcher
+  }
+
 }

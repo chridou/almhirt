@@ -11,6 +11,6 @@ trait CommandDispatcher {
   def dispatchAndGetState(cmd: DomainCommand): AlmFuture[ResultOperationState]
 }
 
-trait commandDispatcherFactory {
+trait CommandDispatcherFactory {
   def createCommandDispatcher(theAlmhirt: Almhirt): AlmValidation[CommandDispatcher]
 }
