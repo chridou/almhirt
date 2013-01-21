@@ -1,5 +1,6 @@
 package riftwarp
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -30,16 +31,16 @@ object RiftWarpFuns {
       findDematerializerFactory(riftwarp.converters.getConvertersToByDimType(tDimension)).map(tuple => (tuple._1, List(tuple._2))))
   }
 
-  private[riftwarp] def getDematerializationFun[T <: AnyRef](channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(divertBlobs: BlobDivert)(implicit riftwarp: RiftWarp): scalaz.Validation[RiftWarpProblem, (T, Decomposer[T]) => AlmValidation[RiftDimension]] =
+  private[riftwarp] def getDematerializationFun(channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(divertBlobs: BlobDivert)(implicit riftwarp: RiftWarp): scalaz.Validation[RiftWarpProblem, (AnyRef, RawDecomposer) => AlmValidation[RiftDimension]] =
     lookUpDematerializerFactoryAndConverters(channel, tDimension, toolGroup).map(factoryAndConverters =>
-      (what: T, decomposer: Decomposer[T]) =>
+      (what: AnyRef, decomposer: RawDecomposer) =>
         factoryAndConverters._1.createDematerializer(divertBlobs)(riftwarp.barracks, riftwarp.toolShed).flatMap(demat =>
-          decomposer.decompose(what)(demat).flatMap(demat =>
+          decomposer.decomposeRaw(what)(demat).flatMap(demat =>
             factoryAndConverters._2.foldLeft(demat.dematerializeRaw.success[Problem])((acc, converter) =>
               acc.fold(prob => prob.failure, dim => converter.convertRaw(dim))))))
   
-  private[riftwarp] def getDematerializationFun[T <: AnyRef, TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(divertBlobs: BlobDivert)(implicit riftwarp: RiftWarp, m: Manifest[TDimension]): scalaz.Validation[RiftWarpProblem, (T, Decomposer[T]) => AlmValidation[TDimension]] =
-  	getDematerializationFun[T](channel, m.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)(divertBlobs).map(_.asInstanceOf[(T, Decomposer[T]) => AlmValidation[TDimension]])
+  private[riftwarp] def getDematerializationFun[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(divertBlobs: BlobDivert)(implicit riftwarp: RiftWarp, c: ClassTag[TDimension]): scalaz.Validation[RiftWarpProblem, (AnyRef, RawDecomposer) => AlmValidation[TDimension]] =
+  	getDematerializationFun(channel, c.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)(divertBlobs).map(_.asInstanceOf[(AnyRef, RawDecomposer) => AlmValidation[TDimension]])
               
   private[riftwarp] def lookUpRematerializerFactoryAndConverters(channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(implicit riftWarp: RiftWarp): AlmValidation[(RematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
     def findRematerializerFactory(converters: List[RawDimensionConverter]): AlmValidation[(RematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
@@ -56,11 +57,11 @@ object RiftWarpFuns {
       findRematerializerFactory(riftWarp.converters.getConvertersFromByDimType(tDimension)).map(tuple => (tuple._1, List(tuple._2))))
   }
 
-  private[riftwarp] def lookUpRematerializerFactoryAndConverters[DimSource <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit mS: Manifest[DimSource], riftWarp: RiftWarp): AlmValidation[(RematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
-    lookUpRematerializerFactoryAndConverters(channel,  mS.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)
+  private[riftwarp] def lookUpRematerializerFactoryAndConverters[DimSource <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit cSourceDim: ClassTag[DimSource], riftWarp: RiftWarp): AlmValidation[(RematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
+    lookUpRematerializerFactoryAndConverters(channel,  cSourceDim.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)
   }
   
-  def getRecomposeFun[T <: AnyRef](channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit mTarget: Manifest[T], riftWarp: RiftWarp): AlmValidation[RiftDimension => AlmValidation[T]] = {
+  def getRecomposeFun[T <: AnyRef](channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit cTarget: ClassTag[T], riftWarp: RiftWarp): AlmValidation[RiftDimension => AlmValidation[T]] = {
     lookUpRematerializerFactoryAndConverters(channel, tDimension, toolGroup).map {
       case (arrayFactory, converters) =>
         (sourceDim: RiftDimension) =>
@@ -73,8 +74,8 @@ object RiftWarpFuns {
     }
   }
   
-  def getRecomposeFun[TSource <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit mD: Manifest[TSource], mTarget: Manifest[T], riftWarp: RiftWarp): AlmValidation[(TSource) => AlmValidation[T]] = {
-    getRecomposeFun(channel, mD.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)(getRecomposer)(blobFetch)
+  def getRecomposeFun[TSource <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit cSourceDim: ClassTag[TSource], cTarget: ClassTag[T], riftWarp: RiftWarp): AlmValidation[(TSource) => AlmValidation[T]] = {
+    getRecomposeFun(channel, cSourceDim.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)(getRecomposer)(blobFetch)
   }
   
 }

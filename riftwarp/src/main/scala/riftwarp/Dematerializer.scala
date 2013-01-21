@@ -1,12 +1,14 @@
 package riftwarp
 
 import language.higherKinds
+
+import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
-import scala.reflect.ClassTag
-import riftwarp.components.HasRiftDescriptor
+import riftwarp.components._
+import riftwarp.ma.HasFunctionObjects
 
 trait RawDematerializer {
   def channel: RiftChannel
@@ -21,7 +23,7 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
   import language.higherKinds
 
   def dematerialize: TDimension
-  def dematerializeRaw: RiftDimension = dematerialize.asInstanceOf[RiftDimension]
+  override def dematerializeRaw: RiftDimension = dematerialize.asInstanceOf[RiftDimension]
 
   def addString(ident: String, aValue: String): AlmValidation[Dematerializer[TDimension]]
   def addOptionalString(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TDimension]]
@@ -75,27 +77,27 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]] = addOptionalBlob(ident, anOptionalValue, PropertyPathAndIdentifiers(ident :: path, identifiers))
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]]
 
-  def addComplexType(decomposer: RawDecomposer)(ident: String, aComplexType: AnyRef): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalComplexType(decomposer: RawDecomposer)(ident: String, aComplexType: Option[AnyRef]): AlmValidation[Dematerializer[TDimension]]
+  def addComplexSelective(ident: String, decomposer: RawDecomposer, complex: AnyRef): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalComplexSelective(ident: String, decomposer: RawDecomposer, complex: Option[AnyRef]): AlmValidation[Dematerializer[TDimension]]
   /** Uses exactly the RiftDescriptor to look up a Decomposer */
-  def addComplexTypeFixed(ident: String, aComplexType: AnyRef, descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
+  def addComplexFixed(ident: String, complex: AnyRef, descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
   /** Uses exactly the RiftDescriptor to look up a Decomposer */
-  def addOptionalComplexTypeFixed(ident: String, aComplexType: Option[AnyRef], descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalComplexFixed(ident: String, complex: Option[AnyRef], descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
   /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor, if not use the backupDescriptor, otherwise use the class name to create a RiftDescriptor */
-  def addComplexType(ident: String, aComplexType: AnyRef, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] = {
-    val rd = aComplexType match {
+  def addComplex(ident: String, complex: AnyRef, backupDescriptor: Option[RiftDescriptor] = None): AlmValidation[Dematerializer[TDimension]] = {
+    val rd = complex match {
       case htd: HasRiftDescriptor => htd.riftDescriptor
-      case x => backupDescriptor.getOrElse(RiftDescriptor(aComplexType.getClass()))
+      case x => backupDescriptor.getOrElse(RiftDescriptor(complex.getClass()))
     }
-    addComplexTypeFixed(ident, aComplexType, rd)
+    addComplexFixed(ident, complex, rd)
   }
   /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor, if not use the backupDescriptor, otherwise use the class name to create a RiftDescriptor */
-  def addOptionalComplexType(ident: String, aComplexType: Option[AnyRef], backupDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
-
-  //  def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit cU: ClassTag[U]): AlmValidation[Dematerializer[TDimension]] =
-  //    addComplexType(ident, aComplexType, Some(RiftDescriptor(cU.runtimeClass)))
-  //  def addOptionalComplexTypeFixed[U <: AnyRef](ident: String, anOptionalComplexType: Option[U])(implicit mU: Manifest[U]): AlmValidation[Dematerializer[TDimension]] =
-  //    addComplexType(ident, aComplexType, Some(RiftDescriptor(cU.runtimeClass)))
+  def addOptionalComplex(ident: String, complex: Option[AnyRef], backupDescriptor: Option[RiftDescriptor] = None): AlmValidation[Dematerializer[TDimension]]
+  /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor otherwise use the erased type U to determine look up a decomposer */
+  def addComplexTyped[U <: AnyRef](ident: String, complex: U)(implicit cU: ClassTag[U]): AlmValidation[Dematerializer[TDimension]] =
+    addComplex(ident, complex, Some(RiftDescriptor(cU.runtimeClass)))
+  /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor otherwise use the erased type U to determine look up a decomposer */
+  def addOptionalComplexTyped[U <: AnyRef](ident: String, complex: Option[U])(implicit cU: ClassTag[U]): AlmValidation[Dematerializer[TDimension]]
 
   def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Dematerializer[TDimension]]
@@ -127,72 +129,5 @@ trait Dematerializer[TDimension <: RiftDimension] extends RawDematerializer {
 
 }
 
-trait NoneHasNoEffectDematerializationFunnel[TDimension <: RiftDimension] { dematerializer: Dematerializer[TDimension] =>
-  def addOptionalString(ident: String, anOptionalValue: Option[String]) = option.cata(anOptionalValue)(addString(ident, _), dematerializer.success)
 
-  def addOptionalBoolean(ident: String, anOptionalValue: Option[Boolean]) = option.cata(anOptionalValue)(addBoolean(ident, _), dematerializer.success)
 
-  def addOptionalByte(ident: String, anOptionalValue: Option[Byte]) = option.cata(anOptionalValue)(addByte(ident, _), dematerializer.success)
-  def addOptionalInt(ident: String, anOptionalValue: Option[Int]) = option.cata(anOptionalValue)(addInt(ident, _), dematerializer.success)
-  def addOptionalLong(ident: String, anOptionalValue: Option[Long]) = option.cata(anOptionalValue)(addLong(ident, _), dematerializer.success)
-  def addOptionalBigInt(ident: String, anOptionalValue: Option[BigInt]) = option.cata(anOptionalValue)(addBigInt(ident, _), dematerializer.success)
-
-  def addOptionalFloat(ident: String, anOptionalValue: Option[Float]) = option.cata(anOptionalValue)(addFloat(ident, _), dematerializer.success)
-  def addOptionalDouble(ident: String, anOptionalValue: Option[Double]) = option.cata(anOptionalValue)(addDouble(ident, _), dematerializer.success)
-  def addOptionalBigDecimal(ident: String, anOptionalValue: Option[BigDecimal]) = option.cata(anOptionalValue)(addBigDecimal(ident, _), dematerializer.success)
-
-  def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addByteArray(ident, _), dematerializer.success)
-  def addOptionalBase64EncodedByteArray(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addBase64EncodedByteArray(ident, _), dematerializer.success)
-  def addOptionalByteArrayBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]) = option.cata(anOptionalValue)(addByteArrayBlobEncoded(ident, _), dematerializer.success)
-
-  def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]) = option.cata(anOptionalValue)(addDateTime(ident, _), dematerializer.success)
-
-  def addOptionalUri(ident: String, anOptionalValue: Option[_root_.java.net.URI]) = option.cata(anOptionalValue)(addUri(ident, _), dematerializer.success)
-
-  def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]) = option.cata(anOptionalValue)(addUuid(ident, _), dematerializer.success)
-
-  def addOptionalJson(ident: String, anOptionalValue: Option[String]) = option.cata(anOptionalValue)(addJson(ident, _), dematerializer.success)
-  def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]) = option.cata(anOptionalValue)(addXml(ident, _), dematerializer.success)
-
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) = option.cata(anOptionalValue)(addBlob(ident, _, blobIdentifier), dematerializer.success)
-
-  def addOptionalComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(decomposer)(ident, _), this.success)
-  def addOptionalComplexType[U <: AnyRef](ident: String, anOptionalComplexType: Option[U]) = option.cata(anOptionalComplexType)(addComplexType(ident, _), dematerializer.success)
-  def addOptionalComplexTypeFixed[U <: AnyRef](ident: String, anOptionalComplexType: Option[U])(implicit mU: Manifest[U]) = option.cata(anOptionalComplexType)(addComplexTypeFixed(ident, _), dematerializer.success)
-
-  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addPrimitiveMA(ident, _), dematerializer.success)
-  def addOptionalComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addComplexMA(decomposer)(ident, _), dematerializer.success)
-  def addOptionalComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addComplexMAFixed(ident, _), dematerializer.success)
-  def addOptionalComplexMALoose[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addComplexMALoose(ident, _), dematerializer.success)
-  def addOptionalMA[M[_], A <: Any](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addMA(ident, _), dematerializer.success)
-
-  def addOptionalPrimitiveMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addPrimitiveMap(ident, _), dematerializer.success)
-  def addOptionalComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addComplexMap(decomposer)(ident, _), dematerializer.success)
-  def addOptionalComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addComplexMapFixed(ident, _), dematerializer.success)
-  def addOptionalComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addComplexMapLoose(ident, _), dematerializer.success)
-  def addOptionalMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addMap(ident, _), dematerializer.success)
-  def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addMapSkippingUnknownValues(ident, _), dematerializer.success)
-}
-
-abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension]) extends Dematerializer[TDimension] {
-  protected def divertBlob: BlobDivert
-  protected def spawnNew(ident: String): AlmValidation[Dematerializer[TDimension]] = spawnNew(ident :: path)
-  /**
-   * Creates a new instance of a dematerializer. It should respect divertBlob when creating the new instance.
-   *
-   */
-  protected def spawnNew(path: List[String]): AlmValidation[Dematerializer[TDimension]]
-  protected def getDematerializedBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]] =
-    spawnNew(ident).flatMap(demat =>
-      divertBlob(aValue, blobIdentifier).flatMap(blob =>
-        blob.decompose(demat)))
-
-}
-
-abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup) extends BaseDematerializer[DimensionString](classOf[DimensionCord])
-
-abstract class ToCordDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup) extends BaseDematerializer[DimensionCord](classOf[DimensionCord])
-
-abstract class ToBinaryDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup) extends BaseDematerializer[DimensionBinary](classOf[DimensionCord])
-
-abstract class ToRawMapDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup) extends BaseDematerializer[DimensionRawMap](classOf[DimensionCord])

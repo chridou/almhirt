@@ -1,5 +1,6 @@
 package riftwarp
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -12,28 +13,28 @@ trait RiftWarp {
   def converters: HasDimensionConverters
   def channels: ChannelRegistry
 
-  def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
-    barracks.getDecomposerForAny[AnyRef](what).flatMap(decomposer =>
-      RiftWarpFuns.getDematerializationFun[AnyRef, TDimension](channel, toolGroup)(NoDivertBlobDivert)(this, m).flatMap(fun => 
+  def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit cDim: ClassTag[TDimension]): AlmValidation[TDimension] =
+    barracks.getRawDecomposerFor(what).flatMap(decomposer =>
+      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(NoDivertBlobDivert)(this, cDim).flatMap(fun => 
         fun(what, decomposer)))
 
-  def prepareForWarpWithBlobs[TDimension <: RiftDimension](divertBlobs: BlobDivert)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit m: Manifest[TDimension]): AlmValidation[TDimension] =
-    barracks.getDecomposerForAny[AnyRef](what).flatMap(decomposer =>
-      RiftWarpFuns.getDematerializationFun[AnyRef, TDimension](channel, toolGroup)(divertBlobs)(this, m).flatMap(fun => 
+  def prepareForWarpWithBlobs[TDimension <: RiftDimension](divertBlobs: BlobDivert)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit cDim: ClassTag[TDimension]): AlmValidation[TDimension] =
+    barracks.getRawDecomposerFor(what).flatMap(decomposer =>
+      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(divertBlobs)(this, cDim).flatMap(fun => 
         fun(what, decomposer)))
 
-  def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] = {
-    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(mTarget.runtimeClass)))
+  def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit cDim: ClassTag[TDimension], cTarget: ClassTag[T]): AlmValidation[T] = {
+    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
     for {
-      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(NoFetchBlobFetch)(mD, mTarget, this)
+      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(NoFetchBlobFetch)(cDim, cTarget, this)
       recomposed <- recomposeFun(warpStream)
     } yield recomposed
   }
 
-  def receiveFromWarpWithBlobs[TDimension <: RiftDimension, T <: AnyRef](blobFetch: BlobFetch)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit mD: Manifest[TDimension], mTarget: Manifest[T]): AlmValidation[T] = {
-    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(mTarget.runtimeClass)))
+  def receiveFromWarpWithBlobs[TDimension <: RiftDimension, T <: AnyRef](blobFetch: BlobFetch)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit cDim: ClassTag[TDimension], cTarget: ClassTag[T]): AlmValidation[T] = {
+    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
     for {
-      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(blobFetch)(mD, mTarget, this)
+      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(blobFetch)(cDim, cTarget, this)
       recomposed <- recomposeFun(warpStream)
     } yield recomposed
   }

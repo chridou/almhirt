@@ -1,5 +1,6 @@
 package riftwarp.components
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -33,7 +34,7 @@ trait HasRecomposers {
   def decomposeRawWithLookedUpRawRecomposer(remat: Rematerializer): AlmValidation[AnyRef] =
     lookUpRawFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat))
 
-  def lookUpFromRematerializer[T <: AnyRef](remat: Rematerializer, backupDescriptor: Option[RiftDescriptor])(implicit mTarget: Manifest[T]): AlmValidation[Recomposer[T]] =
+  def lookUpFromRematerializer[T <: AnyRef](remat: Rematerializer, backupDescriptor: Option[RiftDescriptor])(implicit mTarget: ClassTag[T]): AlmValidation[Recomposer[T]] =
     remat.tryGetRiftDescriptor.fold(
       prob =>
         prob.failure,

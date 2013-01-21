@@ -75,7 +75,7 @@ object ToXmlElemDematerializerFuns {
   }
 
   def createKeyValuePair(kv: (Elem, Elem)): Elem = {
-    Elem(null, "KeyValue", Null, TopScope, true, <k>{kv._1}</k>, <v>{kv._2}</v>)
+    Elem(null, "KeyValue", Null, TopScope, true, <k>{ kv._1 }</k>, <v>{ kv._2 }</v>)
   }
 
   def foldKeyValuePairs(items: scala.collection.immutable.Iterable[(Elem, Elem)])(implicit functionObjects: HasFunctionObjects): AlmValidation[Elem] =
@@ -85,11 +85,17 @@ object ToXmlElemDematerializerFuns {
 
 }
 
-class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], protected val divertBlob: BlobDivert, riftDescriptor: Option[RiftDescriptor])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionXmlElem](classOf[DimensionXmlElem]) with NoneHasNoEffectDematerializationFunnel[DimensionXmlElem] {
+class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], protected val divertBlob: BlobDivert, riftDescriptor: Option[RiftDescriptor])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionXmlElem](classOf[DimensionXmlElem], hasDecomposers, hasFunctionObjects) with NoneIsHandledUnified[DimensionXmlElem] with NoneIsOmmitted[DimensionXmlElem] {
   val toolGroup = ToolGroupRiftStd()
   val channel = RiftXml()
 
   import ToXmlElemDematerializerFuns._
+  
+  private def wrapComplexElem(ident: String, complex: Elem) = Elem(null, ident, Null, TopScope, true, complex)
+ 
+  protected override def insertDematerializer(ident: String, dematerializer: Dematerializer[DimensionXmlElem]) = {
+    addElem(wrapComplexElem(ident, dematerializer.dematerialize.manifestation))
+  }
 
   protected def spawnNew(path: List[String]): AlmValidation[ToXmlElemDematerializer] =
     ToXmlElemDematerializer.apply(path, divertBlob).success
@@ -102,85 +108,69 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
   private def addElem(elem: Elem): AlmValidation[ToXmlElemDematerializer] =
     new ToXmlElemDematerializer(state :+ elem, path, divertBlob, riftDescriptor).success
 
-  def createPrimitiveElem(ident: String, value: String) = Elem(null, ident, Null, TopScope, true, Text(value))
-  def wrapComplexElem(ident: String, complex: Elem) = Elem(null, ident, Null, TopScope, true, complex)
+  private def createPrimitiveElem(ident: String, value: String) = Elem(null, ident, Null, TopScope, true, Text(value))
 
-  def dematerialize: DimensionXmlElem = DimensionXmlElem(asElem)
+  override def dematerialize: DimensionXmlElem = DimensionXmlElem(asElem)
 
-  def addString(ident: String, aValue: String) = addElem(createPrimitiveElem(ident, aValue))
+  override def addString(ident: String, aValue: String) = addElem(createPrimitiveElem(ident, aValue))
 
-  def addBoolean(ident: String, aValue: Boolean) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addBoolean(ident: String, aValue: Boolean) = addElem(createPrimitiveElem(ident, aValue.toString))
 
-  def addByte(ident: String, aValue: Byte) = addElem(createPrimitiveElem(ident, aValue.toString))
-  def addInt(ident: String, aValue: Int) = addElem(createPrimitiveElem(ident, aValue.toString))
-  def addLong(ident: String, aValue: Long) = addElem(createPrimitiveElem(ident, aValue.toString))
-  def addBigInt(ident: String, aValue: BigInt) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addByte(ident: String, aValue: Byte) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addInt(ident: String, aValue: Int) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addLong(ident: String, aValue: Long) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addBigInt(ident: String, aValue: BigInt) = addElem(createPrimitiveElem(ident, aValue.toString))
 
-  def addFloat(ident: String, aValue: Float) = addElem(createPrimitiveElem(ident, aValue.toString))
-  def addDouble(ident: String, aValue: Double) = addElem(createPrimitiveElem(ident, aValue.toString))
-  def addBigDecimal(ident: String, aValue: BigDecimal) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addFloat(ident: String, aValue: Float) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addDouble(ident: String, aValue: Double) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addBigDecimal(ident: String, aValue: BigDecimal) = addElem(createPrimitiveElem(ident, aValue.toString))
 
-  def addByteArray(ident: String, aValue: Array[Byte]) = addElem(createPrimitiveElem(ident, aValue.mkString(",")))
-  def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]) = addElem(createPrimitiveElem(ident, org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)))
-  def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]) = addBase64EncodedByteArray(ident, aValue)
+  override def addByteArray(ident: String, aValue: Array[Byte]) = addElem(createPrimitiveElem(ident, aValue.mkString(",")))
+  override def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]) = addElem(createPrimitiveElem(ident, org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)))
+  override def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]) = addBase64EncodedByteArray(ident, aValue)
 
-  def addDateTime(ident: String, aValue: org.joda.time.DateTime) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addDateTime(ident: String, aValue: org.joda.time.DateTime) = addElem(createPrimitiveElem(ident, aValue.toString))
 
-  def addUri(ident: String, aValue: _root_.java.net.URI) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addUri(ident: String, aValue: _root_.java.net.URI) = addElem(createPrimitiveElem(ident, aValue.toString))
 
-  def addUuid(ident: String, aValue: _root_.java.util.UUID) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addUuid(ident: String, aValue: _root_.java.util.UUID) = addElem(createPrimitiveElem(ident, aValue.toString))
 
-  def addJson(ident: String, aValue: String) = addElem(createPrimitiveElem(ident, aValue.toString))
-  def addXml(ident: String, aValue: scala.xml.Node) = NotSupportedProblem("addXml is not supported").withIdentifier(ident).failure
+  override def addJson(ident: String, aValue: String) = addElem(createPrimitiveElem(ident, aValue.toString))
+  override def addXml(ident: String, aValue: scala.xml.Node) = NotSupportedProblem("addXml is not supported").withIdentifier(ident).failure
 
-  def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
+  override def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
     getDematerializedBlob(ident, aValue, blobIdentifier).flatMap(blobDemat =>
-      addElem(wrapComplexElem(ident, blobDemat.dematerialize.manifestation)))
+      insertDematerializer(ident, blobDemat))
 
-  def addComplexType[U <: AnyRef](decomposer: Decomposer[U])(ident: String, aComplexType: U): AlmValidation[ToXmlElemDematerializer] =
-    spawnNew(ident).flatMap(demat =>
-      decomposer.decompose(aComplexType)(demat).flatMap(toEmbed =>
-        addElem(wrapComplexElem(ident, toEmbed.dematerialize.manifestation))))
-
-  def addComplexTypeFixed[U <: AnyRef](ident: String, aComplexType: U)(implicit mU: Manifest[U]): AlmValidation[ToXmlElemDematerializer] =
-    hasDecomposers.getDecomposer[U].flatMap(decomposer => addComplexType(decomposer)(ident, aComplexType))
-
-  def addComplexType[U <: AnyRef](ident: String, aComplexType: U): AlmValidation[ToXmlElemDematerializer] = {
-    hasDecomposers.tryGetDecomposerForAny(aComplexType) match {
-      case Some(decomposer) => addComplexType(decomposer)(ident, aComplexType)
-      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, aComplexType.getClass.getName())).failure
-    }
-  }
-
-  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
+  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
     primitiveMapperByType[A].flatMap(map =>
       MAFuncs.map(ma)(x => map(x)).flatMap(m =>
         MAFuncs.fold(this.channel)(m)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem])).flatMap(elem =>
         addElem(wrapComplexElem(ident, elem))))
 
-  def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
+  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
     spawnNew(ident).flatMap(demat =>
       MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(demat).map(_.dematerialize.manifestation)).flatMap(m =>
         MAFuncs.fold(this.channel)(m)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem])).flatMap(elem =>
         addElem(wrapComplexElem(ident, elem))))
 
-  def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
-    hasDecomposers.tryGetDecomposer[A] match {
+  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
+    hasDecomposers.getDecomposer[A](mA.runtimeClass).toOption match {
       case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
       case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.runtimeClass.getName())).failure
     }
 
-  def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
+  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
     MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
       MAFuncs.fold(this.channel)(complex)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem]).flatMap(elem =>
         addElem(wrapComplexElem(ident, elem))))
 
-  def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
+  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToXmlElemDematerializer] =
     MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
       MAFuncs.fold(this.channel)(complex)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem]).flatMap(elem =>
         addElem(wrapComplexElem(ident, elem))))
 
-  def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
+  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
     (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) =>
         primitiveMapperByType[A].flatMap(mapA =>
@@ -195,7 +185,7 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
       case (false, false) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.runtimeClass.getName(), mB.runtimeClass.getName())).failure
     }
 
-  def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
+  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       primitiveMapperByType[A].map(mapA =>
@@ -209,10 +199,10 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
         addElem(wrapComplexElem(ident, elem))),
       UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
-    hasDecomposers.getDecomposer[B].flatMap(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
+  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
+    hasDecomposers.getDecomposer[B](mB.runtimeClass).flatMap(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
 
-  def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
+  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       primitiveMapperByType[A].flatMap(mapA =>
@@ -224,7 +214,7 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
           addElem(wrapComplexElem(ident, elem)))),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
+  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       primitiveMapperByType[A].flatMap(mapA =>
@@ -236,7 +226,7 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
           addElem(wrapComplexElem(ident, elem)))),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
+  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToXmlElemDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       primitiveMapperByType[A].flatMap(mapA =>
@@ -247,8 +237,8 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
           foldKeyValuePairs(items)).flatMap(elem =>
           addElem(wrapComplexElem(ident, elem)))),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
-      
-  def addRiftDescriptor(descriptor: RiftDescriptor): AlmValidation[ToXmlElemDematerializer] =
+
+  override def addRiftDescriptor(descriptor: RiftDescriptor): AlmValidation[ToXmlElemDematerializer] =
     new ToXmlElemDematerializer(state, path, divertBlob, Some(descriptor)).success
 
   private def decomposeWithDecomposer[T <: AnyRef](idxIdent: List[String])(decomposer: Decomposer[T])(what: T): AlmValidation[Elem] =
@@ -257,7 +247,7 @@ class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], prote
         demat.dematerialize.manifestation))
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[Elem] =
-    hasDecomposers.getRawDecomposerForAny(toDecompose).flatMap(decomposer =>
+    hasDecomposers.getRawDecomposerFor(toDecompose).flatMap(decomposer =>
       spawnNew(idx :: ident :: path).flatMap(freshDemat =>
         decomposer.decomposeRaw(toDecompose)(freshDemat).map(x => x.asInstanceOf[ToXmlElemDematerializer].asElem)))
 

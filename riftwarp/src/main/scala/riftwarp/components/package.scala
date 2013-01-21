@@ -4,17 +4,26 @@ import almhirt.common._
 
 package object components {
   implicit class HasDecomposerOps(private val hasDecomposers: HasDecomposers) {
-
-    def getRawDecomposerForAny(what: AnyRef, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[RawDecomposer] = {
+    def getRawDecomposerFor(what: AnyRef, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[RawDecomposer] = {
       val rd = what match {
         case htd: HasRiftDescriptor => htd.riftDescriptor
         case x => backupRiftDescriptor.getOrElse(RiftDescriptor(what.getClass()))
       }
-      hasDecomposers.getDecomposer(rd)
+      hasDecomposers.getRawDecomposer(rd)
     }
 
-    def getRawDecomposerForAny(what: AnyRef): AlmValidation[RawDecomposer] =
-      getRawDecomposerForAny(what, None)
+    def getRawDecomposerFor(what: AnyRef): AlmValidation[RawDecomposer] =
+      getRawDecomposerFor(what, None)
+      
+   def getDecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): AlmValidation[Decomposer[T]] =
+      hasDecomposers.getRawDecomposer(riftDescriptor).map(_.asInstanceOf[Decomposer[T]])
+
+   def getDecomposerFor[T <: AnyRef](what: T, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Decomposer[T]] =
+      hasDecomposers.getRawDecomposerFor(what, backupRiftDescriptor).map(_.asInstanceOf[Decomposer[T]])
+
+   def getDecomposerFor[T <: AnyRef](what: T): AlmValidation[Decomposer[T]] =
+      hasDecomposers.getRawDecomposerFor(what, None).map(_.asInstanceOf[Decomposer[T]])
+
   }
   //  def tryGetDecomposer[T <: AnyRef](implicit m: Manifest[T]): Option[Decomposer[T]] = tryGetDecomposer(m.runtimeClass)
   //  def tryGetDecomposerFor[T <: HasRiftDescriptor](what: T): Option[Decomposer[T]] = tryGetDecomposer[T](what.riftDescriptor)

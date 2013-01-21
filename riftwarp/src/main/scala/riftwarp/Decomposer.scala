@@ -4,13 +4,14 @@ import almhirt.common._
 import riftwarp.components._
 
 trait RawDecomposer extends HasRiftDescriptor {
-  def decomposeRaw[TDimension <: RiftDimension](what: AnyRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] 
+  def decomposeRaw[TDimension <: RiftDimension](what: AnyRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]
 }
 
-/** instance -> Atoms 
+/**
+ * instance -> Atoms
  */
 trait Decomposer[T <: AnyRef] extends RawDecomposer {
-  def decomposeRaw[TDimension <: RiftDimension](what: AnyRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = 
-    decompose[TDimension](what.asInstanceOf[T])(into)
+  def decomposeRaw[TDimension <: RiftDimension](what: AnyRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+    almhirt.almvalidation.funs.computeSafely(decompose[TDimension](what.asInstanceOf[T])(into))
   def decompose[TDimension <: RiftDimension](what: T)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]
 }

@@ -38,9 +38,9 @@ object RiftWarpHttpFuns {
 
   def createHttpProblemResponseData(settings: RiftHttpFunsSettings)(what: Problem, optReqChannel: Option[RiftHttpChannel]): RiftHttpDataWithContent = {
     (for {
-      decomposer <- settings.riftWarp.barracks.getDecomposerForAny[Problem](what)
+      decomposer <- settings.riftWarp.barracks.getDecomposerFor[Problem](what)
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
-      dematerialzeFun <- RiftWarpFuns.getDematerializationFun[Problem](channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
+      dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
       contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
       response <- dematerialized.toHttpData(contentType)
@@ -54,9 +54,9 @@ object RiftWarpHttpFuns {
 
   def createHttpData[TResp <: AnyRef](settings: RiftHttpFunsSettings)(what: TResp, optReqChannel: Option[RiftHttpChannel]): AlmValidation[RiftHttpDataWithContent] =
     for {
-      decomposer <- settings.riftWarp.barracks.getDecomposerForAny[TResp](what)
+      decomposer <- settings.riftWarp.barracks.getDecomposerFor[TResp](what)
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
-      dematerialzeFun <- RiftWarpFuns.getDematerializationFun[TResp](channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
+      dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
       contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
       response <- dematerialized.toHttpData(contentType)

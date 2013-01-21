@@ -11,9 +11,9 @@ sealed trait RiftHttpContentType {
   def tryGetRiftDescriptor: Option[RiftDescriptor]
   def args: Map[String, String]
 
-  def getChannel: AlmValidation[RiftHttpChannel] = option.cata(tryGetChannel)(ch => ch.success, ElementNotFoundProblem("channel").failure)
-  def getHeaderValue: AlmValidation[String] = option.cata(tryGetHeaderValue)(v => v.success, ElementNotFoundProblem("headerValue").failure)
-  def getRiftDescriptor: AlmValidation[RiftDescriptor] = option.cata(tryGetRiftDescriptor)(v => v.success, ElementNotFoundProblem("RiftDescriptor").failure)
+  def getChannel: AlmValidation[RiftHttpChannel] = option.cata(tryGetChannel)(ch => ch.success, NoSuchElementProblem("channel").failure)
+  def getHeaderValue: AlmValidation[String] = option.cata(tryGetHeaderValue)(v => v.success, NoSuchElementProblem("headerValue").failure)
+  def getRiftDescriptor: AlmValidation[RiftDescriptor] = option.cata(tryGetRiftDescriptor)(v => v.success, NoSuchElementProblem("RiftDescriptor").failure)
 }
 
 case object RiftHttpNoContentContentType extends RiftHttpContentType {

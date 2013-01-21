@@ -20,7 +20,7 @@ object Problems {
           next <- option.cata(problem.cause)(
             cause => cause match {
               case CauseIsThrowable(_) => next.success
-              case CauseIsProblem(prob) => next.addComplexType("cause", prob)
+              case CauseIsProblem(prob) => next.addComplex("cause", prob)
             },
             next.success)
         } yield next
@@ -112,7 +112,7 @@ object Problems {
     createAndRegisterDefaultDecomposerAndRecomposer[OperationCancelledProblem](riftwarp)(RiftDescriptor(classOf[OperationCancelledProblem].getName), OperationCancelledProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[BusinessRuleViolatedProblem](riftwarp)(RiftDescriptor(classOf[BusinessRuleViolatedProblem].getName), BusinessRuleViolatedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[LocaleNotSupportedProblem](riftwarp)(RiftDescriptor(classOf[LocaleNotSupportedProblem].getName), LocaleNotSupportedProblem.tupled) 
-    createAndRegisterDefaultDecomposerAndRecomposer[ElementNotFoundProblem](riftwarp)(RiftDescriptor(classOf[ElementNotFoundProblem].getName), ElementNotFoundProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[NoSuchElementProblem](riftwarp)(RiftDescriptor(classOf[NoSuchElementProblem].getName), NoSuchElementProblem.tupled) 
 
     createAndRegisterDefaultDecomposerAndRecomposer[RiftWarpProblem](riftwarp)(RiftDescriptor(classOf[RiftWarpProblem].getName), RiftWarpProblem.tupled) 
   }

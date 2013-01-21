@@ -7,19 +7,13 @@ import riftwarp._
 import riftwarp.components._
 
 class UnsafeDecomposerRegistry extends HasDecomposers {
-  private var decomposers = Map.empty[RiftDescriptor, Decomposer[_]]
+  private var decomposers = Map.empty[RiftDescriptor, Decomposer[_ <: AnyRef]]
 
-//  def getRawDecomposer(riftDescriptor: RiftDescriptor): AlmValidation[RawDecomposer] =
-//    decomposers.get(riftDescriptor) match {
-//      case None => KeyNotFoundProblem(s"No (Raw-)Decomposer found for $riftDescriptor").failure
-//      case Some(x) => x.success
-//  }
-
-  def getDecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): AlmValidation[Decomposer[T]] =
+  def getRawDecomposer(riftDescriptor: RiftDescriptor): AlmValidation[RawDecomposer] =
     decomposers.get(riftDescriptor) match {
       case None => KeyNotFoundProblem(s"No ecomposer found for $riftDescriptor").failure
-      case Some(x) => x.asInstanceOf[Decomposer[T]].success
+      case Some(x) => x.success
     }
 
-  def addDecomposer(decomposer: Decomposer[_]) { decomposers = decomposers + (decomposer.riftDescriptor -> decomposer) }
+  def addDecomposer(decomposer: Decomposer[_ <: AnyRef]) { decomposers = decomposers + (decomposer.riftDescriptor -> decomposer) }
 }

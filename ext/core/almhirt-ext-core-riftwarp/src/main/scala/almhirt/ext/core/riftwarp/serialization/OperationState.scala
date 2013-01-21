@@ -52,19 +52,19 @@ class OperationStateDecomposer extends Decomposer[OperationState] {
         into
           .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "inProcess"))
-          .flatMap(_.addComplexTypeFixed[TrackingTicket]("ticket", ticket))
+          .flatMap(_.addComplexTyped[TrackingTicket]("ticket", ticket))
       case Executed(ticket, action) =>
         into
           .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "executed"))
-          .flatMap(_.addComplexTypeFixed[TrackingTicket]("ticket", ticket))
-          .flatMap(_.addComplexTypeFixed[CommandAction]("action", action))
+          .flatMap(_.addComplexTyped[TrackingTicket]("ticket", ticket))
+          .flatMap(_.addComplexTyped[CommandAction]("action", action))
       case NotExecuted(ticket, problem) =>
         into
           .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "notExecuted"))
-          .flatMap(_.addComplexTypeFixed[TrackingTicket]("ticket", ticket))
-          .flatMap(_.addComplexType[Problem]("action", problem))
+          .flatMap(_.addComplexTyped[TrackingTicket]("ticket", ticket))
+          .flatMap(_.addComplexTyped[Problem]("action", problem))
       case x => 
         UnspecifiedProblem("'%s' is not a valid OperationState type").failure
     }

@@ -7,7 +7,7 @@ import riftwarp._
 
 trait HasDecomposers {
 //  def getRawDecomposer(riftDescriptor: RiftDescriptor): AlmValidation[RawDecomposer]
-  def getDecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): AlmValidation[Decomposer[T]]
+  def getRawDecomposer(riftDescriptor: RiftDescriptor): AlmValidation[RawDecomposer]
 
-  def addDecomposer(decomposer: Decomposer[_]): Unit
+  def addDecomposer(decomposer: Decomposer[_ <: AnyRef]): Unit
 }

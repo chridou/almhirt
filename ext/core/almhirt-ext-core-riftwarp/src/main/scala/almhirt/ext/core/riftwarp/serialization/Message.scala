@@ -35,7 +35,7 @@ class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
     into
       .addRiftDescriptor(this.riftDescriptor)
       .flatMap(_.addUuid("id", what.id))
-      .flatMap(_.addOptionalComplexType("grouping", what.grouping))
+      .flatMap(_.addOptionalComplex("grouping", what.grouping))
       .flatMap(_.addMapSkippingUnknownValues("metaData", what.metaData))
       .flatMap(_.addDateTime("timestamp", what.timestamp))
   }
@@ -56,8 +56,8 @@ class MessageDecomposer extends Decomposer[Message[AnyRef]] {
   def decompose[TDimension <: RiftDimension](what: Message[AnyRef])(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .flatMap(_.addComplexType("header", what.header))
-      .flatMap(_.addComplexType("payload", what.payload))
+      .flatMap(_.addComplex("header", what.header))
+      .flatMap(_.addComplex("payload", what.payload))
   }
 }
 

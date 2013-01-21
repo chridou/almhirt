@@ -7,11 +7,8 @@ trait RiftWarpBarracks extends HasRecomposers with HasDecomposers
 object RiftWarpBarracks {
   def apply(decomposers: HasDecomposers, recomposers: HasRecomposers): RiftWarpBarracks = {
     new RiftWarpBarracks {
-      def tryGetRawDecomposer(riftDescriptor: RiftDescriptor) = decomposers.tryGetRawDecomposer(riftDescriptor)
-      def tryGetDecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor) = decomposers.tryGetDecomposer[T](riftDescriptor)
-
-      def addRawDecomposer(decomposer: RawDecomposer) { decomposers.addRawDecomposer(decomposer) }
-      def addDecomposer(decomposer: Decomposer[_]) { decomposers.addDecomposer(decomposer) }
+      def getRawDecomposer(riftDescriptor: RiftDescriptor) = decomposers.getRawDecomposer(riftDescriptor)
+      def addDecomposer(decomposer: Decomposer[_ <: AnyRef]) { decomposers.addDecomposer(decomposer) }
 
       def tryGetRawRecomposer(riftDescriptor: RiftDescriptor) = recomposers.tryGetRawRecomposer(riftDescriptor)
       def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor) = recomposers.tryGetRecomposer[T](riftDescriptor)
