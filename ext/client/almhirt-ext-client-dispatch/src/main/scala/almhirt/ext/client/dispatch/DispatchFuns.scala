@@ -48,22 +48,8 @@ object DispatchFuns {
     }
   }
 
-  def transformResponse[T <: AnyRef](settings: RiftHttpFunsSettings)(response: RiftHttpResponse): AlmFuture[T] = {
-    AlmFuture.promise {
-      for {
-        (statusCode, channel, riftDescriptor, dim) <- response.explode
-        recompose <- {
-          def getRecomposer(remat: Rematerializer) = settings.riftWarp.barracks.lookUpFromRematerializer[AnyRef](remat, riftDescriptor)
-          RiftWarpFuns.getRecomposeFun[AnyRef](channel, dim.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(getRecomposer)(NoFetchBlobFetch)(manifest[AnyRef], settings.riftWarp)
-        }
-        recomposed <- recompose(dim)
-        retyped <- recomposed match {
-          case prob: Problem => prob.failure
-          case result => result.castTo[T]
-        }
-      } yield retyped
-    }
-  }
+  def transformResponse[T <: AnyRef](settings: RiftHttpFunsSettings)(response: RiftHttpResponse): AlmFuture[T] = 
+    AlmFuture.promise { RiftWarpHttpFuns.transformResponse[T](settings)(response)  }
 
   def getResponseResult[T <: AnyRef](settings: RiftHttpFunsSettings, req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     for {

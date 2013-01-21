@@ -60,6 +60,5 @@ object RiftHttpContentType {
 
   val PlainText = RiftHttpChannelContentType(RiftChannel.Text)
 
-  def parse(rawContent: String): AlmValidation[RiftHttpContentTypeWithChannel] =
-    sys.error("")
+  def parse(rawContent: String): AlmValidation[RiftHttpContentTypeWithChannel] = ???
 }
