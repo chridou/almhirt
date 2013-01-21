@@ -1,17 +1,17 @@
 package riftwarp
 
 
-trait RiftDimension {
+sealed trait RiftDimension {
   def manifestation: Any
 }
 
-trait RiftHttpDimension extends RiftDimension
+sealed trait RiftHttpDimension extends RiftDimension
 
-trait RiftStringBasedDimension extends RiftDimension {
+sealed trait RiftStringBasedDimension extends RiftDimension {
   def manifestation: String
 }
 
-trait RiftByteArrayBasedDimension extends RiftDimension {
+sealed trait RiftByteArrayBasedDimension extends RiftDimension {
   def manifestation: Array[Byte]
 }
 
