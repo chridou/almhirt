@@ -33,7 +33,7 @@ final case class RiftHttpChannelContentType(channel: RiftHttpChannel, args: Map[
   override val getRiftDescriptor: AlmValidation[RiftDescriptor] = UnspecifiedProblem("RiftHttpChannelContentType has no RiftDescriptor").failure
 }
 
-final case class RiftHttpQualifiedContentType(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, args: Map[String, String]) extends RiftHttpContentTypeWithChannel {
+final case class RiftHttpQualifiedContentType(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, args: Map[String, String] = Map()) extends RiftHttpContentTypeWithChannel {
   override val getChannel: AlmValidation[RiftHttpChannel] = channel.success
   override val getRiftDescriptor: AlmValidation[RiftDescriptor] = riftDescriptor.success
 }
