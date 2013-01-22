@@ -14,11 +14,12 @@ object RiftWarpHttpFuns {
     nice: Boolean,
     launderProblem: Problem => (Problem, HttpError),
     reportProblem: Problem => Unit,
-    defaultChannel: RiftHttpChannel)
+    defaultChannel: RiftHttpChannel,
+    contentTypePrefix: Option[String])
 
-  def createHttpDataFromRequest(getContentType: () => Option[String], getBody: RiftHttpBodyType => AlmValidation[RiftHttpBody]): AlmValidation[RiftHttpData] =
+  def createHttpDataFromRequest(getContentType: () => Option[String], getBody: RiftHttpBodyType => AlmValidation[RiftHttpBody], contentTypePrefix: Option[String]): AlmValidation[RiftHttpData] =
     for {
-      contentType <- option.cata(getContentType())(ct => RiftHttpContentType.parse(ct), RiftHttpNoContentContentType.success)
+      contentType <- option.cata(getContentType())(ct => RiftHttpContentType.parse(ct, contentTypePrefix), RiftHttpNoContentContentType.success)
       data <- contentType match {
         case RiftHttpNoContentContentType =>
           RiftHttpNoContentData.success

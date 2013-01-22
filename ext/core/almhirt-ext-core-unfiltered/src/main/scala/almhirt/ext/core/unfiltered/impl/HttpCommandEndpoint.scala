@@ -17,7 +17,7 @@ import almhirt.util.ResultOperationState
 
 class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], riftWarp: RiftWarp, theAlmhirt: Almhirt) extends ForwardsCommandsFromHttpRequest {
   implicit val hasExecutionContext = theAlmhirt
-  val settings = RiftWarpHttpFuns.RiftHttpFunsSettings(riftWarp, true, JustForTestingProblemLaundry, theAlmhirt.reportProblem, RiftChannel.Json)
+  val settings = RiftWarpHttpFuns.RiftHttpFunsSettings(riftWarp, true, JustForTestingProblemLaundry, theAlmhirt.reportProblem, RiftChannel.Json, None)
 
   protected def processRequest[TResp <: AnyRef](okStatus: HttpSuccess, computeResponse: (DomainCommand, CommandEndpoint) => AlmValidation[Option[TResp]])(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) =
     UnfilteredFuns.processRequest[DomainCommand, TResp](settings, okStatus, cmd => getEndpoint().flatMap(endPoint => computeResponse(cmd, endPoint)), req, responder)

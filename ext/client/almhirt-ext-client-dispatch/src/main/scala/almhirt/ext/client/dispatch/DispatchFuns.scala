@@ -24,9 +24,9 @@ object DispatchFuns {
       reqBuilder <- putDataAndContentType(httpData, req)
     } yield reqBuilder
 
-  def getHttpData(resp: client.Response): AlmValidation[RiftHttpResponse] =
+  def getHttpDataFromResponse(contentTypePrefix: Option[String])(resp: client.Response): AlmValidation[RiftHttpResponse] =
     for {
-      contentType <- RiftHttpContentType.parse(resp.getContentType())
+      contentType <- RiftHttpContentType.parse(resp.getContentType(), contentTypePrefix)
       content <- contentType.getChannel.map(channel =>
         channel.httpBodyType match {
           case RiftStringBodyType => RiftHttpDataWithContent(contentType, RiftStringBody(resp.getResponseBody()))
@@ -38,11 +38,11 @@ object DispatchFuns {
   /**
    * Here's where the blocking happens!!!!!
    */
-  def awaitResponseData(req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[RiftHttpResponse] = {
+  def awaitResponseData(contentTypePrefix: Option[String])(req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[RiftHttpResponse] = {
     AlmFuture {
       val data =
         Http(req)
-          .map(resp => getHttpData(resp))
+          .map(resp => getHttpDataFromResponse(contentTypePrefix)(resp))
           .onComplete(x => x.fold(exn => ExceptionCaughtProblem("An exception has been caught", cause = Some(CauseIsThrowable(exn))).failure, v => v))
       data()
     }
@@ -53,7 +53,7 @@ object DispatchFuns {
 
   def getResponseResult[T <: AnyRef](settings: RiftHttpFunsSettings, req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     for {
-      respData <- awaitResponseData(req)
+      respData <- awaitResponseData(settings.contentTypePrefix)(req)
       result <- transformResponse[T](settings)(respData)
     } yield result
 }
