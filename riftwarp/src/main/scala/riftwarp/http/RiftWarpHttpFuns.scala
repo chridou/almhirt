@@ -44,7 +44,7 @@ object RiftWarpHttpFuns {
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
-      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
+      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, settings.contentTypePrefix, Map.empty[String, String]).success
       response <- dematerialized.toHttpData(contentType)
     } yield response).fold(
       prob => {
@@ -60,7 +60,7 @@ object RiftWarpHttpFuns {
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
-      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
+      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, settings.contentTypePrefix, Map.empty[String, String]).success
       response <- dematerialized.toHttpData(contentType)
     } yield response
 

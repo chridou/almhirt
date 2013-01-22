@@ -35,9 +35,13 @@ case class RiftHttpChannelContentType(channel: RiftHttpChannel, args: Map[String
   val tryGetRiftDescriptor = None
 }
 
-case class RiftHttpQualifiedContentType(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, args: Map[String, String] = Map()) extends RiftHttpContentTypeWithChannel {
+case class RiftHttpQualifiedContentType(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, contentTypePrefix: Option[String], args: Map[String, String]) extends RiftHttpContentTypeWithChannel {
   def headerValue = {
-    val typeStr = "vnd." + riftDescriptor.identifier + "+" + channel.httpContentTypeExt
+    val typeStr =
+      contentTypePrefix match {
+        case Some(ctpre) => "vnd." +ctpre + "." + riftDescriptor.identifier + "+" + channel.httpContentTypeExt
+        case None => "vnd." + riftDescriptor.identifier + "+" + channel.httpContentTypeExt
+      }
     val protocol = option.cata(riftDescriptor.version)(v => typeStr + ";version=" + v, typeStr)
     (protocol :: (args.map { case (k, v) => k + "=" + v }.toList)).mkString(";")
   }
@@ -51,12 +55,12 @@ object RiftHttpContentType {
 
   def apply(channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
     RiftHttpChannelContentType(channel, args)
-  def apply(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
-    RiftHttpQualifiedContentType(riftDescriptor, channel, args)
-  def apply(clazz: Class[_], version: Int, channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
-    RiftHttpQualifiedContentType(RiftDescriptor(clazz, version), channel, args)
-  def apply(clazz: Class[_], channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
-    RiftHttpQualifiedContentType(RiftDescriptor(clazz), channel, args)
+  def apply(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, contentTypePrefix: Option[String], args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(riftDescriptor, channel, contentTypePrefix: Option[String], args)
+  def apply(clazz: Class[_], version: Int, channel: RiftHttpChannel, contentTypePrefix: Option[String], args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(RiftDescriptor(clazz, version), channel, contentTypePrefix: Option[String], args)
+  def apply(clazz: Class[_], channel: RiftHttpChannel, contentTypePrefix: Option[String], args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(RiftDescriptor(clazz), channel, contentTypePrefix, args)
 
   val PlainText = RiftHttpChannelContentType(RiftChannel.Text)
 
