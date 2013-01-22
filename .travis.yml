@@ -6,7 +6,3 @@ jdk:
 branches:
   only:
     - master
-notifications:
-  email:
-    recipients:
-      - ch.douven@web.de
