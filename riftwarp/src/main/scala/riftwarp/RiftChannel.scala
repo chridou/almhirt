@@ -60,6 +60,19 @@ object RiftText {
   def apply() = theInstance
 }
 
+final class RiftHtml() extends RiftHttpChannel {
+  val channelType = "html"
+  val httpContentType = "text/html"
+  val httpContentTypeExt = "html"
+  val moreLookUpSymbols = Nil
+  val httpBodyType = RiftStringBodyType
+  def httpDimensionType(nice: Boolean ) = classOf[DimensionString]
+}
+object RiftHtml {
+  private val theInstance = new RiftHtml()
+  def apply() = theInstance
+}
+
 final class RiftMap() extends RiftChannel {
   val channelType = "map"
   val httpContentType = None
@@ -77,7 +90,7 @@ final class RiftJson() extends RiftHttpChannel {
   val httpContentTypeExt = "json"
   val moreLookUpSymbols = Nil
   val httpBodyType = RiftStringBodyType
-  def httpDimensionType(nice: Boolean ) = if(nice) classOf[DimensionNiceString] else classOf[DimensionString]
+  def httpDimensionType(nice: Boolean) = if (nice) classOf[DimensionNiceString] else classOf[DimensionString]
 }
 object RiftJson {
   private val theInstance = new RiftJson()
@@ -158,6 +171,7 @@ object RiftProtocolBuffers {
 
 object RiftChannel {
   val Text = RiftText()
+  val Html = RiftHtml()
   val Map = RiftMap()
   val Json = RiftJson()
   val Bson = RiftBson()
@@ -169,6 +183,7 @@ object RiftChannel {
   
   def register(memoizer:MemoizesChannels) {
     memoizer.memoizeChannel(Text)
+    memoizer.memoizeChannel(Html)
     memoizer.memoizeChannel(Map)
     memoizer.memoizeChannel(Json)
     memoizer.memoizeChannel(Bson)
