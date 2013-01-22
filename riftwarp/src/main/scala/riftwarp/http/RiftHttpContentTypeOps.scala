@@ -45,18 +45,20 @@ class RiftHttpContentTypeWithoutPrefixOps(channels: KnowsChannels) extends RiftH
       val parts = rawContent.split(";").map(_.trim()).toList
       val sample = "application/vnd."
       if (parts.head.startsWith(sample)) {
-        val clean = parts.head.substring(0, sample.length()).split("+").map(_.trim())
+        val clean = parts.head.drop(sample.length()).split("\\+").map(_.trim())
         clean match {
           case Array(identifier, channelRaw) =>
             channels.lookUpFromHttpContentType(channelRaw).flatMap { channel =>
               val args = processArgs(parts.tail)
               (option.cata(args.get("version"))(
                 v => almhirt.almvalidation.funs.parseIntAlm(v, "version").map(x => Some(x)),
-                None.success)).map(version =>
-                  RiftHttpQualifiedContentType(RiftDescriptor(identifier, version), channel, args))
+                None.success)).map { version =>
+                  val cleanedArgs = if (version.isDefined) args - "version" else args
+                  RiftHttpQualifiedContentType(RiftDescriptor(identifier, version), channel, cleanedArgs)
+                }
             }
           case x =>
-            ParsingProblem("$x is no valid content type pattern").failure
+            ParsingProblem("%s is no valid content type pattern".format(x.mkString(" and "))).failure
         }
       } else {
         channels.lookUpFromHttpContentType(parts.head).map(channel =>
@@ -85,18 +87,20 @@ class RiftHttpContentTypeWithPrefixOps(contentTypePrefix: String, channels: Know
       val parts = rawContent.split(";").map(_.trim()).toList
       val sample = "application/vnd." + contentTypePrefix + "."
       if (parts.head.startsWith(sample)) {
-        val clean = parts.head.substring(0, sample.length()).split("+").map(_.trim())
+        val clean = parts.head.drop(sample.length()).split("\\+").map(_.trim())
         clean match {
           case Array(identifier, channelRaw) =>
             channels.lookUpFromHttpContentType(channelRaw).flatMap { channel =>
               val args = processArgs(parts.tail)
               (option.cata(args.get("version"))(
                 v => almhirt.almvalidation.funs.parseIntAlm(v, "version").map(x => Some(x)),
-                None.success)).map(version =>
-                  RiftHttpQualifiedContentType(RiftDescriptor(identifier, version), channel, args))
+                None.success)).map { version =>
+                  val cleanedArgs = if (version.isDefined) args - "version" else args
+                  RiftHttpQualifiedContentType(RiftDescriptor(identifier, version), channel, cleanedArgs)
+                }
             }
           case x =>
-            ParsingProblem("$x is no valid content type pattern").failure
+            ParsingProblem("%s is no valid content type pattern".format(x.mkString(" and "))).failure
         }
       } else {
         channels.lookUpFromHttpContentType(parts.head).map(channel =>

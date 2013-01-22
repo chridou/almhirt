@@ -15,6 +15,7 @@
 package almhirt
 
 import language.implicitConversions
+
 import scalaz.Validation
 import scala.concurrent.ExecutionContext
 
@@ -30,4 +31,7 @@ package object common {
   type AlmValidationAP[+α] = Validation[AggregateProblem, α]  
   
   implicit def hasExecutionContext2ExecutionContext(hasExecutionContext: HasExecutionContext): ExecutionContext = hasExecutionContext.executionContext
+  
+  implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T]{  def equal(p1: T, p2: T): Boolean = p1 == p2 }
+    
 }
