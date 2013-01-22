@@ -16,6 +16,7 @@ import dispatch._
  * Currently blocking....
  */
 class DispatchCommandDispatcher(endpointUris: CommandEndpointUris, settings: RiftHttpFunsSettings)(implicit theAlmhirt: Almhirt) extends CommandDispatcher {
+  implicit private val contentTypeOps = settings.contentTypeOps
   def dispatch(cmd: DomainCommand): AlmFuture[Unit] =
     for {
       request <- AlmFuture {
@@ -24,7 +25,7 @@ class DispatchCommandDispatcher(endpointUris: CommandEndpointUris, settings: Rif
           req <- DispatchFuns.configureRequest(settings)(cmd, None, url(endpointUris.executeAndForget.toString()).PUT)
         } yield req
       }
-      respData <- DispatchFuns.awaitResponseData(settings.contentTypePrefix)(request)
+      respData <- DispatchFuns.awaitResponseData(request)
       res <- respData match {
         case RiftHttpResponse(Http_202_Accepted, _) => AlmFuture.successful(())
         case RiftHttpResponse(_, data) => DispatchFuns.transformResponse[AnyRef](settings)(respData)

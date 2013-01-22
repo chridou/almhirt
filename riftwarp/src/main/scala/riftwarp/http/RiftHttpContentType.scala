@@ -4,50 +4,98 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
+import riftwarp.components.KnowsChannels
 
 sealed trait RiftHttpContentType {
-  def tryGetHeaderValue: Option[String]
-  def tryGetChannel: Option[RiftHttpChannel]
-  def tryGetRiftDescriptor: Option[RiftDescriptor]
   def args: Map[String, String]
 
-  def getChannel: AlmValidation[RiftHttpChannel] = option.cata(tryGetChannel)(ch => ch.success, NoSuchElementProblem("channel").failure)
-  def getHeaderValue: AlmValidation[String] = option.cata(tryGetHeaderValue)(v => v.success, NoSuchElementProblem("headerValue").failure)
-  def getRiftDescriptor: AlmValidation[RiftDescriptor] = option.cata(tryGetRiftDescriptor)(v => v.success, NoSuchElementProblem("RiftDescriptor").failure)
+  def getHeaderValue(implicit ops: RiftHttpContentTypeOps): AlmValidation[String] = ops.headerValue(this)
+  def getChannel: AlmValidation[RiftHttpChannel]
+  def getRiftDescriptor: AlmValidation[RiftDescriptor]
+
+  def tryGetHeaderValue(implicit ops: RiftHttpContentTypeOps) = getHeaderValue.toOption
+  def tryGetChannel = getChannel.toOption
+  def tryGetRiftDescriptor = getRiftDescriptor.toOption
 }
 
 case object RiftHttpNoContentContentType extends RiftHttpContentType {
-  val tryGetHeaderValue = None
-  val tryGetChannel = None
-  val args = Map.empty[String, String]
-  val tryGetRiftDescriptor = None
+  override val args = Map.empty[String, String]
+  override val getChannel: AlmValidation[RiftHttpChannel] = UnspecifiedProblem("RiftHttpNoContentContentType has no channel").failure
+  override val getRiftDescriptor: AlmValidation[RiftDescriptor] = UnspecifiedProblem("RiftHttpNoContentContentType has no RiftDescriptor").failure
 }
 
 sealed trait RiftHttpContentTypeWithChannel extends RiftHttpContentType {
   def channel: RiftHttpChannel
-  def headerValue: String
+  def safeHeaderValue(implicit ops: RiftHttpContentTypeOps): String = ops.safeHeaderValue(this)
 }
 
-case class RiftHttpChannelContentType(channel: RiftHttpChannel, args: Map[String, String] = Map()) extends RiftHttpContentTypeWithChannel {
-  val headerValue = (channel.httpContentType :: (args.map { case (k, v) => k + "=" + v }.toList)).mkString(";")
-  def tryGetHeaderValue = Some(headerValue)
-  def tryGetChannel = Some(channel)
-  val tryGetRiftDescriptor = None
+final case class RiftHttpChannelContentType(channel: RiftHttpChannel, args: Map[String, String] = Map()) extends RiftHttpContentTypeWithChannel {
+  override val getChannel: AlmValidation[RiftHttpChannel] = channel.success
+  override val getRiftDescriptor: AlmValidation[RiftDescriptor] = UnspecifiedProblem("RiftHttpChannelContentType has no RiftDescriptor").failure
 }
 
-case class RiftHttpQualifiedContentType(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, contentTypePrefix: Option[String], args: Map[String, String]) extends RiftHttpContentTypeWithChannel {
-  def headerValue = {
-    val typeStr =
-      contentTypePrefix match {
-        case Some(ctpre) => "vnd." +ctpre + "." + riftDescriptor.identifier + "+" + channel.httpContentTypeExt
-        case None => "vnd." + riftDescriptor.identifier + "+" + channel.httpContentTypeExt
+final case class RiftHttpQualifiedContentType(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, args: Map[String, String]) extends RiftHttpContentTypeWithChannel {
+  override val getChannel: AlmValidation[RiftHttpChannel] = channel.success
+  override val getRiftDescriptor: AlmValidation[RiftDescriptor] = riftDescriptor.success
+}
+
+trait RiftHttpContentTypeOps {
+  def headerValue(contentType: RiftHttpContentType): AlmValidation[String] =
+    contentType match {
+      case RiftHttpNoContentContentType =>
+        UnspecifiedProblem("RiftHttpNoContentContentType has no header value").failure
+      case withChannel: RiftHttpContentTypeWithChannel =>
+        safeHeaderValue(withChannel).success
+    }
+
+  def safeHeaderValue(contentType: RiftHttpContentTypeWithChannel): String
+  def parse(rawContent: String): AlmValidation[RiftHttpContentTypeWithChannel]
+}
+
+class RiftHttpContentTypeWithPrefixOps(contentTypePrefix: String, channels: KnowsChannels) extends RiftHttpContentTypeOps {
+  override def safeHeaderValue(contentType: RiftHttpContentTypeWithChannel): String =
+    contentType match {
+      case RiftHttpChannelContentType(channel, args) =>
+        (channel.httpContentType :: (args.map { case (k, v) => k + "=" + v }.toList)).mkString(";")
+      case RiftHttpQualifiedContentType(riftDescriptor, channel, args) =>
+        val typeStr = "application/vnd." + contentTypePrefix + "." + riftDescriptor.identifier + "+" + channel.httpContentTypeExt
+        val protocol = option.cata(riftDescriptor.version)(v => typeStr + ";version=" + v, typeStr)
+        (protocol :: (args.map { case (k, v) => k + "=" + v }.toList)).mkString(";")
+    }
+
+  override def parse(rawContent: String): AlmValidation[RiftHttpContentTypeWithChannel] = {
+    if (rawContent.trim().isEmpty())
+      BadDataProblem("Raw content do parse a content type from may not be empty").failure
+    else {
+      val parts = rawContent.split(";").map(_.trim())
+      val sample = "application/vnd." + contentTypePrefix + "."
+      if (parts(0).startsWith(sample)) {
+        ???
+      } else {
+        ???
       }
-    val protocol = option.cata(riftDescriptor.version)(v => typeStr + ";version=" + v, typeStr)
-    (protocol :: (args.map { case (k, v) => k + "=" + v }.toList)).mkString(";")
+    }
   }
-  def tryGetHeaderValue = Some(headerValue)
-  def tryGetChannel = Some(channel)
-  val tryGetRiftDescriptor = Some(riftDescriptor)
+}
+
+class RiftHttpContentTypeoutWithPrefixOps(channels: KnowsChannels) extends RiftHttpContentTypeOps {
+  override def safeHeaderValue(contentType: RiftHttpContentTypeWithChannel): String =
+    contentType match {
+      case RiftHttpChannelContentType(channel, args) =>
+        (channel.httpContentType :: (args.map { case (k, v) => k + "=" + v }.toList)).mkString(";")
+      case RiftHttpQualifiedContentType(riftDescriptor, channel, args) =>
+        val typeStr = "application/vnd." + riftDescriptor.identifier + "+" + channel.httpContentTypeExt
+        val protocol = option.cata(riftDescriptor.version)(v => typeStr + ";version=" + v, typeStr)
+        (protocol :: (args.map { case (k, v) => k + "=" + v }.toList)).mkString(";")
+    }
+
+  override def parse(rawContent: String): AlmValidation[RiftHttpContentTypeWithChannel] = {
+    if (rawContent.trim().isEmpty())
+      BadDataProblem("Raw content do parse a content type from may not be empty").failure
+    else {
+      ???
+    }
+  }
 }
 
 object RiftHttpContentType {
@@ -55,14 +103,14 @@ object RiftHttpContentType {
 
   def apply(channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
     RiftHttpChannelContentType(channel, args)
-  def apply(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, contentTypePrefix: Option[String], args: Map[String, String]): RiftHttpContentTypeWithChannel =
-    RiftHttpQualifiedContentType(riftDescriptor, channel, contentTypePrefix: Option[String], args)
-  def apply(clazz: Class[_], version: Int, channel: RiftHttpChannel, contentTypePrefix: Option[String], args: Map[String, String]): RiftHttpContentTypeWithChannel =
-    RiftHttpQualifiedContentType(RiftDescriptor(clazz, version), channel, contentTypePrefix: Option[String], args)
-  def apply(clazz: Class[_], channel: RiftHttpChannel, contentTypePrefix: Option[String], args: Map[String, String]): RiftHttpContentTypeWithChannel =
-    RiftHttpQualifiedContentType(RiftDescriptor(clazz), channel, contentTypePrefix, args)
+  def apply(riftDescriptor: RiftDescriptor, channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(riftDescriptor, channel, args)
+  def apply(clazz: Class[_], version: Int, channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(RiftDescriptor(clazz, version), channel, args)
+  def apply(clazz: Class[_], channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
+    RiftHttpQualifiedContentType(RiftDescriptor(clazz), channel, args)
 
   val PlainText = RiftHttpChannelContentType(RiftChannel.Text)
 
-  def parse(rawContent: String, prefix: Option[String]): AlmValidation[RiftHttpContentTypeWithChannel] = ???
+  def parse(rawContent: String)(implicit ops: RiftHttpContentTypeOps): AlmValidation[RiftHttpContentTypeWithChannel] = ops.parse(rawContent)
 }

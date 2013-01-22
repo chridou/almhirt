@@ -15,11 +15,11 @@ object RiftWarpHttpFuns {
     launderProblem: Problem => (Problem, HttpError),
     reportProblem: Problem => Unit,
     defaultChannel: RiftHttpChannel,
-    contentTypePrefix: Option[String])
+    contentTypeOps: RiftHttpContentTypeOps)
 
-  def createHttpDataFromRequest(getContentType: () => Option[String], getBody: RiftHttpBodyType => AlmValidation[RiftHttpBody], contentTypePrefix: Option[String]): AlmValidation[RiftHttpData] =
+  def createHttpDataFromRequest(getContentType: () => Option[String], getBody: RiftHttpBodyType => AlmValidation[RiftHttpBody])(implicit contentTypeOps: RiftHttpContentTypeOps): AlmValidation[RiftHttpData] =
     for {
-      contentType <- option.cata(getContentType())(ct => RiftHttpContentType.parse(ct, contentTypePrefix), RiftHttpNoContentContentType.success)
+      contentType <- option.cata(getContentType())(ct => contentTypeOps.parse(ct), RiftHttpNoContentContentType.success)
       data <- contentType match {
         case RiftHttpNoContentContentType =>
           RiftHttpNoContentData.success
@@ -44,7 +44,7 @@ object RiftWarpHttpFuns {
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
-      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, settings.contentTypePrefix, Map.empty[String, String]).success
+      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
       response <- dematerialized.toHttpData(contentType)
     } yield response).fold(
       prob => {
@@ -60,7 +60,7 @@ object RiftWarpHttpFuns {
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
       dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(NoDivertBlobDivert)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
-      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, settings.contentTypePrefix, Map.empty[String, String]).success
+      contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
       response <- dematerialized.toHttpData(contentType)
     } yield response
 

@@ -23,31 +23,31 @@ object UnfilteredFuns {
     }
   }
 
-  def createGetHttpDataFromRequest(contentTypePrefix: Option[String])(req: HttpRequest[Any]): () => AlmValidation[RiftHttpData] =
-    () => RiftWarpHttpFuns.createHttpDataFromRequest(() => getContentType(req), bodyType => getBodyData(bodyType, req), contentTypePrefix)
+  def createGetHttpDataFromRequest(req: HttpRequest[Any])(implicit ops: RiftHttpContentTypeOps): () => AlmValidation[RiftHttpData] =
+    () => RiftWarpHttpFuns.createHttpDataFromRequest(() => getContentType(req), bodyType => getBodyData(bodyType, req))
 
-  def createResponseFunction(httpResponse: RiftHttpResponse): ResponseFunction[Any] = {
+  def createResponseFunction(httpResponse: RiftHttpResponse)(implicit ops: RiftHttpContentTypeOps): ResponseFunction[Any] = {
     httpResponse.data match {
       case RiftHttpNoContentData => Status(httpResponse.statusCode.code)
       case RiftHttpDataWithContent(contentType, content) =>
         content match {
           case RiftStringBody(data) =>
-            Status(httpResponse.statusCode.code) ~> ResponseString(data) ~> ContentType(contentType.headerValue)
+            Status(httpResponse.statusCode.code) ~> ResponseString(data) ~> ContentType(contentType.safeHeaderValue)
           case RiftBinaryBody(data) =>
-            Status(httpResponse.statusCode.code) ~> ResponseBytes(data) ~> ContentType(contentType.headerValue)
+            Status(httpResponse.statusCode.code) ~> ResponseBytes(data) ~> ContentType(contentType.safeHeaderValue)
         }
     }
   }
     
   def processRequest[TReq <: AnyRef, TResp <: AnyRef](settings: RiftWarpHttpFuns.RiftHttpFunsSettings, okStatus: HttpSuccess, computeResponse: TReq => AlmValidation[Option[TResp]], req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any])(implicit mReq: Manifest[TReq]) {
-    val resp = RiftWarpHttpFuns.processRequest[TReq, TResp](settings, createGetHttpDataFromRequest(settings.contentTypePrefix)(req), okStatus, computeResponse)
-    val respFun = createResponseFunction(resp)
+    val resp = RiftWarpHttpFuns.processRequest[TReq, TResp](settings, createGetHttpDataFromRequest(req)(settings.contentTypeOps), okStatus, computeResponse)
+    val respFun = createResponseFunction(resp)(settings.contentTypeOps)
     responder.respond(respFun)
   }
   
   def processRequestRespondOnFuture[TReq <: AnyRef, TResp <: AnyRef](settings: RiftWarpHttpFuns.RiftHttpFunsSettings, okStatus: HttpSuccess, computeResponse: TReq => AlmFuture[Option[TResp]], req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any])(implicit mReq: Manifest[TReq], hasExecutor: HasExecutionContext) {
-    val resp = RiftWarpHttpFuns.processRequestRespondOnFuture[TReq, TResp](settings, createGetHttpDataFromRequest(settings.contentTypePrefix)(req), okStatus, computeResponse)
-    RiftWarpHttpFuns.futureResponder(settings, http => responder.respond(createResponseFunction(http)), resp)
+    val resp = RiftWarpHttpFuns.processRequestRespondOnFuture[TReq, TResp](settings, createGetHttpDataFromRequest(req)(settings.contentTypeOps), okStatus, computeResponse)
+    RiftWarpHttpFuns.futureResponder(settings, http => responder.respond(createResponseFunction(http)(settings.contentTypeOps)), resp)
   }
   
 }

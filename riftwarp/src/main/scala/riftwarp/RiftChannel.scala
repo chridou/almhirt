@@ -47,7 +47,7 @@ trait RiftHttpChannel extends RiftChannel {
   def httpBodyType: RiftHttpBodyType
 }
 
-class RiftText() extends RiftHttpChannel {
+final class RiftText() extends RiftHttpChannel {
   val channelType = "text"
   val httpContentType = "text/plain"
   val httpContentTypeExt = "text"
@@ -60,7 +60,7 @@ object RiftText {
   def apply() = theInstance
 }
 
-class RiftMap() extends RiftChannel {
+final class RiftMap() extends RiftChannel {
   val channelType = "map"
   val httpContentType = None
   val httpContentTypeExt = None
@@ -71,9 +71,9 @@ object RiftMap {
   def apply() = theInstance
 }
 
-class RiftJson() extends RiftHttpChannel {
+final class RiftJson() extends RiftHttpChannel {
   val channelType = "json"
-  val httpContentType = "text/x-json"
+  val httpContentType = "text/json"
   val httpContentTypeExt = "json"
   val moreLookUpSymbols = Nil
   val httpBodyType = RiftStringBodyType
@@ -84,7 +84,7 @@ object RiftJson {
   def apply() = theInstance
 }
 
-class RiftBson() extends RiftChannel {
+final class RiftBson() extends RiftChannel {
   val channelType = "bson"
   val httpContentType = None
   val httpContentTypeExt = None
@@ -95,7 +95,7 @@ object RiftBson {
   def apply() = theInstance
 }
 
-class RiftXml() extends RiftHttpChannel {
+final class RiftXml() extends RiftHttpChannel {
   val channelType = "xml"
   val httpContentType = "text/xml"
   val httpContentTypeExt = "xml"
@@ -109,7 +109,7 @@ object RiftXml {
   def apply() = theInstance
 }
 
-class RiftMessagePack() extends RiftHttpChannel {
+final class RiftMessagePack() extends RiftHttpChannel {
   val channelType = "msgpack"
   val httpContentType = "x-pack"
   val httpContentTypeExt = "pack"
@@ -122,7 +122,7 @@ object RiftMessagePack {
   def apply() = theInstance
 }
 
-class RiftProtocolBuffers() extends RiftChannel {
+final class RiftProtocolBuffers() extends RiftChannel {
   val channelType = "protobuf"
   val httpContentType = None
   val httpContentTypeExt = None
