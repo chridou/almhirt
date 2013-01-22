@@ -110,7 +110,10 @@ object RiftHttpContentType {
   def apply(clazz: Class[_], channel: RiftHttpChannel, args: Map[String, String]): RiftHttpContentTypeWithChannel =
     RiftHttpQualifiedContentType(RiftDescriptor(clazz), channel, args)
 
-  val PlainText = RiftHttpChannelContentType(RiftChannel.Text)
+  val TextPlain = RiftHttpChannelContentType(RiftChannel.Text)
+  val TextJson = RiftHttpChannelContentType(RiftChannel.Json)
+  val TextXml = RiftHttpChannelContentType(RiftChannel.Xml)
+  val NoContent = RiftHttpNoContentContentType
 
   def parse(rawContent: String)(implicit ops: RiftHttpContentTypeOps): AlmValidation[RiftHttpContentTypeWithChannel] = ops.parse(rawContent)
 }

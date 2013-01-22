@@ -49,7 +49,7 @@ object RiftWarpHttpFuns {
     } yield response).fold(
       prob => {
         settings.reportProblem(prob)
-        RiftHttpDataWithContent(RiftHttpContentType.PlainText, RiftStringBody(what.toString()))
+        RiftHttpDataWithContent(RiftHttpContentType.TextPlain, RiftStringBody(what.toString()))
       },
       identity)
   }
