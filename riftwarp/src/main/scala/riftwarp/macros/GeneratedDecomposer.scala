@@ -1,4 +1,4 @@
-package riftwarp.automatic
+package riftwarp.macros
 
 import scala.language.experimental.macros
 

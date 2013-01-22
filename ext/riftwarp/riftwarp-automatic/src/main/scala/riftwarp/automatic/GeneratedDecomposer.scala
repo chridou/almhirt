@@ -3,6 +3,7 @@ package riftwarp.automatic
 
 import almhirt.common._
 import riftwarp._
+import riftwarp.macros.GeneratedDecomposerImpl;
 
 trait GeneratedDecomposer[TToDecompose <: AnyRef] extends Decomposer[TToDecompose] {
   def addRiftDescriptor: Boolean
