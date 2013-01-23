@@ -18,8 +18,8 @@ trait AlmhirtSystem extends CanCreateUuidsAndDateTimes with HasExecutionContext 
   def shortDuration: FiniteDuration
   def mediumDuration: FiniteDuration
   def longDuration: FiniteDuration
-  def getUuid: java.util.UUID
-  def getDateTime: DateTime = new DateTime()
+  override def getUuid: java.util.UUID
+  override def getDateTime: DateTime
 }
 
 object AlmhirtSystem {
@@ -38,8 +38,9 @@ object AlmhirtSystem {
         val shortDuration = short
         val mediumDuration = medium
         val longDuration = long
-        def getUuid = uuidGen.generate
-        def dispose = { actorSystem.shutdown; actorSystem.awaitTermination }
+        override def getUuid = uuidGen.generate
+        override def getDateTime = DateTime.now()
+        override def dispose = { actorSystem.shutdown; actorSystem.awaitTermination }
       }
   }
   def apply(): AlmValidation[AlmhirtSystem] = almhirt.almvalidation.funs.inTryCatch { ConfigFactory.load() }.flatMap(apply(_))

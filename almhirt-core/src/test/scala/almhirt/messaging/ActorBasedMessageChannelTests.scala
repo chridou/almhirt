@@ -18,14 +18,14 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
 
   private def createChannel[T <: AnyRef](implicit tag: ClassTag[T]): MessageChannel[T] = MessageChannel[T](java.util.UUID.randomUUID().toString())
 
-  test("ActorBasedMessageStream creates creates a subscription") {
+  test("A MessageChannel creates creates a subscription") {
     val channel = createChannel[AnyRef]
     val future = channel <-* ({ case _ => () }, _ => true)
     val subscription = future.awaitResult(Duration.Inf)
     subscription != null
   }
 
-  test("ActorBasedMessageStream does not execute a handler when the subscription is cancelled") {
+  test("A MessageChannel does not execute a handler when the subscription is cancelled") {
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, _ => true)
@@ -36,7 +36,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     !hit
   }
 
-  test("ActorBasedMessageStream does only execute one handler when the subscription for one of two was cancelled") {
+  test("A MessageChannel does only execute one handler when the subscription for one of two was cancelled") {
     val channel = createChannel[AnyRef]
     var hitCount = 0
     val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => true)
@@ -49,7 +49,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     hitCount === 2
   }
 
-  test("ActorBasedMessageStream does execute a subscribed handler when classifier always returns true") {
+  test("A MessageChannel does execute a subscribed handler when classifier always returns true") {
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, _ => true)
@@ -59,7 +59,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     hit
   }
 
-  test("ActorBasedMessageStream does execute two handlers when classifier always returns true for 2 subscriptions") {
+  test("A MessageChannel does execute two handlers when classifier always returns true for 2 subscriptions") {
     val channel = createChannel[AnyRef]
     var hitCount = 0
     val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => false)
@@ -71,7 +71,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     hitCount === 2
   }
 
-  test("ActorBasedMessageStream does not execute a subscribed handler when classifier always returns false") {
+  test("A MessageChannel does not execute a subscribed handler when classifier always returns false") {
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, _ => false)
@@ -81,7 +81,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     !hit
   }
 
-  test("ActorBasedMessageStream does execute a subscribed handler when classifier is met") {
+  test("A MessageChannel does execute a subscribed handler when classifier is met") {
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "a" => true })
@@ -91,7 +91,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     hit
   }
 
-  test("ActorBasedMessageStream does not execute a subscribed handler when classifier is not met but the payload is of the same type") {
+  test("A MessageChannel does not execute a subscribed handler when classifier is not met but the payload is of the same type") {
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "a" => true; case _ => false })
@@ -101,7 +101,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     !hit
   }
 
-  test("ActorBasedMessageStream does not execute a subscribed handler when classifier is not met because the payload is of a different type") {
+  test("A MessageChannel does not execute a subscribed handler when classifier is not met because the payload is of a different type") {
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "1" => true; case _ => false })
