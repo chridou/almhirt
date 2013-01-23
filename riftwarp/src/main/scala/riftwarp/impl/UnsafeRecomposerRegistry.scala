@@ -1,5 +1,6 @@
 package riftwarp.impl
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import almhirt.common._
 import riftwarp._
@@ -11,7 +12,7 @@ class UnsafeRecomposerRegistry extends HasRecomposers {
   def tryGetRawRecomposer(riftDescriptor: RiftDescriptor) =
     recomposers.get(riftDescriptor).map(_._1)
 
-  def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): Option[Recomposer[T]] =
+  def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit tag: ClassTag[T]): Option[Recomposer[T]] =
     recomposers.get(riftDescriptor).flatMap {
       case (desc, true) =>
        Some(desc.asInstanceOf[Recomposer[T]])

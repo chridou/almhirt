@@ -1,5 +1,6 @@
 package almhirt.environment.configuration.impl
 
+import scala.reflect.ClassTag
 import akka.event._
 import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
@@ -60,7 +61,7 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
         } yield (new Almhirt {
           val system = theSystem
           
-          def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]) = messageHub.createMessageChannel(name)
+          def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]) = messageHub.createMessageChannel(name)
 
           def reportProblem(prob: Problem) { broadcast(prob) }
           def reportOperationState(opState: OperationState) { broadcast(opState) }

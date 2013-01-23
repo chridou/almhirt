@@ -1,5 +1,6 @@
 package riftwarp.components
 
+import scala.reflect.ClassTag
 import riftwarp._
 
 trait HasDematerializers {
@@ -7,6 +8,6 @@ trait HasDematerializers {
   def addDematerializerFactoryAsDefault(factory: DematerializerFactory[_ <: RiftDimension]) = addDematerializerFactory(factory, true)
 
   def tryGetDematerializerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None): Option[DematerializerFactory[_ <: RiftDimension]]
-  def tryGetDematerializerFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit md: Manifest[TDimension]) =
+  def tryGetDematerializerFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit md: ClassTag[TDimension]) =
     tryGetDematerializerFactoryByType(md.runtimeClass.asInstanceOf[Class[TDimension]])(channel, toolGroup).map(_.asInstanceOf[DematerializerFactory[TDimension]])
 }

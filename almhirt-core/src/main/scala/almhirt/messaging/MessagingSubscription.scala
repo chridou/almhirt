@@ -1,5 +1,7 @@
 package almhirt.messaging
 
+import scala.reflect.ClassTag
+
 trait MessagingSubscription {
   def predicate: Message[AnyRef] => Boolean
   def handler: Message[AnyRef] => Unit
@@ -7,19 +9,19 @@ trait MessagingSubscription {
 
 object MessagingSubscription {
   import akka.actor.ActorRef
-  def forActor[TPayload <: AnyRef](actor: ActorRef)(implicit m: Manifest[TPayload]): MessagingSubscription =
+  def forActor[TPayload <: AnyRef](actor: ActorRef)(implicit m: ClassTag[TPayload]): MessagingSubscription =
     new MessagingSubscription {
       val predicate = MessagePredicate[TPayload]
       val handler = (message: Message[AnyRef]) => actor ! (message.payload)
     }
   
-  def forActor[TPayload <: AnyRef, U](actor: ActorRef, map: TPayload => U)(implicit m: Manifest[TPayload]): MessagingSubscription =
+  def forActor[TPayload <: AnyRef, U](actor: ActorRef, map: TPayload => U)(implicit m: ClassTag[TPayload]): MessagingSubscription =
     new MessagingSubscription {
       val predicate = MessagePredicate[TPayload]
       val handler = (message: Message[AnyRef]) => actor ! (map(message.payload.asInstanceOf[TPayload]))
     }
   
-  def typeBasedHandler[TPayload <: AnyRef](aHandler: TPayload => Unit)(implicit m: Manifest[TPayload]): MessagingSubscription =
+  def typeBasedHandler[TPayload <: AnyRef](aHandler: TPayload => Unit)(implicit m: ClassTag[TPayload]): MessagingSubscription =
     new MessagingSubscription {
       val predicate = MessagePredicate[TPayload]
       val handler = (message: Message[AnyRef]) => aHandler(message.payload.asInstanceOf[TPayload])

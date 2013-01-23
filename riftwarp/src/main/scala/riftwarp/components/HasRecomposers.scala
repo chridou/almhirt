@@ -8,13 +8,13 @@ import riftwarp._
 
 trait HasRecomposers {
   def tryGetRawRecomposer(riftDescriptor: RiftDescriptor): Option[RawRecomposer]
-  def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): Option[Recomposer[T]]
+  def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit tag: ClassTag[T]): Option[Recomposer[T]]
   def getRawRecomposer(riftDescriptor: RiftDescriptor): AlmValidation[RawRecomposer] =
     option.cata(tryGetRawRecomposer(riftDescriptor))(
       recomposer => recomposer.success,
       UnspecifiedProblem("No raw recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
 
-  def getRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): AlmValidation[Recomposer[T]] =
+  def getRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit tag: ClassTag[T]): AlmValidation[Recomposer[T]] =
     option.cata(tryGetRecomposer[T](riftDescriptor))(
       recomposer => recomposer.success,
       UnspecifiedProblem("No recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)

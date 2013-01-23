@@ -15,6 +15,7 @@
 package almhirt.messaging
 
 import java.util.UUID
+import scala.reflect.ClassTag
 import scala.concurrent.duration.FiniteDuration
 import almhirt.core._
 import almhirt.common._
@@ -38,7 +39,7 @@ trait SubscribableForMessages[T <: AnyRef] {
   def <-<* (handler: T => Unit, classifier: T => Boolean)(implicit atMost: FiniteDuration): AlmFuture[RegistrationHolder] = 
   	<-* (x => handler(x.payload), (x => classifier(x.payload)))
   	
-  def <-#[TPayload <: T](handler: Message[TPayload] => Unit, classifier: Message[TPayload] => Boolean)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = {
+  def <-#[TPayload <: T](handler: Message[TPayload] => Unit, classifier: Message[TPayload] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]): AlmFuture[RegistrationHolder] = {
     def wrappedHandler(message: Message[T]): Unit =
       handler(message.asInstanceOf[Message[TPayload]])
     def wrappedClassifier(message: Message[T]) = 
@@ -49,13 +50,13 @@ trait SubscribableForMessages[T <: AnyRef] {
     <-* (wrappedHandler, wrappedClassifier)
   }
 	
-  def <-#[TPayload <: T](handler: Message[TPayload] => Unit)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
+  def <-#[TPayload <: T](handler: Message[TPayload] => Unit)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]): AlmFuture[RegistrationHolder] = 
   	<-# [TPayload](handler, (_: Message[TPayload]) => true)
 
-  def <-<#[TPayload <: T](handler: TPayload => Unit, classifier: TPayload => Boolean)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
+  def <-<#[TPayload <: T](handler: TPayload => Unit, classifier: TPayload => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]): AlmFuture[RegistrationHolder] = 
  	<-# ((x: Message[TPayload]) => handler(x.payload), ((x: Message[TPayload]) => classifier(x.payload)))
 
-  def <-<#[TPayload <: T](handler: TPayload => Unit)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[RegistrationHolder] = 
+  def <-<#[TPayload <: T](handler: TPayload => Unit)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]): AlmFuture[RegistrationHolder] = 
  	<-# ((x: Message[TPayload]) => handler(x.payload), ((x: Message[TPayload]) => true))
 
 }

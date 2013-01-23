@@ -1,5 +1,6 @@
 package almhirt.ext.client.dispatch
 
+import scala.reflect.ClassTag
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -48,14 +49,14 @@ object DispatchFuns {
     }
   }
 
-  def transformResponse[T <: AnyRef](settings: RiftHttpFunsSettings)(response: RiftHttpResponse): AlmFuture[T] = 
-    AlmFuture.promise { RiftWarpHttpFuns.transformResponse[T](settings)(response)  }
+  def transformResponse[T <: AnyRef](settings: RiftHttpFunsSettings, response: RiftHttpResponse)(implicit tag: ClassTag[T]): AlmFuture[T] = 
+    AlmFuture.promise { RiftWarpHttpFuns.transformResponse[T](settings, response)  }
 
-  def getResponseResult[T <: AnyRef](settings: RiftHttpFunsSettings, req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = {
+  def getResponseResult[T <: AnyRef](settings: RiftHttpFunsSettings, req: client.RequestBuilder)(implicit hasExecutionContext: HasExecutionContext, tag: ClassTag[T]): AlmFuture[T] = {
     implicit val contentTypeOps = settings.contentTypeOps
     for {
       respData <- awaitResponseData(req)
-      result <- transformResponse[T](settings)(respData)
+      result <- transformResponse[T](settings, respData)
     } yield result
   }
 }

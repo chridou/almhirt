@@ -1,5 +1,6 @@
 package riftwarp
 
+import scala.reflect.ClassTag
 import almhirt.common._
 import riftwarp.components._
 
@@ -13,7 +14,7 @@ trait Recomposer[T] extends RawRecomposer {
   def recomposeRaw(from: Rematerializer) = recompose(from).map(_.asInstanceOf[AnyRef])
 }
 
-class EnrichedRawRecomposer[T](raw: RawRecomposer) extends Recomposer[T] {
+class EnrichedRawRecomposer[T](raw: RawRecomposer)(implicit tag: ClassTag[T]) extends Recomposer[T] {
   val riftDescriptor = raw.riftDescriptor
   def recompose(from: Rematerializer) = raw.recomposeRaw(from).flatMap(almhirt.almvalidation.funs.almCast[T](_))
 }

@@ -151,11 +151,15 @@ class AlmValidationSpecs extends Specification {
     """cast C to A""" in {
       almCast[A](new C).isSuccess
     }
+    """not cast A to B""" in {
+      almCast[B](new A).isFailure
+    }
     """not cast A to C""" in {
       almCast[C](new A).isFailure
     }
-    """not cast B to C""" in {
-      almCast[C](new B).isFailure
+    """cast a 1 as Any to Int""" in {
+      val x: Any = 1
+      almCast[Int](x).isSuccess
     }
   }
 }

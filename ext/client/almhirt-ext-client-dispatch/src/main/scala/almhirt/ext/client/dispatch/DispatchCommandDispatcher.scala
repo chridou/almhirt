@@ -28,7 +28,7 @@ class DispatchCommandDispatcher(endpointUris: CommandEndpointUris, settings: Rif
       respData <- DispatchFuns.awaitResponseData(request)
       res <- respData match {
         case RiftHttpResponse(Http_202_Accepted, _) => AlmFuture.successful(())
-        case RiftHttpResponse(_, data) => DispatchFuns.transformResponse[AnyRef](settings)(respData)
+        case RiftHttpResponse(_, data) => DispatchFuns.transformResponse[AnyRef](settings, respData)
       }
     } yield ()
 

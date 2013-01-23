@@ -2,6 +2,7 @@ package riftwarp.impl
 
 import language.higherKinds
 
+import scala.reflect.ClassTag
 import riftwarp._
 import riftwarp.ma._
 
@@ -16,7 +17,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
       functionObjects.put(fo.tM.getName(), fo)
   }
 
-  def tryGetMAFunctions[M[_]](implicit mM: Manifest[M[_]]): Option[MAFunctions[M]] =
+  def tryGetMAFunctions[M[_]](implicit mM: ClassTag[M[_]]): Option[MAFunctions[M]] =
     functionObjects.get(mM.runtimeClass.getName()) match {
       case null => None
       case x => Some(x.asInstanceOf[MAFunctions[M]])
@@ -28,7 +29,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
       channelFolders.put(ident, folder)
   }
 
-  def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[Folder[A, B]] = {
+  def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: ClassTag[A], mB: ClassTag[B]): Option[Folder[A, B]] = {
     val ident = "%s_%s_%s".format(channel.channelType, mA.runtimeClass.getName(), mB.runtimeClass.getName())
     channelFolders.get(ident) match {
       case null => None
@@ -42,7 +43,7 @@ class ConcurrentFunctionObjectRegistry extends HasFunctionObjects {
       mAToNAConverters.put(ident, converter)
   }
 
-  def tryGetConvertsMAToNA[M[_], N[_]](implicit mM: Manifest[M[_]], mN: Manifest[N[_]]): Option[ConvertsMAToNA[M, N]] = {
+  def tryGetConvertsMAToNA[M[_], N[_]](implicit mM: ClassTag[M[_]], mN: ClassTag[N[_]]): Option[ConvertsMAToNA[M, N]] = {
     if (mM == mN)
       Some(new IdentityMAToNAConverter[M].asInstanceOf[ConvertsMAToNA[M, N]])
     else {

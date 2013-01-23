@@ -1,5 +1,6 @@
 package riftwarp.http
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -28,7 +29,7 @@ object RiftWarpHttpFuns {
       }
     } yield data
 
-  def transformFromHttpData[To <: AnyRef](riftWarp: RiftWarp)(content: RiftHttpDataWithContent)(implicit mResult: Manifest[To]): AlmValidation[To] = {
+  def transformFromHttpData[To <: AnyRef](riftWarp: RiftWarp)(content: RiftHttpDataWithContent)(implicit mResult: ClassTag[To]): AlmValidation[To] = {
     val contentType = content.contentType
     val td = option.cata(contentType.tryGetRiftDescriptor)(td => td, RiftDescriptor(mResult.runtimeClass))
     for {
@@ -64,7 +65,7 @@ object RiftWarpHttpFuns {
       response <- dematerialized.toHttpData(contentType)
     } yield response
 
-  def withRequestData[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => RiftHttpResponse)(implicit mEntity: Manifest[TEntity]): RiftHttpResponse =
+  def withRequestData[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => RiftHttpResponse)(implicit mEntity: ClassTag[TEntity]): RiftHttpResponse =
     transformFromHttpData[TEntity](settings.riftWarp)(httpData).fold(
       fail => {
         settings.reportProblem(fail)
@@ -73,7 +74,7 @@ object RiftWarpHttpFuns {
       },
       succ => computeResponse(succ))
 
-  def withRequest[TEntity <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], computeResponse: (TEntity) => RiftHttpResponse)(implicit mEntity: Manifest[TEntity]): RiftHttpResponse =
+  def withRequest[TEntity <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], computeResponse: (TEntity) => RiftHttpResponse)(implicit mEntity: ClassTag[TEntity]): RiftHttpResponse =
     getHttpData().fold(
       fail => {
         val (prob, code) = settings.launderProblem(fail)
@@ -87,7 +88,7 @@ object RiftWarpHttpFuns {
             withRequestData(settings, RiftHttpDataWithContent(contentType, body), computeResponse)
         })
 
-  def withRequestDataOnFuture[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => AlmFuture[RiftHttpResponse])(implicit mEntity: Manifest[TEntity]): AlmFuture[RiftHttpResponse] =
+  def withRequestDataOnFuture[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => AlmFuture[RiftHttpResponse])(implicit mEntity: ClassTag[TEntity]): AlmFuture[RiftHttpResponse] =
     transformFromHttpData[TEntity](settings.riftWarp)(httpData).fold(
       fail => {
         settings.reportProblem(fail)
@@ -96,7 +97,7 @@ object RiftWarpHttpFuns {
       },
       succ => computeResponse(succ))
 
-  def withRequestOnFuture[TEntity <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], computeResponse: (TEntity) => AlmFuture[RiftHttpResponse])(implicit mEntity: Manifest[TEntity]): AlmFuture[RiftHttpResponse] =
+  def withRequestOnFuture[TEntity <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], computeResponse: (TEntity) => AlmFuture[RiftHttpResponse])(implicit mEntity: ClassTag[TEntity]): AlmFuture[RiftHttpResponse] =
     getHttpData().fold(
       fail => {
         val (prob, code) = settings.launderProblem(fail)
@@ -148,7 +149,7 @@ object RiftWarpHttpFuns {
               succ => RiftHttpResponse(okStatus, succ)),
           RiftHttpResponse(okStatus, RiftHttpDataWithoutContent)))
 
-  def processRequest[TReq <: AnyRef, TResp <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], okStatus: HttpSuccess, computeResponse: TReq => AlmValidation[Option[TResp]])(implicit mReq: Manifest[TReq]): RiftHttpResponse =
+  def processRequest[TReq <: AnyRef, TResp <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], okStatus: HttpSuccess, computeResponse: TReq => AlmValidation[Option[TResp]])(implicit mReq: ClassTag[TReq]): RiftHttpResponse =
     getHttpData().fold(
       fail => {
         val (prob, code) = settings.launderProblem(fail)
@@ -159,7 +160,7 @@ object RiftWarpHttpFuns {
         respond[TResp](settings)(okStatus, channel)(() => computeResponse(req))
       }))
 
-  def processRequestRespondOnFuture[TReq <: AnyRef, TResp <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], okStatus: HttpSuccess, computeResponse: TReq => AlmFuture[Option[TResp]])(implicit mReq: Manifest[TReq], hasExecutionContext: HasExecutionContext): AlmFuture[RiftHttpResponse] =
+  def processRequestRespondOnFuture[TReq <: AnyRef, TResp <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], okStatus: HttpSuccess, computeResponse: TReq => AlmFuture[Option[TResp]])(implicit mReq: ClassTag[TReq], hasExecutionContext: HasExecutionContext): AlmFuture[RiftHttpResponse] =
     getHttpData().fold(
       fail => {
         val (prob, code) = settings.launderProblem(fail)
@@ -179,7 +180,7 @@ object RiftWarpHttpFuns {
       succ => responder(succ))
   }
 
-  def transformResponse[T <: AnyRef](settings: RiftHttpFunsSettings)(response: RiftHttpResponse): AlmValidation[T] = {
+  def transformResponse[T <: AnyRef](settings: RiftHttpFunsSettings, response: RiftHttpResponse)(implicit tag: ClassTag[T]): AlmValidation[T] = {
     for {
       (statusCode, channel, riftDescriptor, dim) <- response.explode
       recompose <- {

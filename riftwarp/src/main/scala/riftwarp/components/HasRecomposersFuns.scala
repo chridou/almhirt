@@ -1,5 +1,6 @@
 package riftwarp.components
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -12,7 +13,7 @@ trait HasRecomposersFuns {
       recomposer => recomposer.success,
       UnspecifiedProblem("No raw recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
 
-  def getRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Recomposer[T]] =
+  def getRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[Recomposer[T]] =
     option.cata(hasRecomposers.tryGetRecomposer[T](riftDescriptor))(
       recomposer => recomposer.success,
       UnspecifiedProblem("No recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
@@ -46,7 +47,7 @@ trait HasRecomposersFuns {
   def recomposeWithLookedUpRawRecomposerFromRematerializer(remat: Rematerializer)(implicit hasRecomposers: HasRecomposers): AlmValidation[AnyRef] =
     lookUpFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat))
 
-  def recomposeWithLookUpFromRematerializer[T <: AnyRef](remat: Rematerializer)(implicit hasRecomposers: HasRecomposers): AlmValidation[T] =
+  def recomposeWithLookUpFromRematerializer[T <: AnyRef](remat: Rematerializer)(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T] =
     lookUpFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat).flatMap(almCast[T](_)))
     
 }

@@ -2,7 +2,7 @@ package riftwarp.impl.dematerializers
 
 import language.higherKinds
 
-
+import scala.reflect.ClassTag
 import scalaz._, Scalaz._
 import scalaz.std._
 import scalaz.syntax.validation
@@ -57,14 +57,14 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
     getDematerializedBlob(ident, aValue, blobIdentifier).flatMap(blobDemat =>
       addValue(ident, blobDemat.dematerialize.manifestation))
 
-  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
+  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] = {
     hasFunctionObjects.tryGetMAFunctions[M] match {
       case Some(fo) => addValue(ident, ma)
       case None => UnspecifiedProblem("No function object  found for ident '%s' and M[_](%s[_])".format(ident, mM.runtimeClass.getName())).failure
     }
   }
 
-  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
+  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] = {
     def mapA(a: A, idx: String): AlmValidationAP[Map[String, Any]] =
       spawnNew(idx :: ident :: path).flatMap(freshDemat =>
         decomposer.decompose(a)(freshDemat).map(_.dematerialize.manifestation)).toAgg
@@ -87,23 +87,23 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
     }
   }
 
-  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] =
+  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] =
     hasDecomposers.getDecomposer[A](mA.runtimeClass).toOption match {
       case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
       case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.runtimeClass.getName())).failure
     }
 
-  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
+  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] = {
     MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).flatMap(x =>
       addValue(ident, x))
   }
 
-  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToMapDematerializer] = {
+  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] = {
     MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndComplexDecomposerLookUp(idx, ident)(a)).flatMap(x =>
       addValue(ident, x))
   }
 
-  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] = {
+  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] = {
     (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) => addValue(ident, aMap)
       case (false, true) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure
@@ -112,7 +112,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
     }
   }
 
-  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       {
@@ -129,11 +129,11 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
       },
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
     hasDecomposers.getDecomposer[B](mB.runtimeClass).flatMap(decomposer => 
       addComplexMap[A, B](decomposer)(ident, aMap))
 
-  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       {
@@ -147,7 +147,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
       },
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       aMap.toList.map {
@@ -159,7 +159,7 @@ class ToMapDematerializer(state: Map[String, Any], val path: List[String], prote
         addValue(ident, x)),
       UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToMapDematerializer] =
+  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       aMap.toList.map {

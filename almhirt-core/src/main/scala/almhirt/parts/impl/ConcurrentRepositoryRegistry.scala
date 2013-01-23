@@ -1,5 +1,6 @@
 package almhirt.parts.impl
 
+import scala.reflect.ClassTag
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.domain._
@@ -15,7 +16,7 @@ class ConcurrentRepositoryRegistry extends HasRepositories {
     }
     
   }
-  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: Manifest[AR]){
+  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: ClassTag[AR]){
     repos.put(m.runtimeClass.asInstanceOf[Class[_<: AggregateRoot[AR, TEvent]]], repo)
   }
 

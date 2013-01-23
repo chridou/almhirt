@@ -2,6 +2,7 @@ package riftwarp.impl
 
 import language.higherKinds
 
+import scala.reflect.ClassTag
 import riftwarp._
 import riftwarp.ma._
 
@@ -16,7 +17,7 @@ class UnsafeFunctionObjectRegistry extends HasFunctionObjects {
       functionObjects += (fo.tM.getName() -> fo)
   }
 
-  def tryGetMAFunctions[M[_]](implicit mM: Manifest[M[_]]): Option[MAFunctions[M]] =
+  def tryGetMAFunctions[M[_]](implicit mM: ClassTag[M[_]]): Option[MAFunctions[M]] =
     functionObjects.get(mM.runtimeClass.getName()).map(_.asInstanceOf[MAFunctions[M]])
 
   def addChannelFolder[A, B](folder: RegisterableChannelFolder[A, B]) {
@@ -25,7 +26,7 @@ class UnsafeFunctionObjectRegistry extends HasFunctionObjects {
       channelFolders += (ident -> folder)
   }
 
-  def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[Folder[A, B]] = {
+  def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: ClassTag[A], mB: ClassTag[B]): Option[Folder[A, B]] = {
     val ident = "%s_%s_%s".format(channel.channelType, mA.runtimeClass.getName(), mB.runtimeClass.getName())
     channelFolders.get(ident).map(_.asInstanceOf[RegisterableChannelFolder[A, B]])
   }
@@ -36,7 +37,7 @@ class UnsafeFunctionObjectRegistry extends HasFunctionObjects {
       mAToNAConverters += (ident -> converter)
   }
 
-  def tryGetConvertsMAToNA[M[_], N[_]](implicit mM: Manifest[M[_]], mN: Manifest[N[_]]): Option[ConvertsMAToNA[M, N]] = {
+  def tryGetConvertsMAToNA[M[_], N[_]](implicit mM: ClassTag[M[_]], mN: ClassTag[N[_]]): Option[ConvertsMAToNA[M, N]] = {
     if (mM == mN)
       Some(new IdentityMAToNAConverter[M].asInstanceOf[ConvertsMAToNA[M, N]])
     else {

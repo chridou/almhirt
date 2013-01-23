@@ -1,5 +1,6 @@
 package almhirt.environment
 
+import scala.reflect.ClassTag
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 import almhirt.messaging.MessageChannel
@@ -14,7 +15,7 @@ class CommandChannelWrapper(toWrap: MessageChannel[CommandEnvelope]) extends Com
   def actor = toWrap.actor
   def <-* (handler: Message[CommandEnvelope] => Unit, classifier: Message[CommandEnvelope] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
   def post[U <: CommandEnvelope](message: Message[U]) = { println("xxxxxxxxxxxxxxxxxxxxxxx\n"+message);toWrap.post(message) }
-  def createSubChannel[U <: CommandEnvelope](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: Manifest[U]) =
+  def createSubChannel[U <: CommandEnvelope](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
     toWrap.createSubChannel[U](name, classifier)
   def close = toWrap.close
 }
@@ -24,7 +25,7 @@ class DomainEventsChannelWrapper(toWrap: MessageChannel[DomainEvent]) extends Do
   def actor = toWrap.actor
   def <-* (handler: Message[DomainEvent] => Unit, classifier: Message[DomainEvent] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
   def post[U <: DomainEvent](message: Message[U]) = toWrap.post(message)
-  def createSubChannel[U <: DomainEvent](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: Manifest[U]) =
+  def createSubChannel[U <: DomainEvent](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
     toWrap.createSubChannel[U](name, classifier)
   def close = toWrap.close
 }
@@ -34,7 +35,7 @@ class OperationStateChannelWrapper(toWrap: MessageChannel[OperationState]) exten
   def actor = toWrap.actor
   def <-* (handler: Message[OperationState] => Unit, classifier: Message[OperationState] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
   def post[U <: OperationState](message: Message[U]) = toWrap.post(message)
-  def createSubChannel[U <: OperationState](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: Manifest[U]) =
+  def createSubChannel[U <: OperationState](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
     toWrap.createSubChannel[U](name, classifier)
   def close = toWrap.close
 }
@@ -44,7 +45,7 @@ class ProblemChannelWrapper(toWrap: MessageChannel[Problem]) extends ProblemChan
   def actor = toWrap.actor
   def <-* (handler: Message[Problem] => Unit, classifier: Message[Problem] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
   def post[U <: Problem](message: Message[U]) = toWrap.post(message)
-  def createSubChannel[U <: Problem](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: Manifest[U]) =
+  def createSubChannel[U <: Problem](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
     toWrap.createSubChannel[U](name, classifier)
   def close = toWrap.close
 }

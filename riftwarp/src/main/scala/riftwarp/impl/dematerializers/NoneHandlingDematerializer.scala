@@ -46,18 +46,18 @@ trait NoneIsHandledUnified[TDimension <: RiftDimension] { dematerializer: Demate
   override def  addOptionalComplex(ident: String, complex: Option[AnyRef], backupDescriptor: Option[RiftDescriptor] = None) = option.cata(complex)(addComplex(ident, _, backupDescriptor), noneHandler(ident))
   override def  addOptionalComplexTyped[U <: AnyRef](ident: String, complex: Option[U])(implicit cU: ClassTag[U]): AlmValidation[Dematerializer[TDimension]] = option.cata(complex)(addComplexTyped[U](ident, _), noneHandler(ident))
   
-  override def  addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addPrimitiveMA(ident, _), noneHandler(ident))
-  override def  addOptionalComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addComplexMA(decomposer)(ident, _), noneHandler(ident))
-  override def  addOptionalComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addComplexMAFixed(ident, _), noneHandler(ident))
-  override def  addOptionalComplexMALoose[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addComplexMALoose(ident, _), noneHandler(ident))
-  override def  addOptionalMA[M[_], A <: Any](ident: String, ma: Option[M[A]])(implicit mM: Manifest[M[_]], mA: Manifest[A]) = option.cata(ma)(addMA(ident, _), noneHandler(ident))
+  override def  addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = option.cata(ma)(addPrimitiveMA(ident, _), noneHandler(ident))
+  override def  addOptionalComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = option.cata(ma)(addComplexMA(decomposer)(ident, _), noneHandler(ident))
+  override def  addOptionalComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = option.cata(ma)(addComplexMAFixed(ident, _), noneHandler(ident))
+  override def  addOptionalComplexMALoose[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = option.cata(ma)(addComplexMALoose(ident, _), noneHandler(ident))
+  override def  addOptionalMA[M[_], A <: Any](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = option.cata(ma)(addMA(ident, _), noneHandler(ident))
 
-  override def  addOptionalPrimitiveMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addPrimitiveMap(ident, _), noneHandler(ident))
-  override def  addOptionalComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addComplexMap(decomposer)(ident, _), noneHandler(ident))
-  override def  addOptionalComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addComplexMapFixed(ident, _), noneHandler(ident))
-  override def  addOptionalComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addComplexMapLoose(ident, _), noneHandler(ident))
-  override def  addOptionalMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addMap(ident, _), noneHandler(ident))
-  override def  addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: Manifest[A], mB: Manifest[B]) = option.cata(aMap)(addMapSkippingUnknownValues(ident, _), noneHandler(ident))
+  override def  addOptionalPrimitiveMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addPrimitiveMap(ident, _), noneHandler(ident))
+  override def  addOptionalComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addComplexMap(decomposer)(ident, _), noneHandler(ident))
+  override def  addOptionalComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addComplexMapFixed(ident, _), noneHandler(ident))
+  override def  addOptionalComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addComplexMapLoose(ident, _), noneHandler(ident))
+  override def  addOptionalMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addMap(ident, _), noneHandler(ident))
+  override def  addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addMapSkippingUnknownValues(ident, _), noneHandler(ident))
 }
 
 trait NoneIsOmmitted[TDimension <: RiftDimension] { dematerializer: Dematerializer[TDimension] with NoneIsHandledUnified[TDimension] =>

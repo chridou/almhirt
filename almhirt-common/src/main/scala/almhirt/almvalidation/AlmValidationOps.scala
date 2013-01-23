@@ -13,10 +13,10 @@
    limitations under the License.
 */
 package almhirt.almvalidation
-/** Implicits regarding [[almhirt.validation.AlmValidaion]] */
 
 import scala.language.implicitConversions
 
+import scala.reflect.ClassTag
 import java.util.UUID
 import scalaz.{Validation, NonEmptyList}
 import scalaz.syntax.Ops
@@ -183,7 +183,7 @@ trait AlmValidationOps12[R] extends Ops[List[AlmValidation[R]]] {
 }
 
 trait AlmValidationOps13 extends Ops[Any] {
-  def castTo[T](): AlmValidation[T] = almhirt.almvalidation.funs.almCast[T](self)
+  def castTo[To](implicit tag: ClassTag[To]): AlmValidation[To] = almhirt.almvalidation.funs.almCast[To](self)
 }
 
 trait ToAlmValidationOps {

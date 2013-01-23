@@ -2,6 +2,7 @@ package riftwarp.impl.rematerializers
 
 import language.higherKinds
 
+import scala.reflect.ClassTag
 import scala.util.parsing.json._
 import scalaz._, Scalaz._
 import scalaz.std._
@@ -57,10 +58,10 @@ private[rematerializers] object FromJsonMapRematerializerFuns {
       Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(clazz.getName())))
   }
   
-  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Any => AlmValidation[A]] = 
+  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: ClassTag[A]): AlmValidation[Any => AlmValidation[A]] = 
     getPrimitiveRematerializer[A](key, mA.runtimeClass)
 
-  def createTuple[A, B](rematA: Any => AlmValidation[A])(mapB: Any => AlmValidation[B])(kv: Map[String, Any])(implicit m: Manifest[A]): AlmValidation[(A, B)] = {
+  def createTuple[A, B](rematA: Any => AlmValidation[A])(mapB: Any => AlmValidation[B])(kv: Map[String, Any])(implicit m: ClassTag[A]): AlmValidation[(A, B)] = {
     (kv.get("k"), kv.get("v")) match {
       case (Some(k), Some(v)) => rematA(k).flatMap(k => mapB(v).map(v => (k, v)))
       case (None, Some(_)) => KeyNotFoundProblem("Can not create key value tuple because the key entry is missing").failure
@@ -69,7 +70,7 @@ private[rematerializers] object FromJsonMapRematerializerFuns {
     }
   }
 
-  def createTuples[A, B](mapB: Any => AlmValidation[B])(kvPairs: List[Any])(implicit m: Manifest[A]): AlmValidation[List[(A, B)]] =
+  def createTuples[A, B](mapB: Any => AlmValidation[B])(kvPairs: List[Any])(implicit m: ClassTag[A]): AlmValidation[List[(A, B)]] =
     computeSafely {
       getPrimitiveRematerializerFor[A]("key").flatMap(rematA =>
         kvPairs.map(x => createTuple(rematA)(mapB)(x.asInstanceOf[Map[String, Any]]))
@@ -135,18 +136,18 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
         remat => recomposer.recompose(remat).map(Some(_)),
         None.success))
 
-  def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
+  def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: ClassTag[T]): AlmValidation[Option[T]] =
     hasRecomposers.getRecomposer[T](m.runtimeClass).flatMap(recomposer =>
       tryGetComplexType[T](ident, recomposer))
 
-  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
+  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: ClassTag[T]): AlmValidation[Option[T]] =
     trySpawnNew(ident).flatMap(rematOpt =>
       option.cata(rematOpt)(
         remat => hasRecomposers.lookUpFromRematerializer(remat, Some(m.runtimeClass)).flatMap(recomposer =>
           recomposer.recomposeRaw(remat).flatMap(x => almCast[T](x)).map(Some(_))),
         None.success))
 
-  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[A]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       elem =>
         boolean.fold(
@@ -159,7 +160,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[_]".format(ident)).failure),
       None.success)
 
-  def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       mx =>
         boolean.fold(
@@ -175,11 +176,11 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[Any]".format(ident)).failure),
       None.success)
 
-  def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     hasRecomposers.getRecomposer[A](RiftDescriptor(mA.runtimeClass)).flatMap(recomposer =>
       tryGetComplexMA[M, A](ident, recomposer))
 
-  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[Option[M[A]]] =
+  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       mx =>
         boolean.fold(
@@ -195,7 +196,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type List[Any]".format(ident)).failure),
       None.success)
 
-  def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetMA[M[_], A](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       mx =>
         boolean.fold(
@@ -209,7 +210,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
           UnspecifiedProblem("Cannot rematerialize at ident '%s' because it is not of type M[_](%s[_]). It is of type '%s'".format(ident, mM.runtimeClass.getName(), mx.getClass.getName())).failure),
       None.success)
 
-  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Option[Map[A, B]]] =
     (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) =>
         get(ident).map(any =>
@@ -223,7 +224,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
       case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.runtimeClass.getName(), mB.runtimeClass.getName())).failure
     }
 
-  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
+  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: ClassTag[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Any): AlmValidation[B] =
       recomposer.recompose(spawnNew(x.asInstanceOf[Map[String, Any]]))
 
@@ -239,10 +240,10 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
   }
 
-  def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+  def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Option[Map[A, B]]] =
     hasRecomposers.getRecomposer[B](RiftDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
 
-  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
+  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: ClassTag[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Any): AlmValidation[B] =
       recomposeWithLookedUpRawRecomposerFromRematerializer(spawnNew(x.asInstanceOf[Map[String, Any]])).map(_.asInstanceOf[B])
 
@@ -258,7 +259,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
   }
 
-  def tryGetMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = {
+  def tryGetMap[A, B](ident: String)(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Any): AlmValidation[B] = mapToAny[B](ident)(x)
 
     boolean.fold(
@@ -276,7 +277,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
   def tryGetRiftDescriptor =
     option.cata(get(RiftDescriptor.defaultKey))(almCast[String](_).flatMap(RiftDescriptor.parse(_)).map(Some(_)), Success(None))
 
-  private def mapToAny[A](ident: String)(what: Any)(implicit m: Manifest[A]): AlmValidation[A] =
+  private def mapToAny[A](ident: String)(what: Any)(implicit m: ClassTag[A]): AlmValidation[A] =
     getPrimitiveRematerializer[A](ident, what.getClass).fold(
       prob =>
         if (classOf[Map[_, _]].isAssignableFrom(what.getClass))

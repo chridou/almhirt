@@ -1,17 +1,17 @@
 package riftwarp.components
 
 import language.higherKinds
-
+import scala.reflect.ClassTag
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.ma._
 
 trait RiftWarpToolShed extends HasDematerializers with HasRematerializerFactories with HasFunctionObjects {
-  def tryGetRematerializer[TDimension <: RiftDimension](from: TDimension)(channel: RiftChannel)(implicit hasRecomposers: HasRecomposers, hasRematerializerFactories: HasRematerializerFactories, hasFunctionObjects: HasFunctionObjects, mD: Manifest[TDimension]): AlmValidation[Option[Rematerializer]] =
+  def tryGetRematerializer[TDimension <: RiftDimension](from: TDimension)(channel: RiftChannel)(implicit hasRecomposers: HasRecomposers, hasRematerializerFactories: HasRematerializerFactories, hasFunctionObjects: HasFunctionObjects, mD: ClassTag[TDimension]): AlmValidation[Option[Rematerializer]] =
     tryGetRematerializerFactory[TDimension](channel).map(factory => factory.createRematerializer(from)).validationOut
 
-  def tryGetDematerializer[TDimension <: RiftDimension](to: TDimension)(channel: RiftChannel)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects, mD: Manifest[TDimension]): AlmValidation[Option[Dematerializer[TDimension]]] =
+  def tryGetDematerializer[TDimension <: RiftDimension](to: TDimension)(channel: RiftChannel)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects, mD: ClassTag[TDimension]): AlmValidation[Option[Dematerializer[TDimension]]] =
     tryGetDematerializerFactory[TDimension](channel).map(factory => factory.createDematerializer).validationOut
 }
 
@@ -25,11 +25,11 @@ object RiftWarpToolShed {
       def tryGetRematerializerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = hasRematerializerFactories.tryGetRematerializerFactoryByType(tDimension)(channel, toolGroup)
 
       def addMAFunctions[M[_]](fo: RegisterableMAFunctions[M]) { functionObjectRegistry.addMAFunctions[M](fo) }
-      def tryGetMAFunctions[M[_]](implicit mM: Manifest[M[_]]) = functionObjectRegistry.tryGetMAFunctions[M]
+      def tryGetMAFunctions[M[_]](implicit mM: ClassTag[M[_]]) = functionObjectRegistry.tryGetMAFunctions[M]
       def addChannelFolder[A, B](fo: RegisterableChannelFolder[A, B]) = { functionObjectRegistry.addChannelFolder[A, B](fo) }
-      def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: Manifest[A], mB: Manifest[B]): Option[Folder[A, B]] = functionObjectRegistry.tryGetChannelFolder[A, B](channel)
+      def tryGetChannelFolder[A, B](channel: RiftChannel)(implicit mA: ClassTag[A], mB: ClassTag[B]): Option[Folder[A, B]] = functionObjectRegistry.tryGetChannelFolder[A, B](channel)
       def addConvertsMAToNA[M[_], N[_]](converter: RegisterableConvertsMAToNA[M, N]) { functionObjectRegistry.addConvertsMAToNA[M, N](converter) }
-      def tryGetConvertsMAToNA[M[_], N[_]](implicit mM: Manifest[M[_]], mN: Manifest[N[_]]) = functionObjectRegistry.tryGetConvertsMAToNA
+      def tryGetConvertsMAToNA[M[_], N[_]](implicit mM: ClassTag[M[_]], mN: ClassTag[N[_]]) = functionObjectRegistry.tryGetConvertsMAToNA
     }
   }
 

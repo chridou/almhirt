@@ -14,6 +14,7 @@
 */
 package almhirt.messaging
 
+import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import java.util.UUID
@@ -51,7 +52,7 @@ object MessageHub {
   }
 
   private class ActorBasedMessageHubImpl(val actor: ActorRef)(implicit hasExecutionContext: HasExecutionContext) extends MessageHub {
-    def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
+    def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       (actor ? CreateSubChannelQry(name, MessagePredicate[TPayload]))(atMost)
         .mapTo[NewSubChannelRsp]
         .map(subchannel => subchannel.channel)(hasExecutionContext).mapToAlmFuture[ActorRef]

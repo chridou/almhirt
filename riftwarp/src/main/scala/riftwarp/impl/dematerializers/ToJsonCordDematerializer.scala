@@ -1,6 +1,7 @@
 package riftwarp.impl.dematerializers
 
 import language.higherKinds
+import scala.reflect.ClassTag
 import org.joda.time.DateTime
 import scalaz._, Scalaz._
 import scalaz.Cord
@@ -60,7 +61,7 @@ object ToJsonCordDematerializerFuns {
   val mapDateTime = (value: DateTime) => Cord(mapStringLike(value.toString))
   val mapUuid = (value: _root_.java.util.UUID) => Cord(mapStringLike(value.toString))
 
-  def mapperByType[A](implicit m: Manifest[A]): AlmValidation[A => Cord] = {
+  def mapperByType[A](implicit m: ClassTag[A]): AlmValidation[A => Cord] = {
     val t = m.runtimeClass
     if (t == classOf[String])
       (mapString).asInstanceOf[A => Cord].success
@@ -221,39 +222,39 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       addComplexPart(ident, blobDemat.dematerialize.manifestation))
 
 
-  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
+  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] =
     mapperByType[A].flatMap(map =>
       MAFuncs.map(ma)(x => DimensionCord(map(x))).flatMap(mcord =>
         MAFuncs.fold(this.channel)(mcord)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).flatMap(dimCord =>
         addPart(ident, dimCord.manifestation)))
 
 
-  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
+  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] =
     spawnNew(ident).flatMap(demat =>
       MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(demat).map(_.dematerialize)).flatMap(complex =>
         MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).flatMap(dimCord =>
         addPart(ident, dimCord.manifestation)))
 
 
-  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] =
+  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] =
     hasDecomposers.getDecomposer[A](mA.runtimeClass).toOption match {
       case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
       case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.runtimeClass.getName())).failure
     }
 
-  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = {
+  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] = {
     MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).flatMap(dimCord =>
       addPart(ident, dimCord.manifestation))
   }
 
-  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[ToJsonCordDematerializer] = {
+  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] = {
     MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).flatMap(dimCord =>
       addPart(ident, dimCord.manifestation))
   }
 
-  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
+  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) =>
         mapperByType[A].flatMap(mapA =>
@@ -269,7 +270,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       case (false, false) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.runtimeClass.getName(), mB.runtimeClass.getName())).failure
     }
 
-  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
+  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       mapperByType[A].flatMap(mapA =>
@@ -283,11 +284,11 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
             addPart(ident, pairs.manifestation)))),
       UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
+  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     hasDecomposers.getDecomposer[B](mB.runtimeClass).flatMap(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
 
 
-  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
+  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       mapperByType[A].flatMap(mapA =>
@@ -300,7 +301,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
             addPart(ident, pairs.manifestation)))),
       UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
+  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       mapperByType[A].flatMap(mapA =>
@@ -313,7 +314,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
             addPart(ident, pairs.manifestation)))),
       UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[ToJsonCordDematerializer] =
+  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
       mapperByType[A].flatMap(mapA =>

@@ -1,6 +1,7 @@
 package riftwarp.impl.rematerializers
 
 import language.higherKinds
+import scala.reflect.ClassTag
 import scala.xml.Elem
 import scalaz._, Scalaz._
 import scalaz.std._
@@ -12,7 +13,7 @@ import riftwarp.ma._
 import riftwarp.components._
 
 private[rematerializers] object FromXmlElemRematerializerFuns {
-  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: Manifest[A]): AlmValidation[Elem => AlmValidation[A]] = {
+  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: ClassTag[A]): AlmValidation[Elem => AlmValidation[A]] = {
     if (mA.runtimeClass.isAssignableFrom(classOf[String]))
       Success(((x: Elem) => x.text.success).asInstanceOf[Elem => AlmValidation[A]])
     else if (mA.runtimeClass.isAssignableFrom(classOf[Boolean]))
@@ -41,7 +42,7 @@ private[rematerializers] object FromXmlElemRematerializerFuns {
       Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(mA.runtimeClass.getName())))
   }
 
-  def createTuple[A, B](mapA: Elem => AlmValidation[A])(mapB: Elem => AlmValidation[B])(kv: Elem)(implicit m: Manifest[A]): AlmValidation[(A, B)] = {
+  def createTuple[A, B](mapA: Elem => AlmValidation[A])(mapB: Elem => AlmValidation[B])(kv: Elem)(implicit m: ClassTag[A]): AlmValidation[(A, B)] = {
     for {
       k <- kv \! "k"
       v <- kv \! "v"
@@ -50,7 +51,7 @@ private[rematerializers] object FromXmlElemRematerializerFuns {
     } yield (a, b)
   }
 
-  def createTuples[A, B](mapB: Elem => AlmValidation[B])(kvPairs: List[Elem])(implicit m: Manifest[A]): AlmValidation[List[(A, B)]] =
+  def createTuples[A, B](mapB: Elem => AlmValidation[B])(kvPairs: List[Elem])(implicit m: ClassTag[A]): AlmValidation[List[(A, B)]] =
     computeSafely {
       getPrimitiveRematerializerFor[A]("key").flatMap(rematA =>
         kvPairs.map(x => createTuple(rematA)(mapB)(x))
@@ -139,16 +140,16 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
   def tryGetComplexType[T <: AnyRef](ident: String, recomposer: Recomposer[T]) =
     spawnNewForIdentAndThenMap(ident, remat => recomposer.recompose(remat))
 
-  def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
+  def tryGetComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: ClassTag[T]): AlmValidation[Option[T]] =
     hasRecomposers.getRecomposer[T](m.runtimeClass).flatMap(recomposer =>
       tryGetComplexType[T](ident, recomposer))
 
-  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: Manifest[T]): AlmValidation[Option[T]] =
+  def tryGetComplexType[T <: AnyRef](ident: String)(implicit m: ClassTag[T]): AlmValidation[Option[T]] =
     spawnNewForIdentAndThenMap(ident, remat =>
       hasRecomposers.lookUpFromRematerializer(remat, Some(m.runtimeClass)).flatMap(recomposer =>
         recomposer.recomposeRaw(remat).flatMap(x => almCast[T](x))))
 
-  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[A]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     getPrimitiveRematerializerFor[A](ident).flatMap(primRemat =>
       functionObjects.getConvertsMAToNA[List, M].flatMap(converterToN =>
         getCollectionElements(ident).flatMap(elemsOpt =>
@@ -158,7 +159,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
                 converterToN.convert(seq)).map(Some(_)),
             None.success))))
 
-  def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     getCollectionElements(ident).flatMap(elemsOpt =>
       functionObjects.getConvertsMAToNA[List, M].flatMap(converterToN =>
         option.cata(elemsOpt)(
@@ -167,11 +168,11 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
               converterToN.convert(seq)).map(Some(_)),
           None.success)))
 
-  def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     hasRecomposers.getRecomposer[A](RiftDescriptor(mA.runtimeClass)).flatMap(recomposer =>
       tryGetComplexMA[M, A](ident, recomposer))
 
-  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: Manifest[M[_]]): AlmValidation[Option[M[A]]] =
+  def tryGetComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     getCollectionElements(ident).flatMap(elemsOpt =>
       functionObjects.getConvertsMAToNA[List, M].flatMap(converterToN =>
         option.cata(elemsOpt)(
@@ -179,8 +180,9 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
             elems.map(elem => recomposeWithLookUpFromRematerializer[A](spawnNew(elem)).toAgg).sequence.flatMap(seq =>
               converterToN.convert(seq)).map(ma => Some(ma)),
           None.success)))
+          
 
-  def tryGetMA[M[_], A](ident: String)(implicit mM: Manifest[M[_]], mA: Manifest[A]): AlmValidation[Option[M[A]]] =
+  def tryGetMA[M[_], A](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     getCollectionElements(ident).flatMap(elemsOpt =>
       functionObjects.getConvertsMAToNA[List, M].flatMap(converterToN =>
         option.cata(elemsOpt)(
@@ -189,7 +191,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
               converterToN.convert(seq)).map(ma => Some(ma)),
           None.success)))
 
-  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+  def tryGetPrimitiveMap[A, B](ident: String)(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Option[Map[A, B]]] =
     (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) =>
         for {
@@ -202,7 +204,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
       case (false, false) => UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.runtimeClass.getName(), mB.runtimeClass.getName())).failure
     }
 
-  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
+  def tryGetComplexMap[A, B <: AnyRef](ident: String, recomposer: Recomposer[B])(implicit mA: ClassTag[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Elem): AlmValidation[B] = recomposer.recompose(spawnNew(x))
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
@@ -213,10 +215,10 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
   }
 
-  def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] =
+  def tryGetComplexMapFixed[A, B <: AnyRef](ident: String)(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Option[Map[A, B]]] =
     hasRecomposers.getRecomposer[B](RiftDescriptor(mB.runtimeClass)).flatMap(recomposer => tryGetComplexMap[A, B](ident, recomposer))
 
-  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: Manifest[A]): AlmValidation[Option[Map[A, B]]] = {
+  def tryGetComplexMapLoose[A, B <: AnyRef](ident: String)(implicit mA: ClassTag[A]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Elem): AlmValidation[B] = recomposeWithLookUpFromRematerializer(spawnNew(x))
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
@@ -227,7 +229,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
   }
 
-  def tryGetMap[A, B](ident: String)(implicit mA: Manifest[A], mB: Manifest[B]): AlmValidation[Option[Map[A, B]]] = {
+  def tryGetMap[A, B](ident: String)(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Option[Map[A, B]]] = {
     def rematerialize(x: Elem): AlmValidation[B] = mapToAny[B](ident)(x)
     boolean.fold(
       TypeHelpers.isPrimitiveType(mA.runtimeClass),
@@ -241,7 +243,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
   def tryGetRiftDescriptor =
     (stillInWarp \\ "@riftDescriptor").headOption.map(node => RiftDescriptor.parse(node.text)).validationOut
 
-  private def mapToAny[A](ident: String)(what: Elem)(implicit m: Manifest[A]): AlmValidation[A] =
+  private def mapToAny[A](ident: String)(what: Elem)(implicit m: ClassTag[A]): AlmValidation[A] =
     getPrimitiveRematerializerFor[A](ident).fold(
       prob =>
         if (classOf[Map[_, _]].isAssignableFrom(what.getClass))

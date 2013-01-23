@@ -1,5 +1,6 @@
 package riftwarp.impl
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import almhirt.common._
 import riftwarp._
@@ -14,7 +15,7 @@ class ConcurrentRecomposerRegistry extends HasRecomposers {
       case x => Some(x._1)
     }
 
-  def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor): Option[Recomposer[T]] =
+  def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit tag: ClassTag[T]): Option[Recomposer[T]] =
     recomposers.get(riftDescriptor) match {
       case null => None
       case (desc, true) => Some(desc.asInstanceOf[Recomposer[T]])

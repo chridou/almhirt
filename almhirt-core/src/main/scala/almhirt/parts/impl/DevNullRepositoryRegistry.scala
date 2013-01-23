@@ -1,5 +1,6 @@
 package almhirt.parts.impl
 
+import scala.reflect.ClassTag
 import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
@@ -13,5 +14,5 @@ import almhirt.common.AlmFuture
 
 class DevNullRepositoryRegistry() extends HasRepositories {
   def getForAggregateRootByType(arType: Class[_ <: AggregateRoot[_, _]]): AlmValidation[AnyRef] = { NotFoundProblem("Repository for aggregate root  '%s' not found".format(arType.getName)).failure }
-  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: Manifest[AR]) {}
+  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: ClassTag[AR]) {}
 }

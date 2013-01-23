@@ -1,5 +1,6 @@
 package almhirt.ext.core.unfiltered
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -39,13 +40,13 @@ object UnfilteredFuns {
     }
   }
     
-  def processRequest[TReq <: AnyRef, TResp <: AnyRef](settings: RiftWarpHttpFuns.RiftHttpFunsSettings, okStatus: HttpSuccess, computeResponse: TReq => AlmValidation[Option[TResp]], req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any])(implicit mReq: Manifest[TReq]) {
+  def processRequest[TReq <: AnyRef, TResp <: AnyRef](settings: RiftWarpHttpFuns.RiftHttpFunsSettings, okStatus: HttpSuccess, computeResponse: TReq => AlmValidation[Option[TResp]], req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any])(implicit mReq: ClassTag[TReq]) {
     val resp = RiftWarpHttpFuns.processRequest[TReq, TResp](settings, createGetHttpDataFromRequest(req)(settings.contentTypeOps), okStatus, computeResponse)
     val respFun = createResponseFunction(resp)(settings.contentTypeOps)
     responder.respond(respFun)
   }
   
-  def processRequestRespondOnFuture[TReq <: AnyRef, TResp <: AnyRef](settings: RiftWarpHttpFuns.RiftHttpFunsSettings, okStatus: HttpSuccess, computeResponse: TReq => AlmFuture[Option[TResp]], req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any])(implicit mReq: Manifest[TReq], hasExecutor: HasExecutionContext) {
+  def processRequestRespondOnFuture[TReq <: AnyRef, TResp <: AnyRef](settings: RiftWarpHttpFuns.RiftHttpFunsSettings, okStatus: HttpSuccess, computeResponse: TReq => AlmFuture[Option[TResp]], req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any])(implicit mReq: ClassTag[TReq], hasExecutor: HasExecutionContext) {
     val resp = RiftWarpHttpFuns.processRequestRespondOnFuture[TReq, TResp](settings, createGetHttpDataFromRequest(req)(settings.contentTypeOps), okStatus, computeResponse)
     RiftWarpHttpFuns.futureResponder(settings, http => responder.respond(createResponseFunction(http)(settings.contentTypeOps)), resp)
   }

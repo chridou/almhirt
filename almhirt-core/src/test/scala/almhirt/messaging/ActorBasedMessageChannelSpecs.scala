@@ -1,5 +1,6 @@
 package almhirt.messaging
 
+import scala.reflect.ClassTag
 import scala.concurrent.duration._
 import almhirt.syntax.almvalidation._
 import almhirt.environment.AlmhirtsystemTestkit
@@ -9,7 +10,7 @@ import org.specs2.mutable._
 class ActorBasedMessageChannelSpecs extends Specification with AlmhirtsystemTestkit {
   implicit val atMost = FiniteDuration(1, "s")
   implicit def getUUID = java.util.UUID.randomUUID()
-  private def getChannel[T <: AnyRef](context: AlmhirtSystem)(implicit m: Manifest[T]): MessageChannel[T] = {
+  private def getChannel[T <: AnyRef](context: AlmhirtSystem)(implicit m: ClassTag[T]): MessageChannel[T] = {
     MessageChannel[T]("testChannel")(context, m)
   }
 

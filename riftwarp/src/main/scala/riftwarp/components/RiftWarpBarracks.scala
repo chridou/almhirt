@@ -1,5 +1,6 @@
 package riftwarp.components
 
+import scala.reflect.ClassTag
 import riftwarp._
 
 trait RiftWarpBarracks extends HasRecomposers with HasDecomposers
@@ -11,11 +12,10 @@ object RiftWarpBarracks {
       def addDecomposer(decomposer: Decomposer[_ <: AnyRef]) { decomposers.addDecomposer(decomposer) }
 
       def tryGetRawRecomposer(riftDescriptor: RiftDescriptor) = recomposers.tryGetRawRecomposer(riftDescriptor)
-      def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor) = recomposers.tryGetRecomposer[T](riftDescriptor)
+      def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit tag: ClassTag[T]) = recomposers.tryGetRecomposer[T](riftDescriptor)
 
       def addRawRecomposer(recomposer: RawRecomposer) { recomposers.addRawRecomposer(recomposer) }
       def addRecomposer(recomposer: Recomposer[_]) { recomposers.addRecomposer(recomposer) }
-    
     }
   }
 

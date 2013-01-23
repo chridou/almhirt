@@ -1,5 +1,6 @@
 package almhirt.parts
 
+import scala.reflect.ClassTag
 import akka.actor._
 import almhirt.common._
 import almhirt.domain._
@@ -8,11 +9,11 @@ import almhirt.parts.impl.ConcurrentRepositoryRegistry
 
 trait HasRepositories {
   def getForAggregateRootByType(arType: Class[_ <: AggregateRoot[_,_]]): AlmValidation[AnyRef]
-  def getForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: Manifest[AR]): AlmValidation[AggregateRootRepository[AR, TEvent]] =
+  def getForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](implicit m: ClassTag[AR]): AlmValidation[AggregateRootRepository[AR, TEvent]] =
     getForAggregateRootByType(m.runtimeClass.asInstanceOf[Class[AR]]).map(_.asInstanceOf[AggregateRootRepository[AR, TEvent]])
   /** Registers a new repository. Has replace semantics. 
    */
-  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: Manifest[AR]): Unit
+  def registerForAggregateRoot[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](repo: AggregateRootRepository[AR, TEvent])(implicit m: ClassTag[AR]): Unit
 }
 
 object HasRepositories {

@@ -48,7 +48,7 @@ class RiftHttpCommandDispatcher(communicator: RiftHttpCommandCommunicator, setti
       response <- communicator.dispatch(request)
       result <- response match {
         case RiftHttpResponse(Http_202_Accepted, _) => AlmFuture.successful(())
-        case RiftHttpResponse(_, data) => AlmFuture.promise { RiftWarpHttpFuns.transformResponse[AnyRef](settings)(response) }
+        case RiftHttpResponse(_, data) => AlmFuture.promise { RiftWarpHttpFuns.transformResponse[AnyRef](settings, response) }
       }
     } yield ()
 
@@ -56,13 +56,13 @@ class RiftHttpCommandDispatcher(communicator: RiftHttpCommandCommunicator, setti
     for {
       request <- AlmFuture { RiftWarpHttpFuns.createHttpData[DomainCommand](settings)(cmd, None) }
       response <- communicator.dispatchTracked(request)
-      result <- AlmFuture.promise { RiftWarpHttpFuns.transformResponse[TrackingTicket](settings)(response) }
+      result <- AlmFuture.promise { RiftWarpHttpFuns.transformResponse[TrackingTicket](settings, response) }
     } yield result
 
   override def dispatchAndGetState(cmd: DomainCommand): AlmFuture[ResultOperationState] =
     for {
       request <- AlmFuture { RiftWarpHttpFuns.createHttpData[DomainCommand](settings)(cmd, None) }
       response <- communicator.dispatchAndGetState(request)
-      result <- AlmFuture.promise { RiftWarpHttpFuns.transformResponse[ResultOperationState](settings)(response) }
+      result <- AlmFuture.promise { RiftWarpHttpFuns.transformResponse[ResultOperationState](settings, response) }
     } yield result
 }

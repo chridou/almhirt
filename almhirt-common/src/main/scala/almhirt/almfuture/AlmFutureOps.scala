@@ -17,7 +17,7 @@ package almhirt.almfuture
 import scala.language.implicitConversions
 
 import scala.concurrent.{Future, ExecutionContext}
-import scala.reflect.Manifest
+import scala.reflect.ClassTag
 import scalaz.Scalaz.ToValidationV
 import scalaz.syntax.Ops
 import almhirt.common._
@@ -32,7 +32,7 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
    * 
    * @tparam T The success type in [[almhirt.validation.AlmValidation[T]]]
    */
-  def mapToAlmFuture[T](implicit m: Manifest[T]): AlmFuture[T] = 
+  def mapToAlmFuture[T](implicit m: ClassTag[T]): AlmFuture[T] = 
     new AlmFuture[T](self.mapTo[AlmValidation[T]])
 }
 

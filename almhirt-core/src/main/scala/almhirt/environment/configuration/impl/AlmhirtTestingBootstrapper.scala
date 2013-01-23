@@ -1,5 +1,6 @@
 package almhirt.environment.configuration.impl
 
+import scala.reflect.ClassTag
 import scala.concurrent.duration.FiniteDuration
 import akka.event.LoggingAdapter
 import almhirt.almvalidation.kit._
@@ -24,7 +25,7 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
         (new AlmhirtForTesting {
           def system = theSystem
 
-          def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: Manifest[TPayload]) = almhirt.createMessageChannel(name)
+          def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]) = almhirt.createMessageChannel(name)
 
           def executeCommand(cmdEnv: CommandEnvelope) { almhirt.broadcast(cmdEnv) }
 

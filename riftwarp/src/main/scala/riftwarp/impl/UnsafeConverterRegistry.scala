@@ -1,5 +1,6 @@
 package riftwarp.impl
 
+import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -24,7 +25,7 @@ class UnsafeDimensionConverterRegistry extends HasDimensionConverters {
       convertersByTarget = convertersByTarget + (converter.tTarget.getName() -> (converter :: convertersByTarget(converter.tTarget.getName())))
   }
 
-  def tryGetConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension](implicit mS: Manifest[DimSource], mT: Manifest[DimTarget]): Option[DimensionConverter[DimSource, DimTarget]] =
+  def tryGetConverter[DimSource <: RiftDimension, DimTarget <: RiftDimension](implicit mS: ClassTag[DimSource], mT: ClassTag[DimTarget]): Option[DimensionConverter[DimSource, DimTarget]] =
     converters.get(mS.runtimeClass.getName()+mT.runtimeClass.getName()).map(_.asInstanceOf[DimensionConverter[DimSource, DimTarget]])
 
   def getConvertersFromByDimType(tSource: Class[_ <: RiftDimension]): List[DimensionConverter[_, _]] =
