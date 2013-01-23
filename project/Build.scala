@@ -35,10 +35,11 @@ object Dependencies {
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
-        lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "compile"
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "compile"
 
 	
 	lazy val specs2 = "org.specs2" %% "specs2" % "1.13" % "test"
+    lazy val scalatest = "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"	
 	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % "2.1.0" % "test"
 
 }
@@ -71,6 +72,7 @@ trait CoreBuild {
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
+	  libraryDependencies += scalatest,
 	  libraryDependencies += specs2
   )
 }

@@ -68,7 +68,7 @@ object MessageChannel {
 
     def post[U <: T](message: Message[U]) = actor ! PostMessageCmd(message)
 
-    def close() {}
+    def close() { actor ! PoisonPill }
 
   }
 

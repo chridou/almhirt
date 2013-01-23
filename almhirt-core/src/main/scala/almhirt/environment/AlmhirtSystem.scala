@@ -39,7 +39,7 @@ object AlmhirtSystem {
         val mediumDuration = medium
         val longDuration = long
         def getUuid = uuidGen.generate
-        def dispose = actorSystem.shutdown
+        def dispose = { actorSystem.shutdown; actorSystem.awaitTermination }
       }
   }
   def apply(): AlmValidation[AlmhirtSystem] = almhirt.almvalidation.funs.inTryCatch { ConfigFactory.load() }.flatMap(apply(_))
