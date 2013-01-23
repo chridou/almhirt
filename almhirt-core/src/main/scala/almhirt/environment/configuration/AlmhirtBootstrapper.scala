@@ -50,5 +50,5 @@ object AlmhirtBootstrapper {
       cleanUp10 <- bootstrapper.prepareGateways(almhirt, startUpLogger)
       cleanUp11 <- bootstrapper.registerAndInitializeAuxServices(almhirt, startUpLogger)
       _ <- bootstrapper.cleanUpTemps(almhirt, startUpLogger)
-    } yield (almhirt, new ShutDown{ def shutDown() { cleanUp11(); cleanUp10(); cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1(); system.actorSystem.awaitTermination } })
+    } yield (almhirt, new ShutDown{ def shutDown() { cleanUp11(); cleanUp10(); cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1() } })
 }

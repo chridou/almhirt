@@ -22,21 +22,21 @@ class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit 
 
   """A MessageHub""" should {
     """accept a message""" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val hub = getHub(ctx)
         hub.broadcast(Message(new B(1, "B")))
         true
       }
     }
     """be able to create a global channel""" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val hub = getHub(ctx)
         val channel = hub.createMessageChannel[AnyRef]("testChannel")
         true
       }
     }
     """be able to create a channel""" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val hub = getHub(ctx)
         val channel = hub.createMessageChannel[AnyRef]("testChannel")
         true
@@ -46,7 +46,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit 
 
   """A MessageHub with a created global channel of payload type AnyRef""" should {
     """trigger a handler on the created channel""" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val hub = getHub(ctx)
         val channel = (hub.createMessageChannel[AnyRef]("testChannel")).awaitResult(Duration.Inf).forceResult
         var hit = false
@@ -59,7 +59,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit 
   }
   """A MessageHub with a created global channel of payload type String using the MessageHub trait""" should {
     """trigger a handler on the created channel when a String is broadcasted""" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val hub = getHub(ctx)
         val channel = hub.createMessageChannel[String]("testChannel").awaitResult(Duration.Inf).forceResult
         var hit = false
@@ -70,7 +70,7 @@ class ActorBasedMessageHubSpecs extends Specification with AlmhirtsystemTestkit 
       }
     }
     """not trigger a handler on the created channel when a UUID is broadcasted""" in {
-      inTestSystem { ctx =>
+      inTestSystem { implicit ctx =>
         val hub = getHub(ctx)
         val channel = hub.createMessageChannel[String]("testChannel").awaitResult(Duration.Inf).forceResult
         var hit = false

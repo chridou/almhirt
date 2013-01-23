@@ -62,7 +62,7 @@ object MessageHub {
     def broadcast(message: Message[AnyRef], topic: Option[String]) = actor ! BroadcastMessageCmd(message)
     def post(message: Message[AnyRef]) = actor ! PostMessageCmd(message)
 
-    def close() {}
+    def close() { actor ! PoisonPill }
   }
 
 }

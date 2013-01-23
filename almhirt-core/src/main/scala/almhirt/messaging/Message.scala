@@ -16,6 +16,8 @@ package almhirt.messaging
 
 import java.util.UUID
 import org.joda.time.DateTime
+import almhirt.core.CanCreateUuid
+import almhirt.core.CanCreateUuidsAndDateTimes
 
 /**
  * Multiple [[almhirt.messaging.Message]]s that share [[almhirt.messaging.MessageGrouping]]s with the same groupId belong to one group
@@ -48,13 +50,12 @@ final case class Message[+TPayload <: AnyRef](header: MessageHeader, payload: TP
 
 /** A factory for messages */
 object Message {
-  def apply[T <: AnyRef](grouping: Option[MessageGrouping], metaData: Map[String, String], payload: T)(implicit id: UUID): Message[T] =
-    new Message[T](MessageHeader(id, grouping, metaData, DateTime.now), payload)
+  def apply[T <: AnyRef](grouping: Option[MessageGrouping], metaData: Map[String, String], payload: T)(implicit gen: CanCreateUuidsAndDateTimes): Message[T] =
+    new Message[T](MessageHeader(gen.getUuid, grouping, metaData, gen.getDateTime), payload)
+    
+  def apply[T <: AnyRef](payload: T)(implicit gen: CanCreateUuidsAndDateTimes): Message[T] =
+    apply(None, Map.empty, payload)(gen)
 
-  def apply[T <: AnyRef](payload: T)(implicit id: UUID): Message[T] =
-    apply(None, Map.empty, payload)(id)
-
-  def createWithUuid[T <: AnyRef](payload: T): Message[T] =
-    apply(None, Map.empty, payload)(UUID.randomUUID)
-
+  def create[T <: AnyRef](payload: T): Message[T] =
+     new Message[T](MessageHeader(UUID.randomUUID(), None, Map.empty, DateTime.now()), payload)
 }
