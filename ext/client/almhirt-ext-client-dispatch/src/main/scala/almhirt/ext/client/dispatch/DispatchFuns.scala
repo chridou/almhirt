@@ -14,7 +14,7 @@ object DispatchFuns {
     data match {
       case RiftHttpDataWithContent(contentType, RiftStringBody(body)) => req.setBody(body).addHeader("Content-Type", contentType.safeHeaderValue).success
       case RiftHttpDataWithContent(contentType, RiftBinaryBody(body)) => req.setBody(body).addHeader("Content-Type", contentType.safeHeaderValue).success
-      case RiftHttpNoContentData => req.success
+      case RiftHttpDataWithoutContent => req.success
     }
   }
 

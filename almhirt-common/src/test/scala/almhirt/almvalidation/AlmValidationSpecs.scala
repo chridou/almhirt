@@ -130,4 +130,32 @@ class AlmValidationSpecs extends Specification {
       res.isFailure
     }
   }
+  
+  private class A
+  private class B extends A
+  private class C extends A
+  
+  """almCast (B and C inherit from A)""" should {
+    """cast A to A""" in {
+      almCast[A](new A).isSuccess
+    }
+    """cast B to B""" in {
+      almCast[B](new B).isSuccess
+    }
+    """cast C to C""" in {
+      almCast[C](new C).isSuccess
+    }
+    """cast B to A""" in {
+      almCast[A](new B).isSuccess
+    }
+    """cast C to A""" in {
+      almCast[A](new C).isSuccess
+    }
+    """not cast A to C""" in {
+      almCast[C](new A).isFailure
+    }
+    """not cast B to C""" in {
+      almCast[C](new B).isFailure
+    }
+  }
 }

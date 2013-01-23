@@ -12,7 +12,7 @@ object RiftHttpResponse {
   implicit class RiftHttpResponseOps(response: RiftHttpResponse) {
     def explode(): AlmValidation[(HttpStatusCode, RiftHttpChannel, Option[RiftDescriptor], RiftHttpDimension)] =
       response.data match {
-        case RiftHttpNoContentData =>
+        case RiftHttpDataWithoutContent =>
           BadDataProblem(s"No content. Status: ${response.statusCode.code}").failure
         case data @ RiftHttpDataWithContent(contentType, body) =>
           data.toRiftDimension.map(dim =>

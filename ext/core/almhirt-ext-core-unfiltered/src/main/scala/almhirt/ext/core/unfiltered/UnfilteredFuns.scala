@@ -28,7 +28,7 @@ object UnfilteredFuns {
 
   def createResponseFunction(httpResponse: RiftHttpResponse)(implicit ops: RiftHttpContentTypeOps): ResponseFunction[Any] = {
     httpResponse.data match {
-      case RiftHttpNoContentData => Status(httpResponse.statusCode.code)
+      case RiftHttpDataWithoutContent => Status(httpResponse.statusCode.code)
       case RiftHttpDataWithContent(contentType, content) =>
         content match {
           case RiftStringBody(data) =>

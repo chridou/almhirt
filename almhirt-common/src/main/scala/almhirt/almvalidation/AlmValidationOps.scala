@@ -152,6 +152,9 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
 
   def toAgg(): AlmValidationAP[T] = 
     toAgg("One or more problems occured. See problems.")
+    
+  def invert(): scalaz.Validation[T, Problem] =
+    self fold (fail => fail.success, succ => succ.failure)
 }
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {

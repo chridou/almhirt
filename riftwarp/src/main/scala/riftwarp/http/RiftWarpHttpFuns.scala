@@ -22,13 +22,13 @@ object RiftWarpHttpFuns {
       contentType <- option.cata(getContentType())(ct => contentTypeOps.parse(ct), RiftHttpNoContentContentType.success)
       data <- contentType match {
         case RiftHttpNoContentContentType =>
-          RiftHttpNoContentData.success
+          RiftHttpDataWithoutContent.success
         case withChannel: RiftHttpContentTypeWithChannel =>
           getBody(withChannel.channel.httpBodyType).flatMap(_.toHttpData(contentType))
       }
     } yield data
 
-  def transformHttpData[To <: AnyRef](riftWarp: RiftWarp)(content: RiftHttpDataWithContent)(implicit mResult: Manifest[To]): AlmValidation[To] = {
+  def transformFromHttpData[To <: AnyRef](riftWarp: RiftWarp)(content: RiftHttpDataWithContent)(implicit mResult: Manifest[To]): AlmValidation[To] = {
     val contentType = content.contentType
     val td = option.cata(contentType.tryGetRiftDescriptor)(td => td, RiftDescriptor(mResult.runtimeClass))
     for {
@@ -65,7 +65,7 @@ object RiftWarpHttpFuns {
     } yield response
 
   def withRequestData[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => RiftHttpResponse)(implicit mEntity: Manifest[TEntity]): RiftHttpResponse =
-    transformHttpData[TEntity](settings.riftWarp)(httpData).fold(
+    transformFromHttpData[TEntity](settings.riftWarp)(httpData).fold(
       fail => {
         settings.reportProblem(fail)
         val (prob, code) = settings.launderProblem(fail)
@@ -81,14 +81,14 @@ object RiftWarpHttpFuns {
       },
       succ =>
         succ match {
-          case RiftHttpNoContentData =>
-            RiftHttpResponse(Http_400_Bad_Request, RiftHttpNoContentData)
+          case RiftHttpDataWithoutContent =>
+            RiftHttpResponse(Http_400_Bad_Request, RiftHttpDataWithoutContent)
           case RiftHttpDataWithContent(contentType, body) =>
             withRequestData(settings, RiftHttpDataWithContent(contentType, body), computeResponse)
         })
 
   def withRequestDataOnFuture[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => AlmFuture[RiftHttpResponse])(implicit mEntity: Manifest[TEntity]): AlmFuture[RiftHttpResponse] =
-    transformHttpData[TEntity](settings.riftWarp)(httpData).fold(
+    transformFromHttpData[TEntity](settings.riftWarp)(httpData).fold(
       fail => {
         settings.reportProblem(fail)
         val (prob, code) = settings.launderProblem(fail)
@@ -104,8 +104,8 @@ object RiftWarpHttpFuns {
       },
       succ =>
         succ match {
-          case RiftHttpNoContentData =>
-            AlmFuture.successful(RiftHttpResponse(Http_400_Bad_Request, RiftHttpNoContentData))
+          case RiftHttpDataWithoutContent =>
+            AlmFuture.successful(RiftHttpResponse(Http_400_Bad_Request, RiftHttpDataWithoutContent))
           case RiftHttpDataWithContent(contentType, body) =>
             withRequestDataOnFuture(settings, RiftHttpDataWithContent(contentType, body), computeResponse)
         })
@@ -127,7 +127,7 @@ object RiftWarpHttpFuns {
                 RiftHttpResponse(code, createHttpProblemResponseData(settings)(prob, Some(channel)))
               },
               succ => RiftHttpResponse(okStatus, succ)),
-          RiftHttpResponse(okStatus, RiftHttpNoContentData)))
+          RiftHttpResponse(okStatus, RiftHttpDataWithoutContent)))
 
   def respondOnFuture[TResp <: AnyRef](settings: RiftHttpFunsSettings, okStatus: HttpSuccess, channel: RiftHttpChannel, computeResponseValue: () => AlmFuture[Option[TResp]])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[RiftHttpResponse] =
     computeResponseValue().fold(
@@ -146,7 +146,7 @@ object RiftWarpHttpFuns {
                 RiftHttpResponse(code, createHttpProblemResponseData(settings)(prob, Some(channel)))
               },
               succ => RiftHttpResponse(okStatus, succ)),
-          RiftHttpResponse(okStatus, RiftHttpNoContentData)))
+          RiftHttpResponse(okStatus, RiftHttpDataWithoutContent)))
 
   def processRequest[TReq <: AnyRef, TResp <: AnyRef](settings: RiftHttpFunsSettings, getHttpData: () => AlmValidation[RiftHttpData], okStatus: HttpSuccess, computeResponse: TReq => AlmValidation[Option[TResp]])(implicit mReq: Manifest[TReq]): RiftHttpResponse =
     getHttpData().fold(
