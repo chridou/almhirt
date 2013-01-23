@@ -138,7 +138,6 @@ class RiftWarpHttpFunsSpecs extends Specification {
           transformFromHttpData[PrimitiveMaps](riftWarp)(RiftHttpDataWithContent(
               RiftHttpQualifiedContentType(RiftDescriptor(classOf[PrimitiveTypes]), RiftChannel.Json), 
               RiftStringBody(testdataPrimJson)))
-              println(recreated.forceResult.mapIntInt)
         recreated.isFailure
       } 
       """be able to recreate PrimitiveTypes from proper request data with RiftHttpQualifiedContentType(RiftDescriptor(classOf[PrimitiveTypes]), RiftChannel.Json) even if the content has no RiftDescriptor""" in {

@@ -70,7 +70,8 @@ object RiftWarpFuns {
             rematerializer <- arrayFactory.createRematerializerRaw(sourceDimForRematerializer, blobFetch)(riftWarp.barracks, riftWarp.toolShed)
             recomposer <- getRecomposer(rematerializer)
             recomposed <- recomposer.recompose(rematerializer)
-          } yield recomposed
+            casted <- almCast[T](recomposed)
+          } yield casted
     }
   }
   
