@@ -65,8 +65,6 @@ trait AlmhirtsystemTestkit {
       val shortDuration = short
       val mediumDuration = medium
       val longDuration = long
-      def getUuid = uuidGen.generate
-      def getDateTime = org.joda.time.DateTime.now
       def dispose = { actorSystem.shutdown; actorSystem.awaitTermination }
     }).forceResult
   }

@@ -20,7 +20,6 @@ trait StandardAlmhirtsystemComponent extends AlmhirtsystemComponent {
     val shortDuration = ConfigHelper.getDuration(config)("almhirt.durations.short").forceResult
     val mediumDuration = ConfigHelper.getDuration(config)("almhirt.durations.medium").forceResult
     val longDuration = ConfigHelper.getDuration(config)("almhirt.durations.long").forceResult
-    def getUuid = uuidGen.generate
     def dispose = actorSystem.shutdown
   }
 }

@@ -41,9 +41,6 @@ class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrap
 
           def serviceRegistry = almhirt.serviceRegistry
 
-          def getDateTime = almhirt.getDateTime
-          def getUuid = almhirt.getUuid
-
           def repositories = almhirt.getService[HasRepositories].forceResult
           def hasCommandHandlers = almhirt.getService[HasCommandHandlers].forceResult
           def eventLog = almhirt.getService[DomainEventLog].forceResult

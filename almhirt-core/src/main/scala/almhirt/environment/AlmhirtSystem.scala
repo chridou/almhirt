@@ -25,7 +25,6 @@ trait AlmhirtSystem extends CanCreateUuidsAndDateTimes with HasExecutionContext 
 object AlmhirtSystem {
   def apply(config: Config): AlmValidation[AlmhirtSystem] = {
     import scalaz.syntax.validation._
-    val uuidGen = new JavaUtilUuidGenerator()
     for {
       short <- ConfigHelper.getDuration(config)("almhirt.durations.short")
       medium <- ConfigHelper.getDuration(config)("almhirt.durations.medium")
@@ -38,8 +37,6 @@ object AlmhirtSystem {
         val shortDuration = short
         val mediumDuration = medium
         val longDuration = long
-        override def getUuid = uuidGen.generate
-        override def getDateTime = DateTime.now()
         override def dispose = { actorSystem.shutdown; actorSystem.awaitTermination }
       }
   }

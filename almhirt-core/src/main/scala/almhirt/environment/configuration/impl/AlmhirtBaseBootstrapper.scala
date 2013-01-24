@@ -74,9 +74,6 @@ class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
           def shortDuration = system.shortDuration
           def mediumDuration = system.mediumDuration
           def longDuration = system.longDuration
-
-          def getDateTime = system.getDateTime
-          def getUuid = system.getUuid
           
           val log = Logging(theSystem.actorSystem, classOf[Almhirt])
 
