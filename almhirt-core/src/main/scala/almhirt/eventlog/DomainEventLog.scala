@@ -1,6 +1,7 @@
 package almhirt.eventlog
 
 import java.util.UUID
+import scala.concurrent.duration._
 import almhirt.common._
 import almhirt.core._
 import almhirt.domain.DomainEvent
@@ -42,8 +43,12 @@ object DomainEventLog {
     new InefficientSerializingInMemoryDomainEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_))
   }
 
-  def devNull()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = {
+  def devNullFromFactory()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = {
     new DevNullEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_))
   }
 
+  def devNull()(implicit system: AlmhirtSystem): DomainEventLog = {
+    DomainEventLogActorHull(system.actorSystem.actorOf(Props(new DevNullEventLogActor()), s"devNullEventLog-${system.getUuid.toString()}"), Duration(1, "s"))
+  }
+  
 }

@@ -50,7 +50,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
             sr.registerService[OperationStateTracker](almhirt.util.impl.OperationStateTrackerActorHull(tracker))
           }
 
-          repos = HasRepositories().forceResult
+          repos = HasRepositories()
           sr.registerService[HasRepositories](repos)
 
           cmdHandlerRegistry = HasCommandHandlers()

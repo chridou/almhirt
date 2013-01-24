@@ -34,4 +34,11 @@ object AggregateRootRepository {
     apply(actor)
   }
   
+  def dummy[AR <: AggregateRoot[AR, Event], Event <: DomainEvent]: AggregateRootRepository[AR, Event] =
+    new AggregateRootRepository[AR, Event]{ 
+     def get(id: java.util.UUID) = ???
+     def store(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]) { ??? }
+     def actor = ???
+}
+  
 }

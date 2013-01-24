@@ -12,8 +12,8 @@ import almhirt.domain._
 import almhirt.eventlog._
 import almhirt.environment.configuration._
 
-class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: FiniteDuration)(implicit theAlmhirt: Almhirt) extends DomainEventLog {
-  private implicit def executionContext = theAlmhirt.executionContext
+class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: FiniteDuration)(implicit hasExecutionContext: HasExecutionContext) extends DomainEventLog {
+  private implicit def executionContext = hasExecutionContext.executionContext
 
   def this(actor: ActorRef, maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, maximumDirectCallDuration.getOrElse(FiniteDuration(5, "seconds")))
   def this(actor: ActorRef)(implicit theAlmhirt: Almhirt) = this(actor, None)
@@ -33,4 +33,9 @@ object DomainEventLogActorHull {
     val maxCallDuration = ConfigHelper.tryGetDuration(theAlmhirt.system.config)(ConfigPaths.eventlog+".maximum_direct_call_duration")
     new DomainEventLogActorHull(actor, maxCallDuration)
   }
+
+  def apply(actor: ActorRef, maxDirectCallDuration: FiniteDuration)(implicit hasExecutionContext: HasExecutionContext): DomainEventLog = {
+    new DomainEventLogActorHull(actor, maxDirectCallDuration)
+  }
+
 }

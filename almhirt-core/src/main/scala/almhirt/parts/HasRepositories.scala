@@ -6,6 +6,7 @@ import almhirt.common._
 import almhirt.domain._
 import almhirt.common.AlmFuture
 import almhirt.parts.impl.ConcurrentRepositoryRegistry
+import almhirt.parts.impl.DevNullRepositoryRegistry
 
 trait HasRepositories {
   def getForAggregateRootByType(arType: Class[_ <: AggregateRoot[_,_]]): AlmValidation[AnyRef]
@@ -18,8 +19,16 @@ trait HasRepositories {
 
 object HasRepositories {
   import scalaz.syntax.validation._
-  def apply(): AlmValidation[HasRepositories] = {
-    new ConcurrentRepositoryRegistry().success
+  def apply(): HasRepositories = {
+    concurrent()
+  }
+  
+  def devNull(): HasRepositories = {
+    new DevNullRepositoryRegistry()
+  }
+  
+  def concurrent(): HasRepositories = {
+    new ConcurrentRepositoryRegistry()
   }
 }
 

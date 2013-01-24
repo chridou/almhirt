@@ -41,6 +41,7 @@ class DevNullEventLogFactory() extends DomainEventLogFactory {
   }
 }
 
+
 class DevNullEventLogActor() extends Actor {
   def receive = {
     case LogEventsQry(events, _) =>
