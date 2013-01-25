@@ -12,12 +12,9 @@ import com.typesafe.config.ConfigFactory
 
 
 /** Components and values needed to use Akka */
-trait AlmhirtSystem extends CanCreateUuidsAndDateTimes with HasExecutionContext with Disposable {
+trait AlmhirtSystem extends CanCreateUuidsAndDateTimes with HasExecutionContext  with HasDurations with Disposable {
   def config: Config
   def actorSystem: ActorSystem
-  def shortDuration: FiniteDuration
-  def mediumDuration: FiniteDuration
-  def longDuration: FiniteDuration
   override def getUuid: java.util.UUID
   override def getDateTime: DateTime
 }
@@ -29,14 +26,13 @@ object AlmhirtSystem {
       short <- ConfigHelper.getDuration(config)("almhirt.durations.short")
       medium <- ConfigHelper.getDuration(config)("almhirt.durations.medium")
       long <- ConfigHelper.getDuration(config)("almhirt.durations.long")
+      extraLong <- ConfigHelper.getDuration(config)("almhirt.durations.extraLong")
     } yield
       new AlmhirtSystem {
-        val config = ConfigFactory.load
-        val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
-        val executionContext = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherNameFromRootConfig(config)(ConfigPaths.futures))
-        val shortDuration = short
-        val mediumDuration = medium
-        val longDuration = long
+        override val config = ConfigFactory.load
+        override val actorSystem = ActorSystem(config.getString("almhirt.systemname"))
+        override val executionContext = ConfigHelper.lookUpDispatcher(actorSystem)(ConfigHelper.tryGetDispatcherNameFromRootConfig(config)(ConfigPaths.futures))
+        override val durations = HasDurations(short, medium, long, extraLong)
         override def dispose = { actorSystem.shutdown; actorSystem.awaitTermination }
       }
   }

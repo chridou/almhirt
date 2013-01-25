@@ -4,6 +4,15 @@ import scala.concurrent.duration._
 
 trait HasDurations {
   def durations: Durations
+  def defaultDuration = durations.mediumDuration
+}
+
+object HasDurations {
+  def apply(): HasDurations = new HasDurations { override val durations = Durations() }
+  def apply(theDurations: Durations): HasDurations = new HasDurations { override val durations = theDurations }
+  def apply(short: FiniteDuration, medium: FiniteDuration, long: FiniteDuration, extraLong: FiniteDuration): HasDurations =
+    apply(Durations(short: FiniteDuration, medium: FiniteDuration, long: FiniteDuration, extraLong: FiniteDuration))
+
 }
 
 trait Durations {

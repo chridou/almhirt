@@ -20,11 +20,12 @@ trait AlmhirtTestKit {
           class = "almhirt.environment.configuration.impl.AlmhirtTestingBootstrapper" 
         }
 		systemname = "almhirt-testing"
-		durations {
+		  	durations {
 		  short = 500
 		  medium = 2500
 		  long = 10000
-		  }
+		  long = 20000
+		  	}
 		  eventlog {
 		  	factory = "almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLogFactory"
 		  }
