@@ -10,11 +10,10 @@ import almhirt.eventlog.DomainEventLog
 import almhirt.environment.Almhirt
 import almhirt.util._
 import almhirt.common.AlmFuture
-import almhirt.environment.AlmhirtBaseOps
 
 abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirt: Almhirt) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
-  implicit private def timeout = almhirt.mediumDuration
+  implicit private def timeout = almhirt.defaultDuration
   implicit private val hasExecutionContext = almhirt
   implicit private val executionContext = hasExecutionContext.executionContext
 

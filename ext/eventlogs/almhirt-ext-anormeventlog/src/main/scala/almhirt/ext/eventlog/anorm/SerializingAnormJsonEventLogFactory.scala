@@ -29,10 +29,10 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
   }
 
   private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, riftWarp: RiftWarp, theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    ConfigHelper.eventLog.getConfig(theAlmhirt.system.config).map { eventLogConfig =>
+    ConfigHelper.eventLog.getConfig(theAlmhirt.config).map { eventLogConfig =>
       val props =
         SystemHelper.addDispatcherToProps(eventLogConfig)(Props(new SerializingAnormJsonEventLogActor(settings)(riftWarp, theAlmhirt)))
-      val actor = theAlmhirt.system.actorSystem.actorOf(props, actorName)
+      val actor = theAlmhirt.actorSystem.actorOf(props, actorName)
       if (dropOnClose) {
         def dropTable() = {
           DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
@@ -42,14 +42,14 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
           }
           ()
         }
-        theAlmhirt.system.actorSystem.registerOnTermination(dropOnClose)
+        theAlmhirt.actorSystem.registerOnTermination(dropOnClose)
       }
       actor
     }
   }
 
   def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    ConfigHelper.eventLog.getConfig(theAlmhirt.system.config).flatMap { eventLogConfig =>
+    ConfigHelper.eventLog.getConfig(theAlmhirt.config).flatMap { eventLogConfig =>
       val createSchemaFun: (AnormSettings, DbTemplate) => AlmValidation[AnormSettings] =
         ConfigHelper
           .getBoolean(eventLogConfig)("create_schema")
@@ -67,24 +67,20 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
       val dropOnClose = ConfigHelper.isBooleanSet(eventLogConfig)("drop_on_close")
 
       val tableName = {
-        val baseName = ConfigHelper.tryGetString(eventLogConfig)("eventlogtable").getOrElse("eventlog")
+        val baseName = ConfigHelper.getString(eventLogConfig)("eventlogtable").getOrElse("eventlog")
         if (ConfigHelper.isBooleanSet(eventLogConfig)("randomize_tablename"))
           "%s_%s".format(baseName, _root_.scala.util.Random.nextInt.toString.replaceAll("-", "N"))
         else
           baseName
       }
 
-      val dbTemplate = {
-        DbTemplate.tryGetTemplate(eventLogConfig) match {
-          case Some(template) =>
-            template.success
-          case None =>
-            ConfigHelper.getString(eventLogConfig)("driver").map { driverName =>
-              val ddlPath = ConfigHelper.tryGetString(eventLogConfig)("ddlpath")
-              DbTemplate(driverName, ddlPath)
-            }
-        }
-      }
+      val dbTemplate = 
+        DbTemplate.getTemplate(eventLogConfig).fold(
+            fail => 
+              ConfigHelper.getString(eventLogConfig)("driver").map { driverName =>
+              val ddlPath = ConfigHelper.getString(eventLogConfig)("ddlpath").toOption
+              DbTemplate(driverName, ddlPath)},
+              succ => succ.success)
 
       import collection.JavaConversions._
 
@@ -94,7 +90,7 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
           dbTemplate.flatMap(dbTemplate =>
             almhirt.almvalidation.funs.inTryCatch({ Class.forName(dbTemplate.driverName); () }).flatMap { _ =>
               val props =
-                ConfigHelper.tryGetSubConfig(eventLogConfig)("properties") match {
+                ConfigHelper.getSubConfig(eventLogConfig)("properties").toOption match {
                   case Some(config) =>
                     config.entrySet()
                       .map(x => (x.getKey(), x.getValue().unwrapped().toString()))

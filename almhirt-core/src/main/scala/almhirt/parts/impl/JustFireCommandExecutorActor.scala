@@ -17,15 +17,15 @@ import almhirt.common.AlmFuture
 
 /**
  */
-class JustFireCommandExecutorActor(handlers: HasCommandHandlers, repositories: HasRepositories)(implicit baseOps: AlmhirtBaseOps) extends Actor {
+class JustFireCommandExecutorActor(handlers: HasCommandHandlers, repositories: HasRepositories)(implicit theAlmHirt: Almhirt) extends Actor {
 
   private def executeCommand(command: DomainCommand, ticket: Option[TrackingTicket]) {
-    ticket foreach { t => baseOps.reportOperationState(InProcess(t)) }
+    ticket foreach { t => theAlmHirt.reportOperationState(InProcess(t)) }
     handlers.getHandlerByType(command.getClass).fold(
       fail => {
-        baseOps.reportProblem(fail)
+        theAlmHirt.reportProblem(fail)
         ticket match {
-          case Some(t) => baseOps.reportOperationState(NotExecuted(t, fail))
+          case Some(t) => theAlmHirt.reportOperationState(NotExecuted(t, fail))
           case None => ()
         }
       },

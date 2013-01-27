@@ -15,9 +15,9 @@ import almhirt.environment._
 import almhirt.util._
 import almhirt.common.AlmFuture
 
-abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](val actor: ActorRef, baseOps: AlmhirtBaseOps) extends AggregateRootRepository[AR, Event] with CanValidateAggregateRootsAgainstEvents[AR, Event] {
-  implicit private def duration = baseOps.mediumDuration
-  implicit private def futureContext = baseOps.executionContext
+abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](val actor: ActorRef, sys: HasExecutionContext with HasDurations) extends AggregateRootRepository[AR, Event] with CanValidateAggregateRootsAgainstEvents[AR, Event] {
+  implicit private def duration = sys.defaultDuration
+  implicit private def futureContext = sys.executionContext
 
   def get(id: java.util.UUID): AlmFuture[AR] = 
     (actor ? GetAggregateRootQry(id))(duration)

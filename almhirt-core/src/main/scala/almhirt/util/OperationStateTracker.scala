@@ -32,8 +32,8 @@ trait OperationStateTracker {
 
 object OperationStateTracker {
   import akka.actor._
-  def apply()(implicit almhirt: Almhirt): AlmValidation[OperationStateTracker] = {
-    val actor = almhirt.system.actorSystem.actorOf(Props(new impl.OperationStateTrackerWithoutTimeoutActor), "operationStateTracker")
+  def apply()(implicit theAlmHirt: Almhirt): AlmValidation[OperationStateTracker] = {
+    val actor = theAlmHirt.actorSystem.actorOf(Props(new impl.OperationStateTrackerWithoutTimeoutActor), "OperationStateTracker")
     new impl.OperationStateTrackerActorHull(actor).success
   }
 }

@@ -95,7 +95,7 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       })
   }
 
-  private def updateFailedOperationState(baseOps: AlmhirtBaseOps, p: Problem, ticket: Option[TrackingTicket]) {
+  private def updateFailedOperationState(baseOps: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
     baseOps.reportProblem(p)
     ticket match {
       case Some(t) => baseOps.reportOperationState(NotExecuted(t, p))

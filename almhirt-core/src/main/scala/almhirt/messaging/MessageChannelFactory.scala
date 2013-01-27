@@ -4,5 +4,5 @@ import almhirt.common._
 import almhirt.environment._
 
 trait MessageChannelFactory {
-  def createMessageChannel[T <: AnyRef](sys: AlmhirtSystem): AlmValidation[MessageChannel[T]]
+  def createMessageChannel[T <: AnyRef](foundations: HasConfig with HasActorSystem with HasExecutionContext): AlmValidation[MessageChannel[T]]
 }

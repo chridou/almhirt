@@ -31,7 +31,7 @@ class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], set
     UnfilteredFuns.processRequestRespondOnFuture[DomainCommand, ResultOperationState](
       settings,
       Http_200_OK,
-      cmd => AlmFuture.promise(getEndpoint()).flatMap(endPoint => endPoint.executeWithResult(theAlmhirt.mediumDuration)(cmd).map(Some(_))),
+      cmd => AlmFuture.promise(getEndpoint()).flatMap(endPoint => endPoint.executeWithResult(theAlmhirt.defaultDuration)(cmd).map(Some(_))),
       req, responder)
 
   def forward(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) { forwardHandler(req, responder) }

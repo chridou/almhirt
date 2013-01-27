@@ -14,5 +14,5 @@ class DirectDispatcher(endpoint: CommandEndpoint, atMost: scala.concurrent.durat
 
 class DirectDispatcherFactory extends CommandDispatcherFactory {
   def createCommandDispatcher(theAlmhirt: Almhirt): AlmValidation[CommandDispatcher] =
-    theAlmhirt.getService[CommandEndpoint].map(endpoint => new DirectDispatcher(endpoint, theAlmhirt.mediumDuration))
+    theAlmhirt.getService[CommandEndpoint].map(endpoint => new DirectDispatcher(endpoint, theAlmhirt.defaultDuration))
 }

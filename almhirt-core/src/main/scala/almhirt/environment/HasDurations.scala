@@ -1,6 +1,8 @@
 package almhirt.environment
 
 import scala.concurrent.duration._
+import com.typesafe.config.Config
+import almhirt.environment.configuration.ConfigHelper
 
 trait HasDurations {
   def durations: Durations
@@ -9,6 +11,7 @@ trait HasDurations {
 
 object HasDurations {
   def apply(): HasDurations = new HasDurations { override val durations = Durations() }
+  def apply(config: Config): HasDurations = new HasDurations { override val durations = Durations(config) }
   def apply(theDurations: Durations): HasDurations = new HasDurations { override val durations = theDurations }
   def apply(short: FiniteDuration, medium: FiniteDuration, long: FiniteDuration, extraLong: FiniteDuration): HasDurations =
     apply(Durations(short: FiniteDuration, medium: FiniteDuration, long: FiniteDuration, extraLong: FiniteDuration))
@@ -22,7 +25,7 @@ trait Durations {
   def extraLongDuration: FiniteDuration
 }
 
-trait DefaultDurations extends HasDurations {
+trait DefaultDurations extends Durations {
   override val shortDuration = Duration(1, "s")
   override val mediumDuration = Duration(3, "s")
   override val longDuration = Duration(9, "s")
@@ -30,7 +33,15 @@ trait DefaultDurations extends HasDurations {
 }
 
 object Durations {
-  def apply(): HasDurations = new DefaultDurations {}
+  def apply(): Durations = new DefaultDurations {}
+  def apply(config: Config): Durations = {
+    val shortDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.short").getOrElse(Duration(1, "s"))
+    val mediumDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.medium").getOrElse(Duration(3, "s"))
+    val longDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.long").getOrElse(Duration(9, "s"))
+    val extraLongDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.extralong").getOrElse(Duration(22, "s"))
+    apply(shortDuration, mediumDuration, longDuration, extraLongDuration)
+  }
+
   def apply(short: FiniteDuration, medium: FiniteDuration, long: FiniteDuration, extraLong: FiniteDuration): Durations =
     new Durations {
       override val shortDuration = short

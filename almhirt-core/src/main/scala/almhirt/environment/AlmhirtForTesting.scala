@@ -1,5 +1,6 @@
 package almhirt.environment
 
+import almhirt.core.ServiceRegistry
 import almhirt.parts.HasRepositories
 import almhirt.parts.HasCommandHandlers
 import almhirt.eventlog.DomainEventLog
@@ -7,6 +8,7 @@ import almhirt.util._
 import almhirt.commanding._
 
 trait AlmhirtForTesting extends Almhirt {
+  def serviceRegistry: ServiceRegistry
   def repositories: HasRepositories
   def hasCommandHandlers: HasCommandHandlers
   def eventLog: DomainEventLog

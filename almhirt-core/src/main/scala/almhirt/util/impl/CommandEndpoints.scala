@@ -35,7 +35,7 @@ class CommandEndpointWithUuidTickets(forwardCommand: CommandEnvelope => Unit, op
 class CommandEndpointWithUuidTicketsFactory {
   def createCommandEndpoint(theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] = {
     for {
-      config <- ConfigHelper.commandEndpoint.getConfig(theAlmhirt.system.config)
+      config <- ConfigHelper.commandEndpoint.getConfig(theAlmhirt.config)
       modeStr <- ConfigHelper.getString(config)("mode")
       mode <- CommandEndpointForwardMode.fromString(modeStr)
       forwardAction <- mode match {
@@ -48,8 +48,8 @@ class CommandEndpointWithUuidTicketsFactory {
         case PushCommandDirectlyToExecutor =>
           theAlmhirt.getService[CommandExecutor].map(executor => (cmdEnv: CommandEnvelope) => executor.executeCommand(cmdEnv))
       }
-      trackerActorName <- ConfigHelper.operationState.getConfig(theAlmhirt.system.config).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
-      tracker <- inTryCatch { theAlmhirt.system.actorSystem.actorFor("/user/" + trackerActorName) }
+      trackerActorName <- ConfigHelper.operationState.getConfig(theAlmhirt.config).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
+      tracker <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + trackerActorName) }
     } yield new CommandEndpointWithUuidTickets(forwardAction, tracker, theAlmhirt)
   }
 

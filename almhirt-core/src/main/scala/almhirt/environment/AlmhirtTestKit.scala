@@ -24,7 +24,7 @@ trait AlmhirtTestKit {
 		  short = 500
 		  medium = 2500
 		  long = 10000
-		  long = 20000
+		  extralong = 20000
 		  	}
 		  eventlog {
 		  	factory = "almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLogFactory"

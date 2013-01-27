@@ -9,28 +9,24 @@ import com.typesafe.config.Config
 import almhirt.common._
 
 object ConfigHelper {
-  def tryGetString(config: Config)(path: String): Option[String] = {
+  def getString(config: Config)(path: String): AlmValidation[String] = {
     try {
       config.getString(path) match {
-        case null => None
-        case "" => None
+        case null => KeyNotFoundProblem("String not found: %s".format(path), args = Map("key" -> path)).failure
+        case "" => KeyNotFoundProblem("String not found: %s".format(path), args = Map("key" -> path)).failure
         case str =>
           if (str.toLowerCase().equals("none"))
-            None
+            KeyNotFoundProblem("String not found: %s".format(path), args = Map("key" -> path)).failure
           else
-            Some(str)
+            str.success
       }
     } catch {
-      case exn: Throwable => None
+      case exn: Throwable => ExceptionCaughtProblem("").withCause(CauseIsThrowable(exn)).failure
     }
   }
 
-  def getString(config: Config)(path: String): AlmValidation[String] = {
-    option.cata(tryGetString(config)(path))(_.success, KeyNotFoundProblem("String not found: %s".format(path), args = Map("key" -> path)).failure)
-  }
-
   def getStringOrDefault(default: => String)(config: Config)(path: String): String = {
-    tryGetString(config)(path).getOrElse(default)
+    getString(config)(path).toOption.getOrElse(default)
   }
 
   def getBoolean(config: Config)(path: String): AlmValidation[Boolean] =
@@ -39,63 +35,50 @@ object ConfigHelper {
   def isBooleanSet(config: Config)(path: String): Boolean =
     getBoolean(config)(path).fold(_ => false, x => x)
 
-  def getDuration(config: Config)(path: String): AlmValidation[FiniteDuration] = {
+  def getMilliseconds(config: Config)(path: String): AlmValidation[FiniteDuration] = {
     try {
-      config.getNanoseconds(path) match {
+      config.getMilliseconds(path) match {
         case null => KeyNotFoundProblem("Entry for duration not found: %s".format(path), args = Map("key" -> path)).failure
-        case nanos => FiniteDuration(nanos, NANOSECONDS).success
+        case nanos => FiniteDuration(nanos, "ms").success
       }
     } catch {
       case exn: Throwable => UnspecifiedProblem("Not a duration on path '%s'".format(path), cause = Some(CauseIsThrowable(exn)), args = Map("key" -> path)).failure
     }
   }
 
-  def tryGetDuration(config: Config)(path: String): Option[FiniteDuration] =
-    (getDuration(config)(path)).fold(_ => None, succ => Some(succ))
-
-  def tryGetSubConfig(config: Config)(path: String): Option[Config] =
+  def getSubConfig(config: Config)(path: String): AlmValidation[Config] =
     config.getConfig(path) match {
-      case null => None
-      case found => Some(found)
+      case null => KeyNotFoundProblem("SubConfig not found: %s".format(path), args = Map("key" -> path)).failure
+      case found => found.success
     }
 
-  def getSubConfig(config: Config)(path: String): AlmValidation[Config] =
-    option.cata(tryGetSubConfig(config)(path))(_.success, KeyNotFoundProblem("SubConfig not found: %s".format(path), args = Map("key" -> path)).failure)
+  def getDispatcherNameFromRootConfig(config: Config)(path: String): AlmValidation[String] =
+    getSubConfig(config)(path).flatMap(getString(_)("dispatchername"))
 
-  def ifSubConfigExists(config: Config)(path: String)(action: Config => Unit) {
-    option.cata(tryGetSubConfig(config)(path))(
-      subConfig => action(subConfig),
-      ())
-  }
-
-  def tryGetDispatcherNameFromRootConfig(config: Config)(path: String): Option[String] =
-    tryGetSubConfig(config)(path).flatMap(tryGetString(_)("dispatchername"))
-
+  def lookupDispatcherConfigPath(config: Config)(path: String): AlmValidation[String] =
+    getDispatcherNameFromRootConfig(config)(path).map(dispatcherLookupName =>
+      s"almhirt.dispatchers.$dispatcherLookupName")
+      
   object eventLog {
-    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.eventlog)
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog)
     def getActorName(eventlogConfig: Config): String = ConfigHelper.getStringOrDefault("EventLog")(eventlogConfig)(ConfigItems.actorName)
   }
 
   object operationState {
-    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.operationState)
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.operationState)
     def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)
   }
 
   object commandEndpoint {
-    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.commandEndpoint)
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.commandEndpoint)
     def getActorName(endpointConfig: Config): String = ConfigHelper.getStringOrDefault("CommandEnpoint")(endpointConfig)(ConfigItems.actorName)
   }
 
   object commandDispatcher {
-    def tryGetConfig(config: Config): Option[Config] = tryGetSubConfig(config)(ConfigPaths.commandDispatcher)
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.commandDispatcher)
   }
-  
+
   object shared {
-    def tryGetFactoryName(config: Config): Option[String] = ConfigHelper.tryGetString(config)(ConfigItems.factory)
     def getFactoryName(config: Config): AlmValidation[String] = ConfigHelper.getString(config)(ConfigItems.factory)
   }
 

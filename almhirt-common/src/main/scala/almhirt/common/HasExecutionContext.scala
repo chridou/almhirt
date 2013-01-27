@@ -1,10 +1,11 @@
 package almhirt.common
 
+import java.util.concurrent._
+import scala.concurrent.ExecutionContext
+
 trait HasExecutionContext {
   def executionContext: scala.concurrent.ExecutionContext
 }
-
-import java.util.concurrent._
 
 trait HasCachedExecutionContext extends HasExecutionContext {
   val executionContext = scala.concurrent.ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
@@ -21,6 +22,9 @@ trait HasFixedSizeExecutionContext extends HasExecutionContext {
 
 object HasExecutionContext {
   def apply(): HasExecutionContext = cached
+
+  def apply(execContext: ExecutionContext): HasExecutionContext =
+    new HasExecutionContext { val executionContext = execContext }
 
   def cached(): HasExecutionContext = new HasExecutionContext {
     val executionContext = scala.concurrent.ExecutionContext.fromExecutor(Executors.newCachedThreadPool())

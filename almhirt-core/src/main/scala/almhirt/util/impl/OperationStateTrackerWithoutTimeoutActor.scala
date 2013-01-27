@@ -74,11 +74,11 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
 
 class OperationStateTrackerWithoutTimeoutFactory extends OperationStateTrackerFactory {
   def createOperationStateTracker(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    ConfigHelper.operationState.getConfig(theAlmhirt.system.config).map { subConfig =>
+    ConfigHelper.operationState.getConfig(theAlmhirt.config).map { subConfig =>
       val name = ConfigHelper.operationState.getActorName(subConfig)
       val props =
         SystemHelper.addDispatcherToProps(subConfig)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
-      theAlmhirt.system.actorSystem.actorOf(props, name)
+      theAlmhirt.actorSystem.actorOf(props, name)
     }
   }
 }

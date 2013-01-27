@@ -5,12 +5,9 @@ import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
 import almhirt.messaging._
-import almhirt.environment.AlmhirtSystem
-import almhirt.environment.configuration.ConfigPaths
-import almhirt.environment.configuration.ConfigHelper
-
-class MessageChannelActor extends Actor {
-  private var almhirtsystem: Option[AlmhirtSystem] = None
+import almhirt.environment._
+import almhirt.environment.configuration._
+class MessageChannelActor(messageChannelDispatcherName: Option[String]) extends Actor {
 
   private var subscriptions = Vector.empty[(UUID, MessagingSubscription)]
   private var subChannels = Vector.empty[(UUID, ActorRef, Message[AnyRef] => Boolean)]
@@ -30,24 +27,15 @@ class MessageChannelActor extends Actor {
       val registrationToken = UUID.randomUUID
       val registration = new RegistrationUUID { val ticket = registrationToken; def dispose { self ! UnsubscribeSubChannel(ticket) } }
       val actor =
-        almhirtsystem match {
+        messageChannelDispatcherName match {
           case None => context.actorOf(Props[MessageChannelActor], name = name)
-          case Some(sys) =>
-            ConfigHelper.tryGetDispatcherNameFromRootConfig(sys.config)(ConfigPaths.messagechannels) match {
-              case None => context.actorOf(Props[MessageChannelActor], name = name)
-              case Some(dn) => context.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
-            }
+          case Some(dn) => context.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
         }
-      almhirtsystem.foreach(sys => actor ! UseAlmhirtSystemMessage(sys))
       subChannels = subChannels :+ (registrationToken, actor, predicate)
       actor ! SubscriptionRsp(registration.success)
       sender ! NewSubChannelRsp(name, actor.success)
     case UnsubscribeSubChannel(token) =>
       subChannels = subChannels.filterNot(_._1 == token)
-    case UseAlmhirtSystemMessage(system) =>
-      almhirtsystem = Some(system)
-      subChannels.foreach(_._2 ! UseAlmhirtSystemMessage(system))
-
   }
 
   private case class Unsubscribe(token: UUID)

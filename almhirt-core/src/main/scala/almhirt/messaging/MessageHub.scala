@@ -26,14 +26,12 @@ import almhirt.core._
 import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.messaging.impl.MessageHubActor
-import almhirt.environment.AlmhirtSystem
-import almhirt.environment.configuration.ConfigPaths
-import almhirt.environment.configuration.ConfigHelper
+import almhirt.environment._
+import almhirt.environment.configuration._
 import almhirt.almakka.ActorBased
-import almhirt.common.AlmFuture
 
-trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable{
-   def post(message: Message[AnyRef]): Unit
+trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable {
+  def post(message: Message[AnyRef]): Unit
 }
 
 object MessageHub {
@@ -41,16 +39,23 @@ object MessageHub {
     new ActorBasedMessageHubImpl(actor)(hasExecutionContext)
   }
 
-  def apply(name: String)(implicit almhirtsystem: AlmhirtSystem): MessageHub = {
+  def apply(name: String, dispatcherName: Option[String], channelsDispatcherName: Option[String])(implicit foundations: HasActorSystem with HasExecutionContext): MessageHub = {
     val actor =
-      ConfigHelper.tryGetDispatcherNameFromRootConfig(almhirtsystem.config)(ConfigPaths.messagehub) match {
-        case None => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor], name = name)
-        case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageHubActor].withDispatcher(dn), name = name)
+      dispatcherName match {
+        case None => foundations.actorSystem.actorOf(Props(new MessageHubActor(channelsDispatcherName)), name = name)
+        case Some(dn) => foundations.actorSystem.actorOf(Props(new MessageHubActor(channelsDispatcherName)).withDispatcher(dn), name = name)
       }
-    actor ! UseAlmhirtSystemMessage(almhirtsystem)
-    apply(actor, almhirtsystem)
+    apply(actor, foundations)
   }
 
+  def apply(name: String, dispatcherName: Option[String])(implicit foundations: HasActorSystem with HasExecutionContext): MessageHub = {
+    apply(name, dispatcherName, None)
+  }
+  
+  def apply(name: String)(implicit foundations: HasActorSystem with HasExecutionContext): MessageHub = {
+    apply(name, None, None)
+  }
+  
   private class ActorBasedMessageHubImpl(val actor: ActorRef)(implicit hasExecutionContext: HasExecutionContext) extends MessageHub {
     def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]): AlmFuture[MessageChannel[TPayload]] = {
       (actor ? CreateSubChannelQry(name, MessagePredicate[TPayload]))(atMost)

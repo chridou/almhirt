@@ -9,11 +9,11 @@ class LogBackLoggingAdapter(logger: org.slf4j.Logger) extends akka.event.Logging
   val isInfoEnabled = true
   val isDebugEnabled = true
 
-  protected def notifyError(message: String) = logger.error(message)
-  protected def notifyError(cause: Throwable, message: String) = logger.error(message, cause)
-  protected def notifyWarning(message: String) = logger.warn(message)
-  protected def notifyInfo(message: String) = logger.info(message)
-  protected def notifyDebug(message: String) = logger.debug(message)
+  protected override def notifyError(message: String) = logger.error(message)
+  protected override def notifyError(cause: Throwable, message: String) = logger.error(message, cause)
+  protected override def notifyWarning(message: String) = logger.warn(message)
+  protected override def notifyInfo(message: String) = logger.info(message)
+  protected override def notifyDebug(message: String) = logger.debug(message)
 }
 
 object LogBackLoggingAdapter {

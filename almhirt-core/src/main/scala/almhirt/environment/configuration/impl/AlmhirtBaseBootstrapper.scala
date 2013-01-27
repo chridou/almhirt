@@ -1,6 +1,8 @@
 package almhirt.environment.configuration.impl
 
 import scala.reflect.ClassTag
+import scala.concurrent.duration._
+import akka.actor.ActorSystem
 import akka.event._
 import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
@@ -15,95 +17,95 @@ import almhirt.core.ServiceRegistry
 import almhirt.environment.configuration._
 import com.typesafe.config.Config
 
-class AlmhirtBaseBootstrapper(val config: Config) extends AlmhirtBootstrapper {
-  def createAlmhirtSystem(startUpLogger: LoggingAdapter): AlmValidation[(AlmhirtSystem, CleanUpAction)] =
-    AlmhirtSystem(config).map(sys => (sys, sys.dispose))
-
-  def createServiceRegistry(system: AlmhirtSystem, startUpLogger: LoggingAdapter): (Option[ServiceRegistry], CleanUpAction) = {
-    (Some(new SimpleConcurrentServiceRegistry), () => ())
+class AlmhirtBaseBootstrapper(override val config: Config) extends AlmhirtBootstrapper with HasConfig {
+  override def createActorSystem(startUpLogger: LoggingAdapter): AlmValidation[ActorSystem] = {
+    val sysName = ConfigHelper.getString(config)("almhirt.systemname").getOrElse("almhirt")
+    ActorSystem(sysName, config).success
   }
 
-  def createChannels(theServiceRegistry: Option[ServiceRegistry], startUpLogger: LoggingAdapter)(implicit system: AlmhirtSystem): AlmValidation[CleanUpAction] = {
-    theServiceRegistry match {
-      case Some(sr) =>
-        implicit val atMost = system.shortDuration
-        implicit val executionContext = system.executionContext
-        val messageHub = MessageHub("MessageHub")
-        val channels =
-          (for {
-            commandChannel <- messageHub.createMessageChannel[CommandEnvelope]("CommandChannel")
-            operationStateChannel <- messageHub.createMessageChannel[OperationState]("OperationStateChannel")
-            domainEventsChannel <- messageHub.createMessageChannel[DomainEvent]("DomainEventsChannel")
-            problemsChannel <- messageHub.createMessageChannel[Problem]("ProblemsChannel")
-          } yield (
-            new CommandChannelWrapper(commandChannel),
-            new OperationStateChannelWrapper(operationStateChannel),
-            new DomainEventsChannelWrapper(domainEventsChannel),
-            new ProblemChannelWrapper(problemsChannel))).awaitResult
+  override def createServiceRegistry(system: ActorSystem, startUpLogger: LoggingAdapter): (ServiceRegistry, CleanUpAction) = {
+    (new SimpleConcurrentServiceRegistry, () => ())
+  }
 
-        channels.map { x =>
-          sr.registerService[MessageHub](messageHub)
-          sr.registerService[CommandChannel](x._1)
-          sr.registerService[OperationStateChannel](x._2)
-          sr.registerService[DomainEventsChannel](x._3)
-          sr.registerService[ProblemChannel](x._4)
-          (() => { x._1.close(); x._1.close(); x._2.close(); x._3.close(); messageHub.close(); })
-        }
-      case _ => (() => ()).success
+  override def createFuturesExecutionContext(actorSystem: ActorSystem, startUpLogger: LoggingAdapter): AlmValidation[(HasExecutionContext, CleanUpAction)] = {
+    val dispatcherPath = ConfigHelper.lookupDispatcherConfigPath(config)(ConfigPaths.futures).toOption
+    val dispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(dispatcherPath)
+    (HasExecutionContext(dispatcher), () => ()).success
+  }
+
+  override def initializeMessaging(foundations: MessagingFoundations, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
+    implicit val dur = Duration(1, "s")
+    implicit val hec = foundations
+    val messageHubDispatcherName = ConfigHelper.lookupDispatcherConfigPath(config)(ConfigPaths.messagehub).toOption
+    val messageChannelsDispatcherName = ConfigHelper.lookupDispatcherConfigPath(config)(ConfigPaths.messagechannels).toOption
+    val messageHub = MessageHub("MessageHub", messageHubDispatcherName, messageChannelsDispatcherName)(foundations)
+    val channels =
+      (for {
+        commandChannel <- messageHub.createMessageChannel[CommandEnvelope]("CommandChannel")
+        operationStateChannel <- messageHub.createMessageChannel[OperationState]("OperationStateChannel")
+        domainEventsChannel <- messageHub.createMessageChannel[DomainEvent]("DomainEventsChannel")
+        problemsChannel <- messageHub.createMessageChannel[Problem]("ProblemsChannel")
+      } yield (
+        new CommandChannelWrapper(commandChannel),
+        new OperationStateChannelWrapper(operationStateChannel),
+        new DomainEventsChannelWrapper(domainEventsChannel),
+        new ProblemChannelWrapper(problemsChannel))).awaitResult
+
+    channels.map { x =>
+      theServiceRegistry.registerService[MessageHub](messageHub)
+      theServiceRegistry.registerService[CommandChannel](x._1)
+      theServiceRegistry.registerService[OperationStateChannel](x._2)
+      theServiceRegistry.registerService[DomainEventsChannel](x._3)
+      theServiceRegistry.registerService[ProblemChannel](x._4)
+      (() => { x._1.close(); x._1.close(); x._2.close(); x._3.close(); messageHub.close(); })
     }
   }
 
-  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry], startUpLogger: LoggingAdapter)(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
-    theServiceRegistry match {
-      case Some(sr) =>
-        for {
-          messageHub <- sr.getService[MessageHub]
-        } yield (new Almhirt {
-          val system = theSystem
-          
-          def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]) = messageHub.createMessageChannel(name)
+  override def createAlmhirt(theActorSystem: ActorSystem, hasFuturesExecutionContext: HasExecutionContext, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, CleanUpAction)] = {
+    for {
+      messageHub <- theServiceRegistry.getService[MessageHub]
+    } yield (new Almhirt {
+      override val config = AlmhirtBaseBootstrapper.this.config
+      override val actorSystem = theActorSystem
+      override val executionContext = hasFuturesExecutionContext.executionContext
+      override def getServiceByType(clazz: Class[_ <: AnyRef]) = theServiceRegistry.getServiceByType(clazz)
+      
+      override def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]) = messageHub.createMessageChannel(name)
 
-          def reportProblem(prob: Problem) { broadcast(prob) }
-          def reportOperationState(opState: OperationState) { broadcast(opState) }
-          def broadcastDomainEvent(event: DomainEvent) { broadcast(event) }
-          def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { messageHub.actor ! BroadcastMessageCmd(createMessage(payload, metaData)) }
+      override def reportProblem(prob: Problem) { broadcast(prob) }
+      override def reportOperationState(opState: OperationState) { broadcast(opState) }
+      override def broadcastDomainEvent(event: DomainEvent) { broadcast(event) }
+      override def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { messageHub.actor ! BroadcastMessageCmd(createMessage(payload, metaData)) }
 
-          val serviceRegistry = theServiceRegistry
+      override val durations = Durations(config)
 
-          def executionContext = system.executionContext
-          def shortDuration = system.shortDuration
-          def mediumDuration = system.mediumDuration
-          def longDuration = system.longDuration
-          
-          val log = Logging(theSystem.actorSystem, classOf[Almhirt])
+      override val log = Logging(actorSystem, classOf[Almhirt])
 
-        }, () => ())
-      case None => scalaz.Failure(UnspecifiedProblem("Cannot create almhirt without a service registry"))
-    }
+    }, () => { theActorSystem.shutdown(); theActorSystem.awaitTermination() })
   }
 
-  def createCoreComponents(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
-    (() => ()).success
-    
-  def initializeCoreComponents(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
+  override def createCoreComponents(almhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
     (() => ()).success
 
-  def registerRepositories(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
-    (() => ()).success
-    
-  def registerCommandHandlers(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
+  override def initializeCoreComponents(almhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
     (() => ()).success
 
-  def registerAndInitializeMoreComponents(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
-    (() => ()).success
-    
-  def prepareGateways(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
+  override def registerRepositories(almhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
     (() => ()).success
 
-  def registerAndInitializeAuxServices(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
+  override def registerCommandHandlers(almhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
     (() => ()).success
 
-  def cleanUpTemps(implicit almhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[Unit] =
+  override def registerAndInitializeMoreComponents(almhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
+    (() => ()).success
+
+  override def prepareGateways(almhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
+    (() => ()).success
+
+  override def registerAndInitializeAuxServices(almhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
+    (() => ()).success
+
+  override def cleanUpTemps(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[Unit] =
     ().success
-    
+
 }

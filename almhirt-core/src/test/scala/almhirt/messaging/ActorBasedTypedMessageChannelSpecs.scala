@@ -7,13 +7,14 @@ import akka.actor.ActorSystem
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
 
-class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll with AlmhirtsystemTestkit {
-  implicit val system = createTestSystem()
+class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll with AlmhirtTestKit {
+  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt()
   implicit val atMost = FiniteDuration(1, "s")
-  implicit def getUUID = java.util.UUID.randomUUID()
-
+  implicit val alm = theAlmhirt
+  implicit val executionContext = theAlmhirt.executionContext
+ 
   override def afterAll {
-    system.dispose()
+    shutDown.shutDown
   }
 
   private class A(val propa: Int)

@@ -5,18 +5,20 @@ import scala.concurrent.duration._
 import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.domain._
-import almhirt.environment.AlmhirtsystemTestkit
+import almhirt.environment.AlmhirtTestKit
 import almhirt.eventlog._
 import almhirt.parts.HasRepositories
 import test._
 import akka.testkit.TestEvent
 
-class RepositoryRegistrySpecs extends FlatSpec with BeforeAndAfterAll with AlmhirtsystemTestkit {
-  implicit val system = createTestSystem()
+class RepositoryRegistrySpecs extends FlatSpec with BeforeAndAfterAll with AlmhirtTestKit {
+  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt()
   implicit val atMost = FiniteDuration(1, "s")
-
+  implicit val alm = theAlmhirt
+  implicit val executionContext = theAlmhirt.executionContext
+ 
   override def afterAll {
-    system.dispose()
+    shutDown.shutDown
   }
 
   """The default repository registry""" should

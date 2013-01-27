@@ -5,7 +5,7 @@ import almhirt.common._
 
 trait HasServices {
   def getService[T <: AnyRef](implicit m: ClassTag[T]): AlmValidation[T] =
-    getServiceByType(m.runtimeClass.asInstanceOf[Class[_ <: AnyRef]]).map(_.asInstanceOf[T])
+    getServiceByType(m.runtimeClass.asInstanceOf[Class[_ <: AnyRef]]).flatMap(almhirt.almvalidation.funs.almCast[T](_))
 
   def getServiceByType(clazz: Class[_ <: AnyRef]): AlmValidation[AnyRef]
 }

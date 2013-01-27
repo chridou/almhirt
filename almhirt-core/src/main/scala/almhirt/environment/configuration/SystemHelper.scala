@@ -10,12 +10,10 @@ import almhirt.common.AlmValidation
 import almhirt.util.CommandEndpoint
 
 object SystemHelper {
-  def addDispatcherToProps(config: Config)(props: Props): Props = {
-    ConfigHelper.tryGetString(config)(ConfigItems.dispatchername) match {
-      case None => props
-      case Some(dn) => props.withDispatcher(dn)
-    }
-  }
+  def addDispatcherToProps(config: Config)(props: Props): Props =
+    ConfigHelper.getString(config)(ConfigItems.dispatchername).fold(
+      _ => props,
+      dn => props.withDispatcher(dn))
 
   def createBootstrapperFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] = {
     ConfigHelper.getSubConfig(config)(ConfigPaths.bootstrapper).flatMap(subConf =>
@@ -30,7 +28,7 @@ object SystemHelper {
   def createEventLogFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     import language.reflectiveCalls
     for {
-      eventLogConfig <- ConfigHelper.eventLog.getConfig(theAlmhirt.system.config)
+      eventLogConfig <- ConfigHelper.eventLog.getConfig(theAlmhirt.config)
       factoryName <- ConfigHelper.shared.getFactoryName(eventLogConfig)
       factory <- inTryCatch(
         Class.forName(factoryName)
@@ -43,7 +41,7 @@ object SystemHelper {
   def createOperationStateTrackerFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     import language.reflectiveCalls
     for {
-      opStateConfig <- ConfigHelper.operationState.getConfig(theAlmhirt.system.config)
+      opStateConfig <- ConfigHelper.operationState.getConfig(theAlmhirt.config)
       factoryName <- ConfigHelper.shared.getFactoryName(opStateConfig)
       factory <- inTryCatch {
         Class.forName(factoryName)
@@ -57,7 +55,7 @@ object SystemHelper {
   def createCommandEndpointFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] = {
     import language.reflectiveCalls
     for {
-      endpointConfig <- ConfigHelper.commandEndpoint.getConfig(theAlmhirt.system.config)
+      endpointConfig <- ConfigHelper.commandEndpoint.getConfig(theAlmhirt.config)
       factoryName <- ConfigHelper.shared.getFactoryName(endpointConfig)
       factory <- inTryCatch {
         Class.forName(factoryName)
@@ -71,7 +69,7 @@ object SystemHelper {
   def createCommandDispatcherFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] = {
     import language.reflectiveCalls
     for {
-      dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theAlmhirt.system.config)
+      dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theAlmhirt.config)
       factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
       factory <- inTryCatch {
         Class.forName(factoryName)

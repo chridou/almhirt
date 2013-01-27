@@ -17,9 +17,9 @@ class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: Fi
 
   def this(actor: ActorRef, maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, maximumDirectCallDuration.getOrElse(FiniteDuration(5, "seconds")))
   def this(actor: ActorRef)(implicit theAlmhirt: Almhirt) = this(actor, None)
-  
+
   def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None))(maximumDirectCallDuration).mapTo[CommittedDomainEventsRsp].map(_.events)
-  def purgeEvents(aggRootId: java.util.UUID) = AlmFuture.successful{ Nil }
+  def purgeEvents(aggRootId: java.util.UUID) = AlmFuture.successful { Nil }
 
   def getAllEvents() = (actor ? GetAllEventsQry())(maximumDirectCallDuration).mapTo[AllEventsRsp].map(x => x.chunk.events)
   def getEvents(id: UUID) = (actor ? GetEventsQry(id))(maximumDirectCallDuration).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)
@@ -29,8 +29,10 @@ class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: Fi
 }
 
 object DomainEventLogActorHull {
-  def apply(actor: ActorRef)(implicit theAlmhirt: Almhirt): DomainEventLog = {
-    val maxCallDuration = ConfigHelper.tryGetDuration(theAlmhirt.system.config)(ConfigPaths.eventlog+".maximum_direct_call_duration")
+  def apply(actor: ActorRef)(implicit foundations: HasExecutionContext with HasDurations with HasConfig): DomainEventLog = {
+    val maxCallDuration =
+      ConfigHelper.getMilliseconds(foundations.config)(ConfigPaths.eventlog + ".maximum_direct_call_duration")
+        .getOrElse(foundations.durations.extraLongDuration)
     new DomainEventLogActorHull(actor, maxCallDuration)
   }
 

@@ -10,12 +10,15 @@ import almhirt.environment._
 import almhirt.util.TrackingTicket
 import almhirt.common.AlmFuture
 
-class DevNullCommandExecutor(implicit baseOps: AlmhirtBaseOps, system: AlmhirtSystem) extends CommandExecutor {
+class DevNullCommandExecutor(implicit hasSystem: HasActorSystem) extends CommandExecutor {
   import akka.actor._
-  private implicit val executionContext = baseOps.executionContext
-  val actor = system.actorSystem.actorOf(Props(new Actor { def receive: Receive = { case _ => () } }))
+  val actor = hasSystem.actorSystem.actorOf(Props(new Actor { def receive: Receive = { case _ => () } }))
   def addHandler(handler: HandlesCommand) {}
   def removeHandlerByType(commandType: Class[_ <: DomainCommand]) {}
   def getHandlerByType(commandType: Class[_ <: DomainCommand])(implicit atMost: Duration): AlmFuture[HandlesCommand] = AlmFuture.failed[HandlesCommand](NotFoundProblem("DevNullCommandHandlerRegistry has no commands"))
   def executeCommand(commandEnvelope: CommandEnvelope) {}
+}
+
+object DevNullCommandExecutor {
+  def apply()(implicit hasSystem: HasActorSystem): CommandExecutor = new DevNullCommandExecutor
 }

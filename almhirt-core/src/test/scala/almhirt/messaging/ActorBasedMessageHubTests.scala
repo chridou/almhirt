@@ -9,14 +9,14 @@ import almhirt.syntax.almvalidation._
 import almhirt.almfuture.all._
 import almhirt.environment._
 
-class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with AlmhirtsystemTestkit {
-  implicit val system = createTestSystem()
-  implicit val executionContext = system.executionContext
+class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with AlmhirtTestKit {
+  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt()
   implicit val atMost = FiniteDuration(1, "s")
-  implicit def getUUID = java.util.UUID.randomUUID()
-
+  implicit val alm = theAlmhirt
+  implicit val executionContext = theAlmhirt.executionContext
+ 
   override def afterAll {
-    system.dispose()
+    shutDown.shutDown
   }
 
   private class A(val propa: Int)
@@ -44,7 +44,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created global channel of payload type AnyRef must trigger a handler on the created channel""") {
     val hub = getHub
-    val channel = (hub.createMessageChannel[AnyRef]("testChannel" + system.getUuid.toString())).awaitResult(Duration.Inf).forceResult
+    val channel = (hub.createMessageChannel[AnyRef]("testChannel" + theAlmhirt.getUuid.toString())).awaitResult(Duration.Inf).forceResult
     var hit = false
     val subscription = (channel <-* { x => hit = true }).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
@@ -54,7 +54,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created global channel of payload type String must trigger a handler on the created channel when a String is broadcasted""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[String]("testChannel" + system.getUuid.toString()).awaitResult(Duration.Inf).forceResult
+    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
     val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message("A"))
@@ -64,7 +64,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created global channel of payload type String must not trigger a handler on the created channel when a UUID is broadcasted""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[String]("testChannel" + system.getUuid.toString()).awaitResult(Duration.Inf).forceResult
+    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
     val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(java.util.UUID.randomUUID))
@@ -74,7 +74,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created channel with no topic of payload type AnyRef must trigger a handler on the created channel""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[AnyRef]("testChannel" + system.getUuid.toString()).awaitResult(Duration.Inf).forceResult
+    val channel = hub.createMessageChannel[AnyRef]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
     val subscription = (channel <-* (x => hit = true)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
@@ -84,7 +84,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created channel with no topic of payload type String must trigger a handler on the created channel when a String is broadcasted""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[String]("testChannel" + system.getUuid.toString()).awaitResult(Duration.Inf).forceResult
+    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
     val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message("A"))
@@ -94,7 +94,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created channel with no topic of payload type String must not be trigger a handler on the created channel when a UUID is broadcasted""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[String]("testChannel" + system.getUuid.toString()).awaitResult(Duration.Inf).forceResult
+    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
     val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(java.util.UUID.randomUUID))
@@ -105,7 +105,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
   test("""A MessageHub with a created global channel of payload type String using actors directly must trigger a handler on the created channel when a String is broadcasted""") {
     val hub = getHub
     val channel =
-      (hub.actor ? CreateSubChannelQry("testChannel" + system.getUuid.toString(), MessagePredicate[String]))(atMost)
+      (hub.actor ? CreateSubChannelQry("testChannel" + theAlmhirt.getUuid.toString(), MessagePredicate[String]))(atMost)
         .mapTo[NewSubChannelRsp]
         .map(_.channel)
         .toAlmFuture
@@ -126,7 +126,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
   test("""A MessageHub with a created global channel of payload type String using actors directly must not trigger a handler on the created channel when a UUID is broadcasted""") {
     val hub = getHub
     val channel =
-      (hub.actor ? CreateSubChannelQry("testChannel" + system.getUuid.toString(), MessagePredicate[String]))(atMost)
+      (hub.actor ? CreateSubChannelQry("testChannel" + theAlmhirt.getUuid.toString(), MessagePredicate[String]))(atMost)
         .mapTo[NewSubChannelRsp]
         .map(_.channel)
         .toAlmFuture

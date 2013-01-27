@@ -20,6 +20,7 @@ import almhirt.eventlog.impl.DomainEventLogActorHull
 import almhirt.environment.configuration.ConfigHelper
 import almhirt.environment.configuration.ConfigPaths
 import almhirt.util.impl.OperationStateTrackerActorHull
+import almhirt.core.ServiceRegistry
 
 class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper(config) {
   private var trackerRegistration: RegistrationHolder = null
@@ -28,16 +29,14 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
   private var cmdExecutor: CommandExecutor = null
   private var cmdExecutorRegistration: RegistrationHolder = null
 
-  override def createCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
-    val config = theAlmhirt.system.config
-    theAlmhirt.serviceRegistry match {
-      case Some(sr) =>
+  override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
         import akka.pattern._
         implicit val atMost = FiniteDuration(5, "s")
+        implicit val anAlmhirt = theAlmhirt
         implicit val executionContext = theAlmhirt.executionContext
 
         inTryCatch {
-          ConfigHelper.ifSubConfigExists(config)(ConfigPaths.operationState) { _ =>
+          ConfigHelper.getSubConfig(config)(ConfigPaths.operationState).foreach { _ =>
             val tracker = SystemHelper.createOperationStateTrackerFromFactory.forceResult
             trackerRegistration =
               theAlmhirt.getService[OperationStateChannel].flatMap(channel =>
@@ -47,14 +46,14 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
                   .toAlmFuture
                   .awaitResult)
                 .forceResult
-            sr.registerService[OperationStateTracker](almhirt.util.impl.OperationStateTrackerActorHull(tracker))
+            theServiceRegistry.registerService[OperationStateTracker](almhirt.util.impl.OperationStateTrackerActorHull(tracker))
           }
 
           repos = HasRepositories()
-          sr.registerService[HasRepositories](repos)
+          theServiceRegistry.registerService[HasRepositories](repos)
 
           cmdHandlerRegistry = HasCommandHandlers()
-          sr.registerService[HasCommandHandlers](cmdHandlerRegistry)
+          theServiceRegistry.registerService[HasCommandHandlers](cmdHandlerRegistry)
 
           cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos).forceResult
           cmdExecutorRegistration =
@@ -65,22 +64,20 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
                 .toAlmFuture
                 .awaitResult)
               .forceResult
-          sr.registerService[CommandExecutor](cmdExecutor)
-          ConfigHelper.ifSubConfigExists(config)(ConfigPaths.eventlog) { _ =>
+          theServiceRegistry.registerService[CommandExecutor](cmdExecutor)
+          ConfigHelper.getSubConfig(config)(ConfigPaths.eventlog).foreach { _ =>
             val eventLogActor = SystemHelper.createEventLogFromFactory.forceResult
-            sr.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor))
+            theServiceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor))
           }
-          ConfigHelper.ifSubConfigExists(config)(ConfigPaths.commandEndpoint) { _ =>
+          ConfigHelper.getSubConfig(config)(ConfigPaths.commandEndpoint).foreach { _ =>
             val endpoint = SystemHelper.createCommandEndpointFromFactory.forceResult
-            sr.registerService[CommandEndpoint](endpoint)
+            theServiceRegistry.registerService[CommandEndpoint](endpoint)
           }
 
           (() => {
             cmdExecutorRegistration.dispose
             trackerRegistration.dispose
           })
-        }.flatMap(cleanUp => super.createCoreComponents(theAlmhirt, startUpLogger).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
-      case None => scalaz.Failure(UnspecifiedProblem("Cannot register services without a service registry"))
-    }
+        }.flatMap(cleanUp => super.createCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
   }
 }

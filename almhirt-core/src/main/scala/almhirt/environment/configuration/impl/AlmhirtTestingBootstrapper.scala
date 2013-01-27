@@ -2,6 +2,7 @@ package almhirt.environment.configuration.impl
 
 import scala.reflect.ClassTag
 import scala.concurrent.duration.FiniteDuration
+import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import almhirt.almvalidation.kit._
 import almhirt.environment._
@@ -19,34 +20,32 @@ import almhirt.environment.configuration.CleanUpAction
 import com.typesafe.config.Config
 
 class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrapper(config) {
-  override def createAlmhirt(theServiceRegistry: Option[ServiceRegistry], startUpLogger: LoggingAdapter)(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)] = {
-    super.createAlmhirt(theServiceRegistry, startUpLogger).map {
-      case (almhirt, cleanUp) =>
+  override def createAlmhirt(actorSystem: ActorSystem, hasFuturesExecutionContext: HasExecutionContext, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, CleanUpAction)] = {
+    super.createAlmhirt(actorSystem, hasFuturesExecutionContext, theServiceRegistry, startUpLogger).map {
+      case (theAlmhirt, cleanUp) =>
         (new AlmhirtForTesting {
-          def system = theSystem
+          override val config = theAlmhirt.config
+          override val actorSystem = theAlmhirt.actorSystem
+          override val executionContext = theAlmhirt.executionContext
+          override def getServiceByType(clazz: Class[_ <: AnyRef]) = theAlmhirt.getServiceByType(clazz)
 
-          def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]) = almhirt.createMessageChannel(name)
+          override val serviceRegistry = theServiceRegistry
+          override def executeCommand(cmdEnv: CommandEnvelope) { theAlmhirt.broadcast(cmdEnv) }
 
-          def executeCommand(cmdEnv: CommandEnvelope) { almhirt.broadcast(cmdEnv) }
+          override def reportProblem(prob: Problem) { theAlmhirt.reportProblem(prob) }
+          override def reportOperationState(opState: OperationState) { theAlmhirt.reportOperationState(opState) }
+          override def broadcastDomainEvent(event: DomainEvent) { theAlmhirt.broadcastDomainEvent(event) }
+          override def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { theAlmhirt.broadcast(payload, metaData) }
 
-          def reportProblem(prob: Problem) { almhirt.reportProblem(prob) }
-          def reportOperationState(opState: OperationState) { almhirt.reportOperationState(opState) }
-          def broadcastDomainEvent(event: DomainEvent) { almhirt.broadcastDomainEvent(event) }
-          def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { almhirt.broadcast(payload, metaData) }
+          override def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]) = theAlmhirt.createMessageChannel(name)
+          override val durations = theAlmhirt.durations
 
-          def executionContext = almhirt.executionContext
-          def shortDuration = almhirt.shortDuration
-          def mediumDuration = almhirt.mediumDuration
-          def longDuration = almhirt.longDuration
+          override def repositories = theAlmhirt.getService[HasRepositories].forceResult
+          override def hasCommandHandlers = theAlmhirt.getService[HasCommandHandlers].forceResult
+          override def eventLog = theAlmhirt.getService[DomainEventLog].forceResult
+          override def operationStateTracker = theAlmhirt.getService[OperationStateTracker].forceResult
 
-          def serviceRegistry = almhirt.serviceRegistry
-
-          def repositories = almhirt.getService[HasRepositories].forceResult
-          def hasCommandHandlers = almhirt.getService[HasCommandHandlers].forceResult
-          def eventLog = almhirt.getService[DomainEventLog].forceResult
-          def operationStateTracker = almhirt.getService[OperationStateTracker].forceResult
-          
-          def log = almhirt.log
+          override def log = theAlmhirt.log
         }, cleanUp)
     }
   }

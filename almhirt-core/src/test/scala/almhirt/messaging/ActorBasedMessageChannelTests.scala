@@ -7,16 +7,16 @@ import akka.actor.ActorSystem
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
 
-class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with AlmhirtsystemTestkit {
-  implicit val system = createTestSystem()
+class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with AlmhirtTestKit {
+  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt()
   implicit val atMost = FiniteDuration(1, "s")
-  implicit def getUUID = java.util.UUID.randomUUID()
-
+  implicit val alm = theAlmhirt
+ 
   override def afterAll {
-    system.dispose()
+    shutDown.shutDown
   }
 
-  private def createChannel[T <: AnyRef](implicit tag: ClassTag[T]): MessageChannel[T] = MessageChannel[T](java.util.UUID.randomUUID().toString())
+  private def createChannel[T <: AnyRef](implicit tag: ClassTag[T]): MessageChannel[T] = MessageChannel[T](java.util.UUID.randomUUID().toString(), None)
 
   test("A MessageChannel creates creates a subscription") {
     val channel = createChannel[AnyRef]

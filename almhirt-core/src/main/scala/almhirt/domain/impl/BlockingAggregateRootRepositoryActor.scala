@@ -15,7 +15,7 @@ import almhirt.environment.Almhirt
 
 abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event], almhirt: Almhirt) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
-  implicit private def timeout = almhirt.mediumDuration
+  implicit private def timeout = almhirt.defaultDuration
   implicit private val hasExecutionContext = almhirt
   implicit private val executionContext = hasExecutionContext.executionContext
 

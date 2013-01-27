@@ -1,35 +1,39 @@
 package almhirt.environment.configuration
 
+import scalaz.syntax.validation._
 import akka.event.LoggingAdapter
 import almhirt.common._
 import almhirt.environment._
 import almhirt.core._
 import com.typesafe.config.Config
+import akka.actor.ActorSystem
 
 trait AlmhirtBootstrapper {
-  def createAlmhirtSystem(startUpLogger: LoggingAdapter): AlmValidation[(AlmhirtSystem, CleanUpAction)]
+  def createActorSystem(startUpLogger: LoggingAdapter): AlmValidation[(ActorSystem)]
 
-  def createServiceRegistry(theSystem: AlmhirtSystem, startUpLogger: LoggingAdapter): (Option[ServiceRegistry], CleanUpAction)
+  def createServiceRegistry(theActorSystem: ActorSystem, startUpLogger: LoggingAdapter): (ServiceRegistry, CleanUpAction)
 
-  def createChannels(theServiceRegistry: Option[ServiceRegistry], startUpLogger: LoggingAdapter)(implicit theSystem: AlmhirtSystem): AlmValidation[CleanUpAction]
-
-  def createAlmhirt(theServiceRegistry: Option[ServiceRegistry], startUpLogger: LoggingAdapter)(implicit theSystem: AlmhirtSystem): AlmValidation[(Almhirt, CleanUpAction)]
-
-  def createCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
-
-  def initializeCoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+  def createFuturesExecutionContext(theActorSystem: ActorSystem, startUpLogger: LoggingAdapter): AlmValidation[(HasExecutionContext, CleanUpAction)]
   
-  def registerRepositories(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+  def initializeMessaging(foundations: MessagingFoundations, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
 
-  def registerCommandHandlers(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
-  
-  def registerAndInitializeMoreComponents(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+  def createAlmhirt(theActorSystem: ActorSystem, hasFuturesExecutionContext: HasExecutionContext, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, CleanUpAction)]
 
-  def prepareGateways(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
-  
-  def registerAndInitializeAuxServices(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+  def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
 
-  def cleanUpTemps(implicit theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[Unit]
+  def initializeCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+
+  def registerRepositories(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+
+  def registerCommandHandlers(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+
+  def registerAndInitializeMoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+
+  def prepareGateways(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+
+  def registerAndInitializeAuxServices(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction]
+
+  def cleanUpTemps(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[Unit]
 }
 
 object AlmhirtBootstrapper {
@@ -38,17 +42,20 @@ object AlmhirtBootstrapper {
 
   def runStartupSequence(bootstrapper: AlmhirtBootstrapper, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, ShutDown)] =
     for {
-      (system, cleanUp1) <- bootstrapper.createAlmhirtSystem(startUpLogger)
-      (serviceRegistry, cleanUp2) <- scalaz.Success(bootstrapper.createServiceRegistry(system, startUpLogger))
-      cleanUp3 <- bootstrapper.createChannels(serviceRegistry, startUpLogger)(system)
-      (almhirt, cleanUp4) <- bootstrapper.createAlmhirt(serviceRegistry, startUpLogger)(system)
-      cleanUp5 <- bootstrapper.createCoreComponents(almhirt, startUpLogger)
-      cleanUp6 <- bootstrapper.initializeCoreComponents(almhirt, startUpLogger)
-      cleanUp7 <- bootstrapper.registerRepositories(almhirt, startUpLogger)
-      cleanUp8 <- bootstrapper.registerCommandHandlers(almhirt, startUpLogger)
-      cleanUp9 <- bootstrapper.registerAndInitializeMoreComponents(almhirt, startUpLogger)
-      cleanUp10 <- bootstrapper.prepareGateways(almhirt, startUpLogger)
-      cleanUp11 <- bootstrapper.registerAndInitializeAuxServices(almhirt, startUpLogger)
-      _ <- bootstrapper.cleanUpTemps(almhirt, startUpLogger)
-    } yield (almhirt, new ShutDown{ def shutDown() { cleanUp11(); cleanUp10(); cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1() } })
+      
+      (system) <- bootstrapper.createActorSystem(startUpLogger)
+      (serviceRegistry, cleanUp1) <- scalaz.Success(bootstrapper.createServiceRegistry(system, startUpLogger))
+      (executionContext, cleanUp2) <- bootstrapper.createFuturesExecutionContext(system, startUpLogger)
+      messagingFoundations <- MessagingFoundations(system, executionContext.executionContext).success
+      cleanUp3 <- bootstrapper.initializeMessaging(messagingFoundations, serviceRegistry, startUpLogger)
+      (almhirt, cleanUp4) <- bootstrapper.createAlmhirt(system, messagingFoundations, serviceRegistry, startUpLogger)
+      cleanUp5 <- bootstrapper.createCoreComponents(almhirt, serviceRegistry, startUpLogger)
+      cleanUp6 <- bootstrapper.initializeCoreComponents(almhirt, serviceRegistry, startUpLogger)
+      cleanUp7 <- bootstrapper.registerRepositories(almhirt, serviceRegistry, startUpLogger)
+      cleanUp8 <- bootstrapper.registerCommandHandlers(almhirt, serviceRegistry, startUpLogger)
+      cleanUp9 <- bootstrapper.registerAndInitializeMoreComponents(almhirt, serviceRegistry, startUpLogger)
+      cleanUp10 <- bootstrapper.prepareGateways(almhirt, serviceRegistry, startUpLogger)
+      cleanUp11 <- bootstrapper.registerAndInitializeAuxServices(almhirt, serviceRegistry, startUpLogger)
+      _ <- bootstrapper.cleanUpTemps(almhirt, serviceRegistry, startUpLogger)
+    } yield (almhirt, new ShutDown { def shutDown() { cleanUp11(); cleanUp10(); cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1() } })
 }

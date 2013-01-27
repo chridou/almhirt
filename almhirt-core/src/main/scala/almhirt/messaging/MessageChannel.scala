@@ -26,12 +26,10 @@ import akka.dispatch._
 import almhirt.core._
 import almhirt.common._
 import almhirt.almfuture.all._
-import almhirt.messaging.impl.MessageChannelActor
-import almhirt.environment.AlmhirtSystem
-import almhirt.environment.configuration.ConfigPaths
-import almhirt.environment.configuration.ConfigHelper
+import almhirt.environment._
+import almhirt.environment.configuration._
 import almhirt.almakka.ActorBased
-import almhirt.common.AlmFuture
+import almhirt.messaging.impl.MessageChannelActor
 
 trait MessageChannel[T <: AnyRef] extends MessageStream[T] with CanDeliverMessages[T] with CanCreateSubChannels[T] with ActorBased
 
@@ -40,14 +38,17 @@ object MessageChannel {
     new ActorBasedMessageChannelImpl[T](actor)(hasExecutionContext, m)
   }
 
-  def apply[T <: AnyRef](name: String)(implicit almhirtsystem: AlmhirtSystem, m: ClassTag[T]): MessageChannel[T] = {
+  def apply[T <: AnyRef](name: String, dispatcherName: Option[String])(implicit foundations: HasActorSystem with HasExecutionContext, m: ClassTag[T]): MessageChannel[T] = {
     val actor =
-      ConfigHelper.tryGetDispatcherNameFromRootConfig(almhirtsystem.config)(ConfigPaths.messagechannels) match {
-        case None => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor], name = name)
-        case Some(dn) => almhirtsystem.actorSystem.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
+      dispatcherName match {
+        case None => foundations.actorSystem.actorOf(Props(new MessageChannelActor(dispatcherName)), name = name)
+        case Some(dn) => foundations.actorSystem.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
       }
-    actor ! UseAlmhirtSystemMessage(almhirtsystem)
-    apply[T](actor, almhirtsystem)(m)
+    apply[T](actor, foundations)(m)
+  }
+  
+  def apply[T <: AnyRef](name: String)(implicit foundations: HasActorSystem with HasExecutionContext, m: ClassTag[T]): MessageChannel[T] = {
+    apply[T](name, None)
   }
 
   class ActorBasedMessageChannelImpl[T <: AnyRef](val actor: ActorRef)(implicit hasExecutionContext: HasExecutionContext, m: ClassTag[T]) extends MessageChannel[T] {

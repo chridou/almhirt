@@ -37,7 +37,7 @@ object DomainEventLog {
   import almhirt.environment._
   import almhirt.eventlog.impl._
 
-  def apply()(implicit almhirt: Almhirt, system: AlmhirtSystem): AlmValidation[DomainEventLog] = unsafeInMemory()
+  def apply()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = unsafeInMemory()
 
   def unsafeInMemory()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = {
     new InefficientSerializingInMemoryDomainEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_))
@@ -47,8 +47,8 @@ object DomainEventLog {
     new DevNullEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_))
   }
 
-  def devNull()(implicit system: AlmhirtSystem): DomainEventLog = {
-    DomainEventLogActorHull(system.actorSystem.actorOf(Props(new DevNullEventLogActor()), s"devNullEventLog-${system.getUuid.toString()}"), Duration(1, "s"))
+  def devNull()(implicit foundations: HasActorSystem with CanCreateUuid with HasExecutionContext): DomainEventLog = {
+    DomainEventLogActorHull(foundations.actorSystem.actorOf(Props(new DevNullEventLogActor()), s"devNullEventLog-${foundations.getUuid.toString()}"), Duration(1, "s"))
   }
   
 }

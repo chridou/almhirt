@@ -14,10 +14,10 @@ import almhirt.util._
 import almhirt.common.AlmFuture
 import almhirt.almakka.ActorBased
 
-class OperationStateTrackerActorHull(private val operationStateTracker: ActorRef)(implicit almhirt: Almhirt) extends OperationStateTracker with ActorBased {
+class OperationStateTrackerActorHull(private val operationStateTracker: ActorRef)(implicit theAlmhirt: Almhirt) extends OperationStateTracker with ActorBased {
   val actor = operationStateTracker
-  implicit private def executionContext = almhirt.executionContext
-  implicit private def timeout = almhirt.mediumDuration
+  implicit private def executionContext = theAlmhirt.executionContext
+  implicit private def timeout = theAlmhirt.defaultDuration
 
   def updateState(opState: OperationState) {
     operationStateTracker ! opState
