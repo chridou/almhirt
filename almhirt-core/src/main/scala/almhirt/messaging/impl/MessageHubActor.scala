@@ -21,8 +21,8 @@ class MessageHubActor(messageChannelsDispatcherName: Option[String]) extends Act
       val registration = new RegistrationUUID { val ticket = registrationToken; def dispose { self ! UnsubscribeSubChannel(ticket) } }
       val actor =
         messageChannelsDispatcherName match {
-          case None => context.actorOf(Props[MessageChannelActor], name = name)
-          case Some(dn) => context.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
+          case None => context.actorOf(Props(new MessageChannelActor(messageChannelsDispatcherName)), name = name)
+          case Some(dn) => context.actorOf(Props(new MessageChannelActor(messageChannelsDispatcherName)).withDispatcher(dn), name = name)
         }
       subChannels = subChannels :+ (registrationToken, actor, predicate)
       actor ! SubscriptionRsp(registration.success)

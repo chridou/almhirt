@@ -28,8 +28,8 @@ class MessageChannelActor(messageChannelDispatcherName: Option[String]) extends 
       val registration = new RegistrationUUID { val ticket = registrationToken; def dispose { self ! UnsubscribeSubChannel(ticket) } }
       val actor =
         messageChannelDispatcherName match {
-          case None => context.actorOf(Props[MessageChannelActor], name = name)
-          case Some(dn) => context.actorOf(Props[MessageChannelActor].withDispatcher(dn), name = name)
+          case None => context.actorOf(Props(new MessageChannelActor(messageChannelDispatcherName)), name = name)
+          case Some(dn) => context.actorOf(Props(new MessageChannelActor(messageChannelDispatcherName)).withDispatcher(dn), name = name)
         }
       subChannels = subChannels :+ (registrationToken, actor, predicate)
       actor ! SubscriptionRsp(registration.success)
