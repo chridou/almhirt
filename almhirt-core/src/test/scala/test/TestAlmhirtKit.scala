@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import almhirt.domain.AggregateRootRepository
-import almhirt.environment.Almhirt
+import almhirt.core.Almhirt
 import almhirt.parts.HasRepositories
 
 trait TestAlmhirtKit {

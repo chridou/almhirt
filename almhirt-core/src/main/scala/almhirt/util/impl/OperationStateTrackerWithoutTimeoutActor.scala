@@ -16,6 +16,7 @@ import almhirt.commanding.DomainCommand
 import almhirt.almakka.AlmActorLogging
 import almhirt.environment.configuration.ConfigHelper
 import almhirt.environment.configuration.SystemHelper
+import almhirt.core.Almhirt
 
 class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with LogsProblemsTagged with AlmActorLogging {
   val logTag = "OperationStateTracker"
@@ -37,7 +38,7 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
             }
           }
         case resState: ResultOperationState =>
-            if (!collectedInProcess.contains(resState.ticket))
+          if (!collectedInProcess.contains(resState.ticket))
             log.warning("ResultState received but no InProcess state for ticket %s".format(resState.ticket))
           else
             collectedInProcess -= resState.ticket
@@ -74,11 +75,12 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
 
 class OperationStateTrackerWithoutTimeoutFactory extends OperationStateTrackerFactory {
   def createOperationStateTracker(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    ConfigHelper.operationState.getConfig(theAlmhirt.config).map { subConfig =>
-      val name = ConfigHelper.operationState.getActorName(subConfig)
-      val props =
-        SystemHelper.addDispatcherToProps(subConfig)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
-      theAlmhirt.actorSystem.actorOf(props, name)
-    }
+    theAlmhirt.getConfig.flatMap(config =>
+      ConfigHelper.operationState.getConfig(config).map { subConfig =>
+        val name = ConfigHelper.operationState.getActorName(subConfig)
+        val props =
+          SystemHelper.addDispatcherToProps(subConfig)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
+        theAlmhirt.actorSystem.actorOf(props, name)
+      })
   }
 }

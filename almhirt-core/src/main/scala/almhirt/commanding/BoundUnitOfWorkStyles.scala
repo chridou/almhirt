@@ -14,6 +14,7 @@ import almhirt.parts.HasRepositories
 import almhirt.environment._
 import almhirt.util._
 import almhirt.common.AlmFuture
+import almhirt.core.Almhirt
 
 trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent, TCom <: DomainCommand] { 
   protected def getRepository(): AlmValidation[AggregateRootRepository[AR, TEvent]]
@@ -28,9 +29,9 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
         repo => {
           executeHandler(command).fold(
             fail => {
-              theAlmhirt.reportProblem(fail)
+              theAlmhirt.publishProblem(fail)
               ticket match {
-                case Some(t) => theAlmhirt.reportOperationState(NotExecuted(t, fail))
+                case Some(t) => theAlmhirt.publishOperationState(NotExecuted(t, fail))
                 case None => ()
               }
             },
@@ -39,9 +40,9 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
         })
     } else {
       val p = ArgumentProblem("Not a creator command: %s".format(com.getClass.getName), severity = Major)
-      theAlmhirt.reportProblem(p)
+      theAlmhirt.publishProblem(p)
       ticket match {
-        case Some(t) => theAlmhirt.reportOperationState(NotExecuted(t, p))
+        case Some(t) => theAlmhirt.publishOperationState(NotExecuted(t, p))
         case None => ()
       }
     }
@@ -95,10 +96,10 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
       })
   }
 
-  private def updateFailedOperationState(baseOps: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
-    baseOps.reportProblem(p)
+  private def updateFailedOperationState(theAlmhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
+    theAlmhirt.publishProblem(p)
     ticket match {
-      case Some(t) => baseOps.reportOperationState(NotExecuted(t, p))
+      case Some(t) => theAlmhirt.publishOperationState(NotExecuted(t, p))
       case None => ()
     }
   }

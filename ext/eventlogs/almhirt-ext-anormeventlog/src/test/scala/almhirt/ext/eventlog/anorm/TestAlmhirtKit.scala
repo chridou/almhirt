@@ -3,14 +3,13 @@ package almhirt.ext.eventlog.anorm
 import almhirt._
 import almhirt.environment._
 import almhirt.domain.AggregateRootRepository
-import almhirt.environment.Almhirt
 import com.typesafe.config.ConfigFactory
 
 import almhirt.common._
+import almhirt.core.Almhirt
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import almhirt.domain.AggregateRootRepository
-import almhirt.environment.Almhirt
 import almhirt.parts.HasRepositories
 
 trait TestAlmhirtKit {

@@ -9,6 +9,7 @@ import almhirt.parts.CommandExecutor
 import almhirt.environment._
 import almhirt.util.TrackingTicket
 import almhirt.common.AlmFuture
+import almhirt.core.HasActorSystem
 
 class DevNullCommandExecutor(implicit hasSystem: HasActorSystem) extends CommandExecutor {
   import akka.actor._

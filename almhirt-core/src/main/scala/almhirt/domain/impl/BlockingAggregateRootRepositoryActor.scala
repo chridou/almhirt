@@ -11,7 +11,7 @@ import almhirt.domain._
 import almhirt.eventlog._
 import almhirt.util._
 import almhirt.common.AlmFuture
-import almhirt.environment.Almhirt
+import almhirt.core.Almhirt
 
 abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event], almhirt: Almhirt) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
@@ -46,14 +46,14 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
         fail =>
           updateFailedOperationState(almhirt, fail, ticket),
         succ => {
-          ticket.foreach(t => almhirt.reportOperationState(Executed(t)))
-          succ.foreach(event => almhirt.broadcastDomainEvent(event))
+          ticket.foreach(t => almhirt.publishOperationState(Executed(t)))
+          succ.foreach(event => almhirt.publishDomainEvent(event))
         }).awaitResult
 
   private def updateFailedOperationState(almhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
-    almhirt.reportProblem(p)
+    almhirt.publishProblem(p)
     ticket match {
-      case Some(t) => almhirt.reportOperationState(NotExecuted(t, p))
+      case Some(t) => almhirt.publishOperationState(NotExecuted(t, p))
       case None => ()
     }
   }

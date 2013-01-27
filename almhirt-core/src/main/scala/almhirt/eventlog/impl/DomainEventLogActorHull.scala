@@ -6,11 +6,13 @@ import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
 import almhirt.common._
+import almhirt.core._
 import almhirt.almfuture.all._
 import almhirt.environment._
 import almhirt.domain._
 import almhirt.eventlog._
 import almhirt.environment.configuration._
+import com.typesafe.config.Config
 
 class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: FiniteDuration)(implicit hasExecutionContext: HasExecutionContext) extends DomainEventLog {
   private implicit def executionContext = hasExecutionContext.executionContext
@@ -29,11 +31,11 @@ class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: Fi
 }
 
 object DomainEventLogActorHull {
-  def apply(actor: ActorRef)(implicit foundations: HasExecutionContext with HasDurations with HasConfig): DomainEventLog = {
+  def apply(actor: ActorRef, config: Config)(implicit foundations: HasExecutionContext with HasDurations): DomainEventLog = {
     val maxCallDuration =
-      ConfigHelper.getMilliseconds(foundations.config)(ConfigPaths.eventlog + ".maximum_direct_call_duration")
+      ConfigHelper.getMilliseconds(config)(ConfigPaths.eventlog + ".maximum_direct_call_duration")
         .getOrElse(foundations.durations.extraLongDuration)
-    new DomainEventLogActorHull(actor, maxCallDuration)
+    DomainEventLogActorHull(actor, maxCallDuration)
   }
 
   def apply(actor: ActorRef, maxDirectCallDuration: FiniteDuration)(implicit hasExecutionContext: HasExecutionContext): DomainEventLog = {

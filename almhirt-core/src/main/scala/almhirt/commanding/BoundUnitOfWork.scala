@@ -7,6 +7,7 @@ import almhirt.parts.HasRepositories
 import almhirt.environment._
 import almhirt.messaging.Message
 import almhirt.util._
+import almhirt.core.Almhirt
 
 abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEvent](private val theAlmhirt: Almhirt, getTheRepository: () => AlmValidation[AggregateRootRepository[AR, TEvent]])(implicit m: ClassTag[AR]) extends HandlesCommand {
   def getRepository(): AlmValidation[AggregateRootRepository[AR, TEvent]] = getTheRepository()
@@ -25,9 +26,9 @@ abstract class BoundUnitOfWork[AR <: AggregateRoot[AR, TEvent], TEvent <: Domain
       case bcmd: BoundDomainCommand => handleBoundCommand(bcmd, ticket)(theAlmhirt)
       case wrongType =>
         val p = ArgumentProblem("Not a BoundDomainCommand: %s".format(wrongType.getClass.getName), severity = Major)
-        theAlmhirt.reportProblem(p)
+        theAlmhirt.publishProblem(p)
         ticket match {
-          case Some(t) => theAlmhirt.reportOperationState(NotExecuted(t, p))
+          case Some(t) => theAlmhirt.publishOperationState(NotExecuted(t, p))
           case None => ()
         }
     }

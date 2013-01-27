@@ -21,6 +21,7 @@ import almhirt.environment.configuration.ConfigHelper
 import almhirt.environment.configuration.ConfigPaths
 import almhirt.util.impl.OperationStateTrackerActorHull
 import almhirt.core.ServiceRegistry
+import almhirt.core.Almhirt
 
 class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper(config) {
   private var trackerRegistration: RegistrationHolder = null
@@ -67,7 +68,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
           theServiceRegistry.registerService[CommandExecutor](cmdExecutor)
           ConfigHelper.getSubConfig(config)(ConfigPaths.eventlog).foreach { _ =>
             val eventLogActor = SystemHelper.createEventLogFromFactory.forceResult
-            theServiceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor))
+            theServiceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor, config))
           }
           ConfigHelper.getSubConfig(config)(ConfigPaths.commandEndpoint).foreach { _ =>
             val endpoint = SystemHelper.createCommandEndpointFromFactory.forceResult

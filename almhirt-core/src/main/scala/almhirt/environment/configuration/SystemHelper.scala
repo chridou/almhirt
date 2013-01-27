@@ -8,6 +8,7 @@ import almhirt.eventlog._
 import almhirt.environment._
 import almhirt.common.AlmValidation
 import almhirt.util.CommandEndpoint
+import almhirt.core.Almhirt
 
 object SystemHelper {
   def addDispatcherToProps(config: Config)(props: Props): Props =
@@ -28,7 +29,8 @@ object SystemHelper {
   def createEventLogFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     import language.reflectiveCalls
     for {
-      eventLogConfig <- ConfigHelper.eventLog.getConfig(theAlmhirt.config)
+      theConfig <- theAlmhirt.getConfig
+      eventLogConfig <- ConfigHelper.eventLog.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryName(eventLogConfig)
       factory <- inTryCatch(
         Class.forName(factoryName)
@@ -41,7 +43,8 @@ object SystemHelper {
   def createOperationStateTrackerFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     import language.reflectiveCalls
     for {
-      opStateConfig <- ConfigHelper.operationState.getConfig(theAlmhirt.config)
+      theConfig <- theAlmhirt.getConfig
+      opStateConfig <- ConfigHelper.operationState.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryName(opStateConfig)
       factory <- inTryCatch {
         Class.forName(factoryName)
@@ -55,7 +58,8 @@ object SystemHelper {
   def createCommandEndpointFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] = {
     import language.reflectiveCalls
     for {
-      endpointConfig <- ConfigHelper.commandEndpoint.getConfig(theAlmhirt.config)
+      theConfig <- theAlmhirt.getConfig
+      endpointConfig <- ConfigHelper.commandEndpoint.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryName(endpointConfig)
       factory <- inTryCatch {
         Class.forName(factoryName)
@@ -69,7 +73,8 @@ object SystemHelper {
   def createCommandDispatcherFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] = {
     import language.reflectiveCalls
     for {
-      dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theAlmhirt.config)
+      theConfig <- theAlmhirt.getConfig
+      dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
       factory <- inTryCatch {
         Class.forName(factoryName)

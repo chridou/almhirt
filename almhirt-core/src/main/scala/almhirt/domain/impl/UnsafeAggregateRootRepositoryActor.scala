@@ -7,7 +7,7 @@ import almhirt.common._
 import almhirt.syntax.almfuture._
 import almhirt.domain._
 import almhirt.eventlog.DomainEventLog
-import almhirt.environment.Almhirt
+import almhirt.core.Almhirt
 import almhirt.util._
 import almhirt.common.AlmFuture
 
@@ -33,14 +33,14 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
         fail =>
           updateFailedOperationState(almhirt, fail, ticket),
         succ => {
-          ticket.foreach(t => almhirt.reportOperationState(Executed(t)))
-          succ.foreach(event => almhirt.broadcastDomainEvent(event))
+          ticket.foreach(t => almhirt.publishOperationState(Executed(t)))
+          succ.foreach(event => almhirt.publishDomainEvent(event))
         })
 
   private def updateFailedOperationState(almhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
-    almhirt.reportProblem(p)
+    almhirt.publishProblem(p)
     ticket match {
-      case Some(t) => almhirt.reportOperationState(NotExecuted(t, p))
+      case Some(t) => almhirt.publishOperationState(NotExecuted(t, p))
       case None => ()
     }
   }

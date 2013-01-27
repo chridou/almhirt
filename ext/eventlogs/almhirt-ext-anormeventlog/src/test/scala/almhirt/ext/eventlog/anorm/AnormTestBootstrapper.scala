@@ -2,6 +2,7 @@ package almhirt.ext.eventlog.anorm
 
 import akka.event.LoggingAdapter
 import almhirt.common._
+import almhirt.core.Almhirt
 import almhirt.core.ServiceRegistry
 import almhirt.environment._
 import almhirt.environment.configuration.CleanUpAction

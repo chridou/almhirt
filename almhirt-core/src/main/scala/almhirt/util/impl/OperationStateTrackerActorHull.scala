@@ -13,6 +13,7 @@ import almhirt.almfuture.all._
 import almhirt.util._
 import almhirt.common.AlmFuture
 import almhirt.almakka.ActorBased
+import almhirt.core.Almhirt
 
 class OperationStateTrackerActorHull(private val operationStateTracker: ActorRef)(implicit theAlmhirt: Almhirt) extends OperationStateTracker with ActorBased {
   val actor = operationStateTracker

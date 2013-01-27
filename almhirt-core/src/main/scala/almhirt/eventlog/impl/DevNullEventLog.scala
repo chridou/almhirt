@@ -29,18 +29,19 @@ import almhirt.almfuture.all._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog._
 import almhirt.common.AlmFuture
+import almhirt.core.Almhirt
 
 class DevNullEventLogFactory() extends DomainEventLogFactory {
   def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    ConfigHelper.eventLog.getConfig(theAlmhirt.config).map { subConfig =>
-      val name = ConfigHelper.eventLog.getActorName(subConfig)
-      val props =
-        SystemHelper.addDispatcherToProps(subConfig)(Props(new DevNullEventLogActor()))
-      theAlmhirt.actorSystem.actorOf(props, name)
-    }
+    theAlmhirt.getConfig.flatMap(config =>
+      ConfigHelper.eventLog.getConfig(config).map { subConfig =>
+        val name = ConfigHelper.eventLog.getActorName(subConfig)
+        val props =
+          SystemHelper.addDispatcherToProps(subConfig)(Props(new DevNullEventLogActor()))
+        theAlmhirt.actorSystem.actorOf(props, name)
+      })
   }
 }
-
 
 class DevNullEventLogActor() extends Actor {
   def receive = {

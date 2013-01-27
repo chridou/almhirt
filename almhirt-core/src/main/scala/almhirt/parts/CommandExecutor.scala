@@ -4,6 +4,8 @@ import almhirt.common._
 import almhirt.environment._
 import almhirt.commanding.ExecutesCommands
 import almhirt.parts.impl.DevNullCommandExecutor
+import almhirt.core.Almhirt
+import almhirt.core.HasActorSystem
 
 trait CommandExecutor extends ExecutesCommands with almhirt.almakka.ActorBased
 

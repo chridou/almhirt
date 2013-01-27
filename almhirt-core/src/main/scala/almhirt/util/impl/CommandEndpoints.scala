@@ -12,6 +12,7 @@ import almhirt.environment.configuration._
 import almhirt.util._
 import almhirt.messaging._
 import almhirt.parts.CommandExecutor
+import almhirt.core.Almhirt
 
 class CommandEndpointWithUuidTickets(forwardCommand: CommandEnvelope => Unit, operationStateTracker: ActorRef, theAlmhirt: Almhirt) extends CommandEndpoint {
   private case class RegisterForTicket(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit, atMost: FiniteDuration)
@@ -35,7 +36,8 @@ class CommandEndpointWithUuidTickets(forwardCommand: CommandEnvelope => Unit, op
 class CommandEndpointWithUuidTicketsFactory {
   def createCommandEndpoint(theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] = {
     for {
-      config <- ConfigHelper.commandEndpoint.getConfig(theAlmhirt.config)
+      rootConf <- theAlmhirt.getConfig
+      config <- ConfigHelper.commandEndpoint.getConfig(rootConf)
       modeStr <- ConfigHelper.getString(config)("mode")
       mode <- CommandEndpointForwardMode.fromString(modeStr)
       forwardAction <- mode match {
@@ -48,7 +50,7 @@ class CommandEndpointWithUuidTicketsFactory {
         case PushCommandDirectlyToExecutor =>
           theAlmhirt.getService[CommandExecutor].map(executor => (cmdEnv: CommandEnvelope) => executor.executeCommand(cmdEnv))
       }
-      trackerActorName <- ConfigHelper.operationState.getConfig(theAlmhirt.config).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
+      trackerActorName <- ConfigHelper.operationState.getConfig(config).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
       tracker <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + trackerActorName) }
     } yield new CommandEndpointWithUuidTickets(forwardAction, tracker, theAlmhirt)
   }

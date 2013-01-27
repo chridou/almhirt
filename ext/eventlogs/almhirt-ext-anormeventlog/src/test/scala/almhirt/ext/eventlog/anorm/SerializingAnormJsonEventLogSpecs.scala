@@ -3,6 +3,7 @@ package almhirt.ext.eventlog.anorm
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.core.Almhirt
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import almhirt.eventlog._

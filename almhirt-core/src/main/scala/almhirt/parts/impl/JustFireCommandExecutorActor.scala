@@ -14,18 +14,19 @@ import almhirt.commanding._
 import almhirt.parts.CommandExecutor
 import almhirt.util._
 import almhirt.common.AlmFuture
+import almhirt.core.Almhirt
 
 /**
  */
 class JustFireCommandExecutorActor(handlers: HasCommandHandlers, repositories: HasRepositories)(implicit theAlmHirt: Almhirt) extends Actor {
 
   private def executeCommand(command: DomainCommand, ticket: Option[TrackingTicket]) {
-    ticket foreach { t => theAlmHirt.reportOperationState(InProcess(t)) }
+    ticket foreach { t => theAlmHirt.publishOperationState(InProcess(t)) }
     handlers.getHandlerByType(command.getClass).fold(
       fail => {
-        theAlmHirt.reportProblem(fail)
+        theAlmHirt.publishProblem(fail)
         ticket match {
-          case Some(t) => theAlmHirt.reportOperationState(NotExecuted(t, fail))
+          case Some(t) => theAlmHirt.publishOperationState(NotExecuted(t, fail))
           case None => ()
         }
       },

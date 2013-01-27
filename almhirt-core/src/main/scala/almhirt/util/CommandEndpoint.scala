@@ -4,7 +4,7 @@ import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.commanding.DomainCommand
-import almhirt.environment.Almhirt
+import almhirt.core.Almhirt
 import almhirt.common.AlmValidation
 import almhirt.common.UnspecifiedProblem
 

@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 import almhirt.common._
 import almhirt.core._
 import almhirt.domain.DomainEvent
+import almhirt.core.Almhirt
 
 sealed trait DomainEventLogCmd
 case class LogEventsQry(events: List[DomainEvent], correlationId: Option[UUID] = None) extends DomainEventLogCmd
@@ -40,15 +41,17 @@ object DomainEventLog {
   def apply()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = unsafeInMemory()
 
   def unsafeInMemory()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = {
-    new InefficientSerializingInMemoryDomainEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_))
+    almhirt.getConfig.flatMap(config =>
+      new InefficientSerializingInMemoryDomainEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_, config)))
   }
 
   def devNullFromFactory()(implicit almhirt: Almhirt): AlmValidation[DomainEventLog] = {
-    new DevNullEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_))
+    almhirt.getConfig.flatMap(config =>
+      new DevNullEventLogFactory().createDomainEventLog(almhirt).map(DomainEventLogActorHull(_, config)))
   }
 
   def devNull()(implicit foundations: HasActorSystem with CanCreateUuid with HasExecutionContext): DomainEventLog = {
     DomainEventLogActorHull(foundations.actorSystem.actorOf(Props(new DevNullEventLogActor()), s"devNullEventLog-${foundations.getUuid.toString()}"), Duration(1, "s"))
   }
-  
+
 }

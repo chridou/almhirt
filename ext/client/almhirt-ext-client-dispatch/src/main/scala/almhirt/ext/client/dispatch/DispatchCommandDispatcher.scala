@@ -1,8 +1,8 @@
 package almhirt.ext.client.dispatch
 
 import almhirt.common._
+import almhirt.core.Almhirt
 import almhirt.http._
-import almhirt.environment.Almhirt
 import almhirt.commanding.DomainCommand
 import almhirt.util.{ TrackingTicket, ResultOperationState }
 import almhirt.client.CommandDispatcher

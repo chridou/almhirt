@@ -5,6 +5,7 @@ import almhirt.common._
 import almhirt.commanding._
 import almhirt.environment._
 import almhirt.domain.AggregateRootRepository
+import almhirt.core.Almhirt
 
 trait TestPersonCommand extends BoundDomainCommand
 trait TestPersonCreatorCommand extends TestPersonCommand with CreatorCommandStyle
@@ -29,11 +30,6 @@ object TestPersonHandlerFactory {
   def moveTestPersonNameUnitOfWork(implicit theAlmhirt: Almhirt) = BoundUnitOfWork.createMutatorStyleFuture[TestPerson, TestPersonEvent, MoveTestPerson]((cmd: MoveTestPerson, person: TestPerson, passedAlmhirt: Almhirt) => AlmFuture { person.move(cmd.newAddress).recordings }(theAlmhirt))
   def moveBecauseOfMarriageUnitOfWork(implicit theAlmhirt: Almhirt) = BoundUnitOfWork.createMutatorStyleFuture[TestPerson, TestPersonEvent, MoveBecauseOfMarriage]((cmd: MoveBecauseOfMarriage, person: TestPerson, passedAlmhirt: Almhirt) => AlmFuture { person.changeName(cmd.newName).flatMap(_.move(cmd.newAddress)).recordings }(passedAlmhirt))
 }
-//
-//class NewTestPersonUnitOfWork(implicit almhirt: Almhirt) extends TestPersonCreatorUnitOfWork[NewTestPerson] {
-//  private implicit val executionContext = almhirt.executionContext
-//  val commandType = classOf[NewTestPerson]
-//  val handler = (cmd: NewTestPerson) => AlmFuture { TestPerson(cmd.id, cmd.name).recordings }
 //}
 //
 //class ChangeTestPersonNameUnitOfWork(implicit almhirt: Almhirt) extends TestPersonMutatorUnitOfWork[ChangeTestPersonName] {

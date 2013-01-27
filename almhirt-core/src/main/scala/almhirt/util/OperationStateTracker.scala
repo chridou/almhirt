@@ -15,6 +15,7 @@ import almhirt.commanding.DomainCommand
 import almhirt.almakka.AlmActorLogging
 import almhirt.almakka.ActorBased
 import almhirt.common.AlmFuture
+import almhirt.core.Almhirt
 
 trait OperationStateTrackerCmd
 case class RegisterResultCallbackQry(ticket: TrackingTicket, atMost: FiniteDuration) extends OperationStateTrackerCmd

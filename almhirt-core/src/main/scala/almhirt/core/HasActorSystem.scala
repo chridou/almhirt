@@ -1,4 +1,4 @@
-package almhirt.environment
+package almhirt.core
 
 import akka.actor.ActorSystem
 

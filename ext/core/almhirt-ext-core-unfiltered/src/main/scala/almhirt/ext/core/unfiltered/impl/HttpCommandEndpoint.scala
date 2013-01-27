@@ -2,7 +2,7 @@ package almhirt.ext.core.unfiltered.impl
 
 import scalaz.syntax.validation._
 import almhirt.common._
-import almhirt.environment.Almhirt
+import almhirt.core.Almhirt
 import almhirt.commanding.DomainCommand
 import almhirt.util.CommandEndpoint
 import almhirt.ext.core.unfiltered._

@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.core._
 import almhirt.domain._
 import almhirt.common.AlmFuture
-import almhirt.environment.Almhirt
+import almhirt.core.Almhirt
 
 package object commanding {
   type CreatorCommandHandlerFuture[AR <: domain.AggregateRoot[AR, TEvent], TEvent <: domain.DomainEvent, TCom <: BoundDomainCommand] = (TCom, Almhirt) => AlmFuture[(AR, List[TEvent])]

@@ -1,7 +1,7 @@
 package almhirt.client
 
 import almhirt.common._
-import almhirt.environment.Almhirt
+import almhirt.core.Almhirt
 import almhirt.commanding.DomainCommand
 import almhirt.util._
 

@@ -18,35 +18,14 @@ import almhirt.util.OperationStateTracker
 import almhirt.core.ServiceRegistry
 import almhirt.environment.configuration.CleanUpAction
 import com.typesafe.config.Config
+import almhirt.core.Almhirt
+import almhirt.core.HasActorSystem
 
 class AlmhirtTestingBootstrapper(config: Config) extends AlmhirtDefaultBootStrapper(config) {
-  override def createAlmhirt(actorSystem: ActorSystem, hasFuturesExecutionContext: HasExecutionContext, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, CleanUpAction)] = {
-    super.createAlmhirt(actorSystem, hasFuturesExecutionContext, theServiceRegistry, startUpLogger).map {
+  override def createAlmhirt(hasActorSystem: HasActorSystem, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, CleanUpAction)] = {
+    super.createAlmhirt(hasActorSystem, theServiceRegistry, startUpLogger).flatMap {
       case (theAlmhirt, cleanUp) =>
-        (new AlmhirtForTesting {
-          override val config = theAlmhirt.config
-          override val actorSystem = theAlmhirt.actorSystem
-          override val executionContext = theAlmhirt.executionContext
-          override def getServiceByType(clazz: Class[_ <: AnyRef]) = theAlmhirt.getServiceByType(clazz)
-
-          override val serviceRegistry = theServiceRegistry
-          override def executeCommand(cmdEnv: CommandEnvelope) { theAlmhirt.broadcast(cmdEnv) }
-
-          override def reportProblem(prob: Problem) { theAlmhirt.reportProblem(prob) }
-          override def reportOperationState(opState: OperationState) { theAlmhirt.reportOperationState(opState) }
-          override def broadcastDomainEvent(event: DomainEvent) { theAlmhirt.broadcastDomainEvent(event) }
-          override def broadcast[T <: AnyRef](payload: T, metaData: Map[String, String] = Map.empty) { theAlmhirt.broadcast(payload, metaData) }
-
-          override def createMessageChannel[TPayload <: AnyRef](name: String)(implicit atMost: FiniteDuration, m: ClassTag[TPayload]) = theAlmhirt.createMessageChannel(name)
-          override val durations = theAlmhirt.durations
-
-          override def repositories = theAlmhirt.getService[HasRepositories].forceResult
-          override def hasCommandHandlers = theAlmhirt.getService[HasCommandHandlers].forceResult
-          override def eventLog = theAlmhirt.getService[DomainEventLog].forceResult
-          override def operationStateTracker = theAlmhirt.getService[OperationStateTracker].forceResult
-
-          override def log = theAlmhirt.log
-        }, cleanUp)
+        AlmhirtForTesting(theAlmhirt, theServiceRegistry).map((_, cleanUp))
     }
   }
 }

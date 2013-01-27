@@ -2,6 +2,7 @@ package almhirt.app
 
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.core.Almhirt
 import almhirt.almvalidation.kit._
 import almhirt.environment._
 import almhirt.environment.configuration._

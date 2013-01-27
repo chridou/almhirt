@@ -2,6 +2,7 @@ package almhirt.ext.eventlog.anorm
 
 import java.util.UUID
 import almhirt.common._
+import almhirt.core.Almhirt
 import almhirt.commanding._
 import almhirt.environment._
 import almhirt.domain.AggregateRootRepository
