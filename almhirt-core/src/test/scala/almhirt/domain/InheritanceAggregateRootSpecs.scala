@@ -41,7 +41,6 @@ case class PaidInvoice(id: UUID, version: Long, total: BigDecimal) extends Invoi
   }
 }
 
-import org.specs2.mutable._
 
 class InheritanceAggregateRootSpecs {
 
