@@ -85,6 +85,7 @@ trait CoreExtRiftwarpBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
 	  libraryDependencies += scalatest
   )
 }
@@ -254,11 +255,11 @@ object AlmHirtBuild extends Build
 	                       		baseFile = file("almhirt-core")) dependsOn(common)
 
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
-	                       		baseFile = file("./ext/core/almhirt-ext-core-riftwarp")) dependsOn(common, core, riftwarp)
+	                       		baseFile = file("./ext/core/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
 								
 
   lazy val anormEventLog = anormEventLogProject(	name = "almhirt-ext-anormeventlog",
-                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(core, riftwarp)
+                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(core, riftwarp, coreExtRiftwarp % "test->test")
 
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/core/almhirt-ext-core-slick")) dependsOn(core, riftwarp)

@@ -9,11 +9,11 @@ import almhirt.ext.core.riftwarp.serialization.RiftWarpUtilityFuns._
 import almhirt.environment.configuration.CleanUpAction
 import riftwarp._
 
-trait RiftWarpBootstrapper { self: almhirt.environment.configuration.AlmhirtBootstrapper =>
+trait RiftWarpBootstrapper extends almhirt.environment.configuration.AlmhirtBootstrapper {
   override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
     val riftwarp = RiftWarp.concurrentWithDefaults
     addRiftWarpRegistrations(riftwarp)
     theServiceRegistry.registerService[RiftWarp](riftwarp)
-    self.createCoreComponents(theAlmhirt,theServiceRegistry, startUpLogger)
+    super.createCoreComponents(theAlmhirt,theServiceRegistry, startUpLogger)
   }
 }

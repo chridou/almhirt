@@ -4,17 +4,17 @@ import scala.concurrent.duration.Duration
 import almhirt._
 import almhirt.almvalidation.kit._
 import almhirt.environment._
-import test._
+import almhirt.core.test._
 import almhirt.almfuture.inst._
 import almhirt.common.AlmFuture
 import almhirt.commanding._
 import org.scalatest._
 
-class TestAlmhirtMassSpecs extends FlatSpec with TestAlmhirtKit {
+class TestAlmhirtMassSpecs extends FlatSpec with AlmhirtTestKit {
   private implicit val atMost = Duration(5, "s")
   "The TestAlmhirt" should
     "create, modify and retrieve 100 persons when actions for all entities are processed as sequenced blocks (A)" in {
-      inTestAlmhirt { implicit almhirt =>
+      inExtendedTestAlmhirt(new BlockingRepoCoreBootstrapper(this.defaultConf)) { implicit almhirt =>
 
         val getResultFor = almhirt.operationStateTracker.getResultFor(atMost)_
 

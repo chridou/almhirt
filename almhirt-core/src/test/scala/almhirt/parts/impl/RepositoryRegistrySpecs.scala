@@ -8,8 +8,9 @@ import almhirt.domain._
 import almhirt.environment.AlmhirtTestKit
 import almhirt.eventlog._
 import almhirt.parts.HasRepositories
-import test._
+import almhirt.core.test._
 import akka.testkit.TestEvent
+import almhirt.core.test.TestPerson
 
 class RepositoryRegistrySpecs extends FlatSpec with BeforeAndAfterAll with AlmhirtTestKit {
   private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(createDefaultBootStrapper()).forceResult

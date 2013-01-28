@@ -3,7 +3,8 @@ package almhirt.domain
 import org.scalatest._
 import java.util.UUID
 import almhirt.syntax.almvalidation._
-import test._
+import almhirt.core.test._
+import almhirt.core.test.TestPerson
 
 class AggregateRootFactorySpecsWithPersonEntity extends FlatSpec {
   "An aggregate root factory for Persons" should

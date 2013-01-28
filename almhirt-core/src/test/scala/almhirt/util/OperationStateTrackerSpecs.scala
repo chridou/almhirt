@@ -4,7 +4,6 @@ import scala.concurrent.duration.Duration
 import almhirt.common._
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
-import test._
 import org.scalatest._
 
 class OperationStateTrackerSpecs extends FlatSpec with AlmhirtTestKit {

@@ -58,8 +58,8 @@ trait AlmhirtTestKit {
         (AlmhirtForTesting(theAlmhirt), shutDown)
     }
 
-  def createExtendedTestAlmhirt(bootStrapper: AlmhirtBootstrapper): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] =
-    AlmhirtBootstrapper.runStartupSequence(bootStrapper, NoLogging).flatMap {
+  def createExtendedTestAlmhirt(bootstrapper: AlmhirtBootstrapper): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] =
+    AlmhirtBootstrapper.runStartupSequence(bootstrapper, NoLogging).flatMap {
       case (theAlmhirt, shutDown) =>
         theAlmhirt.getService[ServiceRegistry].flatMap(reg =>
           AlmhirtForExtendedTesting(theAlmhirt, reg).map(anAlmhirt =>
@@ -69,8 +69,8 @@ trait AlmhirtTestKit {
   def createExtendedTestAlmhirt(): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] =
    createExtendedTestAlmhirt(createExtendedBootStrapper())
 
-  def inTestAlmhirt[T](bootStrapper: AlmhirtBootstrapper)(compute: AlmhirtForTesting => T): T = {
-    val (almhirt, shutDown) = createTestAlmhirt(bootStrapper).forceResult
+  def inTestAlmhirt[T](bootstrapper: AlmhirtBootstrapper)(compute: AlmhirtForTesting => T): T = {
+    val (almhirt, shutDown) = createTestAlmhirt(bootstrapper).forceResult
     val res = compute(almhirt)
     shutDown.shutDown
     res

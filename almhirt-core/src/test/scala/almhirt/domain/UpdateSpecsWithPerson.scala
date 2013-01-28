@@ -5,7 +5,7 @@ import org.scalatest.matchers.ShouldMatchers
 import scalaz._, Scalaz._
 import almhirt._
 import almhirt.syntax.almvalidation._
-import test._
+import almhirt.core.test._
 
 class UpdateSpecsWithPerson extends FlatSpec with ShouldMatchers {
   val person = TestPerson("Peter").result.forceResult
