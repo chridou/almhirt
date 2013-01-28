@@ -7,7 +7,7 @@ import almhirt.syntax.almvalidation._
 import almhirt.core._
 import almhirt.environment.configuration.AlmhirtBootstrapper
 import com.typesafe.config._
-import almhirt.environment.configuration.impl.LogBackLoggingAdapter
+import almhirt.environment.configuration.impl._
 
 trait AlmhirtTestKit {
   private val configText =
@@ -40,17 +40,47 @@ trait AlmhirtTestKit {
     """
   val defaultConf = ConfigFactory.parseString(configText).withFallback(ConfigFactory.load)
 
-  def createTestAlmhirt(): (AlmhirtForTesting, ShutDown) = createTestAlmhirt(defaultConf)
-  def createTestAlmhirt(aConf: Config): (AlmhirtForTesting, ShutDown) = {
-    AlmhirtBootstrapper.createFromConfig(aConf).flatMap(bootstrapper =>
-      AlmhirtBootstrapper.runStartupSequence(bootstrapper, NoLogging)).map { case (almhirt, shutDown) => (almhirt.asInstanceOf[AlmhirtForTesting], shutDown) }.forceResult
-  }
+  def createDefaultBootStrapper(): AlmhirtBootstrapper =
+    createDefaultBootStrapper(defaultConf)
 
-  def inTestAlmhirt[T](compute: AlmhirtForTesting => T): T = inTestAlmhirt(compute, defaultConf)
-  def inTestAlmhirt[T](compute: AlmhirtForTesting => T, aConf: Config): T = {
-    val (almhirt, shutDown) = createTestAlmhirt(aConf)
+  def createDefaultBootStrapper(aConfig: Config): AlmhirtBootstrapper =
+    new AlmhirtBaseBootstrapper(aConfig)
+
+  def createExtendedBootStrapper(): AlmhirtBootstrapper =
+    createExtendedBootStrapper(defaultConf)
+
+  def createExtendedBootStrapper(aConfig: Config): AlmhirtBootstrapper =
+    new AlmhirtBaseBootstrapper(aConfig) with RegistersServiceRegistry with BootstrapperWithDefaultChannels with BootstrapperDefaultCoreComponents
+
+  def createTestAlmhirt(bootStrapper: AlmhirtBootstrapper): AlmValidation[(AlmhirtForTesting, ShutDown)] =
+    AlmhirtBootstrapper.runStartupSequence(bootStrapper, NoLogging).map {
+      case (theAlmhirt, shutDown) =>
+        (AlmhirtForTesting(theAlmhirt), shutDown)
+    }
+
+  def createExtendedTestAlmhirt(bootStrapper: AlmhirtBootstrapper): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] =
+    AlmhirtBootstrapper.runStartupSequence(bootStrapper, NoLogging).flatMap {
+      case (theAlmhirt, shutDown) =>
+        theAlmhirt.getService[ServiceRegistry].flatMap(reg =>
+          AlmhirtForExtendedTesting(theAlmhirt, reg).map(anAlmhirt =>
+            (anAlmhirt, shutDown)))
+    }
+  
+  def createExtendedTestAlmhirt(): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] =
+   createExtendedTestAlmhirt(createExtendedBootStrapper())
+
+  def inTestAlmhirt[T](bootStrapper: AlmhirtBootstrapper)(compute: AlmhirtForTesting => T): T = {
+    val (almhirt, shutDown) = createTestAlmhirt(bootStrapper).forceResult
     val res = compute(almhirt)
     shutDown.shutDown
     res
   }
+
+  def inExtendedTestAlmhirt[T](bootStrapper: AlmhirtBootstrapper)(compute: AlmhirtForExtendedTesting => T): T = {
+    val (almhirt, shutDown) = createExtendedTestAlmhirt(bootStrapper).forceResult
+    val res = compute(almhirt)
+    shutDown.shutDown
+    res
+  }
+
 }

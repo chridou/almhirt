@@ -22,8 +22,9 @@ import almhirt.environment.configuration.ConfigPaths
 import almhirt.util.impl.OperationStateTrackerActorHull
 import almhirt.core.ServiceRegistry
 import almhirt.core.Almhirt
+import almhirt.core.HasConfig
 
-class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper(config) {
+trait BootstrapperDefaultCoreComponents extends AlmhirtBootstrapper { self: HasConfig =>
   private var trackerRegistration: RegistrationHolder = null
   private var repos: HasRepositories = null
   private var cmdHandlerRegistry: HasCommandHandlers = null
@@ -31,6 +32,7 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
   private var cmdExecutorRegistration: RegistrationHolder = null
 
   override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
+    super.createCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
         import akka.pattern._
         implicit val atMost = FiniteDuration(5, "s")
         implicit val anAlmhirt = theAlmhirt
@@ -78,7 +80,9 @@ class AlmhirtDefaultBootStrapper(config: Config) extends AlmhirtBaseBootstrapper
           (() => {
             cmdExecutorRegistration.dispose
             trackerRegistration.dispose
+            superCleanUp();
           })
-        }.flatMap(cleanUp => super.createCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).map(superCleanUp => () => { cleanUp(); superCleanUp() }))
+        }
+    }
   }
 }

@@ -1,22 +1,17 @@
 package almhirt.domain
 
-import scalaz._
-import scalaz.NonEmptyList
-import Scalaz._
-import org.specs2.mutable._
-import scalaz.NonEmptyList
 import test._
 import almhirt._
+import org.scalatest._
+import org.scalatest.matchers.ShouldMatchers
 
-
-class AggregateRootSpecsWithTestPerson extends Specification {
+class AggregateRootSpecsWithTestPerson extends FlatSpec with ShouldMatchers {
   val shouldBe = TestPerson("Jim") flatMap {_.changeName("Fritz")} flatMap {_.addressAquired("Roma")} flatMap {_.move("New York")}
   val events = shouldBe.events
   
-  "A Person created by methods on the aggregate root" should {
+  "A Person created by methods on the aggregate root" should 
     "be the same when created from the history of" in {
       val rebuilt = TestPerson.rebuildFromHistory(events)
-      rebuilt must beEqualTo(shouldBe.result)
-    }
+      rebuilt should equal (shouldBe.result)
   }
 }

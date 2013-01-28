@@ -8,7 +8,8 @@ import almhirt.syntax.almvalidation._
 import almhirt.environment._
 
 class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll with AlmhirtTestKit {
-  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt()
+  private[this] val bootstrapper = createDefaultBootStrapper()
+  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(bootstrapper).forceResult
   implicit val atMost = FiniteDuration(1, "s")
   implicit val alm = theAlmhirt
   implicit val executionContext = theAlmhirt.executionContext

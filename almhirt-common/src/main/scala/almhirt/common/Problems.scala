@@ -234,6 +234,17 @@ case class SerializationProblem(message: String, severity: Severity = Minor, cat
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+/**
+ * The application couldn't be started
+ */
+case class StartupProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = StartupProblem
+  def withMessage(newMessage: String) = copy(message = newMessage)
+  def withSeverity(severity: Severity) = copy(severity = severity)
+  def withArg(key: String, value: Any) = copy(args = args + (key -> value))
+  def withCause(aCause: ProblemCause) = copy(cause = Some(aCause))
+  def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
+}
 
 /**
  * Data couldn't be found. Use when looking for an entity or something similar. Do not use for a missing key in a map.

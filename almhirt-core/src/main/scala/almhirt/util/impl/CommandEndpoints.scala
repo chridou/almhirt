@@ -1,6 +1,7 @@
 package almhirt.util.impl
 
 import scala.concurrent.duration.FiniteDuration
+import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
 import almhirt.common._
@@ -42,15 +43,15 @@ class CommandEndpointWithUuidTicketsFactory {
       mode <- CommandEndpointForwardMode.fromString(modeStr)
       forwardAction <- mode match {
         case BroadcastCommandOnMessageHub =>
-          theAlmhirt.getService[MessageHub].map(hub => (cmdEnv: CommandEnvelope) => hub.broadcast(theAlmhirt.createMessage(cmdEnv)))
+          ((cmdEnv: CommandEnvelope) => theAlmhirt.messageHub.broadcast(theAlmhirt.createMessage(cmdEnv))).success
         case PostCommandOnMessageHub =>
-          theAlmhirt.getService[MessageHub].map(hub => (cmdEnv: CommandEnvelope) => hub.post(theAlmhirt.createMessage(cmdEnv)))
+          ((cmdEnv: CommandEnvelope) => theAlmhirt.messageHub.post(theAlmhirt.createMessage(cmdEnv))).success
         case PostCommandOnCommandChannel =>
           theAlmhirt.getService[CommandChannel].map(channel => (cmdEnv: CommandEnvelope) => channel.post(theAlmhirt.createMessage(cmdEnv)))
         case PushCommandDirectlyToExecutor =>
           theAlmhirt.getService[CommandExecutor].map(executor => (cmdEnv: CommandEnvelope) => executor.executeCommand(cmdEnv))
       }
-      trackerActorName <- ConfigHelper.operationState.getConfig(config).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
+      trackerActorName <- ConfigHelper.operationState.getConfig(rootConf).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
       tracker <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + trackerActorName) }
     } yield new CommandEndpointWithUuidTickets(forwardAction, tracker, theAlmhirt)
   }

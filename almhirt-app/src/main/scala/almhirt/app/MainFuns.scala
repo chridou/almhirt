@@ -8,17 +8,18 @@ import almhirt.environment._
 import almhirt.environment.configuration._
 import com.typesafe.config._
 import almhirt.environment.configuration.impl.LogBackLoggingAdapter
+import almhirt.environment.configuration.impl.AlmhirtBaseBootstrapper
 
 object MainFuns {
   def createConfig(args: Array[String]): AlmValidation[Config] =
     inTryCatch(ConfigFactory.load())
 
-  def initializeAlmhirt(config: Config): AlmValidation[(Almhirt, ShutDown)] =
+  def initializeAlmhirt(bootStrapper: AlmhirtBootstrapper): AlmValidation[(Almhirt, ShutDown)] = {
     for {
       startUpLogger <- LogBackLoggingAdapter()
-      bootStrapper <- AlmhirtBootstrapper.createFromConfig(config)
       almhirtAndShutDown <- AlmhirtBootstrapper.runStartupSequence(bootStrapper, startUpLogger)
     } yield almhirtAndShutDown
+  }
 
   def createShutDown(shutDown: ShutDown) =
     (() => {

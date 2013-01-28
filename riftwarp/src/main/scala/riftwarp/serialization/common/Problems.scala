@@ -101,6 +101,7 @@ object Problems {
     createAndRegisterDefaultDecomposerAndRecomposer[MappingProblem](riftwarp)(RiftDescriptor(classOf[MappingProblem].getName), MappingProblem.tupled)
     createAndRegisterDefaultDecomposerAndRecomposer[MappingProblem](riftwarp)(RiftDescriptor(classOf[MappingProblem].getName), MappingProblem.tupled)
     createAndRegisterDefaultDecomposerAndRecomposer[SerializationProblem](riftwarp)(RiftDescriptor(classOf[SerializationProblem].getName), SerializationProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[StartupProblem](riftwarp)(RiftDescriptor(classOf[StartupProblem].getName), StartupProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[KeyNotFoundProblem](riftwarp)(RiftDescriptor(classOf[KeyNotFoundProblem].getName), KeyNotFoundProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[ConstraintViolatedProblem](riftwarp)(RiftDescriptor(classOf[ConstraintViolatedProblem].getName), ConstraintViolatedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[ParsingProblem](riftwarp)(RiftDescriptor(classOf[ParsingProblem].getName), ParsingProblem.tupled)

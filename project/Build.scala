@@ -72,8 +72,7 @@ trait CoreBuild {
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
-	  libraryDependencies += scalatest,
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 

@@ -6,12 +6,13 @@ import almhirt.environment._
 import almhirt.domain.AggregateRootRepository
 import almhirt.core.Almhirt
 import almhirt.parts.HasRepositories
+import almhirt.environment.configuration.impl.AlmhirtBaseBootstrapper
 
 trait TestAlmhirtKit {
   val testKit = new AlmhirtTestKit {}
 
-  def createTestAlmhirt(): (AlmhirtForTesting, ShutDown) = {
-    implicit val (almhirt, shutDown) = testKit.createTestAlmhirt()
+  def createExtendedTestAlmhirt(): (AlmhirtForExtendedTesting, ShutDown) = {
+    implicit val (almhirt, shutDown) = testKit.createExtendedTestAlmhirt(testKit.createExtendedBootStrapper()).bimap(f => {println(f); f}, g => g).forceResult
     val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent](TestPerson, almhirt.eventLog.actor)
     almhirt.repositories.registerForAggregateRoot[TestPerson, TestPersonEvent](personRepository)
     almhirt.hasCommandHandlers.addHandler(TestPersonHandlerFactory.newTestPersonUnitOfWork)
@@ -37,8 +38,8 @@ trait TestAlmhirtKit {
     (almhirt, shutDown)
   }
 
-  def inTestAlmhirt[T](compute: AlmhirtForTesting => T) = {
-    val (almhirt, shutDown) = createTestAlmhirt()
+  def inTestAlmhirt[T](compute: AlmhirtForExtendedTesting => T) = {
+    val (almhirt, shutDown) = createExtendedTestAlmhirt()
     val res = compute(almhirt)
     shutDown.shutDown
     res

@@ -6,9 +6,10 @@ import scala.reflect.ClassTag
 import akka.actor.ActorSystem
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
+import almhirt.environment.configuration.impl._
 
 class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with AlmhirtTestKit {
-  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt()
+  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(createDefaultBootStrapper()).forceResult
   implicit val atMost = FiniteDuration(1, "s")
   implicit val alm = theAlmhirt
  

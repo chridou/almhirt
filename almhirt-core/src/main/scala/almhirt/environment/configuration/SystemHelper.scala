@@ -9,6 +9,8 @@ import almhirt.environment._
 import almhirt.common.AlmValidation
 import almhirt.util.CommandEndpoint
 import almhirt.core.Almhirt
+import almhirt.common.UnspecifiedProblem
+import almhirt.common.CauseIsProblem
 
 object SystemHelper {
   def addDispatcherToProps(config: Config)(props: Props): Props =
@@ -72,17 +74,19 @@ object SystemHelper {
 
   def createCommandDispatcherFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] = {
     import language.reflectiveCalls
-    for {
-      theConfig <- theAlmhirt.getConfig
-      dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theConfig)
-      factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
-      factory <- inTryCatch {
-        Class.forName(factoryName)
-          .newInstance()
-          .asInstanceOf[{ def createCommandDispatcher(theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] }]
-      }
-      dispatcher <- factory.createCommandDispatcher(theAlmhirt)
-    } yield dispatcher
+    val res =
+	    for {
+	      theConfig <- theAlmhirt.getConfig
+	      dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theConfig)
+	      factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
+	      factory <- inTryCatch {
+	        Class.forName(factoryName)
+	          .newInstance()
+	          .asInstanceOf[{ def createCommandDispatcher(theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] }]
+	      }
+	      dispatcher <- factory.createCommandDispatcher(theAlmhirt)
+	    } yield dispatcher
+	res.bimap(prob => new UnspecifiedProblem("Could not create a command endpoint from factory", cause = Some(CauseIsProblem(prob))), g => g)
   }
 
 }

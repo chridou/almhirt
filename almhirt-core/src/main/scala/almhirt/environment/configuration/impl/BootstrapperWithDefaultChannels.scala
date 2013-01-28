@@ -12,9 +12,9 @@ import almhirt.util.OperationState
 import almhirt.environment.CommandChannel
 import almhirt.domain.DomainEvent
 
-trait BootstrapperWithDefaultChannels { self: AlmhirtBootstrapper =>
+trait BootstrapperWithDefaultChannels extends AlmhirtBootstrapper{
   override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
-    self.createCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
+    super.createCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
       implicit val dur = Duration(1, "s")
       implicit val hasExecContext = theAlmhirt
       val channels =
@@ -35,7 +35,7 @@ trait BootstrapperWithDefaultChannels { self: AlmhirtBootstrapper =>
         theServiceRegistry.registerService[DomainEventsChannel](x._3)
         theServiceRegistry.registerService[ProblemChannel](x._4)
       }
-      (() => ()).success
+      (superCleanUp).success
     }
   }
 

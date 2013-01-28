@@ -10,7 +10,7 @@ import almhirt.almfuture.all._
 import almhirt.environment._
 
 class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with AlmhirtTestKit {
-  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt()
+  private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(createDefaultBootStrapper()).forceResult
   implicit val atMost = FiniteDuration(1, "s")
   implicit val alm = theAlmhirt
   implicit val executionContext = theAlmhirt.executionContext
