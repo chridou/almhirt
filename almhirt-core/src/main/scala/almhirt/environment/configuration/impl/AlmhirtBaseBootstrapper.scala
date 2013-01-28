@@ -52,29 +52,8 @@ class AlmhirtBaseBootstrapper(override val config: Config) extends AlmhirtBootst
     }, () => { hasActorSystem.actorSystem.shutdown(); hasActorSystem.actorSystem.awaitTermination() })
   }
 
-  override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
-    implicit val dur = Duration(1, "s")
-    implicit val hasExecContext = theAlmhirt
-    val channels =
-      (for {
-        commandChannel <- theAlmhirt.messageHub.createMessageChannel[CommandEnvelope]("CommandChannel")
-        operationStateChannel <- theAlmhirt.messageHub.createMessageChannel[OperationState]("OperationStateChannel")
-        domainEventsChannel <- theAlmhirt.messageHub.createMessageChannel[DomainEvent]("DomainEventsChannel")
-        problemsChannel <- theAlmhirt.messageHub.createMessageChannel[Problem]("ProblemsChannel")
-      } yield (
-        new CommandChannelWrapper(commandChannel),
-        new OperationStateChannelWrapper(operationStateChannel),
-        new DomainEventsChannelWrapper(domainEventsChannel),
-        new ProblemChannelWrapper(problemsChannel))).awaitResult
-
-    channels.foreach { x =>
-      theServiceRegistry.registerService[CommandChannel](x._1)
-      theServiceRegistry.registerService[OperationStateChannel](x._2)
-      theServiceRegistry.registerService[DomainEventsChannel](x._3)
-      theServiceRegistry.registerService[ProblemChannel](x._4)
-    }
+  override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = 
     (() => ()).success
-  }
 
   override def initializeCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
     (() => ()).success
