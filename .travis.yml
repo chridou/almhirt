@@ -6,3 +6,6 @@ jdk:
 branches:
   only:
     - master
+before_script:
+ - "echo $JAVA_OPTS"
+ - "export JAVA_OPTS=-Xmx512m"
