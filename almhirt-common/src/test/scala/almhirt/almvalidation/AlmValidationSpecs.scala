@@ -1,165 +1,152 @@
 package almhirt.almvalidation
 
+import org.scalatest._
+import org.scalatest.matchers.ShouldMatchers
 import scalaz._
 import Scalaz._
 import scalaz.syntax.validation._
-import scalaz.{Failure}
-import org.specs2.mutable._
-import org.specs2.mutable.Specification
+import scalaz.{ Failure }
 import almhirt.common._
 
-class AlmValidationSpecs extends Specification {
+class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
   import almhirt.almvalidation.funs._
   import almhirt.problem.inst._
   import almhirt.syntax.almvalidation._
-  
-  "AlmValidation.parseIntAlm" should {
+
+  "AlmValidation.parseIntAlm" should
     "return a success of 1 when supplied with '1'" in {
-      (parseIntAlm("1")) must beEqualTo(Success(1))
+      (parseIntAlm("1")) should equal(Success(1))
     }
-    "return a failure when supplied with ' 1'" in {
-      (parseIntAlm(" 1")).isFailure
-    }
-    "return a failure when supplied with '1 '" in {
-      (parseIntAlm("1 ")).isFailure
-    }
+  it should "return a failure when supplied with ' 1'" in {
+    (parseIntAlm(" 1")).isFailure
+  }
+  it should "return a failure when supplied with '1 '" in {
+    (parseIntAlm("1 ")).isFailure
   }
 
-  "AlmValidation.parseLongAlm" should {
+  "AlmValidation.parseLongAlm" should
     "return a success of 1 when supplied with '1'" in {
-      (parseIntAlm("1")) must beEqualTo(Success(1L))
+      (parseIntAlm("1")) should equal(Success(1L))
     }
-    "return a failure when supplied with ' 1'" in {
-      (parseIntAlm(" 1")).isFailure
-    }
-    "return a failure when supplied with '1 '" in {
-      (parseIntAlm("1 ")).isFailure
-    }
+  it should "return a failure when supplied with ' 1'" in {
+    (parseIntAlm(" 1")).isFailure
+  }
+  it should "return a failure when supplied with '1 '" in {
+    (parseIntAlm("1 ")).isFailure
   }
 
-  "AlmValidation.parseDoubleAlm" should {
+  "AlmValidation.parseDoubleAlm" should
     "return a success of 1 when supplied with '1'" in {
-      (parseDoubleAlm("1")) must beEqualTo(Success(1d))
+      (parseDoubleAlm("1")) should equal(Success(1d))
     }
-    "return a success of 1.1 when supplied with '1.1'" in {
-      (parseDoubleAlm("1.1")) must beEqualTo(Success(1.1d))
-    }
-    "return a success of 0.1 when supplied with '.1'" in {
-      (parseDoubleAlm(".1")) must beEqualTo(Success(0.1))
-    }
-    "return a success of 1 when supplied with '1 '" in {
-      (parseDoubleAlm("1 ")) must beEqualTo(Success(1d))
-    }
-    "return a success of 1 when supplied with ' 1'" in {
-      (parseDoubleAlm(" 1")) must beEqualTo(Success(1d))
-    }
-    "return a success of 1 when supplied with '1'" in {
-      (parseDoubleAlm("1 ")) must beEqualTo(Success(1d))
-    }
-    "return a success of 1 when supplied with ' 1.0'" in {
-      (parseDoubleAlm(" 1.0")) must beEqualTo(Success(1d))
-    }
-    "return a success of 1 when supplied with '1.0 '" in {
-      (parseDoubleAlm("1.0 ")) must beEqualTo(Success(1d))
-    }
-    "return a failure when supplied with ''" in {
-      (parseIntAlm("")).isFailure
-    }
-    "return a failure when supplied with 'x'" in {
-      (parseIntAlm("x")).isFailure
-    }
-    "return a failure when supplied with 'a1.0'" in {
-      (parseIntAlm("a1.0")).isFailure
-    }
-    "return a failure when supplied with '1,0'" in {
-      (parseIntAlm("1,0")).isFailure
-    }
-    "return a failure when supplied with '1.0.0'" in {
-      (parseIntAlm("1.0.0")).isFailure
-    }
+  it should "return a success of 1.1 when supplied with '1.1'" in {
+    (parseDoubleAlm("1.1")) should equal(Success(1.1d))
+  }
+  it should "return a success of 0.1 when supplied with '.1'" in {
+    (parseDoubleAlm(".1")) should equal(Success(0.1))
+  }
+  it should "return a success of 1 when supplied with '1 '" in {
+    (parseDoubleAlm("1 ")) should equal(Success(1d))
+  }
+  it should "return a success of 1 when supplied with ' 1'" in {
+    (parseDoubleAlm(" 1")) should equal(Success(1d))
+  }
+  it should "return a success of 1 when supplied with ' 1.0'" in {
+    (parseDoubleAlm(" 1.0")) should equal(Success(1d))
+  }
+  it should "return a success of 1 when supplied with '1.0 '" in {
+    (parseDoubleAlm("1.0 ")) should equal(Success(1d))
+  }
+  it should "return a failure when supplied with ''" in {
+    (parseIntAlm("")).isFailure
+  }
+  it should "return a failure when supplied with 'x'" in {
+    (parseIntAlm("x")).isFailure
+  }
+  it should "return a failure when supplied with 'a1.0'" in {
+    (parseIntAlm("a1.0")).isFailure
+  }
+  it should "return a failure when supplied with '1,0'" in {
+    (parseIntAlm("1,0")).isFailure
+  }
+  it should "return a failure when supplied with '1.0.0'" in {
+    (parseIntAlm("1.0.0")).isFailure
   }
 
-  "AlmValidation.failIfEmpty" should {
+  "AlmValidation.failIfEmpty" should
     """return a success of "x" when supplied with "x"""" in {
-      (notEmpty("x")) must beEqualTo(Success("x"))
+      (notEmpty("x")) should equal(Success("x"))
     }
-    """return a success of " " when supplied with " """" in {
-      (notEmpty(" ")) must beEqualTo(Success(" "))
-    }
-    """return a failure when supplied with "" """ in {
-      (parseIntAlm("")).isFailure
-    }
+  it should """return a success of " " when supplied with " """" in {
+    (notEmpty(" ")) should equal(Success(" "))
+  }
+  it should """return a failure when supplied with "" """ in {
+    (parseIntAlm("")).isFailure
   }
 
-  "AlmValidation.failIfEmptyOrWhitespace" should {
+  "AlmValidation.failIfEmptyOrWhitespace" should
     """return a success of "x" when supplied with "x"""" in {
-      (notEmptyOrWhitespace("x")) must beEqualTo(Success("x"))
+      (notEmptyOrWhitespace("x")) should equal(Success("x"))
     }
-    """return a failure when supplied with """"" in {
-      (notEmptyOrWhitespace(" ")).isFailure
-    }
-    """return a failure when supplied with "" """ in {
-      (notEmptyOrWhitespace("")).isFailure
-    }
+  it should """return a failure when supplied with " """" in {
+    (notEmptyOrWhitespace(" ")).isFailure
   }
-  
- 
-  
-  """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in a "for comprehension"""" should {
+  it should """return a failure when supplied with """"" in {
+    (notEmptyOrWhitespace("")).isFailure
+  }
+
+  """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in a "for comprehension"""" should
     """add to 5 when A="2" and B="3"""" in {
       val res = parseIntAlm("2").toAgg flatMap (x => parseIntAlm("3").toAgg.map(_ + x))
-      res must beEqualTo(Success(5))
+      res should equal(Success(5))
     }
-    """be a Failure when A="x" and B="3"""" in {
-      val res = parseIntAlm("2").toAgg flatMap (_ => parseIntAlm("x").toAgg)
-      res.isFailure
-    }
+  it should """be a Failure when A="x" and B="3"""" in {
+    val res = parseIntAlm("2").toAgg flatMap (_ => parseIntAlm("x").toAgg)
+    res.isFailure
   }
 
-  """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in an applicative functor""" should {
+  """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in an applicative functor""" should
     """add to 5 when A="2" and B="3"""" in {
       val a = "2".toIntAlm().toAgg
       val b = "3".toIntAlm().toAgg
-	  val res = (a |@| b)((a, b) => a + b)
-      res must beEqualTo(Success(5))
+      val res = (a |@| b)((a, b) => a + b)
+      res should equal(Success(5))
     }
-    """be a Failue when A="x" and B="3"""" in {
-      val a = "x".toIntAlm().toAgg
-      val b = "3".toIntAlm().toAgg
-	  val res = (a |@| b)((a, b) => a + b)
-      res.isFailure
-    }
+  it should """be a Failue when A="x" and B="3"""" in {
+    val a = "x".toIntAlm().toAgg
+    val b = "3".toIntAlm().toAgg
+    val res = (a |@| b)((a, b) => a + b)
+    res.isFailure
   }
-  
+
   private class A
   private class B extends A
   private class C extends A
-  
-  """almCast (B and C inherit from A)""" should {
+
+  """almCast (B and C inherit from A)""" should
     """cast A to A""" in {
       almCast[A](new A).isSuccess
     }
-    """cast B to B""" in {
-      almCast[B](new B).isSuccess
-    }
-    """cast C to C""" in {
-      almCast[C](new C).isSuccess
-    }
-    """cast B to A""" in {
-      almCast[A](new B).isSuccess
-    }
-    """cast C to A""" in {
-      almCast[A](new C).isSuccess
-    }
-    """not cast A to B""" in {
-      almCast[B](new A).isFailure
-    }
-    """not cast A to C""" in {
-      almCast[C](new A).isFailure
-    }
-    """cast a 1 as Any to Int""" in {
-      val x: Any = 1
-      almCast[Int](x).isSuccess
-    }
+  it should """cast B to B""" in {
+    almCast[B](new B).isSuccess
+  }
+  it should """cast C to C""" in {
+    almCast[C](new C).isSuccess
+  }
+  it should """cast B to A""" in {
+    almCast[A](new B).isSuccess
+  }
+  it should """cast C to A""" in {
+    almCast[A](new C).isSuccess
+  }
+  it should """not cast A to B""" in {
+    almCast[B](new A).isFailure
+  }
+  it should """not cast A to C""" in {
+    almCast[C](new A).isFailure
+  }
+  it should """cast a 1 as Any to Int""" in {
+    val x: Any = 1
+    almCast[Int](x).isSuccess
   }
 }

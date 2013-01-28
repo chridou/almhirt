@@ -55,7 +55,7 @@ trait CommonBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 
@@ -86,7 +86,7 @@ trait CoreExtRiftwarpBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 
@@ -103,7 +103,7 @@ trait AnormEventLogBuild {
 	  libraryDependencies += "play" %% "anorm" % "2.1-12142012",
 	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
 	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 
@@ -120,7 +120,7 @@ trait CoreExtSlickBuild {
 	  libraryDependencies += "com.typesafe" %% "slick" % "1.0.0-RC1",
 	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
 	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 
@@ -136,7 +136,7 @@ trait CoreExtActivateBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += "net.fwbrasil" %% "activate-core" % "1.2-RC4",
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 
@@ -151,7 +151,7 @@ trait RiftWarpBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 
@@ -165,7 +165,7 @@ trait RiftWarpAutomaticBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 
@@ -180,7 +180,7 @@ trait RiftWarpExtLiftJsonBuild {
 	  libraryDependencies += "net.liftweb" %% "lift-json" % "2.5-M2",
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 
@@ -193,7 +193,7 @@ trait DocItBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += specs2
+	  libraryDependencies += scalatest
   )
 }
 

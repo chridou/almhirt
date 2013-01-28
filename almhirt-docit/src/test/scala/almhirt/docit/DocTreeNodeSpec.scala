@@ -1,6 +1,7 @@
 package almhirt.docit
 
-import org.specs2.mutable._
+import org.scalatest._
+import org.scalatest.matchers.ShouldMatchers
 import scalaz._, Scalaz._
 
 object DocSample {
@@ -59,28 +60,26 @@ object DocSample {
       Nil)
 }
 
-class DocTreeNodeSpec extends Specification {
+class DocTreeNodeSpec extends FlatSpec with ShouldMatchers {
   import DocSample._
-  """A single DocTreeNode(leaf)""" should {
+  """A single DocTreeNode(leaf)""" should 
     """be convertible to scalaz.Tree""" in {
       DocIt(l3b)
-      success
+      true
     }
-    """be convertible to scalaz.TreeLoc after being converted to a tree""" in {
+    it should """be convertible to scalaz.TreeLoc after being converted to a tree""" in {
       DocIt(l3b).loc
-      success
+      true
     }
-  }
 
-  """A DocTreeNode(tree)""" should {
+  """A DocTreeNode(tree)""" should 
     """be convertible to scalaz.Tree""" in {
       DocIt(l1)
-      success
+      true
     }
-    """be convertible to scalaz.TreeLoc after being converted to a tree""" in {
+    it should """be convertible to scalaz.TreeLoc after being converted to a tree""" in {
       DocIt(l1).loc
-      success
+      true
     }
-  }
   
 }
