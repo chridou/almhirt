@@ -8,4 +8,4 @@ branches:
     - master
 before_script:
  - "echo $JAVA_OPTS"
- - "export JAVA_OPTS=-Xmx512m"
+ - "export JAVA_OPTS=-Xms512M -Xmx2048M -Xss1M -XX:+CMSClassUnloadingEnabled -XX:MaxPermSize=384M"
