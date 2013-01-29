@@ -25,19 +25,19 @@ trait Almhirt extends HasActorSystem
 }
 
 object Almhirt {
-  def apply(): Almhirt with Disposable =
-    Almhirt("Almhirt")
-  
-  def apply(name: String): Almhirt with Disposable =
-    Almhirt(name, None, c => scalaz.Failure(UnspecifiedProblem("Get service not supplied")))
-  
-  def apply(name: String, getService: (Class[_ <: AnyRef]) => AlmValidation[AnyRef]): Almhirt with Disposable =
-    Almhirt(name, None, getService)
+  def quickCreate(): Almhirt with Disposable with CanCreateSuffixedName =
+    quickCreate("Almhirt")
 
-  def apply(name: String, namesSuffix: Option[String], getService: (Class[_ <: AnyRef]) => AlmValidation[AnyRef]): Almhirt with Disposable =
-    Almhirt(name, namesSuffix, getService, None)
+  def quickCreate(name: String): Almhirt with Disposable with CanCreateSuffixedName =
+    quickCreate(name, None, c => scalaz.Failure(UnspecifiedProblem("Get service not supplied")))
 
-  def apply(name: String, namesSuffix: Option[String], getService: (Class[_ <: AnyRef]) => AlmValidation[AnyRef], actorSystem: Option[ActorSystem]): Almhirt with Disposable = {
+  def quickCreate(name: String, getService: (Class[_ <: AnyRef]) => AlmValidation[AnyRef]): Almhirt with Disposable with CanCreateSuffixedName =
+    quickCreate(name, None, getService)
+
+  def quickCreate(name: String, namesSuffix: Option[String], getService: (Class[_ <: AnyRef]) => AlmValidation[AnyRef]): Almhirt with Disposable with CanCreateSuffixedName =
+    quickCreate(name, namesSuffix, getService, None)
+
+  def quickCreate(name: String, namesSuffix: Option[String], getService: (Class[_ <: AnyRef]) => AlmValidation[AnyRef], actorSystem: Option[ActorSystem]): Almhirt with Disposable with CanCreateSuffixedName = {
     def getName(name: String) = option.cata(namesSuffix)(aSuffix => s"${name}_$aSuffix", name)
 
     val (theActorSystem, disposer) = option.cata(actorSystem)(
