@@ -26,7 +26,7 @@ trait AlmValidationFunctions {
     try {
       a.success[Problem]
     } catch {
-      case err: Throwable => ExceptionCaughtProblem(err.getMessage, cause = Some(CauseIsThrowable(err))).failure
+      case exn: Throwable => launderThrowable(exn).failure
     }
   }
   
@@ -34,23 +34,23 @@ trait AlmValidationFunctions {
     try {
       a
     } catch {
-      case err: Throwable => ExceptionCaughtProblem(err.getMessage, cause = Some(CauseIsThrowable(err))).failure
+      case exn: Throwable => launderThrowable(exn).failure
     }
   }
   
   def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
     if(cond) ().success else problem.failure[Unit]
   
-  def noneIsBadData[T](v: Option[T], key: String = "unknown"): AlmValidation[T] =
+  def noneIsBadData[T](v: Option[T]): AlmValidation[T] =
     v match {
       case Some(that) => that.success[BadDataProblem]
       case None => BadDataProblem("A value was required but None was supplied.").failure[T]
     }
   
-  def noneIsNotFound[T](v: Option[T], message: String = "Not found"): AlmValidation[T] =
+  def noneIsNotFound[T](v: Option[T]): AlmValidation[T] =
     v match {
-      case Some(v) => v.success[NotFoundProblem]
-      case None => NotFoundProblem(message).failure[T]
+      case Some(v) => v.success
+      case None => NotFoundProblem("A value was expected but there was None").failure
     }
   
   def tryGetFromMap[K,V](key: K, map: Map[K,V], severity: Severity = NoProblem): Validation[KeyNotFoundProblem, V] = {

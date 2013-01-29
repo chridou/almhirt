@@ -50,7 +50,7 @@ trait XmlFunctions {
         e => e.success,
         UnspecifiedProblem("The element did not contain a child labeled %s".format(label)).failure))
 
-  def xmlFromString(xmlString: String, key: String = ""): AlmValidation[Elem] = {
+  def xmlFromString(xmlString: String): AlmValidation[Elem] = {
     try {
       XML.loadString(xmlString).success
     } catch {

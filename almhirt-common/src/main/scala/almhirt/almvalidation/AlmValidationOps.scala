@@ -134,10 +134,10 @@ trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
 }
   
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
-  def noneIsBadData(key: String = "unknown"): AlmValidation[T] =
-    funs.noneIsBadData(self, key)
-  def noneIsNotFound(message: String = "Not found"): AlmValidation[T] =
-    funs.noneIsNotFound(self, message)
+  def noneIsBadData(): AlmValidation[T] =
+    funs.noneIsBadData(self)
+  def noneIsNotFound(): AlmValidation[T] =
+    funs.noneIsNotFound(self)
 }
 
 trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {

@@ -56,14 +56,14 @@ object DimensionConverterStringToXmlElem extends DimensionConverter[DimensionStr
   val tSource = classOf[DimensionString]
   val tTarget = classOf[DimensionXmlElem]
   def convert(source: DimensionString): AlmValidation[DimensionXmlElem] =
-    almhirt.xml.funs.xmlFromString(source.manifestation, "DimensionString").map(DimensionXmlElem(_))
+    almhirt.xml.funs.xmlFromString(source.manifestation).map(DimensionXmlElem(_))
 }
 
 object DimensionConverterCordToXmlElem extends DimensionConverter[DimensionCord, DimensionXmlElem] {
   val tSource = classOf[DimensionCord]
   val tTarget = classOf[DimensionXmlElem]
   def convert(source: DimensionCord): AlmValidation[DimensionXmlElem] =
-    almhirt.xml.funs.xmlFromString(source.manifestation.toString, "DimensionString").map(DimensionXmlElem(_))
+    almhirt.xml.funs.xmlFromString(source.manifestation.toString).map(DimensionXmlElem(_))
 }
 
 object DimensionConverterXmlElemToString extends DimensionConverter[DimensionXmlElem, DimensionString] {
