@@ -6,6 +6,7 @@ import almhirt.environment._
 import almhirt.util.TrackingTicket
 import almhirt.almakka.ActorBased
 import almhirt.core.Almhirt
+import scala.reflect.ClassTag
 
 sealed trait AggregateRootRepositoryCmd
 case class GetAggregateRootQry(aggId: java.util.UUID) extends AggregateRootRepositoryCmd
@@ -21,16 +22,16 @@ object AggregateRootRepository {
   import almhirt.eventlog._
   import akka.actor._
   
-  def apply[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](actor: ActorRef)(implicit theAlmhirt: Almhirt): AggregateRootRepository[AR, Event] = {
+  def apply[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](actor: ActorRef)(implicit theAlmhirt: Almhirt, tag: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
     new AggregateRootRepositoryActorHull[AR, Event](actor, theAlmhirt) {}
   }
 
-  def unsafe[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit theAlmhirt: Almhirt): AggregateRootRepository[AR, Event] = {
+  def unsafe[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: DomainEventLog)(implicit theAlmhirt: Almhirt, tag: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
     val actor = theAlmhirt.actorSystem.actorOf(Props(new UnsafeAggregateRootRepositoryActor[AR, Event](null, arFactory, theAlmhirt) {}))
     apply(actor)
   }
   
-  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit theAlmhirt: Almhirt): AggregateRootRepository[AR, Event] = {
+  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit theAlmhirt: Almhirt, tag: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
     val actor = theAlmhirt.actorSystem.actorOf(Props(new BlockingAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, theAlmhirt) {}))
     apply(actor)
   }
