@@ -1,5 +1,7 @@
 package almhirt.common
 
+import scala.language.implicitConversions
+
 import java.util.concurrent._
 import scala.concurrent.ExecutionContext
 
@@ -37,4 +39,8 @@ object HasExecutionContext {
   def fixed(nThreads: Int): HasExecutionContext = new HasExecutionContext {
     val executionContext = scala.concurrent.ExecutionContext.fromExecutor(Executors.newFixedThreadPool(nThreads))
   }
+  
+  implicit def hasExecutionContext2ExecutionContext(hasExecutionContext: HasExecutionContext): ExecutionContext = hasExecutionContext.executionContext
+  implicit def executionContext2HasExecutionContext(executionContext: ExecutionContext): HasExecutionContext = HasExecutionContext(executionContext)
+  
 }

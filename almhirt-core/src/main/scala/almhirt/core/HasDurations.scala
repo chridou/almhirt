@@ -9,6 +9,11 @@ trait HasDurations {
   def defaultDuration = durations.mediumDuration
 }
 
+trait HasDefaultDurations extends HasDurations{
+  override def durations = Durations()
+  override def defaultDuration = durations.mediumDuration
+}
+
 object HasDurations {
   def apply(): HasDurations = new HasDurations { override val durations = Durations() }
   def apply(config: Config): HasDurations = new HasDurations { override val durations = Durations(config) }

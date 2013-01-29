@@ -31,7 +31,6 @@ package object common {
   type AlmValidation[+α] = Validation[Problem, α]
   type AlmValidationAP[+α] = Validation[AggregateProblem, α]  
   
-  implicit def hasExecutionContext2ExecutionContext(hasExecutionContext: HasExecutionContext): ExecutionContext = hasExecutionContext.executionContext
   
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T]{  def equal(p1: T, p2: T): Boolean = p1 == p2 }
     
