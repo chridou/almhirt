@@ -50,14 +50,14 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def fold[T](failure: Problem => T, success: R => T)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.map { validation => (validation fold (failure, success)).success }(hasExecutionContext.executionContext))
 
-  def onComplete(handler: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext, launderThrowable: ThrowableLaundry): Unit = {
+  def onComplete(handler: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => handler(validation)
       case scala.util.Failure(err) => handler(launderThrowable(err).failure)
     }(hasExecutionContext.executionContext)
   }
 
-  def onComplete(fail: Problem => Unit, succ: R => Unit)(implicit hasExecutionContext: HasExecutionContext, launderThrowable: ThrowableLaundry): Unit = {
+  def onComplete(fail: Problem => Unit, succ: R => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => validation fold (fail, succ)
       case scala.util.Failure(err) => fail(launderThrowable(err))
@@ -72,14 +72,14 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def onFailure(onProb: Problem => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit =
     onComplete(_ fold (onProb(_), _ => ()))
 
-  def andThen(effect: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext, launderThrowable: ThrowableLaundry): AlmFuture[R] = {
+  def andThen(effect: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
       case scala.util.Success(r) => effect(r)
       case scala.util.Failure(err) => effect(launderThrowable(err).failure)
     }(hasExecutionContext.executionContext))
   }
 
-  def andThen(fail: Problem => Unit, succ: R => Unit)(implicit hasExecutionContext: HasExecutionContext, launderThrowable: ThrowableLaundry): AlmFuture[R] = {
+  def andThen(fail: Problem => Unit, succ: R => Unit)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
       case scala.util.Success(r) => r.fold(fail, succ)
       case scala.util.Failure(err) => fail(launderThrowable(err))
@@ -91,7 +91,7 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
   def isCompleted = underlying.isCompleted
 
-  def awaitResult(implicit atMost: Duration, launderThrowable: ThrowableLaundry): AlmValidation[R] =
+  def awaitResult(implicit atMost: Duration): AlmValidation[R] =
     try {
       Await.result(underlying, atMost)
     } catch {

@@ -252,7 +252,7 @@ object AlmHirtBuild extends Build
                        			baseFile = file("almhirt-common"))
 
   lazy val core = coreProject(	name = "almhirt-core",
-	                       		baseFile = file("almhirt-core")) dependsOn(common)
+	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile")
 
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
 	                       		baseFile = file("./ext/core/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)

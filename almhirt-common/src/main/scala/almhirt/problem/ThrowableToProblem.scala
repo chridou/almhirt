@@ -4,7 +4,7 @@ import almhirt.common._
 
 trait ThrowableToProblem extends PartialFunction[Throwable, Problem] {
   def orElse(that: PartialFunction[Throwable, Problem]): ThrowableToProblem = {
-    val fn = (this orElse that)
+    val fn = ((this: PartialFunction[Throwable, Problem]) orElse (that: PartialFunction[Throwable, Problem]))
     new ThrowableToProblem {
       override def apply(exn: Throwable): Problem = fn(exn)
       override def isDefinedAt(exn: Throwable) = this.isDefinedAt(exn) || that.isDefinedAt(exn)

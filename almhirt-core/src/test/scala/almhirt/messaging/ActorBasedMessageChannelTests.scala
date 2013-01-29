@@ -23,7 +23,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
   test("A MessageChannel creates creates a subscription") {
     val channel = createChannel[AnyRef]
     val future = channel <-* ({ case _ => () }, _ => true)
-    val subscription = future.awaitResult(Duration.Inf, implicitly[ThrowableLaundry])
+    val subscription = future.awaitResult(Duration.Inf)
     subscription != null
   }
 
@@ -31,7 +31,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, _ => true)
-    val subscription = future.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = future.awaitResult(Duration.Inf).forceResult
     subscription.dispose()
     channel.post(Message("a"))
     channel.close()
@@ -43,8 +43,8 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     var hitCount = 0
     val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => true)
     val future2 = channel <-* ({ case _ => hitCount += 2 }, _ => true)
-    val subscription1 = future1.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
-    val subscription2 = future2.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription1 = future1.awaitResult(Duration.Inf).forceResult
+    val subscription2 = future2.awaitResult(Duration.Inf).forceResult
     subscription1.dispose()
     channel.post(Message("a"))
     channel.close()
@@ -55,7 +55,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, _ => true)
-    val subscription = future.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
     hit
@@ -66,8 +66,8 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     var hitCount = 0
     val future1 = channel <-* ({ case _ => hitCount += 1 }, _ => false)
     val future2 = channel <-* ({ case _ => hitCount += 2 }, _ => true)
-    val subscription1 = future1.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
-    val subscription2 = future2.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription1 = future1.awaitResult(Duration.Inf).forceResult
+    val subscription2 = future2.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
     hitCount === 2
@@ -77,7 +77,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, _ => false)
-    val subscription = future.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
     !hit
@@ -87,7 +87,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "a" => true })
-    val subscription = future.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
     hit
@@ -97,7 +97,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "a" => true; case _ => false })
-    val subscription = future.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("b"))
     channel.close()
     !hit
@@ -107,7 +107,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val channel = createChannel[AnyRef]
     var hit = false
     val future = channel <-* ({ case _ => hit = true }, x => x.payload match { case "1" => true; case _ => false })
-    val subscription = future.awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
     !hit

@@ -45,9 +45,9 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created global channel of payload type AnyRef must trigger a handler on the created channel""") {
     val hub = getHub
-    val channel = (hub.createMessageChannel[AnyRef]("testChannel" + theAlmhirt.getUuid.toString())).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val channel = (hub.createMessageChannel[AnyRef]("testChannel" + theAlmhirt.getUuid.toString())).awaitResult(Duration.Inf).forceResult
     var hit = false
-    val subscription = (channel <-* { x => hit = true }).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = (channel <-* { x => hit = true }).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
     subscription.dispose()
     hit === true
@@ -55,9 +55,9 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created global channel of payload type String must trigger a handler on the created channel when a String is broadcasted""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
-    val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message("A"))
     subscription.dispose()
     hit === true
@@ -65,9 +65,9 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created global channel of payload type String must not trigger a handler on the created channel when a UUID is broadcasted""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
-    val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(java.util.UUID.randomUUID))
     subscription.dispose()
     hit === false
@@ -75,9 +75,9 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created channel with no topic of payload type AnyRef must trigger a handler on the created channel""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[AnyRef]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val channel = hub.createMessageChannel[AnyRef]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
-    val subscription = (channel <-* (x => hit = true)).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = (channel <-* (x => hit = true)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
     subscription.dispose()
     hit === true
@@ -85,9 +85,9 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created channel with no topic of payload type String must trigger a handler on the created channel when a String is broadcasted""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
-    val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message("A"))
     subscription.dispose()
     hit === true
@@ -95,9 +95,9 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
 
   test("""A MessageHub with a created channel with no topic of payload type String must not be trigger a handler on the created channel when a UUID is broadcasted""") {
     val hub = getHub
-    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val channel = hub.createMessageChannel[String]("testChannel" + theAlmhirt.getUuid.toString()).awaitResult(Duration.Inf).forceResult
     var hit = false
-    val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf, implicitly[ThrowableLaundry]).forceResult
+    val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(java.util.UUID.randomUUID))
     subscription.dispose()
     hit === false
