@@ -18,6 +18,7 @@ import language.implicitConversions
 
 import scalaz.Validation
 import scala.concurrent.ExecutionContext
+import almhirt.problem._
 
 /** Classes and traits needed at other places*/
 package object common {
@@ -34,4 +35,7 @@ package object common {
   
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T]{  def equal(p1: T, p2: T): Boolean = p1 == p2 }
     
+  type ThrowableLaundry = ThrowableToProblem
+  
+  implicit val throwableConverter: ThrowableToProblem = CommonThrowableToProblem orElse (AllThrowablesToCaughtExceptionProblem)
 }

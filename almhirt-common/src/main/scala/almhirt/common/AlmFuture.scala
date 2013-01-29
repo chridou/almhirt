@@ -50,17 +50,17 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def fold[T](failure: Problem => T, success: R => T)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.map { validation => (validation fold (failure, success)).success }(hasExecutionContext.executionContext))
 
-  def onComplete(handler: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit = {
+  def onComplete(handler: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext, launderThrowable: ThrowableLaundry): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => handler(validation)
-      case scala.util.Failure(err) => handler(throwableToProblem(err).failure)
+      case scala.util.Failure(err) => handler(launderThrowable(err).failure)
     }(hasExecutionContext.executionContext)
   }
 
-  def onComplete(fail: Problem => Unit, succ: R => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit = {
+  def onComplete(fail: Problem => Unit, succ: R => Unit)(implicit hasExecutionContext: HasExecutionContext, launderThrowable: ThrowableLaundry): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => validation fold (fail, succ)
-      case scala.util.Failure(err) => fail(throwableToProblem(err))
+      case scala.util.Failure(err) => fail(launderThrowable(err))
     }(hasExecutionContext.executionContext)
   }
 
@@ -72,17 +72,17 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def onFailure(onProb: Problem => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit =
     onComplete(_ fold (onProb(_), _ => ()))
 
-  def andThen(effect: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[R] = {
+  def andThen(effect: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext, launderThrowable: ThrowableLaundry): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
       case scala.util.Success(r) => effect(r)
-      case scala.util.Failure(err) => effect(throwableToProblem(err).failure)
+      case scala.util.Failure(err) => effect(launderThrowable(err).failure)
     }(hasExecutionContext.executionContext))
   }
 
-  def andThen(fail: Problem => Unit, succ: R => Unit)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[R] = {
+  def andThen(fail: Problem => Unit, succ: R => Unit)(implicit hasExecutionContext: HasExecutionContext, launderThrowable: ThrowableLaundry): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
       case scala.util.Success(r) => r.fold(fail, succ)
-      case scala.util.Failure(err) => fail(throwableToProblem(err))
+      case scala.util.Failure(err) => fail(launderThrowable(err))
     }(hasExecutionContext.executionContext))
   }
   
@@ -91,18 +91,18 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
   def isCompleted = underlying.isCompleted
 
-  def awaitResult(implicit atMost: Duration): AlmValidation[R] =
+  def awaitResult(implicit atMost: Duration, launderThrowable: ThrowableLaundry): AlmValidation[R] =
     try {
       Await.result(underlying, atMost)
     } catch {
-      case exn: Throwable => throwableToProblem(exn).failure
+      case exn: Throwable => launderThrowable(exn).failure
     }
 
-  private def throwableToProblem(throwable: Throwable): Problem =
-    throwable match {
-      case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out: %s".format(tout.getMessage), cause = Some(CauseIsThrowable(tout)))
-      case exn => UnspecifiedProblem(exn.getMessage, severity = Major, category = SystemProblem, cause = Some(CauseIsThrowable(exn)))
-    }
+//  private def throwableToProblem(throwable: Throwable): Problem =
+//    throwable match {
+//      case tout: TimeoutException => OperationTimedOutProblem("A future operation timed out: %s".format(tout.getMessage), cause = Some(CauseIsThrowable(tout)))
+//      case exn => UnspecifiedProblem(exn.getMessage, severity = Major, category = SystemProblem, cause = Some(CauseIsThrowable(exn)))
+//    }
 }
 
 object AlmFuture {
