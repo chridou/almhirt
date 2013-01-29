@@ -2,7 +2,6 @@ package almhirt.util
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.Duration._
-import scalaz.syntax.validation._
 import akka.actor.ActorRef
 import akka.pattern._
 import almhirt.common._
@@ -25,7 +24,7 @@ trait OperationStateTrackerRsp
 case class OperationStateRsp(ticket: TrackingTicket, state: AlmValidation[Option[OperationState]])
 case class OperationStateResultRsp(ticket: TrackingTicket, state: AlmValidation[ResultOperationState])
 
-trait OperationStateTracker {
+trait OperationStateTracker extends ActorBased {
   def updateState(opState: OperationState): Unit
   def queryStateFor(within: FiniteDuration)(ticket: TrackingTicket): AlmFuture[Option[OperationState]]
   def getResultFor(within: FiniteDuration)(ticket: TrackingTicket): AlmFuture[ResultOperationState]
@@ -33,8 +32,8 @@ trait OperationStateTracker {
 
 object OperationStateTracker {
   import akka.actor._
-  def apply()(implicit theAlmHirt: Almhirt): AlmValidation[OperationStateTracker] = {
+  def apply()(implicit theAlmHirt: Almhirt): OperationStateTracker = {
     val actor = theAlmHirt.actorSystem.actorOf(Props(new impl.OperationStateTrackerWithoutTimeoutActor), "OperationStateTracker")
-    new impl.OperationStateTrackerActorHull(actor).success
+    new impl.OperationStateTrackerActorHull(actor)
   }
 }

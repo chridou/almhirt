@@ -1,41 +1,51 @@
 package almhirt.domain.impl
 
+import scala.reflect.ClassTag
 import scalaz._, Scalaz._
 import akka.actor._
-import almhirt.core._
+import akka.pattern._
+import akka.util.Timeout._
 import almhirt.common._
+import almhirt.core._
 import almhirt.syntax.almfuture._
+import almhirt.syntax.almvalidation._
 import almhirt.domain._
-import almhirt.eventlog.DomainEventLog
-import almhirt.core.Almhirt
+import almhirt.eventlog._
 import almhirt.util._
-import almhirt.common.AlmFuture
 
-abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: DomainEventLog, arFactory: CanCreateAggragateRoot[AR, Event], almhirt: Almhirt) extends Actor {
+abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event], theAlmhirt: Almhirt)(implicit tag: ClassTag[Event]) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
-  implicit private def timeout = almhirt.defaultDuration
-  implicit private val hasExecutionContext = almhirt
-  implicit private val executionContext = hasExecutionContext.executionContext
+  implicit private def timeout = theAlmhirt.durations.longDuration
+  implicit private val hasExecutionContext = theAlmhirt
 
-  private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] =
-    eventLog.getEvents(id)
-      .map(e => e.map(_.asInstanceOf[Event]).toList)
-      .mapV(events =>
-        if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
-        else arFactory.rebuildFromHistory(events))
+  private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] = {
+    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).mapTo[EventsForAggregateRootRsp]
+    future
+    	.mapOver{ case EventsForAggregateRootRsp(id, DomainEventsChunk(idx, isLast, events), corrId) => events }
+    	.map(events => events.map(x => x.asInstanceOf[Event]))
+    	.mapV(events =>
+          if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
+          else arFactory.rebuildFromHistory(events))
+  }
+//    (eventLognts(id)
+//      .map(e => e.map(_.asInstanceOf[Event]).toList)
+//      .mapV(events =>
+//        if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
+//        else arFactory.rebuildFromHistory(events))
 
   private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]): Unit =
-    eventLog.getRequiredNextEventVersion(ar.id).flatMap(nextRequiredEventVersion =>
-      validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture {
-        case (ar, events) => eventLog.storeEvents(uncommittedEvents)
-      })
-      .onComplete(
-        fail =>
-          updateFailedOperationState(almhirt, fail, ticket),
-        succ => {
-          ticket.foreach(t => almhirt.publishOperationState(Executed(t)))
-          succ.foreach(event => almhirt.publishDomainEvent(event))
-        })
+    ???
+//    eventLog.getRequiredNextEventVersion(ar.id).flatMap(nextRequiredEventVersion =>
+//      validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture {
+//        case (ar, events) => eventLog.storeEvents(uncommittedEvents)
+//      })
+//      .onComplete(
+//        fail =>
+//          updateFailedOperationState(almhirt, fail, ticket),
+//        succ => {
+//          ticket.foreach(t => almhirt.publishOperationState(Executed(t)))
+//          succ.foreach(event => almhirt.publishDomainEvent(event))
+//        })
 
   private def updateFailedOperationState(almhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
     almhirt.publishProblem(p)

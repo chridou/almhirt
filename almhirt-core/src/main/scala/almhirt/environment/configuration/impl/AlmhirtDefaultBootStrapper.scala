@@ -58,7 +58,7 @@ trait BootstrapperDefaultCoreComponents extends AlmhirtBootstrapper { self: HasC
           cmdHandlerRegistry = HasCommandHandlers()
           theServiceRegistry.registerService[HasCommandHandlers](cmdHandlerRegistry)
 
-          cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos).forceResult
+          cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos)
           cmdExecutorRegistration =
             theAlmhirt.getService[CommandChannel].flatMap(channel =>
               (channel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)

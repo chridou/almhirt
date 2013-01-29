@@ -14,7 +14,7 @@
 */
 package almhirt
 
-package object almfuture {
+package object almfuture extends {
   object inst extends almhirt.almfuture.AlmFutureInstances
   object all extends almhirt.almfuture.AlmFutureInstances with almhirt.almfuture.ToAlmFutureOps
 }

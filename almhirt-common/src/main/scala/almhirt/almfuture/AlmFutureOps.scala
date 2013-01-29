@@ -34,6 +34,10 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
    */
   def mapToAlmFuture[T](implicit m: ClassTag[T]): AlmFuture[T] = 
     new AlmFuture[T](self.mapTo[AlmValidation[T]])
+
+  def mapToSuccessfulAlmFuture[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
+    new AlmFuture[T](self.mapTo[T].map(_.success)(hasExecutionContext.executionContext))
+
 }
 
 trait AlmFutureOps1[T] extends Ops[Future[AlmValidation[T]]] {
@@ -112,18 +116,15 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
 trait AlmFutureOps3[T] extends Ops[Future[T]] {
   def toSuccessfulAlmFuture(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = 
     new AlmFuture[T](self.map(_.success)(hasExecutionContext.executionContext))
-}
-
-trait AlmFutureOps4 extends Ops[Future[Any]] {
-  def mapToSuccessfulAlmFuture[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
-    new AlmFuture[T](self.mapTo[T].map(_.success)(hasExecutionContext.executionContext))
+    
+  def mapOver[U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[U] =
+    new AlmFuture[U](self.map(x => compute(x))(hasExecutionContext.executionContext))
 }
 
 
 trait ToAlmFutureOps {
-  implicit def FromAkkaFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 {def self = a }
-  implicit def FromAkkaFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] {def self = a }
+  implicit def FromFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 {def self = a }
+  implicit def FromTypedFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] {def self = a }
   implicit def FromAlmValidationToAlmFutureOps2[T](a: AlmValidation[T]): AlmFutureOps2[T] = new AlmFutureOps2[T]{def self = a }
-  implicit def FromAlmValidationToAlmFutureOps3[T](a: Future[T]): AlmFutureOps3[T] = new AlmFutureOps3[T]{def self = a }
-  implicit def FromAlmValidationToAlmFutureOps4[T](a: Future[Any]): AlmFutureOps4 = new AlmFutureOps4{def self = a }
+  implicit def FromTypedFutureToAlmFutureOps3[T](a: Future[T]): AlmFutureOps3[T] = new AlmFutureOps3[T]{def self = a }
 }
