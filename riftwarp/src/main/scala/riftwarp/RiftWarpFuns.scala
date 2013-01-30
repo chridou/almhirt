@@ -19,7 +19,7 @@ object RiftWarpFuns {
   private[riftwarp] def lookUpDematerializerFactoryAndConverters(channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(implicit riftwarp: RiftWarp): scalaz.Validation[RiftWarpProblem, (DematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
     def findDematerializerFactory(converters: List[RawDimensionConverter]): scalaz.Validation[RiftWarpProblem, (DematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
       converters match {
-        case Nil => RiftWarpProblem("No DematerializerFactory found matching with a target type matching %s.".format(converters.mkString(", "))).failure
+        case Nil => RiftWarpProblem(s"No DematerializerFactory found matching a target dimension '${tDimension.getName()}'. This has been found:${converters.mkString(", ")}.").failure
         case x :: xs =>
           option.cata(riftwarp.toolShed.tryGetDematerializerFactoryByType(x.tSource)(channel, toolGroup))(
             factory => (factory, x).success,
