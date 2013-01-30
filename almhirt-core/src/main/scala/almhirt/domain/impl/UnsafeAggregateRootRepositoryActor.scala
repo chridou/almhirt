@@ -29,15 +29,15 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
   }
 
   private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]): Unit =
-    for {
-      nextRequiredVersion <- 
-      	(eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).mapTo[CommittedDomainEventsRsp].mapOver(x => x.success)
-      x <-??
-    } yield nextRequiredVersion
+    ???
+//    for {
+//      nextRequiredVersion <- 
+//      	(eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).mapTo[CommittedDomainEventsRsp].mapOver(x => x.success)
+//      x <-??
+//    } yield nextRequiredVersion
 //    validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture
 //    (eventLog ? LogEventsQry)(timeout).mapTo[CommittedDomainEventsRsp].mapOver{ case CommittedDomainEventsRsp(events, corrId) =>
 //      }
-    ???
 //    eventLog.getRequiredNextEventVersion(ar.id).flatMap(nextRequiredEventVersion =>
 //      validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture {
 //        case (ar, events) => eventLog.storeEvents(uncommittedEvents)

@@ -54,7 +54,7 @@ trait XmlFunctions {
     try {
       XML.loadString(xmlString).success
     } catch {
-      case err: Throwable => BadDataProblem("Could not parse xml: %s".format(err.getMessage), cause = Some(CauseIsThrowable(err))).failure[Elem]
+      case err: Throwable => BadDataProblem("Could not parse xml: %s".format(err.getMessage), cause = Some(err)).failure[Elem]
     }
   }
 

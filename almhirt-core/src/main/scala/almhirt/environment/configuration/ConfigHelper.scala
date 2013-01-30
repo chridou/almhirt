@@ -21,7 +21,7 @@ object ConfigHelper {
             str.success
       }
     } catch {
-      case exn: Throwable => ExceptionCaughtProblem("").withCause(CauseIsThrowable(exn)).failure
+      case exn: Throwable => ExceptionCaughtProblem("").withCause(exn).failure
     }
   }
 
@@ -42,7 +42,7 @@ object ConfigHelper {
         case nanos => FiniteDuration(nanos, "ms").success
       }
     } catch {
-      case exn: Throwable => UnspecifiedProblem("Not a duration on path '%s'".format(path), cause = Some(CauseIsThrowable(exn)), args = Map("key" -> path)).failure
+      case exn: Throwable => UnspecifiedProblem("Not a duration on path '%s'".format(path), cause = Some(exn), args = Map("key" -> path)).failure
     }
   }
 

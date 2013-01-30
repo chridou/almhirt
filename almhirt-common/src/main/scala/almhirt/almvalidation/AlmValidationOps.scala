@@ -159,12 +159,12 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
   def fromExceptional(): AlmValidation[T] = 
-    self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(CauseIsThrowable(exn))).failure[T], _.success)
+    self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(exn)).failure[T], _.success)
 }
 
 trait AlmValidationOps11[T] extends Ops[Either[Throwable, T]] {
   def toAlmValidation(): AlmValidation[T] = 
-    self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(CauseIsThrowable(exn))).failure[T], _.success)
+    self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(exn)).failure[T], _.success)
 }
 
 trait AlmValidationOps12[R] extends Ops[List[AlmValidation[R]]] {

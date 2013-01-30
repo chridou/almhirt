@@ -44,7 +44,7 @@ object DispatchFuns {
       val data =
         Http(req)
           .map(resp => getHttpDataFromResponse(resp))
-          .onComplete(x => x.fold(exn => ExceptionCaughtProblem("An exception has been caught", cause = Some(CauseIsThrowable(exn))).failure, v => v))
+          .onComplete(x => x.fold(exn => ExceptionCaughtProblem("An exception has been caught", cause = Some(exn)).failure, v => v))
       data()
     }
   }

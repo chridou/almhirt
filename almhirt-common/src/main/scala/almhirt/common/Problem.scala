@@ -40,9 +40,11 @@ trait Problem{
       cause match {
       	case None => 
       	  ()
-      	case Some(CauseIsThrowable(exn)) => 
-          builder.append("Exception: %s\n".format(exn.toString))
+      	case Some(CauseIsThrowable(HasAThrowable(exn))) => 
+          builder.append("Message: %s\n".format(exn.toString))
           builder.append("Stacktrace:\n%s\n".format(exn.getStackTraceString))
+      	case Some(CauseIsThrowable(desc @ HasADescription(_,_,_,_))) => 
+          builder.append("Description: %s\n".format(desc.toString))
       	case Some(CauseIsProblem(prob)) => 
           builder.append("Problem: %s\n".format(prob.toString))
       }
