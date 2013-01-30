@@ -19,36 +19,34 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
   implicit private val hasExecutionContext = theAlmhirt
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] = {
-    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).mapTo[EventsForAggregateRootRsp]
+    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).mapToSuccessfulAlmFuture[EventsForAggregateRootRsp]
     future
-    	.mapOver{ case EventsForAggregateRootRsp(id, DomainEventsChunk(idx, isLast, events), corrId) => events }
-    	.map(events => events.map(x => x.asInstanceOf[Event]))
-    	.mapV(events =>
-          if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
-          else arFactory.rebuildFromHistory(events))
+      .mapV { case EventsForAggregateRootRsp(id, DomainEventsChunk(idx, isLast, events), corrId) => events }
+      .map(events => events.map(x => x.asInstanceOf[Event]))
+      .mapV(events =>
+        if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure
+        else arFactory.rebuildFromHistory(events))
   }
 
-  private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]): Unit =
-    ???
-//    for {
-//      nextRequiredVersion <- 
-//      	(eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).mapTo[CommittedDomainEventsRsp].mapOver(x => x.success)
-//      x <-??
-//    } yield nextRequiredVersion
-//    validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture
-//    (eventLog ? LogEventsQry)(timeout).mapTo[CommittedDomainEventsRsp].mapOver{ case CommittedDomainEventsRsp(events, corrId) =>
-//      }
-//    eventLog.getRequiredNextEventVersion(ar.id).flatMap(nextRequiredEventVersion =>
-//      validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion).continueWithFuture {
-//        case (ar, events) => eventLog.storeEvents(uncommittedEvents)
-//      })
-//      .onComplete(
-//        fail =>
-//          updateFailedOperationState(almhirt, fail, ticket),
-//        succ => {
-//          ticket.foreach(t => almhirt.publishOperationState(Executed(t)))
-//          succ.foreach(event => almhirt.publishDomainEvent(event))
-//        })
+  private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]) {
+    (for {
+      response <- (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).mapToSuccessfulAlmFuture[RequiredNextEventVersionRsp]
+      validated <- AlmFuture {
+        for {
+          nextRequiredEventVersion <- response.nextVersion
+          validated <- validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion)
+        } yield validated
+      }
+      committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[CommittedDomainEventsRsp]
+      committedEvents <- AlmFuture { committedEventsRsp.events }
+    } yield committedEvents).onComplete(
+      fail =>
+        updateFailedOperationState(theAlmhirt, fail, ticket),
+      succ => {
+        ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t)))
+        succ.foreach(event => theAlmhirt.publishDomainEvent(event))
+      })
+  }
 
   private def updateFailedOperationState(almhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
     almhirt.publishProblem(p)
