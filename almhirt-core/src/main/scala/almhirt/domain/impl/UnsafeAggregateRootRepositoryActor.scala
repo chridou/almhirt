@@ -19,7 +19,7 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
   implicit private val hasExecutionContext = theAlmhirt
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] = {
-    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).mapToSuccessfulAlmFuture[EventsForAggregateRootRsp]
+    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).~+>[EventsForAggregateRootRsp]
     future
       .mapV { case EventsForAggregateRootRsp(id, DomainEventsChunk(idx, isLast, events), corrId) => events }
       .map(events => events.map(x => x.asInstanceOf[Event]))
@@ -30,14 +30,14 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
 
   private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]) {
     (for {
-      response <- (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).mapToSuccessfulAlmFuture[RequiredNextEventVersionRsp]
+      response <- (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).~+>[RequiredNextEventVersionRsp]
       validated <- AlmFuture {
         for {
           nextRequiredEventVersion <- response.nextVersion
           validated <- validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion)
         } yield validated
       }
-      committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[CommittedDomainEventsRsp]
+      committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).~+>[CommittedDomainEventsRsp]
       committedEvents <- AlmFuture { committedEventsRsp.events }
     } yield committedEvents).onComplete(
       fail =>

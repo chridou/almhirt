@@ -15,6 +15,7 @@
 package almhirt.almfuture
 
 import scala.language.implicitConversions
+import scala.language.postfixOps
 
 import scala.concurrent.{Future, ExecutionContext}
 import scala.reflect.ClassTag
@@ -35,9 +36,14 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
   def mapToAlmFuture[T](implicit m: ClassTag[T]): AlmFuture[T] = 
     new AlmFuture[T](self.mapTo[AlmValidation[T]])
 
+  def ~>[T](implicit m: ClassTag[T]): AlmFuture[T] = mapToAlmFuture   
+    
   def mapToSuccessfulAlmFuture[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
     new AlmFuture[T](self.mapTo[T].map(_.success)(hasExecutionContext.executionContext))
 
+  def ~+>[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = mapToSuccessfulAlmFuture  
+    
+    
   def mapToAlmFutureOver[T,U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
     new AlmFuture[U](self.mapTo[T].map(x => compute(x))(hasExecutionContext.executionContext))
 }
@@ -119,6 +125,8 @@ trait AlmFutureOps3[T] extends Ops[Future[T]] {
   def toSuccessfulAlmFuture(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = 
     new AlmFuture[T](self.map(_.success)(hasExecutionContext.executionContext))
     
+  def -+>(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = toSuccessfulAlmFuture  
+  
   def mapOver[U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[U] =
     new AlmFuture[U](self.map(x => compute(x))(hasExecutionContext.executionContext))
 }
