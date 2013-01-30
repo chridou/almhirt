@@ -99,6 +99,7 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
       		| "dateTime":"2013-01-23T06:23:14.421+01:00",
       		| "uuid":"63d0847f-718d-4d00-8267-09d809477589"}""".stripMargin
 
+      		
   val testdataPrimJsonWithoutDescriptor =
     """	|{"str":"I am Pete",
       		| "bool":true,
@@ -111,6 +112,7 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
       		| "bigDec":"23761247614876823746.23846749182408",
       		| "dateTime":"2013-01-23T06:23:14.421+01:00",
       		| "uuid":"63d0847f-718d-4d00-8267-09d809477589"}""".stripMargin
+      		
 
   "transformFromHttpData(targeting 'PrimitiveTypes' from JSON)" should {
     """recreate PrimitiveTypes from proper request data with RiftHttpChannelContentType(RiftChannel.Json)""" in {
@@ -195,7 +197,7 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
   "createHttpProblemResponseData" when {
     "no channel is provided and settings specifies JSON as a default channel" should {
       "create a JSON response for an 'UnspecifiedProblem" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpProblemResponseData(settings)(prob, None)
         resp should equal(shouldBe)
@@ -203,7 +205,7 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
     }
     "JSON is set as the target channel and settings specifies JSON as a default channel" should {
       "create a JSON response for an 'UnspecifiedProblem" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpProblemResponseData(settings)(prob, None)
         resp should equal(shouldBe)
@@ -214,86 +216,107 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
   "createHttpData" when {
     "no channel is provided and settings specifies JSON as a default channel" should {
       "create a JSON response for an 'UnspecifiedProblem' and TResp set to 'UnspecifiedProblem'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpData[UnspecifiedProblem](settings)(prob, None).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for an 'UnspecifiedProblem' and TResp set to 'Problem'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpData[Problem](settings)(prob, None).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for an 'UnspecifiedProblem' and TResp set to 'AnyRef'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpData[AnyRef](settings)(prob, None).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for an 'UnspecifiedProblem' and TResp is not set" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpData(settings)(prob, None).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for 'PrimitiveTypes'  and TResp set to 'PrimitiveTypes'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
         val resp = createHttpData[PrimitiveTypes](settings)(testdataPrim, None).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for 'PrimitiveTypes'  and TResp set to 'AnyRef'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
         val resp = createHttpData[PrimitiveTypes](settings)(testdataPrim, None).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for 'PrimitiveTypes'  and TResp is not set" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
         val resp = createHttpData(settings)(testdataPrim, None).forceResult
         resp should equal(shouldBe)
       }
     }
     "JSON is set as the target channel and settings specifies JSON as a default channel" should {
       "create a JSON response for an 'UnspecifiedProblem' and TResp set to 'UnspecifiedProblem'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpData[UnspecifiedProblem](settings)(prob, Some(RiftChannel.Json)).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for an 'UnspecifiedProblem' and TResp set to 'Problem'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpData[Problem](settings)(prob, Some(RiftChannel.Json)).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for an 'UnspecifiedProblem' and TResp set to 'AnyRef'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpData[AnyRef](settings)(prob, Some(RiftChannel.Json)).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for an 'UnspecifiedProblem' and TResp is not set" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"test","severity":"Major","category":"SystemProblem","args":[]}"""))
         val prob = UnspecifiedProblem("test")
         val resp = createHttpData(settings)(prob, Some(RiftChannel.Json)).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for 'PrimitiveTypes'  and TResp set to 'PrimitiveTypes'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
         val resp = createHttpData[PrimitiveTypes](settings)(testdataPrim, Some(RiftChannel.Json)).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for 'PrimitiveTypes'  and TResp set to 'AnyRef'" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
         val resp = createHttpData[PrimitiveTypes](settings)(testdataPrim, Some(RiftChannel.Json)).forceResult
         resp should equal(shouldBe)
       }
       "create a JSON response for 'PrimitiveTypes'  and TResp is not set" in {
-        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
+        val shouldBe = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}"""))
         val resp = createHttpData(settings)(testdataPrim, Some(RiftChannel.Json)).forceResult
         resp should equal(shouldBe)
       }
     }
   }
+
+  val primitiveVectorMAs = PrimitiveVectorMAs(
+        vectorString = Vector("alpha", "beta", "gamma", "delta"),
+        vectorInt = Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+        vectorDouble = Vector(1.0, 0.5, 0.2, 0.125),
+        vectorBigDecimal = Vector(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
+        vectorDateTime = Vector(new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(1), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(2), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(3), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(4)))
+
+  val primitiveVectorMAsJson = """{"riftdesc":"riftwarp.PrimitiveVectorMAs","vectorString":["alpha","beta","gamma","delta"],"vectorInt":[1,2,3,4,5,6,7,8,9,10],"vectorDouble":[1.0,0.5,0.2,0.125],"vectorBigDecimal":["1.333333","1.33333335","1.6666666","1.6666667"],"vectorDateTime":["2013-01-23T07:23:14.421+01:00","2013-01-23T08:23:14.421+01:00","2013-01-23T09:23:14.421+01:00","2013-01-23T10:23:14.421+01:00"]}"""
+  val primitiveVectorMAsJsonWithoutTypeDescriptor = """{"vectorString":["alpha","beta","gamma","delta"],"vectorInt":[1,2,3,4,5,6,7,8,9,10],"vectorDouble":[1.0,0.5,0.2,0.125],"vectorBigDecimal":["1.333333","1.33333335","1.6666666","1.6666667"],"vectorDateTime":["2013-01-23T07:23:14.421+01:00","2013-01-23T08:23:14.421+01:00","2013-01-23T09:23:14.421+01:00","2013-01-23T10:23:14.421+01:00"]}"""
   
+  val primitiveVectorRequestDataQualifiedWithDescriptorInBody = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveVectorMAs", RiftChannel.Json, Map()), RiftStringBody(primitiveVectorMAsJson))
+  val primitiveVectorRequestDataUnqualifiedWithDescriptorInBody = RiftHttpDataWithContent(RiftHttpChannelContentType(RiftChannel.Json, Map()), RiftStringBody(primitiveVectorMAsJson))
+
+  val primitiveVectorRequestDataQualified = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveVectorMAs", RiftChannel.Json, Map()), RiftStringBody(primitiveVectorMAsJsonWithoutTypeDescriptor))
+  val primitiveVectorRequestDataUnqualified = RiftHttpDataWithContent(RiftHttpChannelContentType(RiftChannel.Json, Map()), RiftStringBody(primitiveVectorMAsJsonWithoutTypeDescriptor))
+   
+  "withRequestData" when {
+    "getting " in {
+    }
+  }
+
 }
