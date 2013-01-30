@@ -1,5 +1,6 @@
 package almhirt.core.test
 
+import scala.reflect.ClassTag
 import scalaz.syntax.validation._
 import akka.event.LoggingAdapter
 import almhirt.common._
@@ -17,7 +18,7 @@ trait CoreBootstrapperWithBlockingRepo extends AlmhirtBootstrapper {
     super.registerRepositories(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
       theServiceRegistry.getService[HasRepositories].flatMap { hasRepos =>
         theServiceRegistry.getService[DomainEventLog].flatMap { eventLog =>
-          val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent](TestPerson, eventLog.actor)(theAlmhirt)
+          val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent]("TestPersonRepo" ,TestPerson, eventLog.actor)(theAlmhirt, implicitly[ClassTag[TestPersonEvent]])
           hasRepos.registerForAggregateRoot(personRepository)
           superCleanUp.success
         }
