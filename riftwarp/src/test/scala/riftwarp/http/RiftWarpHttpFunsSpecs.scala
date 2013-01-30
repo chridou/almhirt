@@ -8,6 +8,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.impl.UnsafeChannelRegistry
+import almhirt.http.Http_200_OK
 
 class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
   import RiftWarpHttpFuns._
@@ -99,7 +100,6 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
       		| "dateTime":"2013-01-23T06:23:14.421+01:00",
       		| "uuid":"63d0847f-718d-4d00-8267-09d809477589"}""".stripMargin
 
-      		
   val testdataPrimJsonWithoutDescriptor =
     """	|{"str":"I am Pete",
       		| "bool":true,
@@ -112,7 +112,6 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
       		| "bigDec":"23761247614876823746.23846749182408",
       		| "dateTime":"2013-01-23T06:23:14.421+01:00",
       		| "uuid":"63d0847f-718d-4d00-8267-09d809477589"}""".stripMargin
-      		
 
   "transformFromHttpData(targeting 'PrimitiveTypes' from JSON)" should {
     """recreate PrimitiveTypes from proper request data with RiftHttpChannelContentType(RiftChannel.Json)""" in {
@@ -299,24 +298,42 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
   }
 
   val primitiveVectorMAs = PrimitiveVectorMAs(
-        vectorString = Vector("alpha", "beta", "gamma", "delta"),
-        vectorInt = Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
-        vectorDouble = Vector(1.0, 0.5, 0.2, 0.125),
-        vectorBigDecimal = Vector(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
-        vectorDateTime = Vector(new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(1), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(2), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(3), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(4)))
+    vectorString = Vector("alpha", "beta", "gamma", "delta"),
+    vectorInt = Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+    vectorDouble = Vector(1.0, 0.5, 0.2, 0.125),
+    vectorBigDecimal = Vector(BigDecimal("1.333333"), BigDecimal("1.33333335"), BigDecimal("1.6666666"), BigDecimal("1.6666667")),
+    vectorDateTime = Vector(new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(1), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(2), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(3), new DateTime("2013-01-23T06:23:14.421+01:00").plusHours(4)))
 
   val primitiveVectorMAsJson = """{"riftdesc":"riftwarp.PrimitiveVectorMAs","vectorString":["alpha","beta","gamma","delta"],"vectorInt":[1,2,3,4,5,6,7,8,9,10],"vectorDouble":[1.0,0.5,0.2,0.125],"vectorBigDecimal":["1.333333","1.33333335","1.6666666","1.6666667"],"vectorDateTime":["2013-01-23T07:23:14.421+01:00","2013-01-23T08:23:14.421+01:00","2013-01-23T09:23:14.421+01:00","2013-01-23T10:23:14.421+01:00"]}"""
   val primitiveVectorMAsJsonWithoutTypeDescriptor = """{"vectorString":["alpha","beta","gamma","delta"],"vectorInt":[1,2,3,4,5,6,7,8,9,10],"vectorDouble":[1.0,0.5,0.2,0.125],"vectorBigDecimal":["1.333333","1.33333335","1.6666666","1.6666667"],"vectorDateTime":["2013-01-23T07:23:14.421+01:00","2013-01-23T08:23:14.421+01:00","2013-01-23T09:23:14.421+01:00","2013-01-23T10:23:14.421+01:00"]}"""
-  
+
   val primitiveVectorRequestDataQualifiedWithDescriptorInBody = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveVectorMAs", RiftChannel.Json, Map()), RiftStringBody(primitiveVectorMAsJson))
   val primitiveVectorRequestDataUnqualifiedWithDescriptorInBody = RiftHttpDataWithContent(RiftHttpChannelContentType(RiftChannel.Json, Map()), RiftStringBody(primitiveVectorMAsJson))
 
   val primitiveVectorRequestDataQualified = RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveVectorMAs", RiftChannel.Json, Map()), RiftStringBody(primitiveVectorMAsJsonWithoutTypeDescriptor))
   val primitiveVectorRequestDataUnqualified = RiftHttpDataWithContent(RiftHttpChannelContentType(RiftChannel.Json, Map()), RiftStringBody(primitiveVectorMAsJsonWithoutTypeDescriptor))
-   
-  "withRequestData" when {
-    "getting " in {
-    }
-  }
 
+  def createPrimitiveTypesResponseDataJson(statusCode: almhirt.http.HttpStatusCode) = RiftHttpResponse(statusCode, RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveTypes", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"riftwarp.PrimitiveTypes","str":"I am Pete","bool":true,"byte":127,"int":-237823,"long":-278234263,"bigInt":"265876257682376587365863876528756875682765252520577305007209857025728132213242","float":1.3674999475479126,"double":1.3672322350005,"bigDec":"23761247614876823746.23846749182408","dateTime":"2013-01-23T06:23:14.421+01:00","uuid":"63d0847f-718d-4d00-8267-09d809477589"}""")))
+
+  "The respond function transforming to JSON" should {
+      "return an OK-Response when the computations returns a Success(Some(x))" in {
+        val response = respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success)
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "return an OK-Response with no content when computations returns a Success(None)" in {
+        val response = respond(settings)(Http_200_OK, RiftChannel.Json)(() => None.success)
+        response should equal(RiftHttpResponse(Http_200_OK, RiftHttpDataWithoutContent))
+      }
+    }
+  
+//  "withRequestData transforming to 'PrimitiveTypes'" when {
+//    "getting a JSON-Request of 'PrimitiveVectorMAs'" should {
+//      "return a JSON-OK response when the request is qualified" in {
+//        val result = withRequestData[PrimitiveVectorMAs](settings, primitiveVectorRequestDataQualifiedWithDescriptorInBody, pva =>
+//          createHttpData(settings)(pva, None))
+//      }
+//    }
+//  }
+
+ 
 }
