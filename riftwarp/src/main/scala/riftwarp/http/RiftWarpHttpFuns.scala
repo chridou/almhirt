@@ -182,7 +182,7 @@ object RiftWarpHttpFuns {
 
   def transformResponse[T <: AnyRef](settings: RiftHttpFunsSettings, response: RiftHttpResponse)(implicit tag: ClassTag[T]): AlmValidation[T] = {
     for {
-      (statusCode, channel, riftDescriptor, dim) <- response.explode
+      (_, channel, riftDescriptor, dim) <- response.explode
       recompose <- {
         def getRecomposer(remat: Rematerializer) = settings.riftWarp.barracks.lookUpFromRematerializer[AnyRef](remat, riftDescriptor)
         RiftWarpFuns.getRecomposeFun[AnyRef](channel, dim.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(getRecomposer)(NoFetchBlobFetch)(manifest[AnyRef], settings.riftWarp)

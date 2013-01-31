@@ -344,14 +344,155 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
     }
   }
 
-  "withRequestData transforming to 'PrimitiveTypes'" when {
-    "getting a JSON-Request of 'PrimitiveVectorMAs'" should {
-      "return a JSON-OK response when the request is qualified" in {
+  "withRequestData receiving a JSON-Request of 'PrimitiveVectorMAs'to' and a computed result of 'PrimitiveTypes'" should {
+      "transform to a JSON-OK response when the request is qualified and the content has a RiftDescriptor" in {
         val response = withRequestData[PrimitiveVectorMAs](settings, primitiveVectorRequestDataQualifiedWithDescriptorInBody, pva =>
           respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
         response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
       }
+      "transform to a JSON-OK response when the request is qualified and the content has a RiftDescriptor and the type parameter is set wrong" in {
+        val response = withRequestData[AnyRef](settings, primitiveVectorRequestDataQualifiedWithDescriptorInBody, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request has a channel and the content has a RiftDescriptor" in {
+        val response = withRequestData[PrimitiveVectorMAs](settings, primitiveVectorRequestDataUnqualifiedWithDescriptorInBody, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request has a channel and the content has a RiftDescriptor and the type parameter is set wrong" in {
+        val response = withRequestData[AnyRef](settings, primitiveVectorRequestDataUnqualifiedWithDescriptorInBody, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request is qualified and the content has no RiftDescriptor" in {
+        val response = withRequestData[PrimitiveVectorMAs](settings, primitiveVectorRequestDataQualified, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request is unqualified and the content has no RiftDescriptor but the type parameter is set correctly" in {
+        val response = withRequestData[PrimitiveVectorMAs](settings, primitiveVectorRequestDataUnqualified, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "fail when the request is unqualified and the content has no RiftDescriptor and the type parameter is not set exactly" in {
+        val response = withRequestData[AnyRef](settings, primitiveVectorRequestDataUnqualified, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response.statusCode should equal(Http_500_Internal_Server_Error)
+      }
+   }
+
+  "withRequest" should {
+      "transform to a JSON-OK response when the request is qualified and the content has a RiftDescriptor" in {
+        val response = withRequest[PrimitiveVectorMAs](settings, () => primitiveVectorRequestDataQualifiedWithDescriptorInBody.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request is qualified and the content has a RiftDescriptor and the type parameter is set wrong" in {
+        val response = withRequest[AnyRef](settings, () => primitiveVectorRequestDataQualifiedWithDescriptorInBody.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request has a channel and the content has a RiftDescriptor" in {
+        val response = withRequest[PrimitiveVectorMAs](settings, () => primitiveVectorRequestDataUnqualifiedWithDescriptorInBody.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request has a channel and the content has a RiftDescriptor and the type parameter is set wrong" in {
+        val response = withRequest[AnyRef](settings, () => primitiveVectorRequestDataUnqualifiedWithDescriptorInBody.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request is qualified and the content has no RiftDescriptor" in {
+        val response = withRequest[PrimitiveVectorMAs](settings, () => primitiveVectorRequestDataQualified.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "transform to a JSON-OK response when the request is unqualified and the content has no RiftDescriptor but the type parameter is set correctly" in {
+        val response = withRequest[PrimitiveVectorMAs](settings,() =>  primitiveVectorRequestDataUnqualified.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(createPrimitiveTypesResponseDataJson(Http_200_OK))
+      }
+      "fail when the request is unqualified and the content has no RiftDescriptor and the type parameter is not set exactly" in {
+        val response = withRequest[AnyRef](settings, () => primitiveVectorRequestDataUnqualified.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response.statusCode should equal(Http_500_Internal_Server_Error)
+      }
+      "fail with 400_Bad_Request when gettHttpData returns a failure" in {
+        val response = withRequest[AnyRef](settings, () => UnspecifiedProblem("Invalid request data").failure, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(RiftHttpResponse(Http_400_Bad_Request, RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"Invalid request data","severity":"Major","category":"SystemProblem","args":[]}"""))))
+      }
+      "fail with 400_Bad_Request without content when gettHttpData returns a success with no content" in {
+        val response = withRequest[AnyRef](settings, () => RiftHttpDataWithoutContent.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(RiftHttpResponse(Http_400_Bad_Request, RiftHttpDataWithoutContent))
+      }
+      "fail with Http_Http_500_Internal_Server_Error when gettHttpData returns a success with invalid data(the response will contain a parsing problem)" in {
+        val response = withRequest[AnyRef](settings, () => RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveVectorMAs", RiftChannel.Json, Map()), RiftStringBody("xxx")).success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(RiftHttpResponse(Http_500_Internal_Server_Error, RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.ParsingProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.ParsingProblem","message":"``['' expected but ErrorToken(Not a keyword: xxx) found","severity":"Minor","category":"ApplicationProblem","args":[{"k":"input","v":"xxx"}]}"""))))
+      }
+      "fail with 500_Internal_Server_Error when gettHttpData returns a success with correct data but the data can not be parsed to the target type(it will contain an InvalidCastProblem)" in {
+        val response = withRequest[String](settings, () => primitiveVectorRequestDataUnqualifiedWithDescriptorInBody.success, pva =>
+          respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
+        response should equal(RiftHttpResponse(Http_500_Internal_Server_Error, RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.InvalidCastProblem",RiftChannel.Json,Map()),RiftStringBody("""{"riftdesc":"almhirt.common.InvalidCastProblem","message":"I can not cast from riftwarp.PrimitiveVectorMAs to java.lang.String","severity":"Major","category":"SystemProblem","args":[]}"""))))
+      }
+  }
+  
+  
+  "transformResponse" should {
+    "transform when the content type is qualified and the content contained a RiftDescriptor" in {
+      val res = transformResponse[PrimitiveVectorMAs](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataQualifiedWithDescriptorInBody))
+      res should equal(scalaz.Success(primitiveVectorMAs))
+    }
+    "transform when the content type is not qualified and the content contained a RiftDescriptor" in {
+      val res = transformResponse[PrimitiveVectorMAs](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataUnqualifiedWithDescriptorInBody))
+      res should equal(scalaz.Success(primitiveVectorMAs))
+    }
+    "transform when the content type is qualified and the content contained no RiftDescriptor" in {
+      val res = transformResponse[PrimitiveVectorMAs](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataQualified))
+      res should equal(scalaz.Success(primitiveVectorMAs))
+    }
+    "transform when the content type is qualified and the content contained a RiftDescriptor and the type parameter was set to a supertype(AnyRef)" in {
+      val res = transformResponse[AnyRef](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataQualifiedWithDescriptorInBody))
+      res should equal(scalaz.Success(primitiveVectorMAs))
+    }
+    "transform when the content type is not qualified and the content contained a RiftDescriptor and the type parameter was set to a supertype(AnyRef)" in {
+      val res = transformResponse[AnyRef](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataUnqualifiedWithDescriptorInBody))
+      res should equal(scalaz.Success(primitiveVectorMAs))
+    }
+    "transform when the content type is qualified and the content contained no RiftDescriptor and the type parameter was set to a supertype(AnyRef)" in {
+      val res = transformResponse[AnyRef](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataQualified))
+      res should equal(scalaz.Success(primitiveVectorMAs))
+    }
+    "fail when the content type is qualified and the content contained a RiftDescriptor and the type parameter was set to an incompatible type(String)" in {
+      val res = transformResponse[String](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataQualifiedWithDescriptorInBody))
+      res.isFailure should be(true)
+    }
+    "fail when the content type is not qualified and the content contained a RiftDescriptor and the type parameter was set to an incompatible type(String)" in {
+      val res = transformResponse[String](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataUnqualifiedWithDescriptorInBody))
+      res.isFailure should be(true)
+    }
+    "fail when the content type is qualified and the content contained no RiftDescriptor and the type parameter was set to an incompatible type(String)" in {
+      val res = transformResponse[String](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataQualified))
+      res.isFailure should be(true)
+    }
+    "fail when the content type is not qualified and the content contained no RiftDescriptor even though the type parameter was set correct" in {
+      val res = transformResponse[PrimitiveIterableMAs](settings, RiftHttpResponse(Http_200_OK, primitiveVectorRequestDataUnqualified))
+      res.isFailure should be(true)
+    }
+    "fail with the same problem that was contained in the response" in {
+      val res = transformResponse[AnyRef](settings, RiftHttpResponse(Http_200_OK, RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.UnspecifiedProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":"almhirt.common.UnspecifiedProblem","message":"Content was a problem","severity":"Major","category":"SystemProblem","args":[]}"""))))
+  	  res should equal(scalaz.Failure(UnspecifiedProblem("Content was a problem")))
+    }
+    
+    "fail on a no content response" in {
+      transformResponse[AnyRef](settings, RiftHttpResponse(Http_200_OK, RiftHttpDataWithoutContent)).isFailure should be(true)
+    }
+    """fail on a no content response with a BadDataProblem("No content. Status: 200") when the response contained the status""" in {
+      transformResponse[AnyRef](settings, RiftHttpResponse(Http_200_OK, RiftHttpDataWithoutContent)) should equal(scalaz.Failure(BadDataProblem("No content. Status: 200")))
     }
   }
-
+  
 }
