@@ -17,19 +17,19 @@ class RiftHttpContentTypeOpsSpecs extends FlatSpec with ShouldMatchers {
 
   "The safeHeaderValue method on RiftHttpContentTypeWithoutPrefixOps" should
     """create a string "text/json" for a RiftHttpChannelContentType(RiftChannel.Json, Map.empty) """ in {
-      opsWithoutPrefix.safeHeaderValue(RiftHttpChannelContentType(RiftChannel.Json, Map.empty)) === "text/json"
+      opsWithoutPrefix.safeHeaderValue(RiftHttpChannelContentType(RiftChannel.Json, Map.empty)) should equal("text/json")
     }
   it should """create a string "text/json;encoding=utf-8" for a RiftHttpChannelContentType(RiftChannel.Json, Map("encoding" -> "utf-8")) """ in {
-    opsWithoutPrefix.safeHeaderValue(RiftHttpChannelContentType(RiftChannel.Json, Map("encoding" -> "utf-8"))) === "text/json;encoding=utf-8"
+    opsWithoutPrefix.safeHeaderValue(RiftHttpChannelContentType(RiftChannel.Json, Map("encoding" -> "utf-8"))) should equal("text/json;encoding=utf-8")
   }
   it should """create a string "application/vnd.mytype+json" for a RiftHttpQualifiedContentType(RiftDescriptor("mytype"), RiftChannel.Json, Map.empty)""" in {
-    opsWithoutPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype"), RiftChannel.Json, Map.empty)) === "application/vnd.mytype+json"
+    opsWithoutPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype"), RiftChannel.Json, Map.empty)) should equal("application/vnd.mytype+json")
   }
   it should """create a string "application/vnd.mytype+json;version=1" for a RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map.empty)""" in {
-    opsWithoutPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map.empty)) === "application/vnd.mytype+json;version=1"
+    opsWithoutPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map.empty)) should equal("application/vnd.mytype+json;version=1")
   }
   it should """create a string "application/vnd.mytype+json;version=1;encoding=utf-8" for a RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map("encoding" -> "utf-8"))""" in {
-    opsWithoutPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map("encoding" -> "utf-8"))) === "application/vnd.mytype+json;version=1;encoding=utf-8"
+    opsWithoutPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map("encoding" -> "utf-8"))) should equal("application/vnd.mytype+json;version=1;encoding=utf-8")
   }
 
   "The parse method on RiftHttpContentTypeWithoutPrefixOps" should
@@ -53,19 +53,19 @@ class RiftHttpContentTypeOpsSpecs extends FlatSpec with ShouldMatchers {
 
   "The safeHeaderValue method on RiftHttpContentTypeWithPrefixOps and a prefix 'prefix'" should
     """create a string "text/json" for a RiftHttpChannelContentType(RiftChannel.Json, Map.empty) """ in {
-      opsWithPrefix.safeHeaderValue(RiftHttpChannelContentType(RiftChannel.Json, Map.empty)) === "text/json"
+      opsWithPrefix.safeHeaderValue(RiftHttpChannelContentType(RiftChannel.Json, Map.empty)) should equal("text/json")
     }
   it should """create a string "text/json;encoding=utf-8" for a RiftHttpChannelContentType(RiftChannel.Json, Map("encoding" -> "utf-8")) """ in {
-    opsWithPrefix.safeHeaderValue(RiftHttpChannelContentType(RiftChannel.Json, Map("encoding" -> "utf-8"))) === "text/json;encoding=utf-8"
+    opsWithPrefix.safeHeaderValue(RiftHttpChannelContentType(RiftChannel.Json, Map("encoding" -> "utf-8"))) should equal("text/json;encoding=utf-8")
   }
   it should """create a string "application/vnd.prefix.mytype+json" for a RiftHttpQualifiedContentType(RiftDescriptor("mytype"), RiftChannel.Json, Map.empty)""" in {
-    opsWithPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype"), RiftChannel.Json, Map.empty)) === "application/vnd.prefix.mytype+json"
+    opsWithPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype"), RiftChannel.Json, Map.empty)) should equal("application/vnd.prefix.mytype+json")
   }
   it should """create a string "application/vnd.prefix.mytype+json;version=1" for a RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map.empty)""" in {
-    opsWithPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map.empty)) === "application/vnd.prefix.mytype+json;version=1"
+    opsWithPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map.empty)) should equal("application/vnd.prefix.mytype+json;version=1")
   }
   it should """create a string "application/vnd.prefix.mytype+json;version=1;encoding=utf-8" for a RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map("encoding" -> "utf-8"))""" in {
-    opsWithPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map("encoding" -> "utf-8"))) === "application/vnd.prefix.mytype+json;version=1;encoding=utf-8"
+    opsWithPrefix.safeHeaderValue(RiftHttpQualifiedContentType(RiftDescriptor("mytype", 1), RiftChannel.Json, Map("encoding" -> "utf-8"))) should equal("application/vnd.prefix.mytype+json;version=1;encoding=utf-8")
   }
 
   "The parse method on RiftHttpContentTypeWithPrefixOps and a prefix 'prefix'" should
@@ -86,7 +86,7 @@ class RiftHttpContentTypeOpsSpecs extends FlatSpec with ShouldMatchers {
   }
 
   it should """fail on "application/vnd.wrong.mytype+json;version=1;encoding=utf-8"""" in {
-    opsWithPrefix.parse("application/vnd.wrong.mytype+json;version=1;encoding=utf-8").isFailure
+    opsWithPrefix.parse("application/vnd.wrong.mytype+json;version=1;encoding=utf-8").isFailure should be(true)
   }
 
 }

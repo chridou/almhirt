@@ -1,6 +1,7 @@
 package almhirt.messaging
 
 import org.scalatest._
+import org.scalatest.matchers.ShouldMatchers
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
@@ -10,7 +11,7 @@ import almhirt.syntax.almvalidation._
 import almhirt.almfuture.all._
 import almhirt.environment._
 
-class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with AlmhirtTestKit {
+class ActorBasedMessageHubTests extends FunSuite with ShouldMatchers with BeforeAndAfterAll with AlmhirtTestKit {
   private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(createDefaultBootStrapper()).forceResult
   implicit val atMost = FiniteDuration(1, "s")
   implicit val alm = theAlmhirt
@@ -50,7 +51,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
     val subscription = (channel <-* { x => hit = true }).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
     subscription.dispose()
-    hit === true
+    hit should be(true)
   }
 
   test("""A MessageHub with a created global channel of payload type String must trigger a handler on the created channel when a String is broadcasted""") {
@@ -70,7 +71,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
     val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(java.util.UUID.randomUUID))
     subscription.dispose()
-    hit === false
+    hit should be(false)
   }
 
   test("""A MessageHub with a created channel with no topic of payload type AnyRef must trigger a handler on the created channel""") {
@@ -80,7 +81,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
     val subscription = (channel <-* (x => hit = true)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
     subscription.dispose()
-    hit === true
+    hit should be(true)
   }
 
   test("""A MessageHub with a created channel with no topic of payload type String must trigger a handler on the created channel when a String is broadcasted""") {
@@ -90,7 +91,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
     val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message("A"))
     subscription.dispose()
-    hit === true
+    hit should be(true)
   }
 
   test("""A MessageHub with a created channel with no topic of payload type String must not be trigger a handler on the created channel when a UUID is broadcasted""") {
@@ -100,7 +101,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
     val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(java.util.UUID.randomUUID))
     subscription.dispose()
-    hit === false
+    hit should be(false)
   }
 
   test("""A MessageHub with a created global channel of payload type String using actors directly must trigger a handler on the created channel when a String is broadcasted""") {
@@ -121,7 +122,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
       .forceResult
     hub.broadcast(Message("A"))
 
-    hit === true
+    hit should be(true)
   }
 
   test("""A MessageHub with a created global channel of payload type String using actors directly must not trigger a handler on the created channel when a UUID is broadcasted""") {
@@ -141,7 +142,7 @@ class ActorBasedMessageHubTests extends FunSuite with BeforeAndAfterAll with Alm
       .awaitResult
       .forceResult
     hub.broadcast(Message(java.util.UUID.randomUUID))
-    hit === false
+    hit should be(false)
   }
 
 }

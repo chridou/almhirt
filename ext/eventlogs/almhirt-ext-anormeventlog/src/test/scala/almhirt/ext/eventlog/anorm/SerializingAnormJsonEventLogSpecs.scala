@@ -45,14 +45,13 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
     "return 0L as the next required version" in {
       withEmptyEventLog { (eventLog, almhirt) =>
         val next = eventLog.getRequiredNextEventVersion(almhirt.getUuid).awaitResult(Duration(1, "s")).forceResult
-        next === 0L
+        next should equal(0L)
       }
     }
   it should "accept an event" in {
     withEmptyEventLog { (eventLog, almhirt) =>
       val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
       val res = eventLog.storeEvents(List(event)).awaitResult(Duration(1, "s")).forceResult
-      true
     }
   }
   it should "accept an event and return exactly 1 event as the commited events" in {
@@ -75,7 +74,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
       val resCommit = eventLog.storeEvents(List(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(1, "s")).forceResult
-      res.headOption === Some(event)
+      res.headOption should equal(Some(event))
     }
   }
   it should "accept 100 events with the same aggId and return them in the same order (getEvents(aggId))" in {
@@ -85,7 +84,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i))).toList
       val resCommit = eventLog.storeEvents(events).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).onFailure(p => println(p))
-      res.forceResult === events
+      res.forceResult should equal(events)
     }
   }
   it should "accept 100 events with the same aggId shuffled with 100 other events and return the events for a specific aggId in the same order(getEvents(aggId))" in {
@@ -97,7 +96,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).onFailure(p => println(p)).forceResult
-      res === events
+      res should equal(events)
     }
   }
   it should "accept 100 events with the same aggId shuffled with 100 other events and return the last 10 events for a specific aggId in the same order(getEvents(aggId, from))" in {
@@ -109,7 +108,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId, 90).awaitResult(Duration(1, "s")).onFailure(p => println(p)).forceResult
-      res === events.drop(90)
+      res should equal(events.drop(90))
     }
   }
   it should "accept 100 events with the same aggId shuffled with 100 other events and return the first 10 events for a specific aggId in the same order(getEvents(aggId, from, to))" in {
@@ -121,7 +120,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId, 0, 9).awaitResult(Duration(1, "s")).onFailure(p => println(p)).forceResult
-      res === events.take(10)
+      res should equal(events.take(10))
     }
   }
   it should "accept 100 events with the same aggId shuffled with 100 other events and return the events from 40 to 59 for a specific aggId in the same order(getEvents(aggId, from, to))" in {
@@ -133,7 +132,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId, 40, 59).awaitResult(Duration(1, "s")).onFailure(p => println(p)).forceResult
-      res === events.drop(40).take(20)
+      res should equal(events.drop(40).take(20))
     }
   }
 
@@ -147,7 +146,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   it should "return 1L as the next required version" in {
     withEventLogWithOneTestEventA { (eventLog, almhirt) =>
       val next = eventLog.getRequiredNextEventVersion(testEventA.aggId).awaitResult(Duration(1, "s")).forceResult
-      next === 1L
+      next should equal(1L)
     }
   }
 
@@ -156,7 +155,6 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       withEmptyEventLog { (eventLog, almhirt) =>
         val event = TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "test", almhirt.getDateTime)
         val res = eventLog.storeEvents(List(event)).awaitResult(Duration(1, "s")).forceResult
-        true
       }
     }
   it should "return exactly 2 events when queried for all events" in {
@@ -188,7 +186,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val event = TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "test", almhirt.getDateTime)
       eventLog.storeEvents(List(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getAllEvents.awaitResult(Duration(1, "s")).forceResult
-      res.toList === List(testEventA, event)
+      res.toList should equal(List(testEventA, event))
     }
   }
 }

@@ -1,6 +1,7 @@
 package almhirt.messaging
 
 import org.scalatest._
+import org.scalatest.matchers.ShouldMatchers
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
@@ -8,13 +9,13 @@ import almhirt.common._
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
 
-class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll with AlmhirtTestKit {
+class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers with BeforeAndAfterAll with AlmhirtTestKit {
   private[this] val bootstrapper = createDefaultBootStrapper()
   private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(bootstrapper).forceResult
   implicit val atMost = FiniteDuration(1, "s")
   implicit val alm = theAlmhirt
   implicit val executionContext = theAlmhirt.executionContext
- 
+
   override def afterAll {
     shutDown.shutDown
   }
@@ -39,8 +40,8 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message(new A(1)))
     subscription.dispose()
-    hitA === true
     channel.close()
+    hitA should be(true)
   }
 
   it should """take a handler for A that will be triggered when an B is posted""" in {
@@ -50,8 +51,8 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message(new B(1, "A")))
     subscription.dispose()
-    hitA === true
     channel.close()
+    hitA should be(true)
   }
 
   """A MessageChannel[B] where B <: A""" should
@@ -62,8 +63,8 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
       val subscription = future.awaitResult(Duration.Inf).forceResult
       channel.post(Message(new B(1, "A")))
       subscription.dispose()
-      hitB === true
       channel.close()
+      hitB should be(true)
     }
 
   """A MessageChannel[A] with a subchannel of MessageChannel[B] where B <: A""" should
@@ -77,10 +78,10 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
       channel.post(Message(new A(1)))
       subscriptionA.dispose()
       subscriptionB.dispose()
-      hitA === true
-      hitB === false
       channel.close()
       subChannel.close()
+      hitA should be(true)
+      hitB should be(false)
     }
 
   it should """trigger only the handler on the subchannel for a B posted on the subchannel""" in {
@@ -93,10 +94,10 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     subChannel.post(Message(new B(1, "B")))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitA === false
-    hitB === true
     channel.close()
     subChannel.close()
+    hitA should be(false)
+    hitB should be(true)
   }
 
   it should """trigger the handler on the parent for an A posted on the parent""" in {
@@ -109,9 +110,9 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     channel.post(Message(new A(1)))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitA === true
     channel.close()
     subChannel.close()
+    hitA should be(true)
   }
 
   it should """not trigger the handler on the subchannel for an A posted on the parent""" in {
@@ -124,9 +125,9 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     channel.post(Message(new A(1)))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitB === false
     channel.close()
     subChannel.close()
+    hitB should be(false)
   }
 
   it should """not trigger the handler on the parent for an A posted on the parent when the classifier is not met""" in {
@@ -139,9 +140,9 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     channel.post(Message(new A(1)))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitA === false
     channel.close()
     subChannel.close()
+    hitA should be(false)
   }
 
   it should """trigger the handler on the parent for an A posted on the parent when the classifier is met""" in {
@@ -154,9 +155,9 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     channel.post(Message(new A(1)))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitA === true
     channel.close()
     subChannel.close()
+    hitA should be(true)
   }
 
   it should """not trigger the handler on the parent or the subchannelfor an B posted on the parent when the classifier is not met""" in {
@@ -169,10 +170,10 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     channel.post(Message(new B(1, "B")))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitA === false
-    hitB === false
     channel.close()
     subChannel.close()
+    hitA should be(false)
+    hitB should be(false)
   }
 
   it should """trigger the handler on the parent and the subchannel for an B posted on the parent when the classifier is met""" in {
@@ -185,10 +186,10 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     channel.post(Message(new B(1, "B")))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitA === true
-    hitB === true
     channel.close()
     subChannel.close()
+    hitA should be(true)
+    hitB should be(true)
   }
 
   it should """trigger the handler on the parent and not on the subchannel for an B posted on the parent when the classifier is met only in the parent""" in {
@@ -201,10 +202,9 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     channel.post(Message(new B(1, "B")))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitA === true
-    hitB === false
     channel.close()
     subChannel.close()
+    hitB should be(false)
   }
 
   it should """not trigger the handler on the parent but on the subchannel for an B posted on the subchannel when the classifier is met only in the subchannel""" in {
@@ -217,9 +217,9 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with BeforeAndAfterAll
     channel.post(Message(new B(1, "B")))
     subscriptionA.dispose()
     subscriptionB.dispose()
-    hitA === false
-    hitB === true
     channel.close()
     subChannel.close()
+    hitA should be(false)
+    hitB should be(true)
   }
 }

@@ -1,6 +1,7 @@
 package almhirt.parts.impl
 
 import org.scalatest._
+import org.scalatest.matchers.ShouldMatchers
 import scala.concurrent.duration._
 import almhirt._
 import almhirt.syntax.almvalidation._
@@ -12,7 +13,7 @@ import almhirt.core.test._
 import akka.testkit.TestEvent
 import almhirt.core.test.TestPerson
 
-class RepositoryRegistrySpecs extends FlatSpec with BeforeAndAfterAll with AlmhirtTestKit {
+class RepositoryRegistrySpecs extends FlatSpec with ShouldMatchers with BeforeAndAfterAll with AlmhirtTestKit {
   private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(createDefaultBootStrapper()).forceResult
   implicit val atMost = FiniteDuration(1, "s")
   implicit val alm = theAlmhirt
@@ -47,7 +48,7 @@ class RepositoryRegistrySpecs extends FlatSpec with BeforeAndAfterAll with Almhi
     val repo = AggregateRootRepository.dummy[TestPerson, TestPersonEvent]
     val registry = HasRepositories.concurrent
     registry.registerForAggregateRoot[TestPerson, TestPersonEvent](repo)
-    registry.getForAggregateRoot[TestPerson, TestPersonEvent].forceResult === repo
+    registry.getForAggregateRoot[TestPerson, TestPersonEvent].forceResult should equal(repo)
   }
 
 }

@@ -18,7 +18,7 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
       (parseIntAlm("1")) should equal(Success(1))
     }
   it should "return a failure when supplied with ' 1'" in {
-    (parseIntAlm(" 1")).isFailure
+    (parseIntAlm(" 1")).isFailure should be(true)
   }
   it should "return a failure when supplied with '1 '" in {
     (parseIntAlm("1 ")).isFailure
@@ -29,10 +29,10 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
       (parseIntAlm("1")) should equal(Success(1L))
     }
   it should "return a failure when supplied with ' 1'" in {
-    (parseIntAlm(" 1")).isFailure
+    (parseIntAlm(" 1")).isFailure should be(true)
   }
   it should "return a failure when supplied with '1 '" in {
-    (parseIntAlm("1 ")).isFailure
+    (parseIntAlm("1 ")).isFailure should be(true)
   }
 
   "AlmValidation.parseDoubleAlm" should
@@ -58,19 +58,19 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
     (parseDoubleAlm("1.0 ")) should equal(Success(1d))
   }
   it should "return a failure when supplied with ''" in {
-    (parseIntAlm("")).isFailure
+    (parseIntAlm("")).isFailure should be(true)
   }
   it should "return a failure when supplied with 'x'" in {
-    (parseIntAlm("x")).isFailure
+    (parseIntAlm("x")).isFailure should be(true)
   }
   it should "return a failure when supplied with 'a1.0'" in {
-    (parseIntAlm("a1.0")).isFailure
+    (parseIntAlm("a1.0")).isFailure should be(true)
   }
   it should "return a failure when supplied with '1,0'" in {
-    (parseIntAlm("1,0")).isFailure
+    (parseIntAlm("1,0")).isFailure should be(true)
   }
   it should "return a failure when supplied with '1.0.0'" in {
-    (parseIntAlm("1.0.0")).isFailure
+    (parseIntAlm("1.0.0")).isFailure should be(true)
   }
 
   "AlmValidation.failIfEmpty" should
@@ -81,7 +81,7 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
     (notEmpty(" ")) should equal(Success(" "))
   }
   it should """return a failure when supplied with "" """ in {
-    (parseIntAlm("")).isFailure
+    (parseIntAlm("")).isFailure should be(true)
   }
 
   "AlmValidation.failIfEmptyOrWhitespace" should
@@ -89,10 +89,10 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
       (notEmptyOrWhitespace("x")) should equal(Success("x"))
     }
   it should """return a failure when supplied with " """" in {
-    (notEmptyOrWhitespace(" ")).isFailure
+    (notEmptyOrWhitespace(" ")).isFailure should be(true)
   }
   it should """return a failure when supplied with """"" in {
-    (notEmptyOrWhitespace("")).isFailure
+    (notEmptyOrWhitespace("")).isFailure should be(true)
   }
 
   """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in a "for comprehension"""" should
@@ -102,7 +102,7 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
     }
   it should """be a Failure when A="x" and B="3"""" in {
     val res = parseIntAlm("2").toAgg flatMap (_ => parseIntAlm("x").toAgg)
-    res.isFailure
+    res.isFailure should be(true)
   }
 
   """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in an applicative functor""" should
@@ -116,7 +116,7 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
     val a = "x".toIntAlm().toAgg
     val b = "3".toIntAlm().toAgg
     val res = (a |@| b)((a, b) => a + b)
-    res.isFailure
+    res.isFailure should be(true)
   }
 
   private class A
@@ -125,28 +125,28 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
 
   """almCast (B and C inherit from A)""" should
     """cast A to A""" in {
-      almCast[A](new A).isSuccess
+      almCast[A](new A).isSuccess should be(true)
     }
   it should """cast B to B""" in {
-    almCast[B](new B).isSuccess
+    almCast[B](new B).isSuccess should be(true)
   }
   it should """cast C to C""" in {
-    almCast[C](new C).isSuccess
+    almCast[C](new C).isSuccess should be(true)
   }
   it should """cast B to A""" in {
-    almCast[A](new B).isSuccess
+    almCast[A](new B).isSuccess should be(true)
   }
   it should """cast C to A""" in {
-    almCast[A](new C).isSuccess
+    almCast[A](new C).isSuccess should be(true)
   }
   it should """not cast A to B""" in {
-    almCast[B](new A).isFailure
+    almCast[B](new A).isFailure should be(true)
   }
   it should """not cast A to C""" in {
-    almCast[C](new A).isFailure
+    almCast[C](new A).isFailure should be(true)
   }
   it should """cast a 1 as Any to Int""" in {
     val x: Any = 1
-    almCast[Int](x).isSuccess
+    almCast[Int](x).isSuccess should be(true)
   }
 }

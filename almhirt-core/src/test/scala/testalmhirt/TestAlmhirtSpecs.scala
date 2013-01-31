@@ -1,14 +1,15 @@
 package testalmhirt
 
+import org.scalatest._
+import org.scalatest.matchers.ShouldMatchers
 import scala.concurrent.duration.Duration
 import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
 import almhirt.core.test._
-import org.scalatest._
 import almhirt.core.test.TestPerson
 
-class TestAlmhirtSpecs extends FlatSpec with AlmhirtTestKit {
+class TestAlmhirtSpecs extends FlatSpec with ShouldMatchers with AlmhirtTestKit {
   private implicit val atMost = Duration(2, "s")
   "The TestAlmhirt with a blocking repository" should
     "create and retrieve person" in {
@@ -21,7 +22,7 @@ class TestAlmhirtSpecs extends FlatSpec with AlmhirtTestKit {
           .get(id1)
           .awaitResult
           .forceResult
-          .id === id1
+          .id should equal(id1)
       }
     }
 }

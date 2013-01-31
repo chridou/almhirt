@@ -1,6 +1,7 @@
 package almhirt.messaging
 
 import org.scalatest._
+import org.scalatest.matchers.ShouldMatchers
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
@@ -9,7 +10,7 @@ import almhirt.syntax.almvalidation._
 import almhirt.environment._
 import almhirt.environment.configuration.impl._
 
-class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with AlmhirtTestKit {
+class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with ShouldMatchers with AlmhirtTestKit {
   private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(createDefaultBootStrapper()).forceResult
   implicit val atMost = FiniteDuration(1, "s")
   implicit val alm = theAlmhirt
@@ -24,7 +25,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val channel = createChannel[AnyRef]
     val future = channel <-* ({ case _ => () }, _ => true)
     val subscription = future.awaitResult(Duration.Inf)
-    subscription != null
+    subscription should not equal(null)
   }
 
   test("A MessageChannel does not execute a handler when the subscription is cancelled") {
@@ -35,7 +36,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     subscription.dispose()
     channel.post(Message("a"))
     channel.close()
-    !hit
+    hit should be(false)
   }
 
   test("A MessageChannel does only execute one handler when the subscription for one of two was cancelled") {
@@ -48,7 +49,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     subscription1.dispose()
     channel.post(Message("a"))
     channel.close()
-    hitCount === 2
+    hitCount should equal(2)
   }
 
   test("A MessageChannel does execute a subscribed handler when classifier always returns true") {
@@ -58,7 +59,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
-    hit
+    hit should be(true)
   }
 
   test("A MessageChannel does execute two handlers when classifier always returns true for 2 subscriptions") {
@@ -70,7 +71,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription2 = future2.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
-    hitCount === 2
+    hitCount should equal(2)
   }
 
   test("A MessageChannel does not execute a subscribed handler when classifier always returns false") {
@@ -80,7 +81,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
-    !hit
+    hit should be(false)
   }
 
   test("A MessageChannel does execute a subscribed handler when classifier is met") {
@@ -90,7 +91,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
-    hit
+    hit should be(true)
   }
 
   test("A MessageChannel does not execute a subscribed handler when classifier is not met but the payload is of the same type") {
@@ -100,7 +101,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("b"))
     channel.close()
-    !hit
+    hit should be(false)
   }
 
   test("A MessageChannel does not execute a subscribed handler when classifier is not met because the payload is of a different type") {
@@ -110,7 +111,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
-    !hit
+    hit should be(false)
   }
 
 }
