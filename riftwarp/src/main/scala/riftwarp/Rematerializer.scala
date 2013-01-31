@@ -76,11 +76,11 @@ trait Rematerializer {
   /** Rematerialize an M[_] of primitive types
    * 
    * Primitive types are  String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime and UUID */
-  def getPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[A]], mA: ClassTag[A]): AlmValidation[M[A]]
+  def getPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[M[A]]
   /** Rematerialize an M[_] of complex types
    * 
    * Complex types are all types that are not String, Boolean, Byte, Int, Long, BigInt, Float, Double, BigDecimal, DateTime or UUID */
-  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[A]], mA: ClassTag[A]): AlmValidation[Option[M[A]]]
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]]
   /** Rematerialize an M[_] of complex types using the given recomposer
    * The recomposer is used for all elements of M
    * 
@@ -184,7 +184,7 @@ trait RematerializerBasedOnOptionGetters extends Rematerializer {
   def getComplexType[T <: AnyRef](ident: String)(implicit m: ClassTag[T]) = tryGetComplexType[T](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexTypeFixed[T <: AnyRef](ident: String)(implicit m: ClassTag[T]) = tryGetComplexTypeFixed[T](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
 
-  def getPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[A]], mA: ClassTag[A]) = tryGetPrimitiveMA[M, A](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
+  def getPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = tryGetPrimitiveMA[M, A](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = tryGetComplexMA[M, A](ident, recomposer).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexMAFixed[M[_], A <: AnyRef](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = tryGetComplexMAFixed[M, A](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))
   def getComplexMALoose[M[_], A <: AnyRef](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]) = tryGetComplexMALoose[M, A](ident).flatMap(v => option.cata(v)(_.success, KeyNotFoundProblem("Nothing found for '%s'".format(ident), args = Map("key" -> ident)).failure))

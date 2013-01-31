@@ -86,8 +86,8 @@ class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobDat
     }
   }
   
-  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[A]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
-    option.cata(theMap.get(ident))(almCast[M[A]](_).map(Some(_)), None.success)
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
+    option.cata(theMap.get(ident))(almCast[M[_]](_).map(x => Some(x.asInstanceOf[M[A]])), None.success)
 
   def tryGetComplexMA[M[_], A <: AnyRef](ident: String, recomposer: Recomposer[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     option.cata(theMap.get(ident))(

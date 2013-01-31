@@ -16,6 +16,7 @@ object CommonThrowableToProblem extends ThrowableToProblem {
   private val exnMappers = Map[Class[_ <: Throwable], Throwable => Problem](
     (classOf[NoSuchElementException] -> (exn => NoSuchElementProblem(exn.getMessage, cause = Some(exn)))),
     (classOf[IndexOutOfBoundsException] -> (exn => IndexOutOfBoundsProblem(exn.getMessage, cause = Some(exn)))),
+    (classOf[ClassCastException] -> (exn => InvalidCastProblem(exn.getMessage, cause = Some(exn)))),
     (classOf[java.util.concurrent.TimeoutException] -> (exn => OperationTimedOutProblem(exn.getMessage, cause = Some(exn)))))
 
   override def apply(exn: Throwable) = exnMappers(exn.getClass())(exn)

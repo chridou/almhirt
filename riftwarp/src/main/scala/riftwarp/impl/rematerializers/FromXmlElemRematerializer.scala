@@ -149,7 +149,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
       hasRecomposers.lookUpFromRematerializer(remat, Some(m.runtimeClass)).flatMap(recomposer =>
         recomposer.recomposeRaw(remat).flatMap(x => almCast[T](x))))
 
-  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[A]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     getPrimitiveRematerializerFor[A](ident).flatMap(primRemat =>
       functionObjects.getConvertsMAToNA[List, M].flatMap(converterToN =>
         getCollectionElements(ident).flatMap(elemsOpt =>

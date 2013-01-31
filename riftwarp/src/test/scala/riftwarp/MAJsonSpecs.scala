@@ -39,14 +39,14 @@ class MAJsonSpecs extends FlatSpec with ShouldMatchers {
       riftWarp.prepareForWarp[DimensionString](RiftChannel.Json, None)(primitiveVectorMAs).isSuccess should be(true)
     }
     it should "succeed in rematerialzing PrimitiveVectorMAs" in {
-      riftWarp.receiveFromWarp(RiftChannel.Json, None)(DimensionString(primitiveVectorMAsJson)).isSuccess should be(true)
+      riftWarp.receiveFromWarp[DimensionString, PrimitiveVectorMAs](RiftChannel.Json, None)(DimensionString(primitiveVectorMAsJson)).isSuccess should be(true)
     }
     it should "succeed in dematerialzing PrimitiveVectorMAs correctly" in {
       val res = riftWarp.prepareForWarp[DimensionString](RiftChannel.Json, None)(primitiveVectorMAs)
       res should equal(scalaz.Success(DimensionString(primitiveVectorMAsJson)))
     }
     it should "rematerialze PrimitiveVectorMAs correctly" in {
-     val res = riftWarp.receiveFromWarp(RiftChannel.Json, None)(DimensionString(primitiveVectorMAsJson))
+     val res = riftWarp.receiveFromWarp[DimensionString, PrimitiveVectorMAs](RiftChannel.Json, None)(DimensionString(primitiveVectorMAsJson))
      res should equal(scalaz.Success(primitiveVectorMAs))
   }
 }

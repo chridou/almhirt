@@ -213,10 +213,15 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
   "transformFromHttpData(targeting 'PrimitiveVectorMAs' from JSON)" should {
     """recreate PrimitiveVectorMAs from proper request data with RiftHttpChannelContentType(RiftChannel.Json)""" in {
       val recreated =
-        transformFromHttpData[PrimitiveTypes](riftWarp)(RiftHttpDataWithContent(
+        transformFromHttpData[PrimitiveVectorMAs](riftWarp)(RiftHttpDataWithContent(
           RiftHttpChannelContentType(RiftChannel.Json),
           RiftStringBody(primitiveVectorMAsJson)))
       recreated should equal(scalaz.Success(primitiveVectorMAs))
+    }
+    """fail when the rematreialized content does not match the type parameter""" in {
+        transformFromHttpData[PrimitiveTypes](riftWarp)(RiftHttpDataWithContent(
+          RiftHttpChannelContentType(RiftChannel.Json),
+          RiftStringBody(primitiveVectorMAsJson))).isFailure should be(true)
     }
   }
 

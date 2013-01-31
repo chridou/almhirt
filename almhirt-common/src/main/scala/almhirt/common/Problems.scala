@@ -177,8 +177,8 @@ case class EmptyCollectionProblem(message: String, severity: Severity = Minor, c
 /**
  * As instanceOf failed
  */
-case class TypeCastProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
-  type T = TypeCastProblem
+case class InvalidCastProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+  type T = InvalidCastProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
   def withArg(key: String, value: Any) = copy(args = args + (key -> value))

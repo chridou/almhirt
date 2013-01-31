@@ -25,5 +25,4 @@ class MASpecs extends FlatSpec with ShouldMatchers {
     rw
   }
   
-
 }

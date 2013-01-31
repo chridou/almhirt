@@ -95,7 +95,7 @@ object Problems {
     createAndRegisterDefaultDecomposerAndRecomposer[OperationNotSupportedProblem](riftwarp)(RiftDescriptor(classOf[OperationNotSupportedProblem].getName), OperationNotSupportedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[ArgumentProblem](riftwarp)(RiftDescriptor(classOf[ArgumentProblem].getName), ArgumentProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[EmptyCollectionProblem](riftwarp)(RiftDescriptor(classOf[EmptyCollectionProblem].getName), EmptyCollectionProblem.tupled) 
-    createAndRegisterDefaultDecomposerAndRecomposer[TypeCastProblem](riftwarp)(RiftDescriptor(classOf[TypeCastProblem].getName), TypeCastProblem.tupled) 
+    createAndRegisterDefaultDecomposerAndRecomposer[InvalidCastProblem](riftwarp)(RiftDescriptor(classOf[InvalidCastProblem].getName), InvalidCastProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[PersistenceProblem](riftwarp)(RiftDescriptor(classOf[PersistenceProblem].getName), PersistenceProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[NotSupportedProblem](riftwarp)(RiftDescriptor(classOf[NotSupportedProblem].getName), NotSupportedProblem.tupled) 
     createAndRegisterDefaultDecomposerAndRecomposer[MappingProblem](riftwarp)(RiftDescriptor(classOf[MappingProblem].getName), MappingProblem.tupled)

@@ -34,7 +34,7 @@ trait AlmValidationCastFunctions {
     try {
       scalaz.Success(boxedType(tag.runtimeClass).cast(what).asInstanceOf[To])
     } catch {
-      case exn: ClassCastException => TypeCastProblem(s"I can not cast from ${what.getClass.getName()} to ${tag.runtimeClass.getName()}", cause = Some(exn)).failure
+      case exn: ClassCastException => InvalidCastProblem(s"I can not cast from ${what.getClass.getName()} to ${tag.runtimeClass.getName()}", cause = Some(exn)).failure
     }
   }
 }

@@ -147,7 +147,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
           recomposer.recomposeRaw(remat).flatMap(x => almCast[T](x)).map(Some(_))),
         None.success))
 
-  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[A]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
+  def tryGetPrimitiveMA[M[_], A](ident: String)(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Option[M[A]]] =
     option.cata(get(ident))(
       elem =>
         boolean.fold(
@@ -333,9 +333,9 @@ object FromJsonStringRematerializer extends RematerializerFactory[DimensionStrin
     }
   }
 
-  def apply(json: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializer] = apply(json.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
+//  def apply(json: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializer] = apply(json.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
   def createRematerializer(from: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializer] =
-    apply(from, fetchBlobs)(hasRecomposers, hasFunctionObject)
+    apply(from.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
 }
 
 import scalaz.Cord

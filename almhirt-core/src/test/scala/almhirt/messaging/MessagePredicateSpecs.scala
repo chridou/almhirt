@@ -31,7 +31,7 @@ class MessagePredicateSpecs extends FlatSpec with ShouldMatchers {
   }
   it should "return false when filtering UUID and applied to a String" in {
     val predicate = MessagePredicate[java.util.UUID]
-    predicate(Message.create("")) should be(true)
+    predicate(Message.create("")) should be(false)
   }
 
 }

@@ -45,13 +45,18 @@ class ActorBasedMessageHubTests extends FunSuite with ShouldMatchers with Before
   }
 
   test("""A MessageHub with a created global channel of payload type AnyRef must trigger a handler on the created channel""") {
+    val lock = new java.util.concurrent.locks.ReentrantLock()
+    val cond = lock.newCondition()
+    lock.lock()
     val hub = getHub
     val channel = (hub.createMessageChannel[AnyRef]("testChannel" + theAlmhirt.getUuid.toString())).awaitResult(Duration.Inf).forceResult
     var hit = false
-    val subscription = (channel <-* { x => hit = true }).awaitResult(Duration.Inf).forceResult
+    val subscription = (channel <-* { x => hit = true; cond.signal() }).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
-    subscription.dispose()
+    cond.awaitNanos(1000*1000)
     hit should be(true)
+    subscription.dispose()
+    lock.unlock()
   }
 
   test("""A MessageHub with a created global channel of payload type String must trigger a handler on the created channel when a String is broadcasted""") {
