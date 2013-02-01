@@ -15,29 +15,34 @@
 package almhirt.commanding
 
 import java.util.UUID
+import almhirt.domain.AggregateRoot
+import almhirt.domain.DomainEvent
 
 trait DomainCommand { /* def id: UUID */ }
 
 trait BoundDomainCommand extends DomainCommand {
+  type TEvent <: DomainEvent
+  type TAR <: AggregateRoot[TAR, TEvent]
+  type TAction <: CommandAction { type Event = TEvent; type AR = TAR }
   def aggRootRef: Option[AggregateRootRef]
-  /**
-   * The affected aggregate root
-   */
-  def isMutator: Boolean
-  def isCreator: Boolean
+  
+  def actions: List[TAction]
 }
 
-trait MutatorCommandStyle { self: BoundDomainCommand =>
-  def aggRootRef = Some(target)
-  def target: AggregateRootRef
-  val isMutator = true
-  val isCreator = false
+trait CommandAction {
+  type Event <: DomainEvent
+  type AR <: AggregateRoot[AR,Event]
+  
 }
 
-trait CreatorCommandStyle { self: BoundDomainCommand =>
-  def aggRootRef = None
-  val isMutator = false
-  val isCreator = true
+object CommandAction {
+  implicit class CommanActionOps(act: CommandAction) {
+    def isCreator = act.isInstanceOf[CreatorCommandAction]
+    def isMutator = act.isInstanceOf[MutatorCommandAction]
+  }
 }
+trait MutatorCommandAction extends CommandAction
 
-trait FreestyleCommand extends DomainCommand
+trait CreatorCommandAction extends CommandAction
+
+//trait FreestyleCommand extends DomainCommand

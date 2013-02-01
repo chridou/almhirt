@@ -11,4 +11,7 @@ package object commanding {
   type MutatorCommandHandlerFuture[AR <: domain.AggregateRoot[AR, TEvent], TEvent <: domain.DomainEvent, TCom <: BoundDomainCommand] = (TCom, AR, Almhirt) => AlmFuture[(AR, List[TEvent])]
   type CreatorCommandHandler[AR <: domain.AggregateRoot[AR, TEvent], TEvent <: domain.DomainEvent, TCom <: BoundDomainCommand] = (TCom, Almhirt) => AlmValidation[(AR, List[TEvent])]
   type MutatorCommandHandler[AR <: domain.AggregateRoot[AR, TEvent], TEvent <: domain.DomainEvent, TCom <: BoundDomainCommand] = (TCom, AR, Almhirt) => AlmValidation[(AR, List[TEvent])]
+
+  type MutatingActionHandler[AR <: domain.AggregateRoot[AR, TEvent], TEvent <: domain.DomainEvent, Action <: MutatorCommandAction] = (AR, Action, Almhirt) => UpdateRecorder[AR, TEvent]
+  type CreatingActionHandler[AR <: domain.AggregateRoot[AR, TEvent], TEvent <: domain.DomainEvent, Action <: CreatorCommandAction] = (Action, Almhirt) => UpdateRecorder[AR, TEvent]
 }
