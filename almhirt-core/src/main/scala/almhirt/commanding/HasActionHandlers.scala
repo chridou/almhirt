@@ -17,7 +17,7 @@ object HasCommandActionHandlers {
   implicit class HasCommandActionHandlersOps[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](hasActionHandlers: HasCommandActionHandlers[AR, Event]) {
     def executeCreatingHandler(action: CreatorCommandAction)(implicit theAlmhirt: Almhirt): AlmValidation[UpdateRecorder[AR, Event]] =
       for {
-        handler <- hasActionHandlers.getCreatingHandler(action)
+        handler <- hasActionHandlers.getCreatingHandler(action).map(_.asInstanceOf[CreatingActionHandler[AR, Event, CreatorCommandAction]])
       } yield handler(action, theAlmhirt)
   }
 }
