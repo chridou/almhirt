@@ -24,9 +24,9 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
     if (com.isCreator) {
       val command = com.asInstanceOf[TCom]
       getRepository().fold(
-        fail =>
+        fail ⇒
           (),
-        repo => {
+        repo ⇒ {
           executeHandler(command).fold(
             fail => {
               theAlmhirt.publishProblem(fail)
@@ -35,15 +35,15 @@ trait CreatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
                 case None => ()
               }
             },
-            succ =>
+            succ ⇒
               repo.actor ! StoreAggregateRootCmd(succ._1, succ._2, ticket))
         })
     } else {
       val p = ArgumentProblem("Not a creator command: %s".format(com.getClass.getName), severity = Major)
       theAlmhirt.publishProblem(p)
       ticket match {
-        case Some(t) => theAlmhirt.publishOperationState(NotExecuted(t, p))
-        case None => ()
+        case Some(t) ⇒ theAlmhirt.publishOperationState(NotExecuted(t, p))
+        case None ⇒ ()
       }
     }
   }
@@ -72,26 +72,26 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
     implicit val executionContext = theAlmhirt.executionContext
     val step1 =
       AlmFuture {
-        checkCommandType(untypedcom).flatMap(com =>
-          getIdAndVersion(com).map(idAndVersion =>
+        checkCommandType(untypedcom).flatMap(com ⇒
+          getIdAndVersion(com).map(idAndVersion ⇒
             (com, idAndVersion)).flatMap {
-            case (com, idAndVersion) =>
-              getRepository().map(repo => (com, repo, idAndVersion))
+            case (com, idAndVersion) ⇒
+              getRepository().map(repo ⇒ (com, repo, idAndVersion))
           })
       }
     val step2 =
       step1.flatMap {
-        case (com, repository, (id, version)) =>
-          getAggregateRoot(repository, id).mapV(ar =>
-            checkArId(ar, id, com).flatMap(ar =>
-              checkVersion(ar, version, com))).flatMap { ar =>
+        case (com, repository, (id, version)) ⇒
+          getAggregateRoot(repository, id).mapV(ar ⇒
+            checkArId(ar, id, com).flatMap(ar ⇒
+              checkVersion(ar, version, com))).flatMap { ar ⇒
             executeHandler(com, ar).map((repository, _))
           }
       }
     step2.onComplete(
       f => updateFailedOperationState(theAlmhirt, f, ticket),
       {
-        case (repository, (ar, events)) =>
+        case (repository, (ar, events)) ⇒
           repository.actor ! StoreAggregateRootCmd(ar, events, ticket)
       })
   }
@@ -99,20 +99,20 @@ trait MutatorUnitOfWorkStyle[AR <: AggregateRoot[AR, TEvent], TEvent <: DomainEv
   private def updateFailedOperationState(theAlmhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
     theAlmhirt.publishProblem(p)
     ticket match {
-      case Some(t) => theAlmhirt.publishOperationState(NotExecuted(t, p))
-      case None => ()
+      case Some(t) ⇒ theAlmhirt.publishOperationState(NotExecuted(t, p))
+      case None ⇒ ()
     }
   }
 
   private def checkCommandType(cmd: BoundDomainCommand): AlmValidation[TCom] =
     boolean.fold(
       cmd.isMutator,
-      inTryCatch(cmd.asInstanceOf[TCom]).bimap(f => f.withSeverity(Major), x => x),
+      inTryCatch(cmd.asInstanceOf[TCom]).bimap(f ⇒ f.withSeverity(Major), x ⇒ x),
       UnspecifiedProblem("not a mutator: %s".format(cmd.getClass.getName), severity = Major).failure)
 
   private def getIdAndVersion(cmd: TCom): AlmValidation[(UUID, Long)] =
     option.cata(cmd.aggRootRef)(
-      s => (s.id, s.version).success,
+      s ⇒ (s.id, s.version).success,
       UnspecifiedProblem("Mutator without aggregate root ref: %s".format(cmd.getClass.getName)).failure)
 
   private def checkArId(ar: AR, id: UUID, cmd: TCom): AlmValidation[AR] =
