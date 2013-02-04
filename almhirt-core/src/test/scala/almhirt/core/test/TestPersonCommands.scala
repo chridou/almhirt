@@ -5,42 +5,42 @@ import almhirt.common._
 import almhirt.commanding._
 import almhirt.environment._
 import almhirt.core.Almhirt
+import almhirt.core.CanCreateUuid
+import scala.reflect.ClassTag
 
-object TestPersonContext extends BoundDomainCommandContext[TestPerson, TestPersonEvent] {
+case class NewTestPersonAction(id: UUID, name: String) extends TestPersonContext.CreatorAction
+case class ChangeTestPersonNameAction(newName: String) extends TestPersonContext.MutatorAction
+case class SetTestPersonAddressAction(aquiredAddress: String) extends TestPersonContext.MutatorAction
+case class MoveTestPersonAction(newAddress: String) extends TestPersonContext.MutatorAction
+case class MoveBecauseOfMarriageAction(newName: String, newAddress: String) extends TestPersonContext.MutatorAction
+
+object TestPersonContext extends BoundDomainActionsCommandContext[TestPerson, TestPersonEvent] {
+  val tagAR = implicitly[ClassTag[TestPerson]]
+  val tagEvent = implicitly[ClassTag[TestPersonEvent]]
+
+  val newTestPersonActionHandler: this.CreatingActionHandler[NewTestPersonAction] = (act: NewTestPersonAction, passedAlmhirt: Almhirt) => TestPerson(act.id, act.name)
+  val changeTestPersonNameActionHandler: this.MutatingActionHandler[ChangeTestPersonNameAction] = (act: ChangeTestPersonNameAction, person: TestPerson, passedAlmhirt: Almhirt) => person.changeName(act.newName)
+  val setTestPersonAdressActionHandler: this.MutatingActionHandler[SetTestPersonAddressAction] = (act: SetTestPersonAddressAction, person: TestPerson, passedAlmhirt: Almhirt) => person.addressAquired(act.aquiredAddress)
+  val moveActionHandler: this.MutatingActionHandler[MoveTestPersonAction] = (act: MoveTestPersonAction, person: TestPerson, passedAlmhirt: Almhirt) => person.move(act.newAddress)
+  val moveBecauseOfMarriageActionHandler: this.MutatingActionHandler[MoveBecauseOfMarriageAction] = (act: MoveBecauseOfMarriageAction, person: TestPerson, passedAlmhirt: Almhirt) => person.changeName(act.newName).flatMap(_.move(act.newAddress))
+
+  val hasActionHandlers = this.createHasActionHandlers(
+    List(classOf[NewTestPersonAction] -> this.flattenCreatingActionHandler(newTestPersonActionHandler)),
+    List(classOf[ChangeTestPersonNameAction] -> this.flattenMutatingActionHandler(changeTestPersonNameActionHandler),
+      classOf[SetTestPersonAddressAction] -> this.flattenMutatingActionHandler(setTestPersonAdressActionHandler),
+      classOf[MoveTestPersonAction] -> this.flattenMutatingActionHandler(moveActionHandler),
+      classOf[MoveBecauseOfMarriageAction] -> this.flattenMutatingActionHandler(moveBecauseOfMarriageActionHandler)))
+
 }
 
-trait TestPersonCommand extends TestPersonContext.BoundDomainActionsCommand
+case class TestPersonCommand(id: UUID, aggRef: Option[AggregateRootRef], actions: List[TestPersonContext.CommandAction]) extends TestPersonContext.BoundDomainActionsCommand
 
-case class NewTestPerson(id: UUID, name: String) extends TestPersonContext.CreatorAction
-case class ChangeTestPersonName(newName: String) extends TestPersonContext.MutatorAction
-case class SetTestPersonAddress(aquiredAddress: String) extends TestPersonContext.MutatorAction
-case class MoveTestPerson(newAddress: String) extends TestPersonContext.MutatorAction
-case class MoveBecauseOfMarriage(newName: String, newAddress: String) extends TestPersonContext.MutatorAction
-
-object TestPersonActionHandlers {
-  val newTestPersonActionHandler: TestPersonContext.CreatingActionHandler[NewTestPerson] = (act: NewTestPerson, passedAlmhirt: Almhirt) => AlmFuture.successful { TestPerson(act.id, act.name) }
-  val changeTestPersonNameActionHandler: TestPersonContext.MutatingActionHandler[ChangeTestPersonName] = (act: ChangeTestPersonName, person: TestPerson, passedAlmhirt: Almhirt) => AlmFuture.successful { person.changeName(act.newName) }
-  val setTestPersonAdressActionHandler: TestPersonContext.MutatingActionHandler[SetTestPersonAddress] = (act: SetTestPersonAddress, person: TestPerson, passedAlmhirt: Almhirt) => AlmFuture.successful { person.addressAquired(act.aquiredAddress) }
-  val moveActionHandler: TestPersonContext.MutatingActionHandler[MoveTestPerson] = (act: MoveTestPerson, person: TestPerson, passedAlmhirt: Almhirt) => AlmFuture.successful { person.move(act.newAddress) }
-  val moveBecauseOfMarriageActionHandler: TestPersonContext.MutatingActionHandler[MoveBecauseOfMarriage] = (act: MoveBecauseOfMarriage, person: TestPerson, passedAlmhirt: Almhirt) => AlmFuture.successful { person.changeName(act.newName).flatMap(_.move(act.newAddress)) }
+object TestPersonCommand {
+  def createCreator(action: TestPersonContext.CreatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
+    TestPersonCommand(resources.getUuid, None, List(action))
+  def createMutator(id: UUID, version: Long, action: TestPersonContext.MutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
+    TestPersonCommand(resources.getUuid, Some(AggregateRootRef(id, version)), List(action))
+  def createMutator(aggRef: AggregateRootRef, action: TestPersonContext.MutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
+    TestPersonCommand(resources.getUuid, Some(aggRef), List(action))
 }
-//}
-//
-//class SetTestPersonAdressUnitOfWork(implicit almhirt: Almhirt) extends TestPersonMutatorUnitOfWork[SetTestPersonAddress] {
-//  private implicit val executionContext = almhirt.executionContext
-//  val commandType = classOf[SetTestPersonAddress]
-//  val handler = (cmd: SetTestPersonAddress, person: TestPerson) => AlmFuture { person.addressAquired(cmd.aquiredAddress).recordings }
-//}
-//
-//class MoveTestPersonNameUnitOfWork(implicit almhirt: Almhirt) extends TestPersonMutatorUnitOfWork[MoveTestPerson] {
-//  private implicit val executionContext = almhirt.executionContext
-//  val commandType = classOf[MoveTestPerson]
-//  val handler = (cmd: MoveTestPerson, person: TestPerson) => AlmFuture { person.move(cmd.newAddress).recordings }
-//}
-//
-//class MoveBecauseOfMarriageUnitOfWork(implicit almhirt: Almhirt) extends TestPersonMutatorUnitOfWork[MoveBecauseOfMarriage] {
-//  private implicit val executionContext = almhirt.executionContext
-//  val commandType = classOf[MoveBecauseOfMarriage]
-//  val handler = (cmd: MoveBecauseOfMarriage, person: TestPerson) =>
-//    AlmFuture { person.changeName(cmd.newName).flatMap(_.move(cmd.newAddress)).recordings }
-//}
+

@@ -47,9 +47,11 @@ object ConfigHelper {
   }
 
   def getSubConfig(config: Config)(path: String): AlmValidation[Config] =
-    config.getConfig(path) match {
-      case null => KeyNotFoundProblem("SubConfig not found: %s".format(path), args = Map("key" -> path)).failure
-      case found => found.success
+    almhirt.almvalidation.funs.computeSafely {
+      config.getConfig(path) match {
+        case null => KeyNotFoundProblem("SubConfig not found: %s".format(path), args = Map("key" -> path)).failure
+        case found => found.success
+      }
     }
 
   def getDispatcherNameFromRootConfig(config: Config)(path: String): AlmValidation[String] =
@@ -58,7 +60,7 @@ object ConfigHelper {
   def lookupDispatcherConfigPath(config: Config)(path: String): AlmValidation[String] =
     getDispatcherNameFromRootConfig(config)(path).map(dispatcherLookupName =>
       s"almhirt.dispatchers.$dispatcherLookupName")
-      
+
   object eventLog {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog)
     def getActorName(eventlogConfig: Config): String = ConfigHelper.getStringOrDefault("EventLog")(eventlogConfig)(ConfigItems.actorName)

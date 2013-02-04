@@ -23,7 +23,7 @@ import almhirt.syntax.almvalidation._
  * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s
  * Writer monad.
  */
-trait UpdateRecorder[Event <: DomainEvent, +AR <: AggregateRoot[_, _]] {
+trait UpdateRecorder[+Event <: DomainEvent, +AR <: AggregateRoot[_, _]] {
   /** Apply the events to this Update and return a result
    * 
    * @param events The events to process by the application to create the result

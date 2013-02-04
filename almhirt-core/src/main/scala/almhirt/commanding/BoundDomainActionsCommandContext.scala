@@ -9,8 +9,11 @@ import almhirt.almfuture.all._
 import almhirt.core._
 import almhirt.domain._
 import almhirt.util._
+import almhirt.parts.HasRepositories
 
 trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent] {
+  protected implicit val tagAR: ClassTag[TAR]
+  protected implicit val tagEvent: ClassTag[TEvent]
 
   sealed trait CommandAction
   trait CreatorAction extends CommandAction
@@ -75,7 +78,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
 
     protected def handleBoundActionsCommand(com: BoundDomainActionsCommand, ticket: Option[TrackingTicket])(implicit theAlmhirt: Almhirt) {
       com.actions match {
-        case Nil => ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, UnspecifiedAction), Map.empty))
+        case Nil => ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, PerformedUnspecifiedAction), Map.empty))
         case _ => prevalidate(com).fold(
           prob => reportFailure(prob, ticket),
           succ => executeUnitOfWork(com).onComplete(
@@ -151,7 +154,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
         case (true, true) => ().success
         case (true, false) => IllegalOperationProblem(s"Versions of command(${aggRef.version}) and AR(${ar.version}) do not match!").failure
         case (false, true) => IllegalOperationProblem(s"Ids of command(${aggRef.id}) and AR(${ar.id}) do not match!").failure
-        case (true, false) => IllegalOperationProblem(s"Neither versions nor ids do match!").failure
+        case (false, false) => IllegalOperationProblem(s"Neither versions nor ids do match!").failure
       }
 
     protected def reportFailure(prob: Problem, ticket: Option[TrackingTicket]) {
@@ -168,7 +171,25 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
         case None => ()
       }
     }
-
   }
+
+  def createBasicUow(cmdType: Class[_ <: DomainCommand], theRepository: AggregateRootRepository[TAR, TEvent], theActionHandlers: HasActionHandlers)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
+    new BoundUnitOfWork {
+      val commandType = cmdType
+      val repository = theRepository
+      val actionHandlers = theActionHandlers
+      val theAlmhirt = anAlmhirt
+    }
+
+  def createBasicUow(cmdType: Class[_ <: DomainCommand], theServiceRegistry: ServiceRegistry, theActionHandlers: HasActionHandlers)(implicit anAlmhirt: Almhirt): AlmValidation[this.BoundUnitOfWork] =
+    for {
+      hasRepos <- theServiceRegistry.getServiceByType(classOf[HasRepositories]).flatMap(_.castTo[HasRepositories])
+      repo <- hasRepos.getForAggregateRoot[TAR, TEvent]
+    } yield new BoundUnitOfWork {
+      val commandType = cmdType
+      val repository = repo
+      val actionHandlers = theActionHandlers
+      val theAlmhirt = anAlmhirt
+    }
 
 }

@@ -6,21 +6,21 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 import almhirt.util._
 
-class CommandActionDecomposer extends Decomposer[CommandAction] {
-  val riftDescriptor = RiftDescriptor(classOf[CommandAction], 1)
-  def decompose[TDimension <: RiftDimension](what: CommandAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+class CommandActionDecomposer extends Decomposer[PerformedAction] {
+  val riftDescriptor = RiftDescriptor(classOf[PerformedAction], 1)
+  def decompose[TDimension <: RiftDimension](what: PerformedAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
-      case CreateAction(id) =>
+      case PerformedCreateAction(id) =>
         into
           .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "create"))
           .flatMap(_.addUuid("id", id))
-      case UpdateAction(id) =>
+      case PerformedUpdateAction(id) =>
         into
           .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "update"))
           .flatMap(_.addUuid("id", id))
-      case UnspecifiedAction =>
+      case PerformedUnspecifiedAction =>
         into
           .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "unspecified"))
@@ -28,16 +28,16 @@ class CommandActionDecomposer extends Decomposer[CommandAction] {
   }
 }
 
-class CommandActionRecomposer extends Recomposer[CommandAction] {
-  val riftDescriptor = RiftDescriptor(classOf[CommandAction], 1)
-  def recompose(from: Rematerializer): AlmValidation[CommandAction] = {
+class CommandActionRecomposer extends Recomposer[PerformedAction] {
+  val riftDescriptor = RiftDescriptor(classOf[PerformedAction], 1)
+  def recompose(from: Rematerializer): AlmValidation[PerformedAction] = {
     from.getString("type").flatMap {
       case "create" => 
-        from.getUuid("id").map(CreateAction.apply)
+        from.getUuid("id").map(PerformedCreateAction.apply)
       case "update" => 
-        from.getUuid("id").map(UpdateAction.apply)
+        from.getUuid("id").map(PerformedUpdateAction.apply)
       case "unspecified" => 
-        UnspecifiedAction.success
+        PerformedUnspecifiedAction.success
       case x => 
         UnspecifiedProblem("'%s' is not a valid CommandAction type").failure
     }
@@ -58,7 +58,7 @@ class OperationStateDecomposer extends Decomposer[OperationState] {
           .addRiftDescriptor(this.riftDescriptor)
           .flatMap(_.addString("type", "executed"))
           .flatMap(_.addComplexTyped[TrackingTicket]("ticket", ticket))
-          .flatMap(_.addComplexTyped[CommandAction]("action", action))
+          .flatMap(_.addComplexTyped[PerformedAction]("action", action))
       case NotExecuted(ticket, problem) =>
         into
           .addRiftDescriptor(this.riftDescriptor)
@@ -79,7 +79,7 @@ class OperationStateRecomposer extends Recomposer[OperationState] {
         from.getComplexTypeFixed[TrackingTicket]("ticket").map(InProcess.apply)
        case "executed" => 
         val ticket = from.getComplexTypeFixed[TrackingTicket]("ticket").toAgg
-        val action = from.getComplexTypeFixed[CommandAction]("action").toAgg
+        val action = from.getComplexTypeFixed[PerformedAction]("action").toAgg
         (ticket |@| action)(Executed.apply)
       case "notExecuted" => 
         val ticket = from.getComplexTypeFixed[TrackingTicket]("ticket").toAgg

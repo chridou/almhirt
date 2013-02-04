@@ -4,9 +4,9 @@ import almhirt.common._
 
 
 sealed trait PerformedAction
-case class CreateAction(id: java.util.UUID) extends PerformedAction
-case class UpdateAction(id: java.util.UUID) extends PerformedAction
-case object UnspecifiedAction extends PerformedAction
+case class PerformedCreateAction(id: java.util.UUID) extends PerformedAction
+case class PerformedUpdateAction(id: java.util.UUID) extends PerformedAction
+case object PerformedUnspecifiedAction extends PerformedAction
 
 
 sealed trait OperationState{ 
@@ -23,7 +23,7 @@ case class InProcess(ticket: TrackingTicket) extends OperationState {
   val isFinishedSuccesfully = false
   val tryGetAction = None
 }
-case class Executed(ticket: TrackingTicket, action: PerformedAction = UnspecifiedAction) extends ResultOperationState {
+case class Executed(ticket: TrackingTicket, action: PerformedAction = PerformedUnspecifiedAction) extends ResultOperationState {
   val isFinished = true
   val isFinishedSuccesfully = true
   val tryGetAction = Some(action)

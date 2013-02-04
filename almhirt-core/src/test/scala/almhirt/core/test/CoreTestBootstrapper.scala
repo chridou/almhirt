@@ -30,12 +30,11 @@ trait CoreBootstrapperWithCommandHandlers extends AlmhirtBootstrapper {
   override def registerCommandHandlers(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
     super.registerRepositories(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
       theServiceRegistry.getService[HasCommandHandlers].flatMap { hasHandlers =>
-        hasHandlers.addHandler(TestPersonHandlerFactory.newTestPersonUnitOfWork(theAlmhirt))
-        hasHandlers.addHandler(TestPersonHandlerFactory.changeTestPersonNameUnitOfWork(theAlmhirt))
-        hasHandlers.addHandler(TestPersonHandlerFactory.setTestPersonAdressUnitOfWork(theAlmhirt))
-        hasHandlers.addHandler(TestPersonHandlerFactory.moveTestPersonNameUnitOfWork(theAlmhirt))
-        hasHandlers.addHandler(TestPersonHandlerFactory.moveBecauseOfMarriageUnitOfWork(theAlmhirt))
-        superCleanUp.success
+        for {
+          uow1 <- TestPersonContext.createBasicUow(classOf[TestPersonCommand], theServiceRegistry, TestPersonContext.hasActionHandlers)(theAlmhirt)
+        } yield {
+          hasHandlers.addHandler(uow1)
+          superCleanUp}
       }
     }
 }
