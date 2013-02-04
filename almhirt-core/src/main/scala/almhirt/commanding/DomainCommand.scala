@@ -16,7 +16,7 @@ package almhirt.commanding
 
 import java.util.UUID
 
-trait DomainCommand { /* def id: UUID */ }
+trait DomainCommand { def id: UUID }
 
 
 

@@ -3,10 +3,10 @@ package almhirt.util
 import almhirt.common._
 
 
-sealed trait CommandAction
-case class CreateAction(id: java.util.UUID) extends CommandAction
-case class UpdateAction(id: java.util.UUID) extends CommandAction
-case object UnspecifiedAction extends CommandAction
+sealed trait PerformedAction
+case class CreateAction(id: java.util.UUID) extends PerformedAction
+case class UpdateAction(id: java.util.UUID) extends PerformedAction
+case object UnspecifiedAction extends PerformedAction
 
 
 sealed trait OperationState{ 
@@ -14,7 +14,7 @@ sealed trait OperationState{
   def isFinished: Boolean
   def isFinishedSuccesfully: Boolean
   def isFinishedUnsuccesfully: Boolean = !isFinishedSuccesfully
-  def tryGetAction: Option[CommandAction]
+  def tryGetAction: Option[PerformedAction]
 }
 
 sealed trait ResultOperationState extends OperationState
@@ -23,7 +23,7 @@ case class InProcess(ticket: TrackingTicket) extends OperationState {
   val isFinishedSuccesfully = false
   val tryGetAction = None
 }
-case class Executed(ticket: TrackingTicket, action: CommandAction = UnspecifiedAction) extends ResultOperationState {
+case class Executed(ticket: TrackingTicket, action: PerformedAction = UnspecifiedAction) extends ResultOperationState {
   val isFinished = true
   val isFinishedSuccesfully = true
   val tryGetAction = Some(action)
