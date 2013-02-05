@@ -85,6 +85,14 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
             IllegalOperationProblem("When no AggregateRootRef is supplied, the first action must be a creating action!").failure)
         }))
 
+  def validateAgainstAggregateRoot(ar: TAR, aggRef: AggregateRootRef): AlmValidation[Unit] =
+    (aggRef.id == ar.id, aggRef.version == ar.version) match {
+      case (true, true) => ().success
+      case (true, false) => IllegalOperationProblem(s"Versions of command(${aggRef.version}) and AR(${ar.version}) do not match!").failure
+      case (false, true) => IllegalOperationProblem(s"Ids of command(${aggRef.id}) and AR(${ar.id}) do not match!").failure
+      case (false, false) => IllegalOperationProblem(s"Neither versions nor ids do match on AR and Command(${aggRef.id} <> ${ar.id} & ${aggRef.version} <> ${ar.version}) !").failure
+    }
+
   trait BoundUnitOfWork extends HandlesCommand {
     implicit def theAlmhirt: Almhirt
     protected def getAR(id: JUUID): AlmFuture[TAR]
@@ -155,14 +163,6 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       }
     }
 
-    protected def validateAgainstAggregateRoot(ar: TAR, aggRef: AggregateRootRef): AlmValidation[Unit] =
-      (aggRef.id == ar.id, aggRef.version == ar.version) match {
-        case (true, true) => ().success
-        case (true, false) => IllegalOperationProblem(s"Versions of command(${aggRef.version}) and AR(${ar.version}) do not match!").failure
-        case (false, true) => IllegalOperationProblem(s"Ids of command(${aggRef.id}) and AR(${ar.id}) do not match!").failure
-        case (false, false) => IllegalOperationProblem(s"Neither versions nor ids do match on AR and Command(${aggRef.id} <> ${ar.id} & ${aggRef.version} <> ${ar.version}) !").failure
-      }
-
     protected def reportFailure(prob: Problem, ticket: Option[TrackingTicket]) {
       theAlmhirt.publishProblem(prob)
       ticket match {
@@ -214,7 +214,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
 
     def creatorAndMutator(creator: BoundCreatorAction, mutator: BoundMutatorAction)(implicit resources: CanCreateUuid): TCom =
       apply(None, creator :: mutator :: Nil)
- 
+
     def creatorAndMutators(creator: BoundCreatorAction, mutators: List[BoundMutatorAction])(implicit resources: CanCreateUuid): TCom =
       apply(None, creator :: mutators)
 
