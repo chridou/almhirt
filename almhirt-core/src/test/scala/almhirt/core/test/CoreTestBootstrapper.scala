@@ -31,7 +31,7 @@ trait CoreBootstrapperWithCommandHandlers extends AlmhirtBootstrapper {
     super.registerRepositories(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
       theServiceRegistry.getService[HasCommandHandlers].flatMap { hasHandlers =>
         for {
-          uow1 <- TestPersonContext.createBasicUowFromServices(classOf[TestPersonCommand], theServiceRegistry, TestPersonContext.hasActionHandlers)(theAlmhirt)
+          uow1 <- TestPersonContext.createBasicUowFromServices(classOf[TestPersonCommand], theServiceRegistry, None)(theAlmhirt)
         } yield {
           hasHandlers.addHandler(uow1)
           superCleanUp}

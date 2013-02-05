@@ -25,7 +25,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
   }
 
   def createUOW(getsAnAR: UUID => AlmFuture[TestPerson], storesAnAr: (TestPerson, List[TestPersonEvent], Option[TrackingTicket]) => Unit): TestPersonContext.BoundUnitOfWork = 
-    TestPersonContext.createBasicUow(classOf[TestPersonCommand], getsAnAR, storesAnAr, TestPersonContext.hasActionHandlers)
+    TestPersonContext.createBasicUow(classOf[TestPersonCommand], getsAnAR, storesAnAr, None)
   
   def createUOWOnListBufferAndMap() = {
     val map = new HashMap[UUID, TestPerson]
