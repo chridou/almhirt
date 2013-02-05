@@ -30,7 +30,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends FlatSpec with BeforeAndAfterAll 
       buffer.append(events: _*)
       map.put(ar.id, ar)
     }
-    def get(id: UUID): AlmFuture[TestPerson] = AlmFuture.promise(map.get(id).noneIsKeyNotFound)
+    def get(id: UUID): AlmFuture[TestPerson] = AlmFuture.promise(map.lift >? id)
       
     val uow = createUOW(get, store)
     (uow, map, buffer)

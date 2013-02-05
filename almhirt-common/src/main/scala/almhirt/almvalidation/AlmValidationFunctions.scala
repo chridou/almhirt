@@ -52,8 +52,14 @@ trait AlmValidationFunctions {
       case Some(v) => v.success
       case None => NotFoundProblem("A value was expected but there was None").failure
     }
+
+  def noneIsNoSuchElement[T](v: Option[T]): AlmValidation[T] =
+    v match {
+      case Some(v) => v.success
+      case None => NoSuchElementProblem("A value was expected but there was None").failure
+    }
   
-  def tryGetFromMap[K,V](key: K, map: Map[K,V], severity: Severity = NoProblem): Validation[KeyNotFoundProblem, V] = {
+  def getFromMap[K,V](key: K, map: Map[K,V], severity: Severity = NoProblem): Validation[KeyNotFoundProblem, V] = {
     map.get(key) match {
       case Some(v) => v.success
       case None => KeyNotFoundProblem("Could not find a value for key '%s'".format(key)).failure

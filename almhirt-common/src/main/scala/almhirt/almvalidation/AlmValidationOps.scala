@@ -138,6 +138,8 @@ trait AlmValidationOps7[T] extends Ops[Option[T]] {
     funs.noneIsBadData(self)
   def noneIsNotFound(): AlmValidation[T] =
     funs.noneIsNotFound(self)
+  def noneIsNoSuchElement(): AlmValidation[T] =
+    funs.noneIsNoSuchElement(self)
 }
 
 trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
