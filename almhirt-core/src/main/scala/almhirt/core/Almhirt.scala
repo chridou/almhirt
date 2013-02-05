@@ -44,7 +44,10 @@ object Almhirt {
 
   def quickCreateFromSystem(namesSuffix: Option[String], actorSystem: ActorSystem): Almhirt with Disposable with CanCreateSuffixedName =
     createInternal("", namesSuffix, c => scalaz.Failure(UnspecifiedProblem("Get service not supplied")), Some(actorSystem))
-   
+
+  def quickCreateFromSystem(actorSystem: ActorSystem): Almhirt with Disposable with CanCreateSuffixedName =
+    createInternal("", None, c => scalaz.Failure(UnspecifiedProblem("Get service not supplied")), Some(actorSystem))
+    
   private def createInternal(name: String, namesSuffix: Option[String], getService: (Class[_ <: AnyRef]) => AlmValidation[AnyRef], actorSystem: Option[ActorSystem]): Almhirt with Disposable with CanCreateSuffixedName = {
     def getName(name: String) = option.cata(namesSuffix)(aSuffix => s"${name}_$aSuffix", name)
 

@@ -44,5 +44,7 @@ object TestPersonCommand {
     TestPersonCommand(resources.getUuid, Some(AggregateRootRef(id, version)), List(action))
   def createMutator(aggRef: AggregateRootRef, action: TestPersonContext.BoundMutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
     TestPersonCommand(resources.getUuid, Some(aggRef), List(action))
+  def create(aggRef: Option[AggregateRootRef], actions: List[TestPersonContext.BoundCommandAction])(implicit resources: CanCreateUuid): TestPersonCommand =
+    TestPersonCommand(resources.getUuid, aggRef, actions)
 }
 
