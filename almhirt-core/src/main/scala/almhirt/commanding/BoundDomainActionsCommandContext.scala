@@ -26,7 +26,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
   type MutatingActionHandler[TAct <: BoundMutatorAction] = (TAct, TAR, Almhirt) => UpdateRecorder[TEvent, TAR]
 
   def actionHandlers: HasActionHandlers
-  
+
   trait BoundDomainActionsCommand extends DomainCommand {
     def aggRef: Option[AggregateRootRef]
     def actions: List[BoundCommandAction]
@@ -200,5 +200,25 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       hasRepos <- theServiceRegistry.getServiceByType(classOf[HasRepositories]).flatMap(_.castTo[HasRepositories])
       repo <- hasRepos.getForAggregateRoot[TAR, TEvent]
     } yield createBasicUowWithRepo(cmdType, repo, theActionHandlers, maxGetDuration)
+
+  trait BoundDomainCommandFactory[TCom <: BoundDomainActionsCommand] {
+    def apply(aggRef: Option[AggregateRootRef], actions: List[BoundCommandAction])(implicit resources: CanCreateUuid): TCom
+
+    def creator(creator: BoundCreatorAction)(implicit resources: CanCreateUuid): TCom =
+      apply(None, List(creator))
+
+    def mutator(id: JUUID, version: Long, mutator: BoundMutatorAction)(implicit resources: CanCreateUuid): TCom =
+      apply(Some(AggregateRootRef(id, version)), List(mutator))
+
+    def mutator(aggRef: AggregateRootRef, mutator: BoundMutatorAction)(implicit resources: CanCreateUuid): TCom =
+      apply(Some(aggRef), List(mutator))
+
+    def mutators(aggRef: AggregateRootRef, mutators: List[BoundMutatorAction])(implicit resources: CanCreateUuid): TCom =
+      apply(Some(aggRef), mutators)
+
+    def creatorAndMutators(creator: BoundCreatorAction, mutators: List[BoundMutatorAction])(implicit resources: CanCreateUuid): TCom =
+      apply(None, creator :: mutators)
+
+  }
 
 }

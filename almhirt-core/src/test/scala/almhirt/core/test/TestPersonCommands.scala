@@ -37,14 +37,8 @@ object TestPersonContext extends BoundDomainActionsCommandContext[TestPerson, Te
 
 case class TestPersonCommand(id: UUID, aggRef: Option[AggregateRootRef], actions: List[TestPersonContext.BoundCommandAction]) extends TestPersonContext.BoundDomainActionsCommand
 
-object TestPersonCommand {
-  def createCreator(action: TestPersonContext.BoundCreatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
-    TestPersonCommand(resources.getUuid, None, List(action))
-  def createMutator(id: UUID, version: Long, action: TestPersonContext.BoundMutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
-    TestPersonCommand(resources.getUuid, Some(AggregateRootRef(id, version)), List(action))
-  def createMutator(aggRef: AggregateRootRef, action: TestPersonContext.BoundMutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
-    TestPersonCommand(resources.getUuid, Some(aggRef), List(action))
-  def create(aggRef: Option[AggregateRootRef], actions: List[TestPersonContext.BoundCommandAction])(implicit resources: CanCreateUuid): TestPersonCommand =
+object TestPersonCommand extends TestPersonContext.BoundDomainCommandFactory[TestPersonCommand] {
+  def apply(aggRef: Option[AggregateRootRef], actions: List[TestPersonContext.BoundCommandAction])(implicit resources: CanCreateUuid): TestPersonCommand =
     TestPersonCommand(resources.getUuid, aggRef, actions)
 }
 

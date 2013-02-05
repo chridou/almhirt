@@ -45,13 +45,13 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "not crash" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.createCreator(NewTestPersonAction(id, "Joe"))
+        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
         uow.handle(com, None)
       }
       "create exactly 1 event" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.createCreator(NewTestPersonAction(id, "Joe"))
+        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
         uow.handle(com, None)
         Thread.sleep(50)
         buffer should have size(1)
@@ -59,7 +59,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPersonCreatedEvent with version 0" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.createCreator(NewTestPersonAction(id, "Joe"))
+        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
         uow.handle(com, None)
         Thread.sleep(50)
         buffer.head.aggVersion should equal(0L)
@@ -67,7 +67,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPersonCreatedEvent with aggId equal to the commands aggId" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.createCreator(NewTestPersonAction(id, "Joe"))
+        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
         uow.handle(com, None)
         Thread.sleep(50)
         buffer.head.aggId should equal(id)
@@ -75,7 +75,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPerson with id equal to the commands aggId" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.createCreator(NewTestPersonAction(id, "Joe"))
+        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
         uow.handle(com, None)
         Thread.sleep(50)
         map.get(id).get.id should equal(id)
@@ -83,7 +83,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPerson with version = 1" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.createCreator(NewTestPersonAction(id, "Joe"))
+        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
         uow.handle(com, None)
         Thread.sleep(50)
         map.get(id).get.version should equal(1L)
@@ -91,7 +91,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPerson with the name specified by the creating command" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.createCreator(NewTestPersonAction(id, "Joe"))
+        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
         uow.handle(com, None)
         Thread.sleep(50)
         map.get(id).get.name should equal("Joe")
@@ -101,13 +101,13 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "not crash" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
       }
       "create exactly 2 events" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         buffer should have size(2)
@@ -115,7 +115,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPersonCreatedEvent with version 0" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         buffer.head.aggVersion should equal(0L)
@@ -123,7 +123,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPersonCreatedEvent with aggId equal to the commands aggId" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         buffer.head.aggId should equal(id)
@@ -131,7 +131,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPersonCreatedEvent with aggId different from the events id" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         buffer.head.aggId should not equal( buffer.head.id)
@@ -139,7 +139,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPersonNameChanged with version 1" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         buffer.tail.head.aggVersion should equal(1L)
@@ -147,7 +147,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPersonNameChanged with aggId equal to the commands aggId" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         buffer.tail.head.aggId should equal(id)
@@ -155,7 +155,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPersonNameChanged with aggId different from the events id" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         buffer.tail.head.aggId should not equal( buffer.head.id)
@@ -163,7 +163,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPerson with id equal to the creating commands aggId" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         map.get(id).get.id should equal(id)
@@ -171,7 +171,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPerson with version = 2" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         map.get(id).get.version should equal(2L)
@@ -179,7 +179,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       "have created a TestPerson with the name specified by the changing command" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.create(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
         uow.handle(com, None)
         Thread.sleep(50)
         map.get(id).get.name should equal("Bill")

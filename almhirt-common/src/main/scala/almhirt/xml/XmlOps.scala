@@ -14,43 +14,67 @@
 */
 package almhirt.xml
 
+import java.util.{UUID => JUUID}
 import scala.language.implicitConversions
-
 import scala.xml.{Node, NodeSeq, Elem}
 import scalaz.Validation
 import scalaz.syntax.Ops
 import almhirt.common._
 import almhirt.almvalidation._
+import org.joda.time.DateTime
 
 trait XmlOps0 extends Ops[Elem]{
+  def extractString(): AlmValidation[String] =
+    almhirt.almvalidation.funs.notEmptyOrWhitespace(self.text)
+  def extractOptionalString(): Option[String] =
+    extractString.toOption
   def extractInt(): AlmValidation[Int] = 
     funs.intFromXmlNode(self)
+  def extractOptionalInt(): AlmValidation[Option[Int]] = 
+    funs.optionalIntFromXmlNode(self)
   def extractLong(): AlmValidation[Long] = 
     funs.longFromXmlNode(self)
+  def extractOptionalLong(): AlmValidation[Option[Long]] = 
+    funs.optionalLongFromXmlNode(self)
   def extractDouble(): AlmValidation[Double] = 
     funs.doubleFromXmlNode(self)
-  def extractOptionalInt(): AlmValidation[Option[Int]] = 
-    funs.optionalIntXmlNode(self)
-  def extractOptionalLong(): AlmValidation[Option[Long]] = 
-    funs.optionalLongXmlNode(self)
   def extractOptionalDouble(): AlmValidation[Option[Double]] = 
-    funs.optionalDoubleXmlNode(self)
+    funs.optionalDoubleFromXmlNode(self)
+  def extractDateTime(): AlmValidation[DateTime] = 
+    funs.dateTimeFromXmlNode(self)
+  def extractOptionalDateTime(): AlmValidation[Option[DateTime]] = 
+    funs.optionalDateTimeFromXmlNode(self)
+  def extractUuid(): AlmValidation[JUUID] = 
+    funs.uuidFromXmlNode(self)
+  def extractOptionalUuid(): AlmValidation[Option[JUUID]] = 
+    funs.optionalUuidFromXmlNode(self)
+    
   def extractStringFromChild(label: String): AlmValidation[String] = 
     funs.stringFromChild(self, label)
-  def extractIntFromChild(label: String): AlmValidation[Int] = 
-    funs.intFromChild(self, label)
-  def extractLongFromChild(label: String): AlmValidation[Long] = 
-    funs.longFromChild(self, label)
-  def extractDoubleFromChild(label: String): AlmValidation[Double] = 
-    funs.doubleFromChild(self, label)
   def extractOptionalStringFromChild(label: String): AlmValidation[Option[String]] = 
     funs.stringOptionFromChild(self, label)
+  def extractIntFromChild(label: String): AlmValidation[Int] = 
+    funs.intFromChild(self, label)
   def extractOptionalIntFromChild(label: String): AlmValidation[Option[Int]] = 
     funs.intOptionFromChild(self, label)
+  def extractLongFromChild(label: String): AlmValidation[Long] = 
+    funs.longFromChild(self, label)
   def extractOptionalLongFromChild(label: String): AlmValidation[Option[Long]] = 
     funs.longOptionFromChild(self, label)
+  def extractDoubleFromChild(label: String): AlmValidation[Double] = 
+    funs.doubleFromChild(self, label)
   def extractOptionalDoubleFromChild(label: String): AlmValidation[Option[Double]] =
     funs.doubleOptionFromChild(self, label)
+  def extractDateTimeFromChild(label: String): AlmValidation[DateTime] = 
+    funs.dateTimeFromChild(self, label)
+  def extractOptionalDateTimeFromChild(label: String): AlmValidation[Option[DateTime]] = 
+    funs.dateTimeOptionFromChild(self, label)
+  def extractUuidFromChild(label: String): AlmValidation[JUUID] = 
+    funs.uuidFromChild(self, label)
+  def extractOptionalUuidFromChild(label: String): AlmValidation[Option[JUUID]] =
+    funs.uuidOptionFromChild(self, label)
+    
+    
   def firstChildNode(label: String): AlmValidation[Elem] = 
     funs.firstChildNodeMandatory(self, label)
   def mapOptionalFirstChild[T](label: String, compute: Elem => AlmValidation[T]): AlmValidation[Option[T]] =
@@ -62,6 +86,9 @@ trait XmlOps0 extends Ops[Elem]{
   def \?(label: String) = funs.tryGetChild(self)(label)
   def \??(label: String) = funs.tryGetChild(self)(label).fold(_ => None, succ => succ)
   def elems = funs.allElems(self)
+  
+  def \@(name: String): AlmValidation[String] = funs.getAttributeValue(self, name)
+  def \@?(name: String): Option[String] = funs.getOptionalAttributeValue(self, name)
 }
 
 trait ToXmlOps {

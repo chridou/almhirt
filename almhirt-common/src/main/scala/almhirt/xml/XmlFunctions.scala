@@ -14,6 +14,7 @@
 */
 package almhirt.xml
 
+import java.util.{ UUID => JUUID }
 import scalaz._, Scalaz._
 import scalaz.std._
 import org.joda.time.DateTime
@@ -76,41 +77,50 @@ trait XmlFunctions {
   def dateTimeFromXmlNode(node: Elem): AlmValidation[DateTime] =
     notEmptyOrWhitespace(node.text) flatMap (ne => parseDateTimeAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
-  def optionalIntXmlNode(node: Elem): AlmValidation[Option[Int]] =
+  def uuidFromXmlNode(node: Elem): AlmValidation[JUUID] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseUuidAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
+  def optionalIntFromXmlNode(node: Elem): AlmValidation[Option[Int]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       intFromXmlNode(node) fold (_.failure, Some(_).success)
 
-  def optionalLongXmlNode(node: Elem): AlmValidation[Option[Long]] =
+  def optionalLongFromXmlNode(node: Elem): AlmValidation[Option[Long]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       longFromXmlNode(node) fold (_.failure, Some(_).success)
 
-  def optionalDoubleXmlNode(node: Elem): AlmValidation[Option[Double]] =
+  def optionalDoubleFromXmlNode(node: Elem): AlmValidation[Option[Double]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       doubleFromXmlNode(node) fold (_.failure, Some(_).success)
 
-  def optionalFloatXmlNode(node: Elem): AlmValidation[Option[Float]] =
+  def optionalFloatFromXmlNode(node: Elem): AlmValidation[Option[Float]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       floatFromXmlNode(node) fold (_.failure, Some(_).success)
 
-  def optionalDecimalXmlNode(node: Elem): AlmValidation[Option[BigDecimal]] =
+  def optionalDecimalFromXmlNode(node: Elem): AlmValidation[Option[BigDecimal]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       decimalFromXmlNode(node) fold (_.failure, Some(_).success)
 
-  def optionalDateTimeXmlNode(node: Elem): AlmValidation[Option[DateTime]] =
+  def optionalDateTimeFromXmlNode(node: Elem): AlmValidation[Option[DateTime]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       dateTimeFromXmlNode(node) fold (_.failure, Some(_).success)
+
+  def optionalUuidFromXmlNode(node: Elem): AlmValidation[Option[JUUID]] =
+    if (node.text.trim.isEmpty)
+      None.success[BadDataProblem]
+    else
+      uuidFromXmlNode(node) fold (_.failure, Some(_).success)
 
   def isBooleanSetTrue(elem: Elem): AlmValidation[Boolean] =
     if (elem.text.trim.isEmpty)
@@ -142,17 +152,43 @@ trait XmlFunctions {
     firstChildNodeMandatory(node, label)
       .flatMap { node => notEmptyOrWhitespace(node.text) } bimap (f => f.withIdentifier(label), s => s)
 
-  def doubleFromChild(node: Elem, label: String): AlmValidation[Double] =
-    firstChildNodeMandatory(node, label)
-      .flatMap { node => parseDoubleAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
+  def stringOptionFromChild(node: Elem, label: String): AlmValidation[Option[String]] =
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => s.success)) bimap (f => f.withIdentifier(label), s => s)
 
   def intFromChild(node: Elem, label: String): AlmValidation[Int] =
     firstChildNodeMandatory(node, label)
       .flatMap { node => parseIntAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
 
+  def intOptionFromChild(node: Elem, label: String): AlmValidation[Option[Int]] =
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseIntAlm(s))) bimap (f => f.withIdentifier(label), s => s)
+
   def longFromChild(node: Elem, label: String): AlmValidation[Long] =
     firstChildNodeMandatory(node, label)
       .flatMap { node => parseLongAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
+
+  def longOptionFromChild(node: Elem, label: String): AlmValidation[Option[Long]] =
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseLongAlm(s))) bimap (f => f.withIdentifier(label), s => s)
+
+  def doubleFromChild(node: Elem, label: String): AlmValidation[Double] =
+    firstChildNodeMandatory(node, label)
+      .flatMap { node => parseDoubleAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
+
+  def doubleOptionFromChild(node: Elem, label: String): AlmValidation[Option[Double]] =
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseDoubleAlm(s))) bimap (f => f.withIdentifier(label), s => s)
+
+  def dateTimeFromChild(node: Elem, label: String): AlmValidation[DateTime] =
+    firstChildNodeMandatory(node, label)
+      .flatMap { node => parseDateTimeAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
+
+  def dateTimeOptionFromChild(node: Elem, label: String): AlmValidation[Option[DateTime]] =
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseDateTimeAlm(s))) bimap (f => f.withIdentifier(label), s => s)
+
+  def uuidFromChild(node: Elem, label: String): AlmValidation[JUUID] =
+    firstChildNodeMandatory(node, label)
+      .flatMap { node => parseUuidAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
+
+  def uuidOptionFromChild(node: Elem, label: String): AlmValidation[Option[JUUID]] =
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseUuidAlm(s))) bimap (f => f.withIdentifier(label), s => s)
 
   private def emptyStringIsNone[T](str: String, compute: String => AlmValidation[T]): AlmValidation[Option[T]] =
     if (str.trim().isEmpty)
@@ -160,16 +196,13 @@ trait XmlFunctions {
     else
       compute(str) fold (_.failure, Some(_).success)
 
-  def stringOptionFromChild(node: Elem, label: String): AlmValidation[Option[String]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => s.success)) bimap (f => f.withIdentifier(label), s => s)
+  def getAttributeValue(node: Elem, name: String): AlmValidation[String] =
+    (node \ s"@$name") match {
+      case NodeSeq.Empty => NoSuchElementProblem("Attribute not found").withIdentifier(name).failure
+      case x => x.text.success
+    }
 
-  def doubleOptionFromChild(node: Elem, label: String): AlmValidation[Option[Double]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseDoubleAlm(s))) bimap (f => f.withIdentifier(label), s => s)
-
-  def intOptionFromChild(node: Elem, label: String): AlmValidation[Option[Int]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseIntAlm(s))) bimap (f => f.withIdentifier(label), s => s)
-
-  def longOptionFromChild(node: Elem, label: String): AlmValidation[Option[Long]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseLongAlm(s))) bimap (f => f.withIdentifier(label), s => s)
+  def getOptionalAttributeValue(node: Elem, name: String): Option[String] =
+    getAttributeValue(node, name).toOption
 }
 
