@@ -3,6 +3,7 @@ package riftwarp.http
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.syntax.almvalidation._
 import riftwarp._
 import riftwarp.components.KnowsChannels
 
@@ -51,7 +52,7 @@ class RiftHttpContentTypeWithoutPrefixOps(channels: KnowsChannels) extends RiftH
             channels.lookUpFromHttpContentType(channelRaw).flatMap { channel =>
               val args = processArgs(parts.tail)
               (option.cata(args.get("version"))(
-                v => almhirt.almvalidation.funs.parseIntAlm(v, "version").map(x => Some(x)),
+                v => almhirt.almvalidation.funs.parseIntAlm(v).withIdentifierOnFailure("version").map(x => Some(x)),
                 None.success)).map { version =>
                   val cleanedArgs = if (version.isDefined) args - "version" else args
                   RiftHttpQualifiedContentType(RiftDescriptor(identifier, version), channel, cleanedArgs)
@@ -93,7 +94,7 @@ class RiftHttpContentTypeWithPrefixOps(contentTypePrefix: String, channels: Know
             channels.lookUpFromHttpContentType(channelRaw).flatMap { channel =>
               val args = processArgs(parts.tail)
               (option.cata(args.get("version"))(
-                v => almhirt.almvalidation.funs.parseIntAlm(v, "version").map(x => Some(x)),
+                v => almhirt.almvalidation.funs.parseIntAlm(v).withIdentifierOnFailure("version").map(x => Some(x)),
                 None.success)).map { version =>
                   val cleanedArgs = if (version.isDefined) args - "version" else args
                   RiftHttpQualifiedContentType(RiftDescriptor(identifier, version), channel, cleanedArgs)

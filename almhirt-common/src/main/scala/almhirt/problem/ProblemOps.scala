@@ -42,11 +42,7 @@ trait ProblemOps1[T <: Problem] extends Ops[T] {
 }
 
 trait ProblemOps2[T <: Problem] extends Ops[T] {
-  def withIdentifier(ident: String): T =
-    if (ident.trim().isEmpty())
-      self
-    else
-      self.withArg("ident", ident).asInstanceOf[T]
+  def withIdentifier(ident: String): T = funs.withIdentifier(self, ident)
 
   def markLogged(): T = self.withArg("isLogged", true).asInstanceOf[T]
   def isLogged(): Boolean = self.args.contains("isLogged") && self.args("isLogged") == true

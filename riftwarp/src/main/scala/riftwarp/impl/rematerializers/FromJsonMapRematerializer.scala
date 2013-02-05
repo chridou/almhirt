@@ -37,7 +37,7 @@ private[rematerializers] object FromJsonMapRematerializerFuns {
     else if (clazz == classOf[_root_.java.lang.Long])
       Success(((x: Any) => almCast[Double](x).map(_.toLong)).asInstanceOf[Any => AlmValidation[A]])
     else if (clazz == classOf[BigInt])
-      Success(((x: Any) => almCast[String](x).flatMap(parseBigIntAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
+      Success(((x: Any) => almCast[String](x).flatMap(parseBigIntAlm(_).withIdentifierOnFailure(key))).asInstanceOf[Any => AlmValidation[A]])
     else if (clazz == classOf[Float])
       Success(((x: Any) => almCast[Double](x).map(_.toFloat)).asInstanceOf[Any => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.lang.Float])
@@ -47,13 +47,13 @@ private[rematerializers] object FromJsonMapRematerializerFuns {
     else if (clazz == classOf[_root_.java.lang.Double])
       Success(((x: Any) => almCast[Double](x)).asInstanceOf[Any => AlmValidation[A]])
     else if (clazz == classOf[BigDecimal])
-      Success(((x: Any) => almCast[String](x).flatMap(parseDecimalAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
+      Success(((x: Any) => almCast[String](x).flatMap(parseDecimalAlm(_).withIdentifierOnFailure(key))).asInstanceOf[Any => AlmValidation[A]])
     else if (clazz == classOf[org.joda.time.DateTime])
-      Success(((x: Any) => almCast[String](x).flatMap(parseDateTimeAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
+      Success(((x: Any) => almCast[String](x).flatMap(parseDateTimeAlm(_).withIdentifierOnFailure(key))).asInstanceOf[Any => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.util.UUID])
-      Success(((x: Any) => almCast[String](x).flatMap(parseUuidAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
+      Success(((x: Any) => almCast[String](x).flatMap(parseUuidAlm(_).withIdentifierOnFailure(key))).asInstanceOf[Any => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.net.URI])
-      Success(((x: Any) => almCast[String](x).flatMap(parseUriAlm(_, key))).asInstanceOf[Any => AlmValidation[A]])
+      Success(((x: Any) => almCast[String](x).flatMap(parseUriAlm(_).withIdentifierOnFailure(key))).asInstanceOf[Any => AlmValidation[A]])
     else
       Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(clazz.getName())))
   }
@@ -106,26 +106,26 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
   def tryGetByte(ident: String) = option.cata(get(ident))(almCast[Double](_).map(x => Some(x.toByte)), None.success)
   def tryGetInt(ident: String) = option.cata(get(ident))(almCast[Double](_).map(x => Some(x.toInt)), None.success)
   def tryGetLong(ident: String) = option.cata(get(ident))(almCast[Double](_).map(x => Some(x.toLong)), None.success)
-  def tryGetBigInt(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseBigIntAlm(_, ident)).map(Some(_)), None.success)
+  def tryGetBigInt(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseBigIntAlm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
 
   def tryGetFloat(ident: String) = option.cata(get(ident))(almCast[Double](_).map(x => Some(x.toFloat)), None.success)
   def tryGetDouble(ident: String) = option.cata(get(ident))(almCast[Double](_).map(Some(_)), None.success)
-  def tryGetBigDecimal(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseDecimalAlm(_, ident)).map(Some(_)), None.success)
+  def tryGetBigDecimal(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseDecimalAlm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
 
   def tryGetByteArray(ident: String) =
     option.cata(get(ident))(almCast[List[Double]](_).map(x => Some(x.toArray.map(_.toByte))), None.success)
   def tryGetByteArrayFromBase64Encoding(ident: String) =
-    option.cata(get(ident))(almCast[String](_).flatMap(parseBase64Alm(_, ident).map(Some(_))), None.success)
+    option.cata(get(ident))(almCast[String](_).flatMap(parseBase64Alm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
   def tryGetByteArrayFromBlobEncoding(ident: String) = tryGetByteArrayFromBase64Encoding(ident)
 
-  def tryGetDateTime(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseDateTimeAlm(_, ident)).map(Some(_)), None.success)
+  def tryGetDateTime(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseDateTimeAlm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
 
-  def tryGetUri(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseUriAlm(_, ident)).map(Some(_)), None.success)
+  def tryGetUri(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseUriAlm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
 
-  def tryGetUuid(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseUuidAlm(_, ident)).map(Some(_)), None.success)
+  def tryGetUuid(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseUuidAlm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
 
   def tryGetJson(ident: String) = option.cata(get(ident))(almCast[String](_).map(Some(_)), None.success)
-  def tryGetXml(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseXmlAlm(_, ident)).map(Some(_)), None.success)
+  def tryGetXml(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseXmlAlm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
 
   def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
     tryGetRematerializedBlob(ident)

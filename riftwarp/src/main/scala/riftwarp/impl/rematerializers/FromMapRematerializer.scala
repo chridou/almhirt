@@ -42,7 +42,7 @@ class FromMapRematerializer(theMap: Map[String, Any], protected val fetchBlobDat
 
   def tryGetByteArray(ident: String) = option.cata(theMap.get(ident))(almCast[Array[Byte]](_).map(Some(_)), None.success)
   def tryGetByteArrayFromBase64Encoding(ident: String) =
-    option.cata(theMap.get(ident))(almCast[String](_).flatMap(parseBase64Alm(_, ident).map(Some(_))), None.success)
+    option.cata(theMap.get(ident))(almCast[String](_).flatMap(parseBase64Alm(_).withIdentifierOnFailure(ident).map(Some(_))), None.success)
   def tryGetByteArrayFromBlobEncoding(ident: String) = tryGetByteArray(ident)
 
   def tryGetDateTime(ident: String) = option.cata(theMap.get(ident))(almCast[org.joda.time.DateTime](_).map(Some(_)), None.success)

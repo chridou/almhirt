@@ -34,28 +34,28 @@ import almhirt.common._
  */
 trait AlmValidationOps0 extends Ops[String] {
   import funs._
-  def toIntAlm(key: String = "some value"): AlmValidation[Int] = 
-    parseIntAlm(self, key)
-  def toLongAlm(key: String = "some value"): AlmValidation[Long] =  
-    parseLongAlm(self, key)
-  def toDoubleAlm(key: String = "some value"): AlmValidation[Double] =  
-    parseDoubleAlm(self, key)
-  def toFloatAlm(key: String = "some value"): AlmValidation[Float] =  
-    parseFloatAlm(self, key)
-  def toBooleanAlm(key: String = "some value"): AlmValidation[Boolean] =  
-    parseBooleanAlm(self, key)
-  def toDecimalAlm(key: String = "some value"): AlmValidation[BigDecimal] =  
-    parseDecimalAlm(self, key)
-  def toDateTimeAlm(key: String = "some value"): AlmValidation[DateTime] =  
-    parseDateTimeAlm(self, key)
-  def toUuidAlm(key: String = "some value"): AlmValidation[UUID] =  
-    parseUuidAlm(self, key)
-  def toBytesFromBase64Alm(key: String = "some value"): AlmValidation[Array[Byte]] =  
-    parseBase64Alm(self, key)
-  def notEmptyAlm(key: String = "some value"): AlmValidation[String] =  
-    notEmpty(self, key)
-  def notEmptyOrWhitespaceAlm(key: String = "some value"): AlmValidation[String] =  
-    notEmptyOrWhitespace(self, key)
+  def toIntAlm(): AlmValidation[Int] = 
+    parseIntAlm(self)
+  def toLongAlm(): AlmValidation[Long] =  
+    parseLongAlm(self)
+  def toDoubleAlm(): AlmValidation[Double] =  
+    parseDoubleAlm(self)
+  def toFloatAlm(): AlmValidation[Float] =  
+    parseFloatAlm(self)
+  def toBooleanAlm(): AlmValidation[Boolean] =  
+    parseBooleanAlm(self)
+  def toDecimalAlm(): AlmValidation[BigDecimal] =  
+    parseDecimalAlm(self)
+  def toDateTimeAlm(): AlmValidation[DateTime] =  
+    parseDateTimeAlm(self)
+  def toUuidAlm(): AlmValidation[UUID] =  
+    parseUuidAlm(self)
+  def toBytesFromBase64Alm(): AlmValidation[Array[Byte]] =  
+    parseBase64Alm(self)
+  def notEmptyAlm(): AlmValidation[String] =  
+    notEmpty(self)
+  def notEmptyOrWhitespaceAlm(): AlmValidation[String] =  
+    notEmptyOrWhitespace(self)
 }
 
 trait AlmValidationOps1[T] extends Ops[T] {
@@ -155,6 +155,8 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
     
   def invert(): scalaz.Validation[T, Problem] =
     self fold (fail => fail.success, succ => succ.failure)
+  
+  def withIdentifierOnFailure(ident: String): AlmValidation[T] = self.bimap(p => almhirt.problem.funs.withIdentifier(p, ident), g => g)
 }
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {

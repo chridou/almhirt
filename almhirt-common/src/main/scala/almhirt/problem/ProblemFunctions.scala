@@ -24,4 +24,10 @@ trait ProblemFunctions {
     UnspecifiedProblem(message, severity, SystemProblem, args, cause)
   def applicationProblem(message: String, severity: Severity = Major, cause: Option[ProblemCause] = None, args: Map[String, Any] = Map()) =
     UnspecifiedProblem(message, severity, ApplicationProblem, args, cause)
+    
+  def withIdentifier[T <: Problem](prob: Problem, ident: String): T =
+    if (ident.trim().isEmpty())
+      prob.asInstanceOf[T]
+    else
+      prob.withArg("ident", ident).asInstanceOf[T]
 }

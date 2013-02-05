@@ -59,22 +59,22 @@ trait XmlFunctions {
   }
 
   def intFromXmlNode(node: Elem): AlmValidation[Int] =
-    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseIntAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseIntAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def longFromXmlNode(node: Elem): AlmValidation[Long] =
-    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseLongAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseLongAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def doubleFromXmlNode(node: Elem): AlmValidation[Double] =
-    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseDoubleAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseDoubleAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def floatFromXmlNode(node: Elem): AlmValidation[Float] =
-    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseFloatAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseFloatAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def decimalFromXmlNode(node: Elem): AlmValidation[BigDecimal] =
-    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseDecimalAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseDecimalAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def dateTimeFromXmlNode(node: Elem): AlmValidation[DateTime] =
-    notEmptyOrWhitespace(node.text, node.label) flatMap (ne => parseDateTimeAlm(ne, node.label))
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseDateTimeAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def optionalIntXmlNode(node: Elem): AlmValidation[Option[Int]] =
     if (node.text.trim.isEmpty)
@@ -116,7 +116,7 @@ trait XmlFunctions {
     if (elem.text.trim.isEmpty)
       false.success[BadDataProblem]
     else
-      parseBooleanAlm(elem.text, elem.label)
+      parseBooleanAlm(elem.text) bimap (f => f.withIdentifier(elem.label), s => s)
 
   def firstChildNodeMandatory(node: Elem, label: String): AlmValidation[Elem] = {
     elems(node)(label).toList match {
@@ -140,19 +140,19 @@ trait XmlFunctions {
 
   def stringFromChild(node: Elem, label: String): AlmValidation[String] =
     firstChildNodeMandatory(node, label)
-      .flatMap { node => notEmptyOrWhitespace(node.text, label) }
+      .flatMap { node => notEmptyOrWhitespace(node.text) } bimap (f => f.withIdentifier(label), s => s)
 
   def doubleFromChild(node: Elem, label: String): AlmValidation[Double] =
     firstChildNodeMandatory(node, label)
-      .flatMap { node => parseDoubleAlm(node.text, label) }
+      .flatMap { node => parseDoubleAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
 
   def intFromChild(node: Elem, label: String): AlmValidation[Int] =
     firstChildNodeMandatory(node, label)
-      .flatMap { node => parseIntAlm(node.text, label) }
+      .flatMap { node => parseIntAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
 
   def longFromChild(node: Elem, label: String): AlmValidation[Long] =
     firstChildNodeMandatory(node, label)
-      .flatMap { node => parseLongAlm(node.text, label) }
+      .flatMap { node => parseLongAlm(node.text) } bimap (f => f.withIdentifier(label), s => s)
 
   private def emptyStringIsNone[T](str: String, compute: String => AlmValidation[T]): AlmValidation[Option[T]] =
     if (str.trim().isEmpty)
@@ -161,15 +161,15 @@ trait XmlFunctions {
       compute(str) fold (_.failure, Some(_).success)
 
   def stringOptionFromChild(node: Elem, label: String): AlmValidation[Option[String]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => s.success))
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => s.success)) bimap (f => f.withIdentifier(label), s => s)
 
   def doubleOptionFromChild(node: Elem, label: String): AlmValidation[Option[Double]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseDoubleAlm(s, label)))
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseDoubleAlm(s))) bimap (f => f.withIdentifier(label), s => s)
 
   def intOptionFromChild(node: Elem, label: String): AlmValidation[Option[Int]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseIntAlm(s, label)))
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseIntAlm(s))) bimap (f => f.withIdentifier(label), s => s)
 
   def longOptionFromChild(node: Elem, label: String): AlmValidation[Option[Long]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseLongAlm(s, label)))
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseLongAlm(s))) bimap (f => f.withIdentifier(label), s => s)
 }
 

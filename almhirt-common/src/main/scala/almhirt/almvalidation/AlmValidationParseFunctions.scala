@@ -29,140 +29,140 @@ trait AlmValidationParseFunctions {
   import almhirt.almvalidation.funs._
   import almhirt.problem.all._
 
-  def parseByteAlm(toParse: String, key: String = ""): AlmValidation[Byte] =
+  def parseByteAlm(toParse: String): AlmValidation[Byte] =
     try {
       toParse.toByte.success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid number(Int):%s".format(toParse)).withIdentifier(key).failure
+      case err: Throwable => BadDataProblem("Not a valid number(Int):%s".format(toParse)).failure
     }
 
-  def parseIntAlm(toParse: String, key: String = ""): AlmValidation[Int] =
+  def parseIntAlm(toParse: String): AlmValidation[Int] =
     try {
       toParse.toInt.success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid number(Int):%s".format(toParse)).withIdentifier(key).failure
+      case err: Throwable => BadDataProblem("Not a valid number(Int):%s".format(toParse)).failure
     }
 
-  def parseLongAlm(toParse: String, key: String = ""): AlmValidation[Long] =
+  def parseLongAlm(toParse: String): AlmValidation[Long] =
     try {
       toParse.toLong.success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid number(Long): %s".format(toParse)).withIdentifier(key).failure
+      case err: Throwable => BadDataProblem("Not a valid number(Long): %s".format(toParse)).failure
     }
 
-  def parseBigIntAlm(toParse: String, key: String = ""): AlmValidation[BigInt] =
+  def parseBigIntAlm(toParse: String): AlmValidation[BigInt] =
     try {
       BigInt.apply(toParse).success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid number(BigInt): %s".format(toParse)).withIdentifier(key).failure
+      case err: Throwable => BadDataProblem("Not a valid number(BigInt): %s".format(toParse)).failure
     }
 
-  def parseDoubleAlm(toParse: String, key: String = ""): AlmValidation[Double] =
+  def parseDoubleAlm(toParse: String): AlmValidation[Double] =
     try {
       toParse.toDouble.success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid number(Double): %s".format(toParse)).withIdentifier(key).failure
+      case err: Throwable => BadDataProblem("Not a valid number(Double): %s".format(toParse)).failure
     }
 
-  def parseFloatAlm(toParse: String, key: String = ""): AlmValidation[Float] =
+  def parseFloatAlm(toParse: String): AlmValidation[Float] =
     try {
       toParse.toFloat.success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid number(Float): %s".format(toParse)).withIdentifier(key).failure[Float]
+      case err: Throwable => BadDataProblem("Not a valid number(Float): %s".format(toParse)).failure[Float]
     }
 
-  def parseDecimalAlm(toParse: String, key: String = ""): AlmValidation[BigDecimal] =
+  def parseDecimalAlm(toParse: String): AlmValidation[BigDecimal] =
     try {
       BigDecimal(toParse).success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid number(BigDecimal): %s".format(toParse)).withIdentifier(key).failure
+      case err: Throwable => BadDataProblem("Not a valid number(BigDecimal): %s".format(toParse)).failure
     }
 
-  def parseDateTimeAlm(toParse: String, key: String = ""): AlmValidation[DateTime] =
+  def parseDateTimeAlm(toParse: String): AlmValidation[DateTime] =
     try {
       new DateTime(toParse).success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid DateTime: %s".format(toParse)).withIdentifier(key).failure
+      case err: Throwable => BadDataProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
 
-  def parseUriAlm(toParse: String, key: String = ""): AlmValidation[_root_.java.net.URI] =
+  def parseUriAlm(toParse: String): AlmValidation[_root_.java.net.URI] =
     try {
       _root_.java.net.URI.create(toParse).success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid URI: %s".format(toParse)).withIdentifier(key).failure
+      case err: Throwable => BadDataProblem("Not a valid URI: %s".format(toParse)).failure
     }
 
-  def parseUuidAlm(toParse: String, key: String = ""): AlmValidation[UUID] =
+  def parseUuidAlm(toParse: String): AlmValidation[UUID] =
     try {
       UUID.fromString(toParse).success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid UUID: %s".format(toParse)).withIdentifier(key).failure[UUID]
+      case err: Throwable => BadDataProblem("Not a valid UUID: %s".format(toParse)).failure[UUID]
     }
 
-  def parseBooleanAlm(toParse: String, key: String = ""): AlmValidation[Boolean] =
+  def parseBooleanAlm(toParse: String): AlmValidation[Boolean] =
     try {
       toParse.toBoolean.success
     } catch {
-      case err: Throwable => BadDataProblem("Not a valid Boolean: %s".format(toParse)).withIdentifier(key).failure[Boolean]
+      case err: Throwable => BadDataProblem("Not a valid Boolean: %s".format(toParse)).failure[Boolean]
     }
 
-  def parseByteArrayAlm(toParse: String, key: String = "", sep: String = ","): AlmValidation[Array[Byte]] =
+  def parseByteArrayAlm(toParse: String, sep: String): AlmValidation[Array[Byte]] =
     try {
       toParse.split(sep).map(_.toByte).success
     } catch {
-      case err: Throwable => BadDataProblem("Not all are valid bytes:".format(toParse)).withIdentifier(key).failure[Array[Byte]]
+      case err: Throwable => BadDataProblem("Not all are valid bytes:".format(toParse)).failure
     }
 
-  def parseBase64Alm(toParse: String, key: String = ""): AlmValidation[Array[Byte]] =
+  def parseBase64Alm(toParse: String): AlmValidation[Array[Byte]] =
     try {
       org.apache.commons.codec.binary.Base64.decodeBase64(toParse).success
     } catch {
-      case err: Throwable => BadDataProblem("Not a Base64 encoded String".format(toParse)).withIdentifier(key).failure[Array[Byte]]
+      case err: Throwable => BadDataProblem("Not a Base64 encoded String".format(toParse)).failure[Array[Byte]]
     }
 
-  def parseXmlAlm(toParse: String, key: String = ""): AlmValidation[scala.xml.Elem] =
+  def parseXmlAlm(toParse: String): AlmValidation[scala.xml.Elem] =
     try {
       scala.xml.XML.loadString(toParse).success
     } catch {
       case err: Throwable => BadDataProblem("No valid XML: %s".format(toParse)).failure[scala.xml.Elem]
     }
 
-  def tryParseByteAlm(toParse: String, key: String = ""): AlmValidation[Option[Byte]] =
-    emptyStringIsNone(toParse, x => parseByteAlm(x, key))
+  def tryParseByteAlm(toParse: String): AlmValidation[Option[Byte]] =
+    emptyStringIsNone(toParse, x => parseByteAlm(x))
 
-  def tryParseIntAlm(toParse: String, key: String = ""): AlmValidation[Option[Int]] =
-    emptyStringIsNone(toParse, x => parseIntAlm(x, key))
+  def tryParseIntAlm(toParse: String): AlmValidation[Option[Int]] =
+    emptyStringIsNone(toParse, x => parseIntAlm(x))
 
-  def tryParseLongAlm(toParse: String, key: String = ""): AlmValidation[Option[Long]] =
-    emptyStringIsNone(toParse, x => parseLongAlm(x, key))
+  def tryParseLongAlm(toParse: String): AlmValidation[Option[Long]] =
+    emptyStringIsNone(toParse, x => parseLongAlm(x))
 
-  def tryParseDoubleAlm(toParse: String, key: String = ""): AlmValidation[Option[Double]] =
-    emptyStringIsNone(toParse, x => parseDoubleAlm(x, key))
+  def tryParseDoubleAlm(toParse: String): AlmValidation[Option[Double]] =
+    emptyStringIsNone(toParse, x => parseDoubleAlm(x))
 
-  def tryParseFloatAlm(toParse: String, key: String = ""): AlmValidation[Option[Float]] =
-    emptyStringIsNone(toParse, x => parseFloatAlm(x, key))
+  def tryParseFloatAlm(toParse: String): AlmValidation[Option[Float]] =
+    emptyStringIsNone(toParse, x => parseFloatAlm(x))
 
-  def tryParseDecimalAlm(toParse: String, key: String = ""): AlmValidation[Option[BigDecimal]] =
-    emptyStringIsNone(toParse, x => parseDecimalAlm(x, key))
+  def tryParseDecimalAlm(toParse: String): AlmValidation[Option[BigDecimal]] =
+    emptyStringIsNone(toParse, x => parseDecimalAlm(x))
 
-  def tryParseDateTimeAlm(toParse: String, key: String = ""): AlmValidation[Option[DateTime]] =
-    emptyStringIsNone(toParse, x => parseDateTimeAlm(x, key))
+  def tryParseDateTimeAlm(toParse: String): AlmValidation[Option[DateTime]] =
+    emptyStringIsNone(toParse, x => parseDateTimeAlm(x))
 
-  def tryParseUUIDAlm(toParse: String, key: String = ""): AlmValidation[Option[UUID]] =
-    emptyStringIsNone(toParse, x => parseUuidAlm(x, key))
+  def tryParseUUIDAlm(toParse: String): AlmValidation[Option[UUID]] =
+    emptyStringIsNone(toParse, x => parseUuidAlm(x))
 
-  def tryParseBooleanAlm(toParse: String, key: String = ""): AlmValidation[Option[Boolean]] =
-    emptyStringIsNone(toParse, x => parseBooleanAlm(x, key))
+  def tryParseBooleanAlm(toParse: String): AlmValidation[Option[Boolean]] =
+    emptyStringIsNone(toParse, x => parseBooleanAlm(x))
 
-  def tryParseBase64Alm(toParse: String, key: String = ""): AlmValidation[Option[Array[Byte]]] =
-    emptyStringIsNone(toParse, x => parseBase64Alm(x, key))
+  def tryParseBase64Alm(toParse: String): AlmValidation[Option[Array[Byte]]] =
+    emptyStringIsNone(toParse, x => parseBase64Alm(x))
 
-  def notEmpty(toTest: String, key: String = ""): AlmValidation[String] =
-    if (toTest.isEmpty) BadDataProblem("must not be empty").withIdentifier(key).failure else toTest.success
+  def notEmpty(toTest: String): AlmValidation[String] =
+    if (toTest.isEmpty) BadDataProblem("must not be empty").failure else toTest.success
 
-  def notEmptyOrWhitespace(toTest: String, key: String = ""): AlmValidation[String] =
+  def notEmptyOrWhitespace(toTest: String): AlmValidation[String] =
     if (toTest.trim.isEmpty)
-      BadDataProblem("must not be empty or whitespaces").withIdentifier(key).failure
+      BadDataProblem("must not be empty or whitespaces").failure
     else
       toTest.success
 

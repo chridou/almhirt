@@ -3,7 +3,7 @@ package riftwarp
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
-import almhirt.almvalidation.funs._
+import almhirt.almvalidation.kit._
 
 /**
  * A tag used for looking up a Decomposer or Recomposer.
@@ -55,7 +55,7 @@ object RiftDescriptor {
         RiftDescriptor(name, None).success
       case Array(name, version) =>
         val v = version.drop(1)
-        parseIntAlm(v, "version").map(v => RiftDescriptor(name, Some(v)))
+        parseIntAlm(v).withIdentifierOnFailure("version").map(v => RiftDescriptor(name, Some(v)))
       case _ =>
         ParsingProblem("Not a valid RiftDescriptor format. The provided delimeter for name and version was '%s'".format(versionDelim)).withInput(toParse).failure
     }
