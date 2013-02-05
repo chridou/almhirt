@@ -41,6 +41,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     channel.post(Message(new A(1)))
     subscription.dispose()
     channel.close()
+    Thread.sleep(50)
     hitA should be(true)
   }
 
@@ -52,6 +53,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     channel.post(Message(new B(1, "A")))
     subscription.dispose()
     channel.close()
+    Thread.sleep(50)
     hitA should be(true)
   }
 
@@ -64,6 +66,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
       channel.post(Message(new B(1, "A")))
       subscription.dispose()
       channel.close()
+      Thread.sleep(50)
       hitB should be(true)
     }
 
@@ -80,6 +83,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
       subscriptionB.dispose()
       channel.close()
       subChannel.close()
+      Thread.sleep(50)
       hitA should be(true)
       hitB should be(false)
     }
@@ -96,6 +100,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitA should be(false)
     hitB should be(true)
   }
@@ -112,6 +117,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitA should be(true)
   }
 
@@ -127,6 +133,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitB should be(false)
   }
 
@@ -142,6 +149,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitA should be(false)
   }
 
@@ -157,6 +165,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitA should be(true)
   }
 
@@ -172,6 +181,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitA should be(false)
     hitB should be(false)
   }
@@ -188,6 +198,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitA should be(true)
     hitB should be(true)
   }
@@ -204,6 +215,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitB should be(false)
   }
 
@@ -219,6 +231,7 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     subscriptionB.dispose()
     channel.close()
     subChannel.close()
+    Thread.sleep(50)
     hitA should be(false)
     hitB should be(true)
   }

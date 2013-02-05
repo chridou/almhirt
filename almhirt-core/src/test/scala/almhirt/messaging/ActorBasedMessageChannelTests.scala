@@ -14,7 +14,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
   private[this] val (theAlmhirt, shutDown) = createTestAlmhirt(createDefaultBootStrapper()).forceResult
   implicit val atMost = FiniteDuration(1, "s")
   implicit val alm = theAlmhirt
- 
+
   override def afterAll {
     shutDown.shutDown
   }
@@ -25,7 +25,8 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val channel = createChannel[AnyRef]
     val future = channel <-* ({ case _ => () }, _ => true)
     val subscription = future.awaitResult(Duration.Inf)
-    subscription should not equal(null)
+    Thread.sleep(50)
+    subscription should not equal (null)
   }
 
   test("A MessageChannel does not execute a handler when the subscription is cancelled") {
@@ -36,6 +37,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     subscription.dispose()
     channel.post(Message("a"))
     channel.close()
+    Thread.sleep(50)
     hit should be(false)
   }
 
@@ -49,6 +51,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     subscription1.dispose()
     channel.post(Message("a"))
     channel.close()
+    Thread.sleep(50)
     hitCount should equal(2)
   }
 
@@ -59,6 +62,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
+    Thread.sleep(50)
     hit should be(true)
   }
 
@@ -71,6 +75,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription2 = future2.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
+    Thread.sleep(50)
     hitCount should equal(2)
   }
 
@@ -81,6 +86,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
+    Thread.sleep(50)
     hit should be(false)
   }
 
@@ -91,6 +97,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
+    Thread.sleep(50)
     hit should be(true)
   }
 
@@ -101,6 +108,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("b"))
     channel.close()
+    Thread.sleep(50)
     hit should be(false)
   }
 
@@ -111,6 +119,7 @@ class ActorBasedMessageChannelTests extends FunSuite with BeforeAndAfterAll with
     val subscription = future.awaitResult(Duration.Inf).forceResult
     channel.post(Message("a"))
     channel.close()
+    Thread.sleep(50)
     hit should be(false)
   }
 
