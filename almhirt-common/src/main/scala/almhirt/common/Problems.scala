@@ -27,6 +27,8 @@ case class UnspecifiedProblem(message: String, severity: Severity = Major, categ
 /**
  * Multiple problems that occurred during an operation under the hood of one aggregating problem.
  * The cause property is usually None
+ * 
+ * The order of the aggregated problems is defined as having no meaning
  */
 case class AggregateProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None, problems: List[Problem] = Nil) extends Problem {
   type T = AggregateProblem
