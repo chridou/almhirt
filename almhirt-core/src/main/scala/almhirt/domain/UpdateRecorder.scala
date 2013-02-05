@@ -97,6 +97,7 @@ trait UpdateRecorder[+Event <: DomainEvent, +AR <: AggregateRoot[_, _]] {
     events.reverse
   }
   
+  /** Returns the AR and the events in chronological order */
   def recordings: AlmValidation[(AR, List[Event])] = {
     val (events, validation) = apply(Nil)
     validation.map((_, events.reverse))
