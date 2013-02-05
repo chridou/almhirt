@@ -3,6 +3,7 @@ package almhirt.commanding
 import scala.reflect.ClassTag
 import scalaz._, Scalaz._
 import scalaz.std._
+import akka.actor.ActorRef
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
@@ -65,7 +66,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
 
   trait BoundUnitOfWork extends HandlesCommand {
     implicit def theAlmhirt: Almhirt
-    def repository: AggregateRootRepository[TAR, TEvent]
+    def repository: ActorRef
     def actionHandlers: HasActionHandlers
     def handle(com: DomainCommand, ticket: Option[TrackingTicket]) {
       com match {
@@ -108,7 +109,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
     protected def startFromRepo(aggRef: AggregateRootRef): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
       import akka.pattern._
       for {
-        ar <- (repository.actor ? GetAggregateRootQry(aggRef.id))(theAlmhirt.defaultDuration).mapToAlmFutureOver[AggregateRootFromRepositoryRsp[TAR, TEvent], TAR](rsp => rsp.ar)
+        ar <- (repository ? GetAggregateRootQry(aggRef.id))(theAlmhirt.defaultDuration).mapToAlmFutureOver[AggregateRootFromRepositoryRsp[TAR, TEvent], TAR](rsp => rsp.ar)
         recorder <- AlmFuture.promise {
           validateAgainstAggregateRoot(ar, aggRef).map(_ => UpdateRecorder.startWith[TEvent, TAR](ar))
         }
@@ -146,7 +147,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
     }
 
     protected def store(ar: TAR, events: List[TEvent], ticket: Option[TrackingTicket]) {
-      repository.actor ! StoreAggregateRootCmd[TAR, TEvent](ar, events, ticket)
+      repository ! StoreAggregateRootCmd[TAR, TEvent](ar, events, ticket)
     }
 
     protected def validateAgainstAggregateRoot(ar: TAR, aggRef: AggregateRootRef): AlmValidation[Unit] =
@@ -176,7 +177,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
   def createBasicUow(cmdType: Class[_ <: DomainCommand], theRepository: AggregateRootRepository[TAR, TEvent], theActionHandlers: HasActionHandlers)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
     new BoundUnitOfWork {
       val commandType = cmdType
-      val repository = theRepository
+      val repository = theRepository.actor
       val actionHandlers = theActionHandlers
       val theAlmhirt = anAlmhirt
     }
@@ -187,7 +188,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       repo <- hasRepos.getForAggregateRoot[TAR, TEvent]
     } yield new BoundUnitOfWork {
       val commandType = cmdType
-      val repository = repo
+      val repository = repo.actor
       val actionHandlers = theActionHandlers
       val theAlmhirt = anAlmhirt
     }
