@@ -1,5 +1,6 @@
 package almhirt.commanding
 
+import java.util.{UUID => JUUID}
 import scala.reflect.ClassTag
 import scalaz._, Scalaz._
 import scalaz.std._
@@ -63,10 +64,11 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
           NoSuchElementProblem(s"No mutating handler found for action ${action.getClass().getName()}").failure)
     }
   }
-
+  
   trait BoundUnitOfWork extends HandlesCommand {
     implicit def theAlmhirt: Almhirt
-    def repository: ActorRef
+    protected def getAR(id: JUUID): AlmFuture[TAR]
+    protected def storeAR(ar: TAR, uncommittedEvents: List[TEvent], ticket: Option[TrackingTicket]): Unit
     def actionHandlers: HasActionHandlers
     def handle(com: DomainCommand, ticket: Option[TrackingTicket]) {
       com match {
@@ -86,7 +88,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
             fail => reportFailure(fail, ticket),
             recorder => recorder.recordings.fold(
               fail => reportFailure(fail, ticket),
-              succ => store(succ._1, succ._2, ticket))))
+              succ => storeAR(succ._1, succ._2, ticket))))
       }
     }
 
@@ -106,10 +108,10 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       AlmFuture.promise(actionHandlers.getCreatingHandler(creatorAction).map(handler => handler(creatorAction, theAlmhirt)))
     }
 
+    
     protected def startFromRepo(aggRef: AggregateRootRef): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
-      import akka.pattern._
       for {
-        ar <- (repository ? GetAggregateRootQry(aggRef.id))(theAlmhirt.defaultDuration).mapToAlmFutureOver[AggregateRootFromRepositoryRsp[TAR, TEvent], TAR](rsp => rsp.ar)
+        ar <- getAR(aggRef.id)
         recorder <- AlmFuture.promise {
           validateAgainstAggregateRoot(ar, aggRef).map(_ => UpdateRecorder.startWith[TEvent, TAR](ar))
         }
@@ -146,10 +148,6 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
         })
     }
 
-    protected def store(ar: TAR, events: List[TEvent], ticket: Option[TrackingTicket]) {
-      repository ! StoreAggregateRootCmd[TAR, TEvent](ar, events, ticket)
-    }
-
     protected def validateAgainstAggregateRoot(ar: TAR, aggRef: AggregateRootRef): AlmValidation[Unit] =
       (aggRef.id == ar.id, aggRef.version == ar.version) match {
         case (true, true) => ().success
@@ -173,24 +171,25 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       }
     }
   }
+   
+  import akka.pattern._
 
-  def createBasicUow(cmdType: Class[_ <: DomainCommand], theRepository: AggregateRootRepository[TAR, TEvent], theActionHandlers: HasActionHandlers)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
+  def createBasicUow(cmdType: Class[_ <: DomainCommand], repoActor: ActorRef, theActionHandlers: HasActionHandlers)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
     new BoundUnitOfWork {
       val commandType = cmdType
-      val repository = theRepository.actor
+      protected override def getAR(id: JUUID) = (repoActor ? GetAggregateRootQry(id))(theAlmhirt.defaultDuration).mapToAlmFutureOver[AggregateRootFromRepositoryRsp[TAR, TEvent], TAR](rsp => rsp.ar)
+      protected override def storeAR(ar: TAR, uncommittedEvents: List[TEvent], ticket: Option[TrackingTicket]) = repoActor ! StoreAggregateRootCmd[TAR, TEvent](ar, uncommittedEvents, ticket)
       val actionHandlers = theActionHandlers
       val theAlmhirt = anAlmhirt
     }
+  
+  def createBasicUow(cmdType: Class[_ <: DomainCommand], theRepository: AggregateRootRepository[TAR, TEvent], theActionHandlers: HasActionHandlers)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
+    createBasicUow(cmdType, theRepository.actor, theActionHandlers)
 
   def createBasicUow(cmdType: Class[_ <: DomainCommand], theServiceRegistry: ServiceRegistry, theActionHandlers: HasActionHandlers)(implicit anAlmhirt: Almhirt): AlmValidation[this.BoundUnitOfWork] =
     for {
       hasRepos <- theServiceRegistry.getServiceByType(classOf[HasRepositories]).flatMap(_.castTo[HasRepositories])
       repo <- hasRepos.getForAggregateRoot[TAR, TEvent]
-    } yield new BoundUnitOfWork {
-      val commandType = cmdType
-      val repository = repo.actor
-      val actionHandlers = theActionHandlers
-      val theAlmhirt = anAlmhirt
-    }
+    } yield createBasicUow(cmdType, repo, theActionHandlers)
 
 }
