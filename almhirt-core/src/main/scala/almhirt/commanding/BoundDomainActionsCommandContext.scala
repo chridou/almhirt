@@ -183,20 +183,20 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       val theAlmhirt = anAlmhirt
     }
 
-  def createBasicUow(cmdType: Class[_ <: DomainCommand], repoActor: ActorRef, theActionHandlers: HasActionHandlers, maxGetDuration: Option[FiniteDuration] = None)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork = {
+  def createBasicUowWithRepoActor(cmdType: Class[_ <: DomainCommand], repoActor: ActorRef, theActionHandlers: HasActionHandlers, maxGetDuration: Option[FiniteDuration] = None)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork = {
     val duration = option.cata(maxGetDuration)(dur => dur, anAlmhirt.defaultDuration)
     def get(id: JUUID) = (repoActor ? GetAggregateRootQry(id))(duration).mapToAlmFutureOver[AggregateRootFromRepositoryRsp[TAR, TEvent], TAR](rsp => rsp.ar)
     def store(ar: TAR, uncommittedEvents: List[TEvent], ticket: Option[TrackingTicket]) = repoActor ! StoreAggregateRootCmd[TAR, TEvent](ar, uncommittedEvents, ticket)
     createBasicUow(cmdType, get _, store _, theActionHandlers)
   }
 
-  def createBasicUow(cmdType: Class[_ <: DomainCommand], theRepository: AggregateRootRepository[TAR, TEvent], theActionHandlers: HasActionHandlers, maxGetDuration: Option[FiniteDuration] = None)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
-    createBasicUow(cmdType, theRepository.actor, theActionHandlers, maxGetDuration)
+  def createBasicUowWithRepo(cmdType: Class[_ <: DomainCommand], theRepository: AggregateRootRepository[TAR, TEvent], theActionHandlers: HasActionHandlers, maxGetDuration: Option[FiniteDuration] = None)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
+    createBasicUowWithRepoActor(cmdType, theRepository.actor, theActionHandlers, maxGetDuration)
 
-  def createBasicUow(cmdType: Class[_ <: DomainCommand], theServiceRegistry: ServiceRegistry, theActionHandlers: HasActionHandlers, maxGetDuration: Option[FiniteDuration] = None)(implicit anAlmhirt: Almhirt): AlmValidation[this.BoundUnitOfWork] =
+  def createBasicUowFromServices(cmdType: Class[_ <: DomainCommand], theServiceRegistry: ServiceRegistry, theActionHandlers: HasActionHandlers, maxGetDuration: Option[FiniteDuration] = None)(implicit anAlmhirt: Almhirt): AlmValidation[this.BoundUnitOfWork] =
     for {
       hasRepos <- theServiceRegistry.getServiceByType(classOf[HasRepositories]).flatMap(_.castTo[HasRepositories])
       repo <- hasRepos.getForAggregateRoot[TAR, TEvent]
-    } yield createBasicUow(cmdType, repo, theActionHandlers, maxGetDuration)
+    } yield createBasicUowWithRepo(cmdType, repo, theActionHandlers, maxGetDuration)
 
 }
