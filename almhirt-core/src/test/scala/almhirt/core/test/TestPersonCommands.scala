@@ -8,11 +8,11 @@ import almhirt.core.Almhirt
 import almhirt.core.CanCreateUuid
 import scala.reflect.ClassTag
 
-case class NewTestPersonAction(id: UUID, name: String) extends TestPersonContext.CreatorAction
-case class ChangeTestPersonNameAction(newName: String) extends TestPersonContext.MutatorAction
-case class SetTestPersonAddressAction(aquiredAddress: String) extends TestPersonContext.MutatorAction
-case class MoveTestPersonAction(newAddress: String) extends TestPersonContext.MutatorAction
-case class MoveBecauseOfMarriageAction(newName: String, newAddress: String) extends TestPersonContext.MutatorAction
+case class NewTestPersonAction(id: UUID, name: String) extends TestPersonContext.BoundCreatorAction
+case class ChangeTestPersonNameAction(newName: String) extends TestPersonContext.BoundMutatorAction
+case class SetTestPersonAddressAction(aquiredAddress: String) extends TestPersonContext.BoundMutatorAction
+case class MoveTestPersonAction(newAddress: String) extends TestPersonContext.BoundMutatorAction
+case class MoveBecauseOfMarriageAction(newName: String, newAddress: String) extends TestPersonContext.BoundMutatorAction
 
 object TestPersonContext extends BoundDomainActionsCommandContext[TestPerson, TestPersonEvent] {
   val tagAR = implicitly[ClassTag[TestPerson]]
@@ -33,14 +33,14 @@ object TestPersonContext extends BoundDomainActionsCommandContext[TestPerson, Te
 
 }
 
-case class TestPersonCommand(id: UUID, aggRef: Option[AggregateRootRef], actions: List[TestPersonContext.CommandAction]) extends TestPersonContext.BoundDomainActionsCommand
+case class TestPersonCommand(id: UUID, aggRef: Option[AggregateRootRef], actions: List[TestPersonContext.BoundCommandAction]) extends TestPersonContext.BoundDomainActionsCommand
 
 object TestPersonCommand {
-  def createCreator(action: TestPersonContext.CreatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
+  def createCreator(action: TestPersonContext.BoundCreatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
     TestPersonCommand(resources.getUuid, None, List(action))
-  def createMutator(id: UUID, version: Long, action: TestPersonContext.MutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
+  def createMutator(id: UUID, version: Long, action: TestPersonContext.BoundMutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
     TestPersonCommand(resources.getUuid, Some(AggregateRootRef(id, version)), List(action))
-  def createMutator(aggRef: AggregateRootRef, action: TestPersonContext.MutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
+  def createMutator(aggRef: AggregateRootRef, action: TestPersonContext.BoundMutatorAction)(implicit resources: CanCreateUuid): TestPersonCommand =
     TestPersonCommand(resources.getUuid, Some(aggRef), List(action))
 }
 

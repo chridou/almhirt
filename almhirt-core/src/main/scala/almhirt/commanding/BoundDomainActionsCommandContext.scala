@@ -16,26 +16,26 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
   protected implicit val tagAR: ClassTag[TAR]
   protected implicit val tagEvent: ClassTag[TEvent]
 
-  sealed trait CommandAction
-  trait CreatorAction extends CommandAction
-  trait MutatorAction extends CommandAction
+  sealed trait BoundCommandAction
+  trait BoundCreatorAction extends BoundCommandAction
+  trait BoundMutatorAction extends BoundCommandAction
 
-  type CreatingActionHandler[TAct <: CreatorAction] = (TAct, Almhirt) => UpdateRecorder[TEvent, TAR]
-  type MutatingActionHandler[TAct <: MutatorAction] = (TAct, TAR, Almhirt) => UpdateRecorder[TEvent, TAR]
+  type CreatingActionHandler[TAct <: BoundCreatorAction] = (TAct, Almhirt) => UpdateRecorder[TEvent, TAR]
+  type MutatingActionHandler[TAct <: BoundMutatorAction] = (TAct, TAR, Almhirt) => UpdateRecorder[TEvent, TAR]
 
   trait BoundDomainActionsCommand extends DomainCommand {
     def aggRef: Option[AggregateRootRef]
-    def actions: List[CommandAction]
+    def actions: List[BoundCommandAction]
   }
 
-  def flattenCreatingActionHandler[TAct <: CreatorAction](handler: CreatingActionHandler[TAct])(implicit tag: ClassTag[TAct]): CreatingActionHandler[CreatorAction] = {
+  def flattenCreatingActionHandler[TAct <: BoundCreatorAction](handler: CreatingActionHandler[TAct])(implicit tag: ClassTag[TAct]): CreatingActionHandler[BoundCreatorAction] = {
     (action, theAlmhirt) =>
       action.castTo[TAct].fold(
         fail => UpdateRecorder.reject(fail),
         succ => handler(succ, theAlmhirt))
   }
 
-  def flattenMutatingActionHandler[TAct <: MutatorAction](handler: MutatingActionHandler[TAct])(implicit tag: ClassTag[TAct]): MutatingActionHandler[MutatorAction] = {
+  def flattenMutatingActionHandler[TAct <: BoundMutatorAction](handler: MutatingActionHandler[TAct])(implicit tag: ClassTag[TAct]): MutatingActionHandler[BoundMutatorAction] = {
     (action, ar, theAlmhirt) =>
       action.castTo[TAct].fold(
         fail => UpdateRecorder.reject(fail),
@@ -43,21 +43,21 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
   }
 
   trait HasActionHandlers {
-    def getCreatingHandler(action: CreatorAction): AlmValidation[CreatingActionHandler[CreatorAction]]
-    def getMutatingHandler(action: MutatorAction): AlmValidation[MutatingActionHandler[MutatorAction]]
+    def getCreatingHandler(action: BoundCreatorAction): AlmValidation[CreatingActionHandler[BoundCreatorAction]]
+    def getMutatingHandler(action: BoundMutatorAction): AlmValidation[MutatingActionHandler[BoundMutatorAction]]
   }
 
-  def createHasActionHandlers(creators: List[(Class[_], CreatingActionHandler[CreatorAction])], mutators: List[(Class[_], MutatingActionHandler[MutatorAction])]): HasActionHandlers = {
+  def createHasActionHandlers(creators: List[(Class[_], CreatingActionHandler[BoundCreatorAction])], mutators: List[(Class[_], MutatingActionHandler[BoundMutatorAction])]): HasActionHandlers = {
     val creatorsByClass = creators.toMap
     val mutatorsByClass = mutators.toMap
 
     new HasActionHandlers {
-      override def getCreatingHandler(action: CreatorAction): AlmValidation[CreatingActionHandler[CreatorAction]] =
+      override def getCreatingHandler(action: BoundCreatorAction): AlmValidation[CreatingActionHandler[BoundCreatorAction]] =
         option.cata(creatorsByClass.get(action.getClass()))(
           handler => handler.success,
           NoSuchElementProblem(s"No creating handler found for action ${action.getClass().getName()}").failure)
 
-      override def getMutatingHandler(action: MutatorAction): AlmValidation[MutatingActionHandler[MutatorAction]] =
+      override def getMutatingHandler(action: BoundMutatorAction): AlmValidation[MutatingActionHandler[BoundMutatorAction]] =
         option.cata(mutatorsByClass.get(action.getClass()))(
           handler => handler.success,
           NoSuchElementProblem(s"No mutating handler found for action ${action.getClass().getName()}").failure)
@@ -93,16 +93,16 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
     protected def executeUnitOfWork(com: BoundDomainActionsCommand): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
       for {
         (initial, rest) <- option.cata(com.aggRef)(
-          aggRef => startFromRepo(aggRef).map(recorder => (recorder, com.actions.asInstanceOf[List[MutatorAction]])),
+          aggRef => startFromRepo(aggRef).map(recorder => (recorder, com.actions.asInstanceOf[List[BoundMutatorAction]])),
           {
             val creatorAction :: mutate = com.actions
-            startWithNew(creatorAction.asInstanceOf[CreatorAction]).map(recorder => (recorder, mutate.asInstanceOf[List[MutatorAction]]))
+            startWithNew(creatorAction.asInstanceOf[BoundCreatorAction]).map(recorder => (recorder, mutate.asInstanceOf[List[BoundMutatorAction]]))
           })
         resultOfMutators <- executeMutatorsOn(initial, rest)
       } yield resultOfMutators
     }
 
-    protected def startWithNew(creatorAction: CreatorAction): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
+    protected def startWithNew(creatorAction: BoundCreatorAction): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
       AlmFuture.promise(actionHandlers.getCreatingHandler(creatorAction).map(handler => handler(creatorAction, theAlmhirt)))
     }
 
@@ -116,11 +116,11 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       } yield recorder
     }
 
-    protected def executeMutatorsOn(initial: UpdateRecorder[TEvent, TAR], actions: List[MutatorAction]): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
+    protected def executeMutatorsOn(initial: UpdateRecorder[TEvent, TAR], actions: List[BoundMutatorAction]): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
       import akka.pattern._
       AlmFuture {
         val actionsAndHandlersV = actions.map(action => actionHandlers.getMutatingHandler(action).toAgg.map(h => (action, h)))
-        val actionsAndHandlers = actionsAndHandlersV.sequence[AlmValidationAP, (MutatorAction, (MutatorAction, TAR, Almhirt) => UpdateRecorder[TEvent, TAR])]
+        val actionsAndHandlers = actionsAndHandlersV.sequence[AlmValidationAP, (BoundMutatorAction, (BoundMutatorAction, TAR, Almhirt) => UpdateRecorder[TEvent, TAR])]
         actionsAndHandlers.fold(
           fail => fail.failure,
           succ => {
@@ -133,13 +133,13 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
     protected def prevalidate(com: BoundDomainActionsCommand): AlmValidation[BoundDomainActionsCommand] = {
       option.cata(com.aggRef)(
         aggRef =>
-          boolean.fold(com.actions.forall(_.isInstanceOf[MutatorAction]),
+          boolean.fold(com.actions.forall(_.isInstanceOf[BoundMutatorAction]),
             com.success,
             IllegalOperationProblem("When an AggregateRootRef is supplied, all actions must be mutating actions!").failure),
         {
           val h :: tail = com.actions
-          boolean.fold(h.isInstanceOf[CreatorAction],
-            boolean.fold(tail.forall(_.isInstanceOf[MutatorAction]),
+          boolean.fold(h.isInstanceOf[BoundCreatorAction],
+            boolean.fold(tail.forall(_.isInstanceOf[BoundMutatorAction]),
               com.success,
               IllegalOperationProblem("When the first action is a create action, all others must be mutating actions!").failure),
             IllegalOperationProblem("When no AggregateRootRef is supplied, the first action must be a creating action!").failure)
