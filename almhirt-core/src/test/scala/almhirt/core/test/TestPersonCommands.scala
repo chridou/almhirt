@@ -25,8 +25,10 @@ object TestPersonContext extends BoundDomainActionsCommandContext[TestPerson, Te
   val moveBecauseOfMarriageActionHandler: this.MutatingActionHandler[MoveBecauseOfMarriageAction] = (act: MoveBecauseOfMarriageAction, person: TestPerson, passedAlmhirt: Almhirt) => person.changeName(act.newName).flatMap(_.move(act.newAddress))
 
   val hasActionHandlers = this.createHasActionHandlers(
-    List(classOf[NewTestPersonAction] -> this.flattenCreatingActionHandler(newTestPersonActionHandler)),
-    List(classOf[ChangeTestPersonNameAction] -> this.flattenMutatingActionHandler(changeTestPersonNameActionHandler),
+    List(
+      classOf[NewTestPersonAction] -> this.flattenCreatingActionHandler(newTestPersonActionHandler)),
+    List(
+      classOf[ChangeTestPersonNameAction] -> this.flattenMutatingActionHandler(changeTestPersonNameActionHandler),
       classOf[SetTestPersonAddressAction] -> this.flattenMutatingActionHandler(setTestPersonAdressActionHandler),
       classOf[MoveTestPersonAction] -> this.flattenMutatingActionHandler(moveActionHandler),
       classOf[MoveBecauseOfMarriageAction] -> this.flattenMutatingActionHandler(moveBecauseOfMarriageActionHandler)))
