@@ -68,6 +68,23 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
     }
   }
 
+  def prevalidate(com: BoundDomainActionsCommand): AlmValidation[BoundDomainActionsCommand] =
+    boolean.fold(com.actions.isEmpty,
+      com.success,
+      option.cata(com.aggRef)(
+        aggRef =>
+          boolean.fold(com.actions.forall(_.isInstanceOf[BoundMutatorAction]),
+            com.success,
+            IllegalOperationProblem("When an AggregateRootRef is supplied, all actions must be mutating actions!").failure),
+        {
+          val h :: tail = com.actions
+          boolean.fold(h.isInstanceOf[BoundCreatorAction],
+            boolean.fold(tail.forall(_.isInstanceOf[BoundMutatorAction]),
+              com.success,
+              IllegalOperationProblem("When the first action is a create action, all others must be mutating actions!").failure),
+            IllegalOperationProblem("When no AggregateRootRef is supplied, the first action must be a creating action!").failure)
+        }))
+
   trait BoundUnitOfWork extends HandlesCommand {
     implicit def theAlmhirt: Almhirt
     protected def getAR(id: JUUID): AlmFuture[TAR]
@@ -78,7 +95,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
         case bcmd: BoundDomainActionsCommand =>
           handleBoundActionsCommand(bcmd, ticket)(theAlmhirt)
         case wrongType =>
-          reportFailure(ArgumentProblem("Not a BoundDomainCommand: %s".format(wrongType.getClass.getName), severity = Major), ticket)
+          reportFailure(ArgumentProblem("Not a BoundDomainActionsCommand: %s".format(wrongType.getClass.getName), severity = Major), ticket)
       }
     }
 
@@ -128,26 +145,14 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
         actionsAndHandlers.fold(
           fail => fail.failure,
           succ => {
-            val result = succ.foldLeft(initial) { case (acc, (action, handler)) => acc.flatMap(curAr => handler(action, curAr, theAlmhirt)) }
+            val result = succ.foldLeft(initial) {
+              case (acc, (action, handler)) =>
+                acc.flatMap(curAr =>
+                  handler(action, curAr, theAlmhirt))
+            }
             result.success
           })
       }
-    }
-
-    protected def prevalidate(com: BoundDomainActionsCommand): AlmValidation[BoundDomainActionsCommand] = {
-      option.cata(com.aggRef)(
-        aggRef =>
-          boolean.fold(com.actions.forall(_.isInstanceOf[BoundMutatorAction]),
-            com.success,
-            IllegalOperationProblem("When an AggregateRootRef is supplied, all actions must be mutating actions!").failure),
-        {
-          val h :: tail = com.actions
-          boolean.fold(h.isInstanceOf[BoundCreatorAction],
-            boolean.fold(tail.forall(_.isInstanceOf[BoundMutatorAction]),
-              com.success,
-              IllegalOperationProblem("When the first action is a create action, all others must be mutating actions!").failure),
-            IllegalOperationProblem("When no AggregateRootRef is supplied, the first action must be a creating action!").failure)
-        })
     }
 
     protected def validateAgainstAggregateRoot(ar: TAR, aggRef: AggregateRootRef): AlmValidation[Unit] =
@@ -155,7 +160,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
         case (true, true) => ().success
         case (true, false) => IllegalOperationProblem(s"Versions of command(${aggRef.version}) and AR(${ar.version}) do not match!").failure
         case (false, true) => IllegalOperationProblem(s"Ids of command(${aggRef.id}) and AR(${ar.id}) do not match!").failure
-        case (false, false) => IllegalOperationProblem(s"Neither versions nor ids do match!").failure
+        case (false, false) => IllegalOperationProblem(s"Neither versions nor ids do match on AR and Command(${aggRef.id} <> ${ar.id} & ${aggRef.version} <> ${ar.version}) !").failure
       }
 
     protected def reportFailure(prob: Problem, ticket: Option[TrackingTicket]) {
@@ -207,17 +212,17 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
     def creator(creator: BoundCreatorAction)(implicit resources: CanCreateUuid): TCom =
       apply(None, List(creator))
 
-    def mutator(id: JUUID, version: Long, mutator: BoundMutatorAction)(implicit resources: CanCreateUuid): TCom =
-      apply(Some(AggregateRootRef(id, version)), List(mutator))
+    def creatorAndMutator(creator: BoundCreatorAction, mutator: BoundMutatorAction)(implicit resources: CanCreateUuid): TCom =
+      apply(None, creator :: mutator :: Nil)
+ 
+    def creatorAndMutators(creator: BoundCreatorAction, mutators: List[BoundMutatorAction])(implicit resources: CanCreateUuid): TCom =
+      apply(None, creator :: mutators)
 
     def mutator(aggRef: AggregateRootRef, mutator: BoundMutatorAction)(implicit resources: CanCreateUuid): TCom =
       apply(Some(aggRef), List(mutator))
 
     def mutators(aggRef: AggregateRootRef, mutators: List[BoundMutatorAction])(implicit resources: CanCreateUuid): TCom =
       apply(Some(aggRef), mutators)
-
-    def creatorAndMutators(creator: BoundCreatorAction, mutators: List[BoundMutatorAction])(implicit resources: CanCreateUuid): TCom =
-      apply(None, creator :: mutators)
 
   }
 
