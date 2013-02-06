@@ -57,7 +57,7 @@ object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
     else
       create(TestPersonCreated(UUID.randomUUID(), UUID.randomUUID, name))
 
-  def apply(id: UUID, name: String) =
+  def apply(id: UUID, name: String) : UpdateRecorder[TestPersonEvent, TestPerson] =
     if (name.isEmpty)
       UpdateRecorder.reject(BusinessRuleViolatedProblem("Name must not be empty", severity = Minor).withIdentifier(name))
     else
