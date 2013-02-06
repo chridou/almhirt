@@ -76,7 +76,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
     tryGet(ident).flatMap(elemOpt =>
       option.cata(elemOpt)(
         elem =>
-          (elem \* "Collection") match {
+          (elem \\? "Collection") match {
             case Seq() => None.success
             case Seq(x) => Some(x.elems.toList).success
             case _ => UnspecifiedProblem("More than one child element found for 'Collection' in '%s'".format(ident)).failure

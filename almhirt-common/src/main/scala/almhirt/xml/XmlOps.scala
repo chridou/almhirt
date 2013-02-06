@@ -81,7 +81,8 @@ trait XmlOps0 extends Ops[Elem]{
     funs.mapOptionalFirstChild(self, label, compute)
   def flatMapOptionalFirstChild[T](label: String, compute: Elem => AlmValidation[Option[T]]): AlmValidation[Option[T]] =
     funs.flatMapOptionalFirstChild(self, label, compute)
-  def \*(label: String) = funs.elems(self)(label)
+  def \\?(label: String) = funs.elems(self)(label)
+  def \\?(predicate: String => Boolean) = funs.allElems(self).filter(xml => predicate(xml.label))
   def \!(label: String) = funs.getChild(self)(label)
   def \?(label: String) = funs.tryGetChild(self)(label)
   def \??(label: String) = funs.tryGetChild(self)(label).fold(_ => None, succ => succ)
