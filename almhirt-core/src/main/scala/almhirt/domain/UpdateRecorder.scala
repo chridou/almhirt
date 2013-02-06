@@ -24,7 +24,7 @@ import almhirt.syntax.almvalidation._
  * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s
  * Writer monad.
  */
-trait UpdateRecorder[Event <: DomainEvent, AR <: AggregateRoot[_, _]] {
+trait UpdateRecorder[+AR <: AggregateRoot[_,_], +Event <: DomainEvent] {
   protected def internalHistory: List[Event]
 
   /** Returns the recorded events that lead to the current result in chronological order */
@@ -34,7 +34,7 @@ trait UpdateRecorder[Event <: DomainEvent, AR <: AggregateRoot[_, _]] {
    * The result of previous recordings
    * Returns the current aggregate root in a success or a failure
    */
-  def result: DomainValidation[AR]
+  def ar: DomainValidation[AR]
 
   /**
    * Check whether the current AR state is a success
@@ -51,8 +51,8 @@ trait UpdateRecorder[Event <: DomainEvent, AR <: AggregateRoot[_, _]] {
   def isRejected(): Boolean = !isAccepted
 
   /** Returns the AR and the events in chronological order. If the AR is in a Failure, the whole result is a Failure. */
-  def recordings: AlmValidation[(AR, List[Event])] = {
-    result.map((_, events))
+  def result: AlmValidation[(AR, List[Event])] = {
+    ar.map((_, events))
   }
 
   //  /** Apply the events to this Update and return a result
@@ -70,16 +70,16 @@ trait UpdateRecorder[Event <: DomainEvent, AR <: AggregateRoot[_, _]] {
    * @param f Function that returns a new aggregate root. Usually a mutation of the one stored in this instance.
    * @return The [[almhirt.domain.UpdateRecorder]] with the old events and a mapped aggregate root
    */
-  def map(f: AR => AR): UpdateRecorder[Event, AR] =
-    result fold (
+  def map[AAR >: AR <: AggregateRoot[_,_], EEvent >: Event <: DomainEvent](f: AR => AAR): UpdateRecorder[AAR, Event] =
+    ar fold (
       prob =>
-        new UpdateRecorder[Event, AR] {
-          val result = prob.failure
+        new UpdateRecorder[AAR, Event] {
+          val ar = prob.failure
           val internalHistory = UpdateRecorder.this.internalHistory
         },
       succ =>
-        new UpdateRecorder[Event, AR] {
-          val result = f(succ).success
+        new UpdateRecorder[AAR, Event] {
+          val ar = f(succ).success
           val internalHistory = UpdateRecorder.this.internalHistory
         })
 
@@ -91,17 +91,17 @@ trait UpdateRecorder[Event <: DomainEvent, AR <: AggregateRoot[_, _]] {
    * @param f Function that returns an Update which will be used to create the new Update(Write operation)
    * @return The [[almhirt.domain.UpdateRecorder]] with eventually updated events and the new AR state
    */
-  def flatMap(f: AR => UpdateRecorder[Event, AR]): UpdateRecorder[Event, AR] =
-    result fold (
+  def flatMap[AAR >: AR <: AggregateRoot[_,_], EEvent >: Event <: DomainEvent](f: AR => UpdateRecorder[AAR, EEvent]): UpdateRecorder[AAR, EEvent] =
+    ar fold (
       prob =>
-        new UpdateRecorder[Event, AR] {
-          val result = prob.failure
+        new UpdateRecorder[AAR, EEvent] {
+          val ar = prob.failure
           val internalHistory = UpdateRecorder.this.internalHistory
         },
       succ => {
         val recorder = f(succ)
-        new UpdateRecorder[Event, AR] {
-          val result = recorder.result
+        new UpdateRecorder[AAR, EEvent] {
+          val ar = recorder.ar
           val internalHistory = recorder.internalHistory ++ UpdateRecorder.this.internalHistory
         }
       })
@@ -125,16 +125,16 @@ object UpdateRecorder {
    *
    * @param f Function which takes a list of (previous) events and returns the new events with the result on the modified aggregate root
    */
-  def apply[Event <: DomainEvent, AR <: AggregateRoot[_, _]](ar: AR) =
-    new UpdateRecorder[Event, AR] { protected val internalHistory = Nil; val result = ar.success }
+  def apply[AR <: AggregateRoot[_, _], Event <: DomainEvent](theAr: AR): UpdateRecorder[AR, Event] =
+    new UpdateRecorder[AR, Event] { protected val internalHistory = Nil; val ar = theAr.success }
 
   /**
    * Starts a new recording with a fresh aggregate root and no previous events
    *
    * @param aggregate root The unmodified aggregate root
    */
-  def startWith[Event <: DomainEvent, AR <: AggregateRoot[_, _]](ar: AR) =
-    apply[Event, AR](ar)
+  def startWith[AR <: AggregateRoot[_, _], Event <: DomainEvent](theAr: AR): UpdateRecorder[AR, Event] =
+    apply[AR, Event](theAr)
 
   /**
    * Takes an event and the resulting Aggregate Root. The event is prepended to the previous events
@@ -142,15 +142,15 @@ object UpdateRecorder {
    * @param event The event resulting from an aggregate root operation
    * @param result The state of the aggregate root corresponding to the event
    */
-  def accept[Event <: DomainEvent, AR <: AggregateRoot[_, _]](event: Event, ar: AR) =
-    new UpdateRecorder[Event, AR] { protected val internalHistory = event :: Nil; val result = ar.success }
+  def accept[AR <: AggregateRoot[_, _], Event <: DomainEvent](event: Event, theAr: AR): UpdateRecorder[AR, Event] =
+    new UpdateRecorder[AR, Event] { protected val internalHistory = event :: Nil; val ar = theAr.success }
 
   /**
    * Takes an event and the resulting Aggregate Root. Previously written events are still contained
    *
    * @param error The problem causing this update to fail.
    */
-  def reject[Event <: DomainEvent, AR <: AggregateRoot[_, _]](error: Problem) =
-    new UpdateRecorder[Event, AR] { protected val internalHistory = Nil; val result = error.failure }
+  def reject[AR <: AggregateRoot[_, _], Event <: DomainEvent](error: Problem): UpdateRecorder[AR, Event] =
+    new UpdateRecorder[AR, Event] { protected val internalHistory = Nil; val ar = error.failure }
 
 }

@@ -15,14 +15,14 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
     case TestPersonMoved(_, _, _, newAddress, _) => copy(address = Some(newAddress), version = this.version + 1)
   }
 
-  def changeName(newName: String): UpdateRecorder[TestPersonEvent, TestPerson] = {
+  def changeName(newName: String): UpdateRecorder[TestPerson, TestPersonEvent] = {
     if (newName.isEmpty)
       reject("Name must not be empty")
     else
       update(TestPersonNameChanged(UUID.randomUUID(), id, version, newName))
   }
 
-  def move(newAdress: String): UpdateRecorder[TestPersonEvent, TestPerson] = {
+  def move(newAdress: String): UpdateRecorder[TestPerson, TestPersonEvent] = {
     if (newAdress.isEmpty)
       reject("NewAdress must not be empty")
     else if (address.isEmpty)
@@ -31,7 +31,7 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
       update(TestPersonMoved(UUID.randomUUID(), id, version, newAdress))
   }
 
-  def addressAquired(aquiredAddress: String): UpdateRecorder[TestPersonEvent, TestPerson] = {
+  def addressAquired(aquiredAddress: String): UpdateRecorder[TestPerson, TestPersonEvent] = {
     if (aquiredAddress.isEmpty)
       reject("Aquired addresss must not be empty")
     else if (address.isDefined)
@@ -40,7 +40,7 @@ case class TestPerson(id: UUID, version: Long, name: String, address: Option[Str
       update(TestPersonAddressAquired(UUID.randomUUID(), id, version, aquiredAddress), handlers)
   }
 
-  def unhandableAction(): UpdateRecorder[TestPersonEvent, TestPerson] = {
+  def unhandableAction(): UpdateRecorder[TestPerson, TestPersonEvent] = {
     update(TestPersonUnhandledEvent(UUID.randomUUID(), id, version), handlers)
   }
 
@@ -57,7 +57,7 @@ object TestPerson extends CanCreateAggragateRoot[TestPerson, TestPersonEvent] {
     else
       create(TestPersonCreated(UUID.randomUUID(), UUID.randomUUID, name))
 
-  def apply(id: UUID, name: String) : UpdateRecorder[TestPersonEvent, TestPerson] =
+  def apply(id: UUID, name: String) =
     if (name.isEmpty)
       UpdateRecorder.reject(BusinessRuleViolatedProblem("Name must not be empty", severity = Minor).withIdentifier(name))
     else

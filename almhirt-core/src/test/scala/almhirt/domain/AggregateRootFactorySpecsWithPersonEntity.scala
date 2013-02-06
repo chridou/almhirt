@@ -12,7 +12,7 @@ class AggregateRootFactorySpecsWithPersonEntity extends FlatSpec with ShouldMatc
     "return a new Person(in an accpted Update) when given a TestPersonCreated event to 'create'" in {
       val event = TestPersonCreated(UUID.randomUUID(), UUID.randomUUID(), "Peter")
       val entityValidation = TestPerson.create(event)
-      val entity = entityValidation.result.forceResult
+      val entity = entityValidation.ar.forceResult
       (entity.id) should equal(event.aggId)
       (entity.name should equal(event.name))
     }

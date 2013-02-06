@@ -22,8 +22,8 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
   trait BoundCreatorAction extends BoundCommandAction
   trait BoundMutatorAction extends BoundCommandAction
 
-  type CreatingActionHandler[TAct <: BoundCreatorAction] = (TAct, Almhirt) => UpdateRecorder[TEvent, TAR]
-  type MutatingActionHandler[TAct <: BoundMutatorAction] = (TAct, TAR, Almhirt) => UpdateRecorder[TEvent, TAR]
+  type CreatingActionHandler[TAct <: BoundCreatorAction] = (TAct, Almhirt) => UpdateRecorder[TAR, TEvent]
+  type MutatingActionHandler[TAct <: BoundMutatorAction] = (TAct, TAR, Almhirt) => UpdateRecorder[TAR, TEvent]
 
   def actionHandlers: HasActionHandlers
 
@@ -114,13 +114,13 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
           prob => reportFailure(prob, ticket),
           succ => executeUnitOfWork(com).onComplete(
             fail => reportFailure(fail, ticket),
-            recorder => recorder.recordings.fold(
+            recorder => recorder.result.fold(
               fail => reportFailure(fail, ticket),
               succ => storeAR(succ._1, succ._2, ticket))))
       }
     }
 
-    protected def executeUnitOfWork(com: BoundDomainActionsCommand): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
+    protected def executeUnitOfWork(com: BoundDomainActionsCommand): AlmFuture[UpdateRecorder[TAR, TEvent]] = {
       for {
         (initial, rest) <- option.cata(com.aggRef)(
           aggRef => startFromRepo(aggRef).map(recorder => (recorder, com.actions.asInstanceOf[List[BoundMutatorAction]])),
@@ -132,24 +132,24 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       } yield resultOfMutators
     }
 
-    protected def startWithNew(creatorAction: BoundCreatorAction): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
+    protected def startWithNew(creatorAction: BoundCreatorAction): AlmFuture[UpdateRecorder[TAR, TEvent]] = {
       AlmFuture.promise(actionHandlers.getCreatingHandler(creatorAction).map(handler => handler(creatorAction, theAlmhirt)))
     }
 
-    protected def startFromRepo(aggRef: AggregateRootRef): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
+    protected def startFromRepo(aggRef: AggregateRootRef): AlmFuture[UpdateRecorder[TAR, TEvent]] = {
       for {
         ar <- getAR(aggRef.id)
         recorder <- AlmFuture.promise {
-          validateAgainstAggregateRoot(ar, aggRef).map(_ => UpdateRecorder.startWith[TEvent, TAR](ar))
+          validateAgainstAggregateRoot(ar, aggRef).map(_ => UpdateRecorder.startWith[TAR, TEvent](ar))
         }
       } yield recorder
     }
 
-    protected def executeMutatorsOn(initial: UpdateRecorder[TEvent, TAR], actions: List[BoundMutatorAction]): AlmFuture[UpdateRecorder[TEvent, TAR]] = {
+    protected def executeMutatorsOn(initial: UpdateRecorder[TAR, TEvent], actions: List[BoundMutatorAction]): AlmFuture[UpdateRecorder[TAR, TEvent]] = {
       import akka.pattern._
       AlmFuture {
         val actionsAndHandlersV = actions.map(action => actionHandlers.getMutatingHandler(action).toAgg.map(h => (action, h)))
-        val actionsAndHandlers = actionsAndHandlersV.sequence[AlmValidationAP, (BoundMutatorAction, (BoundMutatorAction, TAR, Almhirt) => UpdateRecorder[TEvent, TAR])]
+        val actionsAndHandlers = actionsAndHandlersV.sequence[AlmValidationAP, (BoundMutatorAction, (BoundMutatorAction, TAR, Almhirt) => UpdateRecorder[TAR, TEvent])]
         actionsAndHandlers.fold(
           fail => fail.failure,
           succ => {

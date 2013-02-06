@@ -13,6 +13,6 @@ class AggregateRootSpecsWithTestPerson extends FlatSpec with ShouldMatchers {
   "A Person created by methods on the aggregate root" should 
     "be the same when created from the history of" in {
       val rebuilt = TestPerson.rebuildFromHistory(events)
-      rebuilt should equal (shouldBe.result)
+      rebuilt should equal (shouldBe.ar)
   }
 }

@@ -8,17 +8,17 @@ import almhirt.syntax.almvalidation._
 import almhirt.core.test._
 
 class UpdateSpecsWithPerson extends FlatSpec with ShouldMatchers {
-  val person = TestPerson("Peter").result.forceResult
+  val person = TestPerson("Peter").ar.forceResult
   
   "A just created person with a valid name having her name changed" should 
     "return no error when name is replaced with a non empty string" in {
       (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).isAccepted should be(true)
     }
     it should "have her name changed to the name given as a parameter" in {
-      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).result.forceResult.name should equal("Bob")
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).ar.forceResult.name should equal("Bob")
     }
     it should "have a version of 2" in {
-      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).result.forceResult.version should equal(2)
+      (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).ar.forceResult.version should equal(2)
     }
     it should "have created a single event " in {
       (UpdateRecorder.startWith(person) flatMap {_.changeName("Bob")}).events.length should equal(1)
@@ -55,13 +55,13 @@ class UpdateSpecsWithPerson extends FlatSpec with ShouldMatchers {
       (updateWithName flatMap {_.addressAquired("Gibraltar")}).isAccepted should be(true)
     }
     it should "still have the original name" in {
-      (updateWithName flatMap {_.addressAquired("Gibraltar")}).result.forceResult.name should equal("Bob")
+      (updateWithName flatMap {_.addressAquired("Gibraltar")}).ar.forceResult.name should equal("Bob")
     }
     it should "have the address set to the new value" in {
-      (updateWithName flatMap {_.addressAquired("Gibraltar")}).result.forceResult.address should equal(Some("Gibraltar"))
+      (updateWithName flatMap {_.addressAquired("Gibraltar")}).ar.forceResult.address should equal(Some("Gibraltar"))
     }
     it should "have a version of 3" in {
-      (updateWithName flatMap {_.addressAquired("Gibraltar")}).result.forceResult.version should equal(3)
+      (updateWithName flatMap {_.addressAquired("Gibraltar")}).ar.forceResult.version should equal(3)
     }
     it should "have created 2 events" in {
       (updateWithName flatMap {_.addressAquired("Gibraltar")}).events.length should equal(2)
@@ -101,10 +101,10 @@ class UpdateSpecsWithPerson extends FlatSpec with ShouldMatchers {
       (updateWithNameAndAddress flatMap {_.move("Norway")}).isAccepted should be(true)
     }
     it should "still have the original name" in {
-      (updateWithNameAndAddress flatMap {_.move("Norway")}).result.forceResult.name should equal("Bob")
+      (updateWithNameAndAddress flatMap {_.move("Norway")}).ar.forceResult.name should equal("Bob")
     }
     it should "have the new address set" in {
-      (updateWithNameAndAddress flatMap {_.move("Norway")}).result.forceResult.address should equal(Some("Norway"))
+      (updateWithNameAndAddress flatMap {_.move("Norway")}).ar.forceResult.address should equal(Some("Norway"))
     }
     it should "have created 3 events" in {
       (updateWithNameAndAddress flatMap {_.move("Norway")}).events.length should equal(3)

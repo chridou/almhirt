@@ -188,7 +188,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
     }
     "changing an existing AR's name" should {
       val id = theAlmhirt.getUuid
-      val testPerson = TestPerson.apply(id, "Joe").result.forceResult
+      val testPerson = TestPerson.apply(id, "Joe").ar.forceResult
       val com = TestPersonCommand(Some(id, 1L), ChangeTestPersonNameAction("Bill") :: Nil)
       "not crash" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap

@@ -12,7 +12,7 @@ trait UpdatesAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent]
    * 
    * @param event The event to apply the standard handler to
    */
-  protected def update(event: Event, handler: Event => AR): UpdateRecorder[Event, AR] = {
+  protected def update(event: Event, handler: Event => AR): UpdateRecorder[AR, Event] = {
     try {
       UpdateRecorder.accept(event, handler(event))
     } catch {
@@ -25,14 +25,14 @@ trait UpdatesAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent]
    * @param prob The reason for rejection as a problem
    * @return A failed [[almhirt.domain.UpdateRecorder]]
    */
-  protected def reject(prob: Problem): UpdateRecorder[Event, AR] = UpdateRecorder.reject(prob)
+  protected def reject(prob: Problem): UpdateRecorder[AR, Event] = UpdateRecorder.reject(prob)
 
    /** Abort the update process. Returns the default application problem
    * 
    * @param msg The reason for rejection as a message
    * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem]] being the default application problem
    */
-  protected def reject(msg: String): UpdateRecorder[Event, AR] = reject(UnspecifiedProblem(msg, category = ApplicationProblem))
+  protected def reject(msg: String): UpdateRecorder[AR, Event] = reject(UnspecifiedProblem(msg, category = ApplicationProblem))
 
    /** Abort the update process. Returns a  BusinessRuleViolatedProblem
    * 
@@ -41,6 +41,6 @@ trait UpdatesAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent]
    * @param severity The severity of the failure. Default is [[almhirt.validation.NoProblem]]
    * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem.BusinessRuleViolatedProblem]] being the application problem
    */
-  protected def rejectBusinessRuleViolated(msg: String, key: String, severity: Severity = NoProblem): UpdateRecorder[Event, AR] = reject(BusinessRuleViolatedProblem(msg, severity).withIdentifier(key))
+  protected def rejectBusinessRuleViolated(msg: String, key: String, severity: Severity = NoProblem): UpdateRecorder[AR, Event] = reject(BusinessRuleViolatedProblem(msg, severity).withIdentifier(key))
 
 }

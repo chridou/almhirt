@@ -81,6 +81,6 @@ trait AddsUpdateToAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainE
    * 
    * @param event The event to apply the standard handler to
    */
-  protected def update(event: Event): UpdateRecorder[Event, AR] = update(event, handlers)
+  protected def update(event: Event): UpdateRecorder[AR, Event] = update(event, handlers)
   }
 

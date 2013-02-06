@@ -48,7 +48,7 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
   }
 
   /** Creates an UpdateRecorder from the creating event */
-  def create(event: Event): UpdateRecorder[Event, AR] =
+  def create(event: Event): UpdateRecorder[AR, Event] =
     applyEvent(event) fold (UpdateRecorder.reject(_), UpdateRecorder.accept(event, _))
 
   /** The event passed to this handler must create a new aggregate root */
