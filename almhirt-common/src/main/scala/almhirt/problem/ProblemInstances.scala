@@ -23,7 +23,9 @@ import scalaz.Semigroup
 trait ProblemInstances {
   implicit def ToAggregateProblemSemiGroup: Semigroup[AggregateProblem] =
     new Semigroup[AggregateProblem] {
-      def append(a: AggregateProblem, b: => AggregateProblem): AggregateProblem =
-        AggregateProblem("One or more problems", severity = a.severity and b.severity, category = a.category and b.category, problems = a.problems ++ b.problems)
-  }
+      def append(a: AggregateProblem, b: => AggregateProblem): AggregateProblem = {
+        val mergedArgs = b.args.foldLeft(a.args) { case (acc, item) => acc + item }
+        AggregateProblem("One or more problems", severity = a.severity and b.severity, category = a.category and b.category, problems = a.problems ++ b.problems, args = mergedArgs)
+      }
+    }
 }
