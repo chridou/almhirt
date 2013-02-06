@@ -58,27 +58,15 @@ trait XmlFunctions {
       case err: Throwable => BadDataProblem("Could not parse xml: %s".format(err.getMessage), cause = Some(err)).failure[Elem]
     }
   }
+  
+  def stringFromXmlNode(node: Elem): AlmValidation[String] =
+    notEmptyOrWhitespace(node.text)
+  
+  def optionalStringFromXmlNode(node: Elem): Option[String] =
+    notEmptyOrWhitespace(node.text).toOption
 
   def intFromXmlNode(node: Elem): AlmValidation[Int] =
     notEmptyOrWhitespace(node.text) flatMap (ne => parseIntAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
-
-  def longFromXmlNode(node: Elem): AlmValidation[Long] =
-    notEmptyOrWhitespace(node.text) flatMap (ne => parseLongAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
-
-  def doubleFromXmlNode(node: Elem): AlmValidation[Double] =
-    notEmptyOrWhitespace(node.text) flatMap (ne => parseDoubleAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
-
-  def floatFromXmlNode(node: Elem): AlmValidation[Float] =
-    notEmptyOrWhitespace(node.text) flatMap (ne => parseFloatAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
-
-  def decimalFromXmlNode(node: Elem): AlmValidation[BigDecimal] =
-    notEmptyOrWhitespace(node.text) flatMap (ne => parseDecimalAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
-
-  def dateTimeFromXmlNode(node: Elem): AlmValidation[DateTime] =
-    notEmptyOrWhitespace(node.text) flatMap (ne => parseDateTimeAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
-
-  def uuidFromXmlNode(node: Elem): AlmValidation[JUUID] =
-    notEmptyOrWhitespace(node.text) flatMap (ne => parseUuidAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def optionalIntFromXmlNode(node: Elem): AlmValidation[Option[Int]] =
     if (node.text.trim.isEmpty)
@@ -86,11 +74,17 @@ trait XmlFunctions {
     else
       intFromXmlNode(node) fold (_.failure, Some(_).success)
 
+  def longFromXmlNode(node: Elem): AlmValidation[Long] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseLongAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
   def optionalLongFromXmlNode(node: Elem): AlmValidation[Option[Long]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       longFromXmlNode(node) fold (_.failure, Some(_).success)
+
+  def doubleFromXmlNode(node: Elem): AlmValidation[Double] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseDoubleAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def optionalDoubleFromXmlNode(node: Elem): AlmValidation[Option[Double]] =
     if (node.text.trim.isEmpty)
@@ -98,11 +92,17 @@ trait XmlFunctions {
     else
       doubleFromXmlNode(node) fold (_.failure, Some(_).success)
 
+  def floatFromXmlNode(node: Elem): AlmValidation[Float] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseFloatAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
   def optionalFloatFromXmlNode(node: Elem): AlmValidation[Option[Float]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       floatFromXmlNode(node) fold (_.failure, Some(_).success)
+
+  def decimalFromXmlNode(node: Elem): AlmValidation[BigDecimal] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseDecimalAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def optionalDecimalFromXmlNode(node: Elem): AlmValidation[Option[BigDecimal]] =
     if (node.text.trim.isEmpty)
@@ -110,11 +110,17 @@ trait XmlFunctions {
     else
       decimalFromXmlNode(node) fold (_.failure, Some(_).success)
 
+  def dateTimeFromXmlNode(node: Elem): AlmValidation[DateTime] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseDateTimeAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
   def optionalDateTimeFromXmlNode(node: Elem): AlmValidation[Option[DateTime]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
       dateTimeFromXmlNode(node) fold (_.failure, Some(_).success)
+
+  def uuidFromXmlNode(node: Elem): AlmValidation[JUUID] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseUuidAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
   def optionalUuidFromXmlNode(node: Elem): AlmValidation[Option[JUUID]] =
     if (node.text.trim.isEmpty)
@@ -152,8 +158,8 @@ trait XmlFunctions {
     firstChildNodeMandatory(node, label)
       .flatMap { node => notEmptyOrWhitespace(node.text) } bimap (f => f.withIdentifier(label), s => s)
 
-  def stringOptionFromChild(node: Elem, label: String): AlmValidation[Option[String]] =
-    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => s.success)) bimap (f => f.withIdentifier(label), s => s)
+  def stringOptionFromChild(node: Elem, label: String): Option[String] =
+    elems(node)(label).headOption.flatMap(optionalStringFromXmlNode)
 
   def intFromChild(node: Elem, label: String): AlmValidation[Int] =
     firstChildNodeMandatory(node, label)

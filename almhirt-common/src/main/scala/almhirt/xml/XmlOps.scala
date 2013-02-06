@@ -51,7 +51,7 @@ trait XmlOps0 extends Ops[Elem]{
     
   def extractStringFromChild(label: String): AlmValidation[String] = 
     funs.stringFromChild(self, label)
-  def extractOptionalStringFromChild(label: String): AlmValidation[Option[String]] = 
+  def extractOptionalStringFromChild(label: String): Option[String] = 
     funs.stringOptionFromChild(self, label)
   def extractIntFromChild(label: String): AlmValidation[Int] = 
     funs.intFromChild(self, label)

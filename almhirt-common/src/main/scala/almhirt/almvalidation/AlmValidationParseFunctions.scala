@@ -158,11 +158,11 @@ trait AlmValidationParseFunctions {
     emptyStringIsNone(toParse, x => parseBase64Alm(x))
 
   def notEmpty(toTest: String): AlmValidation[String] =
-    if (toTest.isEmpty) BadDataProblem("must not be empty").failure else toTest.success
+    if (toTest.isEmpty) BadDataProblem("String must not be empty").failure else toTest.success
 
   def notEmptyOrWhitespace(toTest: String): AlmValidation[String] =
     if (toTest.trim.isEmpty)
-      BadDataProblem("must not be empty or whitespaces").failure
+      BadDataProblem("String must not be empty or whitespaces").failure
     else
       toTest.success
 
