@@ -158,6 +158,7 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
   def invert(): scalaz.Validation[T, Problem] =
     self fold (fail => fail.success, succ => succ.failure)
   
+  def withArgOnFailure(key: String, value: Any): AlmValidation[T] = self.bimap(p => p.withArg(key, value), g => g)
   def withIdentifierOnFailure(ident: String): AlmValidation[T] = self.bimap(p => almhirt.problem.funs.withIdentifier(p, ident), g => g)
 }
 

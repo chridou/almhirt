@@ -41,7 +41,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
     (uow, map, buffer)
   }
 
-  "An UOW on an empty repository" when {
+  "An UnitOfWork on an empty repository" when {
     "adding a new AR via NewTestPersonAction" should {
       "not crash" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
