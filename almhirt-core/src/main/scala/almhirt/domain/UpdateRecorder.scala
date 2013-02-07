@@ -108,10 +108,11 @@ trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
           val initialVersion = UpdateRecorder.this.initialVersion
         },
       succ => {
-        val recorder = f(succ)
-        new UpdateRecorder[AAR, EEvent] {
-          val ar = recorder.ar
-          val internalHistory = recorder.internalHistory ++ UpdateRecorder.this.internalHistory
+       val res = f(succ)
+       if(res.)
+       new UpdateRecorder[AAR, EEvent] {
+          val ar = res.ar
+          val internalHistory = res.internalHistory ++ UpdateRecorder.this.internalHistory
           val initialVersion = UpdateRecorder.this.initialVersion
         }
       })
