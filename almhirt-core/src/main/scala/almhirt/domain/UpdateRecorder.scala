@@ -96,7 +96,7 @@ trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
     ar fold (
       prob => this,
       currAr => f(currAr) foldInternal (
-        (prob, newEvents, newTargetVersion) => 
+        (prob, newEvents, newTargetVersion) =>
           UpdateRecorder[AAR, EEvent](prob.failure, newEvents, newTargetVersion),
         (newAr, newEvents, newTargetVersion) =>
           if (newAr.id != currAr.id) {
