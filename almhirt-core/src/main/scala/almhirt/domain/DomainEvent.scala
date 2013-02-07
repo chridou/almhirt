@@ -22,10 +22,12 @@ trait DomainEvent {
   /** The events unique identifier */
   def id: UUID
   /** The affected aggregate root */
-  def aggId: UUID 
+  def aggId: UUID
   /** The version of the aggregate root __before__ applying the event */
   def aggVersion: Long
   /** The events date of creation */
   def timestamp: DateTime
+
+  def resultingVersionAfterApplication(): Long = aggVersion + 1L
 }
 

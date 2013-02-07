@@ -26,7 +26,8 @@ import almhirt.syntax.almvalidation._
  */
 trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
   protected def internalHistory: List[Event]
-  protected def initialVersion: Long
+  def targetVersion: Long
+  val requiredTargetVersionOnNextEvent: Long = internalHistory.headOption.map(_.aggVersion + 1).getOrElse(targetVersion)
 
   /** Returns the recorded events that lead to the current result in chronological order */
   def events: List[Event] = internalHistory.reverse
@@ -42,14 +43,14 @@ trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
    *
    * @return True in case of a success
    */
-  def isAccepted: Boolean = result.isSuccess
+  def isAccepted: Boolean = ar.isSuccess
 
   /**
    * Check whether the current AR state is a failure
    *
    * @return True in case of a failure
    */
-  def isRejected(): Boolean = !isAccepted
+  def isRejected: Boolean = !isAccepted
 
   /** Returns the AR and the events in chronological order. If the AR is in a Failure, the whole result is a Failure. */
   def result: AlmValidation[(AR, List[Event])] = {
@@ -73,14 +74,14 @@ trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
    */
   def map[AAR >: AR <: AggregateRoot[_, _], EEvent >: Event <: DomainEvent](f: AR => AAR): UpdateRecorder[AAR, EEvent] =
     ar fold (
-      prob => UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, initialVersion),
+      prob => this,
       succ => {
         val nextAr = f(succ)
         val ar =
-          if (nextAr.id != succ.id) UnspecifiedProblem(s"You may not change the AR during a map operation. Original id is '${succ.id.toString()}', you returned an AR with id '${nextAr.id.toString()}'").failure
-          else if (nextAr.version != succ.version) UnspecifiedProblem(s"You may not change the AR's version during a map operation. Original version is '${succ.version.toString()}', you returned an AR with version '${nextAr.version.toString()}'").failure
+          if (nextAr.id != succ.id) UnspecifiedProblem(s"You may not change the AR during a map operation. Original id is '${succ.id.toString()}', you returned an AR with id '${nextAr.id.toString()}'").withArg("AggregateRootId", succ.id).failure
+          else if (nextAr.version != succ.version) UnspecifiedProblem(s"You may not change the AR's version during a map operation. Original version is '${succ.version.toString()}', you returned an AR with version '${nextAr.version.toString()}'").withArg("AggregateRootId", succ.id).failure
           else nextAr.success
-        UpdateRecorder[AAR, EEvent](ar, internalHistory, initialVersion)
+        UpdateRecorder[AAR, EEvent](ar, internalHistory, targetVersion)
       })
 
   /**
@@ -93,24 +94,39 @@ trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
    */
   def flatMap[AAR >: AR <: AggregateRoot[_, _], EEvent >: Event <: DomainEvent](f: AR => UpdateRecorder[AAR, EEvent]): UpdateRecorder[AAR, EEvent] =
     ar fold (
-      prob => UpdateRecorder[AAR, EEvent](ar, internalHistory, initialVersion),
-      succ => f(succ) foldInternal (
-        (prob, newEvents, newInitialVersion) => UpdateRecorder[AAR, EEvent](prob.failure, newEvents ++ internalHistory, initialVersion),
-        (newAr, newEvents, newInitialVersion) =>
-          if (newAr.id != succ.id) {
-            val prob = UnspecifiedProblem(s"You may not change the AR during a map operation. Original id is '${succ.id.toString()}', you returned an AR with id '${newAr.id.toString()}'")
-            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, initialVersion)
-          } else if (newAr.version != succ.version) {
-            val prob = UnspecifiedProblem(s"You may not change the AR's version during a map operation. Original version is '${succ.version.toString()}', you returned an AR with version '${newAr.version.toString()}'")
-            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, initialVersion)
-//          } else if (newInitialVersion - (succ.version)) {
-//            val prob = UnspecifiedProblem(s"You may not change the AR's version during a map operation. Original version is '${succ.version.toString()}', you returned an AR with version '${newAr.version.toString()}'")
-//            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, initialVersion)
+      prob => this,
+      currAr => f(currAr) foldInternal (
+        (prob, newEvents, newTargetVersion) => 
+          UpdateRecorder[AAR, EEvent](prob.failure, newEvents, newTargetVersion),
+        (newAr, newEvents, newTargetVersion) =>
+          if (newAr.id != currAr.id) {
+            val prob = UnspecifiedProblem(s"FlatMap failed. You may not change the AR during a flatMap operation. Original id is '${currAr.id.toString()}', you returned an AR with id '${newAr.id.toString()}'").withArg("AggregateRootId", currAr.id)
+            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, targetVersion)
+          } else if (requiredTargetVersionOnNextEvent != newTargetVersion) {
+            val prob = UnspecifiedProblem(s"FlatMap failed. The computed UpdateRecorder targets version newTargetVersion but the current UpdateRecorder must be targetted at version $requiredTargetVersionOnNextEvent.").withArg("AggregateRootId", currAr.id)
+            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, targetVersion)
           } else
-            UpdateRecorder[AAR, EEvent](newAr.success, events ++ internalHistory, initialVersion)))
+            UpdateRecorder[AAR, EEvent](newAr.success, newEvents ++ internalHistory, targetVersion)))
+
+  //          } else if (newEvents.isEmpty && newAr.version == currAr.version) {
+  //            UpdateRecorder[AAR, EEvent](newAr.success, internalHistory, targetingVersion)
+  //          } else if (newEvents.isEmpty && newAr.version != currAr.version) {
+  //            val prob = UnspecifiedProblem(s"You may not change the AR's version during a flatMap operation when the computed UpdateRecorder has no events. Original version is '${currAr.version.toString()}', you returned an AR with version '${newAr.version.toString()}'")
+  //            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, targetingVersion)
+  //          } else if (newAr.version == currAr.version) {
+  //            val prob = UnspecifiedProblem(s"FlatMap failed. When there is at least 1 event in the computed UpdateRecorder, the versions may not be equal: The Version is '${currAr.version.toString()}''")
+  //            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, targetingVersion)
+  //          } else if (internalHistory.headOption.map(_.aggVersion).getOrElse(0L) != newTargetingVersion) {
+  //            val prob = UnspecifiedProblem(s"XXXX")
+  //            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, targetingVersion)
+  //          } else
+  //            UpdateRecorder[AAR, EEvent](newAr.success, newEvents ++ internalHistory, targetingVersion)))
+
+  def record[AAR >: AR <: AggregateRoot[_, _], EEvent >: Event <: DomainEvent](newRecordings: UpdateRecorder[AAR, EEvent]): UpdateRecorder[AAR, EEvent] =
+    this flatMap (_ => newRecordings)
 
   private def foldInternal[T](f: (Problem, List[Event], Long) => T, s: (AR, List[Event], Long) => T): T =
-    ar fold (prob => f(prob, internalHistory, initialVersion), succ => s(succ, internalHistory, initialVersion))
+    ar fold (prob => f(prob, internalHistory, targetVersion), succ => s(succ, internalHistory, targetVersion))
 
   def fold[T](f: (Problem, List[Event]) => T, s: (AR, List[Event]) => T): T =
     result fold (prob => f(prob, events), succ => s(succ._1, succ._2))
@@ -128,8 +144,8 @@ trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
 }
 
 object UpdateRecorder {
-  private def apply[AR <: AggregateRoot[_, _], Event <: DomainEvent](theAr: DomainValidation[AR], theInternalHistory: List[Event], theInitialVersion: Long): UpdateRecorder[AR, Event] =
-    new UpdateRecorder[AR, Event] { val ar = theAr; protected val internalHistory = theInternalHistory; val initialVersion = theInitialVersion }
+  private def apply[AR <: AggregateRoot[_, _], Event <: DomainEvent](theAr: DomainValidation[AR], theInternalHistory: List[Event], theTargettedVersion: Long): UpdateRecorder[AR, Event] =
+    new UpdateRecorderImpl[AR, Event](theAr, theInternalHistory, theTargettedVersion)
 
   /**
    * Creates a new update.
@@ -138,7 +154,10 @@ object UpdateRecorder {
    * @param f Function which takes a list of (previous) events and returns the new events with the result on the modified aggregate root
    */
   def apply[AR <: AggregateRoot[_, _], Event <: DomainEvent](theAr: AR): UpdateRecorder[AR, Event] =
-    UpdateRecorder[AR, Event](theAr.success, Nil, theAr.version)
+    if (theAr.version != 0L)
+      UpdateRecorder[AR, Event](theAr.success, Nil, theAr.version)
+    else
+      UpdateRecorder[AR, Event](UnspecifiedProblem(s"You may start an UpdateRecorder only with an AggregateRoot which's version is greater than 0. The supplied AggregateRoot has a version of ${theAr.version}").withArg("AggregateRootId", theAr.id).failure, Nil, theAr.version)
 
   /**
    * Starts a new recording with a fresh aggregate root and no previous events
@@ -156,8 +175,11 @@ object UpdateRecorder {
    */
   def accept[AR <: AggregateRoot[_, _], Event <: DomainEvent](event: Event, theAr: AR): UpdateRecorder[AR, Event] = {
     if (theAr.version - event.aggVersion != 1)
-      reject(UnspecifiedProblem(s"The event's version(${event.aggVersion}) must be one less than the AR' version(${theAr.version})."))
-    UpdateRecorder(theAr.success, event :: Nil, theAr.version)
+      reject(UnspecifiedProblem(s"The event's version(${event.aggVersion}) must be one less than the AR' version(${theAr.version}).").withArg("AggregateRootId", theAr.id))
+    else if (theAr.id != event.aggId)
+      reject(UnspecifiedProblem(s"The event's id(${event.aggId}) does not match the AR's id(${theAr.id}).").withArg("AggregateRootId", theAr.id))
+    else
+      UpdateRecorder(theAr.success, event :: Nil, event.aggVersion)
   }
 
   /**
@@ -168,4 +190,5 @@ object UpdateRecorder {
   def reject[AR <: AggregateRoot[_, _], Event <: DomainEvent](error: Problem): UpdateRecorder[AR, Event] =
     UpdateRecorder[AR, Event](error.failure, Nil, 0L)
 
+  private class UpdateRecorderImpl[+AR <: AggregateRoot[_, _], +Event <: DomainEvent](val ar: DomainValidation[AR], val internalHistory: List[Event], val targetVersion: Long) extends UpdateRecorder[AR, Event]
 }
