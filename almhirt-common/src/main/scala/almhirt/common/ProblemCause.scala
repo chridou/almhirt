@@ -22,7 +22,7 @@ case class CauseIsThrowable(repr: ThrowableRepresentation) extends ProblemCause
 
 sealed trait ThrowableRepresentation
 case class HasAThrowable(exn: Throwable) extends ThrowableRepresentation
-case class HasADescription(classname: String, message: String, stacktrace: String, cause: Option[HasADescription]) extends ThrowableRepresentation
+case class HasAThrowableDescribed(classname: String, message: String, stacktrace: String, cause: Option[HasAThrowableDescribed]) extends ThrowableRepresentation
 
 
 object ProblemCause {
