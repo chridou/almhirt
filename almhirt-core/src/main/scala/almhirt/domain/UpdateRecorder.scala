@@ -108,20 +108,6 @@ trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
           } else
             UpdateRecorder[AAR, EEvent](newAr.success, newEvents ++ internalHistory, targetVersion)))
 
-  //          } else if (newEvents.isEmpty && newAr.version == currAr.version) {
-  //            UpdateRecorder[AAR, EEvent](newAr.success, internalHistory, targetingVersion)
-  //          } else if (newEvents.isEmpty && newAr.version != currAr.version) {
-  //            val prob = UnspecifiedProblem(s"You may not change the AR's version during a flatMap operation when the computed UpdateRecorder has no events. Original version is '${currAr.version.toString()}', you returned an AR with version '${newAr.version.toString()}'")
-  //            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, targetingVersion)
-  //          } else if (newAr.version == currAr.version) {
-  //            val prob = UnspecifiedProblem(s"FlatMap failed. When there is at least 1 event in the computed UpdateRecorder, the versions may not be equal: The Version is '${currAr.version.toString()}''")
-  //            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, targetingVersion)
-  //          } else if (internalHistory.headOption.map(_.aggVersion).getOrElse(0L) != newTargetingVersion) {
-  //            val prob = UnspecifiedProblem(s"XXXX")
-  //            UpdateRecorder[AAR, EEvent](prob.failure, internalHistory, targetingVersion)
-  //          } else
-  //            UpdateRecorder[AAR, EEvent](newAr.success, newEvents ++ internalHistory, targetingVersion)))
-
   def record[AAR >: AR <: AggregateRoot[_, _], EEvent >: Event <: DomainEvent](newRecordings: UpdateRecorder[AAR, EEvent]): UpdateRecorder[AAR, EEvent] =
     this flatMap (_ => newRecordings)
 
