@@ -28,6 +28,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
   def actionHandlers: HasActionHandlers
 
   trait BoundDomainActionsCommand extends DomainCommand {
+    type TAction = BoundCommandAction
     def aggRef: Option[AggregateRootRef]
     def actions: List[BoundCommandAction]
   }
