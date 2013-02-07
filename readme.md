@@ -1,5 +1,7 @@
 [![Build Status](https://secure.travis-ci.org/chridou/almhirt.png)](http://travis-ci.org/chridou/almhirt)
 
+(Currently the Travis-CI server aborts the tests with an OutOfMemoryException)
+
 # Almhirt
 
 Warning! This project is still in an early phase! Everything is subject to change! 
