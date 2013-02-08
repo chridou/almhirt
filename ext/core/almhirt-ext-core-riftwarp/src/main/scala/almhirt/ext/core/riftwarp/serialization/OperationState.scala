@@ -6,7 +6,7 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 import almhirt.util._
 
-class CommandActionDecomposer extends Decomposer[PerformedAction] {
+class PerformedActionDecomposer extends Decomposer[PerformedAction] {
   val riftDescriptor = RiftDescriptor(classOf[PerformedAction], 1)
   def decompose[TDimension <: RiftDimension](what: PerformedAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
@@ -28,7 +28,7 @@ class CommandActionDecomposer extends Decomposer[PerformedAction] {
   }
 }
 
-class CommandActionRecomposer extends Recomposer[PerformedAction] {
+class PerformedActionRecomposer extends Recomposer[PerformedAction] {
   val riftDescriptor = RiftDescriptor(classOf[PerformedAction], 1)
   def recompose(from: Rematerializer): AlmValidation[PerformedAction] = {
     from.getString("type").flatMap {

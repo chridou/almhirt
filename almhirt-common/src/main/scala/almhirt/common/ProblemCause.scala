@@ -21,9 +21,20 @@ case class CauseIsProblem(prob: Problem) extends ProblemCause
 case class CauseIsThrowable(repr: ThrowableRepresentation) extends ProblemCause
 
 sealed trait ThrowableRepresentation
-case class HasAThrowable(exn: Throwable) extends ThrowableRepresentation
+case class HasAThrowable(exn: Throwable) extends ThrowableRepresentation {
+  def toDescription: HasAThrowableDescribed = HasAThrowableDescribed(exn)
+}
+
 case class HasAThrowableDescribed(classname: String, message: String, stacktrace: String, cause: Option[HasAThrowableDescribed]) extends ThrowableRepresentation
 
+object HasAThrowableDescribed {
+  def apply(exn: Throwable): HasAThrowableDescribed =
+    HasAThrowableDescribed(
+      exn.getClass().getName(),
+      exn.getMessage(),
+      exn.getStackTraceString,
+      if (exn.getCause() != null) Some(HasAThrowableDescribed(exn.getCause())) else None)
+}
 
 object ProblemCause {
   def apply(exn: Throwable): ProblemCause =
@@ -31,7 +42,7 @@ object ProblemCause {
 
   def apply(problem: Problem): ProblemCause =
     CauseIsProblem(problem)
-    
+
   implicit def exn2ProblemCause(exn: Throwable): ProblemCause = ProblemCause(exn)
   implicit def prob2ProblemCause(problem: Problem): ProblemCause = ProblemCause(problem)
 }

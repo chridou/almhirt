@@ -7,7 +7,7 @@ object RiftWarpUtilityFuns {
     riftWarp.barracks.addDecomposer(new AggregateRootRefDecomposer())
     riftWarp.barracks.addDecomposer(new TrackingTicketDecomposer())
     riftWarp.barracks.addDecomposer(new CommandEnvelopeDecomposer())
-    riftWarp.barracks.addDecomposer(new CommandActionDecomposer())
+    riftWarp.barracks.addDecomposer(new PerformedActionDecomposer())
     riftWarp.barracks.addDecomposer(new OperationStateDecomposer())
 
     riftWarp.barracks.addRecomposer(new MessageGroupingRecomposer())
@@ -16,7 +16,7 @@ object RiftWarpUtilityFuns {
     riftWarp.barracks.addRecomposer(new AggregateRootRefRecomposer())
     riftWarp.barracks.addRecomposer(new TrackingTicketRecomposer())
     riftWarp.barracks.addRecomposer(new CommandEnvelopeRecomposer())
-    riftWarp.barracks.addRecomposer(new CommandActionRecomposer())
+    riftWarp.barracks.addRecomposer(new PerformedActionRecomposer())
     riftWarp.barracks.addRecomposer(new OperationStateRecomposer())
   }
 }

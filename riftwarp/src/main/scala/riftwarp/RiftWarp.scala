@@ -15,12 +15,12 @@ trait RiftWarp {
 
   def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit cDim: ClassTag[TDimension]): AlmValidation[TDimension] =
     barracks.getRawDecomposerFor(what).flatMap(decomposer =>
-      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(NoDivertBlobDivert)(this, cDim).flatMap(fun => 
+      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(NoDivertBlobDivert)(this, cDim).flatMap(fun =>
         fun(what, decomposer)))
 
   def prepareForWarpWithBlobs[TDimension <: RiftDimension](divertBlobs: BlobDivert)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit cDim: ClassTag[TDimension]): AlmValidation[TDimension] =
     barracks.getRawDecomposerFor(what).flatMap(decomposer =>
-      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(divertBlobs)(this, cDim).flatMap(fun => 
+      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(divertBlobs)(this, cDim).flatMap(fun =>
         fun(what, decomposer)))
 
   def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit cDim: ClassTag[TDimension], cTarget: ClassTag[T]): AlmValidation[T] = {
@@ -63,7 +63,7 @@ object RiftWarp {
     initializeWithDefaults(riftWarp)
     riftWarp
   }
-  
+
   private def initializeWithDefaults(riftWarp: RiftWarp) {
     riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToMapDematerializer)
     riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToJsonCordDematerializer)
@@ -74,7 +74,7 @@ object RiftWarp {
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonStringRematerializer)
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonCordRematerializer)
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromXmlElemRematerializer)
-    
+
     riftWarp.converters.addConverter(DimensionNiceStringToString)
     riftWarp.converters.addConverter(DimensionNiceCordToCord)
     riftWarp.converters.addConverter(DimensionConverterStringToCord)
@@ -99,9 +99,14 @@ object RiftWarp {
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToIterableConverter)
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToSetConverter)
     riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToVectorConverter)
-    
+
     serialization.common.Problems.registerAllCommonProblems(riftWarp)
-    
+
+    riftWarp.barracks.addDecomposer(new riftwarp.serialization.common.HasAThrowableDescribedDecomposer {})
+    riftWarp.barracks.addRecomposer(new riftwarp.serialization.common.HasAThrowableDescribedRecomposer {})
+    riftWarp.barracks.addDecomposer(new riftwarp.serialization.common.ProblemCauseDecomposer {})
+    riftWarp.barracks.addRecomposer(new riftwarp.serialization.common.ProblemCauseRecomposer {})
+
     RiftChannel.register(riftWarp.channels)
   }
 }
