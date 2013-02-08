@@ -21,7 +21,7 @@ class BoundDomainActionsCommandDecomposer
   }
 }
 
-class BoundDomainActionsCommandRecomposer[TCom <: BoundDomainActionsCommandContext[TAR, TEvent]#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val riftDescriptor: RiftDescriptor, construct: (JUUID, Option[AggregateRootRef], List[TCom#TAction]) => TCom) extends Recomposer[TCom] {
+class BoundDomainActionsCommandRecomposer[TCom <: BoundDomainActionsCommandContext[TAR, TEvent]#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val riftDescriptor: RiftDescriptor, construct: (JUUID, Option[AggregateRootRef], List[_ <: TCom#TAction]) => TCom) extends Recomposer[TCom] {
   def recompose(from: Rematerializer): AlmValidation[TCom] = {
     val id = from.getUuid("id").toAgg
     val aggRef = from.tryGetComplexType[AggregateRootRef]("aggRef").toAgg
