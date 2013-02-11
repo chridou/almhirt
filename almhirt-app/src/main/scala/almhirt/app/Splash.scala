@@ -1,7 +1,13 @@
 package almhirt.app
 
-object Splash {
-  val splash =
+trait Splash {
+  def startupSplash: String
+  def goodBye: String
+  def crash: String
+}
+
+trait DefaultSplash extends Splash {
+  val startupSplash =
     """ |     ___       __      .___  ___.  __    __   __  .______     .___________.
 		|    /   \     |  |     |   \/   | |  |  |  | |  | |   _  \    |           |
 		|   /  ^  \    |  |     |  \  /  | |  |__|  | |  | |  |_)  |   `---|  |----`
