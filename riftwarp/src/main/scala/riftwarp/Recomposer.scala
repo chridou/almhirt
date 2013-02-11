@@ -1,6 +1,7 @@
 package riftwarp
 
 import scala.reflect.ClassTag
+import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp.components._
@@ -24,7 +25,8 @@ class EnrichedRawRecomposer[+T <: AnyRef](raw: RawRecomposer)(implicit tag: Clas
 abstract class DivertingRecomposer[+T <: AnyRef] extends Recomposer[T] {
   def divert: RiftDescriptor => Option[Recomposer[T]]
   override def recompose(from: Rematerializer): AlmValidation[T] =
-    from.getRiftDescriptor.flatMap(td =>
-      (divert >? td).flatMap(recomposer =>
-        recomposer.recompose(from)))
+    from.getRiftDescriptor.flatMap(rd =>
+      (divert >? rd).fold(
+        fail => KeyNotFoundProblem(s"Recomposer for ${this.riftDescriptor.toString} could not find a Recomposer for ${rd.toString}").failure,
+        recomposer => recomposer.recompose(from)))
 }

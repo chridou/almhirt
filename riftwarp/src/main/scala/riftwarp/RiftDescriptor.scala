@@ -31,7 +31,7 @@ sealed class RiftDescriptor private (val identifier: String, val version: Option
 
   override def toString() = toString(";")
   def toString(versionDelim: String) = {
-    option.cata(version)(v => "%s%sv%d".format(identifier, versionDelim, v), identifier)
+    option.cata(version)(v => s"RiftDescriptor($identifier;$v)", s"RiftDescriptor($identifier;no version)")
   }
 }
 
