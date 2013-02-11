@@ -17,8 +17,8 @@ package almhirt.common
 import scala.language.implicitConversions
 
 sealed trait ProblemCause
-case class CauseIsProblem(prob: Problem) extends ProblemCause
-case class CauseIsThrowable(repr: ThrowableRepresentation) extends ProblemCause
+case class CauseIsProblem(problem: Problem) extends ProblemCause
+case class CauseIsThrowable(representation: ThrowableRepresentation) extends ProblemCause
 
 sealed trait ThrowableRepresentation
 case class HasAThrowable(exn: Throwable) extends ThrowableRepresentation {

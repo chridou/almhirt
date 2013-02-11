@@ -138,9 +138,15 @@ trait Rematerializer {
   
   def getRiftDescriptor: AlmValidation[RiftDescriptor]
   def tryGetRiftDescriptor: AlmValidation[Option[RiftDescriptor]]
+  
+  def divertDirect[T <: AnyRef](recomposer: Recomposer[T]): AlmValidation[T]
 }
 
-abstract class RematerializerWithBlobBlobFetch extends Rematerializer {
+abstract class BaseRematerializer() extends Rematerializer{
+  override def divertDirect[T <: AnyRef](recomposer: Recomposer[T]): AlmValidation[T] = recomposer.recompose(this)
+}
+
+abstract class RematerializerWithBlobBlobFetch extends BaseRematerializer {
   protected def fetchBlobData: BlobFetch
   protected def trySpawnNew(ident: String): AlmValidation[Option[Rematerializer]]
   protected def tryGetRematerializedBlob(ident: String): AlmValidation[Option[Array[Byte]]] =

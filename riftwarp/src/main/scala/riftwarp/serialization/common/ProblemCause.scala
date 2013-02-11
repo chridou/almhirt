@@ -6,8 +6,8 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 
-trait HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribed] {
-  val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed], 1)
+object HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribed] {
+  val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: HasAThrowableDescribed)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor).flatMap(
@@ -18,30 +18,56 @@ trait HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribed
   }
 }
 
-trait ProblemCauseDecomposer extends Decomposer[ProblemCause] {
-  val riftDescriptor = RiftDescriptor(classOf[ProblemCause], 1)
+object HasAThrowableDecomposer extends Decomposer[HasAThrowable] {
+  val riftDescriptor = RiftDescriptor(classOf[HasAThrowable])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: ProblemCause)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    val first = into.addRiftDescriptor(this.riftDescriptor)
+  def decompose[TDimension <: RiftDimension](what: HasAThrowable)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into.includeDirect(what.toDescription, HasAThrowableDescribedDecomposer)
+  }
+}
+
+object ThrowableRepresentationDecomposer extends Decomposer[ThrowableRepresentation] {
+  val riftDescriptor = RiftDescriptor(classOf[ThrowableRepresentation])
+  val alternativeRiftDescriptors = Nil
+  def decompose[TDimension <: RiftDimension](what: ThrowableRepresentation)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
-      case CauseIsProblem(prob) =>
-        first.flatMap(
-          _.addString("type", "CauseIsProblem").flatMap(
-            _.addComplex("cause", prob, None)))
-      case CauseIsThrowable(hat @ HasAThrowable(_)) =>
-        first.flatMap(
-          _.addString("type", "HasAThrowableDescribed").flatMap(
-            _.addComplex("cause", hat.toDescription, Some(RiftDescriptor(classOf[HasAThrowableDescribed], 1)))))
-      case CauseIsThrowable(hatd @ HasAThrowableDescribed(_, _, _, _)) =>
-        first.flatMap(
-          _.addString("type", "HasAThrowableDescribed").flatMap(
-            _.addComplex("cause", hatd, Some(RiftDescriptor(classOf[HasAThrowableDescribed], 1)))))
+      case hat @ HasAThrowable(_) => into.includeDirect(hat, HasAThrowableDecomposer)
+      case hatd @ HasAThrowableDescribed(_, _, _, _) => into.includeDirect(hatd, HasAThrowableDescribedDecomposer)
     }
   }
 }
 
-class HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribed] {
-  val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed], 1)
+object CauseIsThrowableDecomposer extends Decomposer[CauseIsThrowable] {
+  val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
+  val alternativeRiftDescriptors = Nil
+  def decompose[TDimension <: RiftDimension](what: CauseIsThrowable)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into.addRiftDescriptor(this.riftDescriptor).flatMap(
+      _.addComplexSelective("representation", ThrowableRepresentationDecomposer, what.representation))
+  }
+}
+
+object CauseIsProblemDecomposer extends Decomposer[CauseIsProblem] {
+  val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
+  val alternativeRiftDescriptors = Nil
+  def decompose[TDimension <: RiftDimension](what: CauseIsProblem)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into.addRiftDescriptor(this.riftDescriptor).flatMap(
+      _.addComplex("problem", what.problem, None))
+  }
+}
+
+object ProblemCauseDecomposer extends Decomposer[ProblemCause] {
+  val riftDescriptor = RiftDescriptor(classOf[ProblemCause])
+  val alternativeRiftDescriptors = Nil
+  def decompose[TDimension <: RiftDimension](what: ProblemCause)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    what match {
+      case cip @ CauseIsProblem(_) => into.includeDirect(cip, CauseIsProblemDecomposer)
+      case cit @ CauseIsThrowable(_) => into.includeDirect(cit, CauseIsThrowableDecomposer)
+    }
+  }
+}
+
+object HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribed] {
+  val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[HasAThrowableDescribed] = {
     val classname = from.getString("classname").toAgg
@@ -52,14 +78,34 @@ class HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribed
   }
 }
 
-class ProblemCauseRecomposer extends Recomposer[ProblemCause] {
-  val riftDescriptor = RiftDescriptor(classOf[ProblemCause], 1)
+object CauseIsThrowableRecomposer extends Recomposer[CauseIsThrowable] {
+  val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Rematerializer): AlmValidation[CauseIsThrowable] = {
+    from.getComplexType("representation", HasAThrowableDescribedRecomposer).map(desc =>
+      CauseIsThrowable(desc))
+  }
+}
+
+object CauseIsProblemRecomposer extends Recomposer[CauseIsProblem] {
+  val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Rematerializer): AlmValidation[CauseIsProblem] = {
+    from.getComplexType("problem").map(prob =>
+      CauseIsProblem(prob))
+  }
+}
+
+object ProblemCauseRecomposer extends Recomposer[ProblemCause] {
+  val riftDescriptor = RiftDescriptor(classOf[ProblemCause])
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[ProblemCause] = {
-    from.getString("type").flatMap {
-      case "CauseIsProblem" => from.getComplexType[Problem]("cause").map(CauseIsProblem(_))
-      case "HasAThrowableDescribed" => from.getComplexType[HasAThrowableDescribed]("cause").map(CauseIsThrowable(_))
-      case x => BadDataProblem(s"'$x' is not a valid identifier for ProblemCause").withIdentifier("type").failure
-    }
+    from.getRiftDescriptor.flatMap(desc =>
+      if (desc == RiftDescriptor(classOf[CauseIsProblem]))
+        from.divertDirect(CauseIsProblemRecomposer)
+      else if (desc == RiftDescriptor(classOf[CauseIsThrowable]))
+        from.divertDirect(CauseIsThrowableRecomposer)
+      else
+        BadDataProblem(s"'$riftDescriptor' is not a valid identifier for ProblemCause").withIdentifier("type").failure)
   }
 }

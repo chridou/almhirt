@@ -102,10 +102,15 @@ object RiftWarp {
 
     serialization.common.Problems.registerAllCommonProblems(riftWarp)
 
-    riftWarp.barracks.addDecomposer(new riftwarp.serialization.common.HasAThrowableDescribedDecomposer {})
-    riftWarp.barracks.addRecomposer(new riftwarp.serialization.common.HasAThrowableDescribedRecomposer {})
-    riftWarp.barracks.addDecomposer(new riftwarp.serialization.common.ProblemCauseDecomposer {})
-    riftWarp.barracks.addRecomposer(new riftwarp.serialization.common.ProblemCauseRecomposer {})
+    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.HasAThrowableDescribedDecomposer)
+    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.HasAThrowableDecomposer)
+    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.ThrowableRepresentationDecomposer)
+    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.CauseIsThrowableDecomposer)
+    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.CauseIsProblemDecomposer)
+    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.ProblemCauseDecomposer)
+    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.HasAThrowableDescribedRecomposer)
+    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.CauseIsProblemRecomposer)
+    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.ProblemCauseRecomposer)
 
     RiftChannel.register(riftWarp.channels)
   }

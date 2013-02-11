@@ -18,12 +18,7 @@ object Problems {
           next <- next.addString("severity", problem.severity.toString())
           next <- next.addString("category", problem.category.toString())
           next <- next.addMapSkippingUnknownValues[String, Any]("args", problem.args)
-          next <- option.cata(problem.cause)(
-            cause => cause match {
-              case CauseIsThrowable(_) => next.success
-              case CauseIsProblem(prob) => next.addComplex("cause", prob)
-            },
-            next.success)
+          next <- next.addOptionalComplexSelective("cause", ProblemCauseDecomposer, what.cause)
         } yield next
     }
   }
@@ -51,7 +46,7 @@ object Problems {
       severity <- from.getString("severity").flatMap(Severity.fromString(_))
       category <- from.getString("category").flatMap(ProblemCategory.fromString(_))
       args <- from.getMap[String, Any]("args")
-      cause <- from.tryGetComplexType[Problem]("cause").map(optV => optV.map(CauseIsProblem(_)))
+      cause <- from.tryGetComplexType("cause", ProblemCauseRecomposer)
     } yield (message, severity, category, args, cause)
   }
 
