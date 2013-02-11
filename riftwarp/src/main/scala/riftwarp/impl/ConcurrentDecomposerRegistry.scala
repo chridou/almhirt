@@ -11,7 +11,7 @@ class ConcurrentDecomposerRegistry extends HasDecomposers {
 
   def getRawDecomposer(riftDescriptor: RiftDescriptor): AlmValidation[RawDecomposer] =
     decomposers.get(riftDescriptor) match {
-      case null => KeyNotFoundProblem(s"No Decomposer found for  $riftDescriptor").failure
+      case null => KeyNotFoundProblem(s"No Decomposer found for $riftDescriptor").failure
       case x => x.success
     }
 

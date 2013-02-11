@@ -125,6 +125,10 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
 
   def addRiftDescriptor(descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
 
+  def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]] 
+  def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
+  def include[T <: AnyRef](what: T)(implicit tag: ClassTag[T]): AlmValidation[Dematerializer[TDimension]]
+  
   def fail(prob: Problem): AlmValidation[Dematerializer[TDimension]] = prob.failure
 
 }

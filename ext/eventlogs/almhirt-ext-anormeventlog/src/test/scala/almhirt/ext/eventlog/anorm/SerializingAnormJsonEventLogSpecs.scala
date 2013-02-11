@@ -66,6 +66,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
       val resCommit = eventLog.storeEvents(List(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(1, "s"))
+      println("xxxx"+res)
       res.forceResult should have size 1
     }
   }

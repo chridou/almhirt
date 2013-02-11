@@ -237,7 +237,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
 
 
   override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] =
-    hasDecomposers.getDecomposer[A](mA.runtimeClass).toOption match {
+    hasDecomposers.getDecomposer[A].toOption match {
       case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
       case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.runtimeClass.getName())).failure
     }
@@ -285,7 +285,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
   override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
-    hasDecomposers.getDecomposer[B](mB.runtimeClass).flatMap(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
+    hasDecomposers.getDecomposer[B].flatMap(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
 
 
   override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =

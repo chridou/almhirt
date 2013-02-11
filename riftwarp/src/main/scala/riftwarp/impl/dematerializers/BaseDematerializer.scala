@@ -13,7 +13,7 @@ import riftwarp.ma.HasFunctionObjects
 /**
  * Does not implement the up most '...Optional' methods, because they might differ in behaviour.
  */
-abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomosers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[TDimension] {
+abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[TDimension] {
   protected def divertBlob: BlobDivert
   protected def spawnNew(ident: String): AlmValidation[Dematerializer[TDimension]] = spawnNew(ident :: path)
   /**
@@ -26,8 +26,8 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
       divertBlob(aValue, blobIdentifier).flatMap(blob =>
         blob.decompose(demat)))
 
-  protected def insertDematerializer(ident: String, dematerializer: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]      
-        
+  protected def insertDematerializer(ident: String, dematerializer: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]
+
   override def addComplexSelective(ident: String, decomposer: RawDecomposer, complex: AnyRef): AlmValidation[Dematerializer[TDimension]] =
     for {
       demat <- spawnNew(ident)
@@ -36,14 +36,22 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
     } yield result
 
   override def addComplexFixed(ident: String, complex: AnyRef, descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]] =
-    hasDecomosers.getRawDecomposer(descriptor).flatMap(decomposer =>
+    hasDecomposers.getRawDecomposer(descriptor).flatMap(decomposer =>
       addComplexSelective(ident, decomposer, complex))
+
+  override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]] = decomposer.decompose(what)(this)
+  override def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] =
+    hasDecomposers.getRawDecomposerFor(what, riftDescriptor).flatMap(decomposer => decomposer.decomposeRaw(what)(this))
+  override def include[T <: AnyRef](what: T)(implicit tag: ClassTag[T]): AlmValidation[Dematerializer[TDimension]] =
+    hasDecomposers.getDecomposer[T]().flatMap(decomposer =>
+      includeDirect(what, decomposer))
+
 }
 
-abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomosers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomosers, hasFunctionObjects)
+abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
 
-abstract class ToCordDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomosers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionCord](classOf[DimensionCord], hasDecomosers, hasFunctionObjects)
+abstract class ToCordDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionCord](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
 
-abstract class ToBinaryDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomosers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionBinary](classOf[DimensionCord], hasDecomosers, hasFunctionObjects)
+abstract class ToBinaryDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionBinary](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
 
-abstract class ToRawMapDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomosers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionRawMap](classOf[DimensionCord], hasDecomosers, hasFunctionObjects)
+abstract class ToRawMapDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionRawMap](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)

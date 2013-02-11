@@ -49,3 +49,9 @@ trait HasRecomposers {
   def addRecomposer(recomposer: Recomposer[_]): Unit
 }
 
+object HasRecomposers {
+  implicit class HasRecomposersOps(self: HasRecomposers) {
+    
+  }
+}
+
