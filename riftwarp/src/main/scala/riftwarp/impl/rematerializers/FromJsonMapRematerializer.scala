@@ -274,8 +274,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
       UnspecifiedProblem("Could not rematerialize primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
   }
 
-  def tryGetRiftDescriptor =
-    option.cata(get(RiftDescriptor.defaultKey))(almCast[String](_).flatMap(RiftDescriptor.parse(_)).map(Some(_)), Success(None))
+  def tryGetRiftDescriptor = tryGetComplexType(RiftDescriptor.defaultKey, riftwarp.serialization.common.RiftDescriptorRecomposer)
 
   private def mapToAny[A](ident: String)(what: Any)(implicit m: ClassTag[A]): AlmValidation[A] =
     getPrimitiveRematerializer[A](ident, what.getClass).fold(

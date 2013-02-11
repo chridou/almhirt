@@ -327,7 +327,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
             addPart(ident, pairs.manifestation)))),
       UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  override def addRiftDescriptor(descriptor: RiftDescriptor) = addString(RiftDescriptor.defaultKey, descriptor.toString)
+  override def addRiftDescriptor(descriptor: RiftDescriptor) = addComplexSelective(RiftDescriptor.defaultKey, riftwarp.serialization.common.RiftDescriptorDecomposer, descriptor)
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
     hasDecomposers.getRawDecomposer(toDecompose.getClass).toOption match {

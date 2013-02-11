@@ -102,6 +102,9 @@ object RiftWarp {
 
     serialization.common.Problems.registerAllCommonProblems(riftWarp)
 
+    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.RiftDescriptorDecomposer)
+    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.RiftDescriptorRecomposer)
+
     riftWarp.barracks.addDecomposer(riftwarp.serialization.common.HasAThrowableDescribedDecomposer)
     riftWarp.barracks.addDecomposer(riftwarp.serialization.common.HasAThrowableDecomposer)
     riftWarp.barracks.addDecomposer(riftwarp.serialization.common.ThrowableRepresentationDecomposer)

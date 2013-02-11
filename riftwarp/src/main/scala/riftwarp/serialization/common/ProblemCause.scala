@@ -106,6 +106,6 @@ object ProblemCauseRecomposer extends Recomposer[ProblemCause] {
       else if (desc == RiftDescriptor(classOf[CauseIsThrowable]))
         from.divertDirect(CauseIsThrowableRecomposer)
       else
-        BadDataProblem(s"'$riftDescriptor' is not a valid identifier for ProblemCause").withIdentifier("type").failure)
+        BadDataProblem(s"'$desc' is not a valid identifier for ProblemCause").withIdentifier("type").failure)
   }
 }

@@ -9,32 +9,54 @@ import riftwarp._
 import almhirt.util._
 import almhirt.util.StringTrackingTicket
 
-class TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
-  val riftDescriptor = RiftDescriptor(classOf[TrackingTicket], 1)
+object StringTrackingTicketDecomposer extends Decomposer[StringTrackingTicket] {
+  val riftDescriptor = RiftDescriptor(classOf[StringTrackingTicket])
+  val alternativeRiftDescriptors = Nil
+  def decompose[TDimension <: RiftDimension](what: StringTrackingTicket)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+    into
+      .addRiftDescriptor(this.riftDescriptor).flatMap(
+        _.addString("ident", what.ident))
+}
+
+object UuidTrackingTicketDecomposer extends Decomposer[UuidTrackingTicket] {
+  val riftDescriptor = RiftDescriptor(classOf[UuidTrackingTicket])
+  val alternativeRiftDescriptors = Nil
+  def decompose[TDimension <: RiftDimension](what: UuidTrackingTicket)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+    into
+      .addRiftDescriptor(this.riftDescriptor).flatMap(
+        _.addUuid("ident", what.ident))
+}
+
+object TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
+  val riftDescriptor = RiftDescriptor(classOf[TrackingTicket])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: TrackingTicket)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
-      case StringTrackingTicket(ident) =>
-        into
-          .addRiftDescriptor(this.riftDescriptor)
-          .flatMap(_.addString("type", "string"))
-          .flatMap(_.addString("ident", ident))
-      case UuidTrackingTicket(ident) =>
-        into
-          .addRiftDescriptor(this.riftDescriptor)
-          .flatMap(_.addString("type", "uuid"))
-          .flatMap(_.addUuid("ident", ident))
+      case ticket @ UuidTrackingTicket(_) => into.includeDirect(ticket, UuidTrackingTicketDecomposer)
+      case ticket @ StringTrackingTicket(_) => into.includeDirect(ticket, StringTrackingTicketDecomposer)
     }
   }
 }
 
-class TrackingTicketRecomposer extends Recomposer[TrackingTicket] {
-  val riftDescriptor = RiftDescriptor(classOf[TrackingTicket], 1)
+object StringTrackingTicketRecomposer extends Recomposer[StringTrackingTicket] {
+  val riftDescriptor = RiftDescriptor(classOf[StringTrackingTicket])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[TrackingTicket] = {
-    from.getString("type").flatMap {
-      case "string" => from.getString("ident").map(StringTrackingTicket.apply)
-      case "uuid" => from.getUuid("ident").map(UuidTrackingTicket.apply)
-    }
-  }
+  def recompose(from: Rematerializer): AlmValidation[StringTrackingTicket] = 
+    from.getString("ident").map(StringTrackingTicket.apply)
+}
+
+object UuidTrackingTicketRecomposer extends Recomposer[UuidTrackingTicket] {
+  val riftDescriptor = RiftDescriptor(classOf[UuidTrackingTicket])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Rematerializer): AlmValidation[UuidTrackingTicket] = 
+    from.getUuid("ident").map(UuidTrackingTicket.apply)
+}
+
+object TrackingTicketRecomposer extends DivertingRecomposer[TrackingTicket] {
+  val riftDescriptor = RiftDescriptor(classOf[TrackingTicket])
+  val alternativeRiftDescriptors = Nil
+  val divert =
+    Map(
+      StringTrackingTicketRecomposer.riftDescriptor -> StringTrackingTicketRecomposer,
+      UuidTrackingTicketRecomposer.riftDescriptor -> UuidTrackingTicketRecomposer).lift
 }

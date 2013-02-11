@@ -10,8 +10,8 @@ import almhirt.commanding._
 import almhirt.util._
 import almhirt.commanding.CommandEnvelope
 
-class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
-  val riftDescriptor = RiftDescriptor(classOf[CommandEnvelope], 1)
+object CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
+  val riftDescriptor = RiftDescriptor(classOf[CommandEnvelope])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: CommandEnvelope)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
@@ -21,8 +21,8 @@ class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
   }
 }
 
-class CommandEnvelopeRecomposer extends Recomposer[CommandEnvelope] {
-  val riftDescriptor = RiftDescriptor(classOf[CommandEnvelope], 1)
+object CommandEnvelopeRecomposer extends Recomposer[CommandEnvelope] {
+  val riftDescriptor = RiftDescriptor(classOf[CommandEnvelope])
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[CommandEnvelope] = {
     val command = from.getComplexType[DomainCommand]("command").toAgg

@@ -6,7 +6,7 @@ import almhirt.almvalidation.kit._
 import almhirt.commanding._
 import riftwarp._
 
-class AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
+object AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
   val riftDescriptor = RiftDescriptor(classOf[AggregateRootRef], 1)
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: AggregateRootRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
@@ -17,7 +17,7 @@ class AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
   }
 }
 
-class AggregateRootRefRecomposer extends Recomposer[AggregateRootRef] {
+object AggregateRootRefRecomposer extends Recomposer[AggregateRootRef] {
   val riftDescriptor = RiftDescriptor(classOf[AggregateRootRef], 1)
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[AggregateRootRef] = {
