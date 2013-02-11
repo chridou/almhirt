@@ -9,12 +9,12 @@ trait RawRecomposer extends HasAlternativeRiftDescriptors {
 }
 
 /** atoms -> instance */
-trait Recomposer[T] extends RawRecomposer {
+trait Recomposer[T <: AnyRef] extends RawRecomposer {
   def recompose(from: Rematerializer): AlmValidation[T]
   def recomposeRaw(from: Rematerializer) = recompose(from).map(_.asInstanceOf[AnyRef])
 }
 
-class EnrichedRawRecomposer[T](raw: RawRecomposer)(implicit tag: ClassTag[T]) extends Recomposer[T] {
+class EnrichedRawRecomposer[T <: AnyRef](raw: RawRecomposer)(implicit tag: ClassTag[T]) extends Recomposer[T] {
   val riftDescriptor = raw.riftDescriptor
   val alternativeRiftDescriptors = raw.alternativeRiftDescriptors
   def recompose(from: Rematerializer) = raw.recomposeRaw(from).flatMap(almhirt.almvalidation.funs.almCast[T](_))
