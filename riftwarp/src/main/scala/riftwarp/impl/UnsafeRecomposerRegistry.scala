@@ -15,11 +15,18 @@ class UnsafeRecomposerRegistry extends HasRecomposers {
   def tryGetRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit tag: ClassTag[T]): Option[Recomposer[T]] =
     recomposers.get(riftDescriptor).flatMap {
       case (desc, true) =>
-       Some(desc.asInstanceOf[Recomposer[T]])
+        Some(desc.asInstanceOf[Recomposer[T]])
       case (desc, false) =>
         Some(new EnrichedRawRecomposer[T](desc))
     }
 
-  def addRawRecomposer(recomposer: RawRecomposer) { recomposers = recomposers + (recomposer.riftDescriptor -> (recomposer, false)) }
-  def addRecomposer(recomposer: Recomposer[_]) { recomposers = recomposers + (recomposer.riftDescriptor -> (recomposer.asInstanceOf[RawRecomposer], true)) }
+  def addRawRecomposer(recomposer: RawRecomposer) {
+    (recomposer.riftDescriptor :: recomposer.alternativeRiftDescriptors).foreach(desc =>
+      recomposers = recomposers + (desc -> (recomposer, false)))
+  }
+  
+  def addRecomposer(recomposer: Recomposer[_]) {
+    (recomposer.riftDescriptor :: recomposer.alternativeRiftDescriptors).foreach(desc =>
+      recomposers = recomposers + (desc -> (recomposer.asInstanceOf[RawRecomposer], true)))
+  }
 }

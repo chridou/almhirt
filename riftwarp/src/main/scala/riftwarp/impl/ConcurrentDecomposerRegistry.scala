@@ -15,5 +15,7 @@ class ConcurrentDecomposerRegistry extends HasDecomposers {
       case x => x.success
     }
 
-  def addDecomposer(decomposer: Decomposer[_ <: AnyRef]) { decomposers.put(decomposer.riftDescriptor, decomposer) }
+  def addDecomposer(decomposer: Decomposer[_ <: AnyRef]) {
+    (decomposer.riftDescriptor :: decomposer.alternativeRiftDescriptors).foreach(decomposers.put(_, decomposer))
+  }
 }

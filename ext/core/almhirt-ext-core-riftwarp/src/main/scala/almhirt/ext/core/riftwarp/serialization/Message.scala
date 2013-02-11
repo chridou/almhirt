@@ -11,6 +11,7 @@ import almhirt.messaging.MessageGrouping
 
 class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
   val riftDescriptor = RiftDescriptor(classOf[MessageGrouping], 1)
+  val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: MessageGrouping)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
@@ -22,6 +23,7 @@ class MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
 
 class MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
   val riftDescriptor = RiftDescriptor(classOf[MessageGrouping], 1)
+  val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[MessageGrouping] = {
     (from.getUuid("groupId").toAgg |@|
       from.getInt("seq").toAgg |@|
@@ -31,6 +33,7 @@ class MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
 
 class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
   val riftDescriptor = RiftDescriptor(classOf[MessageHeader], 1)
+  val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: MessageHeader)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
@@ -43,16 +46,18 @@ class MessageHeaderDecomposer extends Decomposer[MessageHeader] {
 
 class MessageHeaderRecomposer extends Recomposer[MessageHeader] {
   val riftDescriptor = RiftDescriptor(classOf[MessageHeader], 1)
+  val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[MessageHeader] = {
     (from.getUuid("id").toAgg |@|
       from.tryGetComplexType("grouping").toAgg |@|
-      from.getMap[String, Object]("metaData").toAgg |@| 
+      from.getMap[String, Object]("metaData").toAgg |@|
       from.getDateTime("timestamp").toAgg)(MessageHeader.apply)
   }
 }
 
 class MessageDecomposer extends Decomposer[Message[AnyRef]] {
   val riftDescriptor = RiftDescriptor(classOf[Message[AnyRef]], 1)
+  val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: Message[AnyRef])(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
@@ -63,9 +68,10 @@ class MessageDecomposer extends Decomposer[Message[AnyRef]] {
 
 class MessageRecomposer extends Recomposer[Message[AnyRef]] {
   val riftDescriptor = RiftDescriptor(classOf[Message[AnyRef]], 1)
+  val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[Message[AnyRef]] = {
     val header = from.getComplexType[MessageHeader]("header").toAgg
     val payload = from.getComplexType[AnyRef]("payload").toAgg
-    (header |@| payload)(Message(_,_))
+    (header |@| payload)(Message(_, _))
   }
 }

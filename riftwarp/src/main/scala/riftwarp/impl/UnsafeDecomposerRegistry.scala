@@ -15,5 +15,8 @@ class UnsafeDecomposerRegistry extends HasDecomposers {
       case Some(x) => x.success
     }
 
-  def addDecomposer(decomposer: Decomposer[_ <: AnyRef]) { decomposers = decomposers + (decomposer.riftDescriptor -> decomposer) }
+  def addDecomposer(decomposer: Decomposer[_ <: AnyRef]) {
+    (decomposer.riftDescriptor :: decomposer.alternativeRiftDescriptors).foreach(desc => 
+      decomposers = decomposers + (desc -> decomposer))
+  }
 }

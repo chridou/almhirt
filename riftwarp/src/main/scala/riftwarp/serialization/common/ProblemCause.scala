@@ -8,6 +8,7 @@ import riftwarp._
 
 trait HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribed] {
   val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed], 1)
+  val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: HasAThrowableDescribed)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor).flatMap(
       _.addString("classname", what.classname).flatMap(
@@ -19,6 +20,7 @@ trait HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribed
 
 trait ProblemCauseDecomposer extends Decomposer[ProblemCause] {
   val riftDescriptor = RiftDescriptor(classOf[ProblemCause], 1)
+  val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: ProblemCause)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     val first = into.addRiftDescriptor(this.riftDescriptor)
     what match {
@@ -40,6 +42,7 @@ trait ProblemCauseDecomposer extends Decomposer[ProblemCause] {
 
 class HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribed] {
   val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed], 1)
+  val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[HasAThrowableDescribed] = {
     val classname = from.getString("classname").toAgg
     val message = from.getString("message").toAgg
@@ -51,6 +54,7 @@ class HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribed
 
 class ProblemCauseRecomposer extends Recomposer[ProblemCause] {
   val riftDescriptor = RiftDescriptor(classOf[ProblemCause], 1)
+  val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[ProblemCause] = {
     from.getString("type").flatMap {
       case "CauseIsProblem" => from.getComplexType[Problem]("cause").map(CauseIsProblem(_))

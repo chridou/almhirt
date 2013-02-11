@@ -8,10 +8,8 @@ import almhirt.commanding._
 import riftwarp._
 import almhirt.domain._
 
-class BoundDomainActionsCommandDecomposer
-	[ TCom <: BoundDomainActionsCommandContext[TAR, TEvent]#BoundDomainActionsCommand
-	, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent
-	] (val riftDescriptor: RiftDescriptor) extends Decomposer[TCom] {
+class BoundDomainActionsCommandDecomposer[TCom <: BoundDomainActionsCommandContext[TAR, TEvent]#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val riftDescriptor: RiftDescriptor) extends Decomposer[TCom] {
+  val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: TCom)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor).flatMap(
@@ -22,6 +20,7 @@ class BoundDomainActionsCommandDecomposer
 }
 
 class BoundDomainActionsCommandRecomposer[TContext <: BoundDomainActionsCommandContext[TAR, TEvent], TCom <: TContext#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val riftDescriptor: RiftDescriptor, construct: (JUUID, Option[AggregateRootRef], List[TContext#BoundCommandAction]) => TCom) extends Recomposer[TCom] {
+  val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[TCom] = {
     val id = from.getUuid("id").toAgg
     val aggRef = from.tryGetComplexType[AggregateRootRef]("aggRef").toAgg

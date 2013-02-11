@@ -22,6 +22,11 @@ class ConcurrentRecomposerRegistry extends HasRecomposers {
       case _ => None
     }
 
-  def addRawRecomposer(recomposer: RawRecomposer) { recomposers.put(recomposer.riftDescriptor, (recomposer, false)) }
-  def addRecomposer(recomposer: Recomposer[_]) { recomposers.put(recomposer.riftDescriptor, (recomposer.asInstanceOf[RawRecomposer], true)) }
+  def addRawRecomposer(recomposer: RawRecomposer) {
+    (recomposer.riftDescriptor :: recomposer.alternativeRiftDescriptors).foreach(recomposers.put(_, (recomposer, false)))
+  }
+
+  def addRecomposer(recomposer: Recomposer[_]) {
+    (recomposer.riftDescriptor :: recomposer.alternativeRiftDescriptors).foreach(recomposers.put(_, (recomposer.asInstanceOf[RawRecomposer], false)))
+  }
 }

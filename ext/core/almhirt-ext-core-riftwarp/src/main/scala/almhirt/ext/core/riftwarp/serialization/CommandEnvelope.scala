@@ -12,6 +12,7 @@ import almhirt.commanding.CommandEnvelope
 
 class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
   val riftDescriptor = RiftDescriptor(classOf[CommandEnvelope], 1)
+  val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: CommandEnvelope)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
@@ -22,6 +23,7 @@ class CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
 
 class CommandEnvelopeRecomposer extends Recomposer[CommandEnvelope] {
   val riftDescriptor = RiftDescriptor(classOf[CommandEnvelope], 1)
+  val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[CommandEnvelope] = {
     val command = from.getComplexType[DomainCommand]("command").toAgg
     val ticket = from.tryGetComplexType[TrackingTicket]("ticket").toAgg
