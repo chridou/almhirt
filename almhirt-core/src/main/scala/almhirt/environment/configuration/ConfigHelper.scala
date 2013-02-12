@@ -9,8 +9,8 @@ import com.typesafe.config.Config
 import almhirt.common._
 
 object ConfigHelper {
-  def getString(config: Config)(path: String): AlmValidation[String] = {
-    try {
+  def getString(config: Config)(path: String): AlmValidation[String] =
+    almhirt.almvalidation.funs.computeSafely {
       config.getString(path) match {
         case null => KeyNotFoundProblem("String not found: %s".format(path), args = Map("key" -> path)).failure
         case "" => KeyNotFoundProblem("String not found: %s".format(path), args = Map("key" -> path)).failure
@@ -20,10 +20,7 @@ object ConfigHelper {
           else
             str.success
       }
-    } catch {
-      case exn: Throwable => ExceptionCaughtProblem("").withCause(exn).failure
     }
-  }
 
   def getStringOrDefault(default: => String)(config: Config)(path: String): String = {
     getString(config)(path).toOption.getOrElse(default)
@@ -35,6 +32,13 @@ object ConfigHelper {
   def isBooleanSet(config: Config)(path: String): Boolean =
     getBoolean(config)(path).fold(_ => false, x => x)
 
+  def getInt(config: Config)(path: String): AlmValidation[Int] =
+    almhirt.almvalidation.funs.inTryCatch { config.getInt(path) }
+
+  def getIntOrDefault(default: => Int)(config: Config)(path: String): Int = {
+    getInt(config)(path).toOption.getOrElse(default)
+  }
+  
   def getMilliseconds(config: Config)(path: String): AlmValidation[FiniteDuration] = {
     try {
       config.getMilliseconds(path) match {
@@ -81,6 +85,12 @@ object ConfigHelper {
   object commandDispatcher {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.commandDispatcher)
     def factoryName(dispatcherConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(dispatcherConfig)
+  }
+
+  object http {
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.http)
+    def port(httpConfig: Config): AlmValidation[Int] = getInt(httpConfig)("port")
+    def maxContentLength(httpConfig: Config): AlmValidation[Int] = getInt(httpConfig)("maxContentLength")
   }
 
   object shared {

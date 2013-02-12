@@ -12,6 +12,8 @@ object ConfigPaths {
   val commandDispatcher = "almhirt.client.commanddispatcher"
     
   val futures = "almhirt.futures"
+    
+  val http = "almhirt.http"
 
 }
 
