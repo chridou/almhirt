@@ -203,7 +203,7 @@ trait UnfilteredBuild {
   import Resolvers._
   def unfilteredProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += "net.databinder" %% "unfiltered-netty" % "0.6.6",
+	  libraryDependencies += "net.databinder" %% "unfiltered-netty" % "0.6.7",
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases)
   
