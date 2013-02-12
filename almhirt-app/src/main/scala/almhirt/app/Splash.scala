@@ -7,7 +7,7 @@ trait Splash {
 }
 
 trait DefaultSplash extends Splash {
-  val startupSplash =
+  def startupSplash =
     """ |     ___       __      .___  ___.  __    __   __  .______     .___________.
 		|    /   \     |  |     |   \/   | |  |  |  | |  | |   _  \    |           |
 		|   /  ^  \    |  |     |  \  /  | |  |__|  | |  | |  |_)  |   `---|  |----`
@@ -17,15 +17,15 @@ trait DefaultSplash extends Splash {
 	    |
 	    |www.almhirt.org
 	    |""".stripMargin
-  
+
   def goodbye =
     """ |  ___   __    __  ____  ____  _  _  ____ 
 	    | / __) /  \  /  \(    \(  _ \( \/ )(  __)
 		|( (_ \(  O )(  O )) D ( ) _ ( )  /  ) _) 
 		| \___/ \__/  \__/(____/(____/(__/  (____)
     	|""".stripMargin
-  
-val crash =
+
+  def crash =
     """ |                               ________________ 
 		|                          ____/ (  (    )   )  \___ 
 		|                         /( (  (  )   _    ))  )   )\ 
@@ -54,6 +54,6 @@ val crash =
 		|( )/ )  /__\  (  _ \(  _  )(  _  )(  _  )(  _  )(  \/  ))( 
 		| )  (  /(__)\  ) _ < )(_)(  )(_)(  )(_)(  )(_)(  )    ( \/ 
 		|(_)\_)(__)(__)(____/(_____)(_____)(_____)(_____)(_/\/\_)()
-  		|""".stripMargin 
-  
+  		|""".stripMargin
+
 }
