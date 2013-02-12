@@ -51,7 +51,7 @@ class CommandEndpointWithUuidTicketsFactory {
         case PushCommandDirectlyToExecutor =>
           theAlmhirt.getService[CommandExecutor].map(executor => (cmdEnv: CommandEnvelope) => executor.executeCommand(cmdEnv))
       }
-      endpointActorName <- ConfigHelper.operationState.getConfig(rootConf).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
+      endpointActorName <- ConfigHelper.commandEndpoint.getConfig(rootConf).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
       endpoint <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + endpointActorName) }
     } yield {
       theAlmhirt.log.info(s"CommandEndpoint is CommandEndpointWithUuidTickets. Name is '$endpointActorName', mode is '$mode'")

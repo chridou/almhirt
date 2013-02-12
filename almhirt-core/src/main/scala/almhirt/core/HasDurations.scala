@@ -28,6 +28,9 @@ trait Durations {
   def mediumDuration: FiniteDuration
   def longDuration: FiniteDuration
   def extraLongDuration: FiniteDuration
+  
+  override def toString(): String =
+    s"short: ${shortDuration.toString}, medium: ${mediumDuration.toString}, long: ${longDuration.toString}, extraLong: ${extraLongDuration.toString}"
 }
 
 trait DefaultDurations extends Durations {
