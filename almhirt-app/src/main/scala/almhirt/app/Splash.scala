@@ -1,9 +1,9 @@
 package almhirt.app
 
 trait Splash {
-  def startupSplash: String
-  def goodBye: String
-  def crash: String
+  def startupMessage: String
+  def goodByeMessage: String
+  def crashMessage: String
 }
 
 trait DefaultSplash extends Splash {
@@ -15,13 +15,15 @@ trait DefaultSplash extends Splash {
 		| /  _____  \  |  `----.|  |  |  | |  |  |  | |  | |  |\  \----.   |  |     
 		|/__/     \__\ |_______||__|  |__| |__|  |__| |__| | _| `._____|   |__|
 	    |
-	    |www.almhirt.org""".stripMargin
+	    |www.almhirt.org
+	    |""".stripMargin
   
   def goodbye =
     """ |  ___   __    __  ____  ____  _  _  ____ 
 	    | / __) /  \  /  \(    \(  _ \( \/ )(  __)
 		|( (_ \(  O )(  O )) D ( ) _ ( )  /  ) _) 
-		| \___/ \__/  \__/(____/(____/(__/  (____)""".stripMargin
+		| \___/ \__/  \__/(____/(____/(__/  (____)
+    	|""".stripMargin
   
 val crash =
     """ |                               ________________ 
@@ -51,6 +53,7 @@ val crash =
 		| _  _    __    ____  _____  _____  _____  _____  __  __ /\ 
 		|( )/ )  /__\  (  _ \(  _  )(  _  )(  _  )(  _  )(  \/  ))( 
 		| )  (  /(__)\  ) _ < )(_)(  )(_)(  )(_)(  )(_)(  )    ( \/ 
-		|(_)\_)(__)(__)(____/(_____)(_____)(_____)(_____)(_/\/\_)()""".stripMargin 
+		|(_)\_)(__)(__)(____/(_____)(_____)(_____)(_____)(_/\/\_)()
+  		|""".stripMargin 
   
 }

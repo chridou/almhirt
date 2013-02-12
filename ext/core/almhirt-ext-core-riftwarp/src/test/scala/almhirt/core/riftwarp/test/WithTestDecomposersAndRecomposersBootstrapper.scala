@@ -8,7 +8,6 @@ import almhirt.environment.configuration.impl._
 import almhirt.environment.configuration._
 import com.typesafe.config.Config
 import _root_.riftwarp.RiftWarp
-import almhirt.ext.core.riftwarp.serialization.RiftWarpUtilityFuns
 
 trait WithTestDecomposersAndRecomposersBootstrapper extends AlmhirtBootstrapper {
   override def initializeCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
