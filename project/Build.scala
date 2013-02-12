@@ -246,7 +246,7 @@ object AlmHirtBuild extends Build
 	with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings,
-	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, anormEventLog, slickExtensions, activateExtensions, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
+	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, anormEventLog, slickExtensions, activateExtensions, app, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
