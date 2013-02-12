@@ -1,13 +1,13 @@
 package almhirt.app
 
-trait Splash {
+trait SplashMessages {
   def startupMessage: String
   def goodByeMessage: String
   def crashMessage: String
 }
 
-trait DefaultSplash extends Splash {
-  def startupSplash =
+trait DefaultSplashMessages extends SplashMessages {
+  def startupMessage =
     """ |     ___       __      .___  ___.  __    __   __  .______     .___________.
 		|    /   \     |  |     |   \/   | |  |  |  | |  | |   _  \    |           |
 		|   /  ^  \    |  |     |  \  /  | |  |__|  | |  | |  |_)  |   `---|  |----`
@@ -18,14 +18,14 @@ trait DefaultSplash extends Splash {
 	    |www.almhirt.org
 	    |""".stripMargin
 
-  def goodbye =
+  def goodByeMessage =
     """ |  ___   __    __  ____  ____  _  _  ____ 
 	    | / __) /  \  /  \(    \(  _ \( \/ )(  __)
 		|( (_ \(  O )(  O )) D ( ) _ ( )  /  ) _) 
 		| \___/ \__/  \__/(____/(____/(__/  (____)
     	|""".stripMargin
 
-  def crash =
+  def crashMessage =
     """ |                               ________________ 
 		|                          ____/ (  (    )   )  \___ 
 		|                         /( (  (  )   _    ))  )   )\ 

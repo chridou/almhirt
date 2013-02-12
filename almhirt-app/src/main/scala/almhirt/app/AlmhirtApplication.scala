@@ -6,10 +6,7 @@ import almhirt.core.Almhirt
 import almhirt.environment.ShutDown
 import almhirt.environment.configuration.AlmhirtBootstrapper
 
-trait AlmhirtApplication {
-  protected def startupMessage: String
-  protected def goodByeMessage: String
-  protected def crashMessage: String
+trait AlmhirtApplication extends SplashMessages {
 
   private var exit = false
 
