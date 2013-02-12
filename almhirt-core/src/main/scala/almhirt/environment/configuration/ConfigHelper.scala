@@ -54,12 +54,11 @@ object ConfigHelper {
       }
     }
 
-  def getDispatcherNameFromRootConfig(config: Config)(path: String): AlmValidation[String] =
-    getSubConfig(config)(path).flatMap(getString(_)("dispatchername"))
+  def getDispatcherNameFromComponentConfigPath(rootConfig: Config)(componentConfigPath: String): AlmValidation[String] =
+    getSubConfig(rootConfig)(componentConfigPath).flatMap(getDispatcherNameFromComponentConfig(_))
 
-  def lookupDispatcherConfigPath(config: Config)(path: String): AlmValidation[String] =
-    getDispatcherNameFromRootConfig(config)(path).map(dispatcherLookupName =>
-      s"almhirt.dispatchers.$dispatcherLookupName")
+  def getDispatcherNameFromComponentConfig(componentConfig: Config): AlmValidation[String] =
+    getString(componentConfig)(ConfigItems.dispatchername)
 
   object eventLog {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog)

@@ -37,16 +37,24 @@ class AlmhirtBaseBootstrapper(override val config: Config) extends AlmhirtBootst
 
   private def createFuturesExecutionContext(actorSystem: ActorSystem, startUpLogger: LoggingAdapter): AlmValidation[HasExecutionContext] = {
     startUpLogger.info("Creating FuturesExecutionContext...")
-    val dispatcherPath = ConfigHelper.lookupDispatcherConfigPath(config)(ConfigPaths.futures).toOption
-    val dispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(dispatcherPath)
-    startUpLogger.info(s"... using path ${dispatcherPath}")
+    val dispatcherName =
+      ConfigHelper.getDispatcherNameFromComponentConfigPath(config)(ConfigPaths.futures).fold(
+        fail => {
+          startUpLogger.warning("No dispatchername found for FuturesExecutionContext. Using default Dispatcher")
+          None
+        },
+        succ => {
+          startUpLogger.info(s"FuturesExecutionContext is using dispatcher '$succ'")
+          Some(succ)
+        })
+    val dispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(dispatcherName)
     HasExecutionContext(dispatcher).success
   }
 
   override def createAlmhirt(hasActorSystem: HasActorSystem, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, CleanUpAction)] = {
     val theDurations = Durations(config)
     startUpLogger.info(s"Durations have been set to: ${theDurations.toString()}")
-    
+
     startUpLogger.info("Creating Almhirt...")
     for {
       hasExecutionContext <- createFuturesExecutionContext(hasActorSystem.actorSystem, startUpLogger)
@@ -61,7 +69,7 @@ class AlmhirtBaseBootstrapper(override val config: Config) extends AlmhirtBootst
     }, () => ())
   }
 
-  override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = 
+  override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
     (() => ()).success
 
   override def initializeCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =

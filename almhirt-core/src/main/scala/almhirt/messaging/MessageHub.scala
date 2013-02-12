@@ -58,8 +58,8 @@ object MessageHub {
   }
 
   def apply(name: String, config: Config)(implicit hasActorSystem: HasActorSystem, hasExecutionContext: HasExecutionContext): MessageHub = {
-    val messageHubDispatcherName = ConfigHelper.lookupDispatcherConfigPath(config)(ConfigPaths.messagehub).toOption
-    val messageChannelsDispatcherName = ConfigHelper.lookupDispatcherConfigPath(config)(ConfigPaths.messagechannels).toOption
+    val messageHubDispatcherName = ConfigHelper.getDispatcherNameFromComponentConfigPath(config)(ConfigPaths.messagehub).toOption
+    val messageChannelsDispatcherName = ConfigHelper.getDispatcherNameFromComponentConfigPath(config)(ConfigPaths.messagechannels).toOption
     MessageHub(name, messageHubDispatcherName, messageChannelsDispatcherName)(hasActorSystem, hasExecutionContext)
   }
   

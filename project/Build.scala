@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.61"
+  val buildVersion      = "0.0.62"
   val buildScalaVersion = "2.10.0"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -259,7 +259,7 @@ object AlmHirtBuild extends Build
 								
 
   lazy val anormEventLog = anormEventLogProject(	name = "almhirt-ext-anormeventlog",
-                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(core, riftwarp, coreExtRiftwarp % "test->test")
+                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(common, core, riftwarp, coreExtRiftwarp % "test->test")
 
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/core/almhirt-ext-core-slick")) dependsOn(core, riftwarp)

@@ -1,7 +1,7 @@
 package almhirt.environment.configuration
 
+import scalaz.std._
 import akka.actor._
-import com.typesafe.config.Config
 import almhirt.common.AlmValidation
 import almhirt.almvalidation.funs._
 import almhirt.eventlog._
@@ -11,12 +11,20 @@ import almhirt.util.CommandEndpoint
 import almhirt.core.Almhirt
 import almhirt.common.UnspecifiedProblem
 import almhirt.common.CauseIsProblem
+import com.typesafe.config.Config
 
 object SystemHelper {
-  def addDispatcherToProps(config: Config)(props: Props): Props =
-    ConfigHelper.getString(config)(ConfigItems.dispatchername).fold(
-      _ => props,
-      dn => props.withDispatcher(dn))
+  def addDispatcherToPropsFromComponentPath(rootConfig: Config)(pathToComponentConfig: String)(props: Props): AlmValidation[Props] =
+    ConfigHelper.getSubConfig(rootConfig)(pathToComponentConfig).flatMap(componentConfig =>
+      addDispatcherToPropsFromComponentConfig(componentConfig)(props))
+
+  def addDispatcherToPropsFromComponentConfig(componentConfig: Config)(props: Props): AlmValidation[Props] =
+    ConfigHelper.getString(componentConfig)(ConfigItems.dispatchername).map(props.withDispatcher(_))
+
+  def addDispatcherByNameToProps(dispatcherName: Option[String])(props: Props): Props =
+    option.cata(dispatcherName)(
+      dn => props.withDispatcher(dn),
+      props)
 
   def createBootstrapperFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] = {
     ConfigHelper.getSubConfig(config)(ConfigPaths.bootstrapper).flatMap(subConf =>
@@ -84,7 +92,7 @@ object SystemHelper {
         dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theConfig)
         factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
         factory <- inTryCatch {
-        theAlmhirt.log.info(s"Creating CommandDispatcher using factory '$factoryName'")
+          theAlmhirt.log.info(s"Creating CommandDispatcher using factory '$factoryName'")
           Class.forName(factoryName)
             .newInstance()
             .asInstanceOf[{ def createCommandDispatcher(theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] }]

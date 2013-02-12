@@ -22,6 +22,7 @@ trait AlmhirtApplication extends SplashMessages {
       almhirtAndShutDown => {
         while (!exit) {
           println("""Type "stop" to ...""")
+          print("> ")
           val input = readLine;
           if (input.toLowerCase() == "stop")
             exit = true;

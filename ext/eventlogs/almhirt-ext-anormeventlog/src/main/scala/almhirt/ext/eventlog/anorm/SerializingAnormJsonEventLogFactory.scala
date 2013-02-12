@@ -32,8 +32,18 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
   private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, riftWarp: RiftWarp, theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.getConfig.flatMap(config =>
       ConfigHelper.eventLog.getConfig(config).map { eventLogConfig =>
-        val props =
-          SystemHelper.addDispatcherToProps(eventLogConfig)(Props(new SerializingAnormJsonEventLogActor(settings)(riftWarp, theAlmhirt)))
+        val dispatcherName =
+          ConfigHelper.getDispatcherNameFromComponentConfig(eventLogConfig).fold(
+            fail => {
+              theAlmhirt.log.warning("No dispatchername found for EventLog. Using default Dispatcher")
+              None
+            },
+            succ => {
+              theAlmhirt.log.info(s"EventLog is using dispatcher '$succ'")
+              Some(succ)
+            })
+        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new SerializingAnormJsonEventLogActor(settings)(riftWarp, theAlmhirt)))
+        theAlmhirt.log.info(s"EventLog is SerializingAnormJsonEventLog with name 'actorName'.")
         val actor = theAlmhirt.actorSystem.actorOf(props, actorName)
         if (dropOnClose) {
           def dropTable() = {

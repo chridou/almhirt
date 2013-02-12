@@ -78,8 +78,17 @@ class OperationStateTrackerWithoutTimeoutFactory extends OperationStateTrackerFa
     theAlmhirt.getConfig.flatMap(config =>
       ConfigHelper.operationState.getConfig(config).map { subConfig =>
         val name = ConfigHelper.operationState.getActorName(subConfig)
-        val props =
-          SystemHelper.addDispatcherToProps(subConfig)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
+        val dispatcherName =
+          ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
+            fail => {
+              theAlmhirt.log.warning("No dispatchername found for OperationStateTracker. Using default Dispatcher")
+              None
+            },
+            succ => {
+              theAlmhirt.log.info(s"OperationStateTracker is using dispatcher '$succ'")
+              Some(succ)
+            })
+        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
         theAlmhirt.log.info(s"OperationStateTracker is OperationStateTrackerWithoutTimeout. Name is '$name'")
         theAlmhirt.actorSystem.actorOf(props, name)
       })

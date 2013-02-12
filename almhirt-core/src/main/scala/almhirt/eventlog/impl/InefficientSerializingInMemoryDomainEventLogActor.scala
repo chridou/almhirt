@@ -34,8 +34,17 @@ class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventL
       ConfigHelper.eventLog.getConfig(config).map { subConfig =>
         val name = ConfigHelper.eventLog.getActorName(subConfig)
         theAlmhirt.log.info(s"EventLog is InefficientSerializingInMemoryDomainEventLog with name '$name'. *** THE EVENT LOG IS TRANSIENT ***")
-        val props =
-          SystemHelper.addDispatcherToProps(subConfig)(Props(new InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt)))
+        val dispatcherName =
+          ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
+            fail => {
+              theAlmhirt.log.warning("No dispatchername found for EventLog. Using default Dispatcher")
+              None
+            },
+            succ => {
+              theAlmhirt.log.info(s"EventLog is using dispatcher '$succ'")
+              Some(succ)
+            })
+        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       })
   }
