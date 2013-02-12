@@ -41,7 +41,7 @@ object SystemHelper {
     for {
       theConfig <- theAlmhirt.getConfig
       eventLogConfig <- ConfigHelper.eventLog.getConfig(theConfig)
-      factoryName <- ConfigHelper.shared.getFactoryName(eventLogConfig)
+      factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(eventLogConfig)
       factory <- inTryCatch {
         theAlmhirt.log.info(s"Creating DomainEventLog using factory '$factoryName'")
         Class.forName(factoryName)
@@ -57,7 +57,7 @@ object SystemHelper {
     for {
       theConfig <- theAlmhirt.getConfig
       opStateConfig <- ConfigHelper.operationState.getConfig(theConfig)
-      factoryName <- ConfigHelper.shared.getFactoryName(opStateConfig)
+      factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(opStateConfig)
       factory <- inTryCatch {
         theAlmhirt.log.info(s"Creating OperationStateTracker using factory '$factoryName'")
         Class.forName(factoryName)
@@ -73,7 +73,7 @@ object SystemHelper {
     for {
       theConfig <- theAlmhirt.getConfig
       endpointConfig <- ConfigHelper.commandEndpoint.getConfig(theConfig)
-      factoryName <- ConfigHelper.shared.getFactoryName(endpointConfig)
+      factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(endpointConfig)
       factory <- inTryCatch {
         theAlmhirt.log.info(s"Creating CommandEndpoint using factory '$factoryName'")
         Class.forName(factoryName)
@@ -90,7 +90,7 @@ object SystemHelper {
       for {
         theConfig <- theAlmhirt.getConfig
         dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theConfig)
-        factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
+        factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(dispatcherConfig)
         factory <- inTryCatch {
           theAlmhirt.log.info(s"Creating CommandDispatcher using factory '$factoryName'")
           Class.forName(factoryName)

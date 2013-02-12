@@ -63,24 +63,28 @@ object ConfigHelper {
   object eventLog {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog)
     def getActorName(eventlogConfig: Config): String = ConfigHelper.getStringOrDefault("EventLog")(eventlogConfig)(ConfigItems.actorName)
+    def factoryName(eventlogConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(eventlogConfig)
   }
 
   object operationState {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.operationState)
     def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)
+    def factoryName(operationStateConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(operationStateConfig)
   }
 
   object commandEndpoint {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.commandEndpoint)
-    def getActorName(endpointConfig: Config): String = ConfigHelper.getStringOrDefault("CommandEnpoint")(endpointConfig)(ConfigItems.actorName)
+    def getActorName(endpointConfig: Config): String = ConfigHelper.getStringOrDefault("CommandEndpoint")(endpointConfig)(ConfigItems.actorName)
+    def factoryName(endpointConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(endpointConfig)
   }
 
   object commandDispatcher {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.commandDispatcher)
+    def factoryName(dispatcherConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(dispatcherConfig)
   }
 
   object shared {
-    def getFactoryName(config: Config): AlmValidation[String] = ConfigHelper.getString(config)(ConfigItems.factory)
+    def getFactoryNameFromComponentConfig(componentConfig: Config): AlmValidation[String] = ConfigHelper.getString(componentConfig)(ConfigItems.factory)
   }
 
   def lookUpDispatcher(system: ActorSystem)(name: Option[String]): akka.dispatch.MessageDispatcher = {

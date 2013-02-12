@@ -38,8 +38,8 @@ class CommandEndpointWithUuidTicketsFactory {
   def createCommandEndpoint(theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] = {
     for {
       rootConf <- theAlmhirt.getConfig
-      config <- ConfigHelper.commandEndpoint.getConfig(rootConf)
-      modeStr <- ConfigHelper.getString(config)("mode")
+      componentConfig <- ConfigHelper.commandEndpoint.getConfig(rootConf)
+      modeStr <- ConfigHelper.getString(componentConfig)("mode")
       mode <- CommandEndpointForwardMode.fromString(modeStr)
       forwardAction <- mode match {
         case BroadcastCommandOnMessageHub =>
@@ -51,7 +51,7 @@ class CommandEndpointWithUuidTicketsFactory {
         case PushCommandDirectlyToExecutor =>
           theAlmhirt.getService[CommandExecutor].map(executor => (cmdEnv: CommandEnvelope) => executor.executeCommand(cmdEnv))
       }
-      endpointActorName <- ConfigHelper.commandEndpoint.getConfig(rootConf).map(opStateConf => ConfigHelper.commandEndpoint.getActorName(opStateConf))
+      endpointActorName <- ConfigHelper.commandEndpoint.getActorName(componentConfig).success
       endpoint <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + endpointActorName) }
     } yield {
       theAlmhirt.log.info(s"CommandEndpoint is CommandEndpointWithUuidTickets. Name is '$endpointActorName', mode is '$mode'")
