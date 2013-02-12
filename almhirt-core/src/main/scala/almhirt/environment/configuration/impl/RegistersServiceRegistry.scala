@@ -13,6 +13,7 @@ trait RegistersServiceRegistry extends AlmhirtBootstrapper {
   override def createServiceRegistry(system: HasActorSystem, startUpLogger: LoggingAdapter): AlmValidation[(ServiceRegistry, CleanUpAction)] = {
     super.createServiceRegistry(system, startUpLogger).map {
       case (registry, cleanUp) =>
+        startUpLogger.info("Register the ServiceRegistry to itself")
         registry.registerService[ServiceRegistry](registry)
         (registry, cleanUp)
     }

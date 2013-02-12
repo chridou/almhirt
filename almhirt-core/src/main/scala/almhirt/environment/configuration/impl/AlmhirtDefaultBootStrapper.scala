@@ -33,13 +33,15 @@ trait BootstrapperDefaultCoreComponents extends AlmhirtBootstrapper { self: HasC
 
   override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
     super.createCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
+    	startUpLogger.info("Creating default core components...")
         import akka.pattern._
         implicit val atMost = FiniteDuration(5, "s")
         implicit val anAlmhirt = theAlmhirt
         implicit val executionContext = theAlmhirt.executionContext
 
         inTryCatch {
-          ConfigHelper.getSubConfig(config)(ConfigPaths.operationState).foreach { _ =>
+          ConfigHelper.getSubConfig(config)(ConfigPaths.operationState).foreach { subConf =>
+    	    startUpLogger.info(s"Create operation state tracker ...")
             val tracker = SystemHelper.createOperationStateTrackerFromFactory.forceResult
             trackerRegistration =
               theAlmhirt.getService[OperationStateChannel].flatMap(channel =>
@@ -49,16 +51,23 @@ trait BootstrapperDefaultCoreComponents extends AlmhirtBootstrapper { self: HasC
                   .toAlmFuture
                   .awaitResult)
                 .forceResult
+    	    startUpLogger.info(s"Register operation state tracker")
             theServiceRegistry.registerService[OperationStateTracker](almhirt.util.impl.OperationStateTrackerActorHull(tracker))
           }
 
+    	  startUpLogger.info(s"Create HasRepositories")
           repos = HasRepositories()
+    	  startUpLogger.info(s"Register HasRepositories")
           theServiceRegistry.registerService[HasRepositories](repos)
 
+    	  startUpLogger.info(s"Create HasCommandHandlers")
           cmdHandlerRegistry = HasCommandHandlers()
+    	  startUpLogger.info(s"Register HasCommandHandlers")
           theServiceRegistry.registerService[HasCommandHandlers](cmdHandlerRegistry)
 
+    	  startUpLogger.info(s"Create CommandExecutor")
           cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos)
+    	  startUpLogger.info(s"Register CommandExecutor as listener to CommandChannel")
           cmdExecutorRegistration =
             theAlmhirt.getService[CommandChannel].flatMap(channel =>
               (channel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
@@ -67,18 +76,25 @@ trait BootstrapperDefaultCoreComponents extends AlmhirtBootstrapper { self: HasC
                 .toAlmFuture
                 .awaitResult)
               .forceResult
+    	  startUpLogger.info(s"Register CommandExecutor")
           theServiceRegistry.registerService[CommandExecutor](cmdExecutor)
           ConfigHelper.getSubConfig(config)(ConfigPaths.eventlog).foreach { _ =>
+    	    startUpLogger.info(s"Create EventLog")
             val eventLogActor = SystemHelper.createEventLogFromFactory.forceResult
+    	    startUpLogger.info(s"Register EventLog")
             theServiceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor, config))
           }
           ConfigHelper.getSubConfig(config)(ConfigPaths.commandEndpoint).foreach { _ =>
+    	    startUpLogger.info(s"Create CommandEndpoint")
             val endpoint = SystemHelper.createCommandEndpointFromFactory.forceResult
+    	    startUpLogger.info(s"Register CommandEndpoint")
             theServiceRegistry.registerService[CommandEndpoint](endpoint)
           }
 
           (() => {
+    	    startUpLogger.info(s"Dispose CommandExecutorRegistration")
             cmdExecutorRegistration.dispose
+    	    startUpLogger.info(s"Dispose operation state tracker")
             trackerRegistration.dispose
             superCleanUp();
           })

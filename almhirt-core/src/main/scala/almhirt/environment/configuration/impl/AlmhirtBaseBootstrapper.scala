@@ -23,23 +23,31 @@ import almhirt.core.HasConfig
 class AlmhirtBaseBootstrapper(override val config: Config) extends AlmhirtBootstrapper with HasConfig {
   override def createActorSystem(startUpLogger: LoggingAdapter): AlmValidation[(ActorSystem, CleanUpAction)] = {
     val sysName = ConfigHelper.getString(config)("almhirt.systemname").getOrElse("almhirt")
+    startUpLogger.info(s"Creating ActorSystem with name $sysName ...")
     val system = ActorSystem(sysName, config)
     (system, () => { system.shutdown(); system.awaitTermination() }).success
   }
 
   override def createServiceRegistry(system: HasActorSystem, startUpLogger: LoggingAdapter): AlmValidation[(ServiceRegistry, CleanUpAction)] = {
+    startUpLogger.info("Creating ServiceRegistry...")
     val registry = new SimpleConcurrentServiceRegistry()
     registry.registerService[HasConfig](new HasConfig { override val config = AlmhirtBaseBootstrapper.this.config })
     (registry, () => ()).success
   }
 
   private def createFuturesExecutionContext(actorSystem: ActorSystem, startUpLogger: LoggingAdapter): AlmValidation[HasExecutionContext] = {
+    startUpLogger.info("Creating FuturesExecutionContext...")
     val dispatcherPath = ConfigHelper.lookupDispatcherConfigPath(config)(ConfigPaths.futures).toOption
     val dispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(dispatcherPath)
+    startUpLogger.info(s"... using path ${dispatcherPath}")
     HasExecutionContext(dispatcher).success
   }
 
   override def createAlmhirt(hasActorSystem: HasActorSystem, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, CleanUpAction)] = {
+    val theDurations = Durations(config)
+    startUpLogger.info(s"Durations have been set to: ${theDurations.toString()}")
+    
+    startUpLogger.info("Creating Almhirt...")
     for {
       hasExecutionContext <- createFuturesExecutionContext(hasActorSystem.actorSystem, startUpLogger)
       theMessageHub <- MessageHub("MessageHub", config)(hasActorSystem, hasExecutionContext).success
@@ -48,7 +56,7 @@ class AlmhirtBaseBootstrapper(override val config: Config) extends AlmhirtBootst
       override val executionContext = hasExecutionContext.executionContext
       override val messageHub = theMessageHub
       override def getServiceByType(clazz: Class[_ <: AnyRef]) = theServiceRegistry.getServiceByType(clazz)
-      override val durations = Durations(config)
+      override val durations = theDurations
       override val log = Logging(actorSystem, classOf[Almhirt])
     }, () => ())
   }

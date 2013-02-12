@@ -34,10 +34,12 @@ object SystemHelper {
       theConfig <- theAlmhirt.getConfig
       eventLogConfig <- ConfigHelper.eventLog.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryName(eventLogConfig)
-      factory <- inTryCatch(
+      factory <- inTryCatch {
+        theAlmhirt.log.info(s"Creating DomainEventLog using factory '$factoryName'")
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createDomainEventLog(x: Almhirt): AlmValidation[ActorRef] }])
+          .asInstanceOf[{ def createDomainEventLog(x: Almhirt): AlmValidation[ActorRef] }]
+      }
       eventLog <- factory.createDomainEventLog(theAlmhirt)
     } yield eventLog
   }
@@ -49,6 +51,7 @@ object SystemHelper {
       opStateConfig <- ConfigHelper.operationState.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryName(opStateConfig)
       factory <- inTryCatch {
+        theAlmhirt.log.info(s"Creating OperationStateTracker using factory '$factoryName'")
         Class.forName(factoryName)
           .newInstance()
           .asInstanceOf[{ def createOperationStateTracker(x: Almhirt): AlmValidation[ActorRef] }]
@@ -64,6 +67,7 @@ object SystemHelper {
       endpointConfig <- ConfigHelper.commandEndpoint.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryName(endpointConfig)
       factory <- inTryCatch {
+        theAlmhirt.log.info(s"Creating CommandEndpoint using factory '$factoryName'")
         Class.forName(factoryName)
           .newInstance()
           .asInstanceOf[{ def createCommandEndpoint(theAlmhirt: Almhirt): AlmValidation[CommandEndpoint] }]
@@ -75,18 +79,19 @@ object SystemHelper {
   def createCommandDispatcherFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] = {
     import language.reflectiveCalls
     val res =
-	    for {
-	      theConfig <- theAlmhirt.getConfig
-	      dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theConfig)
-	      factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
-	      factory <- inTryCatch {
-	        Class.forName(factoryName)
-	          .newInstance()
-	          .asInstanceOf[{ def createCommandDispatcher(theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] }]
-	      }
-	      dispatcher <- factory.createCommandDispatcher(theAlmhirt)
-	    } yield dispatcher
-	res.bimap(prob => new UnspecifiedProblem("Could not create a command endpoint from factory", cause = Some(CauseIsProblem(prob))), g => g)
+      for {
+        theConfig <- theAlmhirt.getConfig
+        dispatcherConfig <- ConfigHelper.commandDispatcher.getConfig(theConfig)
+        factoryName <- ConfigHelper.shared.getFactoryName(dispatcherConfig)
+        factory <- inTryCatch {
+        theAlmhirt.log.info(s"Creating CommandDispatcher using factory '$factoryName'")
+          Class.forName(factoryName)
+            .newInstance()
+            .asInstanceOf[{ def createCommandDispatcher(theAlmhirt: Almhirt): AlmValidation[almhirt.client.CommandDispatcher] }]
+        }
+        dispatcher <- factory.createCommandDispatcher(theAlmhirt)
+      } yield dispatcher
+    res.bimap(prob => new UnspecifiedProblem("Could not create a command endpoint from factory", cause = Some(CauseIsProblem(prob))), g => g)
   }
 
 }

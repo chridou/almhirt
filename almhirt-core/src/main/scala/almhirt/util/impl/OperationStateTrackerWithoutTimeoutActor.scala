@@ -80,6 +80,7 @@ class OperationStateTrackerWithoutTimeoutFactory extends OperationStateTrackerFa
         val name = ConfigHelper.operationState.getActorName(subConfig)
         val props =
           SystemHelper.addDispatcherToProps(subConfig)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
+        theAlmhirt.log.info(s"OperationStateTracker is OperationStateTrackerWithoutTimeout. Name is '$name'")
         theAlmhirt.actorSystem.actorOf(props, name)
       })
   }

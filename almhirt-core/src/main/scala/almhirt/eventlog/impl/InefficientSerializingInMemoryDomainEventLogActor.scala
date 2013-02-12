@@ -33,6 +33,7 @@ class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventL
     theAlmhirt.getConfig.flatMap(config =>
       ConfigHelper.eventLog.getConfig(config).map { subConfig =>
         val name = ConfigHelper.eventLog.getActorName(subConfig)
+        theAlmhirt.log.info(s"EventLog is InefficientSerializingInMemoryDomainEventLog with name $name")
         val props =
           SystemHelper.addDispatcherToProps(subConfig)(Props(new InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)

@@ -17,6 +17,7 @@ trait BootstrapperWithDefaultChannels extends AlmhirtBootstrapper{
     super.createCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
       implicit val dur = Duration(1, "s")
       implicit val hasExecContext = theAlmhirt
+      startUpLogger.info("Create CommandChannel, OperationStateChannel, DomainEventsChannel, ProblemsChannel")
       val channels =
         (for {
           commandChannel <- theAlmhirt.messageHub.createMessageChannel[CommandEnvelope]("CommandChannel")
@@ -30,9 +31,13 @@ trait BootstrapperWithDefaultChannels extends AlmhirtBootstrapper{
           new ProblemChannelWrapper(problemsChannel))).awaitResult
 
       channels.foreach { x =>
+        startUpLogger.info("Register CommandChannel")
         theServiceRegistry.registerService[CommandChannel](x._1)
+        startUpLogger.info("Register OperationStateChannel")
         theServiceRegistry.registerService[OperationStateChannel](x._2)
+        startUpLogger.info("Register DomainEventsChannel")
         theServiceRegistry.registerService[DomainEventsChannel](x._3)
+        startUpLogger.info("Register ProblemsChannel")
         theServiceRegistry.registerService[ProblemChannel](x._4)
       }
       (superCleanUp).success

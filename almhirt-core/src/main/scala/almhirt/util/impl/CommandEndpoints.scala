@@ -25,7 +25,7 @@ class CommandEndpointWithUuidTickets(forwardCommand: CommandEnvelope => Unit, op
     forwardCommand(CommandEnvelope(cmd, Some(ticket)))
     ticket
   }
-  
+
   def executeWithResult(atMost: FiniteDuration)(cmd: DomainCommand): AlmFuture[ResultOperationState] = {
     val ticket = UuidTrackingTicket(theAlmhirt.getUuid)
     val future = (operationStateTracker ? RegisterResultCallbackQry(ticket, atMost))(atMost)
@@ -51,9 +51,12 @@ class CommandEndpointWithUuidTicketsFactory {
         case PushCommandDirectlyToExecutor =>
           theAlmhirt.getService[CommandExecutor].map(executor => (cmdEnv: CommandEnvelope) => executor.executeCommand(cmdEnv))
       }
-      trackerActorName <- ConfigHelper.operationState.getConfig(rootConf).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
-      tracker <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + trackerActorName) }
-    } yield new CommandEndpointWithUuidTickets(forwardAction, tracker, theAlmhirt)
+      endpointActorName <- ConfigHelper.operationState.getConfig(rootConf).map(opStateConf => ConfigHelper.operationState.getActorName(opStateConf))
+      endpoint <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + endpointActorName) }
+    } yield {
+      theAlmhirt.log.info(s"CommandEndpoint is CommandEndpointWithUuidTickets. Name is '$endpointActorName', mode is '$mode'")
+      new CommandEndpointWithUuidTickets(forwardAction, endpoint, theAlmhirt)
+    }
   }
 
 }
