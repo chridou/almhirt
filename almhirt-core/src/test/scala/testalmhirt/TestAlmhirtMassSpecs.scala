@@ -7,6 +7,7 @@ import almhirt.environment._
 import almhirt.core.test._
 import almhirt.almfuture.inst._
 import almhirt.common.AlmFuture
+import almhirt.domain._
 import almhirt.commanding._
 import org.scalatest._
 

@@ -7,6 +7,7 @@ import almhirt.environment._
 import almhirt.core.Almhirt
 import almhirt.core.CanCreateUuid
 import scala.reflect.ClassTag
+import almhirt.domain.AggregateRootRef
 
 case class NewTestPersonAction(id: UUID, name: String) extends TestPersonContext.BoundCreatorAction
 case class ChangeTestPersonNameAction(newName: String) extends TestPersonContext.BoundMutatorAction

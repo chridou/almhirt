@@ -1,7 +1,7 @@
 package almhirt.util
 
 import almhirt.common._
-import almhirt.commanding.AggregateRootRef
+import almhirt.domain.AggregateRootRef
 
 
 sealed trait PerformedAction
