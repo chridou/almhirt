@@ -24,7 +24,7 @@ abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], 
       .asInstanceOf[Future[AggregateRootFromRepositoryRsp[AR, Event]]]
       .map(_.ar) 
 
-  def store(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]): Unit =
+  def store(ar: AR, uncommittedEvents: IndexedSeq[Event], ticket: Option[TrackingTicket]): Unit =
     (actor ! StoreAggregateRootCmd(ar, uncommittedEvents, ticket))
   
 }

@@ -29,7 +29,7 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
         else arFactory.rebuildFromHistory(events))
   }
 
-  private def storeToEventLog(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]) = {
+  private def storeToEventLog(ar: AR, uncommittedEvents: IndexedSeq[Event], ticket: Option[TrackingTicket]) = {
     (for {
       response <- (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).~+>[RequiredNextEventVersionRsp]
       validated <- AlmFuture {
@@ -62,6 +62,6 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
       val res = getFromEventLog(aggId).awaitResult
       sender ! AggregateRootFromRepositoryRsp[AR, Event](res)
     case StoreAggregateRootCmd(ar, uncommittedEvents, ticket) =>
-      storeToEventLog(ar.asInstanceOf[AR], uncommittedEvents.asInstanceOf[List[Event]], ticket)
+      storeToEventLog(ar.asInstanceOf[AR], uncommittedEvents.asInstanceOf[IndexedSeq[Event]], ticket)
   }
 }

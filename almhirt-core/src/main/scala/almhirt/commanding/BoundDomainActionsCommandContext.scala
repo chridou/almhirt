@@ -96,7 +96,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
   trait BoundUnitOfWork extends HandlesCommand {
     implicit def theAlmhirt: Almhirt
     protected def getAR(id: JUUID): AlmFuture[TAR]
-    protected def storeAR(ar: TAR, uncommittedEvents: List[TEvent], ticket: Option[TrackingTicket]): Unit
+    protected def storeAR(ar: TAR, uncommittedEvents: IndexedSeq[TEvent], ticket: Option[TrackingTicket]): Unit
     def actionHandlers: HasActionHandlers
     def handle(com: DomainCommand, ticket: Option[TrackingTicket]) {
       com match {
@@ -181,11 +181,11 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
 
   import akka.pattern._
 
-  def createBasicUow(cmdType: Class[_ <: DomainCommand], getsAnAR: JUUID => AlmFuture[TAR], storesAnAr: (TAR, List[TEvent], Option[TrackingTicket]) => Unit, theActionHandlers: Option[HasActionHandlers])(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
+  def createBasicUow(cmdType: Class[_ <: DomainCommand], getsAnAR: JUUID => AlmFuture[TAR], storesAnAr: (TAR, IndexedSeq[TEvent], Option[TrackingTicket]) => Unit, theActionHandlers: Option[HasActionHandlers])(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork =
     new BoundUnitOfWork {
       val commandType = cmdType
       protected override def getAR(id: JUUID) = getsAnAR(id)
-      protected override def storeAR(ar: TAR, uncommittedEvents: List[TEvent], ticket: Option[TrackingTicket]) = storesAnAr(ar, uncommittedEvents, ticket)
+      protected override def storeAR(ar: TAR, uncommittedEvents: IndexedSeq[TEvent], ticket: Option[TrackingTicket]) = storesAnAr(ar, uncommittedEvents, ticket)
       val actionHandlers = theActionHandlers.getOrElse(BoundDomainActionsCommandContext.this.actionHandlers)
       val theAlmhirt = anAlmhirt
     }
@@ -193,7 +193,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
   def createBasicUowWithRepoActor(cmdType: Class[_ <: DomainCommand], repoActor: ActorRef, theActionHandlers: Option[HasActionHandlers], maxGetDuration: Option[FiniteDuration] = None)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork = {
     val duration = option.cata(maxGetDuration)(dur => dur, anAlmhirt.defaultDuration)
     def get(id: JUUID) = (repoActor ? GetAggregateRootQry(id))(duration).mapToAlmFutureOver[AggregateRootFromRepositoryRsp[TAR, TEvent], TAR](rsp => rsp.ar)
-    def store(ar: TAR, uncommittedEvents: List[TEvent], ticket: Option[TrackingTicket]) = repoActor ! StoreAggregateRootCmd[TAR, TEvent](ar, uncommittedEvents, ticket)
+    def store(ar: TAR, uncommittedEvents: IndexedSeq[TEvent], ticket: Option[TrackingTicket]) = repoActor ! StoreAggregateRootCmd[TAR, TEvent](ar, uncommittedEvents, ticket)
     createBasicUow(cmdType, get _, store _, theActionHandlers)
   }
 

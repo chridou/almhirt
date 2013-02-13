@@ -20,8 +20,8 @@ class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: Fi
   def this(actor: ActorRef, maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, maximumDirectCallDuration.getOrElse(FiniteDuration(5, "seconds")))
   def this(actor: ActorRef)(implicit theAlmhirt: Almhirt) = this(actor, None)
 
-  def storeEvents(events: List[DomainEvent]) = (actor ? LogEventsQry(events, None))(maximumDirectCallDuration).mapTo[CommittedDomainEventsRsp].map(_.events)
-  def purgeEvents(aggRootId: java.util.UUID) = AlmFuture.successful { Nil }
+  def storeEvents(events: IndexedSeq[DomainEvent]) = (actor ? LogEventsQry(events, None))(maximumDirectCallDuration).mapTo[CommittedDomainEventsRsp].map(_.events)
+  def purgeEvents(aggRootId: java.util.UUID) = AlmFuture.successful { IndexedSeq.empty }
 
   def getAllEvents() = (actor ? GetAllEventsQry())(maximumDirectCallDuration).mapTo[AllEventsRsp].map(x => x.chunk.events)
   def getEvents(id: UUID) = (actor ? GetEventsQry(id))(maximumDirectCallDuration).mapTo[EventsForAggregateRootRsp].map(x => x.chunk.events)

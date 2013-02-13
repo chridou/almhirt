@@ -12,7 +12,7 @@ import scala.reflect.ClassTag
 
 sealed trait AggregateRootRepositoryCmd
 case class GetAggregateRootQry(aggId: JUUID) extends AggregateRootRepositoryCmd
-case class StoreAggregateRootCmd[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AggregateRoot[AR, Event], uncommittedEvents: List[DomainEvent], ticket: Option[TrackingTicket]) extends AggregateRootRepositoryCmd
+case class StoreAggregateRootCmd[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AggregateRoot[AR, Event], uncommittedEvents: IndexedSeq[DomainEvent], ticket: Option[TrackingTicket]) extends AggregateRootRepositoryCmd
 
 sealed trait AggregateRootRepositoryRsp
 case class AggregateRootFromRepositoryRsp[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AlmValidation[AR]) extends AggregateRootRepositoryRsp
@@ -41,7 +41,7 @@ object AggregateRootRepository {
   def dummy[AR <: AggregateRoot[AR, Event], Event <: DomainEvent]: AggregateRootRepository[AR, Event] =
     new AggregateRootRepository[AR, Event] {
       def get(id: JUUID) = ???
-      def store(ar: AR, uncommittedEvents: List[Event], ticket: Option[TrackingTicket]) { ??? }
+      def store(ar: AR, uncommittedEvents: IndexedSeq[Event], ticket: Option[TrackingTicket]) { ??? }
       def actor = ???
     }
 

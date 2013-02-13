@@ -21,6 +21,8 @@ object AnormEventLogEntry{
       AnormEventLogEntry(event.id, event.aggId, event.aggVersion, timeProvider.getDateTime, serEvent.manifestation))
   }
   
-  def fromDomainEvents(events: List[DomainEvent])(implicit riftWarp: RiftWarp, timeProvider: CanCreateUuidsAndDateTimes): AlmValidation[List[AnormEventLogEntry]] =
-    events.map(event => fromDomainEvent(event).toAgg).sequence
+  def fromDomainEvents(events: IndexedSeq[DomainEvent])(implicit riftWarp: RiftWarp, timeProvider: CanCreateUuidsAndDateTimes): AlmValidation[IndexedSeq[AnormEventLogEntry]] = {
+    val eventsV = events.toList.map(event => fromDomainEvent(event).toAgg).sequence
+    eventsV.map(_.toVector)
+  }
 }

@@ -6,7 +6,7 @@ import almhirt.core._
 import almhirt.common._
 
 trait CanValidateAggregateRootsAgainstEvents[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] {
-  def validateAggregateRootAgainstEvents(newAr: AR, uncommittedEvents: List[Event], nextRequiredEventVersion: Long): AlmValidation[(AR, List[Event])] = {
+  def validateAggregateRootAgainstEvents(newAr: AR, uncommittedEvents: IndexedSeq[Event], nextRequiredEventVersion: Long): AlmValidation[(AR, IndexedSeq[Event])] = {
     if (uncommittedEvents.isEmpty)
       EmptyCollectionProblem("no events to append", category = ApplicationProblem, severity = Minor).failure
     else if (uncommittedEvents.head.aggVersion != nextRequiredEventVersion)

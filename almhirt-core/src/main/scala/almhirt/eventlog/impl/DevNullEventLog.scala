@@ -57,7 +57,7 @@ class DevNullEventLogFactory() extends DomainEventLogFactory {
 class DevNullEventLogActor() extends Actor {
   def receive = {
     case LogEventsQry(events, _) =>
-      sender ! CommittedDomainEventsRsp(events.success, None)
+      sender ! CommittedDomainEventsRsp(events.toVector.success, None)
     case GetAllEventsQry(chunkSize, execIdent) =>
       sender ! AllEventsRsp(DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
     case GetEventsQry(aggId, chunkSize, execIdent) =>

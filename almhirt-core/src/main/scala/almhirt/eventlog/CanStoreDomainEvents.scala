@@ -25,6 +25,6 @@ import almhirt.common.AlmFuture
  */
 trait CanStoreDomainEvents {
   /** Log the domain events and in a case of success return them. Events must contain the events in order of occurence */
-  def storeEvents(events: List[DomainEvent]): AlmFuture[Iterable[DomainEvent]]
-  def purgeEvents(aggRootId: java.util.UUID): AlmFuture[Iterable[DomainEvent]]
+  def storeEvents(events: IndexedSeq[DomainEvent]): AlmFuture[IndexedSeq[DomainEvent]]
+  def purgeEvents(aggRootId: java.util.UUID): AlmFuture[IndexedSeq[DomainEvent]]
 }

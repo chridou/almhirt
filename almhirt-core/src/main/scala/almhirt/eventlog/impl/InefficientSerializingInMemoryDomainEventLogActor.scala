@@ -52,12 +52,12 @@ class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventL
 }
 
 class InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt: Almhirt) extends Actor {
-  private var loggedEvents: List[DomainEvent] = Nil
+  private var loggedEvents: IndexedSeq[DomainEvent] = IndexedSeq.empty
   def receive: Receive = {
     case LogEventsQry(events, executionIdent) =>
       loggedEvents = loggedEvents ++ events
       events.foreach(event => theAlmhirt.publishDomainEvent(event))
-      sender ! CommittedDomainEventsRsp(events.success, executionIdent)
+      sender ! CommittedDomainEventsRsp(events.toVector.success, executionIdent)
     case GetAllEventsQry(chunkSize, execIdent) =>
       sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)
     case GetEventsQry(aggId, chunkSize, execIdent) =>

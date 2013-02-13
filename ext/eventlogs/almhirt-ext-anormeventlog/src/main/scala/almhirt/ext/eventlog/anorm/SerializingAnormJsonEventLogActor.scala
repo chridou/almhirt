@@ -47,7 +47,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
   private def inTransaction[T](compute: Connection => AlmValidation[T]): AlmValidation[T] =
     DbUtil.inTransaction(withConnection[T])(compute)
 
-  private def storeEvents(events: List[DomainEvent]): AlmValidation[List[DomainEvent]] = {
+  private def storeEvents(events: IndexedSeq[DomainEvent]): AlmValidation[IndexedSeq[DomainEvent]] = {
     val entriesV = AnormEventLogEntry.fromDomainEvents(events)
     entriesV.flatMap(entries =>
       inTransaction(implicit conn => {
@@ -63,7 +63,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
         //          events.success
         //        else
         //          PersistenceProblem("Number of committed events(%d) does not match the number of events to store(%d)!".format(rowsInserted.length, events.length)).failure
-        events.success
+        events.toVector.success
       }))
   }
 

@@ -25,13 +25,13 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
     actorSystem.awaitTermination()
   }
 
-  def createUOW(getsAnAR: UUID => AlmFuture[TestPerson], storesAnAr: (TestPerson, List[TestPersonEvent], Option[TrackingTicket]) => Unit): TestPersonContext.BoundUnitOfWork =
+  def createUOW(getsAnAR: UUID => AlmFuture[TestPerson], storesAnAr: (TestPerson, IndexedSeq[TestPersonEvent], Option[TrackingTicket]) => Unit): TestPersonContext.BoundUnitOfWork =
     TestPersonContext.createBasicUow(classOf[TestPersonCommand], getsAnAR, storesAnAr, None)
 
   def createUOWOnListBufferAndMap() = {
     val map = new HashMap[UUID, TestPerson]
     val buffer = new ListBuffer[TestPersonEvent]
-    def store(ar: TestPerson, events: List[TestPersonEvent], ticket: Option[TrackingTicket]) {
+    def store(ar: TestPerson, events: IndexedSeq[TestPersonEvent], ticket: Option[TrackingTicket]) {
       buffer.append(events: _*)
       map.put(ar.id, ar)
     }
