@@ -18,7 +18,7 @@ import almhirt.environment.configuration.ConfigHelper
 import almhirt.environment.configuration.SystemHelper
 import almhirt.core.Almhirt
 
-class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with LogsProblemsTagged with AlmActorLogging {
+class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with AlmActorLogging with LogsProblemsTagged {
   val logTag = "OperationStateTracker"
   val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
   val collectedResults = collection.mutable.HashMap.empty[TrackingTicket, ResultOperationState]

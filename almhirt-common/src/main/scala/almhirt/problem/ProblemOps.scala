@@ -41,20 +41,10 @@ trait ProblemOps1[T <: Problem] extends Ops[T] {
     AggregateProblem(self.message, severity = self.severity, category = self.category, problems = self :: Nil)
 }
 
-trait ProblemOps2[T <: Problem] extends Ops[T] {
-  def withIdentifier(ident: String): T = funs.withIdentifier(self, ident)
 
-  def markLogged(): T = self.withArg("isLogged", true).asInstanceOf[T]
-  def isLogged(): Boolean = self.args.contains("isLogged") && self.args("isLogged") == true
-
-  def setTag(tag: String): T = self.withArg("tag", tag).asInstanceOf[T]
-  def isTagged(): Boolean = self.args.contains("tag") && self.args("tag").isInstanceOf[String]
-  def tryGetTag(): Option[String] = if (isTagged) Some(self.args("tag").asInstanceOf[String]) else None
-}
 
 trait ToProblemOps {
   implicit def ToProblemOps0(a: NonEmptyList[Problem]) = new ProblemOps0 { def self = a }
   implicit def ToProblemOps1[T <: Problem](a: T) = new ProblemOps1[T] { def self = a }
-  implicit def ToProblemOps2[T <: Problem](a: T) = new ProblemOps2[T] { def self = a }
 }
 

@@ -14,6 +14,7 @@ object ConfigPaths {
   val futures = "almhirt.futures"
     
   val http = "almhirt.http"
+  val problems = "almhirt.problems"
 
 }
 

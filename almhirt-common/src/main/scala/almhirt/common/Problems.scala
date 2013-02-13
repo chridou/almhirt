@@ -27,7 +27,7 @@ case class UnspecifiedProblem(message: String, severity: Severity = Major, categ
 /**
  * Multiple problems that occurred during an operation under the hood of one aggregating problem.
  * The cause property is usually None
- * 
+ *
  * The order of the aggregated problems is defined as having no meaning
  */
 case class AggregateProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None, problems: List[Problem] = Nil) extends Problem {
@@ -260,7 +260,6 @@ case class IndexOutOfBoundsProblem(message: String, severity: Severity = Minor, 
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-
 /**
  * Data couldn't be found. Use when looking for an entity or something similar. Do not use for a missing key in a map.
  */
@@ -334,7 +333,7 @@ case class CollisionProblem(message: String, severity: Severity = Minor, categor
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-case class NotAuthorizedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends SecurityProblem {
+case class NotAuthorizedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = NotAuthorizedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -343,7 +342,7 @@ case class NotAuthorizedProblem(message: String, severity: Severity = Minor, cat
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
-case class NotAuthenticatedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends SecurityProblem {
+case class NotAuthenticatedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = ApplicationProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = NotAuthenticatedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)

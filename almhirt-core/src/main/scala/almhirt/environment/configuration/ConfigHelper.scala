@@ -93,6 +93,13 @@ object ConfigHelper {
     def maxContentLength(httpConfig: Config): AlmValidation[Int] = getInt(httpConfig)("maxContentLength")
   }
 
+  object problems {
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.problems)
+    def minSeverity(problemsConfig: Config): AlmValidation[Severity] = 
+      getString(problemsConfig)("minSeverity").flatMap(Severity.fromString(_))
+    def getActorName(problemsConfig: Config): String = ConfigHelper.getStringOrDefault("ProblemLogger")(problemsConfig)(ConfigItems.actorName)
+  }
+  
   object shared {
     def getFactoryNameFromComponentConfig(componentConfig: Config): AlmValidation[String] = ConfigHelper.getString(componentConfig)(ConfigItems.factory)
   }

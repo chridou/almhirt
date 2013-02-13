@@ -3,6 +3,8 @@ package almhirt.environment.configuration.impl
 import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
 import akka.event.LoggingAdapter
+import akka.actor._
+import akka.util.Timeout._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
@@ -31,74 +33,104 @@ trait BootstrapperDefaultCoreComponents extends AlmhirtBootstrapper { self: HasC
   private var cmdExecutor: CommandExecutor = null
   private var cmdExecutorRegistration: RegistrationHolder = null
 
+  implicit val atMost = FiniteDuration(5, "s")
+
+  private var problemLogger: ActorRef = null
+
   override def createCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] = {
     super.createCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
-    	startUpLogger.info("Creating default core components...")
-        import akka.pattern._
-        implicit val atMost = FiniteDuration(5, "s")
-        implicit val anAlmhirt = theAlmhirt
-        implicit val executionContext = theAlmhirt.executionContext
+      startUpLogger.info("Creating default core components...")
+      import akka.pattern._
+      implicit val anAlmhirt = theAlmhirt
+      implicit val executionContext = theAlmhirt.executionContext
 
-        inTryCatch {
-          ConfigHelper.getSubConfig(config)(ConfigPaths.operationState).foreach { subConf =>
-    	    startUpLogger.info(s"Create operation state tracker ...")
-            val tracker = SystemHelper.createOperationStateTrackerFromFactory.forceResult
-            trackerRegistration =
-              theAlmhirt.getService[OperationStateChannel].flatMap(channel =>
-                (channel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker)))(atMost)
-                  .mapTo[SubscriptionRsp]
-                  .map(_.registration)
-                  .toAlmFuture
-                  .awaitResult)
-                .forceResult
-    	    startUpLogger.info(s"Register operation state tracker")
-            theServiceRegistry.registerService[OperationStateTracker](almhirt.util.impl.OperationStateTrackerActorHull(tracker))
-          }
-
-    	  startUpLogger.info(s"Create HasRepositories")
-          repos = HasRepositories()
-    	  startUpLogger.info(s"Register HasRepositories")
-          theServiceRegistry.registerService[HasRepositories](repos)
-
-    	  startUpLogger.info(s"Create HasCommandHandlers")
-          cmdHandlerRegistry = HasCommandHandlers()
-    	  startUpLogger.info(s"Register HasCommandHandlers")
-          theServiceRegistry.registerService[HasCommandHandlers](cmdHandlerRegistry)
-
-    	  startUpLogger.info(s"Create CommandExecutor")
-          cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos)
-    	  startUpLogger.info(s"Register CommandExecutor as listener to CommandChannel")
-          cmdExecutorRegistration =
-            theAlmhirt.getService[CommandChannel].flatMap(channel =>
-              (channel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
+      inTryCatch {
+        ConfigHelper.getSubConfig(config)(ConfigPaths.operationState).foreach { subConf =>
+          startUpLogger.info(s"Create operation state tracker ...")
+          val tracker = SystemHelper.createOperationStateTrackerFromFactory.forceResult
+          trackerRegistration =
+            theAlmhirt.getService[OperationStateChannel].flatMap(channel =>
+              (channel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker)))(atMost)
                 .mapTo[SubscriptionRsp]
                 .map(_.registration)
                 .toAlmFuture
                 .awaitResult)
               .forceResult
-    	  startUpLogger.info(s"Register CommandExecutor")
-          theServiceRegistry.registerService[CommandExecutor](cmdExecutor)
-          ConfigHelper.getSubConfig(config)(ConfigPaths.eventlog).foreach { _ =>
-    	    startUpLogger.info(s"Create EventLog")
-            val eventLogActor = SystemHelper.createEventLogFromFactory.forceResult
-    	    startUpLogger.info(s"Register EventLog")
-            theServiceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor, config))
-          }
-          ConfigHelper.getSubConfig(config)(ConfigPaths.commandEndpoint).foreach { _ =>
-    	    startUpLogger.info(s"Create CommandEndpoint")
-            val endpoint = SystemHelper.createCommandEndpointFromFactory.forceResult
-    	    startUpLogger.info(s"Register CommandEndpoint")
-            theServiceRegistry.registerService[CommandEndpoint](endpoint)
-          }
-
-          (() => {
-    	    startUpLogger.info(s"Dispose CommandExecutorRegistration")
-            cmdExecutorRegistration.dispose
-    	    startUpLogger.info(s"Dispose operation state tracker")
-            trackerRegistration.dispose
-            superCleanUp();
-          })
+          startUpLogger.info(s"Register operation state tracker")
+          theServiceRegistry.registerService[OperationStateTracker](almhirt.util.impl.OperationStateTrackerActorHull(tracker))
         }
+
+        startUpLogger.info(s"Create HasRepositories")
+        repos = HasRepositories()
+        startUpLogger.info(s"Register HasRepositories")
+        theServiceRegistry.registerService[HasRepositories](repos)
+
+        startUpLogger.info(s"Create HasCommandHandlers")
+        cmdHandlerRegistry = HasCommandHandlers()
+        startUpLogger.info(s"Register HasCommandHandlers")
+        theServiceRegistry.registerService[HasCommandHandlers](cmdHandlerRegistry)
+
+        startUpLogger.info(s"Create CommandExecutor")
+        cmdExecutor = CommandExecutor(cmdHandlerRegistry, repos)
+        startUpLogger.info(s"Register CommandExecutor as listener to CommandChannel")
+        cmdExecutorRegistration =
+          theAlmhirt.getService[CommandChannel].flatMap(channel =>
+            (channel.actor ? SubscribeQry(MessagingSubscription.forActor[CommandEnvelope](cmdExecutor.actor)))(atMost)
+              .mapTo[SubscriptionRsp]
+              .map(_.registration)
+              .toAlmFuture
+              .awaitResult)
+            .forceResult
+        startUpLogger.info(s"Register CommandExecutor")
+        theServiceRegistry.registerService[CommandExecutor](cmdExecutor)
+        ConfigHelper.getSubConfig(config)(ConfigPaths.eventlog).foreach { _ =>
+          startUpLogger.info(s"Create EventLog")
+          val eventLogActor = SystemHelper.createEventLogFromFactory.forceResult
+          startUpLogger.info(s"Register EventLog")
+          theServiceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor, config))
+        }
+        ConfigHelper.getSubConfig(config)(ConfigPaths.commandEndpoint).foreach { _ =>
+          startUpLogger.info(s"Create CommandEndpoint")
+          val endpoint = SystemHelper.createCommandEndpointFromFactory.forceResult
+          startUpLogger.info(s"Register CommandEndpoint")
+          theServiceRegistry.registerService[CommandEndpoint](endpoint)
+        }
+        ConfigHelper.getSubConfig(config)(ConfigPaths.problems).foreach { subConf =>
+          startUpLogger.info("Create ProblemLogger")
+          val minSeverity =
+            ConfigHelper.problems.minSeverity(subConf).fold(
+              fail => {
+                startUpLogger.warning(s"Could not determine minSeverity: ${fail.message}. Using Minor as minSeverity")
+                Minor
+              },
+              succ => succ)
+          val actorName = ConfigHelper.problems.getActorName(subConf)
+          problemLogger = theAlmhirt.actorSystem.actorOf(Props(new almhirt.util.impl.ProblemLogger(minSeverity)), actorName)
+          startUpLogger.info(s"ProblemLogger has path ${problemLogger.path.toString()}")
+        }
+
+        (() => {
+          startUpLogger.info(s"Dispose CommandExecutorRegistration")
+          cmdExecutorRegistration.dispose
+          startUpLogger.info(s"Dispose operation state tracker")
+          trackerRegistration.dispose
+          superCleanUp();
+        })
+      }
     }
   }
+
+  override def initializeCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
+    super.initializeCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
+      if (problemLogger != null) {
+        theServiceRegistry.getService[ProblemChannel].fold(
+          fail => superCleanUp.success,
+          probChannel => {
+            startUpLogger.info("Found a problem channel. ProblemLogger will be a listener to ProblemChannel")
+            val registration = (probChannel <-<# ((prob: Problem) => problemLogger ! prob)).awaitResult.forceResult
+            (() => { superCleanUp(); registration.dispose() }).success
+          })
+      } else
+        superCleanUp.success
+    }
 }
