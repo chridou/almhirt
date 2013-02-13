@@ -11,7 +11,7 @@ object PerformedCreateActionDecomposer extends Decomposer[PerformedCreateAction]
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: PerformedCreateAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor).flatMap(
-      _.addUuid("id", what.id))
+      _.addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef))
   }
 }
 
@@ -20,7 +20,7 @@ object PerformedUpdateActionDecomposer extends Decomposer[PerformedUpdateAction]
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: PerformedUpdateAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor).flatMap(
-      _.addUuid("id", what.id))
+      _.addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef))
   }
 }
 
@@ -48,7 +48,7 @@ object PerformedCreateActionRecomposer extends Recomposer[PerformedCreateAction]
   val riftDescriptor = RiftDescriptor(classOf[PerformedCreateAction])
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[PerformedCreateAction] = {
-    from.getUuid("id").map(PerformedCreateAction.apply)
+    from.getComplexType("aggRef", AggregateRootRefRecomposer).map(PerformedCreateAction.apply)
   }
 }
 
@@ -56,7 +56,7 @@ object PerformedUpdateActionRecomposer extends Recomposer[PerformedUpdateAction]
   val riftDescriptor = RiftDescriptor(classOf[PerformedUpdateAction])
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[PerformedUpdateAction] = {
-    from.getUuid("id").map(PerformedUpdateAction.apply)
+    from.getComplexType("aggRef", AggregateRootRefRecomposer).map(PerformedUpdateAction.apply)
   }
 }
 

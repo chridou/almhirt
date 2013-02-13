@@ -1,11 +1,12 @@
 package almhirt.util
 
 import almhirt.common._
+import almhirt.commanding.AggregateRootRef
 
 
 sealed trait PerformedAction
-case class PerformedCreateAction(id: java.util.UUID) extends PerformedAction
-case class PerformedUpdateAction(id: java.util.UUID) extends PerformedAction
+case class PerformedCreateAction(aggRef: AggregateRootRef) extends PerformedAction
+case class PerformedUpdateAction(aggRef: AggregateRootRef) extends PerformedAction
 case object PerformedUnspecifiedAction extends PerformedAction
 
 
