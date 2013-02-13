@@ -124,7 +124,10 @@ trait BootstrapperDefaultCoreComponents extends AlmhirtBootstrapper { self: HasC
     super.initializeCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
       if (problemLogger != null) {
         theServiceRegistry.getService[ProblemChannel].fold(
-          fail => superCleanUp.success,
+          fail => {
+            startUpLogger.warning("We have a ProblemLogger but no ProblemChannel. You will have to deliver your problems directly to the ProblemLogger if you want your problems to be logged.")
+            superCleanUp.success
+            },
           probChannel => {
             startUpLogger.info("Found a problem channel. ProblemLogger will be a listener to ProblemChannel")
             val registration = (probChannel <-<# ((prob: Problem) => problemLogger ! prob)).awaitResult.forceResult
