@@ -15,7 +15,6 @@ trait DefaultSplashMessages extends SplashMessages {
 		| /  _____  \  |  `----.|  |  |  | |  |  |  | |  | |  |\  \----.   |  |     
 		|/__/     \__\ |_______||__|  |__| |__|  |__| |__| | _| `._____|   |__|
 	    |
-	    |www.almhirt.org
 	    |""".stripMargin
 
   def goodByeMessage =

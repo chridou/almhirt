@@ -12,6 +12,9 @@ trait AlmhirtApplication extends SplashMessages {
 
   def run(bootStrapper: AlmhirtBootstrapper, logger: akka.event.LoggingAdapter): Int = {
     println(startupMessage)
+    println
+    println("An application using Almhirt. Check www.almhirt.org for more information")
+    println
     logger.info("Initiating startup")
     val startupV = AlmhirtBootstrapper.runStartupSequence(bootStrapper, logger)
     startupV fold (
