@@ -54,7 +54,7 @@ class CommandEndpointWithUuidTicketsFactory {
       operationStateActorName <- ConfigHelper.operationState.getActorName(componentConfig).success
       trackerActor <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + operationStateActorName) }
     } yield {
-      theAlmhirt.log.info(s"CommandEndpoint is CommandEndpointWithUuidTickets. Name of used OperationStateTracker is 'operationStateActorName', mode is '$mode'")
+      theAlmhirt.log.info(s"CommandEndpoint is CommandEndpointWithUuidTickets. Name of used OperationStateTracker is '$operationStateActorName', mode is '$mode'")
       new CommandEndpointWithUuidTickets(forwardAction, trackerActor, theAlmhirt)
     }
   }
