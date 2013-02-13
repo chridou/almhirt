@@ -33,7 +33,8 @@ class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventL
     theAlmhirt.getConfig.flatMap(config =>
       ConfigHelper.eventLog.getConfig(config).map { subConfig =>
         val name = ConfigHelper.eventLog.getActorName(subConfig)
-        theAlmhirt.log.info(s"EventLog is InefficientSerializingInMemoryDomainEventLog with name '$name'. *** THE EVENT LOG IS TRANSIENT ***")
+        theAlmhirt.log.info(s"EventLog is InefficientSerializingInMemoryDomainEventLog with name '$name'.")
+        theAlmhirt.log.warning("*** THE EVENT LOG IS TRANSIENT ***")
         val dispatcherName =
           ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
             fail => {

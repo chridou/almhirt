@@ -36,7 +36,8 @@ class DevNullEventLogFactory() extends DomainEventLogFactory {
     theAlmhirt.getConfig.flatMap(config =>
       ConfigHelper.eventLog.getConfig(config).map { subConfig =>
         val name = ConfigHelper.eventLog.getActorName(subConfig)
-        theAlmhirt.log.info(s"EventLog is DevNullEventLog with name '$name'. *** THE EVENT LOG IS DOES NOTHING ***")
+        theAlmhirt.log.info(s"EventLog is DevNullEventLog with name '$name'.")
+        theAlmhirt.log.warning("*** THE EVENT LOG IS DOES NOTHING ***")
         val dispatcherName =
           ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
             fail => {
