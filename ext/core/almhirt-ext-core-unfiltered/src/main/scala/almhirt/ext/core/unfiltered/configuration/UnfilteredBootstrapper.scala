@@ -17,12 +17,15 @@ trait UnfilteredBootstrapper extends AlmhirtBootstrapper {
           collectPlans(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { plans =>
             val port = ConfigHelper.http.port(httpConfig).fold(fail => 8080, succ => succ)
             val maxContentLength = ConfigHelper.http.maxContentLength(httpConfig).fold(fail => 1024 * 1024, succ => succ)
-            startUpLogger.info(s"Http gateway will be created on port $port with a maximum request size of maxContentLength bytes")
+            startUpLogger.info(s"Http gateway will be created on port $port with a maximum request size of $maxContentLength bytes")
             almhirt.almvalidation.funs.inTryCatch {
               val http = Http(port).chunked(maxContentLength)
               plans.foreach(http.plan(_))
               http.start
-              () => { superCleanUp(); http.stop }
+              () => { 
+                superCleanUp()
+                startUpLogger.info("Stopping http endpoint")
+                http.stop }
             }
           })))
 
