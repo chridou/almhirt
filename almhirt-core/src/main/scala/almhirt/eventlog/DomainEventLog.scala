@@ -14,7 +14,6 @@ case class GetAllEventsQry(chunkSize: Option[Int] = None, correlationId: Option[
 case class GetEventsQry(aggId: UUID, chunkSize: Option[Int] = None, correlationId: Option[UUID] = None) extends DomainEventLogCmd
 case class GetEventsFromQry(aggId: UUID, from: Long, chunkSize: Option[Int] = None, correlationId: Option[UUID] = None) extends DomainEventLogCmd
 case class GetEventsFromToQry(aggId: UUID, from: Long, to: Long, chunkSize: Option[Int] = None, correlationId: Option[UUID] = None) extends DomainEventLogCmd
-case class GetRequiredNextEventVersionQry(aggId: UUID) extends DomainEventLogCmd
 
 sealed trait DomainEventLogRsp
 case class EventsForAggregateRootRsp(aggId: UUID, chunk: DomainEventsChunk, correlationId: Option[UUID]) extends DomainEventLogRsp

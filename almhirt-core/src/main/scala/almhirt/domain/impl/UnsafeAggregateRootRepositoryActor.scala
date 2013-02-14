@@ -30,13 +30,13 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
 
   private def storeToEventLog(ar: AR, uncommittedEvents: IndexedSeq[Event], ticket: Option[TrackingTicket]) {
     (for {
-      response <- (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).~+>[RequiredNextEventVersionRsp]
-      validated <- AlmFuture {
-        for {
-          nextRequiredEventVersion <- response.nextVersion
-          validated <- validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion)
-        } yield validated
-      }
+      validated <- getFromEventLog(ar.id).foldV(
+        fail => fail match {
+          case p: NotFoundProblem => 0L.success
+          case _ => fail.failure
+        },
+        succ => succ.version.success).map(reqVersion =>
+          validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, reqVersion))
       committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).~+>[CommittedDomainEventsRsp]
       committedEvents <- AlmFuture { committedEventsRsp.events }
     } yield committedEvents).onComplete(

@@ -66,8 +66,6 @@ class DevNullEventLogActor() extends Actor {
       sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
     case GetEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
       sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
-    case GetRequiredNextEventVersionQry(aggId) =>
-      sender ! RequiredNextEventVersionRsp(aggId, 0L.success)
   }
 }
 

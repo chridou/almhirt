@@ -66,7 +66,5 @@ class InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt: Almhirt) ext
       sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success), execIdent)
     case GetEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
       sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success), execIdent)
-    case GetRequiredNextEventVersionQry(aggId) =>
-      sender ! RequiredNextEventVersionRsp(aggId, loggedEvents.view.filter(x => x.aggId == aggId).lastOption.map(_.aggVersion + 1L).getOrElse(0L).success)
   }
 }

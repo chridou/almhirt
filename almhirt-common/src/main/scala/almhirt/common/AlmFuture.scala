@@ -37,6 +37,9 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def map[T](compute: R => T)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     new AlmFuture[T](underlying.map(validation => validation map compute)(hasExecutionContext.executionContext))
 
+  def mapV[T](compute: R => AlmValidation[T])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
+    new AlmFuture[T](underlying.map { validation => validation flatMap compute }(hasExecutionContext.executionContext))
+
   def flatMap[T](compute: R => AlmFuture[T])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.flatMap { validation =>
       validation fold (
@@ -44,12 +47,12 @@ class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
         r => compute(r).underlying)
     }(hasExecutionContext.executionContext))
 
-  def mapV[T](compute: R => AlmValidation[T])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
-    new AlmFuture[T](underlying.map { validation => validation flatMap compute }(hasExecutionContext.executionContext))
-
   def fold[T](failure: Problem => T, success: R => T)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.map { validation => (validation fold (failure, success)).success }(hasExecutionContext.executionContext))
 
+  def foldV[T](failure: Problem => AlmValidation[T], success: R => AlmValidation[T])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
+    new AlmFuture(underlying.map { validation => (validation fold (failure, success)) }(hasExecutionContext.executionContext))
+  
   def onComplete(handler: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => handler(validation)

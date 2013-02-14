@@ -42,18 +42,12 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
     }
 
   "An empty anorm SerializingAnormEventLog" should
-    "return 0L as the next required version" in {
+    "accept an event" in {
       withEmptyEventLog { (eventLog, almhirt) =>
-        val next = eventLog.getRequiredNextEventVersion(almhirt.getUuid).awaitResult(Duration(1, "s")).forceResult
-        next should equal(0L)
+        val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
+        val res = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       }
     }
-  it should "accept an event" in {
-    withEmptyEventLog { (eventLog, almhirt) =>
-      val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
-      val res = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
-    }
-  }
   it should "accept an event and return exactly 1 event as the commited events" in {
     withEmptyEventLog { (eventLog, almhirt) =>
       val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
@@ -66,7 +60,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
       val resCommit = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(1, "s"))
-      println("xxxx"+res)
+      println("xxxx" + res)
       res.forceResult should have size 1
     }
   }
@@ -144,12 +138,6 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
         res should have size 1
       }
     }
-  it should "return 1L as the next required version" in {
-    withEventLogWithOneTestEventA { (eventLog, almhirt) =>
-      val next = eventLog.getRequiredNextEventVersion(testEventA.aggId).awaitResult(Duration(1, "s")).forceResult
-      next should equal(1L)
-    }
-  }
 
   "An anorm SerializingAnormEventLogwhen already containing an event with version 0L after adding another event" should
     "have accepted an event with a different id" in {

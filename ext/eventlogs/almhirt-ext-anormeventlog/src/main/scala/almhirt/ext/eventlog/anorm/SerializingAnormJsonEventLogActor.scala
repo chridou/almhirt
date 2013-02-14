@@ -101,13 +101,6 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
     result
   }
 
-  private def getNextRequiredVersion(aggId: UUID): AlmValidation[Long] = {
-    withConnection { implicit conn =>
-      val rowOpt = SQL(cmdNextId).on("aggId" -> aggId).apply().headOption
-      option.cata(rowOpt)(v => inTryCatch { v[Option[Long]]("next").getOrElse(0L) }, 0L.success)
-    }
-  }
-
   def receive: Receive = {
     case LogEventsQry(events, executionIdent) =>
       val res = storeEvents(events)
@@ -124,9 +117,6 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
     case GetEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
       val res = getEventsFor(aggId, Some(from), Some(to))
       sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
-    case GetRequiredNextEventVersionQry(aggId) =>
-      val res = getNextRequiredVersion(aggId)
-      sender ! RequiredNextEventVersionRsp(aggId, res)
   }
   
   
