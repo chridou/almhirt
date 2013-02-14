@@ -89,12 +89,19 @@ trait AlmValidationOps4[T] extends Ops[Validation[String, T]] {
 }
 
 trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
-  def onFailure(sideEffect: Problem => Unit): Validation[P, T] = 
-    self fold (f => {sideEffect(f); self}, _ => self)
+  def onFailure(sideEffect: P => Unit): Unit = 
+    self fold (sideEffect, _ => ())
+  
+  def onSuccess(sideEffect: T => Unit): Unit = 
+    self fold (_ => (), sideEffect)
+
+  def onResult(failEffect: P => Unit, sucessEffect: T => Unit): Unit = 
+    self fold (failEffect, sucessEffect)
+
+  def withFailEffect(failEffect: P => Unit): Validation[P, T] =
+    self fold (p => {failEffect(p); self}, _ => self)
     
-  def onSuccess(sideEffect: T => Unit): Validation[P, T] = 
-    self fold (_ => self, r => {sideEffect(r); self})
-   
+  
   def noProblem(v: => T): Validation[P, T] = 
     self
       .fold(

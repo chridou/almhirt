@@ -84,7 +84,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
       val events = firstEvent +: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)))
       val resCommit = eventLog.storeEvents(events).awaitResult(Duration(1, "s")).forceResult
-      val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).onFailure(p => println(p))
+      val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).withFailEffect(p => println(p))
       res.forceResult should equal(events)
     }
   }
@@ -96,7 +96,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
-      val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).onFailure(p => println(p)).forceResult
+      val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).withFailEffect(p => println(p)).forceResult
       res should equal(events)
     }
   }
@@ -108,7 +108,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
-      val res = eventLog.getEvents(aggId, 90).awaitResult(Duration(1, "s")).onFailure(p => println(p)).forceResult
+      val res = eventLog.getEvents(aggId, 90).awaitResult(Duration(1, "s")).withFailEffect(p => println(p)).forceResult
       res should equal(events.drop(90))
     }
   }
@@ -120,7 +120,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
-      val res = eventLog.getEvents(aggId, 0, 9).awaitResult(Duration(1, "s")).onFailure(p => println(p)).forceResult
+      val res = eventLog.getEvents(aggId, 0, 9).awaitResult(Duration(1, "s")).withFailEffect(p => println(p)).forceResult
       res should equal(events.take(10))
     }
   }
@@ -132,7 +132,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
       val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
-      val res = eventLog.getEvents(aggId, 40, 59).awaitResult(Duration(1, "s")).onFailure(p => println(p)).forceResult
+      val res = eventLog.getEvents(aggId, 40, 59).awaitResult(Duration(1, "s")).withFailEffect(p => println(p)).forceResult
       res should equal(events.drop(40).take(20))
     }
   }

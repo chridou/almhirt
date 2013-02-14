@@ -8,7 +8,7 @@ import akka.util.Timeout._
 import almhirt.common._
 import almhirt.core._
 import almhirt.syntax.almfuture._
-import almhirt.syntax.almvalidation._
+import almhirt.almvalidation.kit._
 import almhirt.domain._
 import almhirt.eventlog._
 import almhirt.util._

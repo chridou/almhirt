@@ -6,6 +6,7 @@ import akka.pattern._
 import akka.util.Timeout._
 import almhirt.core._
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
 import almhirt.domain._
 import almhirt.eventlog._
@@ -30,33 +31,35 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
   }
 
   private def storeToEventLog(ar: AR, uncommittedEvents: IndexedSeq[Event], ticket: Option[TrackingTicket]) = {
-    (for {
-      response <- (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).~+>[RequiredNextEventVersionRsp]
-      validated <- AlmFuture {
-        for {
-          nextRequiredEventVersion <- response.nextVersion
-          validated <- validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion)
-        } yield validated
-      }
-      committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).~+>[CommittedDomainEventsRsp]
-      committedEvents <- AlmFuture { committedEventsRsp.events }
-    } yield committedEvents).andThen(
-      fail =>
-        updateFailedOperationState(theAlmhirt, fail, ticket),
-      succ => {
-        val action: PerformedAction =
-          if (succ.isEmpty) PerformedUnspecifiedAction
-          else if (succ.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
-          else PerformedUpdateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
-        ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
-        succ.foreach(event => theAlmhirt.publishDomainEvent(event))
-      }).awaitResult
+    inTryCatchM {
+      (for {
+        response <- (eventLog ? GetRequiredNextEventVersionQry(ar.id))(timeout).~+>[RequiredNextEventVersionRsp]
+        validated <- AlmFuture {
+          for {
+            nextRequiredEventVersion <- response.nextVersion
+            validated <- validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, nextRequiredEventVersion)
+          } yield validated
+        }
+        committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).~+>[CommittedDomainEventsRsp]
+        committedEvents <- AlmFuture { committedEventsRsp.events }
+      } yield committedEvents).andThen(
+        fail =>
+          updateFailedOperationState(fail, ticket),
+        succ => {
+          val action: PerformedAction =
+            if (succ.isEmpty) PerformedUnspecifiedAction
+            else if (succ.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
+            else PerformedUpdateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
+          ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
+          succ.foreach(event => theAlmhirt.publishDomainEvent(event))
+        }).awaitResult
+    }(s"Could not store ${uncommittedEvents.size} events for aggregate root ${ar.id}").onFailure(p => updateFailedOperationState(p, ticket))
   }
 
-  private def updateFailedOperationState(almhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
-    almhirt.publishProblem(p)
+  private def updateFailedOperationState(p: Problem, ticket: Option[TrackingTicket]) {
+    theAlmhirt.publishProblem(p)
     ticket match {
-      case Some(t) => almhirt.publishOperationState(NotExecuted(t, p))
+      case Some(t) => theAlmhirt.publishOperationState(NotExecuted(t, p))
       case None => ()
     }
   }

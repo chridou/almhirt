@@ -29,12 +29,28 @@ trait AlmValidationFunctions {
       case exn: Throwable => launderThrowable(exn).failure
     }
   }
+
+  def inTryCatchM[T](a: => T)(message: String): AlmValidation[T] = {
+    try {
+      a.success[Problem]
+    } catch {
+      case exn: Throwable => launderThrowable(exn).withMessage(message).failure
+    }
+  }
   
   def computeSafely[T](a: => AlmValidation[T]): AlmValidation[T] = {
     try {
       a
     } catch {
       case exn: Throwable => launderThrowable(exn).failure
+    }
+  }
+  
+  def computeSafelyM[T](a: => AlmValidation[T])(message: String): AlmValidation[T] = {
+    try {
+      a
+    } catch {
+      case exn: Throwable => launderThrowable(exn).withMessage(message).failure
     }
   }
   

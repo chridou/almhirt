@@ -73,7 +73,7 @@ object PerformedActionRecomposer extends DivertingRecomposer[PerformedAction] {
   val alternativeRiftDescriptors = Nil
   val divert =
     Map(
-      PerformedCreateActionRecomposer.riftDescriptor -> PerformedActionRecomposer,
+      PerformedCreateActionRecomposer.riftDescriptor -> PerformedCreateActionRecomposer,
       PerformedUpdateActionRecomposer.riftDescriptor -> PerformedUpdateActionRecomposer,
       PerformedUnspecifiedActionRecomposer.riftDescriptor -> PerformedUnspecifiedActionRecomposer).lift
 }
