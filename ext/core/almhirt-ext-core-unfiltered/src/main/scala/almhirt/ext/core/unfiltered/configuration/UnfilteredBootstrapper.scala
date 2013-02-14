@@ -38,10 +38,10 @@ trait UnfilteredBootstrapper extends AlmhirtBootstrapper {
         almhirt.almvalidation.funs.inTryCatch {
           val http = Http(port).chunked(maxContentLength)
           val httpWithPlans = plans.foldLeft(http) { case (http, plan) => http.plan(plan) }
-          httpWithPlans.start
+          val startedHttp = httpWithPlans.start
           () => {
             startUpLogger.info("Stopping http endpoint")
-            httpWithPlans.stop
+            startedHttp.stop
           }
         }
       })
