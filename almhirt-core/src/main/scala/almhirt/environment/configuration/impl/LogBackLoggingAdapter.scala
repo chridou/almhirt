@@ -21,4 +21,8 @@ object LogBackLoggingAdapter {
     almhirt.almvalidation.funs.inTryCatch{LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)}.map(logger =>
       new LogBackLoggingAdapter(logger))
   }
+  def apply(name: String): AlmValidation[akka.event.LoggingAdapter] = {
+    almhirt.almvalidation.funs.inTryCatch{LoggerFactory.getLogger(name)}.map(logger =>
+      new LogBackLoggingAdapter(logger))
+  }
 }

@@ -43,11 +43,12 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
               Some(succ)
             })
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new SerializingAnormJsonEventLogActor(settings)(riftWarp, theAlmhirt)))
-        theAlmhirt.log.info(s"EventLog is SerializingAnormJsonEventLog with name 'actorName'.")
+        theAlmhirt.log.info(s"EventLog is SerializingAnormJsonEventLog with name '$actorName'. DropOnClose: $dropOnClose, Connection: ${settings.connection}")
         val actor = theAlmhirt.actorSystem.actorOf(props, actorName)
         if (dropOnClose) {
           def dropTable() = {
             DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
+              theAlmhirt.log.info(s"Dropping eventlog table ${settings.logTableName}")
               val statement = conn.createStatement()
               statement.executeUpdate("DROP TABLE %s".format(settings.logTableName))
               Unit.success
@@ -71,7 +72,11 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
               s => {
                 if (s) {
                   (settings, template) =>
-                    option.cata(template.ddlScriptName)(createSchema(settings, _), UnspecifiedProblem("Schema path not specified. Cannot create a schema.").failure)
+                    {
+                      theAlmhirt.log.info(s"Creating eventlog schema for eventlog table ${settings.logTableName}")
+                      option.cata(template.ddlScriptName)(createSchema(settings, _), UnspecifiedProblem("Schema path not specified. Cannot create a schema.").failure)
+
+                    }
                 } else
                   (settings, template) => settings.success
 

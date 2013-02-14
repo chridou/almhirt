@@ -54,9 +54,15 @@ class AlmhirtBaseBootstrapper(override val config: Config) extends AlmhirtBootst
   override def createAlmhirt(hasActorSystem: HasActorSystem, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, CleanUpAction)] = {
     val theDurations = Durations(config)
     startUpLogger.info(s"Durations have been set to: ${theDurations.toString()}")
-
     startUpLogger.info("Creating Almhirt...")
     for {
+      almhirtLogger <- if (ConfigHelper.isBooleanSet(config)("almhirt.useAkkaLogging")) {
+        startUpLogger.info("Using Akka system logger")
+        Logging(hasActorSystem.actorSystem, classOf[Almhirt]).success
+      } else {
+        startUpLogger.info("Using logback logger")
+        LogBackLoggingAdapter(ConfigHelper.getString(config)("almhirt.systemname").getOrElse("almhirt"))
+      }
       hasExecutionContext <- createFuturesExecutionContext(hasActorSystem.actorSystem, startUpLogger)
       theMessageHub <- MessageHub("MessageHub", config)(hasActorSystem, hasExecutionContext).success
     } yield (new Almhirt with PublishesOnMessageHub {
@@ -65,7 +71,7 @@ class AlmhirtBaseBootstrapper(override val config: Config) extends AlmhirtBootst
       override val messageHub = theMessageHub
       override def getServiceByType(clazz: Class[_ <: AnyRef]) = theServiceRegistry.getServiceByType(clazz)
       override val durations = theDurations
-      override val log = Logging(actorSystem, classOf[Almhirt])
+      override val log = almhirtLogger
     }, () => ())
   }
 
