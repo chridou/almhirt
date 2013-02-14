@@ -1,16 +1,16 @@
 package almhirt.util
 
+import org.joda.time.DateTime
 import almhirt.common._
+import almhirt.core.CanCreateDateTime
 import almhirt.domain.AggregateRootRef
-
 
 sealed trait PerformedAction
 case class PerformedCreateAction(aggRef: AggregateRootRef) extends PerformedAction
 case class PerformedUpdateAction(aggRef: AggregateRootRef) extends PerformedAction
 case object PerformedUnspecifiedAction extends PerformedAction
 
-
-sealed trait OperationState{ 
+sealed trait OperationState {
   def ticket: TrackingTicket
   def isFinished: Boolean
   def isFinishedSuccesfully: Boolean
@@ -19,18 +19,32 @@ sealed trait OperationState{
 }
 
 sealed trait ResultOperationState extends OperationState
-case class InProcess(ticket: TrackingTicket) extends OperationState {
+case class InProcess(ticket: TrackingTicket, timestamp: DateTime) extends OperationState {
   val isFinished = false
   val isFinishedSuccesfully = false
   val tryGetAction = None
 }
-case class Executed(ticket: TrackingTicket, action: PerformedAction = PerformedUnspecifiedAction) extends ResultOperationState {
+
+object InProcess {
+  def apply(ticket: TrackingTicket)(implicit createsDateTimes: CanCreateDateTime): InProcess = apply(ticket, createsDateTimes.getDateTime)
+}
+
+case class Executed(ticket: TrackingTicket, action: PerformedAction, timestamp: DateTime) extends ResultOperationState {
   val isFinished = true
   val isFinishedSuccesfully = true
   val tryGetAction = Some(action)
 }
-case class NotExecuted(ticket: TrackingTicket, problem: Problem) extends ResultOperationState {
+
+object Executed {
+  def apply(ticket: TrackingTicket, action: PerformedAction)(implicit createsDateTimes: CanCreateDateTime): Executed = apply(ticket, action, createsDateTimes.getDateTime)
+}
+
+case class NotExecuted(ticket: TrackingTicket, problem: Problem, timestamp: DateTime) extends ResultOperationState {
   val isFinished = true
   val isFinishedSuccesfully = false
   val tryGetAction = None
+}
+
+object NotExecuted {
+  def apply(ticket: TrackingTicket, problem: Problem)(implicit createsDateTimes: CanCreateDateTime): NotExecuted = apply(ticket, problem, createsDateTimes.getDateTime)
 }

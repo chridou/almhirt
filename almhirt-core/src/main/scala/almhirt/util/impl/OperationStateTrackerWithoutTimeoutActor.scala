@@ -20,19 +20,19 @@ import almhirt.core.Almhirt
 
 class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extends Actor with AlmActorLogging with LogsProblemsTagged {
   val logTag = "OperationStateTracker"
-  val collectedInProcess = collection.mutable.Set.empty[TrackingTicket]
+  val collectedInProcess = collection.mutable.HashMap.empty[TrackingTicket, InProcess]
   val collectedResults = collection.mutable.HashMap.empty[TrackingTicket, ResultOperationState]
   val resultCallbacks = collection.mutable.HashMap.empty[TrackingTicket, List[ActorRef]]
 
   def receive: Receive = {
     case opState: OperationState =>
       opState match {
-        case InProcess(ticket) =>
+        case inProcess @ InProcess(ticket, _) =>
           if (collectedResults.contains(ticket)) {
             log.warning("InProcess state for ticket %s cannot be set because there is already a result!".format(ticket))
           } else {
             if (!collectedInProcess.contains(ticket)) {
-              collectedInProcess += ticket
+              collectedInProcess += (ticket -> inProcess)
             } else {
               log.warning("InProcess state for ticket %s already received!".format(ticket))
             }
@@ -65,7 +65,7 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
 
     case GetStateQry(ticket) =>
       if (collectedInProcess.contains(ticket))
-        sender ! OperationStateRsp(ticket, Some(InProcess(ticket)).success)
+        sender ! OperationStateRsp(ticket, Some(collectedInProcess(ticket)).success)
       else if (collectedResults.contains(ticket))
         sender ! OperationStateRsp(ticket, Some(collectedResults(ticket)).success)
       else

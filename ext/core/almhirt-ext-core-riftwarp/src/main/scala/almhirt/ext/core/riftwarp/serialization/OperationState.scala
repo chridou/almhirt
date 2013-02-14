@@ -12,7 +12,8 @@ object InProcessDecomposer extends Decomposer[InProcess] {
   def decompose[TDimension <: RiftDimension](what: InProcess)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor).flatMap(
-        _.addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket))
+        _.addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
+          _.addDateTime("timestamp", what.timestamp)))
 }
 
 object ExecutedDecomposer extends Decomposer[Executed] {
@@ -22,7 +23,8 @@ object ExecutedDecomposer extends Decomposer[Executed] {
     into
       .addRiftDescriptor(this.riftDescriptor).flatMap(
         _.addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-          _.addComplexSelective("action", PerformedActionDecomposer, what.action)))
+          _.addComplexSelective("action", PerformedActionDecomposer, what.action).flatMap(
+            _.addDateTime("timestamp", what.timestamp))))
 }
 
 object NotExecutedDecomposer extends Decomposer[NotExecuted] {
@@ -32,7 +34,8 @@ object NotExecutedDecomposer extends Decomposer[NotExecuted] {
     into
       .addRiftDescriptor(this.riftDescriptor).flatMap(
         _.addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-          _.addComplexTyped[Problem]("problem", what.problem)))
+          _.addComplexTyped[Problem]("problem", what.problem).flatMap(
+            _.addDateTime("timestamp", what.timestamp))))
 }
 
 object OperationStateDecomposer extends Decomposer[OperationState] {
@@ -40,9 +43,9 @@ object OperationStateDecomposer extends Decomposer[OperationState] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: OperationState)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
-      case opstate @ InProcess(_) => into.includeDirect(opstate, InProcessDecomposer)
-      case opstate @ Executed(_, _) => into.includeDirect(opstate, ExecutedDecomposer)
-      case opstate @ NotExecuted(_, _) => into.includeDirect(opstate, NotExecutedDecomposer)
+      case opstate @ InProcess(_, _) => into.includeDirect(opstate, InProcessDecomposer)
+      case opstate @ Executed(_, _, _) => into.includeDirect(opstate, ExecutedDecomposer)
+      case opstate @ NotExecuted(_, _, _) => into.includeDirect(opstate, NotExecutedDecomposer)
     }
   }
 }
@@ -51,7 +54,9 @@ object InProcessRecomposer extends Recomposer[InProcess] {
   val riftDescriptor = RiftDescriptor(classOf[InProcess])
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[InProcess] = {
-    from.getComplexType("ticket", TrackingTicketRecomposer).map(InProcess.apply)
+    val ticket = from.getComplexType[TrackingTicket]("ticket", TrackingTicketRecomposer).toAgg
+    val timestamp = from.getDateTime("timestamp").toAgg
+    (ticket |@| timestamp)(InProcess.apply)
   }
 }
 
@@ -61,7 +66,8 @@ object ExecutedRecomposer extends Recomposer[Executed] {
   def recompose(from: Rematerializer): AlmValidation[Executed] = {
     val ticket = from.getComplexType[TrackingTicket]("ticket", TrackingTicketRecomposer).toAgg
     val action = from.getComplexType[PerformedAction]("action", PerformedActionRecomposer).toAgg
-    (ticket |@| action)(Executed.apply)
+    val timestamp = from.getDateTime("timestamp").toAgg
+    (ticket |@| action |@| timestamp)(Executed.apply)
   }
 }
 
@@ -71,7 +77,8 @@ object NotExecutedRecomposer extends Recomposer[NotExecuted] {
   def recompose(from: Rematerializer): AlmValidation[NotExecuted] = {
     val ticket = from.getComplexType[TrackingTicket]("ticket", TrackingTicketRecomposer).toAgg
     val problem = from.getComplexType[Problem]("problem").toAgg
-    (ticket |@| problem)(NotExecuted.apply)
+    val timestamp = from.getDateTime("timestamp").toAgg
+    (ticket |@| problem |@| timestamp)(NotExecuted.apply)
   }
 }
 
