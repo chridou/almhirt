@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.67"
+  val buildVersion      = "0.0.68"
   val buildScalaVersion = "2.10.0"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -31,7 +31,7 @@ object Dependencies {
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % "2.1.0"
 
-//	lazy val slick  = "com.typesafe" %% "slick" % "0.11.2"
+	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.0"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
@@ -117,7 +117,7 @@ trait CoreExtSlickBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += "com.typesafe" %% "slick" % "1.0.0-RC1",
+	  libraryDependencies += slick,
 	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
 	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
 	  libraryDependencies += scalatest
