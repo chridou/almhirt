@@ -55,7 +55,7 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
             }
             ()
           }
-          theAlmhirt.actorSystem.registerOnTermination(dropOnClose)
+          theAlmhirt.actorSystem.registerOnTermination(dropTable)
         }
         actor
       })
