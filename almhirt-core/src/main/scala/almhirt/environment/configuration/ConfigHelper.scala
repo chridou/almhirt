@@ -91,6 +91,7 @@ object ConfigHelper {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.http)
     def port(httpConfig: Config): AlmValidation[Int] = getInt(httpConfig)("port")
     def maxContentLength(httpConfig: Config): AlmValidation[Int] = getInt(httpConfig)("maxContentLength")
+    def maxSyncCommandDuration(httpConfig: Config): AlmValidation[FiniteDuration] = getMilliseconds(httpConfig)("max-sync-command-duration")
   }
 
   object problems {

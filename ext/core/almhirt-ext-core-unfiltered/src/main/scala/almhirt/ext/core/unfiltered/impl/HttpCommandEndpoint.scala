@@ -1,5 +1,6 @@
 package almhirt.ext.core.unfiltered.impl
 
+import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.core.Almhirt
@@ -15,7 +16,7 @@ import unfiltered.response._
 import almhirt.util.TrackingTicket
 import almhirt.util.ResultOperationState
 
-class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], settings: RiftWarpHttpFuns.RiftHttpFunsSettings, theAlmhirt: Almhirt) extends ForwardsCommandsFromHttpRequest {
+class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], settings: RiftWarpHttpFuns.RiftHttpFunsSettings, theAlmhirt: Almhirt, maxSyncCallDuration: FiniteDuration) extends ForwardsCommandsFromHttpRequest {
   implicit val hasExecutionContext = theAlmhirt
 
   protected def processRequest[TResp <: AnyRef](okStatus: HttpSuccess, computeResponse: (DomainCommand, CommandEndpoint) => AlmValidation[Option[TResp]])(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) =
@@ -31,7 +32,7 @@ class HttpCommandEndpoint(getEndpoint: () => AlmValidation[CommandEndpoint], set
     UnfilteredFuns.processRequestRespondOnFuture[DomainCommand, ResultOperationState](
       settings,
       Http_200_OK,
-      cmd => AlmFuture.promise(getEndpoint()).flatMap(endPoint => endPoint.executeWithResult(theAlmhirt.defaultDuration)(cmd).map(Some(_))),
+      cmd => AlmFuture.promise(getEndpoint()).flatMap(endPoint => endPoint.executeWithResult(maxSyncCallDuration)(cmd).map(Some(_))),
       req, responder)
 
   def forward(req: HttpRequest[Any], responder: unfiltered.Async.Responder[Any]) { forwardHandler(req, responder) }
