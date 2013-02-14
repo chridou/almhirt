@@ -87,8 +87,8 @@ class UpdateSpecsWithPerson extends FlatSpec with ShouldMatchers {
     it should "reject having her address changed to an empty String" in {
       (updateWithName flatMap {_.addressAquired("")}).isRejected should be(true)
     }
-    it should "contain the previous event when having her address changed to an empty String" in {
-      (updateWithName flatMap {_.addressAquired("")}).events.length should equal(1)
+    it should "contain the no event when having her address changed to an empty String" in {
+      (updateWithName flatMap {_.addressAquired("")}).events should be('empty)
     }
     it should "reject having her address set twice(even though to a different one" in {
       (updateWithName flatMap {_.addressAquired("Gibraltar")} flatMap{_.addressAquired("Norway")}).isRejected should be(true)

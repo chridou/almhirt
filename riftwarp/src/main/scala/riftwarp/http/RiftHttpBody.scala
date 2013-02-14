@@ -1,8 +1,8 @@
 package riftwarp.http
 
 sealed trait RiftHttpBody { def bodyType: RiftHttpBodyType }
-case class RiftStringBody(data: String) extends RiftHttpBody { val bodyType = RiftStringBodyType }
-case class RiftBinaryBody(data: Array[Byte]) extends RiftHttpBody { val bodyType = RiftBinaryBodyType }
+final case class RiftStringBody(data: String) extends RiftHttpBody { val bodyType = RiftStringBodyType }
+final case class RiftBinaryBody(data: Array[Byte]) extends RiftHttpBody { val bodyType = RiftBinaryBodyType }
 
 import scalaz.syntax.validation._
 import almhirt.common._

@@ -50,8 +50,8 @@ class ActorBasedMessageHubTests extends FunSuite with ShouldMatchers with Before
     var hit = false
     val subscription = (channel <-* { x => hit = true }).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
-    hit should be(true)
     Thread.sleep(50)
+    hit should be(true)
     subscription.dispose()
   }
 
@@ -83,8 +83,8 @@ class ActorBasedMessageHubTests extends FunSuite with ShouldMatchers with Before
     var hit = false
     val subscription = (channel <-* (x => hit = true)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message(new A(1)))
-    subscription.dispose()
     Thread.sleep(50)
+    subscription.dispose()
     hit should be(true)
   }
 
@@ -94,9 +94,9 @@ class ActorBasedMessageHubTests extends FunSuite with ShouldMatchers with Before
     var hit = false
     val subscription = (channel <-* (x => hit = true, x => x.payload.length == 1)).awaitResult(Duration.Inf).forceResult
     hub.broadcast(Message("A"))
-    subscription.dispose()
     Thread.sleep(50)
     hit should be(true)
+    subscription.dispose()
   }
 
   test("""A MessageHub with a created channel with no topic of payload type String must not be trigger a handler on the created channel when a UUID is broadcasted""") {

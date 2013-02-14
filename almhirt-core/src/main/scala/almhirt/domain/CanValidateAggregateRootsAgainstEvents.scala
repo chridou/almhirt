@@ -15,7 +15,7 @@ trait CanValidateAggregateRootsAgainstEvents[AR <: AggregateRoot[AR, Event], Eve
       UnspecifiedProblem("The last event's version must be one less that the aggregate root's version: %d + 1 != %d".format(uncommittedEvents.last.aggVersion, newAr.version), category = ApplicationProblem, severity = Minor).failure
     else {
       uncommittedEvents match {
-        case List(x) =>
+        case Vector(x) =>
           (newAr, uncommittedEvents).success
         case xs =>
           boolean.fold(

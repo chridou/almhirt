@@ -194,11 +194,11 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 1)).awaitResult(Duration.Inf).forceResult
     val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "B")).awaitResult(Duration.Inf).forceResult
     channel.post(Message(new B(1, "B")))
-    subscriptionA.dispose()
-    subscriptionB.dispose()
     channel.close()
     subChannel.close()
     Thread.sleep(50)
+    subscriptionA.dispose()
+    subscriptionB.dispose()
     hitA should be(true)
     hitB should be(true)
   }
@@ -227,11 +227,11 @@ class ActorBasedTypedMessageChannelTests extends FlatSpec with ShouldMatchers wi
     val subscriptionA = (channel <-* (x => hitA = true, x => x.payload.propa == 0)).awaitResult(Duration.Inf).forceResult
     val subscriptionB = (subChannel <-* (x => hitB = true, x => x.payload.propb == "B")).awaitResult(Duration.Inf).forceResult
     channel.post(Message(new B(1, "B")))
-    subscriptionA.dispose()
-    subscriptionB.dispose()
     channel.close()
     subChannel.close()
     Thread.sleep(50)
+    subscriptionA.dispose()
+    subscriptionB.dispose()
     hitA should be(false)
     hitB should be(true)
   }
