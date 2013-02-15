@@ -27,12 +27,12 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
   def receive: Receive = {
     case opState: OperationState =>
       opState match {
-        case inProcess @ InProcess(ticket, _) =>
+        case inProcess @ InProcess(ticket, _,_) =>
           if (collectedResults.contains(ticket)) {
             log.warning("InProcess state for ticket %s cannot be set because there is already a result!".format(ticket))
           } else {
             if (!collectedInProcess.contains(ticket)) {
-              collectedInProcess += (ticket -> inProcess)
+              collectedInProcess += (ticket -> inProcess.withHeadCommandInfo)
             } else {
               log.warning("InProcess state for ticket %s already received!".format(ticket))
             }

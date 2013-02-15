@@ -13,7 +13,8 @@ object InProcessDecomposer extends Decomposer[InProcess] {
     into
       .addRiftDescriptor(this.riftDescriptor).flatMap(
         _.addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-          _.addDateTime("timestamp", what.timestamp)))
+          _.addComplexSelective("commandInfo", CommandInfoDecomposer, what.commandInfo).flatMap(
+            _.addDateTime("timestamp", what.timestamp))))
 }
 
 object ExecutedDecomposer extends Decomposer[Executed] {
@@ -43,9 +44,9 @@ object OperationStateDecomposer extends Decomposer[OperationState] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: OperationState)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
-      case opstate @ InProcess(_, _) => into.includeDirect(opstate, InProcessDecomposer)
-      case opstate @ Executed(_, _, _) => into.includeDirect(opstate, ExecutedDecomposer)
-      case opstate @ NotExecuted(_, _, _) => into.includeDirect(opstate, NotExecutedDecomposer)
+      case opstate: InProcess => into.includeDirect(opstate, InProcessDecomposer)
+      case opstate: Executed => into.includeDirect(opstate, ExecutedDecomposer)
+      case opstate: NotExecuted => into.includeDirect(opstate, NotExecutedDecomposer)
     }
   }
 }
@@ -55,8 +56,9 @@ object InProcessRecomposer extends Recomposer[InProcess] {
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[InProcess] = {
     val ticket = from.getComplexType[TrackingTicket]("ticket", TrackingTicketRecomposer).toAgg
+    val commandInfo = from.getComplexType[CommandInfo]("commandInfo", CommandInfoRecomposer).toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (ticket |@| timestamp)(InProcess.apply)
+    (ticket |@| commandInfo |@| timestamp)(InProcess.apply)
   }
 }
 

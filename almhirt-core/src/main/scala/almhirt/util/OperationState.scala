@@ -15,14 +15,17 @@ sealed trait OperationState {
 
 sealed trait ResultOperationState extends OperationState
 
-final case class InProcess(ticket: TrackingTicket, timestamp: DateTime) extends OperationState {
+final case class InProcess(ticket: TrackingTicket, commandInfo: CommandInfo, timestamp: DateTime) extends OperationState {
   val isFinished = false
   val isFinishedSuccesfully = false
   val tryGetAction = None
+  def withHeadCommandInfo: InProcess =
+    this.copy(commandInfo = this.commandInfo.toHeadCommandInfo)
 }
 
 object InProcess {
-  def apply(ticket: TrackingTicket)(implicit createsDateTimes: CanCreateDateTime): InProcess = apply(ticket, createsDateTimes.getDateTime)
+  def apply(ticket: TrackingTicket, commandInfo: CommandInfo)(implicit createsDateTimes: CanCreateDateTime): InProcess =
+    apply(ticket, commandInfo, createsDateTimes.getDateTime)
 }
 
 case class Executed(ticket: TrackingTicket, action: PerformedAction, timestamp: DateTime) extends ResultOperationState {
