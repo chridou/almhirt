@@ -5,11 +5,6 @@ import almhirt.common._
 import almhirt.core.CanCreateDateTime
 import almhirt.domain.AggregateRootRef
 
-sealed trait PerformedAction
-case class PerformedCreateAction(aggRef: AggregateRootRef) extends PerformedAction
-case class PerformedUpdateAction(aggRef: AggregateRootRef) extends PerformedAction
-case object PerformedUnspecifiedAction extends PerformedAction
-
 sealed trait OperationState {
   def ticket: TrackingTicket
   def isFinished: Boolean
@@ -19,7 +14,8 @@ sealed trait OperationState {
 }
 
 sealed trait ResultOperationState extends OperationState
-case class InProcess(ticket: TrackingTicket, timestamp: DateTime) extends OperationState {
+
+final case class InProcess(ticket: TrackingTicket, timestamp: DateTime) extends OperationState {
   val isFinished = false
   val isFinishedSuccesfully = false
   val tryGetAction = None
@@ -39,7 +35,7 @@ object Executed {
   def apply(ticket: TrackingTicket, action: PerformedAction)(implicit createsDateTimes: CanCreateDateTime): Executed = apply(ticket, action, createsDateTimes.getDateTime)
 }
 
-case class NotExecuted(ticket: TrackingTicket, problem: Problem, timestamp: DateTime) extends ResultOperationState {
+final case class NotExecuted(ticket: TrackingTicket, problem: Problem, timestamp: DateTime) extends ResultOperationState {
   val isFinished = true
   val isFinishedSuccesfully = false
   val tryGetAction = None
