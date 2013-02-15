@@ -37,7 +37,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
     try {
       DriverManager.getConnection(settings.connection, settings.props).success
     } catch {
-      case exn: Throwable => PersistenceProblem("Could not connect to %s".format(settings.connection), cause = Some(exn)).failure
+      case exn: Exception => PersistenceProblem("Could not connect to %s".format(settings.connection), cause = Some(exn)).failure
     }
   }
 

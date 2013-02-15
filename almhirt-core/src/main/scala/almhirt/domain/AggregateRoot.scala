@@ -55,7 +55,7 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
       	  handler(validated).success
       	} catch {
       		case err: MatchError => UnhandledDomainEventProblem("Unhandled event: %s".format(event.getClass.getName), event).failure
-      		case err: Throwable => ExceptionCaughtProblem(err.getMessage()).failure
+      		case err: Exception => ExceptionCaughtProblem(err.getMessage()).failure
       	})
   }
   

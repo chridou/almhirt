@@ -27,7 +27,7 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
       creationHandler(event).success
     } catch {
       case err: MatchError => ExceptionCaughtProblem("Unhandled creation event: %s".format(event.getClass.getName)).failure
-      case err: Throwable => ExceptionCaughtProblem(err.getMessage()).failure
+      case err: Exception => ExceptionCaughtProblem(err.getMessage()).failure
     }
   }
 

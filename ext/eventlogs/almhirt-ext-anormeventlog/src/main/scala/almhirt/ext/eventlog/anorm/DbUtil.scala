@@ -11,7 +11,7 @@ private[anorm] object DbUtil {
     try {
       DriverManager.getConnection(url, props).success
     } catch {
-      case exn: Throwable => PersistenceProblem("Could not connect to %s".format(url), cause = Some(exn)).failure
+      case exn: Exception => PersistenceProblem("Could not connect to %s".format(url), cause = Some(exn)).failure
     }
   }
 
@@ -23,7 +23,7 @@ private[anorm] object DbUtil {
         conn.close()
         res
       } catch {
-        case exn: Throwable =>
+        case exn: Exception =>
           PersistenceProblem("Could not complete an operation succesfully while using a db connection: %s".format(exn.getMessage()), cause = Some(exn)).failure
       } finally {
         conn.close()
@@ -56,7 +56,7 @@ private[anorm] object DbUtil {
         val res = compute(conn)
         res.fold(problem => { conn.rollback(); problem.failure }, succ => { conn.commit(); succ.success })
       } catch {
-        case exn: Throwable =>
+        case exn: Exception =>
           conn.rollback
           println(exn.getClass().getName())
           PersistenceProblem("Could not commit transaction. Rolled back: %s".format(exn.getMessage()), cause = Some(exn)).failure

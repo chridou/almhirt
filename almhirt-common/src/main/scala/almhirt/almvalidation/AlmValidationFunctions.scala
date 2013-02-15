@@ -26,7 +26,7 @@ trait AlmValidationFunctions {
     try {
       a.success[Problem]
     } catch {
-      case exn: Throwable => launderThrowable(exn).failure
+      case exn: Exception => launderException(exn).failure
     }
   }
 
@@ -34,7 +34,7 @@ trait AlmValidationFunctions {
     try {
       a.success[Problem]
     } catch {
-      case exn: Throwable => launderThrowable(exn).withMessage(message).failure
+      case exn: Exception => launderException(exn).withMessage(message).failure
     }
   }
   
@@ -42,7 +42,7 @@ trait AlmValidationFunctions {
     try {
       a
     } catch {
-      case exn: Throwable => launderThrowable(exn).failure
+      case exn: Exception => launderException(exn).failure
     }
   }
   
@@ -50,7 +50,7 @@ trait AlmValidationFunctions {
     try {
       a
     } catch {
-      case exn: Throwable => launderThrowable(exn).withMessage(message).failure
+      case exn: Exception => launderException(exn).withMessage(message).failure
     }
   }
   

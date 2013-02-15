@@ -34,5 +34,9 @@ package object common {
   
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T]{  def equal(p1: T, p2: T): Boolean = p1 == p2 }
     
-  def launderThrowable(exn: Throwable): Problem = (CommonThrowableToProblem orElse (AllThrowablesToCaughtExceptionProblem))(exn)
+  def launderException(exn: Exception): Problem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
+  def handleThrowable(throwable: Throwable): Problem =
+    throwable match {
+    case exn: Exception => launderException(exn)
+  }
 }

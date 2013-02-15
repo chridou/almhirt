@@ -43,7 +43,7 @@ object ProblemCause {
   def apply(problem: Problem): ProblemCause =
     CauseIsProblem(problem)
 
-  implicit def exn2ProblemCause(exn: Throwable): ProblemCause = ProblemCause(exn)
+  implicit def throwable2ProblemCause(exn: Throwable): ProblemCause = ProblemCause(exn)
   implicit def prob2ProblemCause(problem: Problem): ProblemCause = ProblemCause(problem)
 }
 
