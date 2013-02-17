@@ -1,6 +1,9 @@
 package almhirt.domain
 
+import scala.language.existentials
+
 import java.util.{ UUID => JUUID }
+import scala.reflect.ClassTag
 import scalaz.std._
 import almhirt.core._
 import almhirt.common._
@@ -8,14 +11,15 @@ import almhirt.environment._
 import almhirt.util.TrackingTicket
 import almhirt.almakka.ActorBased
 import almhirt.core.Almhirt
-import scala.reflect.ClassTag
+import almhirt.util.ExecutionStyle
 
 sealed trait AggregateRootRepositoryCmd
 case class GetAggregateRootQry(aggId: JUUID) extends AggregateRootRepositoryCmd
-case class StoreAggregateRootCmd[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AggregateRoot[AR, Event], uncommittedEvents: IndexedSeq[DomainEvent], ticket: Option[TrackingTicket]) extends AggregateRootRepositoryCmd
+case class StoreAggregateRootCmd(ar: AggregateRoot[_, _], uncommittedEvents: IndexedSeq[DomainEvent], style: ExecutionStyle) extends AggregateRootRepositoryCmd
 
 sealed trait AggregateRootRepositoryRsp
-case class AggregateRootFromRepositoryRsp[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](ar: AlmValidation[AR]) extends AggregateRootRepositoryRsp
+case class GetAggregateRootRsp(ar: AggregateRoot[_, _]) extends AggregateRootRepositoryRsp
+case class StoreAggregateRootRsp(ar: AlmValidation[AggregateRoot[_, _]]) extends AggregateRootRepositoryRsp
 
 trait AggregateRootRepository[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends HasAggregateRoots[AR, Event] with StoresAggregateRoots[AR, Event] with ActorBased
 

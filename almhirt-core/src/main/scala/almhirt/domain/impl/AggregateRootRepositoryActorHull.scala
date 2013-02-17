@@ -15,13 +15,13 @@ import almhirt.environment._
 import almhirt.util._
 import almhirt.common.AlmFuture
 
-abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](val actor: ActorRef, sys: HasExecutionContext with HasDurations) extends AggregateRootRepository[AR, Event] with CanValidateAggregateRootsAgainstEvents[AR, Event] {
+abstract class AggregateRootRepositoryActorHull[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](val actor: ActorRef)(implicit sys: HasExecutionContext with HasDurations) extends AggregateRootRepository[AR, Event] with CanValidateAggregateRootsAgainstEvents[AR, Event] {
   implicit private def duration = sys.defaultDuration
   implicit private def futureContext = sys.executionContext
 
   def get(id: java.util.UUID): AlmFuture[AR] = 
     (actor ? GetAggregateRootQry(id))(duration)
-      .asInstanceOf[Future[AggregateRootFromRepositoryRsp[AR, Event]]]
+      .asInstanceOf[Future[GetAggregateRootQryRsp]]
       .map(_.ar) 
 
   def store(ar: AR, uncommittedEvents: IndexedSeq[Event], ticket: Option[TrackingTicket]): Unit =
