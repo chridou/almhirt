@@ -18,7 +18,8 @@ trait CoreBootstrapperWithBlockingRepo extends AlmhirtBootstrapper {
     super.registerRepositories(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
       theServiceRegistry.getService[HasRepositories].flatMap { hasRepos =>
         theServiceRegistry.getService[DomainEventLog].flatMap { eventLog =>
-          val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent]("TestPersonRepo" ,TestPerson, eventLog.actor)(theAlmhirt, implicitly[ClassTag[TestPersonEvent]])
+          implicit val implicitAlmhirt = theAlmhirt
+          val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent]("TestPersonRepo" ,TestPerson, eventLog.actor)
           hasRepos.registerForAggregateRoot(personRepository)
           superCleanUp.success
         }

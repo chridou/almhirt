@@ -24,7 +24,7 @@ import almhirt.syntax.almvalidation._
  * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s
  *
  */
-trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
+sealed trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
   def targetVersion: Long
   val requiredTargetVersionOnNextEvent: Long = events.lastOption.map(_.aggVersion + 1).getOrElse(targetVersion)
 

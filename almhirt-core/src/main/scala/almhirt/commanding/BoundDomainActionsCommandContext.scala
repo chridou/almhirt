@@ -192,8 +192,9 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
 
   def createBasicUowWithRepoActor(cmdType: Class[_ <: DomainCommand], repoActor: ActorRef, theActionHandlers: Option[HasActionHandlers], maxGetDuration: Option[FiniteDuration] = None)(implicit anAlmhirt: Almhirt): this.BoundUnitOfWork = {
     val duration = option.cata(maxGetDuration)(dur => dur, anAlmhirt.defaultDuration)
-    def get(id: JUUID) = (repoActor ? GetAggregateRootQry(id))(duration).mapToAlmFutureOver[AggregateRootFromRepositoryRsp[TAR, TEvent], TAR](rsp => rsp.ar)
-    def store(ar: TAR, uncommittedEvents: IndexedSeq[TEvent], ticket: Option[TrackingTicket]) = repoActor ! StoreAggregateRootCmd[TAR, TEvent](ar, uncommittedEvents, ticket)
+    def get(id: JUUID) = 
+      (repoActor ? GetAggregateRootQry(id))(duration).mapToAlmFutureOver((rsp: GetAggregateRootRsp) => rsp.ar.flatMap(_.castTo[TAR]))
+    def store(ar: TAR, uncommittedEvents: IndexedSeq[TEvent], ticket: Option[TrackingTicket]) = repoActor ! StoreAggregateRootCmd(ar, uncommittedEvents, ticket)
     createBasicUow(cmdType, get _, store _, theActionHandlers)
   }
 

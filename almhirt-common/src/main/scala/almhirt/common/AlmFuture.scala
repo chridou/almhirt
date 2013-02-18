@@ -32,7 +32,7 @@ import almhirt.almfuture.all.akkaFutureToAlmhirtFuture
  *
  * Errors which would end in a Throwable end in a SystemProblem whereas a TimeoutException ends in a TimeoutProblem.
  */
-class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
+final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   import almhirt.almfuture.all._
   def map[T](compute: R => T)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     new AlmFuture[T](underlying.map(validation => validation map compute)(hasExecutionContext.executionContext))

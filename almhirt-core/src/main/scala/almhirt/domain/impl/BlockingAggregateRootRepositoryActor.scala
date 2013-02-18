@@ -1,5 +1,6 @@
 package almhirt.domain.impl
 
+import scala.reflect.ClassTag
 import scalaz._, Scalaz._
 import akka.actor._
 import akka.pattern._
@@ -14,14 +15,13 @@ import almhirt.util._
 import almhirt.common.AlmFuture
 import almhirt.core.Almhirt
 
-abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event], theAlmhirt: Almhirt) extends Actor {
+abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event])(implicit theAlmhirt: Almhirt, tagAr: ClassTag[AR], tagEvent: ClassTag[Event]) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
   implicit private def timeout = theAlmhirt.defaultDuration
-  implicit private val hasExecutionContext = theAlmhirt
-  implicit private val executionContext = hasExecutionContext.executionContext
+  implicit private val executionContext = theAlmhirt.executionContext
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] = {
-    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).~+>[EventsForAggregateRootRsp]
+    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).mapToSuccessfulAlmFuture[EventsForAggregateRootRsp]
     future
       .mapV { case EventsForAggregateRootRsp(id, DomainEventsChunk(idx, isLast, events), corrId) => events }
       .map(events => events.map(x => x.asInstanceOf[Event]))
@@ -40,7 +40,7 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
           },
           succ => succ.version.success).map(reqVersion =>
             validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, reqVersion))
-        committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).~+>[CommittedDomainEventsRsp]
+        committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[CommittedDomainEventsRsp]
         committedEvents <- AlmFuture { committedEventsRsp.events }
       } yield committedEvents).andThen(
         fail =>
@@ -67,8 +67,16 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
   def receive: Receive = {
     case GetAggregateRootQry(aggId) =>
       val res = getFromEventLog(aggId).awaitResult
-      sender ! AggregateRootFromRepositoryRsp[AR, Event](res)
-    case StoreAggregateRootCmd(ar, uncommittedEvents, ticket) =>
-      storeToEventLog(ar.asInstanceOf[AR], uncommittedEvents.asInstanceOf[IndexedSeq[Event]], ticket)
+      sender ! GetAggregateRootRsp(aggId, res)
+    case StoreAggregateRootCmd(ar, uncommittedEvents, style) =>
+      ar.castTo[AR].fold(
+        fail => theAlmhirt.publishProblem(fail),
+        typedAr =>
+          style match {
+            case Tracked(ticket) => storeToEventLog(typedAr, uncommittedEvents.asInstanceOf[IndexedSeq[Event]], Some(ticket))
+            case FireAndForget => storeToEventLog(typedAr, uncommittedEvents.asInstanceOf[IndexedSeq[Event]], None)
+            case Correlated(corrId) =>
+              theAlmhirt.publishProblem(NotSupportedProblem(s"BlockingAggregateRootRepositoryActor can not store an AR with a Correlated($corrId) style."))
+          })
   }
 }

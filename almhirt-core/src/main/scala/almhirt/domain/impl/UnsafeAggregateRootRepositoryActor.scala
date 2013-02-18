@@ -13,13 +13,12 @@ import almhirt.domain._
 import almhirt.eventlog._
 import almhirt.util._
 
-abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event], theAlmhirt: Almhirt)(implicit tag: ClassTag[Event]) extends Actor {
+abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](eventLog: ActorRef, arFactory: CanCreateAggragateRoot[AR, Event])(implicit theAlmhirt: Almhirt, tagAr: ClassTag[AR], tagEvent: ClassTag[Event]) extends Actor {
   private val validator = new CanValidateAggregateRootsAgainstEvents[AR, Event] {}
   implicit private def timeout = theAlmhirt.durations.longDuration
-  implicit private val hasExecutionContext = theAlmhirt
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] = {
-    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).~+>[EventsForAggregateRootRsp]
+    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).mapToSuccessfulAlmFuture[EventsForAggregateRootRsp]
     future
       .mapV { case EventsForAggregateRootRsp(id, DomainEventsChunk(idx, isLast, events), corrId) => events }
       .map(events => events.map(x => x.asInstanceOf[Event]))
@@ -37,7 +36,7 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
         },
         succ => succ.version.success).map(reqVersion =>
           validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, reqVersion))
-      committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).~+>[CommittedDomainEventsRsp]
+      committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[CommittedDomainEventsRsp]
       committedEvents <- AlmFuture { committedEventsRsp.events }
     } yield committedEvents).onComplete(
       fail =>
@@ -63,9 +62,17 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
   def receive: Receive = {
     case GetAggregateRootQry(aggId) =>
       val pinnedSender = sender
-      getFromEventLog(aggId).onComplete(pinnedSender ! AggregateRootFromRepositoryRsp[AR, Event](_))
-    case StoreAggregateRootCmd(ar, uncommittedEvents, ticket) =>
-      storeToEventLog(ar.asInstanceOf[AR], uncommittedEvents.asInstanceOf[IndexedSeq[Event]], ticket)
+      getFromEventLog(aggId).onComplete(pinnedSender ! GetAggregateRootRsp(aggId, _))
+    case StoreAggregateRootCmd(ar, uncommittedEvents, style) =>
+      ar.castTo[AR].fold(
+        fail => theAlmhirt.publishProblem(fail),
+        typedAr =>
+          style match {
+            case Tracked(ticket) => storeToEventLog(typedAr, uncommittedEvents.asInstanceOf[IndexedSeq[Event]], Some(ticket))
+            case FireAndForget => storeToEventLog(typedAr, uncommittedEvents.asInstanceOf[IndexedSeq[Event]], None)
+            case Correlated(corrId) =>
+              theAlmhirt.publishProblem(NotSupportedProblem(s"UnsafeAggregateRootRepositoryActor can not store an AR with a Correlated($corrId) style."))
+          })
 
   }
 }

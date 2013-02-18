@@ -42,10 +42,6 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
   def mapToSuccessfulAlmFuture[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
     new AlmFuture[T](self.mapTo[T].map(_.success)(hasExecutionContext.executionContext))
 
-  def ~+>[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = mapToSuccessfulAlmFuture  
-  def ⤏[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = mapToSuccessfulAlmFuture  
-    
-    
   def mapToAlmFutureOver[T,U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
     new AlmFuture[U](self.mapTo[T].map(x => compute(x))(hasExecutionContext.executionContext))
 }

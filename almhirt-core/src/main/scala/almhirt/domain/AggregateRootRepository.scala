@@ -15,10 +15,11 @@ import almhirt.util.ExecutionStyle
 
 sealed trait AggregateRootRepositoryCmd
 case class GetAggregateRootQry(aggId: JUUID) extends AggregateRootRepositoryCmd
-case class StoreAggregateRootCmd(ar: AggregateRoot[_, _], uncommittedEvents: IndexedSeq[DomainEvent], style: ExecutionStyle) extends AggregateRootRepositoryCmd
+// How to do this better(Replace the AnyRef with something related to an AggregateRoot)? 
+case class StoreAggregateRootCmd(ar: AnyRef, uncommittedEvents: IndexedSeq[DomainEvent], style: ExecutionStyle) extends AggregateRootRepositoryCmd
 
 sealed trait AggregateRootRepositoryRsp
-case class GetAggregateRootRsp(ar: AggregateRoot[_, _]) extends AggregateRootRepositoryRsp
+case class GetAggregateRootRsp(quriedId: JUUID, ar: AlmValidation[AggregateRoot[_, _]]) extends AggregateRootRepositoryRsp
 case class StoreAggregateRootRsp(ar: AlmValidation[AggregateRoot[_, _]]) extends AggregateRootRepositoryRsp
 
 trait AggregateRootRepository[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends HasAggregateRoots[AR, Event] with StoresAggregateRoots[AR, Event] with ActorBased
@@ -28,18 +29,18 @@ object AggregateRootRepository {
   import almhirt.eventlog._
   import akka.actor._
 
-  def apply[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](aName: String, arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit theAlmhirt: Almhirt, tag: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
+  def apply[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](aName: String, arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit theAlmhirt: Almhirt, tagAr: ClassTag[AR], tag: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
     blocking(aName, arFactory, eventLog)
   }
 
-  def unsafe[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](aName: String, arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit theAlmhirt: Almhirt, tag: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
-    val actor = theAlmhirt.actorSystem.actorOf(Props(new UnsafeAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, theAlmhirt) {}), aName)
-    new AggregateRootRepositoryActorHull[AR, Event](actor, theAlmhirt) {}
+  def unsafe[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](aName: String, arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit theAlmhirt: Almhirt, tagAr: ClassTag[AR], tagEvent: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
+    val actor = theAlmhirt.actorSystem.actorOf(Props(new UnsafeAggregateRootRepositoryActor[AR, Event](eventLog, arFactory) {}), aName)
+    new AggregateRootRepositoryActorHull[AR, Event](actor) {}
   }
 
-  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](aName: String, arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit theAlmhirt: Almhirt, tag: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
-    val actor = theAlmhirt.actorSystem.actorOf(Props(new BlockingAggregateRootRepositoryActor[AR, Event](eventLog, arFactory, theAlmhirt) {}), aName)
-    new AggregateRootRepositoryActorHull[AR, Event](actor, theAlmhirt) {}
+  def blocking[AR <: AggregateRoot[AR, Event], Event <: DomainEvent](aName: String, arFactory: CanCreateAggragateRoot[AR, Event], eventLog: ActorRef)(implicit theAlmhirt: Almhirt, tagAr: ClassTag[AR], tagEvent: ClassTag[Event]): AggregateRootRepository[AR, Event] = {
+    val actor = theAlmhirt.actorSystem.actorOf(Props(new BlockingAggregateRootRepositoryActor[AR, Event](eventLog, arFactory) {}), aName)
+    new AggregateRootRepositoryActorHull[AR, Event](actor) {}
   }
 
   def dummy[AR <: AggregateRoot[AR, Event], Event <: DomainEvent]: AggregateRootRepository[AR, Event] =
