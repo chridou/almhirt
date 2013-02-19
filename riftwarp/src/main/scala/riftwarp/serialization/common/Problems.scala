@@ -11,15 +11,12 @@ object Problems {
       val riftDescriptor = aRiftDescriptor
       val alternativeRiftDescriptors = Nil
       def decompose[TDimension <: RiftDimension](what: T)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-        for {
-          problem <- almhirt.almvalidation.funs.almCast[Problem](what)
-          next <- into.addRiftDescriptor(riftDescriptor)
-          next <- next.addString("message", problem.message)
-          next <- next.addString("severity", problem.severity.toString())
-          next <- next.addString("category", problem.category.toString())
-          next <- next.addMapSkippingUnknownValues[String, Any]("args", problem.args)
-          next <- next.addOptionalComplexSelective("cause", ProblemCauseDecomposer, what.cause)
-        } yield next
+        into.addRiftDescriptor(riftDescriptor)
+          .addString("message", what.message)
+          .addString("severity", what.severity.toString())
+          .addString("category", what.category.toString())
+          .addMapSkippingUnknownValues[String, Any]("args", what.args).flatMap(
+            _.addOptionalComplexSelective("cause", ProblemCauseDecomposer, what.cause))
     }
   }
 
@@ -29,11 +26,9 @@ object Problems {
       val riftDescriptor = aRiftDescriptor
       val alternativeRiftDescriptors = Nil
       def decompose[TDimension <: RiftDimension](what: AggregateProblem)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-
         for {
-          problem <- almhirt.almvalidation.funs.almCast[AggregateProblem](what)
           defaults <- inner.decomposeRaw(what)(into)
-          additional <- defaults.addComplexMALoose("problems", problem.problems)
+          additional <- defaults.addComplexMALoose("problems", what.problems)
         } yield additional
     }
   }

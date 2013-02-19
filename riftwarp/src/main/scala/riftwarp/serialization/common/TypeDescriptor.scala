@@ -9,8 +9,7 @@ object RiftDescriptorDecomposer extends Decomposer[RiftDescriptor] {
   val riftDescriptor = RiftDescriptor(classOf[RiftDescriptor])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: RiftDescriptor)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addString("identifier", what.identifier)
-      .flatMap(_.addOptionalInt("version", what.version))
+    into.addString("identifier", what.identifier).addOptionalInt("version", what.version).ok
   }
 }
 

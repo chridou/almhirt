@@ -12,10 +12,10 @@ class BoundDomainActionsCommandDecomposer[TCom <: BoundDomainActionsCommandConte
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: TCom)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
-      .addRiftDescriptor(this.riftDescriptor).flatMap(
-        _.addUuid("id", what.id).flatMap(
-          _.addOptionalComplex("aggRef", what.aggRef, Some(classOf[AggregateRootRef])).flatMap(
-            _.addComplexMALoose("actions", what.actions))))
+      .addRiftDescriptor(this.riftDescriptor)
+      .addUuid("id", what.id)
+      .addOptionalComplex("aggRef", what.aggRef, Some(classOf[AggregateRootRef])).flatMap(
+        _.addComplexMALoose("actions", what.actions))
   }
 }
 

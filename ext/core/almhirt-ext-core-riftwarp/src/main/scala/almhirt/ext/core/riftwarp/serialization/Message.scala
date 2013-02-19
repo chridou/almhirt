@@ -15,9 +15,9 @@ object MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
   def decompose[TDimension <: RiftDimension](what: MessageGrouping)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .flatMap(_.addUuid("groupId", what.groupId))
-      .flatMap(_.addInt("seq", what.seq))
-      .flatMap(_.addBoolean("isLast", what.isLast))
+      .addUuid("groupId", what.groupId)
+      .addInt("seq", what.seq)
+      .addBoolean("isLast", what.isLast).ok
   }
 }
 
@@ -37,10 +37,10 @@ object MessageHeaderDecomposer extends Decomposer[MessageHeader] {
   def decompose[TDimension <: RiftDimension](what: MessageHeader)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .flatMap(_.addUuid("id", what.id))
-      .flatMap(_.addOptionalComplex("grouping", what.grouping))
-      .flatMap(_.addMapSkippingUnknownValues("metaData", what.metaData))
-      .flatMap(_.addDateTime("timestamp", what.timestamp))
+      .addUuid("id", what.id)
+      .addOptionalComplex("grouping", what.grouping).flatMap(
+        _.addMapSkippingUnknownValues("metaData", what.metaData).map(
+          _.addDateTime("timestamp", what.timestamp)))
   }
 }
 
@@ -61,8 +61,8 @@ object MessageDecomposer extends Decomposer[Message[AnyRef]] {
   def decompose[TDimension <: RiftDimension](what: Message[AnyRef])(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .flatMap(_.addComplex("header", what.header))
-      .flatMap(_.addComplex("payload", what.payload))
+      .addComplex("header", what.header).flatMap(
+        _.addComplex("payload", what.payload))
   }
 }
 

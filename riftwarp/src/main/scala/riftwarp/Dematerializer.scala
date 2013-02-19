@@ -25,48 +25,43 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def dematerialize: TDimension
   override def dematerializeRaw: RiftDimension = dematerialize.asInstanceOf[RiftDimension]
 
-  def addString(ident: String, aValue: String): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalString(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TDimension]]
+  def addString(ident: String, aValue: String): Dematerializer[TDimension]
+  def addOptionalString(ident: String, anOptionalValue: Option[String]): Dematerializer[TDimension]
 
-  def addBoolean(ident: String, aValue: Boolean): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalBoolean(ident: String, anOptionalValue: Option[Boolean]): AlmValidation[Dematerializer[TDimension]]
+  def addBoolean(ident: String, aValue: Boolean): Dematerializer[TDimension]
+  def addOptionalBoolean(ident: String, anOptionalValue: Option[Boolean]): Dematerializer[TDimension]
 
-  def addByte(ident: String, aValue: Byte): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalByte(ident: String, anOptionalValue: Option[Byte]): AlmValidation[Dematerializer[TDimension]]
-  def addInt(ident: String, aValue: Int): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalInt(ident: String, anOptionalValue: Option[Int]): AlmValidation[Dematerializer[TDimension]]
-  def addLong(ident: String, aValue: Long): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalLong(ident: String, anOptionalValue: Option[Long]): AlmValidation[Dematerializer[TDimension]]
-  def addBigInt(ident: String, aValue: BigInt): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalBigInt(ident: String, anOptionalValue: Option[BigInt]): AlmValidation[Dematerializer[TDimension]]
+  def addByte(ident: String, aValue: Byte): Dematerializer[TDimension]
+  def addOptionalByte(ident: String, anOptionalValue: Option[Byte]):Dematerializer[TDimension]
+  def addInt(ident: String, aValue: Int): Dematerializer[TDimension]
+  def addOptionalInt(ident: String, anOptionalValue: Option[Int]): Dematerializer[TDimension]
+  def addLong(ident: String, aValue: Long): Dematerializer[TDimension]
+  def addOptionalLong(ident: String, anOptionalValue: Option[Long]): Dematerializer[TDimension]
+  def addBigInt(ident: String, aValue: BigInt): Dematerializer[TDimension]
+  def addOptionalBigInt(ident: String, anOptionalValue: Option[BigInt]): Dematerializer[TDimension]
 
-  def addFloat(ident: String, aValue: Float): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalFloat(ident: String, anOptionalValue: Option[Float]): AlmValidation[Dematerializer[TDimension]]
-  def addDouble(ident: String, aValue: Double): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalDouble(ident: String, anOptionalValue: Option[Double]): AlmValidation[Dematerializer[TDimension]]
-  def addBigDecimal(ident: String, aValue: BigDecimal): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalBigDecimal(ident: String, anOptionalValue: Option[BigDecimal]): AlmValidation[Dematerializer[TDimension]]
+  def addFloat(ident: String, aValue: Float): Dematerializer[TDimension]
+  def addOptionalFloat(ident: String, anOptionalValue: Option[Float]): Dematerializer[TDimension]
+  def addDouble(ident: String, aValue: Double): Dematerializer[TDimension]
+  def addOptionalDouble(ident: String, anOptionalValue: Option[Double]): Dematerializer[TDimension]
+  def addBigDecimal(ident: String, aValue: BigDecimal): Dematerializer[TDimension]
+  def addOptionalBigDecimal(ident: String, anOptionalValue: Option[BigDecimal]): Dematerializer[TDimension]
 
-  def addByteArray(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
-  def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalBase64EncodedByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
-  def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalByteArrayBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
+  def addByteArray(ident: String, aValue: Array[Byte]): Dematerializer[TDimension]
+  def addOptionalByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): Dematerializer[TDimension]
+  def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]): Dematerializer[TDimension]
+  def addOptionalBase64EncodedByteArray(ident: String, anOptionalValue: Option[Array[Byte]]): Dematerializer[TDimension]
+  def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]): Dematerializer[TDimension]
+  def addOptionalByteArrayBlobEncoded(ident: String, anOptionalValue: Option[Array[Byte]]): Dematerializer[TDimension]
 
-  def addDateTime(ident: String, aValue: org.joda.time.DateTime): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]): AlmValidation[Dematerializer[TDimension]]
+  def addDateTime(ident: String, aValue: org.joda.time.DateTime): Dematerializer[TDimension]
+  def addOptionalDateTime(ident: String, anOptionalValue: Option[org.joda.time.DateTime]): Dematerializer[TDimension]
 
-  def addUri(ident: String, aValue: _root_.java.net.URI): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalUri(ident: String, anOptionalValue: Option[_root_.java.net.URI]): AlmValidation[Dematerializer[TDimension]]
+  def addUri(ident: String, aValue: _root_.java.net.URI): Dematerializer[TDimension]
+  def addOptionalUri(ident: String, anOptionalValue: Option[_root_.java.net.URI]): Dematerializer[TDimension]
 
-  def addUuid(ident: String, aValue: _root_.java.util.UUID): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]): AlmValidation[Dematerializer[TDimension]]
-
-  def addJson(ident: String, aValue: String): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalJson(ident: String, anOptionalValue: Option[String]): AlmValidation[Dematerializer[TDimension]]
-  def addXml(ident: String, aValue: scala.xml.Node): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalXml(ident: String, anOptionalValue: Option[scala.xml.Node]): AlmValidation[Dematerializer[TDimension]]
+  def addUuid(ident: String, aValue: _root_.java.util.UUID): Dematerializer[TDimension]
+  def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]): Dematerializer[TDimension]
 
   def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, aValue, PropertyPath(ident :: path))
   def addBlob(ident: String, aValue: Array[Byte], name: String): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, aValue, PropertyPathAndIdentifier(ident :: path, name))
@@ -123,13 +118,14 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
 
-  def addRiftDescriptor(descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
+  def addRiftDescriptor(descriptor: RiftDescriptor): Dematerializer[TDimension]
 
   def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]] 
   def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
   def include[T <: AnyRef](what: T)(implicit tag: ClassTag[T]): AlmValidation[Dematerializer[TDimension]]
   
   def fail(prob: Problem): AlmValidation[Dematerializer[TDimension]] = prob.failure
+  def ok: AlmValidation[Dematerializer[TDimension]] = this.success
 
 }
 

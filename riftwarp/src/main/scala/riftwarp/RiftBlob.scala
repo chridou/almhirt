@@ -15,8 +15,7 @@ case class RiftBlobArrayValue(val data: Array[Byte]) extends RiftBlobValue {
   val dataAsArray = data.success
 
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
-      demat.addByteArrayBlobEncoded("data", data))
+    into.addRiftDescriptor(this.riftDescriptor).addByteArrayBlobEncoded("data", data).ok
 }
 
 
@@ -25,29 +24,25 @@ trait RiftBlobReference extends RiftBlob
 case class RiftBlobRefFilePath(path: String) extends RiftBlobReference {
   val riftDescriptor = RiftDescriptor("RiftBlobRefFilePath")
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
-      demat.addString("path", path))
+    into.addRiftDescriptor(this.riftDescriptor).addString("path", path).ok
 }
 
 case class RiftBlobRefByName(name: String) extends RiftBlobReference {
   val riftDescriptor = RiftDescriptor("RiftBlobRefByName")
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
-      demat.addString("name", name))
+    into.addRiftDescriptor(this.riftDescriptor).addString("name", name).ok
 }
 
 case class RiftBlobRefByUuid(uuid: java.util.UUID) extends RiftBlobReference {
   val riftDescriptor = RiftDescriptor("RiftBlobRefByUuid")
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
-      demat.addUuid("uuid", uuid))
+    into.addRiftDescriptor(this.riftDescriptor).addUuid("uuid", uuid).ok
 }
 
 case class RiftBlobRefByUri(uri: java.net.URI) extends RiftBlobReference {
   val riftDescriptor = RiftDescriptor("RiftBlobRefByUri")
   def decompose[TDimension <: RiftDimension](into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(demat =>
-      demat.addUri("uri", uri))
+    into.addRiftDescriptor(this.riftDescriptor).addUri("uri", uri).ok
 }
 
 object RiftBlob {

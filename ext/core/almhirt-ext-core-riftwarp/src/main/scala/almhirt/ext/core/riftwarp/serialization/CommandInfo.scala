@@ -12,8 +12,8 @@ object FullComandInfoDecomposer extends Decomposer[FullComandInfo] {
   val riftDescriptor = RiftDescriptor(classOf[FullComandInfo])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: FullComandInfo)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(
-      _.addComplex("command", what.command, None))
+    into.addRiftDescriptor(this.riftDescriptor)
+      .addComplex("command", what.command, None)
   }
 }
 
@@ -21,10 +21,10 @@ object HeadCommandInfoDecomposer extends Decomposer[HeadCommandInfo] {
   val riftDescriptor = RiftDescriptor(classOf[HeadCommandInfo])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: HeadCommandInfo)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(
-      _.addUuid("commandId", what.commandId).flatMap(
-        _.addString("commandType", what.commandType).flatMap(
-          _.addOptionalComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef))))
+    into.addRiftDescriptor(this.riftDescriptor)
+      .addUuid("commandId", what.commandId)
+      .addString("commandType", what.commandType)
+      .addOptionalComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef)
   }
 }
 

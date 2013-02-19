@@ -14,8 +14,8 @@ object StringTrackingTicketDecomposer extends Decomposer[StringTrackingTicket] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: StringTrackingTicket)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
-      .addRiftDescriptor(this.riftDescriptor).flatMap(
-        _.addString("ident", what.ident))
+      .addRiftDescriptor(this.riftDescriptor)
+      .addString("ident", what.ident).ok
 }
 
 object UuidTrackingTicketDecomposer extends Decomposer[UuidTrackingTicket] {
@@ -23,8 +23,8 @@ object UuidTrackingTicketDecomposer extends Decomposer[UuidTrackingTicket] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: UuidTrackingTicket)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
-      .addRiftDescriptor(this.riftDescriptor).flatMap(
-        _.addUuid("ident", what.ident))
+      .addRiftDescriptor(this.riftDescriptor)
+      .addUuid("ident", what.ident).ok
 }
 
 object TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
@@ -41,14 +41,14 @@ object TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
 object StringTrackingTicketRecomposer extends Recomposer[StringTrackingTicket] {
   val riftDescriptor = RiftDescriptor(classOf[StringTrackingTicket])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[StringTrackingTicket] = 
+  def recompose(from: Rematerializer): AlmValidation[StringTrackingTicket] =
     from.getString("ident").map(StringTrackingTicket.apply)
 }
 
 object UuidTrackingTicketRecomposer extends Recomposer[UuidTrackingTicket] {
   val riftDescriptor = RiftDescriptor(classOf[UuidTrackingTicket])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[UuidTrackingTicket] = 
+  def recompose(from: Rematerializer): AlmValidation[UuidTrackingTicket] =
     from.getUuid("ident").map(UuidTrackingTicket.apply)
 }
 

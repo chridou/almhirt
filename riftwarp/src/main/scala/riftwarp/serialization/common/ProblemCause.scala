@@ -10,11 +10,11 @@ object HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribe
   val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: HasAThrowableDescribed)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(
-      _.addString("classname", what.classname).flatMap(
-        _.addString("message", what.message).flatMap(
-          _.addString("stacktrace", what.stacktrace).flatMap(
-            _.addOptionalComplexSelective("cause", this, what.cause)))))
+    into.addRiftDescriptor(this.riftDescriptor)
+      .addString("classname", what.classname)
+      .addString("message", what.message)
+      .addString("stacktrace", what.stacktrace)
+      .addOptionalComplexSelective("cause", this, what.cause)
   }
 }
 
@@ -41,8 +41,8 @@ object CauseIsThrowableDecomposer extends Decomposer[CauseIsThrowable] {
   val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: CauseIsThrowable)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(
-      _.addComplexSelective("representation", ThrowableRepresentationDecomposer, what.representation))
+    into.addRiftDescriptor(this.riftDescriptor)
+      .addComplexSelective("representation", ThrowableRepresentationDecomposer, what.representation)
   }
 }
 
@@ -50,8 +50,7 @@ object CauseIsProblemDecomposer extends Decomposer[CauseIsProblem] {
   val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: CauseIsProblem)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor).flatMap(
-      _.addComplex("problem", what.problem, None))
+    into.addRiftDescriptor(this.riftDescriptor).addComplex("problem", what.problem, None)
   }
 }
 

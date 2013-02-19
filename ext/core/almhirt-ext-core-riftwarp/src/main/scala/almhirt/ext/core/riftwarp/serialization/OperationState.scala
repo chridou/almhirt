@@ -11,10 +11,10 @@ object InProcessDecomposer extends Decomposer[InProcess] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: InProcess)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
-      .addRiftDescriptor(this.riftDescriptor).flatMap(
-        _.addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-          _.addComplexSelective("commandInfo", CommandInfoDecomposer, what.commandInfo).flatMap(
-            _.addDateTime("timestamp", what.timestamp))))
+      .addRiftDescriptor(this.riftDescriptor)
+      .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
+        _.addComplexSelective("commandInfo", CommandInfoDecomposer, what.commandInfo).map(
+          _.addDateTime("timestamp", what.timestamp)))
 }
 
 object ExecutedDecomposer extends Decomposer[Executed] {
@@ -22,10 +22,10 @@ object ExecutedDecomposer extends Decomposer[Executed] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: Executed)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
-      .addRiftDescriptor(this.riftDescriptor).flatMap(
-        _.addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-          _.addComplexSelective("action", PerformedActionDecomposer, what.action).flatMap(
-            _.addDateTime("timestamp", what.timestamp))))
+      .addRiftDescriptor(this.riftDescriptor)
+      .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
+        _.addComplexSelective("action", PerformedActionDecomposer, what.action).map(
+          _.addDateTime("timestamp", what.timestamp)))
 }
 
 object NotExecutedDecomposer extends Decomposer[NotExecuted] {
@@ -33,10 +33,10 @@ object NotExecutedDecomposer extends Decomposer[NotExecuted] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: NotExecuted)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
-      .addRiftDescriptor(this.riftDescriptor).flatMap(
-        _.addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-          _.addComplexTyped[Problem]("problem", what.problem).flatMap(
-            _.addDateTime("timestamp", what.timestamp))))
+      .addRiftDescriptor(this.riftDescriptor)
+      .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
+        _.addComplexTyped[Problem]("problem", what.problem).map(
+          _.addDateTime("timestamp", what.timestamp)))
 }
 
 object OperationStateDecomposer extends Decomposer[OperationState] {

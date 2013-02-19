@@ -15,10 +15,10 @@ class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] with Has
   val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
   def decompose[TDimension <: RiftDimension](what: TestPersonCreated)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .flatMap(_.addUuid("id", what.id))
-      .flatMap(_.addUuid("aggId", what.aggId))
-      .flatMap(_.addString("name", what.name))
-      .flatMap(_.addDateTime("timestamp", what.timestamp))
+      .addUuid("id", what.id)
+      .addUuid("aggId", what.aggId)
+      .addString("name", what.name)
+      .addDateTime("timestamp", what.timestamp).ok
   }
 }
 
@@ -37,11 +37,11 @@ class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] 
   val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
   def decompose[TDimension <: RiftDimension](what: TestPersonNameChanged)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .flatMap(_.addUuid("id", what.id))
-      .flatMap(_.addUuid("aggId", what.aggId))
-      .flatMap(_.addLong("aggVersion", what.aggVersion))
-      .flatMap(_.addString("newName", what.newName))
-      .flatMap(_.addDateTime("timestamp", what.timestamp))
+      .addUuid("id", what.id)
+      .addUuid("aggId", what.aggId)
+      .addLong("aggVersion", what.aggVersion)
+      .addString("newName", what.newName)
+      .addDateTime("timestamp", what.timestamp).ok
   }
 }
 
@@ -61,11 +61,11 @@ class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAqu
   val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
   def decompose[TDimension <: RiftDimension](what: TestPersonAddressAquired)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .flatMap(_.addUuid("id", what.id))
-      .flatMap(_.addUuid("aggId", what.aggId))
-      .flatMap(_.addLong("aggVersion", what.aggVersion))
-      .flatMap(_.addString("aquiredAddress", what.aquiredAddress))
-      .flatMap(_.addDateTime("timestamp", what.timestamp))
+      .addUuid("id", what.id)
+      .addUuid("aggId", what.aggId)
+      .addLong("aggVersion", what.aggVersion)
+      .addString("aquiredAddress", what.aquiredAddress)
+      .addDateTime("timestamp", what.timestamp).ok
   }
 }
 
@@ -85,11 +85,11 @@ class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] with HasNoAl
   val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
   def decompose[TDimension <: RiftDimension](what: TestPersonMoved)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .flatMap(_.addUuid("id", what.id))
-      .flatMap(_.addUuid("aggId", what.aggId))
-      .flatMap(_.addLong("aggVersion", what.aggVersion))
-      .flatMap(_.addString("newAddress", what.newAddress))
-      .flatMap(_.addDateTime("timestamp", what.timestamp))
+      .addUuid("id", what.id)
+      .addUuid("aggId", what.aggId)
+      .addLong("aggVersion", what.aggVersion)
+      .addString("newAddress", what.newAddress)
+      .addDateTime("timestamp", what.timestamp).ok
   }
 }
 
@@ -109,10 +109,10 @@ class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledE
   val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
   def decompose[TDimension <: RiftDimension](what: TestPersonUnhandledEvent)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .flatMap(_.addUuid("id", what.id))
-      .flatMap(_.addUuid("aggId", what.aggId))
-      .flatMap(_.addLong("aggVersion", what.aggVersion))
-      .flatMap(_.addDateTime("timestamp", what.timestamp))
+      .addUuid("id", what.id)
+      .addUuid("aggId", what.aggId)
+      .addLong("aggVersion", what.aggVersion)
+      .addDateTime("timestamp", what.timestamp).ok
   }
 }
 

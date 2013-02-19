@@ -13,6 +13,8 @@ trait RawRecomposer extends HasAlternativeRiftDescriptors {
 /** atoms -> instance */
 trait Recomposer[+T <: AnyRef] extends RawRecomposer {
   def recompose(from: Rematerializer): AlmValidation[T]
+  def recomposeAsync(from: Rematerializer)(implicit hasExecContext: HasExecutionContext): AlmFuture[T] =
+    AlmFuture { recompose(from) }
   def recomposeRaw(from: Rematerializer) = recompose(from).map(_.asInstanceOf[AnyRef])
 }
 
@@ -29,4 +31,11 @@ abstract class DivertingRecomposer[+T <: AnyRef] extends Recomposer[T] {
       (divert >? rd).fold(
         fail => KeyNotFoundProblem(s"Recomposer for ${this.riftDescriptor.toString} could not find a Recomposer for ${rd.toString}").failure,
         recomposer => recomposer.recompose(from)))
+  override def recomposeAsync(from: Rematerializer)(implicit hasExecContext: HasExecutionContext): AlmFuture[T] =
+    from.getRiftDescriptor.fold(
+      fail => AlmFuture.failed(fail),
+      rd =>
+        (divert >? rd).fold(
+          fail => AlmFuture.failed(KeyNotFoundProblem(s"Recomposer for ${this.riftDescriptor.toString} could not find a Recomposer for ${rd.toString}")),
+          recomposer => recomposer.recomposeAsync(from)))
 }

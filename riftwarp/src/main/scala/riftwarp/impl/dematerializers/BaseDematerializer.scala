@@ -15,25 +15,21 @@ import riftwarp.ma.HasFunctionObjects
  */
 abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[TDimension] {
   protected def divertBlob: BlobDivert
-  protected def spawnNew(ident: String): AlmValidation[Dematerializer[TDimension]] = spawnNew(ident :: path)
+  protected def spawnNew(ident: String): Dematerializer[TDimension] = spawnNew(ident :: path)
   /**
    * Creates a new instance of a dematerializer. It should respect divertBlob when creating the new instance.
    *
    */
-  protected def spawnNew(path: List[String]): AlmValidation[Dematerializer[TDimension]]
+  protected def spawnNew(path: List[String]): Dematerializer[TDimension]
   protected def getDematerializedBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]] =
-    spawnNew(ident).flatMap(demat =>
-      divertBlob(aValue, blobIdentifier).flatMap(blob =>
-        blob.decompose(demat)))
+    divertBlob(aValue, blobIdentifier).flatMap(blob =>
+      blob.decompose(spawnNew(ident)))
 
-  protected def insertDematerializer(ident: String, dematerializer: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]
+  protected def insertDematerializer(ident: String, dematerializer: Dematerializer[TDimension]): Dematerializer[TDimension]
 
   override def addComplexSelective(ident: String, decomposer: RawDecomposer, complex: AnyRef): AlmValidation[Dematerializer[TDimension]] =
-    for {
-      demat <- spawnNew(ident)
-      dematerializedComplex <- decomposer.decomposeRaw(complex)(demat)
-      result <- insertDematerializer(ident, dematerializedComplex)
-    } yield result
+    decomposer.decomposeRaw(complex)(spawnNew(ident)).map(dematerializedComplex =>
+      insertDematerializer(ident, dematerializedComplex))
 
   override def addComplexFixed(ident: String, complex: AnyRef, descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]] =
     hasDecomposers.getRawDecomposer(descriptor).flatMap(decomposer =>
@@ -45,7 +41,6 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
   override def include[T <: AnyRef](what: T)(implicit tag: ClassTag[T]): AlmValidation[Dematerializer[TDimension]] =
     hasDecomposers.getDecomposer[T]().flatMap(decomposer =>
       includeDirect(what, decomposer))
-
 }
 
 abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
