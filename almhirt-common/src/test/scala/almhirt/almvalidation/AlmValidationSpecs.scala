@@ -2,10 +2,7 @@ package almhirt.almvalidation
 
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
-import scalaz._
-import Scalaz._
-import scalaz.syntax.validation._
-import scalaz.{ Failure }
+import scalaz._, Scalaz._
 import almhirt.common._
 
 class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
