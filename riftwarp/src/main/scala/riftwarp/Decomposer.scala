@@ -7,11 +7,11 @@ trait RawDecomposer extends HasAlternativeRiftDescriptors {
   def decomposeRaw[TDimension <: RiftDimension](what: AnyRef, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]
 }
 
-trait Decomposes[-T]{
+trait Decomposes[-T] extends {
   def decompose[TDimension <: RiftDimension](what: T, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]
 }
 
-trait DecomposesAsync[-T]{
+trait DecomposesAsync[-T] {
   def decomposeAsync[TDimension <: RiftDimension](what: T, into: Dematerializer[TDimension])(implicit hasExecContext: HasExecutionContext): AlmFuture[Dematerializer[TDimension]]
 }
 

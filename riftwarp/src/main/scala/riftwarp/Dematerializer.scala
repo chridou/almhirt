@@ -32,7 +32,7 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addOptionalBoolean(ident: String, anOptionalValue: Option[Boolean]): Dematerializer[TDimension]
 
   def addByte(ident: String, aValue: Byte): Dematerializer[TDimension]
-  def addOptionalByte(ident: String, anOptionalValue: Option[Byte]):Dematerializer[TDimension]
+  def addOptionalByte(ident: String, anOptionalValue: Option[Byte]): Dematerializer[TDimension]
   def addInt(ident: String, aValue: Int): Dematerializer[TDimension]
   def addOptionalInt(ident: String, anOptionalValue: Option[Int]): Dematerializer[TDimension]
   def addLong(ident: String, aValue: Long): Dematerializer[TDimension]
@@ -105,8 +105,8 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMA[M[_], A <: Any](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
 
-  def addIterable[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposer: Decomposer[A]): AlmValidation[Dematerializer[TDimension]]
-  
+  def addIterable[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
+
   def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalPrimitiveMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
   def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
@@ -122,10 +122,10 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
 
   def addRiftDescriptor(descriptor: RiftDescriptor): Dematerializer[TDimension]
 
-  def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]] 
+  def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]]
   def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
   def include[T <: AnyRef](what: T)(implicit tag: ClassTag[T]): AlmValidation[Dematerializer[TDimension]]
-  
+
   def fail(prob: Problem): AlmValidation[Dematerializer[TDimension]] = prob.failure
   def ok: AlmValidation[Dematerializer[TDimension]] = this.success
 

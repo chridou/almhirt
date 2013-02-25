@@ -1,6 +1,7 @@
 package riftwarp.impl.dematerializers
 
 import language.higherKinds
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 import scala.collection.IterableLike
 import org.joda.time.DateTime
@@ -116,6 +117,16 @@ object ToJsonCordDematerializerFuns {
     else
       UnspecifiedProblem("No mapper found for %s".format(lookupFor.getClass.getName())).failure
   }
+
+  @tailrec
+  private def createInnerJson(rest: List[Cord]): Cord =
+    rest match {
+      case Nil => Cord.empty
+      case last :: Nil => last
+      case h :: t => (h :- ',') ++ createInnerJson(t)
+    }
+
+  def foldParts(items: List[Cord]): Cord = '[' -: createInnerJson(items) :- ']'
 
   def createKeyValuePair(kv: (Cord, Cord)): DimensionCord = {
     DimensionCord((Cord("{\"k\":") ++ kv._1 ++ ",\"v\":" ++ kv._2 ++ "}"))
@@ -241,11 +252,10 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
       addPart(ident, dimCord.manifestation))
   }
-  
-  def addIterable[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposer: Decomposer[A]): AlmValidation[ToJsonCordDematerializer] = {
-    ///val mappedV = what.toList.map(x => decomposer.decompose(x)(spawnNew(ident + "[?]" :: path)))
-   ??? 
-  }
+
+  def addIterable[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[ToJsonCordDematerializer] =
+    what.toList.map(x => decomposes.decompose(x, spawnNew(ident + "[?]" :: path)).toAgg).sequence.map(dematerializedItems =>
+      addPart(ident, foldParts(dematerializedItems.map(_.dematerialize.manifestation))))
 
   override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
