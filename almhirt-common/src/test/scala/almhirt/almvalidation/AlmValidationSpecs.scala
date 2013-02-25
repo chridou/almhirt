@@ -92,7 +92,7 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
     (notEmptyOrWhitespace("")).isFailure should be(true)
   }
 
-  """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in a "for comprehension"""" should
+  """Two strings(A,B) parsed to ints and lifted to AggregateProblem validations in a "for comprehension"""" should
     """add to 5 when A="2" and B="3"""" in {
       val res = parseIntAlm("2").toAgg flatMap (x => parseIntAlm("3").toAgg.map(_ + x))
       res should equal(Success(5))
@@ -102,7 +102,7 @@ class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
     res.isFailure should be(true)
   }
 
-  """Two strings(A,B) parsed to ints and lifted to MultipleBadData validations in an applicative functor""" should
+  """Two strings(A,B) parsed to ints and lifted to AggregateProblem validations in an applicative functor""" should
     """add to 5 when A="2" and B="3"""" in {
       val a = "2".toIntAlm().toAgg
       val b = "3".toIntAlm().toAgg

@@ -10,15 +10,16 @@ import almhirt.domain._
 import riftwarp._
 import almhirt.core.test._
 import riftwarp.components.HasNoAlternativeRiftDescriptors
+import almhirt.ext.core.riftwarp.serialization._
 
 class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
   def decompose[TDimension <: RiftDimension](what: TestPersonCreated)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addString("name", what.name)
-      .addDateTime("timestamp", what.timestamp).ok
+      .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef).map(
+        _.addString("name", what.name)
+          .addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -26,10 +27,10 @@ class TestPersonCreatedRecomposer extends Recomposer[TestPersonCreated] with Has
   val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
   def recompose(from: Rematerializer): AlmValidation[TestPersonCreated] = {
     val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
+    val aggRef = from.getComplexType("aggRef", AggregateRootRefRecomposer).toAgg
     val name = from.getString("name").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| name |@| timestamp)(TestPersonCreated.apply)
+    (id |@| aggRef |@| name |@| timestamp)(TestPersonCreated.apply)
   }
 }
 
@@ -38,10 +39,9 @@ class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] 
   def decompose[TDimension <: RiftDimension](what: TestPersonNameChanged)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addLong("aggVersion", what.aggVersion)
-      .addString("newName", what.newName)
-      .addDateTime("timestamp", what.timestamp).ok
+      .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef).map(
+        _.addString("newName", what.newName)
+          .addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -49,11 +49,10 @@ class TestPersonNameChangedRecomposer extends Recomposer[TestPersonNameChanged] 
   val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
   def recompose(from: Rematerializer): AlmValidation[TestPersonNameChanged] = {
     val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
+    val aggRef = from.getComplexType("aggRef", AggregateRootRefRecomposer).toAgg
     val newName = from.getString("newName").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| newName |@| timestamp)(TestPersonNameChanged.apply)
+    (id |@| aggRef |@| newName |@| timestamp)(TestPersonNameChanged.apply)
   }
 }
 
@@ -62,10 +61,9 @@ class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAqu
   def decompose[TDimension <: RiftDimension](what: TestPersonAddressAquired)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addLong("aggVersion", what.aggVersion)
-      .addString("aquiredAddress", what.aquiredAddress)
-      .addDateTime("timestamp", what.timestamp).ok
+      .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef).map(
+        _.addString("aquiredAddress", what.aquiredAddress)
+          .addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -73,11 +71,10 @@ class TestPersonAddressAquiredRecomposer extends Recomposer[TestPersonAddressAqu
   val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
   def recompose(from: Rematerializer): AlmValidation[TestPersonAddressAquired] = {
     val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
+    val aggRef = from.getComplexType("aggRef", AggregateRootRefRecomposer).toAgg
     val aquiredAddress = from.getString("aquiredAddress").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| aquiredAddress |@| timestamp)(TestPersonAddressAquired.apply)
+    (id |@| aggRef |@| aquiredAddress |@| timestamp)(TestPersonAddressAquired.apply)
   }
 }
 
@@ -86,10 +83,9 @@ class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] with HasNoAl
   def decompose[TDimension <: RiftDimension](what: TestPersonMoved)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addLong("aggVersion", what.aggVersion)
-      .addString("newAddress", what.newAddress)
-      .addDateTime("timestamp", what.timestamp).ok
+      .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef).map(
+        _.addString("newAddress", what.newAddress)
+          .addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -97,11 +93,10 @@ class TestPersonMovedRecomposer extends Recomposer[TestPersonMoved] with HasNoAl
   val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
   def recompose(from: Rematerializer): AlmValidation[TestPersonMoved] = {
     val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
+    val aggRef = from.getComplexType("aggRef", AggregateRootRefRecomposer).toAgg
     val newAddress = from.getString("newAddress").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| newAddress |@| timestamp)(TestPersonMoved.apply)
+    (id |@| aggRef |@| newAddress |@| timestamp)(TestPersonMoved.apply)
   }
 }
 
@@ -110,9 +105,8 @@ class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledE
   def decompose[TDimension <: RiftDimension](what: TestPersonUnhandledEvent)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addLong("aggVersion", what.aggVersion)
-      .addDateTime("timestamp", what.timestamp).ok
+      .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef).map(
+        _.addDateTime("timestamp", what.timestamp))
   }
 }
 
@@ -120,9 +114,8 @@ class TestPersonUnhandledEventRecomposer extends Recomposer[TestPersonUnhandledE
   val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
   def recompose(from: Rematerializer): AlmValidation[TestPersonUnhandledEvent] = {
     val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
+    val aggRef = from.getComplexType("aggRef", AggregateRootRefRecomposer).toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| timestamp)(TestPersonUnhandledEvent.apply)
+    (id |@| aggRef |@| timestamp)(TestPersonUnhandledEvent.apply)
   }
 }

@@ -15,7 +15,7 @@ class UpdateRecorderSpecs extends WordSpec with ShouldMatchers {
         UpdateRecorder.startWith(person).isAccepted should be(true)
       }
       "reject an AR with version 0" in {
-        UpdateRecorder.startWith(person.copy(version = 0L)).isRejected should be(true)
+        UpdateRecorder.startWith(person.copy(ref = person.ref.copy(version = 0L))).isRejected should be(true)
       }
       "target the same version as the AR's version" in {
         UpdateRecorder.startWith(person).targetVersion should equal(person.version)
@@ -49,13 +49,13 @@ class UpdateRecorderSpecs extends WordSpec with ShouldMatchers {
         UpdateRecorder.startWith(person).map(ar => ar.copy(name = "Bob")).isAccepted should be(true)
       }
       "not map to another AR with a different version and the same id" in {
-        UpdateRecorder.startWith(person).map(ar => ar.copy(version = 2L)).isRejected should be(true)
+        UpdateRecorder.startWith(person).map(ar => ar.copy(ref = person.ref.copy(version = 2L))).isRejected should be(true)
       }
       "not map to another AR with the same version and a different id" in {
-        UpdateRecorder.startWith(person).map(ar => ar.copy(id = JUUID.randomUUID())).isRejected should be(true)
+        UpdateRecorder.startWith(person).map(ar => ar.copy(ref = person.ref.copy(id = JUUID.randomUUID))).isRejected should be(true)
       }
       "not map to another AR with a different version and a different  id" in {
-        UpdateRecorder.startWith(person).map(ar => ar.copy(id = JUUID.randomUUID(), version = 2L)).isRejected should be(true)
+        UpdateRecorder.startWith(person).map(ar => ar.copy(ref = (JUUID.randomUUID(), 2L))).isRejected should be(true)
       }
     }
     "flatMapping over an UR already containg an AR with version 1 and updating the AR with 1 event targeting version 1" should {

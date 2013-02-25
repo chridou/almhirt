@@ -28,12 +28,14 @@ import almhirt.syntax.almvalidation._
  */
 trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {
   /**
-   * The combination of id and version that uniqiuly identifies an aggregate root in space and time.
+   * The combination of id and version that uniquely identifies an aggregate root in space and time.
    * 
    * The version which is increased by one with each event generated via mutation starts with 1L on creation.
    * A creating event must target version 0L which means that the aggregate root doesn't yet exist.
    */
   def ref: AggregateRootRef
+  def id: UUID = ref.id
+  def version = ref.version
 }
 
 trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends AggregateRoot[AR, Event] {
@@ -72,10 +74,10 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
    * @return The passed event wrapped in a success if it is valid otherwise a failure
    */
   protected def validateEvent(event: Event): AlmValidation[Event] = {
-    if (event.aggId != this.id)
+    if (event.aggRef.id != this.ref.id)
       UnspecifiedProblem("Ids do not match!").failure
-    else if (event.aggVersion != this.version)
-      CollisionProblem("Conflict: Versions do not match. Targetted version is %d but the entity has version %d. The event was: %s".format(event.aggVersion, this.version, event.getClass().getName)).failure
+    else if (event.aggRef.version != this.ref.version)
+      CollisionProblem("Conflict: Versions do not match. Targetted version is %d but the entity has version %d. The event was: %s".format(event.aggRef.version, this.ref.version, event.getClass().getName)).failure
     else
       event.success
   }

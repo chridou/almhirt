@@ -15,6 +15,7 @@ import almhirt.core.test.BlockingRepoCoreBootstrapper
 import almhirt.ext.core.riftwarp.RiftWarpBootstrapper
 import almhirt.core.riftwarp.test.WithTestDecomposersAndRecomposersBootstrapper
 import almhirt.core.test._
+import almhirt.domain.AggregateRootRef
 
 class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers with AlmhirtTestKit {
   val bootstrapper =
@@ -34,7 +35,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   private def withEmptyEventLog[T](f: (DomainEventLog, Almhirt) => T) =
     inLocalTestAlmhirt(almhirt => f(almhirt.eventLog, almhirt))
 
-  val testEventA = TestPersonCreated(java.util.UUID.randomUUID(), java.util.UUID.randomUUID(), "testEventA", new org.joda.time.DateTime)
+  val testEventA = TestPersonCreated(java.util.UUID.randomUUID(), AggregateRootRef(java.util.UUID.randomUUID), "testEventA", new org.joda.time.DateTime)
   private def withEventLogWithOneTestEventA[T](f: (DomainEventLog, Almhirt) => T) =
     inLocalTestAlmhirt { almhirt =>
       almhirt.eventLog.storeEvents(IndexedSeq(testEventA)).awaitResult(Duration(1, "s")).forceResult
@@ -44,20 +45,20 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   "An empty anorm SerializingAnormEventLog" should
     "accept an event" in {
       withEmptyEventLog { (eventLog, almhirt) =>
-        val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
+        val event = TestPersonCreated(java.util.UUID.randomUUID(), AggregateRootRef(aggIdForEvent), "test", almhirt.getDateTime)
         val res = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       }
     }
   it should "accept an event and return exactly 1 event as the commited events" in {
     withEmptyEventLog { (eventLog, almhirt) =>
-      val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
+      val event = TestPersonCreated(java.util.UUID.randomUUID(), AggregateRootRef(aggIdForEvent), "test", almhirt.getDateTime)
       val res = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s"))
       res.forceResult should have size 1
     }
   }
   it should "accept an event and return exactly 1 event when queried for all events" in {
     withEmptyEventLog { (eventLog, almhirt) =>
-      val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
+      val event = TestPersonCreated(java.util.UUID.randomUUID(), AggregateRootRef(aggIdForEvent), "test", almhirt.getDateTime)
       val resCommit = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(1, "s"))
       println("xxxx" + res)
@@ -66,7 +67,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   }
   it should "accept an event and return exactly the same event when queried for all events" in {
     withEmptyEventLog { (eventLog, almhirt) =>
-      val event = TestPersonCreated(java.util.UUID.randomUUID(), aggIdForEvent, "test", almhirt.getDateTime)
+      val event = TestPersonCreated(java.util.UUID.randomUUID(), AggregateRootRef(aggIdForEvent), "test", almhirt.getDateTime)
       val resCommit = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(1, "s")).forceResult
       res.headOption should equal(Some(event))
@@ -75,8 +76,8 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   it should "accept 100 events with the same aggId and return them in the same order (getEvents(aggId))" in {
     withEmptyEventLog { (eventLog, almhirt) =>
       val aggId = almhirt.getUuid
-      val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-      val events = firstEvent +: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)))
+      val firstEvent = TestPersonCreated(almhirt.getUuid, AggregateRootRef(aggId), "testEvent0")
+      val events = firstEvent +: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, (aggId, i.toLong), "testEvent%d".format(i)))
       val resCommit = eventLog.storeEvents(events).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).withFailEffect(p => println(p))
       res.forceResult should equal(events)
@@ -85,9 +86,9 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   it should "accept 100 events with the same aggId shuffled with 100 other events and return the events for a specific aggId in the same order(getEvents(aggId))" in {
     withEmptyEventLog { (eventLog, almhirt) =>
       val aggId = almhirt.getUuid
-      val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-      val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-      val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+      val firstEvent = TestPersonCreated(almhirt.getUuid, AggregateRootRef(aggId), "testEvent0")
+      val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, (aggId, i.toLong), "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
+      val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId).awaitResult(Duration(1, "s")).withFailEffect(p => println(p)).forceResult
@@ -97,9 +98,9 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   it should "accept 100 events with the same aggId shuffled with 100 other events and return the last 10 events for a specific aggId in the same order(getEvents(aggId, from))" in {
     withEmptyEventLog { (eventLog, almhirt) =>
       val aggId = almhirt.getUuid
-      val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-      val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-      val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+      val firstEvent = TestPersonCreated(almhirt.getUuid, AggregateRootRef(aggId), "testEvent0")
+      val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, (aggId, i.toLong), "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
+      val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId, 90).awaitResult(Duration(1, "s")).withFailEffect(p => println(p)).forceResult
@@ -109,9 +110,9 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   it should "accept 100 events with the same aggId shuffled with 100 other events and return the first 10 events for a specific aggId in the same order(getEvents(aggId, from, to))" in {
     withEmptyEventLog { (eventLog, almhirt) =>
       val aggId = almhirt.getUuid
-      val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-      val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-      val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+      val firstEvent = TestPersonCreated(almhirt.getUuid, AggregateRootRef(aggId), "testEvent0")
+      val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, (aggId, i.toLong), "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
+      val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId, 0, 9).awaitResult(Duration(1, "s")).withFailEffect(p => println(p)).forceResult
@@ -121,9 +122,9 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   it should "accept 100 events with the same aggId shuffled with 100 other events and return the events from 40 to 59 for a specific aggId in the same order(getEvents(aggId, from, to))" in {
     withEmptyEventLog { (eventLog, almhirt) =>
       val aggId = almhirt.getUuid
-      val firstEvent = TestPersonCreated(almhirt.getUuid, aggId, "testEvent0")
-      val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, aggId, i, "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
-      val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
+      val firstEvent = TestPersonCreated(almhirt.getUuid, AggregateRootRef(aggId), "testEvent0")
+      val events = firstEvent :: (for (i <- 1 until 100) yield TestPersonNameChanged(almhirt.getUuid, (aggId, i.toLong), "testEvent%d".format(i)).asInstanceOf[DomainEvent]).toList
+      val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggId, 40, 59).awaitResult(Duration(1, "s")).withFailEffect(p => println(p)).forceResult
@@ -142,13 +143,13 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   "An anorm SerializingAnormEventLogwhen already containing an event with version 0L after adding another event" should
     "have accepted an event with a different id" in {
       withEmptyEventLog { (eventLog, almhirt) =>
-        val event = TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "test", almhirt.getDateTime)
+        val event = TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "test", almhirt.getDateTime)
         val res = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       }
     }
   it should "return exactly 2 events when queried for all events" in {
     withEventLogWithOneTestEventA { (eventLog, almhirt) =>
-      val event = TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "test", almhirt.getDateTime)
+      val event = TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "test", almhirt.getDateTime)
       eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getAllEvents.awaitResult(Duration(1, "s")).forceResult
       res should have size 2
@@ -156,7 +157,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   }
   it should "return exactly 1 event after adding another event when queried for all events for the given id(the one that was already present)" in {
     withEventLogWithOneTestEventA { (eventLog, almhirt) =>
-      val event = TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "test", almhirt.getDateTime)
+      val event = TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "test", almhirt.getDateTime)
       eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(testEventA.aggId).awaitResult(Duration(1, "s")).forceResult
       res should have size 1
@@ -164,7 +165,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   }
   it should "return exactly 1 event after adding another event when queried for all events for the given id(the added one)" in {
     withEventLogWithOneTestEventA { (eventLog, almhirt) =>
-      val event = TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "test", almhirt.getDateTime)
+      val event = TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "test", almhirt.getDateTime)
       eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(event.aggId).awaitResult(Duration(1, "s")).forceResult
       res should have size 1
@@ -172,7 +173,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
   }
   it should "return the 2 events in the order they have been added" in {
     withEventLogWithOneTestEventA { (eventLog, almhirt) =>
-      val event = TestPersonCreated(almhirt.getUuid, almhirt.getUuid, "test", almhirt.getDateTime)
+      val event = TestPersonCreated(almhirt.getUuid, AggregateRootRef(almhirt.getUuid), "test", almhirt.getDateTime)
       eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getAllEvents.awaitResult(Duration(1, "s")).forceResult
       res.toList should equal(List(testEventA, event))
