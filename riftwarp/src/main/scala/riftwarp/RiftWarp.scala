@@ -65,9 +65,9 @@ object RiftWarp {
   }
 
   private def initializeWithDefaults(riftWarp: RiftWarp) {
-    riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToMapDematerializer)
+    //riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToMapDematerializer)
     riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToJsonCordDematerializer)
-    riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToXmlElemDematerializer)
+    //riftWarp.toolShed.addDematerializerFactory(impl.dematerializers.ToXmlElemDematerializer)
 
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromMapRematerializer)
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonMapRematerializer)
