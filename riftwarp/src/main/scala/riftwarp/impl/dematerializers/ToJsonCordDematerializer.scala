@@ -2,6 +2,7 @@ package riftwarp.impl.dematerializers
 
 import language.higherKinds
 import scala.reflect.ClassTag
+import scala.collection.IterableLike
 import org.joda.time.DateTime
 import scalaz._, Scalaz._
 import scalaz.Cord
@@ -219,7 +220,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
         addPart(ident, dimCord.manifestation)))
 
   override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] =
-    MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(spawnNew(ident)).map(_.dematerialize)).flatMap(complex =>
+    MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x, spawnNew(ident)).map(_.dematerialize)).flatMap(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
       addPart(ident, dimCord.manifestation))
 
@@ -239,6 +240,11 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
     MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
       addPart(ident, dimCord.manifestation))
+  }
+  
+  def addIterable[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposer: Decomposer[A]): AlmValidation[ToJsonCordDematerializer] = {
+    ///val mappedV = what.toList.map(x => decomposer.decompose(x)(spawnNew(ident + "[?]" :: path)))
+   ??? 
   }
 
   override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
@@ -263,7 +269,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       mapperByType[A].flatMap(mapA =>
         aMap.map {
           case (a, b) =>
-            decomposer.decompose(b)(spawnNew("[" + a.toString + "]" :: ident :: path)).map(demat =>
+            decomposer.decompose(b, spawnNew("[" + a.toString + "]" :: ident :: path)).map(demat =>
               (mapA(a), demat.dematerialize.manifestation))
         }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
           foldKeyValuePairs(sequenced).map(pairs =>
@@ -317,7 +323,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
     hasDecomposers.getRawDecomposer(toDecompose.getClass).toOption match {
       case Some(decomposer) =>
-        decomposer.decomposeRaw(toDecompose)(spawnNew(idx :: ident :: path)).map(_.dematerialize)
+        decomposer.decomposeRaw(toDecompose, spawnNew(idx :: ident :: path)).map(_.dematerialize)
       case None =>
         UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass.getName())).failure
     }
@@ -328,7 +334,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
         toDecompose match {
           case toDecomposeAsAnyRef: AnyRef =>
             option.cata(hasDecomposers.getRawDecomposer(toDecomposeAsAnyRef.getClass).toOption)(
-              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(spawnNew(idx :: ident :: path)).map(_.dematerialize),
+              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef, spawnNew(idx :: ident :: path)).map(_.dematerialize),
               UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
           case x =>
             UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
@@ -342,7 +348,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
         toDecompose match {
           case toDecomposeAsAnyRef: AnyRef =>
             option.cata(hasDecomposers.getRawDecomposer(toDecomposeAsAnyRef.getClass).toOption)(
-              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef)(spawnNew(idx :: ident :: path)).map(x => Some(x.dematerialize)),
+              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef, spawnNew(idx :: ident :: path)).map(x => Some(x.dematerialize)),
               None.success)
           case x =>
             None.success

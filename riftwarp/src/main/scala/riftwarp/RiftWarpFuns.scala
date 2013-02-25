@@ -9,7 +9,7 @@ import riftwarp.components._
 
 object RiftWarpFuns {
   def prepareForWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel)(what: T)(decomposer: Decomposer[T], dematerializer: Dematerializer[TDimension]): AlmValidation[TDimension] =
-    decomposer.decompose(what)(dematerializer).map(demat =>
+    decomposer.decompose(what, dematerializer).map(demat =>
       demat.dematerialize)
 
   def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel)(warpStream: TDimension)(factory: RematerializerFactory[TDimension], recomposer: Recomposer[T])(implicit hasRecomposers: HasRecomposers, hasFunctionObject: ma.HasFunctionObjects): AlmValidation[T] = {
@@ -35,7 +35,7 @@ object RiftWarpFuns {
     lookUpDematerializerFactoryAndConverters(channel, tDimension, toolGroup).map(factoryAndConverters =>
       (what: AnyRef, decomposer: RawDecomposer) =>
         factoryAndConverters._1.createDematerializer(divertBlobs)(riftwarp.barracks, riftwarp.toolShed).flatMap(demat =>
-          decomposer.decomposeRaw(what)(demat).flatMap(demat =>
+          decomposer.decomposeRaw(what, demat).flatMap(demat =>
             factoryAndConverters._2.foldLeft(demat.dematerializeRaw.success[Problem])((acc, converter) =>
               acc.fold(prob => prob.failure, dim => converter.convertRaw(dim))))))
   

@@ -1,8 +1,8 @@
 package riftwarp
 
 import language.higherKinds
-
 import scala.reflect.ClassTag
+import scala.collection.IterableLike
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -105,6 +105,8 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMA[M[_], A <: Any](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
 
+  def addIterable[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposer: Decomposer[A]): AlmValidation[Dematerializer[TDimension]]
+  
   def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalPrimitiveMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
   def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]

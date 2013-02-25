@@ -28,16 +28,16 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
   protected def insertDematerializer(ident: String, dematerializer: Dematerializer[TDimension]): Dematerializer[TDimension]
 
   override def addComplexSelective(ident: String, decomposer: RawDecomposer, complex: AnyRef): AlmValidation[Dematerializer[TDimension]] =
-    decomposer.decomposeRaw(complex)(spawnNew(ident)).map(dematerializedComplex =>
+    decomposer.decomposeRaw(complex, spawnNew(ident)).map(dematerializedComplex =>
       insertDematerializer(ident, dematerializedComplex))
 
   override def addComplexFixed(ident: String, complex: AnyRef, descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]] =
     hasDecomposers.getRawDecomposer(descriptor).flatMap(decomposer =>
       addComplexSelective(ident, decomposer, complex))
 
-  override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]] = decomposer.decompose(what)(this)
+  override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]] = decomposer.decompose(what, this)
   override def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] =
-    hasDecomposers.getRawDecomposerFor(what, riftDescriptor).flatMap(decomposer => decomposer.decomposeRaw(what)(this))
+    hasDecomposers.getRawDecomposerFor(what, riftDescriptor).flatMap(decomposer => decomposer.decomposeRaw(what, this))
   override def include[T <: AnyRef](what: T)(implicit tag: ClassTag[T]): AlmValidation[Dematerializer[TDimension]] =
     hasDecomposers.getDecomposer[T]().flatMap(decomposer =>
       includeDirect(what, decomposer))

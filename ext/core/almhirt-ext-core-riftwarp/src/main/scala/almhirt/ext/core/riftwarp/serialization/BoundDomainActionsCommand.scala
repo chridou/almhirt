@@ -10,7 +10,7 @@ import almhirt.domain._
 
 class BoundDomainActionsCommandDecomposer[TCom <: BoundDomainActionsCommandContext[TAR, TEvent]#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val riftDescriptor: RiftDescriptor) extends Decomposer[TCom] {
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: TCom)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TCom, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addUuid("id", what.id)
