@@ -1,12 +1,14 @@
 package almhirt.domain
 
-import almhirt.core.test._
-import almhirt._
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
+import almhirt.core.test._
+import almhirt._
 import almhirt.core.test.TestPerson
+import almhirt.core.CanCreateUuidsAndDateTimes
 
 class AggregateRootSpecsWithTestPerson extends FlatSpec with ShouldMatchers {
+  implicit object ccuad extends CanCreateUuidsAndDateTimes  
   val shouldBe = TestPerson("Jim") flatMap {_.changeName("Fritz")} flatMap {_.addressAquired("Roma")} flatMap {_.move("New York")}
   val events = shouldBe.events
   

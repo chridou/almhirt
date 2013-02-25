@@ -6,8 +6,10 @@ import scalaz._, Scalaz._
 import almhirt._
 import almhirt.syntax.almvalidation._
 import almhirt.core.test._
+import almhirt.core.CanCreateUuidsAndDateTimes
 
 class UpdateSpecsWithPerson extends FlatSpec with ShouldMatchers {
+  implicit object ccuad extends CanCreateUuidsAndDateTimes  
   val person = TestPerson("Peter").ar.forceResult
   
   "A just created person with a valid name having her name changed" should 

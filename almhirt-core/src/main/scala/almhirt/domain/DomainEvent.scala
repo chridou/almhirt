@@ -14,19 +14,47 @@
 */
 package almhirt.domain
 
+import scala.language.implicitConversions
+
 import java.util.UUID
 import org.joda.time.DateTime
+import almhirt.core.CanCreateUuidsAndDateTimes
 
 /** These events can create or mutate an aggregate root in the dimension of time */
-trait DomainEvent {
+trait DomainEvent { def header: DomainEventHeader }
+
+object DomainEvent {
+  implicit class DomainEventOps(event: DomainEvent) {
+    def aggRef: AggregateRootRef = event.header.aggRef
+    def aggId: UUID = event.header.aggRef.id
+    def aggVersion: Long = event.header.aggRef.version
+    def id: UUID = event.header.id
+    def timestamp: DateTime = event.header.timestamp
+  }
+}
+
+final case class DomainEventHeader(
   /** The events unique identifier */
-  def id: UUID
+  id: java.util.UUID,
   /** The affected aggregate root */
-  def aggRef: AggregateRootRef
-  /** The events date of creation */
-  def timestamp: DateTime
-  
-  def aggId = aggRef.id
-  def aggVersion = aggRef.version
+  aggRef: AggregateRootRef,
+  /** The events timestamp of creation */
+  timestamp: DateTime)
+
+object DomainEventHeader {
+  def apply(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(ccuad.getUuid, aggRef, ccuad.getDateTime)
+
+  implicit def aggregateRootRef2DomainEventHeader(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(aggRef)
+    
+  implicit class DomainEventHeaderOps(header: DomainEventHeader) {
+    def aggRef: AggregateRootRef = header.aggRef
+    def aggId: UUID = header.aggRef.id
+    def aggVersion: Long = header.aggRef.version
+    def id: UUID = header.id
+    def timestamp: DateTime = header.timestamp
+  }
+
 }
 
