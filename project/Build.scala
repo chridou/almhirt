@@ -246,7 +246,7 @@ object AlmHirtBuild extends Build
 	with ClientDispatchBuild 
 	with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
-				settings = BuildSettings.buildSettings,
+				settings = BuildSettings.buildSettings ++ Unidoc.settings,
 	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, anormEventLog, slickExtensions, activateExtensions, app, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",
