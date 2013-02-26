@@ -41,14 +41,14 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
     (uow, map, buffer)
   }
 
-  "An UnitOfWork on an empty repository" when {
-    "adding a new AR via NewTestPersonAction" should {
-      "not crash" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
-        uow.handle(com, None)
-      }
+//  "An UnitOfWork on an empty repository" when {
+//    "adding a new AR via NewTestPersonAction" should {
+//      "not crash" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
+//        uow.handle(com, None)
+//      }
 //      "create exactly 1 event" in {
 //        val (uow, map, buffer) = createUOWOnListBufferAndMap
 //        val id = theAlmhirt.getUuid
@@ -57,189 +57,189 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
 //        Thread.sleep(100)
 //        buffer should have size (1)
 //      }
-      "have created a TestPersonCreatedEvent with version 0" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.head.aggVersion should equal(0L)
-      }
-      "have created a TestPersonCreatedEvent with aggId equal to the commands aggId" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.head.aggId should equal(id)
-      }
-      "have created a TestPerson with id equal to the commands aggId" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
-        uow.handle(com, None)
-        Thread.sleep(100)
-        map.get(id).get.id should equal(id)
-      }
-      "have created a TestPerson with version = 1" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
-        uow.handle(com, None)
-        Thread.sleep(100)
-        map.get(id).get.version should equal(1L)
-      }
-      "have created a TestPerson with the name specified by the creating command" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
-        uow.handle(com, None)
-        Thread.sleep(100)
-        map.get(id).get.name should equal("Joe")
-      }
-    }
-    "adding a new AR via NewTestPersonAction modifying the name in the same command" should {
-      "not crash" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-      }
-      "create exactly 2 events" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer should have size (2)
-      }
-      "have created a TestPersonCreatedEvent with version 0" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.head.aggVersion should equal(0L)
-      }
-      "have created a TestPersonCreatedEvent with aggId equal to the commands aggId" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.head.aggId should equal(id)
-      }
-      "have created a TestPersonCreatedEvent with aggId different from the events id" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.head.aggId should not equal (buffer.head.id)
-      }
-      "have created a TestPersonNameChanged with version 1" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.tail.head.aggVersion should equal(1L)
-      }
-      "have created a TestPersonNameChanged with aggId equal to the commands aggId" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.tail.head.aggId should equal(id)
-      }
-      "have created a TestPersonNameChanged with aggId different from the events id" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.tail.head.aggId should not equal (buffer.head.id)
-      }
-      "have created a TestPerson with id equal to the creating commands aggId" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        map.get(id).get.id should equal(id)
-      }
-      "have created a TestPerson with version = 2" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        map.get(id).get.version should equal(2L)
-      }
-      "have created a TestPerson with the name specified by the changing command" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        map.get(id).get.name should equal("Bill")
-      }
-    }
-    "changing an existing AR's name" should {
-      val id = theAlmhirt.getUuid
-      val testPerson = TestPerson.apply(id, "Joe").ar.forceResult
-      val com = TestPersonCommand(Some(id, 1L), ChangeTestPersonNameAction("Bill") :: Nil)
-      "not crash" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        map += (id -> testPerson)
-        uow.handle(com, None)
-      }
-      "create exactly 1 event" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        map += (id -> testPerson)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer should have size (1)
-      }
-      "have created a TestPersonNameChanged with version 1" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        map += (id -> testPerson)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.head.aggVersion should equal(1L)
-      }
-      "have created a TestPersonNameChanged with aggId equal to the commands aggId" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        map += (id -> testPerson)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.head.aggId should equal(id)
-      }
-      "have created a TestPersonNameChanged with aggId different from the events id" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        map += (id -> testPerson)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer.head.aggId should not equal (buffer.head.id)
-      }
-      "have increased the TestPerson's id to 2" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        map += (id -> testPerson)
-        map.get(id).get.version should equal(1L)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        map.get(id).get.version should equal(2L)
-      }
-      "have changed the TestPerson's name to the name specified by the changing command" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        map += (id -> testPerson)
-        uow.handle(com, None)
-        Thread.sleep(100)
-        map.get(id).get.name should equal("Bill")
-      }
-    }
-  }
+//      "have created a TestPersonCreatedEvent with version 0" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.head.aggVersion should equal(0L)
+//      }
+//      "have created a TestPersonCreatedEvent with aggId equal to the commands aggId" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.head.aggId should equal(id)
+//      }
+//      "have created a TestPerson with id equal to the commands aggId" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        map.get(id).get.id should equal(id)
+//      }
+//      "have created a TestPerson with version = 1" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        map.get(id).get.version should equal(1L)
+//      }
+//      "have created a TestPerson with the name specified by the creating command" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        map.get(id).get.name should equal("Joe")
+//      }
+//    }
+//    "adding a new AR via NewTestPersonAction modifying the name in the same command" should {
+//      "not crash" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//      }
+//      "create exactly 2 events" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer should have size (2)
+//      }
+//      "have created a TestPersonCreatedEvent with version 0" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.head.aggVersion should equal(0L)
+//      }
+//      "have created a TestPersonCreatedEvent with aggId equal to the commands aggId" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.head.aggId should equal(id)
+//      }
+//      "have created a TestPersonCreatedEvent with aggId different from the events id" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.head.aggId should not equal (buffer.head.id)
+//      }
+//      "have created a TestPersonNameChanged with version 1" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.tail.head.aggVersion should equal(1L)
+//      }
+//      "have created a TestPersonNameChanged with aggId equal to the commands aggId" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.tail.head.aggId should equal(id)
+//      }
+//      "have created a TestPersonNameChanged with aggId different from the events id" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.tail.head.aggId should not equal (buffer.head.id)
+//      }
+//      "have created a TestPerson with id equal to the creating commands aggId" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        map.get(id).get.id should equal(id)
+//      }
+//      "have created a TestPerson with version = 2" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        map.get(id).get.version should equal(2L)
+//      }
+//      "have created a TestPerson with the name specified by the changing command" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand(None, NewTestPersonAction(id, "Joe") :: ChangeTestPersonNameAction("Bill") :: Nil)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        map.get(id).get.name should equal("Bill")
+//      }
+//    }
+//    "changing an existing AR's name" should {
+//      val id = theAlmhirt.getUuid
+//      val testPerson = TestPerson.apply(id, "Joe").ar.forceResult
+//      val com = TestPersonCommand(Some(id, 1L), ChangeTestPersonNameAction("Bill") :: Nil)
+//      "not crash" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        map += (id -> testPerson)
+//        uow.handle(com, None)
+//      }
+//      "create exactly 1 event" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        map += (id -> testPerson)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer should have size (1)
+//      }
+//      "have created a TestPersonNameChanged with version 1" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        map += (id -> testPerson)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.head.aggVersion should equal(1L)
+//      }
+//      "have created a TestPersonNameChanged with aggId equal to the commands aggId" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        map += (id -> testPerson)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.head.aggId should equal(id)
+//      }
+//      "have created a TestPersonNameChanged with aggId different from the events id" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        map += (id -> testPerson)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer.head.aggId should not equal (buffer.head.id)
+//      }
+//      "have increased the TestPerson's id to 2" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        map += (id -> testPerson)
+//        map.get(id).get.version should equal(1L)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        map.get(id).get.version should equal(2L)
+//      }
+//      "have changed the TestPerson's name to the name specified by the changing command" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        map += (id -> testPerson)
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        map.get(id).get.name should equal("Bill")
+//      }
+//    }
+//  }
 
   "prevalidate" should {
     "succeed on a single creator action without an AggregateRootRef" in {
