@@ -49,14 +49,14 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
         val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
         uow.handle(com, None)
       }
-      "create exactly 1 event" in {
-        val (uow, map, buffer) = createUOWOnListBufferAndMap
-        val id = theAlmhirt.getUuid
-        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
-        uow.handle(com, None)
-        Thread.sleep(100)
-        buffer should have size (1)
-      }
+//      "create exactly 1 event" in {
+//        val (uow, map, buffer) = createUOWOnListBufferAndMap
+//        val id = theAlmhirt.getUuid
+//        val com = TestPersonCommand.creator(NewTestPersonAction(id, "Joe"))
+//        uow.handle(com, None)
+//        Thread.sleep(100)
+//        buffer should have size (1)
+//      }
       "have created a TestPersonCreatedEvent with version 0" in {
         val (uow, map, buffer) = createUOWOnListBufferAndMap
         val id = theAlmhirt.getUuid
