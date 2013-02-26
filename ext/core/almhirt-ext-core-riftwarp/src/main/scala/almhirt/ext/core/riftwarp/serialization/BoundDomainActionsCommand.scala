@@ -15,7 +15,7 @@ class BoundDomainActionsCommandDecomposer[TCom <: BoundDomainActionsCommandConte
       .addRiftDescriptor(this.riftDescriptor)
       .addUuid("id", what.id)
       .addOptionalComplex("aggRef", what.aggRef, Some(classOf[AggregateRootRef])).flatMap(
-        _.addComplexMALoose("actions", what.actions))
+        _.addIterableOfComplex("actions", what.actions, None))
   }
 }
 

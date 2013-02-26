@@ -233,35 +233,6 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
     getDematerializedBlob(ident, aValue, blobIdentifier).map(blobDemat =>
       addComplexPart(ident, blobDemat.dematerialize.manifestation))
 
-  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] =
-    mapperByType[A].flatMap(map =>
-      MAFuncs.map(ma)(x => DimensionCord(map(x))).flatMap(mcord =>
-        MAFuncs.fold(this.channel)(mcord)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
-        addPart(ident, dimCord.manifestation)))
-
-  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] =
-    MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x, spawnNew(ident)).map(_.dematerialize)).flatMap(complex =>
-      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
-      addPart(ident, dimCord.manifestation))
-
-  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] =
-    hasDecomposers.getDecomposer[A].toOption match {
-      case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
-      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.runtimeClass.getName())).failure
-    }
-
-  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] = {
-    MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
-      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
-      addPart(ident, dimCord.manifestation))
-  }
-
-  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToJsonCordDematerializer] = {
-    MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
-      MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
-      addPart(ident, dimCord.manifestation))
-  }
-      
   override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) =>

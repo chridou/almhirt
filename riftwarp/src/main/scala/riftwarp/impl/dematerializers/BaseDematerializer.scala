@@ -61,7 +61,7 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
   override def addIterableStrict[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
     hasDecomposers.getDecomposerByDescriptorAndThenByTag(riftDesc).flatMap(decomposer => addIterableAllWith(ident, what, decomposer))
 
-  def addIterableWith[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] = {
+  def addIterableOfComplex[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] = {
     val decomposes = new Decomposes[A] {
       override def decompose[TTDimension <: RiftDimension](elem: A, into: Dematerializer[TTDimension]): AlmValidation[Dematerializer[TTDimension]] =
         hasDecomposers.getDecomposerFor(elem, backupRiftDescriptor).flatMap(_.decompose(elem, into))

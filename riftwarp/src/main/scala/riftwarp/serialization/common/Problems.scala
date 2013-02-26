@@ -28,7 +28,7 @@ object Problems {
       def decompose[TDimension <: RiftDimension](what: AggregateProblem, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
         for {
           defaults <- inner.decomposeRaw(what, into)
-          additional <- defaults.addComplexMALoose("problems", what.problems)
+          additional <- defaults.addIterableOfComplex("problems", what.problems, None)
         } yield additional
     }
   }

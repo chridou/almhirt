@@ -229,8 +229,8 @@ class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
     into.addRiftDescriptor(riftDescriptor)
       .addIterableAllWith("addresses1", what.addresses1, new TestAddressDecomposer())
       .flatMap(_.addIterableStrict("addresses2", what.addresses2, None))
-      .flatMap(_.addIterableWith("addresses3", what.addresses3, None))
-      .flatMap(_.addMA("anything", what.anything))
+      .flatMap(_.addIterableOfComplex("addresses3", what.addresses3, None))
+      .flatMap(_.addIterable("anything", what.anything, None))
   }
 }
 

@@ -94,17 +94,6 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor otherwise use the erased type U to determine look up a decomposer */
   def addOptionalComplexTyped[U <: AnyRef](ident: String, complex: Option[U])(implicit cU: ClassTag[U]): AlmValidation[Dematerializer[TDimension]]
 
-  def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalPrimitiveMA[M[_], A](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalComplexMALoose[M[_], A <: AnyRef](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalMA[M[_], A <: Any](ident: String, ma: Option[M[A]])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-
   /**
    * Dematerialize an Iterable of complex types using the given Decomposer
    */
@@ -117,8 +106,8 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
    * 2) Use the elements runtime type
    * 3) Use the backupDescriptor, if present
    */
-  def addIterableWith[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalIterableWith[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
+  def addIterableOfComplex[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalIterableOfComplex[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
   /**
    * Dematerialize an Iterable of complex types.
    * The Decomposer will be looked up exactly once and be used for the entire Iterable
@@ -136,7 +125,7 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   /**
    * Dematerialize an Iterable of subtypes of A. A may be a complex type or a primitive type.
    * All elements will be checked individually on how to decompose them.
-   * First the element is checked, whether it is a primitive type. If not, the look up mechanism from 'addIterableWith' is used
+   * First the element is checked, whether it is a primitive type. If not, the look up mechanism from 'addIterableOfComplex' is used
    */
   def addIterable[A, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalIterable[A, Coll](ident: String, what: Option[IterableLike[A, Coll]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
