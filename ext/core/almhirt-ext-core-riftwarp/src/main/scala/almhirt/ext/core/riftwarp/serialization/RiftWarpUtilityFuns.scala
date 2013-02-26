@@ -21,6 +21,7 @@ object RiftWarpUtilityFuns {
     riftWarp.barracks.addDecomposer(ExecutedDecomposer)
     riftWarp.barracks.addDecomposer(NotExecutedDecomposer)
     riftWarp.barracks.addDecomposer(OperationStateDecomposer)
+    riftWarp.barracks.addDecomposer(DomainEventHeaderDecomposer)
 
     riftWarp.barracks.addRecomposer(MessageGroupingRecomposer)
     riftWarp.barracks.addRecomposer(MessageHeaderRecomposer)
@@ -41,5 +42,6 @@ object RiftWarpUtilityFuns {
     riftWarp.barracks.addRecomposer(ExecutedRecomposer)
     riftWarp.barracks.addRecomposer(NotExecutedRecomposer)
     riftWarp.barracks.addRecomposer(OperationStateRecomposer)
+    riftWarp.barracks.addRecomposer(DomainEventHeaderRecomposer)
   }
 }

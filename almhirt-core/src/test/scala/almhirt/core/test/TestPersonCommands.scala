@@ -19,11 +19,11 @@ object TestPersonContext extends BoundDomainActionsCommandContext[TestPerson, Te
   val tagAR = implicitly[ClassTag[TestPerson]]
   val tagEvent = implicitly[ClassTag[TestPersonEvent]]
 
-  val newTestPersonActionHandler: this.CreatingActionHandler[NewTestPersonAction] = (act: NewTestPersonAction, passedAlmhirt: Almhirt) => TestPerson(act.id, act.name)
-  val changeTestPersonNameActionHandler: this.MutatingActionHandler[ChangeTestPersonNameAction] = (act: ChangeTestPersonNameAction, person: TestPerson, passedAlmhirt: Almhirt) => person.changeName(act.newName)
-  val setTestPersonAdressActionHandler: this.MutatingActionHandler[SetTestPersonAddressAction] = (act: SetTestPersonAddressAction, person: TestPerson, passedAlmhirt: Almhirt) => person.addressAquired(act.aquiredAddress)
-  val moveActionHandler: this.MutatingActionHandler[MoveTestPersonAction] = (act: MoveTestPersonAction, person: TestPerson, passedAlmhirt: Almhirt) => person.move(act.newAddress)
-  val moveBecauseOfMarriageActionHandler: this.MutatingActionHandler[MoveBecauseOfMarriageAction] = (act: MoveBecauseOfMarriageAction, person: TestPerson, passedAlmhirt: Almhirt) => person.changeName(act.newName).flatMap(_.move(act.newAddress))
+  val newTestPersonActionHandler: this.CreatingActionHandler[NewTestPersonAction] = (act: NewTestPersonAction, passedAlmhirt: Almhirt) => TestPerson(act.id, act.name)(passedAlmhirt)
+  val changeTestPersonNameActionHandler: this.MutatingActionHandler[ChangeTestPersonNameAction] = (act: ChangeTestPersonNameAction, person: TestPerson, passedAlmhirt: Almhirt) => person.changeName(act.newName)(passedAlmhirt)
+  val setTestPersonAdressActionHandler: this.MutatingActionHandler[SetTestPersonAddressAction] = (act: SetTestPersonAddressAction, person: TestPerson, passedAlmhirt: Almhirt) => person.addressAquired(act.aquiredAddress)(passedAlmhirt)
+  val moveActionHandler: this.MutatingActionHandler[MoveTestPersonAction] = (act: MoveTestPersonAction, person: TestPerson, passedAlmhirt: Almhirt) => person.move(act.newAddress)(passedAlmhirt)
+  val moveBecauseOfMarriageActionHandler: this.MutatingActionHandler[MoveBecauseOfMarriageAction] = (act: MoveBecauseOfMarriageAction, person: TestPerson, passedAlmhirt: Almhirt) => person.changeName(act.newName)(passedAlmhirt).flatMap(_.move(act.newAddress)(passedAlmhirt))
 
   override val actionHandlers = this.createHasActionHandlers(
     List(

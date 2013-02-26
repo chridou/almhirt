@@ -9,7 +9,7 @@ import almhirt.util._
 object PerformedCreateActionDecomposer extends Decomposer[PerformedCreateAction] {
   val riftDescriptor = RiftDescriptor(classOf[PerformedCreateAction])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedCreateAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PerformedCreateAction, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
       .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef)
   }
@@ -18,7 +18,7 @@ object PerformedCreateActionDecomposer extends Decomposer[PerformedCreateAction]
 object PerformedUpdateActionDecomposer extends Decomposer[PerformedUpdateAction] {
   val riftDescriptor = RiftDescriptor(classOf[PerformedUpdateAction])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedUpdateAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PerformedUpdateAction, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
       .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef)
   }
@@ -27,7 +27,7 @@ object PerformedUpdateActionDecomposer extends Decomposer[PerformedUpdateAction]
 object PerformedUnspecifiedActionDecomposer extends Decomposer[PerformedUnspecifiedAction.type] {
   val riftDescriptor = RiftDescriptor("almhirt.util.PerformedUnspecifiedAction")
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedUnspecifiedAction.type)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PerformedUnspecifiedAction.type, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor).ok
   }
 }
@@ -35,7 +35,7 @@ object PerformedUnspecifiedActionDecomposer extends Decomposer[PerformedUnspecif
 object PerformedActionDecomposer extends Decomposer[PerformedAction] {
   val riftDescriptor = RiftDescriptor(classOf[PerformedAction])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedAction)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PerformedAction, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
       case act @ PerformedCreateAction(_) => into.includeDirect(act, PerformedCreateActionDecomposer)
       case act @ PerformedUpdateAction(_) => into.includeDirect(act, PerformedUpdateActionDecomposer)

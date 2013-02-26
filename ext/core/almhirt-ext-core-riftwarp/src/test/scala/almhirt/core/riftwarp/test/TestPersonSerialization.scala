@@ -10,119 +10,80 @@ import almhirt.domain._
 import riftwarp._
 import almhirt.core.test._
 import riftwarp.components.HasNoAlternativeRiftDescriptors
+import almhirt.ext.core.riftwarp.serialization._
 
-class TestPersonCreatedDecomposer extends Decomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
+class TestPersonCreatedDecomposer extends DomainEventDecomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
-  def decompose[TDimension <: RiftDimension](what: TestPersonCreated)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addString("name", what.name)
-      .addDateTime("timestamp", what.timestamp).ok
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonCreated, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into.addString("name", what.name).ok
   }
 }
 
-class TestPersonCreatedRecomposer extends Recomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
+class TestPersonCreatedRecomposer extends DomainEventRecomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
-  def recompose(from: Rematerializer): AlmValidation[TestPersonCreated] = {
-    val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val name = from.getString("name").toAgg
-    val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| name |@| timestamp)(TestPersonCreated.apply)
+  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonCreated] = {
+    from.getString("name").map(TestPersonCreated(header, _))
   }
 }
 
-class TestPersonNameChangedDecomposer extends Decomposer[TestPersonNameChanged] with HasNoAlternativeRiftDescriptors {
+class TestPersonNameChangedDecomposer extends DomainEventDecomposer[TestPersonNameChanged] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
-  def decompose[TDimension <: RiftDimension](what: TestPersonNameChanged)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addLong("aggVersion", what.aggVersion)
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonNameChanged, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into
       .addString("newName", what.newName)
       .addDateTime("timestamp", what.timestamp).ok
   }
 }
 
-class TestPersonNameChangedRecomposer extends Recomposer[TestPersonNameChanged] with HasNoAlternativeRiftDescriptors {
+class TestPersonNameChangedRecomposer extends DomainEventRecomposer[TestPersonNameChanged] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
-  def recompose(from: Rematerializer): AlmValidation[TestPersonNameChanged] = {
-    val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
-    val newName = from.getString("newName").toAgg
-    val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| newName |@| timestamp)(TestPersonNameChanged.apply)
+  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonNameChanged] = {
+    from.getString("newName").map(TestPersonNameChanged(header, _))
   }
 }
 
-class TestPersonAddressAquiredDecomposer extends Decomposer[TestPersonAddressAquired] with HasNoAlternativeRiftDescriptors {
+class TestPersonAddressAquiredDecomposer extends DomainEventDecomposer[TestPersonAddressAquired] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
-  def decompose[TDimension <: RiftDimension](what: TestPersonAddressAquired)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addLong("aggVersion", what.aggVersion)
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonAddressAquired, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into
       .addString("aquiredAddress", what.aquiredAddress)
       .addDateTime("timestamp", what.timestamp).ok
   }
 }
 
-class TestPersonAddressAquiredRecomposer extends Recomposer[TestPersonAddressAquired] with HasNoAlternativeRiftDescriptors {
+class TestPersonAddressAquiredRecomposer extends DomainEventRecomposer[TestPersonAddressAquired] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
-  def recompose(from: Rematerializer): AlmValidation[TestPersonAddressAquired] = {
-    val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
-    val aquiredAddress = from.getString("aquiredAddress").toAgg
-    val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| aquiredAddress |@| timestamp)(TestPersonAddressAquired.apply)
+  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonAddressAquired] = {
+    from.getString("aquiredAddress").map(TestPersonAddressAquired(header, _))
   }
 }
 
-class TestPersonMovedDecomposer extends Decomposer[TestPersonMoved] with HasNoAlternativeRiftDescriptors {
+class TestPersonMovedDecomposer extends DomainEventDecomposer[TestPersonMoved] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
-  def decompose[TDimension <: RiftDimension](what: TestPersonMoved)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addLong("aggVersion", what.aggVersion)
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonMoved, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into
       .addString("newAddress", what.newAddress)
       .addDateTime("timestamp", what.timestamp).ok
   }
 }
 
-class TestPersonMovedRecomposer extends Recomposer[TestPersonMoved] with HasNoAlternativeRiftDescriptors {
+class TestPersonMovedRecomposer extends DomainEventRecomposer[TestPersonMoved] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
-  def recompose(from: Rematerializer): AlmValidation[TestPersonMoved] = {
-    val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
-    val newAddress = from.getString("newAddress").toAgg
-    val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| newAddress |@| timestamp)(TestPersonMoved.apply)
+  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonMoved] = {
+    from.getString("newAddress").map(str => TestPersonMoved(header, str))
   }
 }
 
-class TestPersonUnhandledEventDecomposer extends Decomposer[TestPersonUnhandledEvent] with HasNoAlternativeRiftDescriptors {
+class TestPersonUnhandledEventDecomposer extends DomainEventDecomposer[TestPersonUnhandledEvent] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
-  def decompose[TDimension <: RiftDimension](what: TestPersonUnhandledEvent)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addUuid("id", what.id)
-      .addUuid("aggId", what.aggId)
-      .addLong("aggVersion", what.aggVersion)
-      .addDateTime("timestamp", what.timestamp).ok
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonUnhandledEvent, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+    into.ok
   }
 }
 
-class TestPersonUnhandledEventRecomposer extends Recomposer[TestPersonUnhandledEvent] with HasNoAlternativeRiftDescriptors {
+class TestPersonUnhandledEventRecomposer extends DomainEventRecomposer[TestPersonUnhandledEvent] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
-  def recompose(from: Rematerializer): AlmValidation[TestPersonUnhandledEvent] = {
-    val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
-    val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| timestamp)(TestPersonUnhandledEvent.apply)
+  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonUnhandledEvent] = {
+    TestPersonUnhandledEvent(header).success
   }
 }

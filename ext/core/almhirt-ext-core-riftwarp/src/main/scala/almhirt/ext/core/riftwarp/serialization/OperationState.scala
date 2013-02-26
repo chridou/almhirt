@@ -9,7 +9,7 @@ import almhirt.util._
 object InProcessDecomposer extends Decomposer[InProcess] {
   val riftDescriptor = RiftDescriptor(classOf[InProcess])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: InProcess)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+  def decompose[TDimension <: RiftDimension](what: InProcess, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
@@ -20,7 +20,7 @@ object InProcessDecomposer extends Decomposer[InProcess] {
 object ExecutedDecomposer extends Decomposer[Executed] {
   val riftDescriptor = RiftDescriptor(classOf[Executed])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: Executed)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+  def decompose[TDimension <: RiftDimension](what: Executed, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
@@ -31,7 +31,7 @@ object ExecutedDecomposer extends Decomposer[Executed] {
 object NotExecutedDecomposer extends Decomposer[NotExecuted] {
   val riftDescriptor = RiftDescriptor(classOf[NotExecuted])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: NotExecuted)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+  def decompose[TDimension <: RiftDimension](what: NotExecuted, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
@@ -42,7 +42,7 @@ object NotExecutedDecomposer extends Decomposer[NotExecuted] {
 object OperationStateDecomposer extends Decomposer[OperationState] {
   val riftDescriptor = RiftDescriptor(classOf[OperationState])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: OperationState)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: OperationState, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     what match {
       case opstate: InProcess => into.includeDirect(opstate, InProcessDecomposer)
       case opstate: Executed => into.includeDirect(opstate, ExecutedDecomposer)

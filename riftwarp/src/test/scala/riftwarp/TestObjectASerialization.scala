@@ -13,7 +13,7 @@ import riftwarp.components._
 class TestObjectADecomposer extends Decomposer[TestObjectA] {
   val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: TestObjectA)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestObjectA, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(riftDescriptor)
       .addByteArray("arrayByte", what.arrayByte)
@@ -53,7 +53,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
 class PrimitiveTypesDecomposer extends Decomposer[PrimitiveTypes] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveTypes)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveTypes, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addString("str", what.str)
       .addBoolean("bool", what.bool)
@@ -101,14 +101,14 @@ class PrimitiveTypesRecomposer extends Recomposer[PrimitiveTypes] {
 class PrimitiveListMAsDecomposer extends Decomposer[PrimitiveListMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveListMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveListMAs, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(riftDescriptor)
-      .addPrimitiveMA("listString", what.listString)
-      .flatMap(_.addPrimitiveMA("listInt", what.listInt))
-      .flatMap(_.addPrimitiveMA("listDouble", what.listDouble))
-      .flatMap(_.addPrimitiveMA("listBigDecimal", what.listBigDecimal))
-      .flatMap(_.addPrimitiveMA("listDateTime", what.listDateTime))
+      .addIterableOfPrimitives("listString", what.listString)
+      .flatMap(_.addIterableOfPrimitives("listInt", what.listInt))
+      .flatMap(_.addIterableOfPrimitives("listDouble", what.listDouble))
+      .flatMap(_.addIterableOfPrimitives("listBigDecimal", what.listBigDecimal))
+      .flatMap(_.addIterableOfPrimitives("listDateTime", what.listDateTime))
   }
 }
 
@@ -132,13 +132,13 @@ class PrimitiveListMAsRecomposer extends Recomposer[PrimitiveListMAs] {
 class PrimitiveVectorMAsDecomposer extends Decomposer[PrimitiveVectorMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveVectorMAs])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveVectorMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveVectorMAs, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .addPrimitiveMA("vectorString", what.vectorString)
-      .flatMap(_.addPrimitiveMA("vectorInt", what.vectorInt))
-      .flatMap(_.addPrimitiveMA("vectorDouble", what.vectorDouble))
-      .flatMap(_.addPrimitiveMA("vectorBigDecimal", what.vectorBigDecimal))
-      .flatMap(_.addPrimitiveMA("vectorDateTime", what.vectorDateTime))
+      .addIterableOfPrimitives("vectorString", what.vectorString)
+      .flatMap(_.addIterableOfPrimitives("vectorInt", what.vectorInt))
+      .flatMap(_.addIterableOfPrimitives("vectorDouble", what.vectorDouble))
+      .flatMap(_.addIterableOfPrimitives("vectorBigDecimal", what.vectorBigDecimal))
+      .flatMap(_.addIterableOfPrimitives("vectorDateTime", what.vectorDateTime))
   }
 }
 
@@ -163,13 +163,13 @@ class PrimitiveVectorMAsRecomposer extends Recomposer[PrimitiveVectorMAs] {
 class PrimitiveSetMAsDecomposer extends Decomposer[PrimitiveSetMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveSetMAs])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveSetMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveSetMAs, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .addPrimitiveMA("setString", what.setString)
-      .flatMap(_.addPrimitiveMA("setInt", what.setInt))
-      .flatMap(_.addPrimitiveMA("setDouble", what.setDouble))
-      .flatMap(_.addPrimitiveMA("setBigDecimal", what.setBigDecimal))
-      .flatMap(_.addOptionalPrimitiveMA("setDateTime", what.setDateTime))
+      .addIterableOfPrimitives("setString", what.setString)
+      .flatMap(_.addIterableOfPrimitives("setInt", what.setInt))
+      .flatMap(_.addIterableOfPrimitives("setDouble", what.setDouble))
+      .flatMap(_.addIterableOfPrimitives("setBigDecimal", what.setBigDecimal))
+      .flatMap(_.addOptionalIterableOfPrimitives("setDateTime", what.setDateTime))
   }
 }
 
@@ -194,13 +194,13 @@ class PrimitiveSetMAsRecomposer extends Recomposer[PrimitiveSetMAs] {
 class PrimitiveIterableMAsDecomposer extends Decomposer[PrimitiveIterableMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveIterableMAs])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveIterableMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveIterableMAs, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .addPrimitiveMA("iterableString", what.iterableString)
-      .flatMap(_.addPrimitiveMA("iterableInt", what.iterableInt))
-      .flatMap(_.addPrimitiveMA("iterableDouble", what.iterableDouble))
-      .flatMap(_.addPrimitiveMA("iterableBigDecimal", what.iterableBigDecimal))
-      .flatMap(_.addPrimitiveMA("iterableDateTime", what.iterableDateTime))
+      .addIterableOfPrimitives("iterableString", what.iterableString)
+      .flatMap(_.addIterableOfPrimitives("iterableInt", what.iterableInt))
+      .flatMap(_.addIterableOfPrimitives("iterableDouble", what.iterableDouble))
+      .flatMap(_.addIterableOfPrimitives("iterableBigDecimal", what.iterableBigDecimal))
+      .flatMap(_.addIterableOfPrimitives("iterableDateTime", what.iterableDateTime))
   }
 }
 
@@ -225,12 +225,12 @@ class PrimitiveIterableMAsRecomposer extends Recomposer[PrimitiveIterableMAs] {
 class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
   val riftDescriptor = RiftDescriptor(classOf[ComplexMAs])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: ComplexMAs)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: ComplexMAs, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .addComplexMA(new TestAddressDecomposer())("addresses1", what.addresses1)
-      .flatMap(_.addComplexMAFixed("addresses2", what.addresses2))
-      .flatMap(_.addComplexMALoose("addresses3", what.addresses3))
-      .flatMap(_.addMA("anything", what.anything))
+      .addIterableAllWith("addresses1", what.addresses1, new TestAddressDecomposer())
+      .flatMap(_.addIterableStrict("addresses2", what.addresses2, None))
+      .flatMap(_.addIterableOfComplex("addresses3", what.addresses3, None))
+      .flatMap(_.addIterable("anything", what.anything, None))
   }
 }
 
@@ -252,7 +252,7 @@ class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
 class PrimitiveMapsDecomposer extends Decomposer[PrimitiveMaps] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveMaps])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveMaps)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: PrimitiveMaps, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addPrimitiveMap("mapIntInt", what.mapIntInt)
       .flatMap(_.addPrimitiveMap("mapStringInt", what.mapStringInt))
@@ -274,7 +274,7 @@ class PrimitiveMapsRecomposer extends Recomposer[PrimitiveMaps] {
 class ComplexMapsDecomposer extends Decomposer[ComplexMaps] {
   val riftDescriptor = RiftDescriptor(classOf[ComplexMaps])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: ComplexMaps)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: ComplexMaps, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addComplexMapFixed("mapIntTestAddress1", what.mapIntTestAddress1)
       .flatMap(_.addMap("mapIntAny", what.mapIntAny))
@@ -295,7 +295,7 @@ class ComplexMapsRecomposer extends Recomposer[ComplexMaps] {
 class TestAddressDecomposer extends Decomposer[TestAddress] {
   val riftDescriptor = RiftDescriptor(classOf[TestAddress])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: TestAddress)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TestAddress, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
       .addString("city", what.city)
       .addString("street", what.street).ok

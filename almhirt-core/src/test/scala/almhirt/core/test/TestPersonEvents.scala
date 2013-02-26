@@ -8,8 +8,8 @@ import almhirt.almvalidation.kit._
 import almhirt.domain._
 
 trait TestPersonEvent extends DomainEvent
-case class TestPersonCreated(id: UUID, aggId: UUID, name: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent with CreatingNewAggregateRootEvent
-case class TestPersonNameChanged(id: UUID,aggId: UUID, aggVersion: Long, newName: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonAddressAquired(id: UUID,aggId: UUID, aggVersion: Long, aquiredAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonMoved(id: UUID,aggId: UUID, aggVersion: Long, newAddress: String, timestamp: DateTime = DateTime.now) extends TestPersonEvent
-case class TestPersonUnhandledEvent(id: UUID,aggId: UUID, aggVersion: Long, timestamp: DateTime = DateTime.now) extends TestPersonEvent
+case class TestPersonCreated(header: DomainEventHeader, name: String) extends TestPersonEvent with CreatingNewAggregateRootEvent
+case class TestPersonNameChanged(header: DomainEventHeader, newName: String) extends TestPersonEvent
+case class TestPersonAddressAquired(header: DomainEventHeader, aquiredAddress: String) extends TestPersonEvent
+case class TestPersonMoved(header: DomainEventHeader, newAddress: String) extends TestPersonEvent
+case class TestPersonUnhandledEvent(header: DomainEventHeader) extends TestPersonEvent

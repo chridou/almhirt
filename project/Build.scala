@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.77"
+  val buildVersion      = "0.0.82"
   val buildScalaVersion = "2.10.0"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -100,7 +100,7 @@ trait AnormEventLogBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += "play" %% "anorm" % "2.1-12142012",
+	  libraryDependencies += "play" %% "anorm" % "2.1.0",
 	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
 	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
 	  libraryDependencies += scalatest
@@ -246,7 +246,7 @@ object AlmHirtBuild extends Build
 	with ClientDispatchBuild 
 	with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
-				settings = BuildSettings.buildSettings,
+				settings = BuildSettings.buildSettings ++ Unidoc.settings,
 	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, anormEventLog, slickExtensions, activateExtensions, app, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",

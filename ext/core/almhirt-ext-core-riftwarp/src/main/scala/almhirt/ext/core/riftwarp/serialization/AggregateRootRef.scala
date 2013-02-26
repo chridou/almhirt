@@ -10,7 +10,7 @@ import riftwarp._
 object AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
   val riftDescriptor = RiftDescriptor(classOf[AggregateRootRef])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: AggregateRootRef)(into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: AggregateRootRef, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addUuid("id", what.id)

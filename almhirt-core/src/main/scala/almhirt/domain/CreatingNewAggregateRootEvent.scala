@@ -15,6 +15,4 @@
 package almhirt.domain
 
 /** Marks an event that creates a new aggregate root */
-trait CreatingNewAggregateRootEvent {
-  val aggVersion = 0L
-}
+trait CreatingNewAggregateRootEvent
