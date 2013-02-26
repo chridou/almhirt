@@ -115,18 +115,18 @@ object ToJsonCordDematerializerFuns {
     else if (lookupFor.isInstanceOf[_root_.java.util.UUID])
       mapperByType[_root_.java.util.UUID].map(mapper => (x: Any) => mapper(x.asInstanceOf[_root_.java.util.UUID]))
     else
-      UnspecifiedProblem("No mapper found for %s".format(lookupFor.getClass.getName())).failure
+      UnspecifiedProblem("No primitive mapper found for %s".format(lookupFor.getClass.getName())).failure
   }
 
   @tailrec
-  private def createInnerJson(rest: List[Cord]): Cord =
+  private def createInnerJson(rest: List[Cord], acc: Cord): Cord =
     rest match {
-      case Nil => Cord.empty
-      case last :: Nil => last
-      case h :: t => (h :- ',') ++ createInnerJson(t)
+      case Nil => Cord("[]")
+      case last :: Nil => '[' -: (acc ++ last) :- ']'
+      case h :: t => createInnerJson(t, acc ++ h :- ',')
     }
 
-  def foldParts(items: List[Cord]): Cord = '[' -: createInnerJson(items) :- ']'
+  def foldParts(items: List[Cord]): Cord = createInnerJson(items, Cord.empty) 
 
   def createKeyValuePair(kv: (Cord, Cord)): DimensionCord = {
     DimensionCord((Cord("{\"k\":") ++ kv._1 ++ ",\"v\":" ++ kv._2 ++ "}"))
@@ -141,14 +141,23 @@ object ToJsonCordDematerializerFuns {
 class ToJsonCordDematerializer(state: Cord, val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib, hasDecomposers, hasFunctionObjects) with NoneIsHandledUnified[DimensionCord] {
   import ToJsonCordDematerializerFuns._
 
+  type ValueRepr = Cord
+  
   private val nullCord = Cord("null")
+  override def dematerialize = DimensionCord(('{' -: state :- '}'))
+  
   protected def noneHandler(ident: String): ToJsonCordDematerializer = addPart(ident, nullCord)
 
   protected def spawnNew(path: List[String]): ToJsonCordDematerializer =
     ToJsonCordDematerializer.apply(path, divertBlob)
 
-  override def dematerialize = DimensionCord(('{' -: state :- '}'))
-
+  protected override def valueReprToDim(repr: ValueRepr): DimensionCord = DimensionCord(repr)
+  protected override def dimToReprValue(dim: DimensionCord): ValueRepr = dim.manifestation
+  protected override def addReprValue(ident: String, value: ValueRepr): Dematerializer[DimensionCord] = addPart(ident, value)
+  protected override def foldReprs(elems: Iterable[ValueRepr]): ValueRepr = foldParts(elems.toList)
+  protected override def getPrimitiveToRepr[A](implicit tag: ClassTag[A]): AlmValidation[(A => ValueRepr)] = mapperByType[A]
+  protected override def getAnyPrimitiveToRepr(what: Any): AlmValidation[(Any => ValueRepr)] = mapperForAny(what)
+  
   protected override def insertDematerializer(ident: String, dematerializer: Dematerializer[DimensionCord]) =
     addPart(ident, dematerializer.dematerialize.manifestation)
 
@@ -252,11 +261,7 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       MAFuncs.fold(RiftJson())(complex)(hasFunctionObjects, mM, manifest[DimensionCord], manifest[DimensionCord])).map(dimCord =>
       addPart(ident, dimCord.manifestation))
   }
-
-  def addIterable[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[ToJsonCordDematerializer] =
-    what.toList.map(x => decomposes.decompose(x, spawnNew(ident + "[?]" :: path)).toAgg).sequence.map(dematerializedItems =>
-      addPart(ident, foldParts(dematerializedItems.map(_.dematerialize.manifestation))))
-
+      
   override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
     (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
       case (true, true) =>
