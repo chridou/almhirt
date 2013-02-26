@@ -10,7 +10,10 @@ object BuildSettings {
 	organization := buildOrganization,
     version      := buildVersion,
     scalaVersion := buildScalaVersion,
-    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"))
+    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),	
+	publishTo := Some(Resolver.url("LocalRepo", url("http://10.20.0.85:8081/artifactory/libs-local"))(Resolver.ivyStylePatterns)),
+	publishMavenStyle := false,
+    credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"))
 }
 
 object Resolvers {
