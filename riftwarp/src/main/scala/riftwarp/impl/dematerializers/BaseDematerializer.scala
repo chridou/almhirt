@@ -15,7 +15,7 @@ import riftwarp.ma.HasFunctionObjects
  * Does not implement the up most '...Optional' methods, because they might differ in behaviour.
  */
 abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[TDimension] {
-  type ValueRepr
+  type ValueRepr = TDimension#Under
   protected def divertBlob: BlobDivert
   protected def spawnNew(ident: String): Dematerializer[TDimension] = spawnNew(ident :: path)
   /**
@@ -37,13 +37,6 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
 
   protected def insertDematerializer(ident: String, dematerializer: Dematerializer[TDimension]): Dematerializer[TDimension]
 
-  override def addComplexSelective(ident: String, decomposer: RawDecomposer, complex: AnyRef): AlmValidation[Dematerializer[TDimension]] =
-    decomposer.decomposeRaw(complex, spawnNew(ident)).map(dematerializedComplex =>
-      insertDematerializer(ident, dematerializedComplex))
-
-  override def addComplexFixed(ident: String, complex: AnyRef, descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]] =
-    hasDecomposers.getRawDecomposer(descriptor).flatMap(decomposer =>
-      addComplexSelective(ident, decomposer, complex))
 
   override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]] = decomposer.decompose(what, this)
   override def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] =
@@ -52,7 +45,18 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
     hasDecomposers.getDecomposer[T]().flatMap(decomposer =>
       includeDirect(what, decomposer))
 
-  override def addIterableAllWith[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]] = {
+  override def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]] =
+    decomposes.decompose(what, spawnNew(ident)).map(dematerializedComplex =>
+      insertDematerializer(ident, dematerializedComplex))
+
+  override def addComplex[A <: AnyRef](ident: String, what: A, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] =
+    hasDecomposers.getDecomposerFor(what, backupRiftDescriptor).flatMap(decomposer => addWith[A](ident, what, decomposer))
+    
+  override def addComplexByTag[A <: AnyRef](ident: String, what: A)(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
+    hasDecomposers.getDecomposer[A]().flatMap(decomposer => addWith[A](ident, what, decomposer))
+      
+      
+  override def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]] = {
     val mappedV = what.toList.map(x => decomposes.decompose(x, spawnNew(ident + "[?]" :: path)).toAgg)
     mappedV.sequence.map(dematerializedItems =>
       addReprValue(ident, foldReprs(dematerializedItems.map(demat => dimToReprValue(demat.dematerialize)))))
@@ -80,12 +84,21 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
           x match {
             case ar: AnyRef => hasDecomposers.getRawDecomposerFor(ar, backupRiftDescriptor).flatMap(decomposer =>
               decomposer.decomposeRaw[TDimension](ar, spawnNew(ident + "[?]"))).map(demat => dimToReprValue(demat.dematerialize))
-            case x => UnspecifiedProblem("").failure
+            case x => UnspecifiedProblem(s"'${x.getClass.getName()}' is not a primitive type nor an AnyRef").failure
           },
         succ => succ(x).success).toAgg)
     val sequenced = mappedV.sequence
     sequenced.map(elems => addReprValue(ident, foldReprs(elems)))
   }
+  
+  def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A,B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
+//    getPrimitiveToRepr[A](tag).flatMap(primMapper =>
+//      what.toSeq.map{ case (a, b) => 
+//        val itemV = decomposes.decompose[TDimension](b, spawnNew(ident + s"[${a.toString}]")).map(demat =>
+//          primMapper(a, dimToReprValue(demat.dematerialize)))
+//          ???})
+    ???
+  
 }
 
 abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)

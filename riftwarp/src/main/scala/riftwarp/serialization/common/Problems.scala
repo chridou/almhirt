@@ -16,7 +16,7 @@ object Problems {
           .addString("severity", what.severity.toString())
           .addString("category", what.category.toString())
           .addMapSkippingUnknownValues[String, Any]("args", what.args).flatMap(
-            _.addOptionalComplexSelective("cause", ProblemCauseDecomposer, what.cause))
+            _.addOptionalWith("cause", what.cause, ProblemCauseDecomposer))
     }
   }
 

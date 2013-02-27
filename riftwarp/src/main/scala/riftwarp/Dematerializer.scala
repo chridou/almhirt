@@ -2,7 +2,7 @@ package riftwarp
 
 import language.higherKinds
 import scala.reflect.ClassTag
-import scala.collection.IterableLike
+import scala.collection.{IterableLike, MapLike }
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -72,33 +72,27 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]] = addOptionalBlob(ident, anOptionalValue, PropertyPathAndIdentifiers(ident :: path, identifiers))
   def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]]
 
-  def addComplexSelective(ident: String, decomposer: RawDecomposer, complex: AnyRef): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalComplexSelective(ident: String, decomposer: RawDecomposer, complex: Option[AnyRef]): AlmValidation[Dematerializer[TDimension]]
-  /** Uses exactly the RiftDescriptor to look up a Decomposer */
-  def addComplexFixed(ident: String, complex: AnyRef, descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
-  /** Uses exactly the RiftDescriptor to look up a Decomposer */
-  def addOptionalComplexFixed(ident: String, complex: Option[AnyRef], descriptor: RiftDescriptor): AlmValidation[Dematerializer[TDimension]]
-  /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor, if not use the backupDescriptor, otherwise use the class name to create a RiftDescriptor */
-  def addComplex(ident: String, complex: AnyRef, backupDescriptor: Option[RiftDescriptor] = None): AlmValidation[Dematerializer[TDimension]] = {
-    val rd = complex match {
-      case htd: HasRiftDescriptor => htd.riftDescriptor
-      case x => backupDescriptor.getOrElse(RiftDescriptor(complex.getClass()))
-    }
-    addComplexFixed(ident, complex, rd)
-  }
-  /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor, if not use the backupDescriptor, otherwise use the class name to create a RiftDescriptor */
-  def addOptionalComplex(ident: String, complex: Option[AnyRef], backupDescriptor: Option[RiftDescriptor] = None): AlmValidation[Dematerializer[TDimension]]
-  /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor otherwise use the erased type U to determine look up a decomposer */
-  def addComplexTyped[U <: AnyRef](ident: String, complex: U)(implicit cU: ClassTag[U]): AlmValidation[Dematerializer[TDimension]] =
-    addComplex(ident, complex, Some(RiftDescriptor(cU.runtimeClass)))
-  /** Looks up a decomposer by first checking, whether aComplex type implements HasRiftDescriptor otherwise use the erased type U to determine look up a decomposer */
-  def addOptionalComplexTyped[U <: AnyRef](ident: String, complex: Option[U])(implicit cU: ClassTag[U]): AlmValidation[Dematerializer[TDimension]]
+  def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalWith[A](ident: String, what: Option[A], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
+  
+  /**
+   * Dematerialize an complex type with a looked up decomposer
+   * The decomposer is looked up in the following order:
+   * 1) Check whether the element implements [[riftwarp.components.HasRiftDescriptor]] and use that one
+   * 2) Use the elements runtime type
+   * 3) Use the backupDescriptor, if present
+   */
+  def addComplex[A <: AnyRef](ident: String, what: A, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalComplex[A <: AnyRef](ident: String, what: Option[A], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
+
+  def addComplexByTag[A <: AnyRef](ident: String, what: A)(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalComplexByTag[A <: AnyRef](ident: String, what: Option[A])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
 
   /**
    * Dematerialize an Iterable of complex types using the given Decomposer
    */
-  def addIterableAllWith[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalIterableAllWith[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
+  def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalIterableAllWith[A, Coll](ident: String, what: Option[IterableLike[A, Coll]], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
   /**
    * Dematerialize an Iterable of complex types using a separate decomposer for each element
    * The decomposer is looked up in the following order:
@@ -143,6 +137,12 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
 
+  /**
+   * Dematerialize a Map with keys being of primitive type A and values of type B using the given Decomposer for Bs
+   */
+  def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A,B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalMapAllWith[A, B](ident: String, what: Option[scala.collection.Map[A,B]], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+  
   def addRiftDescriptor(descriptor: RiftDescriptor): Dematerializer[TDimension]
 
   def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]]

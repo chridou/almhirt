@@ -2,29 +2,34 @@ package riftwarp
 
 
 sealed trait RiftDimension {
-  def manifestation: Any
+  type Under
+  def manifestation: Under
 }
 
 sealed trait RiftHttpDimension extends RiftDimension
 
 sealed trait RiftStringBasedDimension extends RiftDimension {
-  def manifestation: String
+  type Under = String
+}
+
+sealed trait CordBasedDimension extends RiftDimension {
+  type Under = scalaz.Cord
 }
 
 sealed trait RiftByteArrayBasedDimension extends RiftDimension {
-  def manifestation: Array[Byte]
+  type Under = Array[Byte]
 }
 
 case class DimensionString(manifestation: String) extends RiftStringBasedDimension with RiftHttpDimension
 case class DimensionNiceString(manifestation: String) extends RiftStringBasedDimension with RiftHttpDimension
-case class DimensionCord(manifestation: scalaz.Cord) extends RiftDimension
-case class DimensionNiceCord(manifestation: scalaz.Cord) extends RiftDimension
+case class DimensionCord(manifestation: scalaz.Cord) extends CordBasedDimension
+case class DimensionNiceCord(manifestation: scalaz.Cord) extends CordBasedDimension
 case class DimensionBinary(manifestation: Array[Byte]) extends RiftByteArrayBasedDimension with RiftHttpDimension
-case class DimensionRawMap(manifestation: Map[String, Any]) extends RiftDimension
-case class DimensionStdLibJsonMap(manifestation: Map[String, Any]) extends RiftDimension
-case class DimensionListAny(manifestation: List[Any]) extends RiftDimension
-case class DimensionXmlElem(manifestation: scala.xml.Elem) extends RiftDimension
-case class DimensionAny(manifestation: Any) extends RiftDimension
+case class DimensionRawMap(manifestation: Map[String, Any]) extends RiftDimension { type Under = Map[String, Any] }
+case class DimensionStdLibJsonMap(manifestation: Map[String, Any]) extends RiftDimension{ type Under = Map[String, Any] }
+case class DimensionListAny(manifestation: List[Any]) extends RiftDimension{ type Under = List[Any] }
+case class DimensionXmlElem(manifestation: scala.xml.Elem) extends RiftDimension{ type Under = scala.xml.Elem }
+case class DimensionAny(manifestation: Any) extends RiftDimension{ type Under = Any }
 
 object RiftDimension {
   def string(v: String) = DimensionString(v)

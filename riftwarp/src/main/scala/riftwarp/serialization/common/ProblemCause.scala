@@ -14,7 +14,7 @@ object HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribe
       .addString("classname", what.classname)
       .addString("message", what.message)
       .addString("stacktrace", what.stacktrace)
-      .addOptionalComplexSelective("cause", this, what.cause)
+      .addOptionalWith("cause", what.cause, this)
   }
 }
 
@@ -42,7 +42,7 @@ object CauseIsThrowableDecomposer extends Decomposer[CauseIsThrowable] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: CauseIsThrowable, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
-      .addComplexSelective("representation", ThrowableRepresentationDecomposer, what.representation)
+      .addWith("representation", what.representation, ThrowableRepresentationDecomposer)
   }
 }
 

@@ -118,6 +118,33 @@ object ToJsonCordDematerializerFuns {
       UnspecifiedProblem("No primitive mapper found for %s".format(lookupFor.getClass.getName())).failure
   }
 
+  def mapperForWithTypeInfo(lookupFor: Any): AlmValidation[Any => Cord] = {
+    if (lookupFor.isInstanceOf[String])
+      mapperByType[String].map(mapper => (x: Any) => mapper(x.asInstanceOf[String]))
+    else if (lookupFor.isInstanceOf[Boolean])
+      mapperByType[Boolean].map(mapper => (x: Any) => mapper(x.asInstanceOf[Boolean]))
+    else if (lookupFor.isInstanceOf[Byte])
+      mapperByType[Byte].map(mapper => (x: Any) => mapper(x.asInstanceOf[Byte]))
+    else if (lookupFor.isInstanceOf[Int])
+      mapperByType[Int].map(mapper => (x: Any) => mapper(x.asInstanceOf[Int]))
+    else if (lookupFor.isInstanceOf[Long])
+      mapperByType[Long].map(mapper => (x: Any) => mapper(x.asInstanceOf[Long]))
+    else if (lookupFor.isInstanceOf[BigInt])
+      mapperByType[BigInt].map(mapper => (x: Any) => mapper(x.asInstanceOf[BigInt]))
+    else if (lookupFor.isInstanceOf[Float])
+      mapperByType[Float].map(mapper => (x: Any) => mapper(x.asInstanceOf[Float]))
+    else if (lookupFor.isInstanceOf[Double])
+      mapperByType[Double].map(mapper => (x: Any) => mapper(x.asInstanceOf[Double]))
+    else if (lookupFor.isInstanceOf[BigDecimal])
+      mapperByType[BigDecimal].map(mapper => (x: Any) => mapper(x.asInstanceOf[BigDecimal]))
+    else if (lookupFor.isInstanceOf[DateTime])
+      mapperByType[DateTime].map(mapper => (x: Any) => mapper(x.asInstanceOf[DateTime]))
+    else if (lookupFor.isInstanceOf[_root_.java.util.UUID])
+      mapperByType[_root_.java.util.UUID].map(mapper => (x: Any) => mapper(x.asInstanceOf[_root_.java.util.UUID]))
+    else
+      UnspecifiedProblem("No primitive mapper found for %s".format(lookupFor.getClass.getName())).failure
+  }
+  
   @tailrec
   private def createInnerJson(rest: List[Cord], acc: Cord): Cord =
     rest match {
@@ -140,8 +167,6 @@ object ToJsonCordDematerializerFuns {
 
 class ToJsonCordDematerializer(state: Cord, val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib, hasDecomposers, hasFunctionObjects) with NoneIsHandledUnified[DimensionCord] {
   import ToJsonCordDematerializerFuns._
-
-  type ValueRepr = Cord
   
   private val nullCord = Cord("null")
   override def dematerialize = DimensionCord(('{' -: state :- '}'))
@@ -304,7 +329,8 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
             addPart(ident, pairs.manifestation)))),
       UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 
-  override def addRiftDescriptor(descriptor: RiftDescriptor) = addComplexSelective(RiftDescriptor.defaultKey, riftwarp.serialization.common.RiftDescriptorDecomposer, descriptor).forceResult
+  override def addRiftDescriptor(descriptor: RiftDescriptor) = 
+    addWith(RiftDescriptor.defaultKey, descriptor, riftwarp.serialization.common.RiftDescriptorDecomposer).forceResult
 
   private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
     hasDecomposers.getRawDecomposer(toDecompose.getClass).toOption match {
