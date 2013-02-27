@@ -38,7 +38,7 @@ object MessageHeaderDecomposer extends Decomposer[MessageHeader] {
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addUuid("id", what.id)
-      .addOptionalComplex("grouping", what.grouping).flatMap(
+      .addOptionalComplex("grouping", what.grouping, None).flatMap(
         _.addMapSkippingUnknownValues("metaData", what.metaData).map(
           _.addDateTime("timestamp", what.timestamp)))
   }
@@ -61,8 +61,8 @@ object MessageDecomposer extends Decomposer[Message[AnyRef]] {
   def decompose[TDimension <: RiftDimension](what: Message[AnyRef], into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .addComplex("header", what.header).flatMap(
-        _.addComplex("payload", what.payload))
+      .addComplex("header", what.header, None).flatMap(
+        _.addComplex[AnyRef]("payload", what.payload, None))
   }
 }
 

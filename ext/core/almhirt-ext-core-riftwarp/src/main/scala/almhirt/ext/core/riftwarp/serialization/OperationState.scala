@@ -12,8 +12,8 @@ object InProcessDecomposer extends Decomposer[InProcess] {
   def decompose[TDimension <: RiftDimension](what: InProcess, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-        _.addComplexSelective("commandInfo", CommandInfoDecomposer, what.commandInfo).map(
+      .addWith("ticket", what.ticket, TrackingTicketDecomposer).flatMap(
+        _.addWith("commandInfo", what.commandInfo, CommandInfoDecomposer).map(
           _.addDateTime("timestamp", what.timestamp)))
 }
 
@@ -23,8 +23,8 @@ object ExecutedDecomposer extends Decomposer[Executed] {
   def decompose[TDimension <: RiftDimension](what: Executed, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-        _.addComplexSelective("action", PerformedActionDecomposer, what.action).map(
+      .addWith("ticket", what.ticket, TrackingTicketDecomposer).flatMap(
+        _.addWith("action", what.action, PerformedActionDecomposer).map(
           _.addDateTime("timestamp", what.timestamp)))
 }
 
@@ -34,8 +34,8 @@ object NotExecutedDecomposer extends Decomposer[NotExecuted] {
   def decompose[TDimension <: RiftDimension](what: NotExecuted, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .addComplexSelective("ticket", TrackingTicketDecomposer, what.ticket).flatMap(
-        _.addComplexTyped[Problem]("problem", what.problem).map(
+      .addWith("ticket", what.ticket, TrackingTicketDecomposer).flatMap(
+        _.addComplex("problem", what.problem, None).map(
           _.addDateTime("timestamp", what.timestamp)))
 }
 

@@ -11,7 +11,7 @@ object PerformedCreateActionDecomposer extends Decomposer[PerformedCreateAction]
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: PerformedCreateAction, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
-      .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef)
+      .addWith("aggRef", what.aggRef, AggregateRootRefDecomposer)
   }
 }
 
@@ -20,7 +20,7 @@ object PerformedUpdateActionDecomposer extends Decomposer[PerformedUpdateAction]
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: PerformedUpdateAction, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
-      .addComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef)
+      .addWith("aggRef", what.aggRef, AggregateRootRefDecomposer)
   }
 }
 

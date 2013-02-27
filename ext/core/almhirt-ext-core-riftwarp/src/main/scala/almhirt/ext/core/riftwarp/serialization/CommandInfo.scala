@@ -24,7 +24,7 @@ object HeadCommandInfoDecomposer extends Decomposer[HeadCommandInfo] {
     into.addRiftDescriptor(this.riftDescriptor)
       .addUuid("commandId", what.commandId)
       .addString("commandType", what.commandType)
-      .addOptionalComplexSelective("aggRef", AggregateRootRefDecomposer, what.aggRef)
+      .addOptionalWith("aggRef", what.aggRef, AggregateRootRefDecomposer)
   }
 }
 

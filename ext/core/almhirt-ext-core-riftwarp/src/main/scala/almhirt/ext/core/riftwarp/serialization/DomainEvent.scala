@@ -10,7 +10,7 @@ trait DomainEventDecomposer[TEvent <: DomainEvent] extends Decomposer[TEvent] {
   override def decompose[TDimension <: RiftDimension](what: TEvent, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
-      .addComplexSelective("header", DomainEventHeaderDecomposer, what.header).flatMap(addEventParams(what, _))
+      .addWith("header", what.header, DomainEventHeaderDecomposer).flatMap(addEventParams(what, _))
   }
 
   def addEventParams[TDimension <: RiftDimension](what: TEvent, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]
