@@ -162,6 +162,11 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
    */
   def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A,B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMapOfComplex[A, B <: AnyRef](ident: String, what: Option[scala.collection.Map[A,B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+
+  def addMapOfPrimitives[A, B](ident: String, what: scala.collection.Map[A,B])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalMapOfPrimitives[A, B](ident: String, what: Option[scala.collection.Map[A,B]])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
+    
+  
   
   def addRiftDescriptor(descriptor: RiftDescriptor): Dematerializer[TDimension]
 

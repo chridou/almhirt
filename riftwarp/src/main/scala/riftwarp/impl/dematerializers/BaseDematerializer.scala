@@ -113,6 +113,12 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
     addMapAllWith[A, B](ident, what, decomposes)
   }
 
+  override def addMapOfPrimitives[A, B](ident: String, what: scala.collection.Map[A, B])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]] =
+    for {
+      primMapperA <- getPrimitiveToRepr[A](tagA)
+      primMapperB <- getPrimitiveToRepr[B](tagB)
+    } yield addReprValue(ident, foldReprs(what.map { case (a, b) => foldReprs(primMapperA(a) :: primMapperB(b) :: Nil) }))
+
 }
 
 abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
