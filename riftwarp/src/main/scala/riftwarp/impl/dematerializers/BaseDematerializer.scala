@@ -14,7 +14,7 @@ import riftwarp.ma.HasFunctionObjects
 /**
  * Does not implement the up most '...Optional' methods, because they might differ in behaviour.
  */
-abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends Dematerializer[TDimension] {
+abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomposers: HasDecomposers) extends Dematerializer[TDimension] {
   type ValueRepr = TDimension#Under
   protected def divertBlob: BlobDivert
   protected def spawnNew(ident: String): Dematerializer[TDimension] = spawnNew(ident :: path)
@@ -141,10 +141,10 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
 
 }
 
-abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
+abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomposers)
 
-abstract class ToCordDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionCord](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
+abstract class ToCordDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseDematerializer[DimensionCord](classOf[DimensionCord], hasDecomposers)
 
-abstract class ToBinaryDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionBinary](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
+abstract class ToBinaryDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseDematerializer[DimensionBinary](classOf[DimensionCord], hasDecomposers)
 
-abstract class ToRawMapDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionRawMap](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
+abstract class ToRawMapDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseDematerializer[DimensionRawMap](classOf[DimensionCord], hasDecomposers)
