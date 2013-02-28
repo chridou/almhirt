@@ -59,6 +59,7 @@ trait NoneIsHandledUnified[TDimension <: RiftDimension] { dematerializer: Demate
   override def addOptionalMapStrict[A, B <: AnyRef](ident: String, what: Option[scala.collection.Map[A,B]], riftDesc: Option[RiftDescriptor])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapStrict(ident, _, riftDesc), noneHandler(ident).success)
   override def addOptionalMapOfComplex[A, B <: AnyRef](ident: String, what: Option[scala.collection.Map[A,B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapOfComplex(ident, _, backupRiftDescriptor), noneHandler(ident).success)
   override def addOptionalMapOfPrimitives[A, B](ident: String, what: Option[scala.collection.Map[A,B]])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapOfPrimitives(ident, _), noneHandler(ident).success)
+  override def addOptionalMap[A, B](ident: String, what: Option[scala.collection.Map[A,B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMap(ident, _, backupRiftDescriptor), noneHandler(ident).success)
 
 
 }

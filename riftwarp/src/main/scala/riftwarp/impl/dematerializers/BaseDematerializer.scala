@@ -76,15 +76,7 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
       addReprValue(ident, foldReprs(what.toList.map(elem => primToRepr(elem)))))
 
   override def addIterable[A, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] = {
-    val mappedV = what.toList.map(x =>
-      getAnyPrimitiveToRepr(x).fold(
-        fail =>
-          x match {
-            case ar: AnyRef => hasDecomposers.getRawDecomposerFor(ar, backupRiftDescriptor).flatMap(decomposer =>
-              decomposer.decomposeRaw[TDimension](ar, spawnNew(ident + "[?]"))).map(demat => dimToReprValue(demat.dematerialize))
-            case x => UnspecifiedProblem(s"'${x.getClass.getName()}' is not a primitive type nor an AnyRef").failure
-          },
-        succ => succ(x).success).toAgg)
+    val mappedV = what.toList.map(x => getReprForPrimitiveOrComplex(ident, x, backupRiftDescriptor).toAgg)
     val sequenced = mappedV.sequence
     sequenced.map(elems => addReprValue(ident, foldReprs(elems)))
   }
@@ -118,6 +110,25 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
       primMapperA <- getPrimitiveToRepr[A](tagA)
       primMapperB <- getPrimitiveToRepr[B](tagB)
     } yield addReprValue(ident, foldReprs(what.map { case (a, b) => foldReprs(primMapperA(a) :: primMapperB(b) :: Nil) }))
+
+  override def addMap[A, B](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
+    getPrimitiveToRepr[A](tag).flatMap { keyMapper =>
+      val itemsV = what.map {
+        case (a, b) => getReprForPrimitiveOrComplex(ident, b, backupRiftDescriptor).map(valueRepr =>
+          foldReprs(keyMapper(a) :: valueRepr :: Nil)).toAgg
+      }
+      itemsV.toList.sequence.map(items => addReprValue(ident, foldReprs(items)))
+    }
+
+  private def getReprForPrimitiveOrComplex(ident: String, what: Any, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[ValueRepr] =
+    getAnyPrimitiveToRepr(what).fold(
+      fail =>
+        what match {
+          case ar: AnyRef => hasDecomposers.getRawDecomposerFor(ar, backupRiftDescriptor).flatMap(decomposer =>
+            decomposer.decomposeRaw[TDimension](ar, spawnNew(ident + "[?]"))).map(demat => dimToReprValue(demat.dematerialize))
+          case x => UnspecifiedProblem(s"'${x.getClass.getName()}' is not a primitive type nor an AnyRef").failure
+        },
+      succ => succ(what).success)
 
 }
 

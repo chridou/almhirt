@@ -121,7 +121,7 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   /**
    * Dematerialize an Iterable of subtypes of A. A may be a complex type or a primitive type.
    * All elements will be checked individually on how to decompose them.
-   * First the element is checked, whether it is a primitive type. If not, the look up mechanism from 'addIterableOfComplex' is used
+   * First the element is checked, whether it is a primitive type. If not, the look up mechanism of 'addIterableOfComplex' is used
    */
   def addIterable[A, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalIterable[A, Coll](ident: String, what: Option[IterableLike[A, Coll]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
@@ -166,6 +166,13 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addMapOfPrimitives[A, B](ident: String, what: scala.collection.Map[A,B])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMapOfPrimitives[A, B](ident: String, what: Option[scala.collection.Map[A,B]])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
     
+  /**
+   * Dematerialize a Map with keys being of primitive type A and values of type B using a separate decomposer for each value B
+   * All elements will be checked individually on how to decompose them.
+   * First the element is checked, whether it is a primitive type. If not, the look up mechanism of 'addMapOfComplex' is used
+   */
+  def addMap[A, B](ident: String, what: scala.collection.Map[A,B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalMap[A, B](ident: String, what: Option[scala.collection.Map[A,B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   
   
   def addRiftDescriptor(descriptor: RiftDescriptor): Dematerializer[TDimension]
