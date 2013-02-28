@@ -165,7 +165,7 @@ object ToJsonCordDematerializerFuns {
         folder.fold(items.map(x => createKeyValuePair(x)).seq)(fo)))
 }
 
-class ToJsonCordDematerializer(state: Cord, val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib, hasDecomposers, hasFunctionObjects) with NoneIsHandledUnified[DimensionCord] {
+class ToJsonCordDematerializer(state: Cord, val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib, hasDecomposers) with NoneIsHandledUnified[DimensionCord] {
   import ToJsonCordDematerializerFuns._
   
   private val nullCord = Cord("null")
@@ -258,77 +258,6 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
     getDematerializedBlob(ident, aValue, blobIdentifier).map(blobDemat =>
       addComplexPart(ident, blobDemat.dematerialize.manifestation))
 
-  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
-    (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
-      case (true, true) =>
-        mapperByType[A].flatMap(mapA =>
-          mapperByType[B].map(mapB =>
-            aMap.map {
-              case (a, b) =>
-                (mapA(a), mapB(b))
-            }).flatMap(items =>
-            foldKeyValuePairs(items)).map(dimCord =>
-            addPart(ident, dimCord.manifestation)))
-      case (false, true) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure
-      case (true, false) => UnspecifiedProblem("Could not create primitive map for %s: B(%s) is not a primitive type".format(ident, mB.runtimeClass.getName())).failure
-      case (false, false) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.runtimeClass.getName(), mB.runtimeClass.getName())).failure
-    }
-
-  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
-    boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.runtimeClass),
-      mapperByType[A].flatMap(mapA =>
-        aMap.map {
-          case (a, b) =>
-            decomposer.decompose(b, spawnNew("[" + a.toString + "]" :: ident :: path)).map(demat =>
-              (mapA(a), demat.dematerialize.manifestation))
-        }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
-          foldKeyValuePairs(sequenced).map(pairs =>
-            addPart(ident, pairs.manifestation)))),
-      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
-
-  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
-    hasDecomposers.getDecomposer[B].flatMap(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
-
-  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
-    boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.runtimeClass),
-      mapperByType[A].flatMap(mapA =>
-        aMap.map {
-          case (a, b) =>
-            mapWithComplexDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b =>
-              (mapA(a), b.manifestation))
-        }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
-          foldKeyValuePairs(sequenced).map(pairs =>
-            addPart(ident, pairs.manifestation)))),
-      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
-
-  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
-    boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.runtimeClass),
-      mapperByType[A].flatMap(mapA =>
-        aMap.map {
-          case (a, b) =>
-            mapWithPrimitiveAndDecomposerLookUp("[" + a.toString + "]", ident)(b).map(b =>
-              (mapA(a), b.manifestation))
-        }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
-          foldKeyValuePairs(sequenced).map(pairs =>
-            addPart(ident, pairs.manifestation)))),
-      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
-
-  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToJsonCordDematerializer] =
-    boolean.fold(
-      TypeHelpers.isPrimitiveType(mA.runtimeClass),
-      mapperByType[A].flatMap(mapA =>
-        aMap.map {
-          case (a, b) =>
-            mapForgivingWithPrimitiveAndDecomposerLookUp("[" + a.toString + "]", ident)(b)
-              .map(b => (mapA(a), b))
-        }.map(_.toAgg).toList.sequence.flatMap(sequenced =>
-          foldKeyValuePairs(sequenced.filter(_._2.isDefined).map(x => (x._1, x._2.get.manifestation))).map(pairs =>
-            addPart(ident, pairs.manifestation)))),
-      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
-
   override def addRiftDescriptor(descriptor: RiftDescriptor) = 
     addWith(RiftDescriptor.defaultKey, descriptor, riftwarp.serialization.common.RiftDescriptorDecomposer).forceResult
 
@@ -374,10 +303,10 @@ object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord] {
   val channel = RiftJson()
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
-  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""), divertBlob)
-  def apply(state: Cord, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(state, Nil, divertBlob)
-  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = apply(Cord(""), path, divertBlob)
-  def apply(state: Cord, path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToJsonCordDematerializer = new ToJsonCordDematerializer(state, path, divertBlob)
-  def createDematerializer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[ToJsonCordDematerializer] =
+  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = apply(Cord(""), divertBlob)
+  def apply(state: Cord, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = apply(state, Nil, divertBlob)
+  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = apply(Cord(""), path, divertBlob)
+  def apply(state: Cord, path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = new ToJsonCordDematerializer(state, path, divertBlob)
+  def createDematerializer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): AlmValidation[ToJsonCordDematerializer] =
     apply(divertBlob).success
 }

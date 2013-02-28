@@ -43,20 +43,17 @@ trait NoneIsHandledUnified[TDimension <: RiftDimension] { dematerializer: Demate
   override def addOptionalComplexByTag[A <: AnyRef](ident: String, what: Option[A])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addComplexByTag(ident, _), noneHandler(ident).success)
 
   override def addOptionalIterableAllWith[A, Coll](ident: String, what: Option[IterableLike[A, Coll]], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addIterableAllWith(ident, _, decomposes), noneHandler(ident).success)
-  override def addOptionalIterableOfComplex[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addIterableOfComplex(ident, _, backupRiftDescriptor), noneHandler(ident).success)
   override def addOptionalIterableStrict[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addIterableStrict(ident, _, riftDesc)(tag), noneHandler(ident).success)
+  override def addOptionalIterableOfComplex[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addIterableOfComplex(ident, _, backupRiftDescriptor), noneHandler(ident).success)
   override def addOptionalIterableOfPrimitives[A, Coll](ident: String, what: Option[IterableLike[A, Coll]])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addIterableOfPrimitives(ident, _)(tag), noneHandler(ident).success)
   override def addOptionalIterable[A, Coll](ident: String, what: Option[IterableLike[A, Coll]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addIterable(ident, _, backupRiftDescriptor), noneHandler(ident).success)
 
-  override def addOptionalPrimitiveMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addPrimitiveMap(ident, _), noneHandler(ident).success)
-  override def addOptionalComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addComplexMap(decomposer)(ident, _), noneHandler(ident).success)
-  override def addOptionalComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addComplexMapFixed(ident, _), noneHandler(ident).success)
-  override def addOptionalComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addComplexMapLoose(ident, _), noneHandler(ident).success)
-  override def addOptionalMap[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addMap(ident, _), noneHandler(ident).success)
-  override def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addMapSkippingUnknownValues(ident, _), noneHandler(ident).success)
-
-  override def addOptionalMapAllWith[A, B](ident: String, what: Option[scala.collection.Map[A,B]], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapAllWith(ident, _, decomposes), noneHandler(ident).success)
-
+  override def addOptionalMapAllWith[A, B](ident: String, what: Option[scala.collection.Map[A, B]], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapAllWith(ident, _, decomposes), noneHandler(ident).success)
+  override def addOptionalMapStrict[A, B <: AnyRef](ident: String, what: Option[scala.collection.Map[A, B]], riftDesc: Option[RiftDescriptor])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapStrict(ident, _, riftDesc), noneHandler(ident).success)
+  override def addOptionalMapOfComplex[A, B <: AnyRef](ident: String, what: Option[scala.collection.Map[A, B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapOfComplex(ident, _, backupRiftDescriptor), noneHandler(ident).success)
+  override def addOptionalMapOfPrimitives[A, B](ident: String, what: Option[scala.collection.Map[A, B]])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapOfPrimitives(ident, _), noneHandler(ident).success)
+  override def addOptionalMap[A, B](ident: String, what: Option[scala.collection.Map[A, B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMap(ident, _, backupRiftDescriptor), noneHandler(ident).success)
+  override def addOptionalMapLiberate[A, B](ident: String, what: Option[scala.collection.Map[A, B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapLiberate(ident, _, backupRiftDescriptor), noneHandler(ident).success)
 
 }
 

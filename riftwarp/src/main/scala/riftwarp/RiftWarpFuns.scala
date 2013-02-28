@@ -34,7 +34,7 @@ object RiftWarpFuns {
   private[riftwarp] def getDematerializationFun(channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(divertBlobs: BlobDivert)(implicit riftwarp: RiftWarp): scalaz.Validation[RiftWarpProblem, (AnyRef, RawDecomposer) => AlmValidation[RiftDimension]] =
     lookUpDematerializerFactoryAndConverters(channel, tDimension, toolGroup).map(factoryAndConverters =>
       (what: AnyRef, decomposer: RawDecomposer) =>
-        factoryAndConverters._1.createDematerializer(divertBlobs)(riftwarp.barracks, riftwarp.toolShed).flatMap(demat =>
+        factoryAndConverters._1.createDematerializer(divertBlobs)(riftwarp.barracks).flatMap(demat =>
           decomposer.decomposeRaw(what, demat).flatMap(demat =>
             factoryAndConverters._2.foldLeft(demat.dematerializeRaw.success[Problem])((acc, converter) =>
               acc.fold(prob => prob.failure, dim => converter.convertRaw(dim))))))

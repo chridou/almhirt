@@ -254,9 +254,9 @@ class PrimitiveMapsDecomposer extends Decomposer[PrimitiveMaps] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: PrimitiveMaps, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .addPrimitiveMap("mapIntInt", what.mapIntInt)
-      .flatMap(_.addPrimitiveMap("mapStringInt", what.mapStringInt))
-      .flatMap(_.addPrimitiveMap("mapUuidDateTime", what.mapUuidDateTime))
+      .addMapOfPrimitives("mapIntInt", what.mapIntInt)
+      .flatMap(_.addMapOfPrimitives("mapStringInt", what.mapStringInt))
+      .flatMap(_.addMapOfPrimitives("mapUuidDateTime", what.mapUuidDateTime))
   }
 }
 
@@ -276,9 +276,9 @@ class ComplexMapsDecomposer extends Decomposer[ComplexMaps] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: ComplexMaps, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .addComplexMapFixed("mapIntTestAddress1", what.mapIntTestAddress1)
-      .flatMap(_.addMap("mapIntAny", what.mapIntAny))
-      .flatMap(_.addMapSkippingUnknownValues("mapStringAnyWithUnknown", what.mapStringAnyWithUnknown))
+      .addMapOfComplex("mapIntTestAddress1", what.mapIntTestAddress1, None)
+      .flatMap(_.addMap("mapIntAny", what.mapIntAny, None))
+      .flatMap(_.addMapLiberate("mapStringAnyWithUnknown", what.mapStringAnyWithUnknown, None))
   }
 }
 

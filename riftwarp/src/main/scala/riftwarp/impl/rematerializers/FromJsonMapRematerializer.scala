@@ -13,7 +13,6 @@ import riftwarp._
 import riftwarp.ma._
 import riftwarp.components._
 
-
 private[rematerializers] object FromJsonMapRematerializerFuns {
   def getPrimitiveRematerializer[A](key: String, clazz: Class[_]): AlmValidation[Any => AlmValidation[A]] = {
     if (clazz == classOf[String])
@@ -57,12 +56,20 @@ private[rematerializers] object FromJsonMapRematerializerFuns {
     else
       Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(clazz.getName())))
   }
-  
-  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: ClassTag[A]): AlmValidation[Any => AlmValidation[A]] = 
+
+  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: ClassTag[A]): AlmValidation[Any => AlmValidation[A]] =
     getPrimitiveRematerializer[A](key, mA.runtimeClass)
 
-  def createTuple[A, B](rematA: Any => AlmValidation[A])(mapB: Any => AlmValidation[B])(kv: Map[String, Any])(implicit m: ClassTag[A]): AlmValidation[(A, B)] = {
-    (kv.get("k"), kv.get("v")) match {
+  def createTuple[A, B](rematA: Any => AlmValidation[A])(mapB: Any => AlmValidation[B])(kv: List[Any])(implicit m: ClassTag[A]): AlmValidation[(A, B)] = {
+    val (key, value) =
+      kv match {
+        case Nil => (None, None)
+        case k :: v :: Nil => (Some(k), Some(v))
+        case k :: Nil => (Some(k), None)
+        case _ => (None, None)
+      }
+
+    (key, value) match {
       case (Some(k), Some(v)) => rematA(k).flatMap(k => mapB(v).map(v => (k, v)))
       case (None, Some(_)) => KeyNotFoundProblem("Can not create key value tuple because the key entry is missing").failure
       case (Some(_), None) => KeyNotFoundProblem("Can not create key value tuple because the value entry is missing").failure
@@ -73,7 +80,7 @@ private[rematerializers] object FromJsonMapRematerializerFuns {
   def createTuples[A, B](mapB: Any => AlmValidation[B])(kvPairs: List[Any])(implicit m: ClassTag[A]): AlmValidation[List[(A, B)]] =
     computeSafely {
       getPrimitiveRematerializerFor[A]("key").flatMap(rematA =>
-        kvPairs.map(x => createTuple(rematA)(mapB)(x.asInstanceOf[Map[String, Any]]))
+        kvPairs.map(x => createTuple(rematA)(mapB)(x.asInstanceOf[List[Any]]))
           .map(_.toAgg)
           .sequence[({ type l[a] = scalaz.Validation[AggregateProblem, a] })#l, (A, B)])
     }
@@ -332,7 +339,7 @@ object FromJsonStringRematerializer extends RematerializerFactory[DimensionStrin
     }
   }
 
-//  def apply(json: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializer] = apply(json.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
+  //  def apply(json: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializer] = apply(json.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
   def createRematerializer(from: DimensionString, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers, hasFunctionObject: HasFunctionObjects): AlmValidation[FromJsonMapRematerializer] =
     apply(from.manifestation, fetchBlobs)(hasRecomposers, hasFunctionObject)
 }
