@@ -37,7 +37,6 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
 
   protected def insertDematerializer(ident: String, dematerializer: Dematerializer[TDimension]): Dematerializer[TDimension]
 
-
   override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[Dematerializer[TDimension]] = decomposer.decompose(what, this)
   override def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] =
     hasDecomposers.getRawDecomposerFor(what, riftDescriptor).flatMap(decomposer => decomposer.decomposeRaw(what, this))
@@ -51,11 +50,10 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
 
   override def addComplex[A <: AnyRef](ident: String, what: A, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]] =
     hasDecomposers.getDecomposerFor(what, backupRiftDescriptor).flatMap(decomposer => addWith[A](ident, what, decomposer))
-    
+
   override def addComplexByTag[A <: AnyRef](ident: String, what: A)(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
     hasDecomposers.getDecomposer[A]().flatMap(decomposer => addWith[A](ident, what, decomposer))
-      
-      
+
   override def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]] = {
     val mappedV = what.toList.map(x => decomposes.decompose(x, spawnNew(ident + "[?]" :: path)).toAgg)
     mappedV.sequence.map(dematerializedItems =>
@@ -90,15 +88,18 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
     val sequenced = mappedV.sequence
     sequenced.map(elems => addReprValue(ident, foldReprs(elems)))
   }
-  
-  def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A,B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
-//    getPrimitiveToRepr[A](tag).flatMap(primMapper =>
-//      what.toSeq.map{ case (a, b) => 
-//        val itemV = decomposes.decompose[TDimension](b, spawnNew(ident + s"[${a.toString}]")).map(demat =>
-//          primMapper(a, dimToReprValue(demat.dematerialize)))
-//          ???})
-    ???
-  
+
+  def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A, B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
+    getPrimitiveToRepr[A](tag).flatMap { primMapper =>
+      val itemsV =
+        what.toSeq.map {
+          case (a, b) =>
+            decomposes.decompose[TDimension](b, spawnNew(ident + s"[${a.toString}]")).map(demat =>
+              (primMapper(a), dimToReprValue(demat.dematerialize))).toAgg
+        }
+      val items = itemsV.toList.sequence.map(_.map { case (reprA, reprB) => foldReprs(reprA :: reprB :: Nil) })
+      items.map(tuples => addReprValue(ident, foldReprs(tuples)))
+    }
 }
 
 abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
