@@ -39,7 +39,7 @@ object MessageHeaderDecomposer extends Decomposer[MessageHeader] {
       .addRiftDescriptor(this.riftDescriptor)
       .addUuid("id", what.id)
       .addOptionalComplex("grouping", what.grouping, None).flatMap(
-        _.addMapSkippingUnknownValues("metaData", what.metaData).map(
+        _.addMapLiberate("metaData", what.metaData, None).map(
           _.addDateTime("timestamp", what.timestamp)))
   }
 }

@@ -431,7 +431,7 @@ class RiftWarpHttpFunsSpecs extends WordSpec with ShouldMatchers {
     "fail with Http_Http_500_Internal_Server_Error when gettHttpData returns a success with invalid data(the response will contain a parsing problem)" in {
       val response = withRequest[AnyRef](settings, () => RiftHttpDataWithContent(RiftHttpQualifiedContentType("riftwarp.PrimitiveVectorMAs", RiftChannel.Json, Map()), RiftStringBody("xxx")).success, pva =>
         respond(settings)(Http_200_OK, RiftChannel.Json)(() => Some(testdataPrim).success))
-      response should equal(RiftHttpResponse(Http_500_Internal_Server_Error, RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.ParsingProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":{"identifier":"almhirt.common.ParsingProblem","version":null},"message":"``['' expected but ErrorToken(Not a keyword: xxx) found","severity":"Minor","category":"ApplicationProblem","args":[{"k":"input","v":"xxx"}],"cause":null}"""))))
+      response should equal(RiftHttpResponse(Http_500_Internal_Server_Error, RiftHttpDataWithContent(RiftHttpQualifiedContentType("almhirt.common.ParsingProblem", RiftChannel.Json, Map()), RiftStringBody("""{"riftdesc":{"identifier":"almhirt.common.ParsingProblem","version":null},"message":"``['' expected but ErrorToken(Not a keyword: xxx) found","severity":"Minor","category":"ApplicationProblem","args":[["input","xxx"]],"cause":null}"""))))
     }
     // This Spec is tricky, because it causes many problems with the generated nested problem. Fails almost anytime, code changes somewhere because then the serialized data also changes.
     // Finally use this spec, when everything has become at least a bit stable...
