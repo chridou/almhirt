@@ -145,6 +145,14 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A,B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMapAllWith[A, B](ident: String, what: Option[scala.collection.Map[A,B]], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
 
+    /**
+   * Dematerialize a Map with keys being of primitive type A and values of type B
+   * The Decomposer will be looked up exactly once and be used for all values
+   * First the supplied RiftDescriptor will be used for lookup, then the ClassTag
+   */
+  def addMapStrict[A, B <: AnyRef](ident: String, what: scala.collection.Map[A,B], riftDesc: Option[RiftDescriptor])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalMapStrict[A, B <: AnyRef](ident: String, what: Option[scala.collection.Map[A,B]], riftDesc: Option[RiftDescriptor])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]]
+
   /**
    * Dematerialize a Map with keys being of primitive type A and values of type B using a separate decomposer for each value B
    * The decomposer is looked up in the following order:

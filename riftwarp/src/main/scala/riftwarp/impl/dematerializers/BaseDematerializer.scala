@@ -89,7 +89,7 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
     sequenced.map(elems => addReprValue(ident, foldReprs(elems)))
   }
 
-  def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A, B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
+  override def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A, B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
     getPrimitiveToRepr[A](tag).flatMap { primMapper =>
       val itemsV =
         what.toSeq.map {
@@ -101,7 +101,11 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
       items.map(tuples => addReprValue(ident, foldReprs(tuples)))
     }
 
-  def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = {
+  override def addMapStrict[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], riftDesc: Option[RiftDescriptor])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Dematerializer[TDimension]] =
+    hasDecomposers.getDecomposerByDescriptorAndThenByTag(riftDesc).flatMap(decomposer =>
+      addMapAllWith(ident, what, decomposer))
+
+  override def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = {
     val decomposes = new Decomposes[B] {
       override def decompose[TTDimension <: RiftDimension](elem: B, into: Dematerializer[TTDimension]): AlmValidation[Dematerializer[TTDimension]] =
         hasDecomposers.getDecomposerFor(elem, backupRiftDescriptor).flatMap(_.decompose(elem, into))
