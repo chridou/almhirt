@@ -173,6 +173,15 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
    */
   def addMap[A, B](ident: String, what: scala.collection.Map[A,B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMap[A, B](ident: String, what: Option[scala.collection.Map[A,B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+
+  /**
+   * Dematerialize a Map with keys being of primitive type A and values of type B using a separate decomposer for each value B
+   * Items that couldn't be serialized will be skipped
+   * All elements will be checked individually on how to decompose them.
+   * First the element is checked, whether it is a primitive type. If not, the look up mechanism of 'addMapOfComplex' is used
+   */
+  def addMapLiberate[A, B](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalMapLiberate[A, B](ident: String, what: Option[scala.collection.Map[A, B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   
   
   def addRiftDescriptor(descriptor: RiftDescriptor): Dematerializer[TDimension]

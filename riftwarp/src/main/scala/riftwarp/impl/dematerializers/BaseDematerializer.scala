@@ -120,6 +120,15 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
       itemsV.toList.sequence.map(items => addReprValue(ident, foldReprs(items)))
     }
 
+  override def addMapLiberate[A, B](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] =
+    getPrimitiveToRepr[A](tag).map { keyMapper =>
+      val items = what.map {
+        case (a, b) => getReprForPrimitiveOrComplex(ident, b, backupRiftDescriptor).map(valueRepr =>
+          foldReprs(keyMapper(a) :: valueRepr :: Nil)).toOption
+      }.flatten
+      addReprValue(ident, foldReprs(items))
+    }
+
   private def getReprForPrimitiveOrComplex(ident: String, what: Any, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[ValueRepr] =
     getAnyPrimitiveToRepr(what).fold(
       fail =>
