@@ -56,6 +56,7 @@ trait NoneIsHandledUnified[TDimension <: RiftDimension] { dematerializer: Demate
   override def addOptionalMapSkippingUnknownValues[A, B](ident: String, aMap: Option[Map[A, B]])(implicit mA: ClassTag[A], mB: ClassTag[B]) = option.cata(aMap)(addMapSkippingUnknownValues(ident, _), noneHandler(ident).success)
 
   override def addOptionalMapAllWith[A, B](ident: String, what: Option[scala.collection.Map[A,B]], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapAllWith(ident, _, decomposes), noneHandler(ident).success)
+  override def addOptionalMapOfComplex[A, B <: AnyRef](ident: String, what: Option[scala.collection.Map[A,B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = option.cata(what)(addMapOfComplex(ident, _, backupRiftDescriptor), noneHandler(ident).success)
 
 
 }

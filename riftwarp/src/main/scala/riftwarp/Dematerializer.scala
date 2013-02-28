@@ -93,6 +93,15 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
    */
   def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalIterableAllWith[A, Coll](ident: String, what: Option[IterableLike[A, Coll]], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
+
+  /**
+   * Dematerialize an Iterable of complex types.
+   * The Decomposer will be looked up exactly once and be used for the entire Iterable
+   * First the supplied RiftDescriptor will be used for lookup, then the ClassTag
+   */
+  def addIterableStrict[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalIterableStrict[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+
   /**
    * Dematerialize an Iterable of complex types using a separate decomposer for each element
    * The decomposer is looked up in the following order:
@@ -102,13 +111,6 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
    */
   def addIterableOfComplex[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalIterableOfComplex[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[Dematerializer[TDimension]]
-  /**
-   * Dematerialize an Iterable of complex types.
-   * The Decomposer will be looked up exactly once and be used for the entire Iterable
-   * First the supplied RiftDescriptor will be used for lookup, then the ClassTag
-   */
-  def addIterableStrict[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalIterableStrict[A <: AnyRef, Coll](ident: String, what: Option[IterableLike[A, Coll]], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
 
   /**
    * Dematerialize an Iterable of Riftwarp's primitive types.
@@ -142,6 +144,16 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
    */
   def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A,B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalMapAllWith[A, B](ident: String, what: Option[scala.collection.Map[A,B]], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+
+  /**
+   * Dematerialize a Map with keys being of primitive type A and values of type B using a separate decomposer for each value B
+   * The decomposer is looked up in the following order:
+   * 1) Check whether the element implements [[riftwarp.components.HasRiftDescriptor]] and use that one
+   * 2) Use the elements runtime type
+   * 3) Use the backupDescriptor, if present
+   */
+  def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A,B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalMapOfComplex[A, B <: AnyRef](ident: String, what: Option[scala.collection.Map[A,B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]]
   
   def addRiftDescriptor(descriptor: RiftDescriptor): Dematerializer[TDimension]
 

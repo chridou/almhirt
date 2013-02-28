@@ -100,6 +100,15 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
       val items = itemsV.toList.sequence.map(_.map { case (reprA, reprB) => foldReprs(reprA :: reprB :: Nil) })
       items.map(tuples => addReprValue(ident, foldReprs(tuples)))
     }
+
+  def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[Dematerializer[TDimension]] = {
+    val decomposes = new Decomposes[B] {
+      override def decompose[TTDimension <: RiftDimension](elem: B, into: Dematerializer[TTDimension]): AlmValidation[Dematerializer[TTDimension]] =
+        hasDecomposers.getDecomposerFor(elem, backupRiftDescriptor).flatMap(_.decompose(elem, into))
+    }
+    addMapAllWith[A, B](ident, what, decomposes)
+  }
+
 }
 
 abstract class ToStringDematerializer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionString](classOf[DimensionCord], hasDecomposers, hasFunctionObjects)
