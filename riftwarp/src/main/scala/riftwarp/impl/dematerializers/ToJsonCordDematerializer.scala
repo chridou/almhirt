@@ -182,6 +182,27 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   protected override def foldReprs(elems: Iterable[ValueRepr]): ValueRepr = foldParts(elems.toList)
   protected override def getPrimitiveToRepr[A](implicit tag: ClassTag[A]): AlmValidation[(A => ValueRepr)] = mapperByType[A]
   protected override def getAnyPrimitiveToRepr(what: Any): AlmValidation[(Any => ValueRepr)] = mapperForAny(what)
+  override def getStringRepr(aValue: String) = mapString(aValue)
+  override def getBooleanRepr(aValue: Boolean) = mapBoolean(aValue)
+  override def getByteRepr(aValue: Byte) = mapLong(aValue)
+  override def getIntRepr(aValue: Int) = mapLong(aValue)
+  override def getLongRepr(aValue: Long) = mapLong(aValue)
+  override def getBigIntRepr(aValue: BigInt) = mapBigInt(aValue)
+  override def getFloatRepr(aValue: Float) = mapFloatingPoint(aValue)
+  override def getDoubleRepr(aValue: Double) = mapFloatingPoint(aValue)
+  override def getBigDecimalRepr(aValue: BigDecimal) = mapBigDecimal(aValue)
+  override def getByteArrayRepr(aValue: Array[Byte]) = '[' + aValue.mkString(",") + ']'
+  override def getBase64EncodedByteArrayRepr(aValue: Array[Byte]) = {
+    val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
+    mapString(base64)
+  }
+  override def getByteArrayBlobEncodedRepr(aValue: Array[Byte]) = {
+    val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
+    mapString(theBlob)
+  }
+  override def getDateTimeRepr(aValue: org.joda.time.DateTime) = mapDateTime(aValue)
+  override def getUriRepr(aValue: _root_.java.net.URI) = mapString(aValue.toString())
+  override def getUuidRepr(aValue: _root_.java.util.UUID) = mapUuid(aValue)
   
   protected override def insertDematerializer(ident: String, dematerializer: Dematerializer[DimensionCord]) =
     addPart(ident, dematerializer.dematerialize.manifestation)
@@ -195,34 +216,6 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       ToJsonCordDematerializer((state :- ',') ++ completeCord, path, divertBlob)
   }
 
-  override def getStringRepr(aValue: String) = mapString(aValue)
-
-  override def getBooleanRepr(aValue: Boolean) = mapBoolean(aValue)
-
-  override def getByteRepr(aValue: Byte) = mapLong(aValue)
-  override def getIntRepr(aValue: Int) = mapLong(aValue)
-  override def getLongRepr(aValue: Long) = mapLong(aValue)
-  override def getBigIntRepr(aValue: BigInt) = mapBigInt(aValue)
-
-  override def getFloatRepr(aValue: Float) = mapFloatingPoint(aValue)
-  override def getDoubleRepr(aValue: Double) = mapFloatingPoint(aValue)
-  override def getBigDecimalRepr(aValue: BigDecimal) = mapBigDecimal(aValue)
-
-  override def getByteArrayRepr(aValue: Array[Byte]) = '[' + aValue.mkString(",") + ']'
-  override def getBase64EncodedByteArrayRepr(aValue: Array[Byte]) = {
-    val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    mapString(base64)
-  }
-  override def getByteArrayBlobEncodedRepr(aValue: Array[Byte]) = {
-    val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    mapString(theBlob)
-  }
-
-  override def getDateTimeRepr(aValue: org.joda.time.DateTime) = mapDateTime(aValue)
-
-  override def getUriRepr(aValue: _root_.java.net.URI) = mapString(aValue.toString())
-
-  override def getUuidRepr(aValue: _root_.java.util.UUID) = mapUuid(aValue)
 
 
   override def addRiftDescriptor(descriptor: RiftDescriptor) = 
