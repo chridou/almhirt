@@ -44,6 +44,57 @@ abstract class BaseDematerializer[TDimension <: RiftDimension](val tDimension: C
     hasDecomposers.getDecomposer[T]().flatMap(decomposer =>
       includeDirect(what, decomposer))
 
+  def getStringRepr(aValue: String): ValueRepr
+
+  def getBooleanRepr(aValue: Boolean): ValueRepr
+
+  def getByteRepr(aValue: Byte): ValueRepr
+  def getIntRepr(aValue: Int): ValueRepr
+  def getLongRepr(aValue: Long): ValueRepr
+  def getBigIntRepr(aValue: BigInt): ValueRepr
+
+  def getFloatRepr(aValue: Float): ValueRepr
+  def getDoubleRepr(aValue: Double): ValueRepr
+  def getBigDecimalRepr(aValue: BigDecimal): ValueRepr
+
+  def getByteArrayRepr(aValue: Array[Byte]): ValueRepr
+  def getBase64EncodedByteArrayRepr(aValue: Array[Byte]): ValueRepr
+  def getByteArrayBlobEncodedRepr(aValue: Array[Byte]): ValueRepr
+
+  def getDateTimeRepr(aValue: org.joda.time.DateTime): ValueRepr
+
+  def getUriRepr(aValue: _root_.java.net.URI): ValueRepr
+
+  def getUuidRepr(aValue: _root_.java.util.UUID): ValueRepr
+
+  def addString(ident: String, aValue: String): Dematerializer[TDimension] = addReprValue(ident, getStringRepr(aValue))
+
+  def addBoolean(ident: String, aValue: Boolean): Dematerializer[TDimension] = addReprValue(ident, getBooleanRepr(aValue))
+
+  def addByte(ident: String, aValue: Byte): Dematerializer[TDimension] = addReprValue(ident, getByteRepr(aValue))
+  def addInt(ident: String, aValue: Int): Dematerializer[TDimension] = addReprValue(ident, getIntRepr(aValue))
+  def addLong(ident: String, aValue: Long): Dematerializer[TDimension] = addReprValue(ident, getLongRepr(aValue))
+  def addBigInt(ident: String, aValue: BigInt): Dematerializer[TDimension] = addReprValue(ident, getBigIntRepr(aValue))
+
+  def addFloat(ident: String, aValue: Float): Dematerializer[TDimension] = addReprValue(ident, getFloatRepr(aValue))
+  def addDouble(ident: String, aValue: Double): Dematerializer[TDimension] = addReprValue(ident, getDoubleRepr(aValue))
+  def addBigDecimal(ident: String, aValue: BigDecimal): Dematerializer[TDimension] = addReprValue(ident, getBigDecimalRepr(aValue))
+
+  def addByteArray(ident: String, aValue: Array[Byte]): Dematerializer[TDimension] = addReprValue(ident, getByteArrayRepr(aValue))
+  def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]): Dematerializer[TDimension] = addReprValue(ident, getBase64EncodedByteArrayRepr(aValue))
+  def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]): Dematerializer[TDimension] = addReprValue(ident, getByteArrayBlobEncodedRepr(aValue))
+
+  def addDateTime(ident: String, aValue: org.joda.time.DateTime): Dematerializer[TDimension] = addReprValue(ident, getDateTimeRepr(aValue))
+
+  def addUri(ident: String, aValue: _root_.java.net.URI): Dematerializer[TDimension] = addReprValue(ident, getUriRepr(aValue))
+
+  def addUuid(ident: String, aValue: _root_.java.util.UUID): Dematerializer[TDimension] = addReprValue(ident, getUuidRepr(aValue))
+
+  def addBlob(ident: String, what: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]] = getDematerializedBlob(ident, what, blobIdentifier)
+  def addBlob(ident: String, what: Array[Byte]): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, what, PropertyPath(ident :: path))
+  def addBlob(ident: String, what: Array[Byte], name: String): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, what, PropertyPathAndIdentifier(ident :: path, name))
+  def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, what, PropertyPathAndIdentifiers(ident :: path, identifiers))
+
   override def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]] =
     decomposes.decompose(what, spawnNew(ident)).map(dematerializedComplex =>
       insertDematerializer(ident, dematerializedComplex))

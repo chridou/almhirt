@@ -195,108 +195,38 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
       ToJsonCordDematerializer((state :- ',') ++ completeCord, path, divertBlob)
   }
 
-  private def addStringPart(ident: String, value: String): ToJsonCordDematerializer =
-    addPart(ident, mapString(value))
+  override def getStringRepr(aValue: String) = mapString(aValue)
 
-  private def addBooleanPart(ident: String, value: Boolean): ToJsonCordDematerializer =
-    addPart(ident, mapBoolean(value))
+  override def getBooleanRepr(aValue: Boolean) = mapBoolean(aValue)
 
-  private def addLongPart(ident: String, value: Long): ToJsonCordDematerializer =
-    addPart(ident, mapLong(value))
+  override def getByteRepr(aValue: Byte) = mapLong(aValue)
+  override def getIntRepr(aValue: Int) = mapLong(aValue)
+  override def getLongRepr(aValue: Long) = mapLong(aValue)
+  override def getBigIntRepr(aValue: BigInt) = mapBigInt(aValue)
 
-  private def addBigIntPart(ident: String, value: BigInt): ToJsonCordDematerializer =
-    addPart(ident, mapBigInt(value))
+  override def getFloatRepr(aValue: Float) = mapFloatingPoint(aValue)
+  override def getDoubleRepr(aValue: Double) = mapFloatingPoint(aValue)
+  override def getBigDecimalRepr(aValue: BigDecimal) = mapBigDecimal(aValue)
 
-  private def addFloatingPointPart(ident: String, value: Double): ToJsonCordDematerializer =
-    addPart(ident, mapFloatingPoint(value))
-
-  private def addBigDecimalPart(ident: String, value: BigDecimal): ToJsonCordDematerializer =
-    addPart(ident, mapBigDecimal(value))
-
-  private def addByteArrayPart(ident: String, value: Array[Byte]): ToJsonCordDematerializer =
-    addPart(ident, '[' + value.mkString(",") + ']')
-
-  private def addDateTimePart(ident: String, value: DateTime): ToJsonCordDematerializer =
-    addPart(ident, mapDateTime(value))
-
-  private def addUuidPart(ident: String, value: _root_.java.util.UUID): ToJsonCordDematerializer =
-    addPart(ident, mapUuid(value))
-
-  private def addComplexPart(ident: String, value: Cord): ToJsonCordDematerializer =
-    addPart(ident, value)
-
-  override def addString(ident: String, aValue: String) = addStringPart(ident, aValue)
-
-  override def addBoolean(ident: String, aValue: Boolean) = addBooleanPart(ident, aValue)
-
-  override def addByte(ident: String, aValue: Byte) = addLongPart(ident, aValue)
-  override def addInt(ident: String, aValue: Int) = addLongPart(ident, aValue)
-  override def addLong(ident: String, aValue: Long) = addLongPart(ident, aValue)
-  override def addBigInt(ident: String, aValue: BigInt) = addBigIntPart(ident, aValue)
-
-  override def addFloat(ident: String, aValue: Float) = addFloatingPointPart(ident, aValue)
-  override def addDouble(ident: String, aValue: Double) = addFloatingPointPart(ident, aValue)
-  override def addBigDecimal(ident: String, aValue: BigDecimal) = addBigDecimalPart(ident, aValue)
-
-  override def addByteArray(ident: String, aValue: Array[Byte]) = addByteArrayPart(ident, aValue)
-  override def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]) = {
+  override def getByteArrayRepr(aValue: Array[Byte]) = '[' + aValue.mkString(",") + ']'
+  override def getBase64EncodedByteArrayRepr(aValue: Array[Byte]) = {
     val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    addPart(ident, mapString(base64))
+    mapString(base64)
   }
-  override def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]) = {
+  override def getByteArrayBlobEncodedRepr(aValue: Array[Byte]) = {
     val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    addPart(ident, mapString(theBlob))
+    mapString(theBlob)
   }
 
-  override def addDateTime(ident: String, aValue: org.joda.time.DateTime) = addDateTimePart(ident, aValue)
+  override def getDateTimeRepr(aValue: org.joda.time.DateTime) = mapDateTime(aValue)
 
-  override def addUri(ident: String, aValue: _root_.java.net.URI) = addString(ident, aValue.toString())
+  override def getUriRepr(aValue: _root_.java.net.URI) = mapString(aValue.toString())
 
-  override def addUuid(ident: String, aValue: _root_.java.util.UUID) = addUuidPart(ident, aValue)
+  override def getUuidRepr(aValue: _root_.java.util.UUID) = mapUuid(aValue)
 
-  override def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
-    getDematerializedBlob(ident, aValue, blobIdentifier).map(blobDemat =>
-      addComplexPart(ident, blobDemat.dematerialize.manifestation))
 
   override def addRiftDescriptor(descriptor: RiftDescriptor) = 
     addWith(RiftDescriptor.defaultKey, descriptor, riftwarp.serialization.common.RiftDescriptorDecomposer).forceResult
-
-  private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[DimensionCord] =
-    hasDecomposers.getRawDecomposer(toDecompose.getClass).toOption match {
-      case Some(decomposer) =>
-        decomposer.decomposeRaw(toDecompose, spawnNew(idx :: ident :: path)).map(_.dematerialize)
-      case None =>
-        UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, toDecompose.getClass.getName())).failure
-    }
-
-  def mapWithPrimitiveAndDecomposerLookUp(idx: String, ident: String)(toDecompose: Any): AlmValidation[DimensionCord] =
-    mapperForAny(toDecompose).fold(
-      _ =>
-        toDecompose match {
-          case toDecomposeAsAnyRef: AnyRef =>
-            option.cata(hasDecomposers.getRawDecomposer(toDecomposeAsAnyRef.getClass).toOption)(
-              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef, spawnNew(idx :: ident :: path)).map(_.dematerialize),
-              UnspecifiedProblem("No decomposer or primitive mapper found for ident '%s'. i was trying to find a match for '%s'".format(ident, toDecompose.getClass.getName())).failure)
-          case x =>
-            UnspecifiedProblem("The type '%s' is not supported for dematerialization. The ident was '%s'".format(x.getClass.getName(), ident)).failure
-        },
-      mbt =>
-        DimensionCord(mbt(toDecompose)).success)
-
-  def mapForgivingWithPrimitiveAndDecomposerLookUp(idx: String, ident: String)(toDecompose: Any): AlmValidation[Option[DimensionCord]] =
-    mapperForAny(toDecompose).fold(
-      _ =>
-        toDecompose match {
-          case toDecomposeAsAnyRef: AnyRef =>
-            option.cata(hasDecomposers.getRawDecomposer(toDecomposeAsAnyRef.getClass).toOption)(
-              decomposer => decomposer.decomposeRaw(toDecomposeAsAnyRef, spawnNew(idx :: ident :: path)).map(x => Some(x.dematerialize)),
-              None.success)
-          case x =>
-            None.success
-        },
-      mbt =>
-        Some(DimensionCord(mbt(toDecompose))).success)
-
 }
 
 object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord] {

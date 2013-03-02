@@ -63,14 +63,14 @@ trait Dematerializer[+TDimension <: RiftDimension] extends RawDematerializer {
   def addUuid(ident: String, aValue: _root_.java.util.UUID): Dematerializer[TDimension]
   def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]): Dematerializer[TDimension]
 
-  def addBlob(ident: String, aValue: Array[Byte]): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, aValue, PropertyPath(ident :: path))
-  def addBlob(ident: String, aValue: Array[Byte], name: String): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, aValue, PropertyPathAndIdentifier(ident :: path, name))
-  def addBlob(ident: String, aValue: Array[Byte], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]] = addBlob(ident, aValue, PropertyPathAndIdentifiers(ident :: path, identifiers))
-  def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]]
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]] = addOptionalBlob(ident, anOptionalValue, PropertyPath(ident :: path))
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], name: String): AlmValidation[Dematerializer[TDimension]] = addOptionalBlob(ident, anOptionalValue, PropertyPathAndIdentifier(ident :: path, name))
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]] = addOptionalBlob(ident, anOptionalValue, PropertyPathAndIdentifiers(ident :: path, identifiers))
-  def addOptionalBlob(ident: String, anOptionalValue: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]]
+  def addBlob(ident: String, what: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]]
+  def addBlob(ident: String, what: Array[Byte]): AlmValidation[Dematerializer[TDimension]]
+  def addBlob(ident: String, what: Array[Byte], name: String): AlmValidation[Dematerializer[TDimension]]
+  def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalBlob(ident: String, what: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalBlob(ident: String, what: Option[Array[Byte]]): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalBlob(ident: String, what: Option[Array[Byte]], name: String): AlmValidation[Dematerializer[TDimension]]
+  def addOptionalBlob(ident: String, what: Option[Array[Byte]], identifiers: Map[String, String]): AlmValidation[Dematerializer[TDimension]]
 
   def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
   def addOptionalWith[A](ident: String, what: Option[A], decomposes: Decomposes[A]): AlmValidation[Dematerializer[TDimension]]
