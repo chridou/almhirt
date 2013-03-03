@@ -45,19 +45,54 @@ case class RiftBlobRefByUri(uri: java.net.URI) extends RiftBlobReference {
     into.addRiftDescriptor(this.riftDescriptor).addUri("uri", uri).ok
 }
 
-object RiftBlob {
-  def recompose(from: Rematerializer): AlmValidation[RiftBlob] =
-    from.getRiftDescriptor.flatMap(td =>
-      td match {
-        case RiftDescriptor("RiftBlobArrayValue") =>
-          from.getByteArrayFromBlobEncoding("data").map(RiftBlobArrayValue(_))
-        case RiftDescriptor("RiftBlobRefFilePath") =>
+object RiftBlobArrayValueRecomposer extends Recomposer[RiftBlobArrayValue] {
+  val riftDescriptor = RiftDescriptor(classOf[RiftBlobArrayValue])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Rematerializer): AlmValidation[RiftBlobArrayValue] = {
+    from.getByteArrayFromBlobEncoding("data").map(RiftBlobArrayValue(_))
+  }
+}
+
+object RiftBlobRefFilePathRecomposer extends Recomposer[RiftBlobRefFilePath] {
+  val riftDescriptor = RiftDescriptor(classOf[RiftBlobRefFilePath])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Rematerializer): AlmValidation[RiftBlobRefFilePath] = {
           from.getString("path").map(RiftBlobRefFilePath(_))
-        case RiftDescriptor("RiftBlobRefByName") =>
+  }
+}
+
+object RiftBlobRefByNameRecomposer extends Recomposer[RiftBlobRefByName] {
+  val riftDescriptor = RiftDescriptor(classOf[RiftBlobRefByName])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Rematerializer): AlmValidation[RiftBlobRefByName] = {
           from.getString("name").map(RiftBlobRefByName(_))
-        case RiftDescriptor("RiftBlobRefByUuid") =>
+  }
+}
+
+object RiftBlobRefByUuidRecomposer extends Recomposer[RiftBlobRefByUuid] {
+  val riftDescriptor = RiftDescriptor(classOf[RiftBlobRefByUuid])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Rematerializer): AlmValidation[RiftBlobRefByUuid] = {
           from.getUuid("uuid").map(RiftBlobRefByUuid(_))
-        case RiftDescriptor("RiftBlobRefByUri") =>
+  }
+}
+
+object RiftBlobRefByUriRecomposer extends Recomposer[RiftBlobRefByUri] {
+  val riftDescriptor = RiftDescriptor(classOf[RiftBlobRefByUri])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Rematerializer): AlmValidation[RiftBlobRefByUri] = {
           from.getUri("uri").map(RiftBlobRefByUri(_))
-      })
+  }
+}
+
+object RiftBlobRecomposer extends DivertingRecomposer[RiftBlob] {
+  val riftDescriptor = RiftDescriptor(classOf[RiftBlob])
+  val alternativeRiftDescriptors = Nil
+  val divert =
+    Map(
+      RiftBlobArrayValueRecomposer.riftDescriptor -> RiftBlobArrayValueRecomposer,
+      RiftBlobRefFilePathRecomposer.riftDescriptor -> RiftBlobRefFilePathRecomposer,
+      RiftBlobRefByNameRecomposer.riftDescriptor -> RiftBlobRefByNameRecomposer,
+      RiftBlobRefByUuidRecomposer.riftDescriptor -> RiftBlobRefByUuidRecomposer,
+      RiftBlobRefByUriRecomposer.riftDescriptor -> RiftBlobRefByUriRecomposer).lift
 }

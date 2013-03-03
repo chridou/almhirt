@@ -152,7 +152,7 @@ abstract class RematerializerWithBlobBlobFetch extends BaseRematerializer {
   protected def tryGetRematerializedBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
     trySpawnNew(ident).flatMap(rematOpt =>
       option.cata(rematOpt)(
-       remat => RiftBlob.recompose(remat).flatMap(theBlob =>
+       remat => RiftBlobRecomposer.recompose(remat).flatMap(theBlob =>
         fetchBlobData(theBlob).map(Some(_))),
         None.success))
 }
