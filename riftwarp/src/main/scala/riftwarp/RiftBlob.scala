@@ -54,7 +54,7 @@ object RiftBlobArrayValueRecomposer extends Recomposer[RiftBlobArrayValue] {
 }
 
 object RiftBlobRefFilePathRecomposer extends Recomposer[RiftBlobRefFilePath] {
-  val riftDescriptor = RiftDescriptor(classOf[RiftBlobRefFilePath])
+  val riftDescriptor = RiftDescriptor("RiftBlobRefFilePath")
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[RiftBlobRefFilePath] = {
           from.getString("path").map(RiftBlobRefFilePath(_))
@@ -62,7 +62,7 @@ object RiftBlobRefFilePathRecomposer extends Recomposer[RiftBlobRefFilePath] {
 }
 
 object RiftBlobRefByNameRecomposer extends Recomposer[RiftBlobRefByName] {
-  val riftDescriptor = RiftDescriptor(classOf[RiftBlobRefByName])
+  val riftDescriptor = RiftDescriptor("RiftBlobRefByName")
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[RiftBlobRefByName] = {
           from.getString("name").map(RiftBlobRefByName(_))
@@ -70,7 +70,7 @@ object RiftBlobRefByNameRecomposer extends Recomposer[RiftBlobRefByName] {
 }
 
 object RiftBlobRefByUuidRecomposer extends Recomposer[RiftBlobRefByUuid] {
-  val riftDescriptor = RiftDescriptor(classOf[RiftBlobRefByUuid])
+  val riftDescriptor = RiftDescriptor("RiftBlobRefByUuid")
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[RiftBlobRefByUuid] = {
           from.getUuid("uuid").map(RiftBlobRefByUuid(_))
@@ -78,7 +78,7 @@ object RiftBlobRefByUuidRecomposer extends Recomposer[RiftBlobRefByUuid] {
 }
 
 object RiftBlobRefByUriRecomposer extends Recomposer[RiftBlobRefByUri] {
-  val riftDescriptor = RiftDescriptor(classOf[RiftBlobRefByUri])
+  val riftDescriptor = RiftDescriptor("RiftBlobRefByUri")
   val alternativeRiftDescriptors = Nil
   def recompose(from: Rematerializer): AlmValidation[RiftBlobRefByUri] = {
           from.getUri("uri").map(RiftBlobRefByUri(_))
