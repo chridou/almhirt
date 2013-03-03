@@ -10,7 +10,7 @@ object Problems {
     new Decomposer[T] {
       val riftDescriptor = aRiftDescriptor
       val alternativeRiftDescriptors = Nil
-      def decompose[TDimension <: RiftDimension](what: T, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+      def decompose[TDimension <: RiftDimension](what: T, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] =
         into.addRiftDescriptor(riftDescriptor)
           .addString("message", what.message)
           .addString("severity", what.severity.toString())
@@ -25,7 +25,7 @@ object Problems {
     new Decomposer[AggregateProblem] {
       val riftDescriptor = aRiftDescriptor
       val alternativeRiftDescriptors = Nil
-      def decompose[TDimension <: RiftDimension](what: AggregateProblem, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+      def decompose[TDimension <: RiftDimension](what: AggregateProblem, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] =
         for {
           defaults <- inner.decomposeRaw(what, into)
           additional <- defaults.addIterableOfComplex("problems", what.problems, None)

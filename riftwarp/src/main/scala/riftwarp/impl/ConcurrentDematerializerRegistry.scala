@@ -4,11 +4,11 @@ import _root_.java.util.concurrent.ConcurrentHashMap
 import riftwarp._
 import riftwarp.components._
 
-class ConcurrentDematerializerRegistry extends HasDematerializers {
+class ConcurrentWarpSequencerRegistry extends HasWarpSequencers {
   private val toolregistry = new ConcurrentHashMap[ToolGroup, ConcurrentHashMap[RiftChannel, ConcurrentHashMap[String, AnyRef]]](16)
   private val channelregistry = new ConcurrentHashMap[RiftChannel, ConcurrentHashMap[String, AnyRef]](16)
 
-  def addDematerializerFactory(factory: DematerializerFactory[_ <: RiftDimension], asChannelDefault: Boolean) {
+  def addWarpSequencerFactory(factory: WarpSequencerFactory[_ <: RiftDimension], asChannelDefault: Boolean) {
     synchronized {
       val dimensionIdent = factory.tDimension.getName()
 
@@ -28,7 +28,7 @@ class ConcurrentDematerializerRegistry extends HasDematerializers {
     }
   }
 
-  def tryGetDematerializerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = {
+  def tryGetWarpSequencerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = {
     val dimensionIdent = tDimension.getName
     toolGroup match {
       case None =>
@@ -36,7 +36,7 @@ class ConcurrentDematerializerRegistry extends HasDematerializers {
           case null => None
           case entry => entry.get(dimensionIdent) match {
             case null => None
-            case x => Some(x.asInstanceOf[DematerializerFactory[RiftDimension]])
+            case x => Some(x.asInstanceOf[WarpSequencerFactory[RiftDimension]])
           }
         }
       case Some(toolGroup) =>
@@ -46,7 +46,7 @@ class ConcurrentDematerializerRegistry extends HasDematerializers {
             case null => None
             case channelEntries => channelEntries.get(dimensionIdent) match {
               case null => None
-              case x => Some(x.asInstanceOf[DematerializerFactory[RiftDimension]])
+              case x => Some(x.asInstanceOf[WarpSequencerFactory[RiftDimension]])
             }
           }
         }

@@ -3,11 +3,11 @@ package riftwarp.components
 import scala.reflect.ClassTag
 import riftwarp._
 
-trait HasDematerializers {
-  def addDematerializerFactory(factory: DematerializerFactory[_ <: RiftDimension], asChannelDefault: Boolean = false)
-  def addDematerializerFactoryAsDefault(factory: DematerializerFactory[_ <: RiftDimension]) = addDematerializerFactory(factory, true)
+trait HasWarpSequencers {
+  def addWarpSequencerFactory(factory: WarpSequencerFactory[_ <: RiftDimension], asChannelDefault: Boolean = false)
+  def addWarpSequencerFactoryAsDefault(factory: WarpSequencerFactory[_ <: RiftDimension]) = addWarpSequencerFactory(factory, true)
 
-  def tryGetDematerializerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None): Option[DematerializerFactory[_ <: RiftDimension]]
-  def tryGetDematerializerFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit md: ClassTag[TDimension]) =
-    tryGetDematerializerFactoryByType(md.runtimeClass.asInstanceOf[Class[TDimension]])(channel, toolGroup).map(_.asInstanceOf[DematerializerFactory[TDimension]])
+  def tryGetWarpSequencerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None): Option[WarpSequencerFactory[_ <: RiftDimension]]
+  def tryGetWarpSequencerFactory[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(implicit md: ClassTag[TDimension]) =
+    tryGetWarpSequencerFactoryByType(md.runtimeClass.asInstanceOf[Class[TDimension]])(channel, toolGroup).map(_.asInstanceOf[WarpSequencerFactory[TDimension]])
 }

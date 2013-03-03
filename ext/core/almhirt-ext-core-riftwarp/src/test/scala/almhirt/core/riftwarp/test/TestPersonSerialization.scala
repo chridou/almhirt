@@ -14,7 +14,7 @@ import almhirt.ext.core.riftwarp.serialization._
 
 class TestPersonCreatedDecomposer extends DomainEventDecomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonCreated, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonCreated, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.addString("name", what.name).ok
   }
 }
@@ -28,7 +28,7 @@ class TestPersonCreatedRecomposer extends DomainEventRecomposer[TestPersonCreate
 
 class TestPersonNameChangedDecomposer extends DomainEventDecomposer[TestPersonNameChanged] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonNameChanged, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonNameChanged, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into
       .addString("newName", what.newName)
       .addDateTime("timestamp", what.timestamp).ok
@@ -44,7 +44,7 @@ class TestPersonNameChangedRecomposer extends DomainEventRecomposer[TestPersonNa
 
 class TestPersonAddressAquiredDecomposer extends DomainEventDecomposer[TestPersonAddressAquired] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonAddressAquired, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonAddressAquired, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into
       .addString("aquiredAddress", what.aquiredAddress)
       .addDateTime("timestamp", what.timestamp).ok
@@ -60,7 +60,7 @@ class TestPersonAddressAquiredRecomposer extends DomainEventRecomposer[TestPerso
 
 class TestPersonMovedDecomposer extends DomainEventDecomposer[TestPersonMoved] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonMoved, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonMoved, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into
       .addString("newAddress", what.newAddress)
       .addDateTime("timestamp", what.timestamp).ok
@@ -76,7 +76,7 @@ class TestPersonMovedRecomposer extends DomainEventRecomposer[TestPersonMoved] w
 
 class TestPersonUnhandledEventDecomposer extends DomainEventDecomposer[TestPersonUnhandledEvent] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonUnhandledEvent, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  override def addEventParams[TDimension <: RiftDimension](what: TestPersonUnhandledEvent, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.ok
   }
 }

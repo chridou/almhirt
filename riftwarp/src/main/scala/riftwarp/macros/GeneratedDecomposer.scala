@@ -7,9 +7,9 @@ import almhirt.common._
 import riftwarp._
 
 object GeneratedDecomposerImpl {
-  final def decomposeUncurried[TTWhat <: AnyRef, TTDimension <: RiftDimension](what: TTWhat, into: Dematerializer[TTDimension]): AlmValidation[Dematerializer[TTDimension]] = ??? // macro decomposeUncurriedImpl[TTWhat, TTDimension]
+  final def decomposeUncurried[TTWhat <: AnyRef, TTDimension <: RiftDimension](what: TTWhat, into: WarpSequencer[TTDimension]): AlmValidation[WarpSequencer[TTDimension]] = ??? // macro decomposeUncurriedImpl[TTWhat, TTDimension]
 
-//  final def decomposeUncurriedImpl[TTWhat <: AnyRef: c.WeakTypeTag, TTDimension <: RiftDimension](c: Context)(what: c.Expr[TTWhat], into: c.Expr[Dematerializer[TTDimension]]): c.Expr[AlmValidation[Dematerializer[TTDimension]]] = {
+//  final def decomposeUncurriedImpl[TTWhat <: AnyRef: c.WeakTypeTag, TTDimension <: RiftDimension](c: Context)(what: c.Expr[TTWhat], into: c.Expr[WarpSequencer[TTDimension]]): c.Expr[AlmValidation[WarpSequencer[TTDimension]]] = {
 //    import c.universe._
 //    import scala.collection.mutable.Queue
 //

@@ -12,7 +12,7 @@ import almhirt.util.StringTrackingTicket
 object StringTrackingTicketDecomposer extends Decomposer[StringTrackingTicket] {
   val riftDescriptor = RiftDescriptor(classOf[StringTrackingTicket])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: StringTrackingTicket, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+  def decompose[TDimension <: RiftDimension](what: StringTrackingTicket, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addString("ident", what.ident).ok
@@ -21,7 +21,7 @@ object StringTrackingTicketDecomposer extends Decomposer[StringTrackingTicket] {
 object UuidTrackingTicketDecomposer extends Decomposer[UuidTrackingTicket] {
   val riftDescriptor = RiftDescriptor(classOf[UuidTrackingTicket])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: UuidTrackingTicket, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] =
+  def decompose[TDimension <: RiftDimension](what: UuidTrackingTicket, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] =
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addUuid("ident", what.ident).ok
@@ -30,7 +30,7 @@ object UuidTrackingTicketDecomposer extends Decomposer[UuidTrackingTicket] {
 object TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
   val riftDescriptor = RiftDescriptor(classOf[TrackingTicket])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: TrackingTicket, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: TrackingTicket, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     what match {
       case ticket @ UuidTrackingTicket(_) => into.includeDirect(ticket, UuidTrackingTicketDecomposer)
       case ticket @ StringTrackingTicket(_) => into.includeDirect(ticket, StringTrackingTicketDecomposer)

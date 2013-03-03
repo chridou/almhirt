@@ -9,7 +9,7 @@ import riftwarp._
 object HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribed] {
   val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: HasAThrowableDescribed, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: HasAThrowableDescribed, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
       .addString("classname", what.classname)
       .addString("message", what.message)
@@ -21,7 +21,7 @@ object HasAThrowableDescribedDecomposer extends Decomposer[HasAThrowableDescribe
 object HasAThrowableDecomposer extends Decomposer[HasAThrowable] {
   val riftDescriptor = RiftDescriptor(classOf[HasAThrowable])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: HasAThrowable, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: HasAThrowable, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.includeDirect(what.toDescription, HasAThrowableDescribedDecomposer)
   }
 }
@@ -29,7 +29,7 @@ object HasAThrowableDecomposer extends Decomposer[HasAThrowable] {
 object ThrowableRepresentationDecomposer extends Decomposer[ThrowableRepresentation] {
   val riftDescriptor = RiftDescriptor(classOf[ThrowableRepresentation])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: ThrowableRepresentation, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: ThrowableRepresentation, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     what match {
       case hat @ HasAThrowable(_) => into.includeDirect(hat, HasAThrowableDecomposer)
       case hatd @ HasAThrowableDescribed(_, _, _, _) => into.includeDirect(hatd, HasAThrowableDescribedDecomposer)
@@ -40,7 +40,7 @@ object ThrowableRepresentationDecomposer extends Decomposer[ThrowableRepresentat
 object CauseIsThrowableDecomposer extends Decomposer[CauseIsThrowable] {
   val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: CauseIsThrowable, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: CauseIsThrowable, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
       .addWith("representation", what.representation, ThrowableRepresentationDecomposer)
   }
@@ -49,7 +49,7 @@ object CauseIsThrowableDecomposer extends Decomposer[CauseIsThrowable] {
 object CauseIsProblemDecomposer extends Decomposer[CauseIsProblem] {
   val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: CauseIsProblem, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: CauseIsProblem, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor).addComplex("problem", what.problem, None)
   }
 }
@@ -57,7 +57,7 @@ object CauseIsProblemDecomposer extends Decomposer[CauseIsProblem] {
 object ProblemCauseDecomposer extends Decomposer[ProblemCause] {
   val riftDescriptor = RiftDescriptor(classOf[ProblemCause])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: ProblemCause, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: ProblemCause, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     what match {
       case cip @ CauseIsProblem(_) => into.includeDirect(cip, CauseIsProblemDecomposer)
       case cit @ CauseIsThrowable(_) => into.includeDirect(cit, CauseIsThrowableDecomposer)

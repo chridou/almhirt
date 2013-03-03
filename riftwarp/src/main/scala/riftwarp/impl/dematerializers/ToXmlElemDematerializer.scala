@@ -17,7 +17,7 @@
 //import riftwarp.DimensionXmlElem
 //import riftwarp.components._
 //
-//object ToXmlElemDematerializerFuns {
+//object ToXmlElemWarpSequencerFuns {
 //  def primitiveMapperByType[A](implicit m: ClassTag[A]): AlmValidation[A => Elem] = {
 //    val t = m.runtimeClass
 //    if (t == classOf[String])
@@ -86,28 +86,28 @@
 //
 //}
 //
-//class ToXmlElemDematerializer(state: Seq[XmlNode], val path: List[String], protected val divertBlob: BlobDivert, riftDescriptor: Option[RiftDescriptor])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseDematerializer[DimensionXmlElem](classOf[DimensionXmlElem], hasDecomposers, hasFunctionObjects) with NoneIsHandledUnified[DimensionXmlElem] with NoneIsOmmitted[DimensionXmlElem] {
+//class ToXmlElemWarpSequencer(state: Seq[XmlNode], val path: List[String], protected val divertBlob: BlobDivert, riftDescriptor: Option[RiftDescriptor])(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends BaseWarpSequencer[DimensionXmlElem](classOf[DimensionXmlElem], hasDecomposers, hasFunctionObjects) with NoneIsHandledUnified[DimensionXmlElem] with NoneIsOmmitted[DimensionXmlElem] {
 //  val toolGroup = ToolGroupRiftStd()
 //  val channel = RiftXml()
 //
-//  import ToXmlElemDematerializerFuns._
+//  import ToXmlElemWarpSequencerFuns._
 //
 //  private def wrapComplexElem(ident: String, complex: Elem) = Elem(null, ident, Null, TopScope, true, complex)
 //
-//  protected override def insertDematerializer(ident: String, dematerializer: Dematerializer[DimensionXmlElem]) = {
+//  protected override def insertWarpSequencer(ident: String, dematerializer: WarpSequencer[DimensionXmlElem]) = {
 //    addElem(wrapComplexElem(ident, dematerializer.dematerialize.manifestation))
 //  }
 //
-//  protected def spawnNew(path: List[String]): ToXmlElemDematerializer =
-//    ToXmlElemDematerializer.apply(path, divertBlob)
+//  protected def spawnNew(path: List[String]): ToXmlElemWarpSequencer =
+//    ToXmlElemWarpSequencer.apply(path, divertBlob)
 //
 //  protected def asElem(): Elem =
 //    option.cata(riftDescriptor)(
 //      td => Elem(null, td.unqualifiedName, new UnprefixedAttribute("riftDescriptor", td.toString, Null), TopScope, true, state: _*),
 //      Elem(null, "Element", Null, TopScope, true, state: _*))
 //
-//  private def addElem(elem: Elem): ToXmlElemDematerializer =
-//    new ToXmlElemDematerializer(state :+ elem, path, divertBlob, riftDescriptor)
+//  private def addElem(elem: Elem): ToXmlElemWarpSequencer =
+//    new ToXmlElemWarpSequencer(state :+ elem, path, divertBlob, riftDescriptor)
 //
 //  private def createPrimitiveElem(ident: String, value: String) = Elem(null, ident, Null, TopScope, true, Text(value))
 //
@@ -138,36 +138,36 @@
 //
 //  override def addBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier) =
 //    getDematerializedBlob(ident, aValue, blobIdentifier).map(blobDemat =>
-//      insertDematerializer(ident, blobDemat))
+//      insertWarpSequencer(ident, blobDemat))
 //
-//  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemWarpSequencer] =
 //    primitiveMapperByType[A].flatMap(map =>
 //      MAFuncs.map(ma)(x => map(x)).flatMap(m =>
 //        MAFuncs.fold(this.channel)(m)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem])).map(elem =>
 //        addElem(wrapComplexElem(ident, elem))))
 //
-//  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemWarpSequencer] =
 //    MAFuncs.mapiV(ma)((x, idx) => decomposer.decompose(x)(spawnNew(ident)).map(_.dematerialize.manifestation)).flatMap(m =>
 //      MAFuncs.fold(this.channel)(m)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem])).map(elem =>
 //      addElem(wrapComplexElem(ident, elem)))
 //
-//  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemWarpSequencer] =
 //    hasDecomposers.getDecomposer[A].toOption match {
 //      case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
 //      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.runtimeClass.getName())).failure
 //    }
 //
-//  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemWarpSequencer] =
 //    MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
 //      MAFuncs.fold(this.channel)(complex)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem]).map(elem =>
 //        addElem(wrapComplexElem(ident, elem))))
 //
-//  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToXmlElemWarpSequencer] =
 //    MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndComplexDecomposerLookUp(idx, ident)(a)).flatMap(complex =>
 //      MAFuncs.fold(this.channel)(complex)(hasFunctionObjects, mM, manifest[Elem], manifest[Elem]).map(elem =>
 //        addElem(wrapComplexElem(ident, elem))))
 //
-//  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemWarpSequencer] =
 //    (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
 //      case (true, true) =>
 //        primitiveMapperByType[A].flatMap(mapA =>
@@ -183,7 +183,7 @@
 //      case (false, false) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) and B(%s) are not primitive types".format(ident, mA.runtimeClass.getName(), mB.runtimeClass.getName())).failure
 //    }
 //
-//  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemWarpSequencer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.runtimeClass),
 //      primitiveMapperByType[A].map(mapA =>
@@ -197,10 +197,10 @@
 //        addElem(wrapComplexElem(ident, elem))),
 //      UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 //
-//  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemWarpSequencer] =
 //    hasDecomposers.getDecomposer[B].flatMap(decomposer => addComplexMap[A, B](decomposer)(ident, aMap))
 //
-//  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemWarpSequencer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.runtimeClass),
 //      primitiveMapperByType[A].flatMap(mapA =>
@@ -212,7 +212,7 @@
 //          addElem(wrapComplexElem(ident, elem)))),
 //      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 //
-//  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemWarpSequencer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.runtimeClass),
 //      primitiveMapperByType[A].flatMap(mapA =>
@@ -224,7 +224,7 @@
 //          addElem(wrapComplexElem(ident, elem)))),
 //      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 //
-//  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemDematerializer] =
+//  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToXmlElemWarpSequencer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.runtimeClass),
 //      primitiveMapperByType[A].flatMap(mapA =>
@@ -236,8 +236,8 @@
 //          addElem(wrapComplexElem(ident, elem)))),
 //      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 //
-//  override def addRiftDescriptor(descriptor: RiftDescriptor): ToXmlElemDematerializer =
-//    new ToXmlElemDematerializer(state, path, divertBlob, Some(descriptor))
+//  override def addRiftDescriptor(descriptor: RiftDescriptor): ToXmlElemWarpSequencer =
+//    new ToXmlElemWarpSequencer(state, path, divertBlob, Some(descriptor))
 //
 //  private def decomposeWithDecomposer[T <: AnyRef](idxIdent: List[String])(decomposer: Decomposer[T])(what: T): AlmValidation[Elem] =
 //    decomposer.decompose(what)(spawnNew(idxIdent ++ path)).map(demat =>
@@ -245,7 +245,7 @@
 //
 //  private def mapWithComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: AnyRef): AlmValidation[Elem] =
 //    hasDecomposers.getRawDecomposerFor(toDecompose).flatMap(decomposer =>
-//      decomposer.decomposeRaw(toDecompose)(spawnNew(idx :: ident :: path)).map(x => x.asInstanceOf[ToXmlElemDematerializer].asElem))
+//      decomposer.decomposeRaw(toDecompose)(spawnNew(idx :: ident :: path)).map(x => x.asInstanceOf[ToXmlElemWarpSequencer].asElem))
 //
 //  private def mapWithPrimitiveAndComplexDecomposerLookUp(idx: String, ident: String)(toDecompose: Any): AlmValidation[Elem] =
 //    boolean.fold(
@@ -260,14 +260,14 @@
 //
 //}
 //
-//object ToXmlElemDematerializer extends DematerializerFactory[DimensionXmlElem] {
+//object ToXmlElemWarpSequencer extends WarpSequencerFactory[DimensionXmlElem] {
 //  val channel = RiftXml()
 //  val tDimension = classOf[DimensionXmlElem].asInstanceOf[Class[_ <: RiftDimension]]
 //  val toolGroup = ToolGroupStdLib()
-//  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToXmlElemDematerializer = apply(Seq.empty, divertBlob)
-//  def apply(state: Seq[XmlNode], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToXmlElemDematerializer = apply(state, Nil, divertBlob)
-//  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToXmlElemDematerializer = apply(Seq.empty, path, divertBlob)
-//  def apply(state: Seq[XmlNode], path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToXmlElemDematerializer = new ToXmlElemDematerializer(state, path, divertBlob, None)
-//  def createDematerializer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[ToXmlElemDematerializer] =
+//  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToXmlElemWarpSequencer = apply(Seq.empty, divertBlob)
+//  def apply(state: Seq[XmlNode], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToXmlElemWarpSequencer = apply(state, Nil, divertBlob)
+//  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToXmlElemWarpSequencer = apply(Seq.empty, path, divertBlob)
+//  def apply(state: Seq[XmlNode], path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToXmlElemWarpSequencer = new ToXmlElemWarpSequencer(state, path, divertBlob, None)
+//  def createWarpSequencer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[ToXmlElemWarpSequencer] =
 //    apply(divertBlob).success
 //}

@@ -12,17 +12,17 @@
 //import riftwarp.ma._
 //import riftwarp.components._
 //
-//class ToMapDematerializer(state: Map[String, Any], val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToRawMapDematerializer(RiftMap(), ToolGroupRiftStd(), hasDecomposers, hasFunctionObjects) with NoneIsHandledUnified[DimensionRawMap] with NoneIsOmmitted[DimensionRawMap] {
-//  protected override def spawnNew(path: List[String]): ToMapDematerializer =
-//    ToMapDematerializer.apply(path, divertBlob)
+//class ToMapWarpSequencer(state: Map[String, Any], val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects) extends ToRawMapWarpSequencer(RiftMap(), ToolGroupRiftStd(), hasDecomposers, hasFunctionObjects) with NoneIsHandledUnified[DimensionRawMap] with NoneIsOmmitted[DimensionRawMap] {
+//  protected override def spawnNew(path: List[String]): ToMapWarpSequencer =
+//    ToMapWarpSequencer.apply(path, divertBlob)
 //
 //  override def dematerialize: DimensionRawMap = DimensionRawMap(state)
 //
-//  protected override def insertDematerializer(ident: String, dematerializer: Dematerializer[DimensionRawMap]) =
+//  protected override def insertWarpSequencer(ident: String, dematerializer: WarpSequencer[DimensionRawMap]) =
 //    addValue(ident, dematerializer.dematerialize.manifestation)
 //
-//  protected def addValue(ident: String, aValue: Any): ToMapDematerializer =
-//    (ToMapDematerializer(state + (ident -> aValue), path, divertBlob))
+//  protected def addValue(ident: String, aValue: Any): ToMapWarpSequencer =
+//    (ToMapWarpSequencer(state + (ident -> aValue), path, divertBlob))
 //
 //  override def addString(ident: String, aValue: String) = addValue(ident, aValue)
 //
@@ -54,14 +54,14 @@
 //    getDematerializedBlob(ident, aValue, blobIdentifier).map(blobDemat =>
 //      addValue(ident, blobDemat.dematerialize.manifestation))
 //
-//  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] = {
+//  override def addPrimitiveMA[M[_], A](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapWarpSequencer] = {
 //    hasFunctionObjects.tryGetMAFunctions[M] match {
 //      case Some(fo) => addValue(ident, ma).success
 //      case None => UnspecifiedProblem("No function object  found for ident '%s' and M[_](%s[_])".format(ident, mM.runtimeClass.getName())).failure
 //    }
 //  }
 //
-//  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] = {
+//  override def addComplexMA[M[_], A <: AnyRef](decomposer: Decomposer[A])(ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapWarpSequencer] = {
 //    def mapA(a: A, idx: String): AlmValidationAP[Map[String, Any]] =
 //      decomposer.decompose(a)(spawnNew(idx :: ident :: path)).map(_.dematerialize.manifestation).toAgg
 //
@@ -83,23 +83,23 @@
 //    }
 //  }
 //
-//  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] =
+//  override def addComplexMAFixed[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapWarpSequencer] =
 //    hasDecomposers.getDecomposer[A].toOption match {
 //      case Some(decomposer) => addComplexMA(decomposer)(ident, ma)
 //      case None => UnspecifiedProblem("No decomposer found for ident '%s'. i was looking for a '%s'-Decomposer".format(ident, mA.runtimeClass.getName())).failure
 //    }
 //
-//  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] = {
+//  override def addComplexMALoose[M[_], A <: AnyRef](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapWarpSequencer] = {
 //    MAFuncs.mapiV(ma)((a, idx) => mapWithComplexDecomposerLookUp(idx, ident)(a)).map(x =>
 //      addValue(ident, x))
 //  }
 //
-//  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapDematerializer] = {
+//  override def addMA[M[_], A <: Any](ident: String, ma: M[A])(implicit mM: ClassTag[M[_]], mA: ClassTag[A]): AlmValidation[ToMapWarpSequencer] = {
 //    MAFuncs.mapiV(ma)((a, idx) => mapWithPrimitiveAndComplexDecomposerLookUp(idx, ident)(a)).map(x =>
 //      addValue(ident, x))
 //  }
 //
-//  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] = {
+//  override def addPrimitiveMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapWarpSequencer] = {
 //    (TypeHelpers.isPrimitiveType(mA.runtimeClass), TypeHelpers.isPrimitiveType(mB.runtimeClass)) match {
 //      case (true, true) => addValue(ident, aMap).success
 //      case (false, true) => UnspecifiedProblem("Could not create primitive map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure
@@ -108,7 +108,7 @@
 //    }
 //  }
 //
-//  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
+//  override def addComplexMap[A, B <: AnyRef](decomposer: Decomposer[B])(ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapWarpSequencer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.runtimeClass),
 //      {
@@ -124,11 +124,11 @@
 //      },
 //      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 //
-//  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
+//  override def addComplexMapFixed[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapWarpSequencer] =
 //    hasDecomposers.getDecomposer[B].flatMap(decomposer =>
 //      addComplexMap[A, B](decomposer)(ident, aMap))
 //
-//  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
+//  override def addComplexMapLoose[A, B <: AnyRef](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapWarpSequencer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.runtimeClass),
 //      {
@@ -142,7 +142,7 @@
 //      },
 //      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 //
-//  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
+//  override def addMap[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapWarpSequencer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.runtimeClass),
 //      aMap.toList.map {
@@ -154,7 +154,7 @@
 //        addValue(ident, x)),
 //      UnspecifiedProblem("Could not create complex map for %s: A(%s) is not a primitive type".format(ident, mA.runtimeClass.getName())).failure)
 //
-//  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapDematerializer] =
+//  override def addMapSkippingUnknownValues[A, B](ident: String, aMap: Map[A, B])(implicit mA: ClassTag[A], mB: ClassTag[B]): AlmValidation[ToMapWarpSequencer] =
 //    boolean.fold(
 //      TypeHelpers.isPrimitiveType(mA.runtimeClass),
 //      aMap.toList.map {
@@ -190,14 +190,14 @@
 //
 //}
 //
-//object ToMapDematerializer extends DematerializerFactory[DimensionRawMap] {
+//object ToMapWarpSequencer extends WarpSequencerFactory[DimensionRawMap] {
 //  val channel = RiftMap()
 //  val tDimension = classOf[DimensionRawMap].asInstanceOf[Class[_ <: RiftDimension]]
 //  val toolGroup = ToolGroupRiftStd()
 //
-//  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapDematerializer = apply(Map.empty, Nil, divertBlob)
-//  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapDematerializer = apply(Map.empty, path, divertBlob)
-//  def apply(state: Map[String, Any], path: List[String] = Nil, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapDematerializer = new ToMapDematerializer(state, path, divertBlob)
-//  def createDematerializer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[Dematerializer[DimensionRawMap]] =
+//  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapWarpSequencer = apply(Map.empty, Nil, divertBlob)
+//  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapWarpSequencer = apply(Map.empty, path, divertBlob)
+//  def apply(state: Map[String, Any], path: List[String] = Nil, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): ToMapWarpSequencer = new ToMapWarpSequencer(state, path, divertBlob)
+//  def createWarpSequencer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers, hasFunctionObjects: HasFunctionObjects): AlmValidation[WarpSequencer[DimensionRawMap]] =
 //    apply(divertBlob).success
 //}

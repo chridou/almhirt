@@ -7,13 +7,13 @@ import almhirt.domain._
 import riftwarp._
 
 trait DomainEventDecomposer[TEvent <: DomainEvent] extends Decomposer[TEvent] {
-  override def decompose[TDimension <: RiftDimension](what: TEvent, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  override def decompose[TDimension <: RiftDimension](what: TEvent, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addWith("header", what.header, DomainEventHeaderDecomposer).flatMap(addEventParams(what, _))
   }
 
-  def addEventParams[TDimension <: RiftDimension](what: TEvent, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]]
+  def addEventParams[TDimension <: RiftDimension](what: TEvent, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]]
 }
 
 trait DomainEventRecomposer[TEvent <: DomainEvent] extends Recomposer[TEvent] {

@@ -15,7 +15,7 @@ import riftwarp._
 import riftwarp.ma._
 import riftwarp.components._
 
-object ToJsonCordDematerializerFuns {
+object ToJsonCordWarpSequencerFuns {
   /*
  * Parts of "launderString" are taken from Lift-JSON:
  * 
@@ -165,20 +165,20 @@ object ToJsonCordDematerializerFuns {
         folder.fold(items.map(x => createKeyValuePair(x)).seq)(fo)))
 }
 
-class ToJsonCordDematerializer(state: Cord, val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers) extends ToCordDematerializer(RiftJson(), ToolGroup.StdLib, hasDecomposers) with NoneIsHandledUnified[DimensionCord] {
-  import ToJsonCordDematerializerFuns._
+class ToJsonCordWarpSequencer(state: Cord, val path: List[String], protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers) extends ToCordWarpSequencer(RiftJson(), ToolGroup.StdLib, hasDecomposers) with NoneIsHandledUnified[DimensionCord] {
+  import ToJsonCordWarpSequencerFuns._
   
   private val nullCord = Cord("null")
   override def dematerialize = DimensionCord(('{' -: state :- '}'))
   
-  protected def noneHandler(ident: String): ToJsonCordDematerializer = addPart(ident, nullCord)
+  protected def noneHandler(ident: String): ToJsonCordWarpSequencer = addPart(ident, nullCord)
 
-  protected def spawnNew(path: List[String]): ToJsonCordDematerializer =
-    ToJsonCordDematerializer.apply(path, divertBlob)
+  protected def spawnNew(path: List[String]): ToJsonCordWarpSequencer =
+    ToJsonCordWarpSequencer.apply(path, divertBlob)
 
   protected override def valueReprToDim(repr: ValueRepr): DimensionCord = DimensionCord(repr)
   protected override def dimToReprValue(dim: DimensionCord): ValueRepr = dim.manifestation
-  protected override def addReprValue(ident: String, value: ValueRepr): Dematerializer[DimensionCord] = addPart(ident, value)
+  protected override def addReprValue(ident: String, value: ValueRepr): WarpSequencer[DimensionCord] = addPart(ident, value)
   protected override def foldReprs(elems: Iterable[ValueRepr]): ValueRepr = foldParts(elems.toList)
   protected override def getPrimitiveToRepr[A](implicit tag: ClassTag[A]): AlmValidation[(A => ValueRepr)] = mapperByType[A]
   protected override def getAnyPrimitiveToRepr(what: Any): AlmValidation[(Any => ValueRepr)] = mapperForAny(what)
@@ -204,16 +204,16 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
   override def getUriRepr(aValue: _root_.java.net.URI) = mapString(aValue.toString())
   override def getUuidRepr(aValue: _root_.java.util.UUID) = mapUuid(aValue)
   
-  protected override def insertDematerializer(ident: String, dematerializer: Dematerializer[DimensionCord]) =
+  protected override def insertWarpSequencer(ident: String, dematerializer: WarpSequencer[DimensionCord]) =
     addPart(ident, dematerializer.dematerialize.manifestation)
 
-  def addPart(ident: String, part: Cord): ToJsonCordDematerializer = {
+  def addPart(ident: String, part: Cord): ToJsonCordWarpSequencer = {
     val fieldCord = '\"' + ident + "\":"
     val completeCord = fieldCord ++ part
     if (state.length == 0)
-      ToJsonCordDematerializer(completeCord, path, divertBlob)
+      ToJsonCordWarpSequencer(completeCord, path, divertBlob)
     else
-      ToJsonCordDematerializer((state :- ',') ++ completeCord, path, divertBlob)
+      ToJsonCordWarpSequencer((state :- ',') ++ completeCord, path, divertBlob)
   }
 
 
@@ -222,14 +222,14 @@ class ToJsonCordDematerializer(state: Cord, val path: List[String], protected va
     addWith(RiftDescriptor.defaultKey, descriptor, riftwarp.serialization.common.RiftDescriptorDecomposer).forceResult
 }
 
-object ToJsonCordDematerializer extends DematerializerFactory[DimensionCord] {
+object ToJsonCordWarpSequencer extends WarpSequencerFactory[DimensionCord] {
   val channel = RiftJson()
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
-  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = apply(Cord(""), divertBlob)
-  def apply(state: Cord, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = apply(state, Nil, divertBlob)
-  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = apply(Cord(""), path, divertBlob)
-  def apply(state: Cord, path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordDematerializer = new ToJsonCordDematerializer(state, path, divertBlob)
-  def createDematerializer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): AlmValidation[ToJsonCordDematerializer] =
+  def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = apply(Cord(""), divertBlob)
+  def apply(state: Cord, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = apply(state, Nil, divertBlob)
+  def apply(path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = apply(Cord(""), path, divertBlob)
+  def apply(state: Cord, path: List[String], divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = new ToJsonCordWarpSequencer(state, path, divertBlob)
+  def createWarpSequencer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): AlmValidation[ToJsonCordWarpSequencer] =
     apply(divertBlob).success
 }

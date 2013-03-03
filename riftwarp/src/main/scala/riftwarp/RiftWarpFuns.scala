@@ -8,7 +8,7 @@ import almhirt.almvalidation.funs._
 import riftwarp.components._
 
 object RiftWarpFuns {
-  def prepareForWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel)(what: T)(decomposer: Decomposer[T], dematerializer: Dematerializer[TDimension]): AlmValidation[TDimension] =
+  def prepareForWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel)(what: T)(decomposer: Decomposer[T], dematerializer: WarpSequencer[TDimension]): AlmValidation[TDimension] =
     decomposer.decompose(what, dematerializer).map(demat =>
       demat.dematerialize)
 
@@ -16,25 +16,25 @@ object RiftWarpFuns {
     factory.createRematerializer(warpStream).flatMap(array => recomposer.recompose(array))
   }
 
-  private[riftwarp] def lookUpDematerializerFactoryAndConverters(channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(implicit riftwarp: RiftWarp): scalaz.Validation[RiftWarpProblem, (DematerializerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
-    def findDematerializerFactory(converters: List[RawDimensionConverter]): scalaz.Validation[RiftWarpProblem, (DematerializerFactory[_ <: RiftDimension], RawDimensionConverter)] =
+  private[riftwarp] def lookUpWarpSequencerFactoryAndConverters(channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(implicit riftwarp: RiftWarp): scalaz.Validation[RiftWarpProblem, (WarpSequencerFactory[_ <: RiftDimension], List[RawDimensionConverter])] = {
+    def findWarpSequencerFactory(converters: List[RawDimensionConverter]): scalaz.Validation[RiftWarpProblem, (WarpSequencerFactory[_ <: RiftDimension], RawDimensionConverter)] =
       converters match {
-        case Nil => RiftWarpProblem(s"No DematerializerFactory found matching a target dimension '${tDimension.getName()}'. This has been found:${converters.mkString(", ")}.").failure
+        case Nil => RiftWarpProblem(s"No WarpSequencerFactory found matching a target dimension '${tDimension.getName()}'. This has been found:${converters.mkString(", ")}.").failure
         case x :: xs =>
-          option.cata(riftwarp.toolShed.tryGetDematerializerFactoryByType(x.tSource)(channel, toolGroup))(
+          option.cata(riftwarp.toolShed.tryGetWarpSequencerFactoryByType(x.tSource)(channel, toolGroup))(
             factory => (factory, x).success,
-            findDematerializerFactory(xs))
+            findWarpSequencerFactory(xs))
       }
 
-    option.cata(riftwarp.toolShed.tryGetDematerializerFactoryByType(tDimension)(channel))(
+    option.cata(riftwarp.toolShed.tryGetWarpSequencerFactoryByType(tDimension)(channel))(
       some => (some, Nil).success,
-      findDematerializerFactory(riftwarp.converters.getConvertersToByDimType(tDimension)).map(tuple => (tuple._1, List(tuple._2))))
+      findWarpSequencerFactory(riftwarp.converters.getConvertersToByDimType(tDimension)).map(tuple => (tuple._1, List(tuple._2))))
   }
 
   private[riftwarp] def getDematerializationFun(channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(divertBlobs: BlobDivert)(implicit riftwarp: RiftWarp): scalaz.Validation[RiftWarpProblem, (AnyRef, RawDecomposer) => AlmValidation[RiftDimension]] =
-    lookUpDematerializerFactoryAndConverters(channel, tDimension, toolGroup).map(factoryAndConverters =>
+    lookUpWarpSequencerFactoryAndConverters(channel, tDimension, toolGroup).map(factoryAndConverters =>
       (what: AnyRef, decomposer: RawDecomposer) =>
-        factoryAndConverters._1.createDematerializer(divertBlobs)(riftwarp.barracks).flatMap(demat =>
+        factoryAndConverters._1.createWarpSequencer(divertBlobs)(riftwarp.barracks).flatMap(demat =>
           decomposer.decomposeRaw(what, demat).flatMap(demat =>
             factoryAndConverters._2.foldLeft(demat.dematerializeRaw.success[Problem])((acc, converter) =>
               acc.fold(prob => prob.failure, dim => converter.convertRaw(dim))))))

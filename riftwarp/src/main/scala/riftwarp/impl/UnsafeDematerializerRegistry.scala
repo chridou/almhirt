@@ -3,12 +3,12 @@ package riftwarp.impl
 import riftwarp._
 import riftwarp.components._
 
-class UnsafeDematerializerRegistry extends HasDematerializers {
+class UnsafeWarpSequencerRegistry extends HasWarpSequencers {
   import scala.collection.mutable._
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannel, HashMap[String, AnyRef]]]()
   private val channelregistry = collection.mutable.HashMap[RiftChannel, collection.mutable.HashMap[String, AnyRef]]()
 
-  def addDematerializerFactory(factory: DematerializerFactory[_ <: RiftDimension], asChannelDefault: Boolean) {
+  def addWarpSequencerFactory(factory: WarpSequencerFactory[_ <: RiftDimension], asChannelDefault: Boolean) {
     val dimensionIdent = factory.tDimension.getName()
 
     if (!toolregistry.contains(factory.toolGroup))
@@ -26,20 +26,20 @@ class UnsafeDematerializerRegistry extends HasDematerializers {
       channeltypeentry += (dimensionIdent -> factory)
   }
 
-  def tryGetDematerializerFactoryByType(tDimemsion: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = {
+  def tryGetWarpSequencerFactoryByType(tDimemsion: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = {
     val dimensionIdent = tDimemsion.getName
     (toolGroup match {
       case None =>
         for {
           entry <- channelregistry.get(channel)
           dematerializer <- entry.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[DematerializerFactory[RiftDimension]]
+        } yield dematerializer.asInstanceOf[WarpSequencerFactory[RiftDimension]]
       case Some(toolGroup) =>
         for {
           toolentries <- toolregistry.get(toolGroup)
           channelEntries <- toolentries.get(channel)
           dematerializer <- channelEntries.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[DematerializerFactory[RiftDimension]]
+        } yield dematerializer.asInstanceOf[WarpSequencerFactory[RiftDimension]]
     })
   }
 }

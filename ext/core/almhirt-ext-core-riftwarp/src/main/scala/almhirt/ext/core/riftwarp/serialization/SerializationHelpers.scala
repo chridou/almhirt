@@ -4,10 +4,10 @@ import almhirt.common._
 import riftwarp._
 
 trait SerializationFuns {
-//  def serializeCommonDomainEventFields(event: DomainEvent, funnel: Dematerializer[_,_]): AlmValidation[Dematerializer[_,_]] =
+//  def serializeCommonDomainEventFields(event: DomainEvent, funnel: WarpSequencer[_,_]): AlmValidation[WarpSequencer[_,_]] =
 //    funnel.addUuid("aggId", event.aggId).bind(f => f.addLong("aggVersion", event.aggVersion))
 //
-//  def serializeCommonMutatorCommandFields(com: MutatorCommandStyle, funnel: Dematerializer[_,_]): AlmValidation[Dematerializer[_,_]] =
+//  def serializeCommonMutatorCommandFields(com: MutatorCommandStyle, funnel: WarpSequencer[_,_]): AlmValidation[WarpSequencer[_,_]] =
 //    funnel.addComplexType[AggregateRootRef]("target", com.target)
 }
 

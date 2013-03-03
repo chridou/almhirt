@@ -8,7 +8,7 @@ import riftwarp._
 object RiftDescriptorDecomposer extends Decomposer[RiftDescriptor] {
   val riftDescriptor = RiftDescriptor(classOf[RiftDescriptor])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: RiftDescriptor, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: RiftDescriptor, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.addString("identifier", what.identifier).addOptionalInt("version", what.version).ok
   }
 }

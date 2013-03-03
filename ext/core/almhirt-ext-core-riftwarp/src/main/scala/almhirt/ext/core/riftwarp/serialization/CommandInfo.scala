@@ -11,7 +11,7 @@ import almhirt.domain.AggregateRootRef
 object FullComandInfoDecomposer extends Decomposer[FullComandInfo] {
   val riftDescriptor = RiftDescriptor(classOf[FullComandInfo])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: FullComandInfo, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: FullComandInfo, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
       .addComplex("command", what.command, None)
   }
@@ -20,7 +20,7 @@ object FullComandInfoDecomposer extends Decomposer[FullComandInfo] {
 object HeadCommandInfoDecomposer extends Decomposer[HeadCommandInfo] {
   val riftDescriptor = RiftDescriptor(classOf[HeadCommandInfo])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: HeadCommandInfo, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: HeadCommandInfo, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.addRiftDescriptor(this.riftDescriptor)
       .addUuid("commandId", what.commandId)
       .addString("commandType", what.commandType)
@@ -31,7 +31,7 @@ object HeadCommandInfoDecomposer extends Decomposer[HeadCommandInfo] {
 object CommandInfoDecomposer extends Decomposer[CommandInfo] {
   val riftDescriptor = RiftDescriptor(classOf[CommandInfo])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: CommandInfo, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: CommandInfo, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     what match {
       case ci: FullComandInfo => into.includeDirect(ci, FullComandInfoDecomposer)
       case ci: HeadCommandInfo => into.includeDirect(ci, HeadCommandInfoDecomposer)

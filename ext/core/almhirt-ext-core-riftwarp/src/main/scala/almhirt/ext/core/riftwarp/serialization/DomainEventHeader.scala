@@ -9,7 +9,7 @@ import riftwarp._
 object DomainEventHeaderDecomposer extends Decomposer[DomainEventHeader] {
   val riftDescriptor = RiftDescriptor(classOf[DomainEventHeader])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: DomainEventHeader, into: Dematerializer[TDimension]): AlmValidation[Dematerializer[TDimension]] = {
+  def decompose[TDimension <: RiftDimension](what: DomainEventHeader, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addUuid("id", what.id)
