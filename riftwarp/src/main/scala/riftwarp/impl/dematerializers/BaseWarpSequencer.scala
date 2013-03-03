@@ -1,4 +1,4 @@
-package riftwarp.impl.dematerializers
+package riftwarp.impl.warpSequencers
 
 import language.higherKinds
 import scala.collection.IterableLike
@@ -19,7 +19,7 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
   protected def divertBlob: BlobDivert
   protected def spawnNew(ident: String): WarpSequencer[TDimension] = spawnNew(ident :: path)
   /**
-   * Creates a new instance of a dematerializer. It should respect divertBlob when creating the new instance.
+   * Creates a new instance of a warpSequencer. It should respect divertBlob when creating the new instance.
    *
    */
   protected def spawnNew(path: List[String]): WarpSequencer[TDimension]
@@ -35,7 +35,7 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
     divertBlob(aValue, blobIdentifier).flatMap(blob =>
       blob.decompose(spawnNew(ident)))
 
-  protected def insertWarpSequencer(ident: String, dematerializer: WarpSequencer[TDimension]): WarpSequencer[TDimension]
+  protected def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[TDimension]): WarpSequencer[TDimension]
 
   override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[WarpSequencer[TDimension]] = decomposer.decompose(what, this)
   override def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =

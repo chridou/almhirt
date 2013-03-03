@@ -32,14 +32,14 @@ class UnsafeWarpSequencerRegistry extends HasWarpSequencers {
       case None =>
         for {
           entry <- channelregistry.get(channel)
-          dematerializer <- entry.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[WarpSequencerFactory[RiftDimension]]
+          warpSequencer <- entry.get(dimensionIdent)
+        } yield warpSequencer.asInstanceOf[WarpSequencerFactory[RiftDimension]]
       case Some(toolGroup) =>
         for {
           toolentries <- toolregistry.get(toolGroup)
           channelEntries <- toolentries.get(channel)
-          dematerializer <- channelEntries.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[WarpSequencerFactory[RiftDimension]]
+          warpSequencer <- channelEntries.get(dimensionIdent)
+        } yield warpSequencer.asInstanceOf[WarpSequencerFactory[RiftDimension]]
     })
   }
 }

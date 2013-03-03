@@ -1,4 +1,4 @@
-package riftwarp.impl.dematerializers
+package riftwarp.impl.warpSequencers
 
 import language.higherKinds
 import scala.collection.IterableLike
@@ -10,7 +10,7 @@ import riftwarp._
 import riftwarp.components._
 import riftwarp.ma.HasFunctionObjects
 
-trait NoneIsHandledUnified[TDimension <: RiftDimension] { dematerializer: WarpSequencer[TDimension] =>
+trait NoneIsHandledUnified[TDimension <: RiftDimension] { warpSequencer: WarpSequencer[TDimension] =>
   protected def noneHandler(ident: String): WarpSequencer[TDimension]
 
   override def addOptionalString(ident: String, anOptionalValue: Option[String]) = option.cata(anOptionalValue)(addString(ident, _), noneHandler(ident))
@@ -60,6 +60,6 @@ trait NoneIsHandledUnified[TDimension <: RiftDimension] { dematerializer: WarpSe
 
 }
 
-trait NoneIsOmmitted[TDimension <: RiftDimension] { dematerializer: WarpSequencer[TDimension] with NoneIsHandledUnified[TDimension] =>
-  protected override def noneHandler(ident: String): WarpSequencer[TDimension] = dematerializer
+trait NoneIsOmmitted[TDimension <: RiftDimension] { warpSequencer: WarpSequencer[TDimension] with NoneIsHandledUnified[TDimension] =>
+  protected override def noneHandler(ident: String): WarpSequencer[TDimension] = warpSequencer
 }

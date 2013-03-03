@@ -1,4 +1,4 @@
-package riftwarp.impl.dematerializers
+package riftwarp.impl.warpSequencers
 
 import language.higherKinds
 import scala.annotation.tailrec
@@ -204,8 +204,8 @@ class ToJsonCordWarpSequencer(state: Cord, val path: List[String], protected val
   override def getUriRepr(aValue: _root_.java.net.URI) = mapString(aValue.toString())
   override def getUuidRepr(aValue: _root_.java.util.UUID) = mapUuid(aValue)
   
-  protected override def insertWarpSequencer(ident: String, dematerializer: WarpSequencer[DimensionCord]) =
-    addPart(ident, dematerializer.dematerialize.manifestation)
+  protected override def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[DimensionCord]) =
+    addPart(ident, warpSequencer.dematerialize.manifestation)
 
   def addPart(ident: String, part: Cord): ToJsonCordWarpSequencer = {
     val fieldCord = '\"' + ident + "\":"

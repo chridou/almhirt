@@ -32,14 +32,14 @@ class UnsafeRematerializerFactoryRegistry extends HasRematerializerFactories {
       case None =>
         for {
           entry <- channelregistry.get(channel)
-          dematerializer <- entry.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[RematerializerFactory[RiftDimension]]
+          warpSequencer <- entry.get(dimensionIdent)
+        } yield warpSequencer.asInstanceOf[RematerializerFactory[RiftDimension]]
       case Some(toolGroup) =>
         for {
           toolentries <- toolregistry.get(toolGroup)
           channelEntries <- toolentries.get(channel)
-          dematerializer <- channelEntries.get(dimensionIdent)
-        } yield dematerializer.asInstanceOf[RematerializerFactory[RiftDimension]]
+          warpSequencer <- channelEntries.get(dimensionIdent)
+        } yield warpSequencer.asInstanceOf[RematerializerFactory[RiftDimension]]
     })
   }
 }

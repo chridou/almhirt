@@ -1,4 +1,4 @@
-//package riftwarp.impl.dematerializers
+//package riftwarp.impl.warpSequencers
 //
 //import language.higherKinds
 //
@@ -18,8 +18,8 @@
 //
 //  override def dematerialize: DimensionRawMap = DimensionRawMap(state)
 //
-//  protected override def insertWarpSequencer(ident: String, dematerializer: WarpSequencer[DimensionRawMap]) =
-//    addValue(ident, dematerializer.dematerialize.manifestation)
+//  protected override def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[DimensionRawMap]) =
+//    addValue(ident, warpSequencer.dematerialize.manifestation)
 //
 //  protected def addValue(ident: String, aValue: Any): ToMapWarpSequencer =
 //    (ToMapWarpSequencer(state + (ident -> aValue), path, divertBlob))
@@ -115,8 +115,8 @@
 //        val validations =
 //          aMap.toList.map {
 //            case (a, b) =>
-//              decomposer.decompose(b)(spawnNew("[" + a.toString + "]" :: ident :: path)).map(dematerializer =>
-//                (a, dematerializer.dematerialize.manifestation))
+//              decomposer.decompose(b)(spawnNew("[" + a.toString + "]" :: ident :: path)).map(warpSequencer =>
+//                (a, warpSequencer.dematerialize.manifestation))
 //          }.map(x => x.toAgg)
 //        val sequenced = validations.sequence
 //        sequenced.map(_.toMap).map(x =>

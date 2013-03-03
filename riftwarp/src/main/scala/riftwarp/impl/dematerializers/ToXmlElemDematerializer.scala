@@ -1,4 +1,4 @@
-//package riftwarp.impl.dematerializers
+//package riftwarp.impl.warpSequencers
 //
 //import language.higherKinds
 //
@@ -94,8 +94,8 @@
 //
 //  private def wrapComplexElem(ident: String, complex: Elem) = Elem(null, ident, Null, TopScope, true, complex)
 //
-//  protected override def insertWarpSequencer(ident: String, dematerializer: WarpSequencer[DimensionXmlElem]) = {
-//    addElem(wrapComplexElem(ident, dematerializer.dematerialize.manifestation))
+//  protected override def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[DimensionXmlElem]) = {
+//    addElem(wrapComplexElem(ident, warpSequencer.dematerialize.manifestation))
 //  }
 //
 //  protected def spawnNew(path: List[String]): ToXmlElemWarpSequencer =
