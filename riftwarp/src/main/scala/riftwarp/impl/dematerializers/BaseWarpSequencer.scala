@@ -27,7 +27,8 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
 
   protected def getDematerializedBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]] =
     divertBlob(aValue, blobIdentifier).flatMap(blob =>
-      blob.decompose(spawnNew()))
+      blob.decompose(spawnNew())).map(sequencer =>
+      insertWarpSequencer(ident, sequencer))
 
   protected def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[TDimension]): WarpSequencer[TDimension]
 
@@ -61,10 +62,14 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
 
   override def addUuid(ident: String, aValue: _root_.java.util.UUID): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getUuidRepr(aValue))
 
-  override def addBlob(ident: String, what: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]] = getDematerializedBlob(ident, what, blobIdentifier)
-  override def addBlob(ident: String, what: Array[Byte]): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, RiftBlobIdentifierSimple(ident))
-  override def addBlob(ident: String, what: Array[Byte], name: String): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, RiftBlobIdentifierWithName(ident, name))
-  override def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, String]): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, RiftBlobIdentifierWithArgs(ident, identifiers))
+  override def addBlob(ident: String, what: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]] =
+    getDematerializedBlob(ident, what, blobIdentifier)
+  override def addBlob(ident: String, what: Array[Byte]): AlmValidation[WarpSequencer[TDimension]] =
+    addBlob(ident, what, RiftBlobIdentifierSimple(ident))
+  override def addBlob(ident: String, what: Array[Byte], name: String): AlmValidation[WarpSequencer[TDimension]] =
+    addBlob(ident, what, RiftBlobIdentifierWithName(ident, name))
+  override def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, String]): AlmValidation[WarpSequencer[TDimension]] =
+    addBlob(ident, what, RiftBlobIdentifierWithArgs(ident, identifiers))
 
   override def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))
@@ -75,28 +80,28 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
   override def addComplexByTag[A <: AnyRef](ident: String, what: A)(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getComplexByTagRepr(what, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 
-  override def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] = 
+  override def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getIterableAllWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))
 
   override def addIterableStrict[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getIterableStrictRepr(what, riftDesc, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 
-  def addIterableOfComplex[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = 
+  def addIterableOfComplex[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getIterableOfComplexRepr(what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
 
   override def addIterableOfPrimitives[A, Coll](ident: String, what: IterableLike[A, Coll])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getIterableOfPrimitivesRepr(what).map(addReprValue(ident, _))
 
-  override def addIterable[A, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = 
+  override def addIterable[A, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getIterableRepr(what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
 
   override def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A, B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getMapAllWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))
 
   override def addMapStrict[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], riftDesc: Option[RiftDescriptor])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[WarpSequencer[TDimension]] =
-    dematerializer.getMapStrictRepr(what, riftDesc, spawnNew)(implicitly[ClassTag[A]], implicitly[ClassTag[B]],hasDecomposers).map(addReprValue(ident, _))
- 
-  override def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] = 
+    dematerializer.getMapStrictRepr(what, riftDesc, spawnNew)(implicitly[ClassTag[A]], implicitly[ClassTag[B]], hasDecomposers).map(addReprValue(ident, _))
+
+  override def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getMapOfComplexRepr(what, backupRiftDescriptor, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 
   override def addMapOfPrimitives[A, B](ident: String, what: scala.collection.Map[A, B])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[WarpSequencer[TDimension]] =
