@@ -1,6 +1,7 @@
 package almhirt.domain
 
 import java.util.UUID
+import scalaz._
 import org.joda.time.DateTime
 
 trait InvoiceEvent extends DomainEvent
@@ -21,6 +22,8 @@ case class DraftInvoice(ref: AggregateRootRef, total: BigDecimal) extends Invoic
     case InvoiceSent(header) => SentInvoice(ref.inc, total)
   }
 
+  protected def updateRef(newRef: AggregateRootRef):DraftInvoice = this.copy(ref = newRef) 
+  
 }
 
 case class SentInvoice(ref: AggregateRootRef, total: BigDecimal) extends Invoice {
@@ -29,6 +32,9 @@ case class SentInvoice(ref: AggregateRootRef, total: BigDecimal) extends Invoice
   private def transitionToPaid: PartialFunction[InvoiceEvent, PaidInvoice] = {
     case InvoicePaid(_) => PaidInvoice(ref.inc, total)
   }
+
+  protected def updateRef(newRef: AggregateRootRef):SentInvoice = this.copy(ref = newRef) 
+
 }
 
 case class PaidInvoice(ref: AggregateRootRef, total: BigDecimal) extends Invoice {
@@ -37,6 +43,9 @@ case class PaidInvoice(ref: AggregateRootRef, total: BigDecimal) extends Invoice
   private def transitionToDraft: PartialFunction[InvoiceEvent, DraftInvoice] = {
     case InvoiceReopened(_) => DraftInvoice(ref.inc, total)
   }
+  
+  protected def updateRef(newRef: AggregateRootRef):PaidInvoice = this.copy(ref = newRef) 
+  
 }
 
 class InheritanceAggregateRootSpecs {

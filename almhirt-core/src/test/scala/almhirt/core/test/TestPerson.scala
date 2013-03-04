@@ -16,6 +16,8 @@ case class TestPerson(ref: AggregateRootRef, name: String, address: Option[Strin
     case TestPersonMoved(_, newAddress) => copy(address = Some(newAddress), ref = this.ref.inc)
   }
 
+  protected def updateRef(newRef: AggregateRootRef):TestPerson = this.copy(ref = newRef) 
+  
   def changeName(newName: String)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestPerson, TestPersonEvent] = {
     if (newName.isEmpty)
       reject("Name must not be empty")

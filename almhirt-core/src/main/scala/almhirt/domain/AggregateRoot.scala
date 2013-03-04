@@ -81,7 +81,13 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
     else
       event.success
   }
+  
+  protected def updateRef(newRef: AggregateRootRef):AR 
+  def set[T](lens: Lens[AR, T], newVal: T): AR =
+    lens.set(updateRef(ref.inc), newVal)
 
+  def modify[T](lens: Lens[AR, T], modify: T => T): AR =
+    lens.mod(modify, updateRef(ref.inc))
 }
 
 trait AddsUpdateToAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends UpdatesAggregateRoot[AR, Event] { ar: AggregateRootWithHandlers[AR, Event] =>
@@ -91,5 +97,8 @@ trait AddsUpdateToAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainE
    * @param event The event to apply the standard handler to
    */
   protected def update(event: Event): UpdateRecorder[AR, Event] = update(event, handlers)
+  
+  
+  
 }
 
