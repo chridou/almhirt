@@ -19,9 +19,9 @@ package object riftwarp {
   implicit def uuid2RiftDescriptor(uuid: java.util.UUID): RiftDescriptor = RiftDescriptor(uuid.toString())
   implicit def long2RiftDescriptor(id: Long): RiftDescriptor = RiftDescriptor(id.toString())
   
-  implicit def string2DimensionString(str: String): DimensionString = DimensionString(str)
-  implicit def cord2DimensionCord(cord: scalaz.Cord): DimensionCord = DimensionCord(cord)
-  implicit def arrayByte2DimensionBinary(array: Array[Byte]): DimensionBinary = DimensionBinary(array)
+//  implicit def string2DimensionString(str: String): DimensionString = DimensionString(str)
+//  implicit def cord2DimensionCord(cord: scalaz.Cord): DimensionCord = DimensionCord(cord)
+//  implicit def arrayByte2DimensionBinary(array: Array[Byte]): DimensionBinary = DimensionBinary(array)
   
   object funs {
     import riftwarp.components._

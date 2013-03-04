@@ -11,8 +11,9 @@ import almhirt.common._
 import riftwarp._
 import riftwarp.components._
 
-class ToJsonCordWarpSequencer(state: Cord, protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers) extends ToCordWarpSequencer(RiftJson(), ToolGroup.StdLib, ToJsonCordDematerializer, hasDecomposers) with NoneIsHandledUnified[DimensionCord] {
+class ToJsonCordWarpSequencer(state: Cord, protected val divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers) extends ToCordWarpSequencer(RiftJson(), ToolGroup.StdLib, hasDecomposers) with NoneIsHandledUnified[DimensionCord] {
   private val nullCord = Cord("null")
+  val dematerializer = ToJsonCordDematerializer
   override def dematerialize = DimensionCord(('{' -: state :- '}'))
   
   protected def noneHandler(ident: String): ToJsonCordWarpSequencer = addPart(ident, nullCord)
@@ -43,7 +44,7 @@ object ToJsonCordWarpSequencer extends WarpSequencerFactory[DimensionCord] {
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
   def apply(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = apply(Cord(""), divertBlob)
-  def apply(state: Cord, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = apply(state, divertBlob)
+  def apply(state: Cord, divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = new ToJsonCordWarpSequencer(state, divertBlob)
   def createWarpSequencer(divertBlob: BlobDivert)(implicit hasDecomposers: HasDecomposers): AlmValidation[ToJsonCordWarpSequencer] =
     apply(divertBlob).success
 }

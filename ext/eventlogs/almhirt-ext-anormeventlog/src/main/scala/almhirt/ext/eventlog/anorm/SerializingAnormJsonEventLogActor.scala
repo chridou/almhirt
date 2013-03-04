@@ -80,7 +80,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
           str.flatMap(x =>
-            riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
+            riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(DimensionString(x)))
         }.map(_.toAgg).toList
       payloadsV.sequence
     }
@@ -94,7 +94,7 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
         cmd().map { row =>
           val str = inTryCatch { row[String]("payload") }
           str.flatMap(x =>
-            riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(x))
+            riftWarp.receiveFromWarp[DimensionString, DomainEvent](RiftJson())(DimensionString(x)))
         }.map(_.toAgg).toList
       payloadsV.sequence
     }

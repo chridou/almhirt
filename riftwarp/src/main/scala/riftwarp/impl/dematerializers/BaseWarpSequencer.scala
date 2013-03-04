@@ -13,7 +13,8 @@ import riftwarp.ma.HasFunctionObjects
 /**
  * Does not implement the up most '...Optional' methods, because they might differ in behaviour.
  */
-abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], dematerializer : Dematerializer[TDimension], hasDecomposers: HasDecomposers) extends WarpSequencer[TDimension] {
+abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomposers: HasDecomposers) extends WarpSequencer[TDimension] {
+  def dematerializer: Dematerializer[TDimension]
   type ValueRepr = TDimension#Under
   protected def divertBlob: BlobDivert
   /**
@@ -108,10 +109,10 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
     dematerializer.getMapLiberateRepr(what, backupRiftDescriptor, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 }
 
-abstract class ToStringWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, dematerializer : Dematerializer[DimensionString], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionString](classOf[DimensionCord], dematerializer, hasDecomposers)
+abstract class ToStringWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionString](classOf[DimensionCord], hasDecomposers)
 
-abstract class ToCordWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, dematerializer : Dematerializer[DimensionCord], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionCord](classOf[DimensionCord], dematerializer, hasDecomposers)
+abstract class ToCordWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionCord](classOf[DimensionCord], hasDecomposers)
 
-abstract class ToBinaryWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, dematerializer : Dematerializer[DimensionBinary], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionBinary](classOf[DimensionBinary], dematerializer, hasDecomposers)
+abstract class ToBinaryWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionBinary](classOf[DimensionBinary], hasDecomposers)
 
-abstract class ToRawMapWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, dematerializer : Dematerializer[DimensionRawMap], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionRawMap](classOf[DimensionRawMap], dematerializer, hasDecomposers)
+abstract class ToRawMapWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionRawMap](classOf[DimensionRawMap], hasDecomposers)
