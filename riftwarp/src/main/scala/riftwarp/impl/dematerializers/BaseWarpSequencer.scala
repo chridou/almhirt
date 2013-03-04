@@ -1,6 +1,5 @@
-package riftwarp.impl.warpSequencers
+package riftwarp.impl.dematerializers
 
-import language.higherKinds
 import scala.collection.IterableLike
 import scala.reflect.ClassTag
 import scalaz._, Scalaz._
@@ -14,26 +13,20 @@ import riftwarp.ma.HasFunctionObjects
 /**
  * Does not implement the up most '...Optional' methods, because they might differ in behaviour.
  */
-abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomposers: HasDecomposers) extends WarpSequencer[TDimension] {
+abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], dematerializer : Dematerializer[TDimension], hasDecomposers: HasDecomposers) extends WarpSequencer[TDimension] {
   type ValueRepr = TDimension#Under
   protected def divertBlob: BlobDivert
-  protected def spawnNew(ident: String): WarpSequencer[TDimension] = spawnNew(ident :: path)
   /**
    * Creates a new instance of a warpSequencer. It should respect divertBlob when creating the new instance.
    *
    */
-  protected def spawnNew(path: List[String]): WarpSequencer[TDimension]
+  protected def spawnNew(): WarpSequencer[TDimension]
 
-  protected def valueReprToDim(repr: ValueRepr): TDimension
-  protected def dimToReprValue(dim: TDimension): ValueRepr
   protected def addReprValue(ident: String, value: ValueRepr): WarpSequencer[TDimension]
-  protected def foldReprs(elems: Iterable[ValueRepr]): ValueRepr
-  protected def getPrimitiveToRepr[A](implicit tag: ClassTag[A]): AlmValidation[(A => ValueRepr)]
-  protected def getAnyPrimitiveToRepr(what: Any): AlmValidation[(Any => ValueRepr)]
 
   protected def getDematerializedBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]] =
     divertBlob(aValue, blobIdentifier).flatMap(blob =>
-      blob.decompose(spawnNew(ident)))
+      blob.decompose(spawnNew()))
 
   protected def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[TDimension]): WarpSequencer[TDimension]
 
@@ -44,159 +37,81 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
     hasDecomposers.getDecomposer[T]().flatMap(decomposer =>
       includeDirect(what, decomposer))
 
-  def getStringRepr(aValue: String): ValueRepr
+  override def addString(ident: String, aValue: String): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getStringRepr(aValue))
 
-  def getBooleanRepr(aValue: Boolean): ValueRepr
+  override def addBoolean(ident: String, aValue: Boolean): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getBooleanRepr(aValue))
 
-  def getByteRepr(aValue: Byte): ValueRepr
-  def getIntRepr(aValue: Int): ValueRepr
-  def getLongRepr(aValue: Long): ValueRepr
-  def getBigIntRepr(aValue: BigInt): ValueRepr
+  override def addByte(ident: String, aValue: Byte): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getByteRepr(aValue))
+  override def addInt(ident: String, aValue: Int): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getIntRepr(aValue))
+  override def addLong(ident: String, aValue: Long): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getLongRepr(aValue))
+  override def addBigInt(ident: String, aValue: BigInt): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getBigIntRepr(aValue))
 
-  def getFloatRepr(aValue: Float): ValueRepr
-  def getDoubleRepr(aValue: Double): ValueRepr
-  def getBigDecimalRepr(aValue: BigDecimal): ValueRepr
+  override def addFloat(ident: String, aValue: Float): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getFloatRepr(aValue))
+  override def addDouble(ident: String, aValue: Double): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getDoubleRepr(aValue))
+  override def addBigDecimal(ident: String, aValue: BigDecimal): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getBigDecimalRepr(aValue))
 
-  def getByteArrayRepr(aValue: Array[Byte]): ValueRepr
-  def getBase64EncodedByteArrayRepr(aValue: Array[Byte]): ValueRepr
-  def getByteArrayBlobEncodedRepr(aValue: Array[Byte]): ValueRepr
+  override def addByteArray(ident: String, aValue: Array[Byte]): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getByteArrayRepr(aValue))
+  override def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getBase64EncodedByteArrayRepr(aValue))
+  override def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getByteArrayBlobEncodedRepr(aValue))
 
-  def getDateTimeRepr(aValue: org.joda.time.DateTime): ValueRepr
+  override def addDateTime(ident: String, aValue: org.joda.time.DateTime): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getDateTimeRepr(aValue))
 
-  def getUriRepr(aValue: _root_.java.net.URI): ValueRepr
+  override def addUri(ident: String, aValue: _root_.java.net.URI): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getUriRepr(aValue))
 
-  def getUuidRepr(aValue: _root_.java.util.UUID): ValueRepr
-
-
-  override def addString(ident: String, aValue: String): WarpSequencer[TDimension] = addReprValue(ident, getStringRepr(aValue))
-
-  override def addBoolean(ident: String, aValue: Boolean): WarpSequencer[TDimension] = addReprValue(ident, getBooleanRepr(aValue))
-
-  override def addByte(ident: String, aValue: Byte): WarpSequencer[TDimension] = addReprValue(ident, getByteRepr(aValue))
-  override def addInt(ident: String, aValue: Int): WarpSequencer[TDimension] = addReprValue(ident, getIntRepr(aValue))
-  override def addLong(ident: String, aValue: Long): WarpSequencer[TDimension] = addReprValue(ident, getLongRepr(aValue))
-  override def addBigInt(ident: String, aValue: BigInt): WarpSequencer[TDimension] = addReprValue(ident, getBigIntRepr(aValue))
-
-  override def addFloat(ident: String, aValue: Float): WarpSequencer[TDimension] = addReprValue(ident, getFloatRepr(aValue))
-  override def addDouble(ident: String, aValue: Double): WarpSequencer[TDimension] = addReprValue(ident, getDoubleRepr(aValue))
-  override def addBigDecimal(ident: String, aValue: BigDecimal): WarpSequencer[TDimension] = addReprValue(ident, getBigDecimalRepr(aValue))
-
-  override def addByteArray(ident: String, aValue: Array[Byte]): WarpSequencer[TDimension] = addReprValue(ident, getByteArrayRepr(aValue))
-  override def addBase64EncodedByteArray(ident: String, aValue: Array[Byte]): WarpSequencer[TDimension] = addReprValue(ident, getBase64EncodedByteArrayRepr(aValue))
-  override def addByteArrayBlobEncoded(ident: String, aValue: Array[Byte]): WarpSequencer[TDimension] = addReprValue(ident, getByteArrayBlobEncodedRepr(aValue))
-
-  override def addDateTime(ident: String, aValue: org.joda.time.DateTime): WarpSequencer[TDimension] = addReprValue(ident, getDateTimeRepr(aValue))
-
-  override def addUri(ident: String, aValue: _root_.java.net.URI): WarpSequencer[TDimension] = addReprValue(ident, getUriRepr(aValue))
-
-  override def addUuid(ident: String, aValue: _root_.java.util.UUID): WarpSequencer[TDimension] = addReprValue(ident, getUuidRepr(aValue))
+  override def addUuid(ident: String, aValue: _root_.java.util.UUID): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getUuidRepr(aValue))
 
   override def addBlob(ident: String, what: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]] = getDematerializedBlob(ident, what, blobIdentifier)
-  override def addBlob(ident: String, what: Array[Byte]): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, PropertyPath(ident :: path))
-  override def addBlob(ident: String, what: Array[Byte], name: String): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, PropertyPathAndIdentifier(ident :: path, name))
-  override def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, String]): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, PropertyPathAndIdentifiers(ident :: path, identifiers))
+  override def addBlob(ident: String, what: Array[Byte]): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, RiftBlobIdentifierSimple(ident))
+  override def addBlob(ident: String, what: Array[Byte], name: String): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, RiftBlobIdentifierWithName(ident, name))
+  override def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, String]): AlmValidation[WarpSequencer[TDimension]] = addBlob(ident, what, RiftBlobIdentifierWithArgs(ident, identifiers))
 
   override def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] =
-    decomposes.decompose(what, spawnNew(ident)).map(dematerializedComplex =>
-      insertWarpSequencer(ident, dematerializedComplex))
+    dematerializer.getWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))
 
   override def addComplex[A <: AnyRef](ident: String, what: A, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
-    hasDecomposers.getDecomposerFor(what, backupRiftDescriptor).flatMap(decomposer => addWith[A](ident, what, decomposer))
+    dematerializer.getComplexRepr(what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
 
   override def addComplexByTag[A <: AnyRef](ident: String, what: A)(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
-    hasDecomposers.getDecomposer[A]().flatMap(decomposer => addWith[A](ident, what, decomposer))
+    dematerializer.getComplexByTagRepr(what, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 
-  override def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] = {
-    val mappedV = what.toList.map(x => decomposes.decompose(x, spawnNew(ident + "[?]" :: path)).toAgg)
-    mappedV.sequence.map(dematerializedItems =>
-      addReprValue(ident, foldReprs(dematerializedItems.map(demat => dimToReprValue(demat.dematerialize)))))
-  }
+  override def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] = 
+    dematerializer.getIterableAllWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))
 
   override def addIterableStrict[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
-    hasDecomposers.getDecomposerByDescriptorAndThenByTag(riftDesc).flatMap(decomposer => addIterableAllWith(ident, what, decomposer))
+    dematerializer.getIterableStrictRepr(what, riftDesc, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 
-  def addIterableOfComplex[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = {
-    val decomposes = new Decomposes[A] {
-      override def decompose[TTDimension <: RiftDimension](elem: A, into: WarpSequencer[TTDimension]): AlmValidation[WarpSequencer[TTDimension]] =
-        hasDecomposers.getDecomposerFor(elem, backupRiftDescriptor).flatMap(_.decompose(elem, into))
-    }
-    addIterableAllWith(ident, what, decomposes)
-  }
+  def addIterableOfComplex[A <: AnyRef, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = 
+    dematerializer.getIterableOfComplexRepr(what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
 
   override def addIterableOfPrimitives[A, Coll](ident: String, what: IterableLike[A, Coll])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
-    getPrimitiveToRepr[A](tag).map(primToRepr =>
-      addReprValue(ident, foldReprs(what.toList.map(elem => primToRepr(elem)))))
+    dematerializer.getIterableOfPrimitivesRepr(what).map(addReprValue(ident, _))
 
-  override def addIterable[A, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = {
-    val mappedV = what.toList.map(x => getReprForPrimitiveOrComplex(ident, x, backupRiftDescriptor).toAgg)
-    val sequenced = mappedV.sequence
-    sequenced.map(elems => addReprValue(ident, foldReprs(elems)))
-  }
+  override def addIterable[A, Coll](ident: String, what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = 
+    dematerializer.getIterableRepr(what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
 
   override def addMapAllWith[A, B](ident: String, what: scala.collection.Map[A, B], decomposes: Decomposes[B])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
-    getPrimitiveToRepr[A](tag).flatMap { primMapper =>
-      val itemsV =
-        what.toSeq.map {
-          case (a, b) =>
-            decomposes.decompose[TDimension](b, spawnNew(ident + s"[${a.toString}]")).map(demat =>
-              (primMapper(a), dimToReprValue(demat.dematerialize))).toAgg
-        }
-      val items = itemsV.toList.sequence.map(_.map { case (reprA, reprB) => foldReprs(reprA :: reprB :: Nil) })
-      items.map(tuples => addReprValue(ident, foldReprs(tuples)))
-    }
+    dematerializer.getMapAllWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))
 
   override def addMapStrict[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], riftDesc: Option[RiftDescriptor])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[WarpSequencer[TDimension]] =
-    hasDecomposers.getDecomposerByDescriptorAndThenByTag(riftDesc).flatMap(decomposer =>
-      addMapAllWith(ident, what, decomposer))
-
-  override def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] = {
-    val decomposes = new Decomposes[B] {
-      override def decompose[TTDimension <: RiftDimension](elem: B, into: WarpSequencer[TTDimension]): AlmValidation[WarpSequencer[TTDimension]] =
-        hasDecomposers.getDecomposerFor(elem, backupRiftDescriptor).flatMap(_.decompose(elem, into))
-    }
-    addMapAllWith[A, B](ident, what, decomposes)
-  }
+    dematerializer.getMapStrictRepr(what, riftDesc, spawnNew)(implicitly[ClassTag[A]], implicitly[ClassTag[B]],hasDecomposers).map(addReprValue(ident, _))
+ 
+  override def addMapOfComplex[A, B <: AnyRef](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] = 
+    dematerializer.getMapOfComplexRepr(what, backupRiftDescriptor, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 
   override def addMapOfPrimitives[A, B](ident: String, what: scala.collection.Map[A, B])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[WarpSequencer[TDimension]] =
-    for {
-      primMapperA <- getPrimitiveToRepr[A](tagA)
-      primMapperB <- getPrimitiveToRepr[B](tagB)
-    } yield addReprValue(ident, foldReprs(what.map { case (a, b) => foldReprs(primMapperA(a) :: primMapperB(b) :: Nil) }))
+    dematerializer.getMapOfPrimitivesRepr(what).map(addReprValue(ident, _))
 
   override def addMap[A, B](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
-    getPrimitiveToRepr[A](tag).flatMap { keyMapper =>
-      val itemsV = what.map {
-        case (a, b) => getReprForPrimitiveOrComplex(ident, b, backupRiftDescriptor).map(valueRepr =>
-          foldReprs(keyMapper(a) :: valueRepr :: Nil)).toAgg
-      }
-      itemsV.toList.sequence.map(items => addReprValue(ident, foldReprs(items)))
-    }
+    dematerializer.getMapRepr(what, backupRiftDescriptor, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 
   override def addMapLiberate[A, B](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
-    getPrimitiveToRepr[A](tag).map { keyMapper =>
-      val items = what.map {
-        case (a, b) => getReprForPrimitiveOrComplex(ident, b, backupRiftDescriptor).map(valueRepr =>
-          foldReprs(keyMapper(a) :: valueRepr :: Nil)).toOption
-      }.flatten
-      addReprValue(ident, foldReprs(items))
-    }
-
-  private def getReprForPrimitiveOrComplex(ident: String, what: Any, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[ValueRepr] =
-    getAnyPrimitiveToRepr(what).fold(
-      fail =>
-        what match {
-          case ar: AnyRef => hasDecomposers.getRawDecomposerFor(ar, backupRiftDescriptor).flatMap(decomposer =>
-            decomposer.decomposeRaw[TDimension](ar, spawnNew(ident + "[?]"))).map(demat => dimToReprValue(demat.dematerialize))
-          case x => UnspecifiedProblem(s"'${x.getClass.getName()}' is not a primitive type nor an AnyRef").failure
-        },
-      succ => succ(what).success)
-
+    dematerializer.getMapLiberateRepr(what, backupRiftDescriptor, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 }
 
-abstract class ToStringWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionString](classOf[DimensionCord], hasDecomposers)
+abstract class ToStringWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, dematerializer : Dematerializer[DimensionString], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionString](classOf[DimensionCord], dematerializer, hasDecomposers)
 
-abstract class ToCordWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionCord](classOf[DimensionCord], hasDecomposers)
+abstract class ToCordWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, dematerializer : Dematerializer[DimensionCord], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionCord](classOf[DimensionCord], dematerializer, hasDecomposers)
 
-abstract class ToBinaryWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionBinary](classOf[DimensionCord], hasDecomposers)
+abstract class ToBinaryWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, dematerializer : Dematerializer[DimensionBinary], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionBinary](classOf[DimensionBinary], dematerializer, hasDecomposers)
 
-abstract class ToRawMapWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionRawMap](classOf[DimensionCord], hasDecomposers)
+abstract class ToRawMapWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, dematerializer : Dematerializer[DimensionRawMap], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionRawMap](classOf[DimensionRawMap], dematerializer, hasDecomposers)

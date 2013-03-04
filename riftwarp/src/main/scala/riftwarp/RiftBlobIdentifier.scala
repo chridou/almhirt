@@ -1,9 +1,9 @@
 package riftwarp
 
 sealed trait RiftBlobIdentifier {
-  def path: List[String]
+  def ident: String
 }
 
-case class PropertyPath(path: List[String]) extends RiftBlobIdentifier
-case class PropertyPathAndIdentifier(path: List[String], name: String) extends RiftBlobIdentifier
-case class PropertyPathAndIdentifiers(path: List[String], name: Map[String,String]) extends RiftBlobIdentifier
+case class RiftBlobIdentifierSimple(ident: String) extends RiftBlobIdentifier
+case class RiftBlobIdentifierWithName(ident: String, name: String) extends RiftBlobIdentifier
+case class RiftBlobIdentifierWithArgs(ident: String, args: Map[String,String]) extends RiftBlobIdentifier

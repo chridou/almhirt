@@ -66,7 +66,7 @@ object RiftWarp {
 
   private def initializeWithDefaults(riftWarp: RiftWarp) {
     //riftWarp.toolShed.addWarpSequencerFactory(impl.warpSequencers.ToMapWarpSequencer)
-    riftWarp.toolShed.addWarpSequencerFactory(impl.warpSequencers.ToJsonCordWarpSequencer)
+    riftWarp.toolShed.addWarpSequencerFactory(impl.dematerializers.ToJsonCordWarpSequencer)
     //riftWarp.toolShed.addWarpSequencerFactory(impl.warpSequencers.ToXmlElemWarpSequencer)
 
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromMapRematerializer)

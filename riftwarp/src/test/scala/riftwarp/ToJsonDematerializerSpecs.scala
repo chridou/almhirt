@@ -7,7 +7,7 @@ import org.joda.time.DateTime
 import scalaz._, Scalaz._
 import almhirt.syntax.almvalidation._
 import riftwarp._
-import riftwarp.impl.warpSequencers.ToJsonCordWarpSequencer
+import riftwarp.impl.dematerializers.ToJsonCordWarpSequencer
 import riftwarp.components.HasRiftDescriptor
 
 class ToJsonWarpSequencerSpecs extends WordSpec with ShouldMatchers {

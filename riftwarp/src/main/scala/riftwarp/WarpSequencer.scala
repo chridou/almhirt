@@ -15,7 +15,6 @@ trait RawWarpSequencer {
   def tDimension: Class[_ <: RiftDimension]
   def toolGroup: ToolGroup
   /** Path to the root */
-  def path: List[String]
   def dematerializeRaw: RiftDimension
 }
 
