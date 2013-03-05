@@ -55,7 +55,6 @@ trait CommonBuild {
   	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
-	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest
   )
