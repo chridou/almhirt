@@ -50,8 +50,6 @@ trait AlmValidationOps0 extends Ops[String] {
     parseDateTimeAlm(self)
   def toUuidAlm(): AlmValidation[UUID] =  
     parseUuidAlm(self)
-  def toBytesFromBase64Alm(): AlmValidation[Array[Byte]] =  
-    parseBase64Alm(self)
   def notEmptyAlm(): AlmValidation[String] =  
     notEmpty(self)
   def notEmptyOrWhitespaceAlm(): AlmValidation[String] =  

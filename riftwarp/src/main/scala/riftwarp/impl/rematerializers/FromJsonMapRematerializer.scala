@@ -122,7 +122,7 @@ class FromJsonMapRematerializer(jsonMap: Map[String, Any], protected val fetchBl
   def tryGetByteArray(ident: String) =
     option.cata(get(ident))(almCast[List[Double]](_).map(x => Some(x.toArray.map(_.toByte))), None.success)
   def tryGetByteArrayFromBase64Encoding(ident: String) =
-    option.cata(get(ident))(almCast[String](_).flatMap(parseBase64Alm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
+    option.cata(get(ident))(almCast[String](_).flatMap(ParseFuns.parseBase64Alm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)
   def tryGetByteArrayFromBlobEncoding(ident: String) = tryGetByteArrayFromBase64Encoding(ident)
 
   def tryGetDateTime(ident: String) = option.cata(get(ident))(almCast[String](_).flatMap(parseDateTimeAlm(_).withIdentifierOnFailure(ident)).map(Some(_)), None.success)

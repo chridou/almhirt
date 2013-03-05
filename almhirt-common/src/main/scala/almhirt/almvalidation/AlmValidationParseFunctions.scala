@@ -113,13 +113,6 @@ trait AlmValidationParseFunctions {
       case err: Exception => BadDataProblem("Not all are valid bytes:".format(toParse)).failure
     }
 
-  def parseBase64Alm(toParse: String): AlmValidation[Array[Byte]] =
-    try {
-      org.apache.commons.codec.binary.Base64.decodeBase64(toParse).success
-    } catch {
-      case err: Exception => BadDataProblem("Not a Base64 encoded String".format(toParse)).failure[Array[Byte]]
-    }
-
   def parseXmlAlm(toParse: String): AlmValidation[scala.xml.Elem] =
     try {
       scala.xml.XML.loadString(toParse).success
@@ -153,9 +146,6 @@ trait AlmValidationParseFunctions {
 
   def tryParseBooleanAlm(toParse: String): AlmValidation[Option[Boolean]] =
     emptyStringIsNone(toParse, x => parseBooleanAlm(x))
-
-  def tryParseBase64Alm(toParse: String): AlmValidation[Option[Array[Byte]]] =
-    emptyStringIsNone(toParse, x => parseBase64Alm(x))
 
   def notEmpty(toTest: String): AlmValidation[String] =
     if (toTest.isEmpty) BadDataProblem("String must not be empty").failure else toTest.success

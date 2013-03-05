@@ -122,7 +122,7 @@ class FromXmlElemRematerializer(stillInWarp: Elem, protected val fetchBlobData: 
   def tryGetBigDecimal(ident: String) = tryGetElemThenMapForPrimitive(ident, txt => parseDecimalAlm(txt).withIdentifierOnFailure(ident))
 
   def tryGetByteArray(ident: String) = tryGetElemThenMapForPrimitive(ident, txt => parseByteArrayAlm(txt, ident))
-  def tryGetByteArrayFromBase64Encoding(ident: String) = tryGetElemThenMapForPrimitive(ident, txt => parseBase64Alm(txt).withIdentifierOnFailure(ident))
+  def tryGetByteArrayFromBase64Encoding(ident: String) = tryGetElemThenMapForPrimitive(ident, txt => ParseFuns.parseBase64Alm(txt).withIdentifierOnFailure(ident))
   def tryGetByteArrayFromBlobEncoding(ident: String) = tryGetByteArrayFromBase64Encoding(ident)
 
   def tryGetDateTime(ident: String) = tryGetElemThenMapForPrimitive(ident, txt => parseDateTimeAlm(txt).withIdentifierOnFailure(ident))
