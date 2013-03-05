@@ -65,15 +65,15 @@ object RiftWarp {
   }
 
   private def initializeWithDefaults(riftWarp: RiftWarp) {
-    //riftWarp.toolShed.addWarpSequencerFactory(impl.warpSequencers.ToMapWarpSequencer)
     riftWarp.toolShed.addWarpSequencerFactory(impl.dematerializers.ToJsonCordWarpSequencer)
+    //riftWarp.toolShed.addWarpSequencerFactory(impl.warpSequencers.ToMapWarpSequencer)
     //riftWarp.toolShed.addWarpSequencerFactory(impl.warpSequencers.ToXmlElemWarpSequencer)
 
-    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromMapRematerializer)
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonMapRematerializer)
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonStringRematerializer)
     riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonCordRematerializer)
-    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromXmlElemRematerializer)
+//    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromMapRematerializer)
+//    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromXmlElemRematerializer)
 
     riftWarp.converters.addConverter(DimensionNiceStringToString)
     riftWarp.converters.addConverter(DimensionNiceCordToCord)
