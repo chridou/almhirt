@@ -5,7 +5,7 @@ import scala.reflect.ClassTag
 import riftwarp.components.HasRecomposers
 
 trait RRematerializer[TDimension <: RiftDimension] {
-  type ValueRepr = TDimension#Under
+  type ValueRepr
   
   def stringFromRepr(value: ValueRepr): AlmValidation[String]
   def booleanFromRepr(value: ValueRepr): AlmValidation[Boolean]
@@ -23,9 +23,9 @@ trait RRematerializer[TDimension <: RiftDimension] {
   def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI]
   def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID]
 
-  def getWithFromRepr[T](value: ValueRepr, recomposes: Recomposes[T]): AlmValidation[T]
-  def getComplexByDescriptorFromRepr(value: ValueRepr, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any]
-  def getComplexWithTagFromRepr[T](value: ValueRepr, backupRiftDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T]
+  def fromRepr[T](value: ValueRepr, recomposes: Recomposes[T]): AlmValidation[T]
+  def complexByDescriptorFromRepr(value: ValueRepr, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any]
+  def complexWithTagFromRepr[T](value: ValueRepr, backupRiftDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T]
 
   def getString(from: TDimension): AlmValidation[String]
   def getBoolean(from: TDimension): AlmValidation[Boolean]
