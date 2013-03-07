@@ -27,6 +27,7 @@ case class DimensionNiceCord(manifestation: scalaz.Cord) extends CordBasedDimens
 case class DimensionBinary(manifestation: Array[Byte]) extends RiftByteArrayBasedDimension with RiftHttpDimension
 case class DimensionRawMap(manifestation: Map[String, Any]) extends RiftDimension { type Under = Map[String, Any] }
 case class DimensionStdLibJsonMap(manifestation: Map[String, Any]) extends RiftDimension{ type Under = Map[String, Any] }
+case class DimensionStdLibJson(manifestation: Any) extends RiftDimension{ type Under = Any }
 case class DimensionListAny(manifestation: List[Any]) extends RiftDimension{ type Under = List[Any] }
 case class DimensionXmlElem(manifestation: scala.xml.Elem) extends RiftDimension{ type Under = scala.xml.Elem }
 case class DimensionAny(manifestation: Any) extends RiftDimension{ type Under = Any }

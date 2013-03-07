@@ -10,8 +10,13 @@ trait RawRecomposer extends HasAlternativeRiftDescriptors {
   def recomposeRaw(from: Rematerializer): AlmValidation[AnyRef]
 }
 
+trait Recomposes[+T] {
+  def recompose(from: Rematerializer): AlmValidation[T] 
+  def recomposeAsync(from: Rematerializer)(implicit hasExecContext: HasExecutionContext): AlmFuture[T] 
+}
+
 /** atoms -> instance */
-trait Recomposer[+T <: AnyRef] extends RawRecomposer {
+trait Recomposer[+T <: AnyRef] extends Recomposes[T] with RawRecomposer {
   def recompose(from: Rematerializer): AlmValidation[T]
   def recomposeAsync(from: Rematerializer)(implicit hasExecContext: HasExecutionContext): AlmFuture[T] =
     AlmFuture { recompose(from) }
