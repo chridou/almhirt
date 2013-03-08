@@ -28,14 +28,14 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRema
   override def getUri(from: TDimension): AlmValidation[_root_.java.net.URI] = uriFromRepr(from.manifestation)
   override def getUuid(from: TDimension): AlmValidation[_root_.java.util.UUID] = uuidFromRepr(from.manifestation)
 
-  override def resequence2(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] =
-    resequence(value).flatMap(items =>{
-      val tuplesV = items.map(retuplelize2(_).toAgg).toList.sequence
+  override def resequence2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] =
+    resequenceFromRepr(value).flatMap(items =>{
+      val tuplesV = items.map(retuplelize2FromRepr(_).toAgg).toList.sequence
       tuplesV
     })
   
   override def getResequenced[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
-    resequence(value).flatMap { reprItems =>
+    resequenceFromRepr(value).flatMap { reprItems =>
       val itemsV = reprItems.toList.map(f(_).toAgg).sequence
       itemsV.map(items => {
         val builder = cbf()
@@ -45,7 +45,7 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRema
     }
 
   override def getRetuplelized2[A, B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A, B)] =
-    retuplelize2(value).flatMap(ab =>
+    retuplelize2FromRepr(value).flatMap(ab =>
       for {
         r1 <- fa(ab._1)
         r2 <- fb(ab._2)

@@ -26,10 +26,14 @@ trait RRematerializer[TDimension <: RiftDimension] {
   def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI]
   def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID]
   
-  def resequence(value: ValueRepr): AlmValidation[Traversable[ValueRepr]] 
-  def retuplelize2(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] 
-  def resequence2(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] 
+  def resequenceFromRepr(value: ValueRepr): AlmValidation[Traversable[ValueRepr]] 
+  def retuplelize2FromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] 
+  def resequence2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] 
 
+  def fromRepr[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[T]
+//  def complexByDescriptorFromRepr(value: ValueRepr, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any]
+//  def complexWithTagFromRepr[T](value: ValueRepr, backupRiftDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T]
+  
   def getResequenced[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf : CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] 
   def getRetuplelized2[A,B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A,B)] 
 
