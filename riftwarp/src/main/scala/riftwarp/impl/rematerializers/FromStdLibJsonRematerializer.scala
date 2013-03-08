@@ -2,16 +2,64 @@ package riftwarp.impl.rematerializers
 
 import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom
+import scalaz._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.funs._
 import riftwarp._
 
+private[rematerializers] object FromStdLibJsonRematerializerFuns {
+  def valueMapperFromTag[A](implicit tag: ClassTag[A]): AlmValidation[Any => AlmValidation[A]] = {
+    val clazz = tag.runtimeClass
+    if (clazz == classOf[String])
+      Success(((x: Any) => almCast[String](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.lang.String])
+      Success(((x: Any) => almCast[_root_.java.lang.String](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Boolean])
+      Success(((x: Any) => almCast[Boolean](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.lang.Boolean])
+      Success(((x: Any) => almCast[_root_.java.lang.Boolean](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Byte])
+      Success(((x: Any) => almCast[Double](x).map(_.toByte)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.lang.Byte])
+      Success(((x: Any) => almCast[Double](x).map(_.toByte)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Int])
+      Success(((x: Any) => almCast[Double](x).map(_.toInt)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.lang.Integer])
+      Success(((x: Any) => almCast[Double](x).map(_.toInt)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Long])
+      Success(((x: Any) => almCast[Double](x).map(_.toLong)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.lang.Long])
+      Success(((x: Any) => almCast[Double](x).map(_.toLong)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[BigInt])
+      Success(((x: Any) => almCast[String](x).flatMap(parseBigIntAlm(_))).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Float])
+      Success(((x: Any) => almCast[Double](x).map(_.toFloat)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.lang.Float])
+      Success(((x: Any) => almCast[Double](x).map(_.toFloat)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[Double])
+      Success(((x: Any) => almCast[Double](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.lang.Double])
+      Success(((x: Any) => almCast[Double](x)).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[BigDecimal])
+      Success(((x: Any) => almCast[String](x).flatMap(parseDecimalAlm(_))).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[org.joda.time.DateTime])
+      Success(((x: Any) => almCast[String](x).flatMap(parseDateTimeAlm(_))).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.util.UUID])
+      Success(((x: Any) => almCast[String](x).flatMap(parseUuidAlm(_))).asInstanceOf[Any => AlmValidation[A]])
+    else if (clazz == classOf[_root_.java.net.URI])
+      Success(((x: Any) => almCast[String](x).flatMap(parseUriAlm(_))).asInstanceOf[Any => AlmValidation[A]])
+    else
+      Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(clazz.getName())))
+  }
+
+//  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: ClassTag[A]): AlmValidation[Any => AlmValidation[A]] =
+//    getPrimitiveRematerializer[A](key, mA.runtimeClass)
+}
+
 class FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLibJson] {
-  
-  override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[ValueRepr => AlmValidation[T]] = ???
-  override def anyFromValue(value: ValueRepr): AlmValidation[Any] = ???
-  
+  override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[ValueRepr => AlmValidation[T]] = FromStdLibJsonRematerializerFuns.valueMapperFromTag
+  override def anyFromValue(value: ValueRepr): AlmValidation[Any] = value.success
   
   override def stringFromRepr(value: ValueRepr): AlmValidation[String] = almCast[String](value)
   override def booleanFromRepr(value: ValueRepr): AlmValidation[Boolean] = almCast[Boolean](value)
