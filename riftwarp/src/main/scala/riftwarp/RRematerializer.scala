@@ -10,6 +10,9 @@ import riftwarp.components.HasRecomposers
 trait RRematerializer[TDimension <: RiftDimension] {
   type ValueRepr
   
+  def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[ValueRepr => AlmValidation[T]]
+  def anyFromValue(value: ValueRepr): AlmValidation[Any]
+  
   def stringFromRepr(value: ValueRepr): AlmValidation[String]
   def booleanFromRepr(value: ValueRepr): AlmValidation[Boolean]
   def byteFromRepr(value: ValueRepr): AlmValidation[Byte]
@@ -30,12 +33,12 @@ trait RRematerializer[TDimension <: RiftDimension] {
   def retuplelize2FromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] 
   def resequence2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] 
 
-  def fromRepr[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[T]
+//  def fromRepr[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[T]
 //  def complexByDescriptorFromRepr(value: ValueRepr, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any]
 //  def complexWithTagFromRepr[T](value: ValueRepr, backupRiftDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T]
   
-  def getResequenced[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf : CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] 
-  def getRetuplelized2[A,B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A,B)] 
+  def resequencedMapped[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf : CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] 
+  def retuplelized2Mapped[A,B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A,B)] 
 
   def getString(from: TDimension): AlmValidation[String]
   def getBoolean(from: TDimension): AlmValidation[Boolean]

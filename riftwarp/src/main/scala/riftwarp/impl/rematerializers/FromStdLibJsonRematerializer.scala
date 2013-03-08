@@ -1,5 +1,6 @@
 package riftwarp.impl.rematerializers
 
+import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -7,6 +8,11 @@ import almhirt.almvalidation.funs._
 import riftwarp._
 
 class FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLibJson] {
+  
+  override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[ValueRepr => AlmValidation[T]] = ???
+  override def anyFromValue(value: ValueRepr): AlmValidation[Any] = ???
+  
+  
   override def stringFromRepr(value: ValueRepr): AlmValidation[String] = almCast[String](value)
   override def booleanFromRepr(value: ValueRepr): AlmValidation[Boolean] = almCast[Boolean](value)
   override def byteFromRepr(value: ValueRepr): AlmValidation[Byte] = almCast[Double](value).map(_.toByte)
@@ -26,9 +32,9 @@ class FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLi
   override def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI] = almCast[String](value).flatMap(parseUriAlm(_))
   override def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID] = almCast[String](value).flatMap(parseUuidAlm(_))
   
-  override def resequence(value: ValueRepr): AlmValidation[Iterable[ValueRepr]] = almCast[List[ValueRepr]](value)
-  override def retuplelize2(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] =
-    resequence(value).flatMap { reprItems =>
+  override def resequenceFromRepr(value: ValueRepr): AlmValidation[Iterable[ValueRepr]] = almCast[List[ValueRepr]](value)
+  override def retuplelize2FromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] =
+    resequenceFromRepr(value).flatMap { reprItems =>
       (reprItems.headOption, reprItems.tail.headOption) match {
         case (Some(a), Some(b)) => (a,b).success
         case _ => NoSuchElementProblem("Not enough items to build a tuple").failure
