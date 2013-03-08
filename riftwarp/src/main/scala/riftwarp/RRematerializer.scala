@@ -1,7 +1,10 @@
 package riftwarp
 
-import almhirt.common._
+import language.higherKinds
+
 import scala.reflect.ClassTag
+import scala.collection.generic.CanBuildFrom
+import almhirt.common._
 import riftwarp.components.HasRecomposers
 
 trait RRematerializer[TDimension <: RiftDimension] {
@@ -22,10 +25,13 @@ trait RRematerializer[TDimension <: RiftDimension] {
   def dateTimeFromRepr(value: ValueRepr): AlmValidation[org.joda.time.DateTime]
   def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI]
   def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID]
+  
+  def resequence(value: ValueRepr): AlmValidation[Traversable[ValueRepr]] 
+  def retuplelize2(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] 
+  def resequence2(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] 
 
-  def fromRepr[T](value: ValueRepr, recomposes: Recomposes[T]): AlmValidation[T]
-  def complexByDescriptorFromRepr(value: ValueRepr, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any]
-  def complexWithTagFromRepr[T](value: ValueRepr, backupRiftDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T]
+  def getResequenced[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf : CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] 
+  def getRetuplelized2[A,B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A,B)] 
 
   def getString(from: TDimension): AlmValidation[String]
   def getBoolean(from: TDimension): AlmValidation[Boolean]
@@ -42,9 +48,5 @@ trait RRematerializer[TDimension <: RiftDimension] {
   def getDateTime(from: TDimension): AlmValidation[org.joda.time.DateTime]
   def getUri(from: TDimension): AlmValidation[_root_.java.net.URI]
   def getUuid(from: TDimension): AlmValidation[_root_.java.util.UUID]
-
-  def getWith[T](from: TDimension, recomposes: Recomposes[T]): AlmValidation[T]
-  def getComplexByDescriptor(from: TDimension, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any]
-  def getComplexWithTag[T](from: TDimension, backupRiftDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T]
   
 }

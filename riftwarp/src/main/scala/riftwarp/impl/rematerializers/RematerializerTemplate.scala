@@ -1,14 +1,17 @@
 package riftwarp.impl.rematerializers
 
-import scala.reflect.ClassTag
-import almhirt.common._
-import riftwarp._
-import riftwarp.components.HasRecomposers
+import language.higherKinds
 
-abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRematerializer[TDimension]{
+import scala.collection.generic.CanBuildFrom
+import scala.reflect.ClassTag
+import scalaz._, Scalaz._
+import almhirt.common._
+import almhirt.almvalidation.kit._
+import riftwarp._
+
+abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRematerializer[TDimension] {
   type ValueRepr = TDimension#Under
 
- 
   override def getString(from: TDimension): AlmValidation[String] = stringFromRepr(from.manifestation)
   override def getBoolean(from: TDimension): AlmValidation[Boolean] = booleanFromRepr(from.manifestation)
   override def getByte(from: TDimension): AlmValidation[Byte] = byteFromRepr(from.manifestation)
@@ -25,11 +28,27 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRema
   override def getUri(from: TDimension): AlmValidation[_root_.java.net.URI] = uriFromRepr(from.manifestation)
   override def getUuid(from: TDimension): AlmValidation[_root_.java.util.UUID] = uuidFromRepr(from.manifestation)
 
-  override def getWith[T](from: TDimension, recomposes: Recomposes[T]): AlmValidation[T] = 
-    fromRepr[T](from.manifestation, recomposes: Recomposes[T])
-  override def getComplexByDescriptor(from: TDimension, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any] =
-    complexByDescriptorFromRepr(from.manifestation, riftDescriptor)
-  override def getComplexWithTag[T](from: TDimension, backupRiftDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T] =
-    complexWithTagFromRepr[T](from.manifestation, backupRiftDescriptor)
+  override def resequence2(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] =
+    resequence(value).flatMap(items =>{
+      val tuplesV = items.map(retuplelize2(_).toAgg).toList.sequence
+      tuplesV
+    })
   
+  override def getResequenced[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
+    resequence(value).flatMap { reprItems =>
+      val itemsV = reprItems.toList.map(f(_).toAgg).sequence
+      itemsV.map(items => {
+        val builder = cbf()
+        items.foreach(x => builder += x)
+        builder.result
+      })
+    }
+
+  override def getRetuplelized2[A, B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A, B)] =
+    retuplelize2(value).flatMap(ab =>
+      for {
+        r1 <- fa(ab._1)
+        r2 <- fb(ab._2)
+      } yield (r1, r2))
+
 }

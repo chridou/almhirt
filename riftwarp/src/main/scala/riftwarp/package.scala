@@ -27,4 +27,6 @@ package object riftwarp {
     import riftwarp.components._
     object hasRecomposers extends HasRecomposersFuns 
   }
+  
+  object inst extends CanBuildFroms
 }
