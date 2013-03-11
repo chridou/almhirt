@@ -47,23 +47,23 @@ object PerformedActionDecomposer extends Decomposer[PerformedAction] {
 object PerformedCreateActionRecomposer extends Recomposer[PerformedCreateAction] {
   val riftDescriptor = RiftDescriptor(classOf[PerformedCreateAction])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PerformedCreateAction] = {
-    from.getComplexType("aggRef", AggregateRootRefRecomposer).map(PerformedCreateAction.apply)
+  def recompose(from: Extractor): AlmValidation[PerformedCreateAction] = {
+    from.getWith("aggRef", AggregateRootRefRecomposer.recompose).map(PerformedCreateAction.apply)
   }
 }
 
 object PerformedUpdateActionRecomposer extends Recomposer[PerformedUpdateAction] {
   val riftDescriptor = RiftDescriptor(classOf[PerformedUpdateAction])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PerformedUpdateAction] = {
-    from.getComplexType("aggRef", AggregateRootRefRecomposer).map(PerformedUpdateAction.apply)
+  def recompose(from: Extractor): AlmValidation[PerformedUpdateAction] = {
+    from.getWith("aggRef", AggregateRootRefRecomposer.recompose).map(PerformedUpdateAction.apply)
   }
 }
 
 object PerformedUnspecifiedActionRecomposer extends Recomposer[PerformedUnspecifiedAction.type] {
   val riftDescriptor = RiftDescriptor("almhirt.util.PerformedUnspecifiedAction")
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PerformedUnspecifiedAction.type] = {
+  def recompose(from: Extractor): AlmValidation[PerformedUnspecifiedAction.type] = {
     PerformedUnspecifiedAction.success
   }
 }

@@ -24,7 +24,7 @@ object MessageGroupingDecomposer extends Decomposer[MessageGrouping] {
 object MessageGroupingRecomposer extends Recomposer[MessageGrouping] {
   val riftDescriptor = RiftDescriptor(classOf[MessageGrouping])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[MessageGrouping] = {
+  def recompose(from: Extractor): AlmValidation[MessageGrouping] = {
     (from.getUuid("groupId").toAgg |@|
       from.getInt("seq").toAgg |@|
       from.getBoolean("isLast").toAgg)(MessageGrouping.apply)
@@ -47,10 +47,10 @@ object MessageHeaderDecomposer extends Decomposer[MessageHeader] {
 object MessageHeaderRecomposer extends Recomposer[MessageHeader] {
   val riftDescriptor = RiftDescriptor(classOf[MessageHeader])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[MessageHeader] = {
+  def recompose(from: Extractor): AlmValidation[MessageHeader] = {
     (from.getUuid("id").toAgg |@|
-      from.tryGetComplexType("grouping").toAgg |@|
-      from.getMap[String, Object]("metaData").toAgg |@|
+      from.tryGetComplexByTag("grouping", None).toAgg |@|
+      from.getMap[String]("metaData", None).toAgg |@|
       from.getDateTime("timestamp").toAgg)(MessageHeader.apply)
   }
 }
@@ -69,9 +69,9 @@ object MessageDecomposer extends Decomposer[Message[AnyRef]] {
 object MessageRecomposer extends Recomposer[Message[AnyRef]] {
   val riftDescriptor = RiftDescriptor(classOf[Message[AnyRef]])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[Message[AnyRef]] = {
-    val header = from.getComplexType[MessageHeader]("header").toAgg
-    val payload = from.getComplexType[AnyRef]("payload").toAgg
+  def recompose(from: Extractor): AlmValidation[Message[AnyRef]] = {
+    val header = from.getComplexByTag[MessageHeader]("header", None).toAgg
+    val payload = from.getComplexByValueDescriptor("payload", None).toAgg
     (header |@| payload)(Message(_, _))
   }
 }

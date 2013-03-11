@@ -22,7 +22,7 @@ object DomainEventHeaderDecomposer extends Decomposer[DomainEventHeader] {
 object DomainEventHeaderRecomposer extends Recomposer[DomainEventHeader] {
   val riftDescriptor = RiftDescriptor(classOf[DomainEventHeader])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[DomainEventHeader] = {
+  def recompose(from: Extractor): AlmValidation[DomainEventHeader] = {
     val id = from.getUuid("id").toAgg
     val aggId = from.getUuid("aggId").toAgg
     val aggVersion = from.getLong("aggVersion").toAgg

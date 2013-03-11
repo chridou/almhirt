@@ -42,18 +42,18 @@ object CommandInfoDecomposer extends Decomposer[CommandInfo] {
 object FullComandInfoRecomposer extends Recomposer[FullComandInfo] {
   val riftDescriptor = RiftDescriptor(classOf[FullComandInfo])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[FullComandInfo] = {
-    from.getComplexType[DomainCommand]("command").map(FullComandInfo.apply)
+  def recompose(from: Extractor): AlmValidation[FullComandInfo] = {
+    from.getComplexByTag[DomainCommand]("command", None).map(FullComandInfo.apply)
   }
 }
 
 object HeadCommandInfoRecomposer extends Recomposer[HeadCommandInfo] {
   val riftDescriptor = RiftDescriptor(classOf[HeadCommandInfo])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[HeadCommandInfo] = {
+  def recompose(from: Extractor): AlmValidation[HeadCommandInfo] = {
     val commandId = from.getUuid("commandId").toAgg
     val commandType = from.getString("commandType").toAgg
-    val aggRef = from.tryGetComplexType[AggregateRootRef]("aggRef", AggregateRootRefRecomposer).toAgg
+    val aggRef = from.tryGetWith[AggregateRootRef]("aggRef", AggregateRootRefRecomposer.recompose).toAgg
     (commandId |@| commandType |@| aggRef)(HeadCommandInfo.apply)
   }
 }

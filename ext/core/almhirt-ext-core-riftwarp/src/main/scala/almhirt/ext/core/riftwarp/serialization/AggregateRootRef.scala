@@ -21,7 +21,7 @@ object AggregateRootRefDecomposer extends Decomposer[AggregateRootRef] {
 object AggregateRootRefRecomposer extends Recomposer[AggregateRootRef] {
   val riftDescriptor = RiftDescriptor(classOf[AggregateRootRef])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[AggregateRootRef] = {
+  def recompose(from: Extractor): AlmValidation[AggregateRootRef] = {
     val id = from.getUuid("id").toAgg
     val version = from.getLong("version").toAgg
     (id |@| version)(AggregateRootRef.apply)

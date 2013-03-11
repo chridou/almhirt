@@ -21,7 +21,7 @@ class TestPersonCreatedDecomposer extends DomainEventDecomposer[TestPersonCreate
 
 class TestPersonCreatedRecomposer extends DomainEventRecomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
-  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonCreated] = {
+  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonCreated] = {
     from.getString("name").map(TestPersonCreated(header, _))
   }
 }
@@ -37,7 +37,7 @@ class TestPersonNameChangedDecomposer extends DomainEventDecomposer[TestPersonNa
 
 class TestPersonNameChangedRecomposer extends DomainEventRecomposer[TestPersonNameChanged] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
-  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonNameChanged] = {
+  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonNameChanged] = {
     from.getString("newName").map(TestPersonNameChanged(header, _))
   }
 }
@@ -53,7 +53,7 @@ class TestPersonAddressAquiredDecomposer extends DomainEventDecomposer[TestPerso
 
 class TestPersonAddressAquiredRecomposer extends DomainEventRecomposer[TestPersonAddressAquired] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
-  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonAddressAquired] = {
+  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonAddressAquired] = {
     from.getString("aquiredAddress").map(TestPersonAddressAquired(header, _))
   }
 }
@@ -69,7 +69,7 @@ class TestPersonMovedDecomposer extends DomainEventDecomposer[TestPersonMoved] w
 
 class TestPersonMovedRecomposer extends DomainEventRecomposer[TestPersonMoved] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
-  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonMoved] = {
+  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonMoved] = {
     from.getString("newAddress").map(str => TestPersonMoved(header, str))
   }
 }
@@ -83,7 +83,7 @@ class TestPersonUnhandledEventDecomposer extends DomainEventDecomposer[TestPerso
 
 class TestPersonUnhandledEventRecomposer extends DomainEventRecomposer[TestPersonUnhandledEvent] with HasNoAlternativeRiftDescriptors {
   val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
-  override def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TestPersonUnhandledEvent] = {
+  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonUnhandledEvent] = {
     TestPersonUnhandledEvent(header).success
   }
 }

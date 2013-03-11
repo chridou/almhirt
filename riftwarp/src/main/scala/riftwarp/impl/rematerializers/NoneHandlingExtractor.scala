@@ -50,10 +50,14 @@ trait NoneHandlingExtractor extends Extractor {
 
   override def tryGetWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[Option[T]] =
     if (hasValue(ident)) getWith[T](ident, recomposes).map(Some(_)) else None.success
+  override def tryGetWithRecomposes[T](ident: String, recomposes: Recomposes[T]): AlmValidation[Option[T]] =
+    if (hasValue(ident)) getWithRecomposes[T](ident, recomposes).map(Some(_)) else None.success
   override def tryGetComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Option[Any]] =
     if (hasValue(ident)) getComplex(ident, descriptor).map(Some(_)) else None.success
   override def tryGetComplexByTag[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Option[T]] =
     if (hasValue(ident)) getComplexByTag[T](ident, backupDescriptor).map(Some(_)) else None.success
+  override def tryGetComplexByValueDescriptor(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Option[AnyRef]]=
+    if (hasValue(ident)) getComplexByValueDescriptor(ident, backupDescriptor).map(Some(_)) else None.success
 
   override def tryGetManyPrimitives[That[_], T](ident: String)(implicit mA: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[Option[That[T]]] =
     if (hasValue(ident)) getManyPrimitives[That, T](ident).map(Some(_)) else None.success
@@ -61,6 +65,8 @@ trait NoneHandlingExtractor extends Extractor {
     if (hasValue(ident)) getManyWith[That, T](ident, recomposes).map(Some(_)) else None.success
   override def tryGetManyComplex[That[_]](ident: String, descriptor: RiftDescriptor)(implicit cbf: CanBuildFrom[Traversable[_], Any, That[Any]]): AlmValidation[Option[That[Any]]] =
     if (hasValue(ident)) getManyComplex[That](ident, descriptor).map(Some(_)) else None.success
+  override def tryGetManyComplexOfType[That[_], T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[Option[That[T]]] =
+    if (hasValue(ident)) getManyComplexOfType[That, T](ident, backupDescriptor).map(Some(_)) else None.success
   override def tryGetManyComplexByTag[That[_], T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[Option[That[T]]] =
     if (hasValue(ident)) getManyComplexByTag[That, T](ident, backupDescriptor).map(Some(_)) else None.success
   override def tryGetMany[That[_]](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit cbf: CanBuildFrom[Traversable[_], Any, That[Any]]): AlmValidation[Option[That[Any]]] =

@@ -54,9 +54,9 @@ object OperationStateDecomposer extends Decomposer[OperationState] {
 object InProcessRecomposer extends Recomposer[InProcess] {
   val riftDescriptor = RiftDescriptor(classOf[InProcess])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[InProcess] = {
-    val ticket = from.getComplexType[TrackingTicket]("ticket", TrackingTicketRecomposer).toAgg
-    val commandInfo = from.getComplexType[CommandInfo]("commandInfo", CommandInfoRecomposer).toAgg
+  def recompose(from: Extractor): AlmValidation[InProcess] = {
+    val ticket = from.getWith[TrackingTicket]("ticket", TrackingTicketRecomposer.recompose).toAgg
+    val commandInfo = from.getWith[CommandInfo]("commandInfo", CommandInfoRecomposer.recompose).toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
     (ticket |@| commandInfo |@| timestamp)(InProcess.apply)
   }
@@ -65,9 +65,9 @@ object InProcessRecomposer extends Recomposer[InProcess] {
 object ExecutedRecomposer extends Recomposer[Executed] {
   val riftDescriptor = RiftDescriptor(classOf[Executed])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[Executed] = {
-    val ticket = from.getComplexType[TrackingTicket]("ticket", TrackingTicketRecomposer).toAgg
-    val action = from.getComplexType[PerformedAction]("action", PerformedActionRecomposer).toAgg
+  def recompose(from: Extractor): AlmValidation[Executed] = {
+    val ticket = from.getWith[TrackingTicket]("ticket", TrackingTicketRecomposer.recompose).toAgg
+    val action = from.getWith[PerformedAction]("action", PerformedActionRecomposer.recompose).toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
     (ticket |@| action |@| timestamp)(Executed.apply)
   }
@@ -76,9 +76,9 @@ object ExecutedRecomposer extends Recomposer[Executed] {
 object NotExecutedRecomposer extends Recomposer[NotExecuted] {
   val riftDescriptor = RiftDescriptor(classOf[NotExecuted])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[NotExecuted] = {
-    val ticket = from.getComplexType[TrackingTicket]("ticket", TrackingTicketRecomposer).toAgg
-    val problem = from.getComplexType[Problem]("problem").toAgg
+  def recompose(from: Extractor): AlmValidation[NotExecuted] = {
+    val ticket = from.getWith[TrackingTicket]("ticket", TrackingTicketRecomposer.recompose).toAgg
+    val problem = from.getComplexByTag[Problem]("problem", None).toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
     (ticket |@| problem |@| timestamp)(NotExecuted.apply)
   }

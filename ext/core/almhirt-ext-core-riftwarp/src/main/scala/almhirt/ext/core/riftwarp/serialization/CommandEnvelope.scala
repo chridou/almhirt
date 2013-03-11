@@ -24,9 +24,9 @@ object CommandEnvelopeDecomposer extends Decomposer[CommandEnvelope] {
 object CommandEnvelopeRecomposer extends Recomposer[CommandEnvelope] {
   val riftDescriptor = RiftDescriptor(classOf[CommandEnvelope])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[CommandEnvelope] = {
-    val command = from.getComplexType[DomainCommand]("command").toAgg
-    val ticket = from.tryGetComplexType[TrackingTicket]("ticket").toAgg
+  def recompose(from: Extractor): AlmValidation[CommandEnvelope] = {
+    val command = from.getComplexByTag[DomainCommand]("command", None).toAgg
+    val ticket = from.tryGetComplexByTag[TrackingTicket]("ticket", None).toAgg
     (command |@| ticket)(CommandEnvelope.apply)
   }
 }

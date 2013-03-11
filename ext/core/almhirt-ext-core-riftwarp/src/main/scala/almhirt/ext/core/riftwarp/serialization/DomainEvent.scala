@@ -17,9 +17,9 @@ trait DomainEventDecomposer[TEvent <: DomainEvent] extends Decomposer[TEvent] {
 }
 
 trait DomainEventRecomposer[TEvent <: DomainEvent] extends Recomposer[TEvent] {
-  def recompose(from: Rematerializer): AlmValidation[TEvent] = 
-    from.getComplexType("header", DomainEventHeaderRecomposer).flatMap(header =>
+  def recompose(from: Extractor): AlmValidation[TEvent] = 
+    from.getWith("header", DomainEventHeaderRecomposer.recompose).flatMap(header =>
       extractEventParams(from, header))
   
-  def extractEventParams(from: Rematerializer, header: DomainEventHeader): AlmValidation[TEvent]
+  def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TEvent]
 }
