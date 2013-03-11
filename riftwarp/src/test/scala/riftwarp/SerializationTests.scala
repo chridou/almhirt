@@ -28,6 +28,7 @@ class SerializationTests extends FunSuite with MustMatchers {
     rw.barracks.addRecomposer(new PrimitiveMapsRecomposer())
     rw.barracks.addDecomposer(new ComplexMapsDecomposer())
     rw.barracks.addRecomposer(new ComplexMapsRecomposer())
+    rw.barracks.addDecomposer(new TreesDecomposer())
     rw
   }
 

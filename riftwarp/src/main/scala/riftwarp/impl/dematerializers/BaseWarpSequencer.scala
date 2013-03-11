@@ -111,6 +111,19 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
 
   override def addMapLiberate[A, B](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getMapLiberateRepr(what, backupRiftDescriptor, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
+
+  override def addTreeAllWith[A](ident: String, what: scalaz.Tree[A], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] =
+    dematerializer.getTreeAllWithRepr[A](what, decomposes, spawnNew).map(addReprValue(ident, _))
+  override def addTreeStrict[A <: AnyRef](ident: String, what: scalaz.Tree[A], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
+    dematerializer.getTreeStrictRepr[A](what, riftDesc, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
+  override def addTreeOfComplex[A <: AnyRef](ident: String, what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
+    dematerializer.getTreeOfComplexRepr[A](what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
+  override def addTreeOfPrimitives[A](ident: String, what: scalaz.Tree[A])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
+    dematerializer.getTreeOfPrimitivesRepr[A](what)(implicitly[ClassTag[A]]).map(addReprValue(ident, _))
+  override def addTree[A](ident: String, what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
+    dematerializer.getTreeRepr[A](what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
+
+
 }
 
 abstract class ToStringWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionString](classOf[DimensionCord], hasDecomposers)

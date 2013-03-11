@@ -167,6 +167,12 @@ trait WarpSequencer[+TDimension <: RiftDimension] extends RawWarpSequencer {
    */
   def addMapLiberate[A, B](ident: String, what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]]
   def addOptionalMapLiberate[A, B](ident: String, what: Option[scala.collection.Map[A, B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]]
+
+  def addTreeAllWith[A](ident: String, what: scalaz.Tree[A], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]]
+  def addTreeStrict[A <: AnyRef](ident: String, what: scalaz.Tree[A], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]]
+  def addTreeOfComplex[A <: AnyRef](ident: String, what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]]
+  def addTreeOfPrimitives[A](ident: String, what: scalaz.Tree[A])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]]
+  def addTree[A](ident: String, what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]]
   
   
   def addRiftDescriptor(descriptor: RiftDescriptor): WarpSequencer[TDimension]

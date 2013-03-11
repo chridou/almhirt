@@ -45,7 +45,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
       primitiveMaps <- from.getComplexByTag[PrimitiveMaps]("primitiveMaps", None)
       complexMaps <- from.getComplexByTag[ComplexMaps]("complexMaps", None)
       addressOpt <- from.tryGetComplexByTag[TestAddress]("addressOpt", None)
-    } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, primitiveVectorMAs, primitiveSetMAs, primitiveIterableMAs, complexMAs, primitiveMaps, complexMaps, addressOpt)
+    } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, primitiveVectorMAs, primitiveSetMAs, primitiveIterableMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, Trees())
   }
 }
 
@@ -317,7 +317,7 @@ class TreesDecomposer extends Decomposer[Trees] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: Trees, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     into.addRiftDescriptor(riftDescriptor)
-      .addTree("city", what.city)
-      .addString("street", what.street).ok
+      .addTreeOfPrimitives("intTree", what.intTree).flatMap(
+        _.addTreeOfComplex("addressTree", what.addressTree, None))
   }
 }
