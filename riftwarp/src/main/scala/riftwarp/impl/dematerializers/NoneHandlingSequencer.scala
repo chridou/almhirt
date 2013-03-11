@@ -57,6 +57,17 @@ trait NoneIsHandledUnified[TDimension <: RiftDimension] { warpSequencer: WarpSeq
   override def addOptionalMap[A, B](ident: String, what: Option[scala.collection.Map[A, B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] = option.cata(what)(addMap(ident, _, backupRiftDescriptor), noneHandler(ident).success)
   override def addOptionalMapLiberate[A, B](ident: String, what: Option[scala.collection.Map[A, B]], backupRiftDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] = option.cata(what)(addMapLiberate(ident, _, backupRiftDescriptor), noneHandler(ident).success)
 
+  override def addOptionalTreeAllWith[A](ident: String, what: Option[scalaz.Tree[A]], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] = 
+    option.cata(what)(addTreeAllWith(ident, _, decomposes), noneHandler(ident).success)
+  override def addOptionalTreeStrict[A <: AnyRef](ident: String, what: Option[scalaz.Tree[A]], riftDesc: Option[RiftDescriptor])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] = 
+    option.cata(what)(addTreeStrict(ident, _, riftDesc), noneHandler(ident).success)
+  override def addOptionalTreeOfComplex[A <: AnyRef](ident: String, what: Option[scalaz.Tree[A]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = 
+    option.cata(what)(addTreeOfComplex(ident, _, backupRiftDescriptor), noneHandler(ident).success)
+  override def addOptionalTreeOfPrimitives[A](ident: String, what: Option[scalaz.Tree[A]])(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] = 
+    option.cata(what)(addTreeOfPrimitives(ident, _), noneHandler(ident).success)
+  override def addOptionalTree[A](ident: String, what: Option[scalaz.Tree[A]], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = 
+    option.cata(what)(addTree(ident, _, backupRiftDescriptor), noneHandler(ident).success)
+  
 }
 
 trait NoneIsOmmitted[TDimension <: RiftDimension] { warpSequencer: WarpSequencer[TDimension] with NoneIsHandledUnified[TDimension] =>
