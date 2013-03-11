@@ -26,6 +26,7 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
       .flatMap(_.addComplex("primitiveMaps", what.primitiveMaps, None))
       .flatMap(_.addComplex("complexMaps", what.complexMaps, None))
       .flatMap(_.addOptionalComplex("addressOpt", what.addressOpt, None))
+      .flatMap(_.addComplex("trees", what.trees, None))
   }
 }
 
