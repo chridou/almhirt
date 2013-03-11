@@ -66,7 +66,19 @@ case class ComplexMaps(
   mapIntTestAddress1: Map[Int, TestAddress],
   mapIntAny: Map[Int, AnyRef],
   mapStringAnyWithUnknown: Map[String, Any])
+
+case class Trees(
+  intTree: scalaz.Tree[Int],
+  addressTree: scalaz.Tree[TestAddress])
   
+object Trees {
+  import scalaz.Tree._
+  def apply(): Trees =
+    Trees(
+     intTree = 1.node(21.node(31.leaf), 22.leaf, 23.node(31.leaf, 32.node(41.leaf), 33.leaf)),
+     addressTree = TestAddress("Hamburg", "Am Hafen").node(TestAddress("New York", "Broadway").leaf, TestAddress("Los Angeles ", "Sunset Boulevard").leaf)
+    )
+}  
 case class TestObjectA(
   arrayByte: Array[Byte],
   blob: Array[Byte],
