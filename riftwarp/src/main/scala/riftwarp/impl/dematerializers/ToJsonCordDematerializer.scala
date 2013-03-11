@@ -153,6 +153,9 @@ object ToJsonDematerializerFuns {
     }
 
   def foldParts(items: List[Cord]): Cord = createInnerJson(items, Cord.empty) 
+
+  def foldTree(tree: scalaz.Tree[Cord]): Cord = ???
+
 }
 
 object ToJsonCordDematerializer extends DematerializerTemplate[DimensionCord]{
@@ -162,8 +165,7 @@ object ToJsonCordDematerializer extends DematerializerTemplate[DimensionCord]{
   protected override def foldReprs(elems: Iterable[ValueRepr]): ValueRepr = foldParts(elems.toList)
   protected override def getPrimitiveToRepr[A](implicit tag: ClassTag[A]): AlmValidation[(A => ValueRepr)] = mapperByType[A]
   protected override def getAnyPrimitiveToRepr(what: Any): AlmValidation[(Any => ValueRepr)] = mapperForAny(what)
-  protected override def getTreeRepr(tree: scalaz.Tree[ValueRepr]): ValueRepr =
-    ???
+  protected override def getTreeRepr(tree: scalaz.Tree[ValueRepr]): ValueRepr = foldTree(tree)
 
   override def getStringRepr(aValue: String) = mapString(aValue)
   override def getBooleanRepr(aValue: Boolean) = mapBoolean(aValue)
