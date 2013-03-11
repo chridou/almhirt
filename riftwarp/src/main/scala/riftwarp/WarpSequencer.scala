@@ -8,7 +8,6 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
 import riftwarp.components._
-import riftwarp.ma.HasFunctionObjects
 
 trait RawWarpSequencer {
   def channel: RiftChannel
