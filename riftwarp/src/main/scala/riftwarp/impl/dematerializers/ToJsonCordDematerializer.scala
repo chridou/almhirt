@@ -162,6 +162,8 @@ object ToJsonCordDematerializer extends DematerializerTemplate[DimensionCord]{
   protected override def foldReprs(elems: Iterable[ValueRepr]): ValueRepr = foldParts(elems.toList)
   protected override def getPrimitiveToRepr[A](implicit tag: ClassTag[A]): AlmValidation[(A => ValueRepr)] = mapperByType[A]
   protected override def getAnyPrimitiveToRepr(what: Any): AlmValidation[(Any => ValueRepr)] = mapperForAny(what)
+  protected override def getTreeRepr(tree: scalaz.Tree[ValueRepr]): ValueRepr =
+    ???
 
   override def getStringRepr(aValue: String) = mapString(aValue)
   override def getBooleanRepr(aValue: Boolean) = mapBoolean(aValue)
