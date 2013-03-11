@@ -30,11 +30,11 @@ trait RRematerializer[TDimension <: RiftDimension] {
   def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID]
   
   def traversableOfReprFromRepr(value: ValueRepr): AlmValidation[Traversable[ValueRepr]] 
-  def collectionOfReprFromRepr[That[_]](value: ValueRepr)(implicit cbf : CanBuildFrom[Traversable[_], ValueRepr, That[ValueRepr]]): AlmValidation[That[ValueRepr]]
   def tuple2OfReprFromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] 
   
   
   def traversable2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] 
+  def collectionOfReprFromRepr[That[_]](value: ValueRepr)(implicit cbf : CanBuildFrom[Traversable[_], ValueRepr, That[ValueRepr]]): AlmValidation[That[ValueRepr]]
 
 //  def fromRepr[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[T]
 //  def complexByDescriptorFromRepr(value: ValueRepr, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any]
