@@ -53,14 +53,28 @@ private[rematerializers] object FromStdLibJsonRematerializerFuns {
       Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(clazz.getName())))
   }
 
-//  def getPrimitiveRematerializerFor[A](key: String)(implicit mA: ClassTag[A]): AlmValidation[Any => AlmValidation[A]] =
-//    getPrimitiveRematerializer[A](key, mA.runtimeClass)
+  def isPrimitive(value: Any): Boolean =
+    (value.isInstanceOf[Boolean] ||
+      value.isInstanceOf[String] ||
+      value.isInstanceOf[Byte] ||
+      value.isInstanceOf[Int] ||
+      value.isInstanceOf[Long] ||
+      value.isInstanceOf[BigInt] ||
+      value.isInstanceOf[Float] ||
+      value.isInstanceOf[Double] ||
+      value.isInstanceOf[org.joda.time.DateTime] ||
+      value.isInstanceOf[_root_.java.net.URI] ||
+      value.isInstanceOf[_root_.java.util.UUID])
 }
 
 class FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLibJson] {
   override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[ValueRepr => AlmValidation[T]] = FromStdLibJsonRematerializerFuns.valueMapperFromTag
-  override def anyFromValue(value: ValueRepr): AlmValidation[Any] = value.success
-  
+  override def primitiveFromValue(value: ValueRepr): AlmValidation[Any] = 
+    if(FromStdLibJsonRematerializerFuns.isPrimitive(value))
+      value.success
+    else
+      UnspecifiedProblem("Not a primitive type").failure
+
   override def stringFromRepr(value: ValueRepr): AlmValidation[String] = almCast[String](value)
   override def booleanFromRepr(value: ValueRepr): AlmValidation[Boolean] = almCast[Boolean](value)
   override def byteFromRepr(value: ValueRepr): AlmValidation[Byte] = almCast[Double](value).map(_.toByte)
@@ -79,14 +93,14 @@ class FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLi
   override def dateTimeFromRepr(value: ValueRepr): AlmValidation[org.joda.time.DateTime] = almCast[String](value).flatMap(parseDateTimeAlm(_))
   override def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI] = almCast[String](value).flatMap(parseUriAlm(_))
   override def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID] = almCast[String](value).flatMap(parseUuidAlm(_))
-  
+
   override def resequenceFromRepr(value: ValueRepr): AlmValidation[Iterable[ValueRepr]] = almCast[List[ValueRepr]](value)
   override def retuplelize2FromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] =
     resequenceFromRepr(value).flatMap { reprItems =>
       (reprItems.headOption, reprItems.tail.headOption) match {
-        case (Some(a), Some(b)) => (a,b).success
+        case (Some(a), Some(b)) => (a, b).success
         case _ => NoSuchElementProblem("Not enough items to build a tuple").failure
       }
     }
-  
+
 }

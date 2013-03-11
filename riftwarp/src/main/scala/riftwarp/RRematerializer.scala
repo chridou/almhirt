@@ -11,7 +11,7 @@ trait RRematerializer[TDimension <: RiftDimension] {
   type ValueRepr
   
   def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[ValueRepr => AlmValidation[T]]
-  def anyFromValue(value: ValueRepr): AlmValidation[Any]
+  def primitiveFromValue(value: ValueRepr): AlmValidation[Any]
   
   def stringFromRepr(value: ValueRepr): AlmValidation[String]
   def booleanFromRepr(value: ValueRepr): AlmValidation[Boolean]
