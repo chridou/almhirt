@@ -4,6 +4,7 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
+import riftwarp.inst._
 
 object Problems {
   def createDefaultDecomposer[T <: Problem](aRiftDescriptor: RiftDescriptor): Decomposer[T] = {
@@ -35,13 +36,13 @@ object Problems {
 
   type DefaultProblemCreator[T <: Problem] = ((String, Severity, ProblemCategory, Map[String, Any], Option[ProblemCause])) => T
 
-  private def recomposeBaseFields(from: Rematerializer): AlmValidation[(String, Severity, ProblemCategory, Map[String, Any], Option[ProblemCause])] = {
+  private def recomposeBaseFields(from: Extractor): AlmValidation[(String, Severity, ProblemCategory, Map[String, Any], Option[ProblemCause])] = {
     for {
       message <- from.getString("message")
       severity <- from.getString("severity").flatMap(Severity.fromString(_))
       category <- from.getString("category").flatMap(ProblemCategory.fromString(_))
-      args <- from.getMap[String, Any]("args")
-      cause <- from.tryGetComplexType("cause", ProblemCauseRecomposer)
+      args <- from.getMap[String]("args", None)
+      cause <- from.tryGetWith("cause", ProblemCauseRecomposer.recompose)
     } yield (message, severity, category, args, cause)
   }
 
@@ -49,7 +50,7 @@ object Problems {
     new Recomposer[T] {
       val riftDescriptor = aRiftDescriptor
       val alternativeRiftDescriptors = Nil
-      def recompose(from: Rematerializer): AlmValidation[T] = {
+      def recompose(from: Extractor): AlmValidation[T] = {
         recomposeBaseFields(from).map(x => creator(x).asInstanceOf[T])
       }
     }
@@ -59,10 +60,10 @@ object Problems {
     new Recomposer[AggregateProblem] {
       val riftDescriptor = aRiftDescriptor
       val alternativeRiftDescriptors = Nil
-      def recompose(from: Rematerializer): AlmValidation[AggregateProblem] = {
+      def recompose(from: Extractor): AlmValidation[AggregateProblem] = {
         for {
           baseFields <- recomposeBaseFields(from)
-          problems <- from.getComplexMALoose[List, Problem]("problems")
+          problems <- from.getManyComplexByTag[List, Problem]("problems", None)
         } yield AggregateProblem(baseFields._1, baseFields._2, baseFields._3, baseFields._4, baseFields._5, problems)
       }
     }

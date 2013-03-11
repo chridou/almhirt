@@ -16,7 +16,7 @@ object RiftDescriptorDecomposer extends Decomposer[RiftDescriptor] {
 object RiftDescriptorRecomposer extends Recomposer[RiftDescriptor] {
   val riftDescriptor = RiftDescriptor(classOf[RiftDescriptor])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[RiftDescriptor] = {
+  def recompose(from: Extractor): AlmValidation[RiftDescriptor] = {
     val identifier = from.getString("identifier").toAgg
     val version = from.tryGetInt("version").toAgg
     (identifier |@| version)(RiftDescriptor.apply)

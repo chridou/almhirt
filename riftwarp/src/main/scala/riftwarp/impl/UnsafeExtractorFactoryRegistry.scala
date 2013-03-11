@@ -3,12 +3,12 @@ package riftwarp.impl
 import riftwarp._
 import riftwarp.components._
 
-class UnsafeRematerializerFactoryRegistry extends HasRematerializerFactories {
+class UnsafeExtractorFactoryRegistry extends HasExtractorFactories {
   import scala.collection.mutable._
   private val toolregistry = HashMap[ToolGroup, HashMap[RiftChannel, HashMap[String, AnyRef]]]()
   private val channelregistry = collection.mutable.HashMap[RiftChannel, collection.mutable.HashMap[String, AnyRef]]()
 
-  def addRematerializerFactory(arrayFactory: RematerializerFactory[_ <: RiftDimension], isChannelDefault: Boolean = false) {
+  def addExtractorFactory(arrayFactory: ExtractorFactory[_ <: RiftDimension], isChannelDefault: Boolean = false) {
     val identDim = arrayFactory.tDimension.getName()
  
     if (!toolregistry.contains(arrayFactory.toolGroup))
@@ -26,20 +26,20 @@ class UnsafeRematerializerFactoryRegistry extends HasRematerializerFactories {
       channeltypeentry += (identDim -> arrayFactory)
   }
 
-  def tryGetRematerializerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None): Option[RematerializerFactory[RiftDimension]] = {
+  def tryGetExtractorFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None): Option[ExtractorFactory[RiftDimension]] = {
     val dimensionIdent = tDimension.getName
     (toolGroup match {
       case None =>
         for {
           entry <- channelregistry.get(channel)
           warpSequencer <- entry.get(dimensionIdent)
-        } yield warpSequencer.asInstanceOf[RematerializerFactory[RiftDimension]]
+        } yield warpSequencer.asInstanceOf[ExtractorFactory[RiftDimension]]
       case Some(toolGroup) =>
         for {
           toolentries <- toolregistry.get(toolGroup)
           channelEntries <- toolentries.get(channel)
           warpSequencer <- channelEntries.get(dimensionIdent)
-        } yield warpSequencer.asInstanceOf[RematerializerFactory[RiftDimension]]
+        } yield warpSequencer.asInstanceOf[ExtractorFactory[RiftDimension]]
     })
   }
 }

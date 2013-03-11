@@ -9,8 +9,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 
-abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRematerializer[TDimension] {
-  type ValueRepr = TDimension#Under
+abstract class RematerializerTemplate[TDimension <: RiftDimension] extends Rematerializer[TDimension] {
 
   override def getString(from: TDimension): AlmValidation[String] = stringFromRepr(from.manifestation)
   override def getBoolean(from: TDimension): AlmValidation[Boolean] = booleanFromRepr(from.manifestation)
@@ -29,18 +28,18 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRema
   override def getUuid(from: TDimension): AlmValidation[_root_.java.util.UUID] = uuidFromRepr(from.manifestation)
 
   override def traversable2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] =
-    traversableOfReprFromRepr(value).flatMap(items =>{
+    traversableOfReprFromRepr(value).flatMap(items => {
       val tuplesV = items.map(tuple2OfReprFromRepr(_).toAgg).toList.sequence
       tuplesV
     })
- 
-  override def collectionOfReprFromRepr[That[_]](value: ValueRepr)(implicit cbf : CanBuildFrom[Traversable[_], ValueRepr, That[ValueRepr]]): AlmValidation[That[ValueRepr]] =
+
+  override def collectionOfReprFromRepr[That[_]](value: ValueRepr)(implicit cbf: CanBuildFrom[Traversable[_], ValueRepr, That[ValueRepr]]): AlmValidation[That[ValueRepr]] =
     traversableOfReprFromRepr(value).map { items =>
-        val builder = cbf()
-        items.foreach(x => builder += x)
-        builder.result
-      }
-    
+      val builder = cbf()
+      items.foreach(x => builder += x)
+      builder.result
+    }
+
   override def resequencedMappedFromRepr[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
     collectionOfReprFromRepr(value).flatMap { reprItems =>
       val itemsV = reprItems.toList.map(f(_).toAgg).sequence
@@ -51,12 +50,29 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRema
       })
     }
 
-  
+  override def resequencedOfPrimitivesFromRepr[That[_], T](value: ValueRepr)(implicit tag: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
+    for {
+      mapper <- valueMapperFromTag[T]
+      resequenced <- resequencedMappedFromRepr(value, mapper)
+    } yield resequenced
+
   override def retuplelized2MappedFromRepr[A, B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A, B)] =
     tuple2OfReprFromRepr(value).flatMap(ab =>
       for {
         r1 <- fa(ab._1)
         r2 <- fb(ab._2)
       } yield (r1, r2))
+
+  override def retuplelized2TraversableMappedFromRepr[A, B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[Traversable[(A, B)]] =
+    for {
+      traversable <- traversableOfReprFromRepr(value)
+      tuples <- traversable.map(retuplelized2MappedFromRepr[A, B](_, fa, fb).toAgg).toList.sequence
+    } yield tuples
+
+  override def fromRepr[T](value: ValueRepr, f: Extractor => AlmValidation[T], createExtractor: ValueRepr => AlmValidation[Extractor]): AlmValidation[T] =
+    for {
+      extractor <- createExtractor(value)
+      recomposed <- f(extractor)
+    } yield recomposed
 
 }

@@ -24,7 +24,7 @@ trait RiftWarp {
         fun(what, decomposer)))
 
   def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit cDim: ClassTag[TDimension], cTarget: ClassTag[T]): AlmValidation[T] = {
-    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
+    def findRecomposer(remat: Extractor) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
     for {
       recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(NoFetchBlobFetch)(cDim, cTarget, this)
       recomposed <- recomposeFun(warpStream)
@@ -32,7 +32,7 @@ trait RiftWarp {
   }
 
   def receiveFromWarpWithBlobs[TDimension <: RiftDimension, T <: AnyRef](blobFetch: BlobFetch)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit cDim: ClassTag[TDimension], cTarget: ClassTag[T]): AlmValidation[T] = {
-    def findRecomposer(remat: Rematerializer) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
+    def findRecomposer(remat: Extractor) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
     for {
       recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(blobFetch)(cDim, cTarget, this)
       recomposed <- recomposeFun(warpStream)
@@ -69,9 +69,9 @@ object RiftWarp {
     //riftWarp.toolShed.addWarpSequencerFactory(impl.warpSequencers.ToMapWarpSequencer)
     //riftWarp.toolShed.addWarpSequencerFactory(impl.warpSequencers.ToXmlElemWarpSequencer)
 
-    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonMapRematerializer)
-    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonStringRematerializer)
-    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonCordRematerializer)
+//    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonMapRematerializer)
+//    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonStringRematerializer)
+//    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromJsonCordRematerializer)
 //    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromMapRematerializer)
 //    riftWarp.toolShed.addRematerializerFactory(impl.rematerializers.FromXmlElemRematerializer)
 
@@ -85,20 +85,6 @@ object RiftWarp {
     riftWarp.converters.addConverter(DimensionConverterXmlElemToCord)
     riftWarp.converters.addConverter(DimensionConverterXmlElemToNiceString)
     riftWarp.converters.addConverter(DimensionConverterXmlElemToNiceCord)
-
-    import riftwarp.ma._
-    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.listFunctionObject)
-    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.vectorFunctionObject)
-    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.setFunctionObject)
-    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.iterableFunctionObject)
-    riftWarp.toolShed.addMAFunctions(RegisterableFunctionObjects.treeFunctionObject)
-
-    riftWarp.toolShed.addChannelFolder(JsonCordFolder)
-    riftWarp.toolShed.addChannelFolder(XmlElemFolder)
-
-    riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToIterableConverter)
-    riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToSetConverter)
-    riftWarp.toolShed.addConvertsMAToNA(MAToNAConverters.listToVectorConverter)
 
     serialization.common.Problems.registerAllCommonProblems(riftWarp)
 

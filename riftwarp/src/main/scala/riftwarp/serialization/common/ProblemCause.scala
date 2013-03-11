@@ -68,11 +68,11 @@ object ProblemCauseDecomposer extends Decomposer[ProblemCause] {
 object HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribed] {
   val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[HasAThrowableDescribed] = {
+  def recompose(from: Extractor): AlmValidation[HasAThrowableDescribed] = {
     val classname = from.getString("classname").toAgg
     val message = from.getString("message").toAgg
     val stacktrace = from.getString("stacktrace").toAgg
-    val cause = from.tryGetComplexType[HasAThrowableDescribed]("cause", this).toAgg
+    val cause = from.tryGetWith[HasAThrowableDescribed]("cause", this.recompose).toAgg
     (classname |@| message |@| stacktrace |@| cause)(HasAThrowableDescribed.apply)
   }
 }
@@ -80,8 +80,8 @@ object HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribe
 object CauseIsThrowableRecomposer extends Recomposer[CauseIsThrowable] {
   val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[CauseIsThrowable] = {
-    from.getComplexType("representation", HasAThrowableDescribedRecomposer).map(desc =>
+  def recompose(from: Extractor): AlmValidation[CauseIsThrowable] = {
+    from.getWith("representation", HasAThrowableDescribedRecomposer.recompose).map(desc =>
       CauseIsThrowable(desc))
   }
 }
@@ -89,8 +89,8 @@ object CauseIsThrowableRecomposer extends Recomposer[CauseIsThrowable] {
 object CauseIsProblemRecomposer extends Recomposer[CauseIsProblem] {
   val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[CauseIsProblem] = {
-    from.getComplexType("problem").map(prob =>
+  def recompose(from: Extractor): AlmValidation[CauseIsProblem] = {
+    from.getComplexByTag[Problem]("problem", None).map(prob =>
       CauseIsProblem(prob))
   }
 }
@@ -98,12 +98,12 @@ object CauseIsProblemRecomposer extends Recomposer[CauseIsProblem] {
 object ProblemCauseRecomposer extends Recomposer[ProblemCause] {
   val riftDescriptor = RiftDescriptor(classOf[ProblemCause])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[ProblemCause] = {
+  def recompose(from: Extractor): AlmValidation[ProblemCause] = {
     from.getRiftDescriptor.flatMap(desc =>
       if (desc == RiftDescriptor(classOf[CauseIsProblem]))
-        from.divertDirect(CauseIsProblemRecomposer)
+        CauseIsProblemRecomposer.recompose(from)
       else if (desc == RiftDescriptor(classOf[CauseIsThrowable]))
-        from.divertDirect(CauseIsThrowableRecomposer)
+        CauseIsThrowableRecomposer.recompose(from)
       else
         BadDataProblem(s"'$desc' is not a valid identifier for ProblemCause").withIdentifier("type").failure)
   }
