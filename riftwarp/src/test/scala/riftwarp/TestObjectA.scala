@@ -70,15 +70,14 @@ case class ComplexMaps(
 case class Trees(
   intTree: scalaz.Tree[Int],
   addressTree: scalaz.Tree[TestAddress])
-  
+
 object Trees {
   import scalaz.Tree._
   def apply(): Trees =
     Trees(
-     intTree = 1.node(21.node(31.leaf), 22.leaf, 23.node(31.leaf, 32.node(41.leaf), 33.leaf)),
-     addressTree = TestAddress("Hamburg", "Am Hafen").node(TestAddress("New York", "Broadway").leaf, TestAddress("Los Angeles ", "Sunset Boulevard").leaf)
-    )
-}  
+      intTree = 1.node(21.node(31.leaf), 22.leaf, 23.node(31.leaf, 32.node(41.leaf), 33.leaf)),
+      addressTree = TestAddress("Hamburg", "Am Hafen").node(TestAddress("New York", "Broadway").leaf, TestAddress("Los Angeles ", "Sunset Boulevard").leaf))
+}
 case class TestObjectA(
   arrayByte: Array[Byte],
   blob: Array[Byte],
@@ -143,11 +142,11 @@ object TestObjectA {
       primitiveMaps = PrimitiveMaps(
         Map(1 -> 10, 2 -> 20, 3 -> 30, 4 -> 40),
         Map("a" -> 1, "b" -> 2, "a" -> 1, "c" -> 3),
-        Map(UUID.randomUUID() -> DateTime.now(), UUID.randomUUID() -> DateTime.now().plusDays(1), UUID.randomUUID() -> DateTime.now().plusDays(2))), 
+        Map(UUID.randomUUID() -> DateTime.now(), UUID.randomUUID() -> DateTime.now().plusDays(1), UUID.randomUUID() -> DateTime.now().plusDays(2))),
       complexMaps = ComplexMaps(
         TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
         TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
-        TestAddress.someAddresses.zipWithIndex.map(x => (x._2.toString, x._1)).toMap + ("unknownType" -> UnknownObject(1))+ ("unspecifiedProblem" -> UnspecifiedProblem("Test", args = Map("arg1" -> 95))) +  ("x" -> UUID.randomUUID()) + ("y" -> UUID.randomUUID()) + ("z" -> DateTime.now())), 
+        TestAddress.someAddresses.zipWithIndex.map(x => (x._2.toString, x._1)).toMap + ("unknownType" -> UnknownObject(1)) + ("unspecifiedProblem" -> UnspecifiedProblem("Test", args = Map("arg1" -> 95))) + ("x" -> UUID.randomUUID()) + ("y" -> UUID.randomUUID()) + ("z" -> DateTime.now())),
       addressOpt = Some(TestAddress("Berlin", "At the wall 89")))
 }
 
