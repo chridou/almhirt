@@ -2,6 +2,7 @@ package riftwarp
 
 import scala.reflect.ClassTag
 import scala.collection.IterableLike
+import scalaz.Tree
 import almhirt.common._
 import riftwarp.components.HasDecomposers
 
@@ -37,6 +38,13 @@ trait Dematerializer[TDimension <: RiftDimension] {
   def getMapOfPrimitivesRepr[A, B](what: scala.collection.Map[A,B])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[ValueRepr]
   def getMapRepr[A, B](what: scala.collection.Map[A,B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr]
   def getMapLiberateRepr[A, B](what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr]
+
+  def getTreeAllWithRepr[A](what: scalaz.Tree[A], decomposes: Decomposes[A], spawnNewSequencer: () => WarpSequencer[TDimension]): AlmValidation[ValueRepr]
+  def getTreeStrictRepr[A <: AnyRef](what: scalaz.Tree[A], riftDesc: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr]
+  def getTreeOfComplexRepr[A <: AnyRef](what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[ValueRepr]
+  def getTreeOfPrimitivesRepr[A](what: scalaz.Tree[A])(implicit tag: ClassTag[A]): AlmValidation[ValueRepr]
+  def getTreeRepr[A](what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[ValueRepr]
+  
   
   def getString(aValue: String): TDimension
   def getBoolean(aValue: Boolean): TDimension

@@ -15,7 +15,8 @@ trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer
   protected def foldReprs(elems: Iterable[ValueRepr]): ValueRepr
   protected def getPrimitiveToRepr[A](implicit tag: ClassTag[A]): AlmValidation[(A => ValueRepr)]
   protected def getAnyPrimitiveToRepr(what: Any): AlmValidation[(Any => ValueRepr)]
-  
+  protected def getTreeRepr(tree: scalaz.Tree[ValueRepr]): ValueRepr
+
   override def getWithRepr[A](what: A, decomposes: Decomposes[A], spawnNewSequencer: () => WarpSequencer[TDimension]): AlmValidation[ValueRepr] =
     decomposes.decompose(what, spawnNewSequencer()).map(dematerializedComplex =>
       dimToReprValue(dematerializedComplex.dematerialize))
@@ -34,7 +35,7 @@ trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer
 
   override def getIterableStrictRepr[A <: AnyRef, Coll](what: IterableLike[A, Coll], riftDesc: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] =
     hasDecomposers.getDecomposerByDescriptorAndThenByTag(riftDesc).flatMap(decomposer => getIterableAllWithRepr(what, decomposer, spawnNewSequencer))
-    
+
   override def getIterableOfComplexRepr[A <: AnyRef, Coll](what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] = {
     val decomposes = new Decomposes[A] {
       override def decompose[TTDimension <: RiftDimension](elem: A, into: WarpSequencer[TTDimension]): AlmValidation[WarpSequencer[TTDimension]] =
@@ -42,18 +43,18 @@ trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer
     }
     getIterableAllWithRepr(what, decomposes, spawnNewSequencer)
   }
-    
+
   override def getIterableOfPrimitivesRepr[A, Coll](what: IterableLike[A, Coll])(implicit tag: ClassTag[A]): AlmValidation[ValueRepr] =
     getPrimitiveToRepr[A](tag).map(primToRepr =>
       foldReprs(what.toList.map(elem => primToRepr(elem))))
-      
+
   override def getIterableRepr[A, Coll](what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] = {
     val mappedV = what.toList.map(x => getReprForPrimitiveOrComplex(x, backupRiftDescriptor, spawnNewSequencer).toAgg)
     val sequenced = mappedV.sequence
     sequenced.map(elems => foldReprs(elems))
   }
 
-  override def getMapAllWithRepr[A, B](what: scala.collection.Map[A,B], decomposes: Decomposes[B], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A]): AlmValidation[ValueRepr] =
+  override def getMapAllWithRepr[A, B](what: scala.collection.Map[A, B], decomposes: Decomposes[B], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A]): AlmValidation[ValueRepr] =
     getPrimitiveToRepr[A](tag).flatMap { primMapper =>
       val itemsV =
         what.toSeq.map {
@@ -64,26 +65,26 @@ trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer
       val items = itemsV.toList.sequence.map(_.map { case (reprA, reprB) => foldReprs(reprA :: reprB :: Nil) })
       items.map(tuples => foldReprs(tuples))
     }
- 
-  override def getMapStrictRepr[A, B <: AnyRef](what: scala.collection.Map[A,B], riftDesc: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tagA: ClassTag[A], tagB: ClassTag[B], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] =
+
+  override def getMapStrictRepr[A, B <: AnyRef](what: scala.collection.Map[A, B], riftDesc: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tagA: ClassTag[A], tagB: ClassTag[B], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] =
     hasDecomposers.getDecomposerByDescriptorAndThenByTag(riftDesc).flatMap(decomposer =>
       getMapAllWithRepr(what, decomposer, spawnNewSequencer))
 
-  override def getMapOfComplexRepr[A, B <: AnyRef](what: scala.collection.Map[A,B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] = {
+  override def getMapOfComplexRepr[A, B <: AnyRef](what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] = {
     val decomposes = new Decomposes[B] {
       override def decompose[TTDimension <: RiftDimension](elem: B, into: WarpSequencer[TTDimension]): AlmValidation[WarpSequencer[TTDimension]] =
         hasDecomposers.getDecomposerFor(elem, backupRiftDescriptor).flatMap(_.decompose(elem, into))
     }
     getMapAllWithRepr[A, B](what, decomposes, spawnNewSequencer)
   }
-  
-  override def getMapOfPrimitivesRepr[A, B](what: scala.collection.Map[A,B])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[ValueRepr] =
+
+  override def getMapOfPrimitivesRepr[A, B](what: scala.collection.Map[A, B])(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[ValueRepr] =
     for {
       primMapperA <- getPrimitiveToRepr[A](tagA)
       primMapperB <- getPrimitiveToRepr[B](tagB)
     } yield foldReprs(what.map { case (a, b) => foldReprs(primMapperA(a) :: primMapperB(b) :: Nil) })
-  
-  override def getMapRepr[A, B](what: scala.collection.Map[A,B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] =
+
+  override def getMapRepr[A, B](what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] =
     getPrimitiveToRepr[A](tag).flatMap { keyMapper =>
       val itemsV = what.map {
         case (a, b) => getReprForPrimitiveOrComplex(b, backupRiftDescriptor, spawnNewSequencer).map(valueRepr =>
@@ -100,7 +101,36 @@ trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer
       }.flatten
       foldReprs(items)
     }
-    
+
+  override def getTreeAllWithRepr[A](what: scalaz.Tree[A], decomposes: Decomposes[A], spawnNewSequencer: () => WarpSequencer[TDimension]): AlmValidation[ValueRepr] =
+    inTryCatchM {
+      val mappedTree = what.map(label => decomposes.decompose(label, spawnNewSequencer()).forceResult.dematerialize.manifestation)
+      getTreeRepr(mappedTree)
+    }("Could not map a tree")
+
+  override def getTreeStrictRepr[A <: AnyRef](what: scalaz.Tree[A], riftDesc: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] =
+    hasDecomposers.getDecomposerByDescriptorAndThenByTag(riftDesc).flatMap(decomposer => getTreeAllWithRepr(what, decomposer, spawnNewSequencer))
+
+  override def getTreeOfComplexRepr[A <: AnyRef](what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] = {
+    val decomposes = new Decomposes[A] {
+      override def decompose[TTDimension <: RiftDimension](elem: A, into: WarpSequencer[TTDimension]): AlmValidation[WarpSequencer[TTDimension]] =
+        hasDecomposers.getDecomposerFor(elem, backupRiftDescriptor).flatMap(_.decompose(elem, into))
+    }
+    getTreeAllWithRepr(what, decomposes, spawnNewSequencer)
+  }
+
+  override def getTreeOfPrimitivesRepr[A](what: scalaz.Tree[A])(implicit tag: ClassTag[A]): AlmValidation[ValueRepr] =
+    computeSafelyM {
+      getPrimitiveToRepr[A](tag).map(primToRepr =>
+        getTreeRepr(what.map(elem => primToRepr(elem))))
+    }(s"Could not map to a tree of ${tag.runtimeClass.getName()}")
+
+  override def getTreeRepr[A](what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] =
+    inTryCatchM {
+      val mappedTree = what.map(x => getReprForPrimitiveOrComplex(x, backupRiftDescriptor, spawnNewSequencer).forceResult)
+      getTreeRepr(mappedTree)
+    }("Could not map a tree")
+
   private def getReprForPrimitiveOrComplex(what: Any, backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[ValueRepr] =
     getAnyPrimitiveToRepr(what).fold(
       fail =>
@@ -110,8 +140,7 @@ trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer
           case x => UnspecifiedProblem(s"'${x.getClass.getName()}' is not a primitive type nor an AnyRef").failure
         },
       succ => succ(what).success)
-  
-  
+
   override def getString(aValue: String) = valueReprToDim(getStringRepr(aValue))
   override def getBoolean(aValue: Boolean) = valueReprToDim(getBooleanRepr(aValue))
   override def getByte(aValue: Byte) = valueReprToDim(getByteRepr(aValue))
@@ -141,7 +170,7 @@ trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer
     getIterableOfComplexRepr(what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer).map(valueReprToDim)
   override def getIterableOfPrimitives[A, Coll](what: IterableLike[A, Coll])(implicit tag: ClassTag[A]): AlmValidation[TDimension] =
     getIterableOfPrimitivesRepr(what: IterableLike[A, Coll]).map(valueReprToDim)
-  override def getIterable[A, Coll]( what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[TDimension] =
+  override def getIterable[A, Coll](what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[TDimension] =
     getIterableRepr(what: IterableLike[A, Coll], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer).map(valueReprToDim)
   override def getMapAllWith[A, B](what: scala.collection.Map[A, B], decomposes: Decomposes[B], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A]): AlmValidation[TDimension] =
     getMapAllWithRepr(what: scala.collection.Map[A, B], decomposes: Decomposes[B], spawnNewSequencer).map(valueReprToDim)
