@@ -11,7 +11,9 @@ trait ExtractorFactory[TDimension <: RiftDimension] {
   def tDimension: Class[_ <: RiftDimension]
   def toolGroup: ToolGroup
   def createExtractor(from: TDimension, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor]
-  //def createRematerializerRaw(from: AnyRef, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = createRematerializer(from.asInstanceOf[TDimension], fetchBlobs)(hasRecomposers, hasFunctionObject)
+  def createExtractorRaw(from: AnyRef, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = 
+    createExtractor(from.asInstanceOf[TDimension], fetchBlobs)(hasRecomposers)
   def createExtractor(from: TDimension)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = createExtractor(from, NoFetchBlobFetch)(hasRecomposers)
-  //def createRematerializerRaw(from: AnyRef)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = createRematerializerRaw(from, NoFetchBlobFetch)(hasRecomposers, hasFunctionObject)
+  def createExtractorRaw(from: AnyRef)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = 
+    createExtractorRaw(from, NoFetchBlobFetch)(hasRecomposers)
 }
