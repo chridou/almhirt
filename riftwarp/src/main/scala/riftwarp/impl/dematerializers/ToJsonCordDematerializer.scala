@@ -154,8 +154,9 @@ object ToJsonDematerializerFuns {
 
   def foldParts(items: List[Cord]): Cord = createInnerJson(items, Cord.empty) 
 
-  def foldTree(tree: scalaz.Tree[Cord]): Cord = ???
-
+  def foldTree(tree: scalaz.Tree[Cord]): Cord = 
+    foldParts(tree.rootLabel :: foldParts(tree.subForest.map(foldTree).toList) :: Nil)
+     
 }
 
 object ToJsonCordDematerializer extends DematerializerTemplate[DimensionCord]{
