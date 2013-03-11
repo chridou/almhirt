@@ -94,9 +94,9 @@ class FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLi
   override def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI] = almCast[String](value).flatMap(parseUriAlm(_))
   override def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID] = almCast[String](value).flatMap(parseUuidAlm(_))
 
-  override def resequenceFromRepr(value: ValueRepr): AlmValidation[Iterable[ValueRepr]] = almCast[List[ValueRepr]](value)
-  override def retuplelize2FromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] =
-    resequenceFromRepr(value).flatMap { reprItems =>
+  override def traversableOfReprFromRepr(value: ValueRepr): AlmValidation[Iterable[ValueRepr]] = almCast[List[ValueRepr]](value)
+  override def tuple2OfReprFromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] =
+    traversableOfReprFromRepr(value).flatMap { reprItems =>
       (reprItems.headOption, reprItems.tail.headOption) match {
         case (Some(a), Some(b)) => (a, b).success
         case _ => NoSuchElementProblem("Not enough items to build a tuple").failure

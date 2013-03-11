@@ -11,12 +11,18 @@ object JsonRematerializer {
                                                   //> orig  : riftwarp.DimensionStdLibJson = DimensionStdLibJson(List(1, A, 1.89))
                                                   //| 
   val remat = new FromStdLibJsonRematerializer    //> remat  : riftwarp.impl.rematerializers.FromStdLibJsonRematerializer = riftwa
-                                                  //| rp.impl.rematerializers.FromStdLibJsonRematerializer@379c6fd2
+                                                  //| rp.impl.rematerializers.FromStdLibJsonRematerializer@668bbdab
   
 //  val s: Set[Int] = List("Paris", "London").map(_.length)
 
 
+  val res1: AlmValidation[Vector[Any]] = remat.collectionOfReprFromRepr(orig.manifestation)
+                                                  //> res1  : almhirt.common.AlmValidation[Vector[Any]] = Success(Vector(1, A, 1.8
+                                                  //| 9))
 
-  val res: AlmValidation[List[Any]] = remat.getResequenced(orig.manifestation, x => x.success)
-                                                  //> res  : almhirt.common.AlmValidation[List[Any]] = Success(List(1, A, 1.89))
+  val res2: AlmValidation[List[Any]] = remat.resequencedMappedFromRepr(orig.manifestation, x => x.success)
+                                                  //> res2  : almhirt.common.AlmValidation[List[Any]] = Success(List(1, A, 1.89))
+                                                  //| 
+            
+            
 }

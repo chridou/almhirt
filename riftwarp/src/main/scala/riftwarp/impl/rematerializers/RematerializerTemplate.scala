@@ -28,14 +28,21 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRema
   override def getUri(from: TDimension): AlmValidation[_root_.java.net.URI] = uriFromRepr(from.manifestation)
   override def getUuid(from: TDimension): AlmValidation[_root_.java.util.UUID] = uuidFromRepr(from.manifestation)
 
-  override def resequence2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] =
-    resequenceFromRepr(value).flatMap(items =>{
-      val tuplesV = items.map(retuplelize2FromRepr(_).toAgg).toList.sequence
+  override def traversable2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] =
+    traversableOfReprFromRepr(value).flatMap(items =>{
+      val tuplesV = items.map(tuple2OfReprFromRepr(_).toAgg).toList.sequence
       tuplesV
     })
-  
-  override def resequencedMapped[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
-    resequenceFromRepr(value).flatMap { reprItems =>
+ 
+  override def collectionOfReprFromRepr[That[_]](value: ValueRepr)(implicit cbf : CanBuildFrom[Traversable[_], ValueRepr, That[ValueRepr]]): AlmValidation[That[ValueRepr]] =
+    traversableOfReprFromRepr(value).map { items =>
+        val builder = cbf()
+        items.foreach(x => builder += x)
+        builder.result
+      }
+    
+  override def resequencedMappedFromRepr[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
+    collectionOfReprFromRepr(value).flatMap { reprItems =>
       val itemsV = reprItems.toList.map(f(_).toAgg).sequence
       itemsV.map(items => {
         val builder = cbf()
@@ -44,8 +51,9 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends RRema
       })
     }
 
-  override def retuplelized2Mapped[A, B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A, B)] =
-    retuplelize2FromRepr(value).flatMap(ab =>
+  
+  override def retuplelized2MappedFromRepr[A, B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A, B)] =
+    tuple2OfReprFromRepr(value).flatMap(ab =>
       for {
         r1 <- fa(ab._1)
         r2 <- fb(ab._2)

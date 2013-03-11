@@ -29,16 +29,19 @@ trait RRematerializer[TDimension <: RiftDimension] {
   def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI]
   def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID]
   
-  def resequenceFromRepr(value: ValueRepr): AlmValidation[Traversable[ValueRepr]] 
-  def retuplelize2FromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] 
-  def resequence2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] 
+  def traversableOfReprFromRepr(value: ValueRepr): AlmValidation[Traversable[ValueRepr]] 
+  def collectionOfReprFromRepr[That[_]](value: ValueRepr)(implicit cbf : CanBuildFrom[Traversable[_], ValueRepr, That[ValueRepr]]): AlmValidation[That[ValueRepr]]
+  def tuple2OfReprFromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] 
+  
+  
+  def traversable2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] 
 
 //  def fromRepr[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[T]
 //  def complexByDescriptorFromRepr(value: ValueRepr, riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[Any]
 //  def complexWithTagFromRepr[T](value: ValueRepr, backupRiftDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[T]
   
-  def resequencedMapped[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf : CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] 
-  def retuplelized2Mapped[A,B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A,B)] 
+  def resequencedMappedFromRepr[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf : CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] 
+  def retuplelized2MappedFromRepr[A,B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A,B)] 
 
   def getString(from: TDimension): AlmValidation[String]
   def getBoolean(from: TDimension): AlmValidation[Boolean]
