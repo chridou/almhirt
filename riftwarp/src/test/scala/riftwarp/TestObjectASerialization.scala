@@ -6,8 +6,7 @@ import scalaz._, Scalaz._
 import almhirt.common.AlmValidation
 import java.util.UUID
 import org.joda.time.DateTime
-import riftwarp.components._
-import riftwarp.components._
+import riftwarp.inst._
 import riftwarp.components._
 
 class TestObjectADecomposer extends Decomposer[TestObjectA] {
@@ -33,19 +32,19 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
 class TestObjectARecomposer extends Recomposer[TestObjectA] {
   val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[TestObjectA] = {
+  def recompose(from: Extractor): AlmValidation[TestObjectA] = {
     for {
       arrayByte <- from.getByteArray("arrayByte")
       blob <- from.getBlob("blob")
-      primitiveTypes <- from.getComplexType[PrimitiveTypes]("primitiveTypes")
-      primitiveListMAs <- from.getComplexType[PrimitiveListMAs]("primitiveListMAs")
-      primitiveVectorMAs <- from.getComplexType[PrimitiveVectorMAs]("primitiveVectorMAs")
-      primitiveSetMAs <- from.tryGetComplexType[PrimitiveSetMAs]("primitiveSetMAs")
-      primitiveIterableMAs <- from.getComplexType[PrimitiveIterableMAs]("primitiveIterableMAs")
-      complexMAs <- from.getComplexType[ComplexMAs]("complexMAs")
-      primitiveMaps <- from.getComplexType[PrimitiveMaps]("primitiveMaps")
-      complexMaps <- from.getComplexType[ComplexMaps]("complexMaps")
-      addressOpt <- from.tryGetComplexType[TestAddress]("addressOpt")
+      primitiveTypes <- from.getComplexByTag[PrimitiveTypes]("primitiveTypes", None)
+      primitiveListMAs <- from.getComplexByTag[PrimitiveListMAs]("primitiveListMAs", None)
+      primitiveVectorMAs <- from.getComplexByTag[PrimitiveVectorMAs]("primitiveVectorMAs", None)
+      primitiveSetMAs <- from.tryGetComplexByTag[PrimitiveSetMAs]("primitiveSetMAs", None)
+      primitiveIterableMAs <- from.getComplexByTag[PrimitiveIterableMAs]("primitiveIterableMAs", None)
+      complexMAs <- from.getComplexByTag[ComplexMAs]("complexMAs", None)
+      primitiveMaps <- from.getComplexByTag[PrimitiveMaps]("primitiveMaps", None)
+      complexMaps <- from.getComplexByTag[ComplexMaps]("complexMaps", None)
+      addressOpt <- from.tryGetComplexByTag[TestAddress]("addressOpt", None)
     } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, primitiveVectorMAs, primitiveSetMAs, primitiveIterableMAs, complexMAs, primitiveMaps, complexMaps, addressOpt)
   }
 }
@@ -72,7 +71,7 @@ class PrimitiveTypesDecomposer extends Decomposer[PrimitiveTypes] {
 class PrimitiveTypesRecomposer extends Recomposer[PrimitiveTypes] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PrimitiveTypes] = {
+  def recompose(from: Extractor): AlmValidation[PrimitiveTypes] = {
     val str = from.getString("str").toAgg
     val bool = from.getBoolean("bool").toAgg
     val byte = from.getByte("byte").toAgg
@@ -115,12 +114,12 @@ class PrimitiveListMAsDecomposer extends Decomposer[PrimitiveListMAs] {
 class PrimitiveListMAsRecomposer extends Recomposer[PrimitiveListMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PrimitiveListMAs] = {
-    val listString = from.getPrimitiveMA[List, String]("listString").toAgg
-    val listInt = from.getPrimitiveMA[List, Int]("listInt").toAgg
-    val listDouble = from.getPrimitiveMA[List, Double]("listDouble").toAgg
-    val listBigDecimal = from.getPrimitiveMA[List, BigDecimal]("listBigDecimal").toAgg
-    val listDateTime = from.getPrimitiveMA[List, DateTime]("listDateTime").toAgg
+  def recompose(from: Extractor): AlmValidation[PrimitiveListMAs] = {
+    val listString = from.getManyPrimitives[List, String]("listString").toAgg
+    val listInt = from.getManyPrimitives[List, Int]("listInt").toAgg
+    val listDouble = from.getManyPrimitives[List, Double]("listDouble").toAgg
+    val listBigDecimal = from.getManyPrimitives[List, BigDecimal]("listBigDecimal").toAgg
+    val listDateTime = from.getManyPrimitives[List, DateTime]("listDateTime").toAgg
     (listString
       |@| listInt
       |@| listDouble
@@ -145,13 +144,13 @@ class PrimitiveVectorMAsDecomposer extends Decomposer[PrimitiveVectorMAs] {
 class PrimitiveVectorMAsRecomposer extends Recomposer[PrimitiveVectorMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveVectorMAs])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PrimitiveVectorMAs] = {
+  def recompose(from: Extractor): AlmValidation[PrimitiveVectorMAs] = {
 
-    val vectorString = from.getPrimitiveMA[Vector, String]("vectorString").toAgg
-    val vectorInt = from.getPrimitiveMA[Vector, Int]("vectorInt").toAgg
-    val vectorDouble = from.getPrimitiveMA[Vector, Double]("vectorDouble").toAgg
-    val vectorBigDecimal = from.getPrimitiveMA[Vector, BigDecimal]("vectorBigDecimal").toAgg
-    val vectorDateTime = from.getPrimitiveMA[Vector, DateTime]("vectorDateTime").toAgg
+    val vectorString = from.getManyPrimitives[Vector, String]("vectorString").toAgg
+    val vectorInt = from.getManyPrimitives[Vector, Int]("vectorInt").toAgg
+    val vectorDouble = from.getManyPrimitives[Vector, Double]("vectorDouble").toAgg
+    val vectorBigDecimal = from.getManyPrimitives[Vector, BigDecimal]("vectorBigDecimal").toAgg
+    val vectorDateTime = from.getManyPrimitives[Vector, DateTime]("vectorDateTime").toAgg
     (vectorString
       |@| vectorInt
       |@| vectorDouble
@@ -176,13 +175,13 @@ class PrimitiveSetMAsDecomposer extends Decomposer[PrimitiveSetMAs] {
 class PrimitiveSetMAsRecomposer extends Recomposer[PrimitiveSetMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveSetMAs])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PrimitiveSetMAs] = {
+  def recompose(from: Extractor): AlmValidation[PrimitiveSetMAs] = {
 
-    val setString = from.getPrimitiveMA[Set, String]("setString").toAgg
-    val setInt = from.getPrimitiveMA[Set, Int]("setInt").toAgg
-    val setDouble = from.getPrimitiveMA[Set, Double]("setDouble").toAgg
-    val setBigDecimal = from.getPrimitiveMA[Set, BigDecimal]("setBigDecimal").toAgg
-    val setDateTime = from.tryGetPrimitiveMA[Set, DateTime]("setDateTime").toAgg
+    val setString = from.getManyPrimitives[Set, String]("setString").toAgg
+    val setInt = from.getManyPrimitives[Set, Int]("setInt").toAgg
+    val setDouble = from.getManyPrimitives[Set, Double]("setDouble").toAgg
+    val setBigDecimal = from.getManyPrimitives[Set, BigDecimal]("setBigDecimal").toAgg
+    val setDateTime = from.tryGetManyPrimitives[Set, DateTime]("setDateTime").toAgg
     (setString
       |@| setInt
       |@| setDouble
@@ -207,13 +206,13 @@ class PrimitiveIterableMAsDecomposer extends Decomposer[PrimitiveIterableMAs] {
 class PrimitiveIterableMAsRecomposer extends Recomposer[PrimitiveIterableMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveIterableMAs])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PrimitiveIterableMAs] = {
+  def recompose(from: Extractor): AlmValidation[PrimitiveIterableMAs] = {
 
-    val iterableString = from.getPrimitiveMA[Set, String]("iterableString").toAgg
-    val iterableInt = from.getPrimitiveMA[Set, Int]("iterableInt").toAgg
-    val iterableDouble = from.getPrimitiveMA[Set, Double]("iterableDouble").toAgg
-    val iterableBigDecimal = from.getPrimitiveMA[Set, BigDecimal]("iterableBigDecimal").toAgg
-    val iterableDateTime = from.getPrimitiveMA[Set, DateTime]("iterableDateTime").toAgg
+    val iterableString = from.getManyPrimitives[Set, String]("iterableString").toAgg
+    val iterableInt = from.getManyPrimitives[Set, Int]("iterableInt").toAgg
+    val iterableDouble = from.getManyPrimitives[Set, Double]("iterableDouble").toAgg
+    val iterableBigDecimal = from.getManyPrimitives[Set, BigDecimal]("iterableBigDecimal").toAgg
+    val iterableDateTime = from.getManyPrimitives[Set, DateTime]("iterableDateTime").toAgg
     (iterableString
       |@| iterableInt
       |@| iterableDouble
@@ -237,11 +236,11 @@ class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
 class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
   val riftDescriptor = RiftDescriptor(classOf[ComplexMAs])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[ComplexMAs] = {
-    val addresses1 = from.getComplexMALoose[List, TestAddress]("addresses1").toAgg
-    val addresses2 = from.getComplexMALoose[Vector, TestAddress]("addresses2").toAgg
-    val addresses3 = from.getComplexMALoose[Set, TestAddress]("addresses3").toAgg
-    val anything = from.getMA[Iterable, Any]("anything").toAgg
+  def recompose(from: Extractor): AlmValidation[ComplexMAs] = {
+    val addresses1 = from.getManyComplexByTag[List, TestAddress]("addresses1", None).toAgg
+    val addresses2 = from.getManyComplexByTag[Vector, TestAddress]("addresses2", None).toAgg
+    val addresses3 = from.getManyComplexByTag[Set, TestAddress]("addresses3", None).toAgg
+    val anything = from.getMany[List]("anything", None).toAgg
     (addresses1
       |@| addresses2
       |@| addresses3
@@ -263,10 +262,10 @@ class PrimitiveMapsDecomposer extends Decomposer[PrimitiveMaps] {
 class PrimitiveMapsRecomposer extends Recomposer[PrimitiveMaps] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveMaps])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[PrimitiveMaps] = {
-    val mapIntInt = from.getPrimitiveMap[Int, Int]("mapIntInt").toAgg
-    val mapStringInt = from.getPrimitiveMap[String, Int]("mapStringInt").toAgg
-    val mapUuidDateTime = from.getPrimitiveMap[UUID, DateTime]("mapUuidDateTime").toAgg
+  def recompose(from: Extractor): AlmValidation[PrimitiveMaps] = {
+    val mapIntInt = from.getMapOfPrimitives[Int, Int]("mapIntInt").toAgg
+    val mapStringInt = from.getMapOfPrimitives[String, Int]("mapStringInt").toAgg
+    val mapUuidDateTime = from.getMapOfPrimitives[UUID, DateTime]("mapUuidDateTime").toAgg
     (mapIntInt |@| mapStringInt |@| mapUuidDateTime)(PrimitiveMaps.apply)
   }
 }
@@ -285,10 +284,10 @@ class ComplexMapsDecomposer extends Decomposer[ComplexMaps] {
 class ComplexMapsRecomposer extends Recomposer[ComplexMaps] {
   val riftDescriptor = RiftDescriptor(classOf[ComplexMaps])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[ComplexMaps] = {
-    val mapIntTestAddress1 = from.getComplexMapFixed[Int, TestAddress]("mapIntTestAddress1").toAgg
-    val mapIntAny = from.getComplexMapLoose[Int, AnyRef]("mapIntAny").toAgg
-    val mapStringAnyWithUnknown = from.getMap[String, Any]("mapStringAnyWithUnknown").toAgg
+  def recompose(from: Extractor): AlmValidation[ComplexMaps] = {
+    val mapIntTestAddress1 = from.getMapComplexByTag[Int, TestAddress]("mapIntTestAddress1", None).toAgg
+    val mapIntAny = from.getMapComplexByTag[Int, AnyRef]("mapIntAny", None).toAgg
+    val mapStringAnyWithUnknown = from.getMap[String]("mapStringAnyWithUnknown", None).toAgg
     (mapIntTestAddress1 |@| mapIntAny |@| mapStringAnyWithUnknown)(ComplexMaps.apply)
   }
 }
@@ -305,7 +304,7 @@ class TestAddressDecomposer extends Decomposer[TestAddress] {
 class TestAddressRecomposer extends Recomposer[TestAddress] {
   val riftDescriptor = RiftDescriptor(classOf[TestAddress])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Rematerializer): AlmValidation[TestAddress] = {
+  def recompose(from: Extractor): AlmValidation[TestAddress] = {
     val city = from.getString("city").toAgg
     val street = from.getString("street").toAgg
     (city |@| street)(TestAddress.apply)

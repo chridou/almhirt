@@ -3,7 +3,8 @@ package riftwarp
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import almhirt.syntax.almvalidation._
-import riftwarp.impl.rematerializers.FromJsonStringRematerializer
+import riftwarp.inst._
+import riftwarp.impl.rematerializers.FromStdLibJsonStringExtractor
 
 class FromJsonMapRematerializerSpecs extends WordSpec with ShouldMatchers {
   val riftWarp = RiftWarp.concurrentWithDefaults()
@@ -18,25 +19,25 @@ class FromJsonMapRematerializerSpecs extends WordSpec with ShouldMatchers {
   "FromJsonMapRematerializer" when {
     "dematerializing an empty List of Integers" should {
       "extract the property" in {
-        val list = FromJsonStringRematerializer(list0Json, NoFetchBlobFetch).flatMap(demat =>
-          demat.getPrimitiveMA[List, Int]("list"))
+        val list = FromStdLibJsonStringExtractor(list0Json, NoFetchBlobFetch).flatMap(extractor =>
+          extractor.getManyPrimitives[List, Int]("list"))
         list.isSuccess should be(true)
       }
       "dematerialize the property correctly" in {
-        val list = FromJsonStringRematerializer(list0Json, NoFetchBlobFetch).flatMap(demat =>
-          demat.getPrimitiveMA[List, Int]("list")).forceResult
+        val list = FromStdLibJsonStringExtractor(list0Json, NoFetchBlobFetch).flatMap(extractor =>
+          extractor.getManyPrimitives[List, Int]("list")).forceResult
         list should equal(list0)
       }
     }
     "dematerializing a List of 4 Integers" should {
       "extract the property" in {
-        val list = FromJsonStringRematerializer(list1Json, NoFetchBlobFetch).flatMap(demat =>
-          demat.getPrimitiveMA[List, Int]("list"))
+        val list = FromStdLibJsonStringExtractor(list1Json, NoFetchBlobFetch).flatMap(extractor =>
+          extractor.getManyPrimitives[List, Int]("list"))
         list.isSuccess should be(true)
       }
       "dematerialize the property correctly" in {
-        val list = FromJsonStringRematerializer(list1Json, NoFetchBlobFetch).flatMap(demat =>
-          demat.getPrimitiveMA[List, Int]("list")).forceResult
+        val list = FromStdLibJsonStringExtractor(list1Json, NoFetchBlobFetch).flatMap(extractor =>
+          extractor.getManyPrimitives[List, Int]("list")).forceResult
         list should equal(list1)
       }
     }

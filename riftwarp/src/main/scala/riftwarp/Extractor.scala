@@ -61,7 +61,7 @@ trait Extractor {
   def getManyComplexByTag[That[_], T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]]
   def tryGetManyComplexByTag[That[_], T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[Option[That[T]]]
   def getMany[That[_]](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit cbf: CanBuildFrom[Traversable[_], Any, That[Any]]): AlmValidation[That[Any]]
-  def tryGetMany[That[_]](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit cbf: CanBuildFrom[Traversable[_], Any, That[Any]]): AlmValidation[That[Any]]
+  def tryGetMany[That[_]](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit cbf: CanBuildFrom[Traversable[_], Any, That[Any]]): AlmValidation[Option[That[Any]]]
 
   def getMapOfPrimitives[A, B](ident: String)(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Map[A, B]]
   def tryGetMapOfPrimitives[A, B](ident: String)(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Option[Map[A, B]]]
