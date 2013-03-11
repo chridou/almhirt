@@ -11,12 +11,12 @@ trait HasRecomposersFuns {
   def getRawRecomposer(riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers): AlmValidation[RawRecomposer] =
     option.cata(hasRecomposers.tryGetRawRecomposer(riftDescriptor))(
       recomposer => recomposer.success,
-      UnspecifiedProblem("No raw recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
+      UnspecifiedProblem("HasRecomposersFuns.getRawRecomposer: No raw recomposer found for RiftDescriptor '%s'".format(riftDescriptor)).failure)
 
   def getRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit hasRecomposers: HasRecomposers, tag: ClassTag[T]): AlmValidation[Recomposer[T]] =
     option.cata(hasRecomposers.tryGetRecomposer[T](riftDescriptor))(
       recomposer => recomposer.success,
-      UnspecifiedProblem("No recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
+      UnspecifiedProblem("HasRecomposersFuns.getRecomposer: No recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
   
   def lookUpFromRematerializer(remat: Extractor, backupDescriptor: Option[RiftDescriptor])(implicit hasRecomposers: HasRecomposers): AlmValidation[RawRecomposer] =
     remat.tryGetRiftDescriptor.flatMap(tdOpt =>
@@ -24,7 +24,7 @@ trait HasRecomposersFuns {
         s => s.success,
         option.cata(backupDescriptor)(
           backDescr => backDescr.success,
-          UnspecifiedProblem("Could not determine the required type").failure))).flatMap(td =>
+          UnspecifiedProblem("HasRecomposersFuns.lookUpFromRematerializer: Could not determine the required type").failure))).flatMap(td =>
       hasRecomposers.getRawRecomposer(td))
 
   def lookUpFromRematerializer(remat: Extractor, tBackup: Class[_])(implicit hasRecomposers: HasRecomposers): AlmValidation[RawRecomposer] =

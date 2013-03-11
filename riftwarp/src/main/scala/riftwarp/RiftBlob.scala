@@ -46,7 +46,7 @@ case class RiftBlobRefByUri(uri: java.net.URI) extends RiftBlobReference {
 }
 
 object RiftBlobArrayValueRecomposer extends Recomposer[RiftBlobArrayValue] {
-  val riftDescriptor = RiftDescriptor(classOf[RiftBlobArrayValue])
+  val riftDescriptor = RiftDescriptor("RiftBlobArrayValue")
   val alternativeRiftDescriptors = Nil
   def recompose(from: Extractor): AlmValidation[RiftBlobArrayValue] = {
     from.getByteArrayFromBlobEncoding("data").map(RiftBlobArrayValue(_))

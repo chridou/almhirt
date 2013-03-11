@@ -1,7 +1,10 @@
 package riftwarp
 
 import org.scalatest._
-class DeserializeManyTimes extends FunSuite {
+import org.scalatest.matchers.MustMatchers
+import almhirt.almvalidation.kit._
+
+class SerializationTests extends FunSuite with MustMatchers {
   val riftWarp = {
     val rw = RiftWarp.concurrentWithDefaults()
     rw.barracks.addDecomposer(new TestObjectADecomposer())
@@ -29,10 +32,16 @@ class DeserializeManyTimes extends FunSuite {
   }
 
   val testObject = TestObjectA.pete
-  test("Serialize the Testobject to JSON 1000 times") {
-    val res =
-      for (i <- 1 to 1000) yield riftWarp.prepareForWarp[DimensionCord](RiftJson())(testObject).isSuccess
-    assert(res.forall(_ == true))
-  }
+//  test("Serialize the Testobject to JSON 1000 times") {
+//    val res =
+//      for (i <- 1 to 1000) yield riftWarp.prepareForWarp[DimensionCord](RiftJson())(testObject).isSuccess
+//    assert(res.forall(_ == true))
+//  }
 
+  test("It must deserialize to Json and the reserialize without error") {
+    val warpStream = riftWarp.prepareForWarp[DimensionString](RiftJson())(testObject).forceResult
+    val backFromWarpV = riftWarp.receiveFromWarp[DimensionString, TestObjectA](RiftJson())(warpStream)
+
+    backFromWarpV.isSuccess must be(true)
+  }
 }

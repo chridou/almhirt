@@ -12,30 +12,30 @@ trait HasRecomposers {
   def getRawRecomposer(riftDescriptor: RiftDescriptor): AlmValidation[RawRecomposer] =
     option.cata(tryGetRawRecomposer(riftDescriptor))(
       recomposer => recomposer.success,
-      UnspecifiedProblem("No raw recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
+      UnspecifiedProblem("HasRecomposers.getRawRecomposer: No raw recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
 
   def getRecomposer[T <: AnyRef](riftDescriptor: RiftDescriptor)(implicit tag: ClassTag[T]): AlmValidation[Recomposer[T]] =
     option.cata(tryGetRecomposer[T](riftDescriptor))(
       recomposer => recomposer.success,
-      UnspecifiedProblem("No recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
+      UnspecifiedProblem("HasRecomposers.getRecomposer: No recomposer found for RiftDescriptor '%s')".format(riftDescriptor)).failure)
 
-  def lookUpRawFromRematerializer(remat: Extractor, backupDescriptor: Option[RiftDescriptor]): AlmValidation[RawRecomposer] =
-    remat.tryGetRiftDescriptor.flatMap(tdOpt =>
+  def lookUpRawFromRematerializer(extractor: Extractor, backupDescriptor: Option[RiftDescriptor]): AlmValidation[RawRecomposer] =
+    extractor.tryGetRiftDescriptor.flatMap(tdOpt =>
       option.cata(tdOpt)(
         s => s.success,
         option.cata(backupDescriptor)(
           backDescr => backDescr.success,
-          UnspecifiedProblem("Could not determine the required type").failure))).flatMap(td =>
+          UnspecifiedProblem("HasRecomposers.lookUpRawFromRematerializer: Could not determine the required type").failure))).flatMap(td =>
       getRawRecomposer(td))
 
   def lookUpRawFromRematerializer(remat: Extractor): AlmValidation[RawRecomposer] =
     lookUpRawFromRematerializer(remat, None)
 
-  def decomposeRawWithLookedUpRawRecomposer(remat: Extractor): AlmValidation[AnyRef] =
-    lookUpRawFromRematerializer(remat).flatMap(recomposer => recomposer.recomposeRaw(remat))
+  def decomposeRawWithLookedUpRawRecomposer(extractor: Extractor): AlmValidation[AnyRef] =
+    lookUpRawFromRematerializer(extractor).flatMap(recomposer => recomposer.recomposeRaw(extractor))
 
-  def lookUpFromRematerializer[T <: AnyRef](remat: Extractor, backupDescriptor: Option[RiftDescriptor])(implicit mTarget: ClassTag[T]): AlmValidation[Recomposer[T]] =
-    remat.tryGetRiftDescriptor.fold(
+  def lookUpFromRematerializer[T <: AnyRef](extractor: Extractor, backupDescriptor: Option[RiftDescriptor])(implicit mTarget: ClassTag[T]): AlmValidation[Recomposer[T]] =
+    extractor.tryGetRiftDescriptor.fold(
       prob =>
         prob.failure,
       succ =>

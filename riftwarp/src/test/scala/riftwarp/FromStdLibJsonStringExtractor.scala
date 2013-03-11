@@ -6,7 +6,7 @@ import almhirt.syntax.almvalidation._
 import riftwarp.inst._
 import riftwarp.impl.rematerializers.FromStdLibJsonStringExtractor
 
-class FromJsonMapRematerializerSpecs extends WordSpec with ShouldMatchers {
+class FromStdLibJsonStringExtractorSpecs extends WordSpec with ShouldMatchers {
   val riftWarp = RiftWarp.concurrentWithDefaults()
   implicit val hasDecomposers = riftWarp.barracks
   implicit val toolShed = riftWarp.toolShed
@@ -16,7 +16,7 @@ class FromJsonMapRematerializerSpecs extends WordSpec with ShouldMatchers {
   val list1 = List(1, 2, 3, 4)
   val list1Json = """{"list": [1,2,3,4]}"""
 
-  "FromJsonMapRematerializer" when {
+  "FromStdLibJsonStringExtractor" when {
     "dematerializing an empty List of Integers" should {
       "extract the property" in {
         val list = FromStdLibJsonStringExtractor(list0Json, NoFetchBlobFetch).flatMap(extractor =>
