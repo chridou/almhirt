@@ -184,4 +184,16 @@ trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer
     getMapRepr(what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer).map(valueReprToDim)
   override def getMapLiberate[A, B](what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[TDimension] =
     getMapLiberateRepr(what: scala.collection.Map[A, B], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer).map(valueReprToDim)
+
+  override def getTreeAllWith[A](what: scalaz.Tree[A], decomposes: Decomposes[A], spawnNewSequencer: () => WarpSequencer[TDimension]): AlmValidation[TDimension] =
+    getTreeAllWithRepr[A](what, decomposes, spawnNewSequencer).map(valueReprToDim)
+  override def getTreeStrict[A <: AnyRef](what: scalaz.Tree[A], riftDesc: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit tag: ClassTag[A], hasDecomposers: HasDecomposers): AlmValidation[TDimension] =
+    getTreeStrictRepr[A](what, riftDesc, spawnNewSequencer).map(valueReprToDim)
+  override def getTreeOfComplex[A <: AnyRef](what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[TDimension] =
+    getTreeOfComplexRepr[A](what, backupRiftDescriptor, spawnNewSequencer).map(valueReprToDim)
+  override def getTreeOfPrimitives[A](what: scalaz.Tree[A])(implicit tag: ClassTag[A]): AlmValidation[TDimension] =
+    getTreeOfPrimitivesRepr[A](what).map(valueReprToDim)
+  override def getTree[A](what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor], spawnNewSequencer: () => WarpSequencer[TDimension])(implicit hasDecomposers: HasDecomposers): AlmValidation[TDimension] =
+    getTreeRepr[A](what, backupRiftDescriptor, spawnNewSequencer).map(valueReprToDim)
+
 }

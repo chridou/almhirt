@@ -89,7 +89,8 @@ case class TestObjectA(
   complexMAs: ComplexMAs,
   primitiveMaps: PrimitiveMaps,
   complexMaps: ComplexMaps,
-  addressOpt: Option[TestAddress]) extends HasDefaultRiftDescriptor
+  addressOpt: Option[TestAddress],
+  trees: Trees) extends HasDefaultRiftDescriptor
 
 object TestObjectA {
   val pete: TestObjectA =
@@ -147,7 +148,8 @@ object TestObjectA {
         TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
         TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
         TestAddress.someAddresses.zipWithIndex.map(x => (x._2.toString, x._1)).toMap + ("unknownType" -> UnknownObject(1)) + ("unspecifiedProblem" -> UnspecifiedProblem("Test", args = Map("arg1" -> 95))) + ("x" -> UUID.randomUUID()) + ("y" -> UUID.randomUUID()) + ("z" -> DateTime.now())),
-      addressOpt = Some(TestAddress("Berlin", "At the wall 89")))
+      addressOpt = Some(TestAddress("Berlin", "At the wall 89")),
+      trees = Trees())
 }
 
 case class TestAddress(city: String, street: String) extends HasDefaultRiftDescriptor

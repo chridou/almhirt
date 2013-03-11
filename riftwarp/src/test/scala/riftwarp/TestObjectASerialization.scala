@@ -291,6 +291,7 @@ class ComplexMapsRecomposer extends Recomposer[ComplexMaps] {
     (mapIntTestAddress1 |@| mapIntAny |@| mapStringAnyWithUnknown)(ComplexMaps.apply)
   }
 }
+
 class TestAddressDecomposer extends Decomposer[TestAddress] {
   val riftDescriptor = RiftDescriptor(classOf[TestAddress])
   val alternativeRiftDescriptors = Nil
@@ -308,5 +309,15 @@ class TestAddressRecomposer extends Recomposer[TestAddress] {
     val city = from.getString("city").toAgg
     val street = from.getString("street").toAgg
     (city |@| street)(TestAddress.apply)
+  }
+}
+
+class TreesDecomposer extends Decomposer[Trees] {
+  val riftDescriptor = RiftDescriptor(classOf[Trees])
+  val alternativeRiftDescriptors = Nil
+  def decompose[TDimension <: RiftDimension](what: Trees, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
+    into.addRiftDescriptor(riftDescriptor)
+      .addTree("city", what.city)
+      .addString("street", what.street).ok
   }
 }
