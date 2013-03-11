@@ -75,6 +75,8 @@ class FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLi
     else
       UnspecifiedProblem("Not a primitive type").failure
 
+  override def isPrimitive(value: ValueRepr): Boolean = FromStdLibJsonRematerializerFuns.isPrimitive(value)
+
   override def stringFromRepr(value: ValueRepr): AlmValidation[String] = almCast[String](value)
   override def booleanFromRepr(value: ValueRepr): AlmValidation[Boolean] = almCast[Boolean](value)
   override def byteFromRepr(value: ValueRepr): AlmValidation[Byte] = almCast[Double](value).map(_.toByte)

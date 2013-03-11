@@ -21,7 +21,7 @@ object RiftWarpToolShed {
       def tryGetWarpSequencerFactoryByType(tDimemsion: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = hasWarpSequencers.tryGetWarpSequencerFactoryByType(tDimemsion)(channel, toolGroup)
 
       def addExtractorFactory(arrayFactory: ExtractorFactory[_ <: RiftDimension], isChannelDefault: Boolean = false) { hasExtractorFactories.addExtractorFactory(arrayFactory, isChannelDefault) }
-      def tryGetRematerializerFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = hasExtractorFactories.tryGetExtractorFactoryByType(tDimension)(channel, toolGroup)
+      def tryGetExtractorFactoryByType(tDimension: Class[_ <: RiftDimension])(channel: RiftChannel, toolGroup: Option[ToolGroup] = None) = hasExtractorFactories.tryGetExtractorFactoryByType(tDimension)(channel, toolGroup)
 
     }
   }

@@ -184,7 +184,7 @@ object RiftWarpHttpFuns {
     for {
       (_, channel, riftDescriptor, dim) <- response.explode
       recompose <- {
-        def getRecomposer(remat: Rematerializer) = settings.riftWarp.barracks.lookUpFromRematerializer[AnyRef](remat, riftDescriptor)
+        def getRecomposer(remat: Extractor) = settings.riftWarp.barracks.lookUpFromRematerializer[AnyRef](remat, riftDescriptor)
         RiftWarpFuns.getRecomposeFun[AnyRef](channel, dim.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(getRecomposer)(NoFetchBlobFetch)(manifest[AnyRef], settings.riftWarp)
       }
       recomposed <- recompose(dim)

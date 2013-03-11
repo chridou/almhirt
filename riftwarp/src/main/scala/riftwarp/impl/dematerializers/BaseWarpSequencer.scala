@@ -8,7 +8,6 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.components._
-import riftwarp.ma.HasFunctionObjects
 
 /**
  * Does not implement the up most '...Optional' methods, because they might differ in behaviour.

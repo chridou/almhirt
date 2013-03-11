@@ -62,20 +62,21 @@ object RiftWarpFuns {
   }
   
   def getRecomposeFun[T <: AnyRef](channel: RiftChannel, tDimension: Class[_ <: RiftDimension], toolGroup: Option[ToolGroup] = None)(getRecomposer: (Extractor) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit cTarget: ClassTag[T], riftWarp: RiftWarp): AlmValidation[RiftDimension => AlmValidation[T]] = {
-    lookUpRematerializerFactoryAndConverters(channel, tDimension, toolGroup).map {
-      case (arrayFactory, converters) =>
-        (sourceDim: RiftDimension) =>
-          for {
-            sourceDimForRematerializer <- converters.foldLeft[AlmValidation[RiftDimension]](sourceDim.success[Problem])((acc, conv) => acc.fold(prob => prob.failure, succ => conv.convertRaw(succ)))
-            rematerializer <- arrayFactory.createExtractorRaw(sourceDimForRematerializer, blobFetch)(riftWarp.barracks, riftWarp.toolShed)
-            recomposer <- getRecomposer(rematerializer)
-            recomposed <- recomposer.recompose(rematerializer)
-            casted <- almCast[T](recomposed)
-          } yield casted
-    }
+//    lookUpRematerializerFactoryAndConverters(channel, tDimension, toolGroup).map {
+//      case (arrayFactory, converters) =>
+//        (sourceDim: RiftDimension) =>
+//          for {
+//            sourceDimForRematerializer <- converters.foldLeft[AlmValidation[RiftDimension]](sourceDim.success[Problem])((acc, conv) => acc.fold(prob => prob.failure, succ => conv.convertRaw(succ)))
+//            extractor <- arrayFactory.createExtractorRaw(sourceDimForRematerializer, blobFetch)(riftWarp.barracks, riftWarp.toolShed)
+//            recomposer <- getRecomposer(extractor)
+//            recomposed <- recomposer.recompose(extractor)
+//            casted <- almCast[T](recomposed)
+//          } yield casted
+//    }
+    ???
   }
   
-  def getRecomposeFun[TSource <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(getRecomposer: (Rematerializer) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit cSourceDim: ClassTag[TSource], cTarget: ClassTag[T], riftWarp: RiftWarp): AlmValidation[(TSource) => AlmValidation[T]] = {
+  def getRecomposeFun[TSource <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(getRecomposer: (Extractor) => AlmValidation[Recomposer[T]])(blobFetch: BlobFetch)(implicit cSourceDim: ClassTag[TSource], cTarget: ClassTag[T], riftWarp: RiftWarp): AlmValidation[(TSource) => AlmValidation[T]] = {
     getRecomposeFun(channel, cSourceDim.runtimeClass.asInstanceOf[Class[_ <: RiftDimension]], toolGroup)(getRecomposer)(blobFetch)
   }
   
