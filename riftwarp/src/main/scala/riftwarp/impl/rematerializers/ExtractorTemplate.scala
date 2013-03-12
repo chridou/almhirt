@@ -85,8 +85,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
 
   override def getManyComplexOfType[That[_], T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
     getManyWith[That, T](ident, extractor => extractComplexWithLookupAndCast(extractor, backupDescriptor))
-     
-    
+
   override def getManyComplexByTag[That[_], T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
     getManyWith[That, T](ident, extractor => extractComplexWithLookup(extractor, backupDescriptor))
 
@@ -148,26 +147,37 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
       }
     } yield mappedTuples.toMap
 
-
   def getTreeOfPrimitives[T](ident: String)(implicit mA: ClassTag[T]): AlmValidation[Tree[T]] =
-    ???
-    
+    for {
+      value <- getValue(ident)
+      mapper <- rematerializer.valueMapperFromTag[T]
+      tree <- rematerializer.remappedTree(value, mapper)
+    } yield tree
+
   def getTreeWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[Tree[T]] =
-    ???
-    
-  def getTreeOfComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Tree[Any]] =
-    ???
-    
+    for {
+      value <- getValue(ident)
+      tree <- rematerializer.remappedTree(value, v => spawnNew(v).flatMap(recomposes))
+    } yield tree
+
+  def getTreeOfComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Tree[AnyRef]] =
+    for {
+      recomposer <- hasRecomposers.getRawRecomposer(descriptor)
+      tree <- getTreeWith(ident, recomposer.recomposeRaw)
+    } yield tree
+
   def getTreeOfComplexOfType[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Tree[T]] =
-    ???
-    
+    getTreeWith[T](ident, extractor => extractComplexWithLookupAndCast(extractor, backupDescriptor))
+
   def getTreeOfComplexByTag[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Tree[T]] =
-    ???
-    
+    getTreeWith[T](ident, extractor => extractComplexWithLookup(extractor, backupDescriptor))
+
   def getTree(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Tree[Any]] =
-    ???
-    
-    
+    for {
+      value <- getValue(ident)
+      tree <- rematerializer.remappedTree(value, v => extractPrimitiveOrComplexWithLookup(v, backupDescriptor))
+    } yield tree
+
   override def getBlob(ident: String): AlmValidation[Array[Byte]] =
     for {
       value <- getValue(ident)
@@ -188,7 +198,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
       recomposed <- recomposer.recomposeRaw(extractor)
       casted <- almCast[T](recomposed)
     } yield casted
-    
+
   private def extractPrimitiveOrComplexWithLookup(value: Remat#ValueRepr, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Any] =
     if (rematerializer.isPrimitive(value))
       rematerializer.primitiveFromValue(value)

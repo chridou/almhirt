@@ -88,7 +88,7 @@ trait NoneHandlingExtractor extends Extractor {
     if (hasValue(ident)) getTreeOfPrimitives[T](ident).map(Some(_)) else None.success
   override def tryGetTreeWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[Option[Tree[T]]] =
     if (hasValue(ident)) getTreeWith[T](ident, recomposes).map(Some(_)) else None.success
-  override def tryGetTreeOfComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Option[Tree[Any]]] =
+  override def tryGetTreeOfComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Option[Tree[AnyRef]]] =
     if (hasValue(ident)) getTreeOfComplex(ident, descriptor).map(Some(_)) else None.success
   override def tryGetTreeOfComplexOfType[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Option[Tree[T]]] =
     if (hasValue(ident)) getTreeOfComplexOfType[T](ident, backupDescriptor).map(Some(_)) else None.success
