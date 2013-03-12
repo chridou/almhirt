@@ -15,13 +15,12 @@
 package almhirt.domain
 
 import scala.language.implicitConversions
-
 import java.util.UUID
 import org.joda.time.DateTime
-import almhirt.core.CanCreateUuidsAndDateTimes
+import almhirt.core._
 
 /** These events can create or mutate an aggregate root in the dimension of time */
-trait DomainEvent { def header: DomainEventHeader }
+trait DomainEvent extends Event { def header: DomainEventHeader }
 
 object DomainEvent {
   implicit class DomainEventOps(event: DomainEvent) {
@@ -39,7 +38,7 @@ final case class DomainEventHeader(
   /** The affected aggregate root */
   aggRef: AggregateRootRef,
   /** The events timestamp of creation */
-  timestamp: DateTime)
+  timestamp: DateTime) extends EventHeader
 
 object DomainEventHeader {
   def apply(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
@@ -47,7 +46,7 @@ object DomainEventHeader {
 
   implicit def aggregateRootRef2DomainEventHeader(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
     apply(aggRef)
-    
+
   implicit class DomainEventHeaderOps(header: DomainEventHeader) {
     def aggRef: AggregateRootRef = header.aggRef
     def aggId: UUID = header.aggRef.id
