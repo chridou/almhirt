@@ -26,11 +26,8 @@ case class DimensionCord(manifestation: scalaz.Cord) extends CordBasedDimension
 case class DimensionNiceCord(manifestation: scalaz.Cord) extends CordBasedDimension
 case class DimensionBinary(manifestation: Array[Byte]) extends RiftByteArrayBasedDimension with RiftHttpDimension
 case class DimensionRawMap(manifestation: Map[String, Any]) extends RiftDimension { type Under = Map[String, Any] }
-case class DimensionStdLibJsonMap(manifestation: Map[String, Any]) extends RiftDimension{ type Under = Map[String, Any] }
 case class DimensionStdLibJson(manifestation: Any) extends RiftDimension{ type Under = Any }
-case class DimensionListAny(manifestation: List[Any]) extends RiftDimension{ type Under = List[Any] }
 case class DimensionXmlElem(manifestation: scala.xml.Elem) extends RiftDimension{ type Under = scala.xml.Elem }
-case class DimensionAny(manifestation: Any) extends RiftDimension{ type Under = Any }
 
 object RiftDimension {
   def string(v: String) = DimensionString(v)
@@ -39,10 +36,8 @@ object RiftDimension {
   def niceCord(v: scalaz.Cord) = DimensionNiceCord(v)
   def binary(v: Array[Byte]) = DimensionBinary(v)
   def rawMap(v: Map[String, Any]) = DimensionRawMap(v)
-  def stdLibJsonMap(v: Map[String, Any]) = DimensionStdLibJsonMap(v)
-  def listAny(v: List[Any]) = DimensionListAny(v)
+  def stdLibJson(v: Any) = DimensionStdLibJson(v)
   def xmlElem(v: scala.xml.Elem) = DimensionXmlElem(v)
-  def any(v: Any) = DimensionAny(v)
 
   
   implicit class RiftDimensionOps2(dim: RiftDimension) {
