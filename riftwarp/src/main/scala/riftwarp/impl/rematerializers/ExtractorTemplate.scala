@@ -148,43 +148,23 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
       }
     } yield mappedTuples.toMap
 
-  import scalaz.Tree
   def getTreeOfPrimitives[T](ident: String)(implicit mA: ClassTag[T]): AlmValidation[Tree[T]] =
-    ???
-    
-  def tryGetTreeOfPrimitives[T](ident: String)(implicit mA: ClassTag[T]): AlmValidation[Option[Tree[T]]] =
     ???
     
   def getTreeWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[Tree[T]] =
     ???
     
-  def tryGetTreeWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[Option[Tree[T]]] =
-    ???
-    
   def getTreeOfComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Tree[Any]] =
-    ???
-    
-  def tryGetTreeOfComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Option[Tree[Any]]] =
     ???
     
   def getTreeOfComplexOfType[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Tree[T]] =
     ???
     
-  def tryGetTreeOfComplexOfType[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Option[Tree[T]]] =
-    ???
-    
   def getTreeOfComplexByTag[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Tree[T]] =
-    ???
-    
-  def tryGetTreeOfComplexByTag[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Option[Tree[T]]] =
     ???
     
   def getTree(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Tree[Any]] =
     ???
-    
-  def tryGetTree(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Option[Tree[Any]]] =
-    ???
-    
     
     
   override def getBlob(ident: String): AlmValidation[Array[Byte]] =
