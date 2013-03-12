@@ -148,6 +148,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
       }
     } yield mappedTuples.toMap
 
+
   def getTreeOfPrimitives[T](ident: String)(implicit mA: ClassTag[T]): AlmValidation[Tree[T]] =
     ???
     
