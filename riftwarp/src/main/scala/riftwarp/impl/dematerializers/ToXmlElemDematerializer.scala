@@ -91,7 +91,7 @@ object ToXmlElemDematerializerFuns {
       case h :: t => createInnerXml(t, acc ++ h)
     }
 
-  def foldParts(items: List[XmlElem]): XmlElem = createInnerXml(items, <items></items>) 
+  def foldParts(items: List[XmlElem]): XmlElem = createInnerXml(items, NodeSeq.Empty) 
 
   def foldTree(tree: scalaz.Tree[XmlElem]): XmlElem = 
     foldParts(tree.rootLabel :: foldParts(tree.subForest.map(foldTree).toList) :: Nil)
@@ -116,7 +116,7 @@ object ToXmlElemDematerializer extends DematerializerTemplate[DimensionXmlElem]{
   override def getFloatRepr(aValue: Float) = mapFloat(aValue)
   override def getDoubleRepr(aValue: Double) = mapDouble(aValue)
   override def getBigDecimalRepr(aValue: BigDecimal) = mapBigDecimal(aValue)
-  override def getByteArrayRepr(aValue: Array[Byte]) = <bytes>'[' + aValue.mkString(",")</bytes>
+  override def getByteArrayRepr(aValue: Array[Byte]) = <bytes>{aValue.mkString(",")}</bytes>
   override def getBase64EncodedByteArrayRepr(aValue: Array[Byte]) = {
     val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
     mapString(base64)
