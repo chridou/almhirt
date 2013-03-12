@@ -83,6 +83,21 @@ trait NoneHandlingExtractor extends Extractor {
   override def tryGetMap[A](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tagA: ClassTag[A]): AlmValidation[Option[Map[A, Any]]] =
     if (hasValue(ident)) getMap[A](ident, backupDescriptor).map(Some(_)) else None.success
 
+  import scalaz.Tree
+  override def tryGetTreeOfPrimitives[T](ident: String)(implicit mA: ClassTag[T]): AlmValidation[Option[Tree[T]]] =
+    if (hasValue(ident)) getTreeOfPrimitives[T](ident).map(Some(_)) else None.success
+  override def tryGetTreeWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[Option[Tree[T]]] =
+    if (hasValue(ident)) getTreeWith[T](ident, recomposes).map(Some(_)) else None.success
+  override def tryGetTreeOfComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Option[Tree[Any]]] =
+    if (hasValue(ident)) getTreeOfComplex(ident, descriptor).map(Some(_)) else None.success
+  override def tryGetTreeOfComplexOfType[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Option[Tree[T]]] =
+    if (hasValue(ident)) getTreeOfComplexOfType[T](ident, backupDescriptor).map(Some(_)) else None.success
+  override def tryGetTreeOfComplexByTag[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[Option[Tree[T]]] =
+    if (hasValue(ident)) getTreeOfComplexByTag[T](ident, backupDescriptor).map(Some(_)) else None.success
+  override def tryGetTree(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Option[Tree[Any]]] =
+    if (hasValue(ident)) getTree(ident, backupDescriptor).map(Some(_)) else None.success
+    
+    
   override def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
     if (hasValue(ident)) getBlob(ident).map(Some(_)) else None.success
 

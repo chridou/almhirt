@@ -126,22 +126,6 @@ trait CoreExtSlickBuild {
   )
 }
 
-trait CoreExtActivateBuild {
-  import Dependencies._
-  import Resolvers._
-  def activateExtProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  resolvers += "fwbrasil.net" at "http://fwbrasil.net/maven/",
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += "net.fwbrasil" %% "activate-core" % "1.2-RC4",
-	  libraryDependencies += scalatest
-  )
-}
-
 trait RiftWarpBuild {
   import Dependencies._
   import Resolvers._
@@ -240,7 +224,6 @@ object AlmHirtBuild extends Build
 	with CoreExtRiftwarpBuild 
 	with AnormEventLogBuild 
 	with CoreExtSlickBuild 
-	with CoreExtActivateBuild 
 	with RiftWarpBuild 
 	with RiftWarpAutomaticBuild 
 	with RiftWarpExtLiftJsonBuild 
@@ -249,7 +232,7 @@ object AlmHirtBuild extends Build
 	with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, anormEventLog, slickExtensions, activateExtensions, app, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
+	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, anormEventLog, slickExtensions, app, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -267,8 +250,6 @@ object AlmHirtBuild extends Build
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/core/almhirt-ext-core-slick")) dependsOn(core, riftwarp)
 
-  lazy val activateExtensions = activateExtProject(	name = "almhirt-ext-core-activate",
-                       			baseFile = file("./ext/core/almhirt-ext-core-activate")) dependsOn(core, riftwarp)
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
