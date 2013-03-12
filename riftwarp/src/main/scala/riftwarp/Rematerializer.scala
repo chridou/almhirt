@@ -30,19 +30,22 @@ trait Rematerializer[TDimension <: RiftDimension] {
   def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI]
   def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID]
 
+  def fromReprWithExtractor[T](value: ValueRepr, f: Extractor => AlmValidation[T], createExtractor: ValueRepr => AlmValidation[Extractor]): AlmValidation[T]
+  
   def traversableOfReprFromRepr(value: ValueRepr): AlmValidation[Traversable[ValueRepr]]
   def tuple2OfReprFromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)]
 
   def traversable2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]]
   def collectionOfReprFromRepr[That[_]](value: ValueRepr)(implicit cbf: CanBuildFrom[Traversable[_], ValueRepr, That[ValueRepr]]): AlmValidation[That[ValueRepr]]
 
-  def fromRepr[T](value: ValueRepr, f: Extractor => AlmValidation[T], createExtractor: ValueRepr => AlmValidation[Extractor]): AlmValidation[T]
-
   def resequencedMappedFromRepr[That[_], T](value: ValueRepr, f: ValueRepr => AlmValidation[T])(implicit cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]]
   def resequencedOfPrimitivesFromRepr[That[_], T](value: ValueRepr)(implicit tag: ClassTag[T], cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]]
   def retuplelized2MappedFromRepr[A, B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[(A, B)]
   def retuplelized2TraversableMappedFromRepr[A, B](value: ValueRepr, fa: ValueRepr => AlmValidation[A], fb: ValueRepr => AlmValidation[B]): AlmValidation[Traversable[(A, B)]]
 
+  def treeOfRepr(value: ValueRepr): AlmValidation[scalaz.Tree[ValueRepr]]
+  def remappedTree[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[scalaz.Tree[T]]
+  
   def getString(from: TDimension): AlmValidation[String]
   def getBoolean(from: TDimension): AlmValidation[Boolean]
   def getByte(from: TDimension): AlmValidation[Byte]

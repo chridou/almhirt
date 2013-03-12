@@ -27,6 +27,12 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends Remat
   override def getUri(from: TDimension): AlmValidation[_root_.java.net.URI] = uriFromRepr(from.manifestation)
   override def getUuid(from: TDimension): AlmValidation[_root_.java.util.UUID] = uuidFromRepr(from.manifestation)
 
+  override def fromReprWithExtractor[T](value: ValueRepr, f: Extractor => AlmValidation[T], createExtractor: ValueRepr => AlmValidation[Extractor]): AlmValidation[T] =
+    for {
+      extractor <- createExtractor(value)
+      recomposed <- f(extractor)
+    } yield recomposed
+  
   override def traversable2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] =
     traversableOfReprFromRepr(value).flatMap(items => {
       val tuplesV = items.map(tuple2OfReprFromRepr(_).toAgg).toList.sequence
@@ -69,10 +75,10 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends Remat
       tuples <- traversable.map(retuplelized2MappedFromRepr[A, B](_, fa, fb).toAgg).toList.sequence
     } yield tuples
 
-  override def fromRepr[T](value: ValueRepr, f: Extractor => AlmValidation[T], createExtractor: ValueRepr => AlmValidation[Extractor]): AlmValidation[T] =
-    for {
-      extractor <- createExtractor(value)
-      recomposed <- f(extractor)
-    } yield recomposed
+  override def treeOfRepr(value: ValueRepr): AlmValidation[scalaz.Tree[ValueRepr]] = 
+    ???
+    
+  override def remappedTree[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[scalaz.Tree[T]] = 
+    ???
 
 }

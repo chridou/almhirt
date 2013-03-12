@@ -36,7 +36,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
   override def getWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[T] =
     for {
       value <- getValue(ident)
-      recomposed <- rematerializer.fromRepr(value, recomposes, spawnNew)
+      recomposed <- rematerializer.fromReprWithExtractor(value, recomposes, spawnNew)
     } yield recomposed
 
   override def getWithRecomposes[T](ident: String, recomposes: Recomposes[T]): AlmValidation[T] =
@@ -46,7 +46,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
     for {
       value <- getValue(ident)
       recomposer <- hasRecomposers.getRawRecomposer(descriptor)
-      recomposed <- rematerializer.fromRepr(value, recomposer.recomposeRaw, spawnNew)
+      recomposed <- rematerializer.fromReprWithExtractor(value, recomposer.recomposeRaw, spawnNew)
     } yield recomposed
 
   override def getComplexByTag[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[T] =
