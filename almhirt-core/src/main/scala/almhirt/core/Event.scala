@@ -9,6 +9,12 @@ trait EventHeader {
   def timestamp: DateTime  
 }
 
+case class BasicEventHeader(id: java.util.UUID, timestamp: DateTime) extends EventHeader
+
+object EventHeader {
+  def apply(anId: java.util.UUID, aTimestamp: DateTime): EventHeader = BasicEventHeader(anId, aTimestamp)
+}
+
 trait Event {
   def header: EventHeader
 }
