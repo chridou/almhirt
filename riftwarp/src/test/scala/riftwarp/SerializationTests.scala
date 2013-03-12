@@ -29,15 +29,16 @@ class SerializationTests extends FunSuite with MustMatchers {
     rw.barracks.addDecomposer(new ComplexMapsDecomposer())
     rw.barracks.addRecomposer(new ComplexMapsRecomposer())
     rw.barracks.addDecomposer(new TreesDecomposer())
+    rw.barracks.addRecomposer(new TreesRecomposer())
     rw
   }
 
   val testObject = TestObjectA.pete
-//  test("Serialize the Testobject to JSON 1000 times") {
-//    val res =
-//      for (i <- 1 to 1000) yield riftWarp.prepareForWarp[DimensionCord](RiftJson())(testObject).isSuccess
-//    assert(res.forall(_ == true))
-//  }
+  test("Serialize the Testobject to JSON 1000 times") {
+    val res =
+      for (i <- 1 to 1000) yield riftWarp.prepareForWarp[DimensionCord](RiftJson())(testObject).isSuccess
+    assert(res.forall(_ == true))
+  }
 
   test("It must deserialize to Json and the reserialize without error") {
     val warpStream = riftWarp.prepareForWarp[DimensionString](RiftJson())(testObject).forceResult
@@ -45,4 +46,13 @@ class SerializationTests extends FunSuite with MustMatchers {
 
     backFromWarpV.isSuccess must be(true)
   }
+  
+//  test("It must deserialize the trees to Json and the reserialize without error") {
+//    val warpStream = riftWarp.prepareForWarp[DimensionString](RiftJson())(Trees()).forceResult
+//    val backFromWarp = riftWarp.receiveFromWarp[DimensionString, Trees](RiftJson())(warpStream).forceResult
+////    import scalaz.std.AllInstances._
+////    println(backFromWarpV.forceResult.intTree.drawTree)
+//    
+//    (backFromWarp.intTree == Trees().intTree) must be(true)
+//  }
 }

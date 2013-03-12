@@ -46,7 +46,8 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
       primitiveMaps <- from.getComplexByTag[PrimitiveMaps]("primitiveMaps", None)
       complexMaps <- from.getComplexByTag[ComplexMaps]("complexMaps", None)
       addressOpt <- from.tryGetComplexByTag[TestAddress]("addressOpt", None)
-    } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, primitiveVectorMAs, primitiveSetMAs, primitiveIterableMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, Trees())
+      trees <- from.getComplexByTag[Trees]("trees", None)
+    } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, primitiveVectorMAs, primitiveSetMAs, primitiveIterableMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, trees)
   }
 }
 
@@ -320,5 +321,15 @@ class TreesDecomposer extends Decomposer[Trees] {
     into.addRiftDescriptor(riftDescriptor)
       .addTreeOfPrimitives("intTree", what.intTree).flatMap(
         _.addTreeOfComplex("addressTree", what.addressTree, None))
+  }
+}
+
+class TreesRecomposer extends Recomposer[Trees] {
+  val riftDescriptor = RiftDescriptor(classOf[Trees])
+  val alternativeRiftDescriptors = Nil
+  def recompose(from: Extractor): AlmValidation[Trees] = {
+    val intTree = from.getTreeOfPrimitives[Int]("intTree").toAgg
+    val addressTree = from.getTreeOfComplexByTag[TestAddress]("addressTree", None).toAgg
+    (intTree |@| addressTree)(Trees.apply)
   }
 }
