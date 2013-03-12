@@ -32,7 +32,7 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends Remat
       extractor <- createExtractor(value)
       recomposed <- f(extractor)
     } yield recomposed
-  
+
   override def traversable2FromRepr(value: ValueRepr): AlmValidation[Traversable[(ValueRepr, ValueRepr)]] =
     traversableOfReprFromRepr(value).flatMap(items => {
       val tuplesV = items.map(tuple2OfReprFromRepr(_).toAgg).toList.sequence
@@ -75,10 +75,24 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends Remat
       tuples <- traversable.map(retuplelized2MappedFromRepr[A, B](_, fa, fb).toAgg).toList.sequence
     } yield tuples
 
-  override def treeOfRepr(value: ValueRepr): AlmValidation[scalaz.Tree[ValueRepr]] = 
-    ???
+  import scalaz.Tree._
+  override def treeOfRepr(value: ValueRepr): AlmValidation[Tree[ValueRepr]] =
+    unpackTree(value, x => x.success).map(_.toSzTree)
+
+  override def remappedTree[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[Tree[T]] =
+    unpackTree(value, f).map(_.toSzTree)
+
+  private def unpackTree[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[InternalTree[T]] =
+    for {
+      tuple <- tuple2OfReprFromRepr(value)
+      label <- f(tuple._1)
+      subforestFlat <- traversableOfReprFromRepr(tuple._2)
+      subforest <- subforestFlat.map(unpackTree(_, f).toAgg).toList.sequence
+    } yield InternalTree(label, subforest)
     
-  override def remappedTree[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[scalaz.Tree[T]] = 
-    ???
+  private case class InternalTree[T](label: T, subforest: Traversable[InternalTree[T]]) {
+    def toSzTree: Tree[T] = node(label, subforest.map(_.toSzTree).toStream)
+    
+  }
 
 }
