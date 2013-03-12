@@ -33,6 +33,12 @@ sealed class RiftDescriptor private (val identifier: String, val version: Option
   def toString(versionDelim: String) = {
     option.cata(version)(v => s"RiftDescriptor($identifier;$v)", s"RiftDescriptor($identifier;no version)")
   }
+
+  def toParsableString(versionDelim: String = ";") =
+    version match {
+      case Some(v) => s"$identifier$versionDelim$v"
+      case None => s"$identifier"
+    }
 }
 
 object RiftDescriptor {
@@ -45,8 +51,7 @@ object RiftDescriptor {
   def apply(clazz: Class[_], version: Int): RiftDescriptor = new RiftDescriptor(clazz.getName(), Some(version))
 
   def unapply(td: RiftDescriptor): Option[String] = Some(td.identifier)
-    
-  
+
   def parse(toParse: String): AlmValidation[RiftDescriptor] = parse(toParse, ";")
   def parse(toParse: String, versionDelim: String): AlmValidation[RiftDescriptor] = {
     val parts = toParse.split(versionDelim)

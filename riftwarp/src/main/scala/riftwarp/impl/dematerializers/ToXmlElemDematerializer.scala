@@ -1,4 +1,4 @@
-package riftwarp.impl.warpSequencers
+package riftwarp.impl.dematerializers
 
 import java.util.{UUID => JUUID}
 import scala.reflect.ClassTag
@@ -8,7 +8,6 @@ import scalaz._, Scalaz._
 import org.joda.time.DateTime
 import almhirt.common._
 import riftwarp._
-import riftwarp.impl.dematerializers.DematerializerTemplate
 
 object ToXmlElemDematerializerFuns {
   val mapString = (value: String) => <v type="String">{scala.xml.Utility.escape(value)}</v>
