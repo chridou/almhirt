@@ -117,33 +117,6 @@ object ToJsonDematerializerFuns {
       UnspecifiedProblem("No primitive mapper found for %s".format(lookupFor.getClass.getName())).failure
   }
 
-  def mapperForWithTypeInfo(lookupFor: Any): AlmValidation[Any => Cord] = {
-    if (lookupFor.isInstanceOf[String])
-      mapperByType[String].map(mapper => (x: Any) => mapper(x.asInstanceOf[String]))
-    else if (lookupFor.isInstanceOf[Boolean])
-      mapperByType[Boolean].map(mapper => (x: Any) => mapper(x.asInstanceOf[Boolean]))
-    else if (lookupFor.isInstanceOf[Byte])
-      mapperByType[Byte].map(mapper => (x: Any) => mapper(x.asInstanceOf[Byte]))
-    else if (lookupFor.isInstanceOf[Int])
-      mapperByType[Int].map(mapper => (x: Any) => mapper(x.asInstanceOf[Int]))
-    else if (lookupFor.isInstanceOf[Long])
-      mapperByType[Long].map(mapper => (x: Any) => mapper(x.asInstanceOf[Long]))
-    else if (lookupFor.isInstanceOf[BigInt])
-      mapperByType[BigInt].map(mapper => (x: Any) => mapper(x.asInstanceOf[BigInt]))
-    else if (lookupFor.isInstanceOf[Float])
-      mapperByType[Float].map(mapper => (x: Any) => mapper(x.asInstanceOf[Float]))
-    else if (lookupFor.isInstanceOf[Double])
-      mapperByType[Double].map(mapper => (x: Any) => mapper(x.asInstanceOf[Double]))
-    else if (lookupFor.isInstanceOf[BigDecimal])
-      mapperByType[BigDecimal].map(mapper => (x: Any) => mapper(x.asInstanceOf[BigDecimal]))
-    else if (lookupFor.isInstanceOf[DateTime])
-      mapperByType[DateTime].map(mapper => (x: Any) => mapper(x.asInstanceOf[DateTime]))
-    else if (lookupFor.isInstanceOf[_root_.java.util.UUID])
-      mapperByType[_root_.java.util.UUID].map(mapper => (x: Any) => mapper(x.asInstanceOf[_root_.java.util.UUID]))
-    else
-      UnspecifiedProblem("No primitive mapper found for %s".format(lookupFor.getClass.getName())).failure
-  }
-  
   @tailrec
   private def createInnerJson(rest: List[Cord], acc: Cord): Cord =
     rest match {
