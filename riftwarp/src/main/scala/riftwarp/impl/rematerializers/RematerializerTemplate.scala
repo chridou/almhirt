@@ -77,22 +77,16 @@ abstract class RematerializerTemplate[TDimension <: RiftDimension] extends Remat
 
   import scalaz.Tree._
   override def treeOfRepr(value: ValueRepr): AlmValidation[Tree[ValueRepr]] =
-    unpackTree(value, x => x.success).map(_.toSzTree)
+    unpackTree(value, x => x.success)
 
   override def remappedTree[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[Tree[T]] =
-    unpackTree(value, f).map(_.toSzTree)
+    unpackTree(value, f)
 
-  private def unpackTree[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[InternalTree[T]] =
+  private def unpackTree[T](value: ValueRepr, f: ValueRepr => AlmValidation[T]): AlmValidation[Tree[T]] =
     for {
       tuple <- tuple2OfReprFromRepr(value)
       label <- f(tuple._1)
       subforestFlat <- traversableOfReprFromRepr(tuple._2)
       subforest <- subforestFlat.map(unpackTree(_, f).toAgg).toList.sequence
-    } yield InternalTree(label, subforest)
-    
-  private case class InternalTree[T](label: T, subforest: Traversable[InternalTree[T]]) {
-    def toSzTree: Tree[T] = node(label, subforest.map(_.toSzTree).toStream)
-    
-  }
-
+    } yield node(label, subforest.toStream)
 }
