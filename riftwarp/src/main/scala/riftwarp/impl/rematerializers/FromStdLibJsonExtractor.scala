@@ -18,7 +18,6 @@ class FromStdLibJsonExtractor(values: Map[String, Any], fetchBlobData: BlobFetch
   def spawnNew(value: Any): AlmValidation[Extractor] = FromStdLibJsonExtractor.createExtractor(DimensionStdLibJson(value), fetchBlobData)
 
   def hasValue(ident: String) = {
-    import scala.util.parsing.json._
     values.get(ident) match {
       case Some(v) =>
         v != null
