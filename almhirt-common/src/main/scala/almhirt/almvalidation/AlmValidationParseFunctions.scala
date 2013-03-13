@@ -36,6 +36,13 @@ trait AlmValidationParseFunctions {
       case err: Exception => BadDataProblem("Not a valid number(Int):%s".format(toParse)).failure
     }
 
+  def parseBooleanAlm(toParse: String): AlmValidation[Boolean] =
+    try {
+      toParse.toBoolean.success
+    } catch {
+      case err: Exception => BadDataProblem("Not a valid Boolean: %s".format(toParse)).failure[Boolean]
+    }
+
   def parseIntAlm(toParse: String): AlmValidation[Int] =
     try {
       toParse.toInt.success
@@ -85,12 +92,6 @@ trait AlmValidationParseFunctions {
       case err: Exception => BadDataProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
 
-  def parseUriAlm(toParse: String): AlmValidation[_root_.java.net.URI] =
-    try {
-      _root_.java.net.URI.create(toParse).success
-    } catch {
-      case err: Exception => BadDataProblem("Not a valid URI: %s".format(toParse)).failure
-    }
 
   def parseUuidAlm(toParse: String): AlmValidation[UUID] =
     try {
@@ -99,13 +100,13 @@ trait AlmValidationParseFunctions {
       case err: Exception => BadDataProblem("Not a valid UUID: %s".format(toParse)).failure[UUID]
     }
 
-  def parseBooleanAlm(toParse: String): AlmValidation[Boolean] =
+  def parseUriAlm(toParse: String): AlmValidation[_root_.java.net.URI] =
     try {
-      toParse.toBoolean.success
+      _root_.java.net.URI.create(toParse).success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid Boolean: %s".format(toParse)).failure[Boolean]
+      case err: Exception => BadDataProblem("Not a valid URI: %s".format(toParse)).failure
     }
-
+    
   def parseByteArrayAlm(toParse: String, sep: String): AlmValidation[Array[Byte]] =
     try {
       toParse.split(sep).map(_.toByte).success

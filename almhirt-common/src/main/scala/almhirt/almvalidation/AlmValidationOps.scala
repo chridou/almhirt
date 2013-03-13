@@ -34,22 +34,28 @@ import almhirt.common._
  */
 trait AlmValidationOps0 extends Ops[String] {
   import funs._
+  def toBooleanAlm(): AlmValidation[Boolean] =  
+    parseBooleanAlm(self)
+  def toByteAlm(): AlmValidation[Byte] =  
+    parseByteAlm(self)
   def toIntAlm(): AlmValidation[Int] = 
     parseIntAlm(self)
   def toLongAlm(): AlmValidation[Long] =  
     parseLongAlm(self)
+  def toBigIntAlm(): AlmValidation[BigInt] =  
+    parseBigIntAlm(self)
   def toDoubleAlm(): AlmValidation[Double] =  
     parseDoubleAlm(self)
   def toFloatAlm(): AlmValidation[Float] =  
     parseFloatAlm(self)
-  def toBooleanAlm(): AlmValidation[Boolean] =  
-    parseBooleanAlm(self)
   def toDecimalAlm(): AlmValidation[BigDecimal] =  
     parseDecimalAlm(self)
   def toDateTimeAlm(): AlmValidation[DateTime] =  
     parseDateTimeAlm(self)
   def toUuidAlm(): AlmValidation[UUID] =  
     parseUuidAlm(self)
+  def toUriAlm(): AlmValidation[java.net.URI] =  
+    parseUriAlm(self)
   def notEmptyAlm(): AlmValidation[String] =  
     notEmpty(self)
   def notEmptyOrWhitespaceAlm(): AlmValidation[String] =  
