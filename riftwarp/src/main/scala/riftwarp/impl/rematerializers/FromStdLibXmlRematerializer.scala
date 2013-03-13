@@ -1,8 +1,11 @@
 package riftwarp.impl.rematerializers
 
+import java.util.{ UUID => JUUID }
+import java.net.{ URI => JURI }
 import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom
 import scala.xml.{ Elem => XmlElem, NodeSeq }
+import org.joda.time.DateTime
 import scalaz._
 import scalaz.syntax.validation._
 import almhirt.common._
@@ -11,105 +14,136 @@ import almhirt.xml.all._
 import riftwarp._
 
 private[rematerializers] object FromStdLibXmlRematerializerFuns {
+
+  def extractString(value: XmlElem): AlmValidation[String] = value.text.success
+  def extractBoolean(value: XmlElem): AlmValidation[Boolean] = value.extractBoolean
+  def extractByte(value: XmlElem): AlmValidation[Byte] = value.extractByte
+  def extractInt(value: XmlElem): AlmValidation[Int] = value.extractInt
+  def extractLong(value: XmlElem): AlmValidation[Long] = value.extractLong
+  def extractBigInt(value: XmlElem): AlmValidation[BigInt] = value.extractBigInt
+  def extractFloat(value: XmlElem): AlmValidation[Float] = value.extractFloat
+  def extractDouble(value: XmlElem): AlmValidation[Double] = value.extractDouble
+  def extractBigDecimal(value: XmlElem): AlmValidation[BigDecimal] = value.extractDecimal
+  def extractDateTime(value: XmlElem): AlmValidation[DateTime] = value.extractDateTime
+  def extractUuid(value: XmlElem): AlmValidation[JUUID] = value.extractUuid
+  def extractUri(value: XmlElem): AlmValidation[JURI] = value.extractUri
+
   def valueMapperFromTag[A](implicit tag: ClassTag[A]): AlmValidation[XmlElem => AlmValidation[A]] = {
     val clazz = tag.runtimeClass
     if (clazz == classOf[String])
-      Success(((x: XmlElem) => x.text.success).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractString _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.lang.String])
-      Success(((x: XmlElem) => x.text.success).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractString _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[Boolean])
-      Success(((x: XmlElem) => x.text.toBooleanAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractBoolean _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.lang.Boolean])
-      Success(((x: XmlElem) => x.text.toBooleanAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractBoolean _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[Byte])
-      Success(((x: XmlElem) => x.text.toByteAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractByte _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.lang.Byte])
-      Success(((x: XmlElem) => x.text.toByteAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractByte _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[Int])
-      Success(((x: XmlElem) => x.text.toIntAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractInt _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.lang.Integer])
-      Success(((x: XmlElem) => x.text.toIntAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractInt _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[Long])
-      Success(((x: XmlElem) => x.text.toLongAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractLong _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.lang.Long])
-      Success(((x: XmlElem) => x.text.toLongAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractLong _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[BigInt])
-      Success(((x: XmlElem) => x.text.toBigIntAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractBigInt _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[Float])
-      Success(((x: XmlElem) => x.text.toFloatAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractFloat _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.lang.Float])
-      Success(((x: XmlElem) => x.text.toFloatAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractFloat _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[Double])
-      Success(((x: XmlElem) => x.text.toDoubleAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractDouble _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.lang.Double])
-      Success(((x: XmlElem) => x.text.toDoubleAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractDouble _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[BigDecimal])
-      Success(((x: XmlElem) => x.text.toDecimalAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractBigDecimal _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[org.joda.time.DateTime])
-      Success(((x: XmlElem) => x.text.toDateTimeAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractDateTime _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.util.UUID])
-      Success(((x: XmlElem) => x.text.toUuidAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractUuid _).asInstanceOf[XmlElem => AlmValidation[A]])
     else if (clazz == classOf[_root_.java.net.URI])
-      Success(((x: XmlElem) => x.text.toUriAlm).asInstanceOf[XmlElem => AlmValidation[A]])
+      Success((extractUri _).asInstanceOf[XmlElem => AlmValidation[A]])
     else
       Failure(UnspecifiedProblem("No primitive rematerializer found for '%s'".format(clazz.getName())))
   }
 
-  def isPrimitive(value: XmlElem): Boolean =
+  def isPrimitiveValue(value: XmlElem): Boolean =
     (value \@? "type") match {
-      case Some(t) => 
+      case Some(t) =>
         t == "String" ||
-        t == "Boolean" ||
-        t == "Byte" ||
-        t == "Int" ||
-        t == "Long" ||
-        t == "BigInt" ||
-        t == "Float" ||
-        t == "Double" ||
-        t == "BigDecimal" ||
-        t == "DateTime" ||
-        t == "Uuid" ||
-        t == "Uri"
+          t == "Boolean" ||
+          t == "Byte" ||
+          t == "Int" ||
+          t == "Long" ||
+          t == "BigInt" ||
+          t == "Float" ||
+          t == "Double" ||
+          t == "BigDecimal" ||
+          t == "DateTime" ||
+          t == "Uuid" ||
+          t == "Uri"
       case None => false
     }
+
+  def extractPrimitiveFromElem(value: XmlElem): AlmValidation[Any] =
+    (value \@ "type").fold(
+      fail => BadDataProblem(s"Could not extract a primitive from an XmlElem because it lacks an attribute 'type' which specifies the contained data type. The element was: ${value.label}").failure,
+      succ => succ match {
+        case "String" => extractString(value)
+        case "Boolean" => extractBoolean(value)
+        case "Byte" => extractByte(value)
+        case "Int" => extractInt(value)
+        case "Long" => extractLong(value)
+        case "BigInt" => extractBigInt(value)
+        case "Float" => extractFloat(value)
+        case "Double" => extractDouble(value)
+        case "BigDecimal" => extractBigDecimal(value)
+        case "DateTime" => extractDateTime(value)
+        case "Uuid" => extractUuid(value)
+        case "Uri" => extractUri(value)
+        case x => BadDataProblem(s"Could not extract a primitive from an XmlElem because its attribute 'type' specifies an unknown data type '$x'. The element was: ${value.label}").failure
+      })
+
 }
 
-//object FromStdLibXmlRematerializer extends RematerializerTemplate[DimensionXmlElem] {
-//  override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[ValueRepr => AlmValidation[T]] = FromStdLibJsonRematerializerFuns.valueMapperFromTag
-//  override def primitiveFromValue(value: ValueRepr): AlmValidation[Any] = 
-//    if(FromStdLibJsonRematerializerFuns.isPrimitive(value))
-//      value.success
-//    else
-//      UnspecifiedProblem("Not a primitive type").failure
-//
-//  override def isPrimitive(value: ValueRepr): Boolean = FromStdLibJsonRematerializerFuns.isPrimitive(value)
-//
-//  override def stringFromRepr(value: ValueRepr): AlmValidation[String] = almCast[String](value)
-//  override def booleanFromRepr(value: ValueRepr): AlmValidation[Boolean] = almCast[Boolean](value)
-//  override def byteFromRepr(value: ValueRepr): AlmValidation[Byte] = almCast[Double](value).map(_.toByte)
-//  override def intFromRepr(value: ValueRepr): AlmValidation[Int] = almCast[Double](value).map(_.toInt)
-//  override def longFromRepr(value: ValueRepr): AlmValidation[Long] = almCast[Double](value).map(_.toLong)
-//  override def bigIntFromRepr(value: ValueRepr): AlmValidation[BigInt] = almCast[String](value).flatMap(parseBigIntAlm(_))
-//  override def floatFromRepr(value: ValueRepr): AlmValidation[Float] = almCast[Double](value).map(_.toFloat)
-//  override def doubleFromRepr(value: ValueRepr): AlmValidation[Double] = almCast[Double](value)
-//  override def bigDecimalFromRepr(value: ValueRepr): AlmValidation[BigDecimal] = almCast[String](value).flatMap(parseDecimalAlm(_))
-//  override def byteArrayFromRepr(value: ValueRepr): AlmValidation[Array[Byte]] =
-//    almCast[List[Double]](value).map(x => x.toArray.map(_.toByte))
-//  override def byteArrayFromBase64Repr(value: ValueRepr): AlmValidation[Array[Byte]] =
-//    almCast[String](value).flatMap(ParseFuns.parseBase64Alm(_))
-//  override def byteArrayFromBlobRepr(value: ValueRepr): AlmValidation[Array[Byte]] =
-//    byteArrayFromBase64Repr(value)
-//  override def dateTimeFromRepr(value: ValueRepr): AlmValidation[org.joda.time.DateTime] = almCast[String](value).flatMap(parseDateTimeAlm(_))
-//  override def uriFromRepr(value: ValueRepr): AlmValidation[_root_.java.net.URI] = almCast[String](value).flatMap(parseUriAlm(_))
-//  override def uuidFromRepr(value: ValueRepr): AlmValidation[_root_.java.util.UUID] = almCast[String](value).flatMap(parseUuidAlm(_))
-//
-//  override def traversableOfReprFromRepr(value: ValueRepr): AlmValidation[Iterable[ValueRepr]] = almCast[List[ValueRepr]](value)
-//  override def tuple2OfReprFromRepr(value: ValueRepr): AlmValidation[(ValueRepr, ValueRepr)] =
-//    traversableOfReprFromRepr(value).flatMap { reprItems =>
-//      (reprItems.headOption, reprItems.tail.headOption) match {
-//        case (Some(a), Some(b)) => (a, b).success
-//        case _ => NoSuchElementProblem("Not enough items to build a tuple").failure
-//      }
-//    }
-//
-//}
+object FromStdLibXmlRematerializer extends RematerializerTemplate[DimensionXmlElem] {
+  import FromStdLibXmlRematerializerFuns._
+  override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[XmlElem => AlmValidation[T]] = valueMapperFromTag
+  override def isPrimitive(value: XmlElem): Boolean = isPrimitiveValue(value)
+  override def primitiveFromValue(value: XmlElem): AlmValidation[Any] = extractPrimitiveFromElem(value)
+
+
+  override def stringFromRepr(value: XmlElem): AlmValidation[String] = extractString(value)
+  override def booleanFromRepr(value: XmlElem): AlmValidation[Boolean] = extractBoolean(value)
+  override def byteFromRepr(value: XmlElem): AlmValidation[Byte] = extractByte(value)
+  override def intFromRepr(value: XmlElem): AlmValidation[Int] = extractInt(value)
+  override def longFromRepr(value: XmlElem): AlmValidation[Long] = extractLong(value)
+  override def bigIntFromRepr(value: XmlElem): AlmValidation[BigInt] = extractBigInt(value)
+  override def floatFromRepr(value: XmlElem): AlmValidation[Float] = extractFloat(value)
+  override def doubleFromRepr(value: XmlElem): AlmValidation[Double] = extractDouble(value)
+  override def bigDecimalFromRepr(value: XmlElem): AlmValidation[BigDecimal] = extractBigDecimal(value)
+  override def byteArrayFromRepr(value: XmlElem): AlmValidation[Array[Byte]] =
+    almCast[List[Double]](value).map(x => x.toArray.map(_.toByte))
+  override def byteArrayFromBase64Repr(value: XmlElem): AlmValidation[Array[Byte]] =
+    almCast[String](value).flatMap(ParseFuns.parseBase64Alm(_))
+  override def byteArrayFromBlobRepr(value: XmlElem): AlmValidation[Array[Byte]] =
+    byteArrayFromBase64Repr(value)
+  override def dateTimeFromRepr(value: XmlElem): AlmValidation[org.joda.time.DateTime] = extractDateTime(value)
+  override def uriFromRepr(value: XmlElem): AlmValidation[_root_.java.net.URI] = extractUri(value)
+  override def uuidFromRepr(value: XmlElem): AlmValidation[_root_.java.util.UUID] = extractUuid(value)
+
+  override def traversableOfReprFromRepr(value: XmlElem): AlmValidation[Iterable[XmlElem]] = value.elems.success
+  override def tuple2OfReprFromRepr(value: XmlElem): AlmValidation[(XmlElem, XmlElem)] =
+    traversableOfReprFromRepr(value).flatMap { reprItems =>
+      (reprItems.headOption, reprItems.tail.headOption) match {
+        case (Some(a), Some(b)) => (a, b).success
+        case _ => NoSuchElementProblem("Not enough items to build a tuple").failure
+      }
+    }
+
+}
