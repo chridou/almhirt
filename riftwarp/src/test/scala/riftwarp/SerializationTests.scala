@@ -34,16 +34,27 @@ class SerializationTests extends FunSuite with MustMatchers {
   }
 
   val testObject = TestObjectA.pete
-  test("Serialize the Testobject to JSON 1000 times") {
-    val res =
-      for (i <- 1 to 1000) yield riftWarp.prepareForWarp[DimensionCord](RiftJson())(testObject).isSuccess
-    assert(res.forall(_ == true))
-  }
 
-  test("It must deserialize to Json and the reserialize without error") {
+  test("RiftWarp must deserialize to Json and the reserialize without error") {
     val warpStream = riftWarp.prepareForWarp[DimensionString](RiftJson())(testObject).forceResult
     val backFromWarpV = riftWarp.receiveFromWarp[DimensionString, TestObjectA](RiftJson())(warpStream)
 
+    backFromWarpV.isSuccess must be(true)
+  }
+
+  test("RiftWarp must deserialize to Xml and the reserialize without error") {
+    val warpStream = riftWarp.prepareForWarp[DimensionString](RiftXml())(testObject).forceResult
+    val backFromWarpV = riftWarp.receiveFromWarp[DimensionString, TestObjectA](RiftXml())(warpStream)
+
+    backFromWarpV.isSuccess must be(true)
+  }
+  
+  test("RiftWarp must deserialize the testObject's complex collections to Xml and the reserialize without error") {
+    val warpStream = riftWarp.prepareForWarp[DimensionString](RiftXml())(testObject.complexMAs).forceResult
+    val backFromWarpV = riftWarp.receiveFromWarp[DimensionString, ComplexMAs](RiftXml())(warpStream)
+
+    println(backFromWarpV)
+    
     backFromWarpV.isSuccess must be(true)
   }
   

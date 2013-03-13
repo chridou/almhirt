@@ -7,6 +7,8 @@ import scala.collection.generic.CanBuildFrom
 import almhirt.common._
 
 trait Extractor {
+  def path: List[String]
+  
   def getString(ident: String): AlmValidation[String]
   def tryGetString(ident: String): AlmValidation[Option[String]]
 
@@ -100,4 +102,11 @@ trait Extractor {
   
   def getRiftDescriptor: AlmValidation[RiftDescriptor]
   def tryGetRiftDescriptor: AlmValidation[Option[RiftDescriptor]]
+}
+
+object Extractor {
+  implicit class ExtractorOps(self: Extractor) {
+    def pathFromRoot: List[String] = self.path.reverse
+    def showPathFromRoot(sep: String = "."): String = pathFromRoot.mkString(sep)
+  }
 }

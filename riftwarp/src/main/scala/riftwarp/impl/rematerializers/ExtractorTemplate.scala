@@ -10,12 +10,12 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.components.HasRecomposers
 
-abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers) extends Extractor {
+abstract class ExtractorTemplate[TDimension <: RiftDimension](val path: List[String], fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers) extends Extractor {
   type Remat = Rematerializer[TDimension]
   def rematerializer: Remat
 
   def getValue(ident: String): AlmValidation[Remat#ValueRepr]
-  def spawnNew(value: Remat#ValueRepr): AlmValidation[Extractor]
+  def spawnNew(ident: String)(value: Remat#ValueRepr): AlmValidation[Extractor]
 
   override def getString(ident: String): AlmValidation[String] = getValue(ident).flatMap(value => rematerializer.stringFromRepr(value))
   override def getBoolean(ident: String): AlmValidation[Boolean] = getValue(ident).flatMap(value => rematerializer.booleanFromRepr(value))
@@ -36,7 +36,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
   override def getWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[T] =
     for {
       value <- getValue(ident)
-      recomposed <- rematerializer.fromReprWithExtractor(value, recomposes, spawnNew)
+      recomposed <- rematerializer.fromReprWithExtractor(value, recomposes, spawnNew(ident))
     } yield recomposed
 
   override def getWithRecomposes[T](ident: String, recomposes: Recomposes[T]): AlmValidation[T] =
@@ -46,13 +46,13 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
     for {
       value <- getValue(ident)
       recomposer <- hasRecomposers.getRawRecomposer(descriptor)
-      recomposed <- rematerializer.fromReprWithExtractor(value, recomposer.recomposeRaw, spawnNew)
+      recomposed <- rematerializer.fromReprWithExtractor(value, recomposer.recomposeRaw, spawnNew(ident))
     } yield recomposed
 
   override def getComplexByTag[T <: AnyRef](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[T] =
     for {
       value <- getValue(ident)
-      extractor <- spawnNew(value)
+      extractor <- spawnNew(ident)(value)
       recomposer <- hasRecomposers.lookUpFromRematerializer(extractor, backupDescriptor)
       recomposed <- recomposer.recompose(extractor)
     } yield recomposed
@@ -60,7 +60,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
   override def getComplexByValueDescriptor(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[AnyRef] =
     for {
       value <- getValue(ident)
-      extractor <- spawnNew(value)
+      extractor <- spawnNew(ident)(value)
       recomposer <- hasRecomposers.lookUpRawFromRematerializer(extractor, backupDescriptor)
       recomposed <- recomposer.recomposeRaw(extractor)
     } yield recomposed
@@ -74,7 +74,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
   override def getManyWith[That[_], T](ident: String, recomposes: Extractor => AlmValidation[T])(implicit cbf: CanBuildFrom[Traversable[_], T, That[T]]): AlmValidation[That[T]] =
     for {
       value <- getValue(ident)
-      resequenced <- rematerializer.resequencedMappedFromRepr(value, v => spawnNew(v).flatMap(recomposes))
+      resequenced <- rematerializer.resequencedMappedFromRepr(value, v => spawnNew(ident)(v).flatMap(recomposes))
     } yield resequenced
 
   override def getManyComplex[That[_]](ident: String, descriptor: RiftDescriptor)(implicit cbf: CanBuildFrom[Traversable[_], Any, That[Any]]): AlmValidation[That[Any]] =
@@ -92,7 +92,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
   override def getMany[That[_]](ident: String, backupDescriptor: Option[RiftDescriptor])(implicit cbf: CanBuildFrom[Traversable[_], Any, That[Any]]): AlmValidation[That[Any]] =
     for {
       value <- getValue(ident)
-      resequenced <- rematerializer.resequencedMappedFromRepr(value, v => extractPrimitiveOrComplexWithLookup(v, backupDescriptor))
+      resequenced <- rematerializer.resequencedMappedFromRepr(value, v => extractPrimitiveOrComplexWithLookup(ident, v, backupDescriptor))
     } yield resequenced
 
   override def getMapOfPrimitives[A, B](ident: String)(implicit tagA: ClassTag[A], tagB: ClassTag[B]): AlmValidation[Map[A, B]] =
@@ -113,7 +113,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
           case (va, vb) =>
             (for {
               a <- keyMapper(va)
-              extractorB <- spawnNew(vb)
+              extractorB <- spawnNew(ident)(vb)
               b <- recomposes(extractorB)
             } yield (a, b)).toAgg
         }
@@ -140,7 +140,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
           case (va, vb) =>
             (for {
               a <- keyMapper(va)
-              b <- extractPrimitiveOrComplexWithLookup(vb, backupDescriptor)
+              b <- extractPrimitiveOrComplexWithLookup(ident, vb, backupDescriptor)
             } yield (a, b)).toAgg
         }
         mappedTuplesV.toList.sequence
@@ -157,7 +157,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
   def getTreeWith[T](ident: String, recomposes: Extractor => AlmValidation[T]): AlmValidation[Tree[T]] =
     for {
       value <- getValue(ident)
-      tree <- rematerializer.remappedTree(value, v => spawnNew(v).flatMap(recomposes))
+      tree <- rematerializer.remappedTree(value, v => spawnNew(ident)(v).flatMap(recomposes))
     } yield tree
 
   def getTreeOfComplex(ident: String, descriptor: RiftDescriptor): AlmValidation[Tree[AnyRef]] =
@@ -175,13 +175,13 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
   def getTree(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Tree[Any]] =
     for {
       value <- getValue(ident)
-      tree <- rematerializer.remappedTree(value, v => extractPrimitiveOrComplexWithLookup(v, backupDescriptor))
+      tree <- rematerializer.remappedTree(value, v => extractPrimitiveOrComplexWithLookup(ident, v, backupDescriptor))
     } yield tree
 
   override def getBlob(ident: String): AlmValidation[Array[Byte]] =
     for {
       value <- getValue(ident)
-      blobExtractor <- spawnNew(value)
+      blobExtractor <- spawnNew(ident)(value)
       blob <- RiftBlobRecomposer.recompose(blobExtractor)
       data <- fetchBlobData(blob)
     } yield data
@@ -199,12 +199,12 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](fetchBlobData: Blo
       casted <- almCast[T](recomposed)
     } yield casted
 
-  private def extractPrimitiveOrComplexWithLookup(value: Remat#ValueRepr, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Any] =
+  private def extractPrimitiveOrComplexWithLookup(ident:String, value: Remat#ValueRepr, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Any] =
     if (rematerializer.isPrimitive(value))
       rematerializer.primitiveFromValue(value)
     else
       for {
-        extractor <- spawnNew(value)
+        extractor <- spawnNew(ident)(value)
         recomposer <- hasRecomposers.lookUpRawFromRematerializer(extractor, backupDescriptor)
         recomposed <- recomposer.recomposeRaw(extractor)
       } yield recomposed

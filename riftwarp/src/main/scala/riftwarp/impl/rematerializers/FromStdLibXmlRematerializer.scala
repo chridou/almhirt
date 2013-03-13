@@ -28,7 +28,7 @@ private[rematerializers] object FromStdLibXmlRematerializerFuns {
   def extractUuid(value: XmlElem): AlmValidation[JUUID] = value.extractUuid
   def extractUri(value: XmlElem): AlmValidation[JURI] = value.extractUri
 
-  def valueMapperFromTag[A](implicit tag: ClassTag[A]): AlmValidation[XmlElem => AlmValidation[A]] = {
+  def getValueMapperFromTag[A](implicit tag: ClassTag[A]): AlmValidation[XmlElem => AlmValidation[A]] = {
     val clazz = tag.runtimeClass
     if (clazz == classOf[String])
       Success((extractString _).asInstanceOf[XmlElem => AlmValidation[A]])
@@ -113,7 +113,7 @@ private[rematerializers] object FromStdLibXmlRematerializerFuns {
 
 object FromStdLibXmlRematerializer extends RematerializerTemplate[DimensionXmlElem] {
   import FromStdLibXmlRematerializerFuns._
-  override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[XmlElem => AlmValidation[T]] = valueMapperFromTag
+  override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[XmlElem => AlmValidation[T]] = getValueMapperFromTag
   override def isPrimitive(value: XmlElem): Boolean = isPrimitiveValue(value)
   override def primitiveFromValue(value: XmlElem): AlmValidation[Any] = extractPrimitiveFromElem(value)
 
@@ -128,16 +128,19 @@ object FromStdLibXmlRematerializer extends RematerializerTemplate[DimensionXmlEl
   override def doubleFromRepr(value: XmlElem): AlmValidation[Double] = extractDouble(value)
   override def bigDecimalFromRepr(value: XmlElem): AlmValidation[BigDecimal] = extractBigDecimal(value)
   override def byteArrayFromRepr(value: XmlElem): AlmValidation[Array[Byte]] =
-    almCast[List[Double]](value).map(x => x.toArray.map(_.toByte))
+    parseByteArrayAlm(value.text, ",")
   override def byteArrayFromBase64Repr(value: XmlElem): AlmValidation[Array[Byte]] =
-    almCast[String](value).flatMap(ParseFuns.parseBase64Alm(_))
+    ParseFuns.parseBase64Alm(value.text)
   override def byteArrayFromBlobRepr(value: XmlElem): AlmValidation[Array[Byte]] =
     byteArrayFromBase64Repr(value)
   override def dateTimeFromRepr(value: XmlElem): AlmValidation[org.joda.time.DateTime] = extractDateTime(value)
   override def uriFromRepr(value: XmlElem): AlmValidation[_root_.java.net.URI] = extractUri(value)
   override def uuidFromRepr(value: XmlElem): AlmValidation[_root_.java.util.UUID] = extractUuid(value)
 
-  override def traversableOfReprFromRepr(value: XmlElem): AlmValidation[Iterable[XmlElem]] = value.elems.success
+  override def traversableOfReprFromRepr(value: XmlElem): AlmValidation[Iterable[XmlElem]] = {
+    value.elems.success
+  }
+    
   override def tuple2OfReprFromRepr(value: XmlElem): AlmValidation[(XmlElem, XmlElem)] =
     traversableOfReprFromRepr(value).flatMap { reprItems =>
       (reprItems.headOption, reprItems.tail.headOption) match {

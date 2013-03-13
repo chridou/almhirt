@@ -5,6 +5,7 @@ import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
+import riftwarp.Extractor._
 
 trait HasRecomposers {
   def tryGetRawRecomposer(riftDescriptor: RiftDescriptor): Option[RawRecomposer]
@@ -25,8 +26,11 @@ trait HasRecomposers {
         s => s.success,
         option.cata(backupDescriptor)(
           backDescr => backDescr.success,
-          UnspecifiedProblem("HasRecomposers.lookUpRawFromRematerializer: Could not determine the required type").failure))).flatMap(td =>
-      getRawRecomposer(td))
+          {
+            val path = extractor.showPathFromRoot()
+            UnspecifiedProblem(s"""HasRecomposers.lookUpRawFromRematerializer: Could not determine the required RiftDescriptor. The Extractor's path is "$path"""").failure[RiftDescriptor]
+          })).flatMap(td =>
+          getRawRecomposer(td)))
 
   def lookUpRawFromRematerializer(remat: Extractor): AlmValidation[RawRecomposer] =
     lookUpRawFromRematerializer(remat, None)
@@ -43,7 +47,9 @@ trait HasRecomposers {
           td => getRecomposer[T](td),
           option.cata(backupDescriptor)(
             td => getRecomposer[T](td),
-            getRecomposer[T](RiftDescriptor(mTarget.runtimeClass)))))
+            getRecomposer[T](RiftDescriptor(mTarget.runtimeClass))))).fold(
+              fail => UnspecifiedProblem(s"""HasRecomposers.lookUpFromRematerializer: Could not determine the required RiftDescriptor. The Extractor's path is "${extractor.showPathFromRoot()}"""", cause = Some(fail)).failure,
+              succ => succ.success)
 
   def addRawRecomposer(recomposer: RawRecomposer): Unit
   def addRecomposer(recomposer: Recomposer[_]): Unit
@@ -51,7 +57,7 @@ trait HasRecomposers {
 
 object HasRecomposers {
   implicit class HasRecomposersOps(self: HasRecomposers) {
-    
+
   }
 }
 
