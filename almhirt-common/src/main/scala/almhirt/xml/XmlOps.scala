@@ -116,6 +116,7 @@ trait XmlOps0 extends Ops[Elem]{
   def \@?(name: String): Option[String] = funs.getOptionalAttributeValue(self, name)
 }
 
+import language.implicitConversions
 trait ToXmlOps {
   implicit def FromElemToXmlOps0(a: Elem) = new XmlOps0{ def self = a }
 }
