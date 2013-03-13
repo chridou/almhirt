@@ -15,7 +15,12 @@ import riftwarp._
 
 private[rematerializers] object FromStdLibXmlRematerializerFuns {
 
-  def extractString(value: XmlElem): AlmValidation[String] = value.text.success
+  def unescapeString(str: String): String = {
+    //scala.xml.Utility.unescape(str, new StringBuilder).result
+    str
+  }
+  
+  def extractString(value: XmlElem): AlmValidation[String] = unescapeString(value.text).success
   def extractBoolean(value: XmlElem): AlmValidation[Boolean] = value.extractBoolean
   def extractByte(value: XmlElem): AlmValidation[Byte] = value.extractByte
   def extractInt(value: XmlElem): AlmValidation[Int] = value.extractInt

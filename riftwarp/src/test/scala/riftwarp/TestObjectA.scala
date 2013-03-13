@@ -98,7 +98,7 @@ object TestObjectA {
       arrayByte = Array(126, -123, 12, -45, -128),
       blob = Array(0, 0, 0, 0, 0, 6, -123, 12, -45, -128, 112, 0, 0, 0),
       primitiveTypes = PrimitiveTypes(
-        str = """I am Pete""",
+        str = """I am Pete and heres some invalid embedded xml: <h1>I am great!</h1>. And heres some JSON: {"message: ["I am", "great"]}""",
         bool = true,
         byte = 127,
         int = -237823,

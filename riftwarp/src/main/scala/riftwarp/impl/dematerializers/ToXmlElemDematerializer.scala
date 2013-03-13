@@ -10,7 +10,7 @@ import almhirt.common._
 import riftwarp._
 
 object ToXmlElemDematerializerFuns {
-  val mapString = (value: String) => <v type="String">{scala.xml.Utility.escape(value)}</v>
+  val mapString = (value: String) => <v type="String">{value}</v>
   val mapBoolean = (value: Boolean) => <v type="Boolean">{value.toString}</v>
   val mapByte = (value: Byte) => <v type="Byte">{value.toString}</v>
   val mapInt = (value: Int) => <v type="Int">{value.toString}</v>
@@ -21,7 +21,7 @@ object ToXmlElemDematerializerFuns {
   val mapBigDecimal = (value: BigDecimal) => <v type="BigDecimal">{value.toString}</v>
   val mapDateTime = (value: DateTime) => <v type="DateTime">{value.toString()}</v>
   val mapUuid = (value: JUUID) => <v type="Uuid">{value.toString}</v>
-  val mapUri = (value: java.net.URI) => <v type="Uri">{scala.xml.Utility.escape(value.toString)}</v>
+  val mapUri = (value: java.net.URI) => <v type="Uri">{value.toString}</v>
 
   def valueMapperByType[A](implicit m: ClassTag[A]): AlmValidation[A => XmlElem] = {
     val t = m.runtimeClass
