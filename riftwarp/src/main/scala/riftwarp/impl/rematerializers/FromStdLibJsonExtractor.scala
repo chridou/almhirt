@@ -7,7 +7,7 @@ import riftwarp.components.HasRecomposers
 import riftwarp.components.ExtractorFactory
 
 class FromStdLibJsonExtractor(values: Map[String, Any], fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers) extends ExtractorTemplate[DimensionStdLibJson](fetchBlobData) with NoneHandlingExtractor {
-  override val rematerializer = new FromStdLibJsonRematerializer
+  override val rematerializer = FromStdLibJsonRematerializer
 
   def getValue(ident: String): AlmValidation[Any] =
     values.get(ident) match {

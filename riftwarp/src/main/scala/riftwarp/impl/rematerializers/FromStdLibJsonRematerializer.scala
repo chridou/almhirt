@@ -67,7 +67,7 @@ private[rematerializers] object FromStdLibJsonRematerializerFuns {
       value.isInstanceOf[_root_.java.util.UUID])
 }
 
-class FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLibJson] {
+object FromStdLibJsonRematerializer extends RematerializerTemplate[DimensionStdLibJson] {
   override def valueMapperFromTag[T](implicit tag: ClassTag[T]): AlmValidation[ValueRepr => AlmValidation[T]] = FromStdLibJsonRematerializerFuns.valueMapperFromTag
   override def primitiveFromValue(value: ValueRepr): AlmValidation[Any] = 
     if(FromStdLibJsonRematerializerFuns.isPrimitive(value))
