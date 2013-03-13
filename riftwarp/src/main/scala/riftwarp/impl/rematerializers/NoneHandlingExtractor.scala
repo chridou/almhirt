@@ -100,8 +100,4 @@ trait NoneHandlingExtractor extends Extractor {
     
   override def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
     if (hasValue(ident)) getBlob(ident).map(Some(_)) else None.success
-
-  override def tryGetRiftDescriptor: AlmValidation[Option[RiftDescriptor]] =
-    if (hasValue(RiftDescriptor.defaultKey)) getRiftDescriptor.map(Some(_)) else None.success
-
 }

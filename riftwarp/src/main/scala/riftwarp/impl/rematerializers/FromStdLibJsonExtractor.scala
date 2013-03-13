@@ -29,6 +29,9 @@ class FromStdLibJsonExtractor(values: Map[String, Any], fetchBlobData: BlobFetch
 
   override def getRiftDescriptor: AlmValidation[RiftDescriptor] =
     getWith(RiftDescriptor.defaultKey, riftwarp.serialization.common.RiftDescriptorRecomposer.recompose)
+
+  override def tryGetRiftDescriptor: AlmValidation[Option[RiftDescriptor]] =
+    if (hasValue(RiftDescriptor.defaultKey)) getRiftDescriptor.map(Some(_)) else None.success
 }
 
 object FromStdLibJsonExtractor extends ExtractorFactory[DimensionStdLibJson] {
