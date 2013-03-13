@@ -28,6 +28,14 @@ trait XmlOps0 extends Ops[Elem]{
     almhirt.almvalidation.funs.notEmptyOrWhitespace(self.text)
   def extractOptionalString(): Option[String] =
     extractString.toOption
+  def extractBoolean(): AlmValidation[Boolean] = 
+    funs.booleanFromXmlNode(self)
+  def extractOptionalBoolean(): AlmValidation[Option[Boolean]] = 
+    funs.optionalBooleanFromXmlNode(self)
+  def extractByte(): AlmValidation[Byte] = 
+    funs.byteFromXmlNode(self)
+  def extractOptionalByte(): AlmValidation[Option[Byte]] = 
+    funs.optionalByteFromXmlNode(self)
   def extractInt(): AlmValidation[Int] = 
     funs.intFromXmlNode(self)
   def extractOptionalInt(): AlmValidation[Option[Int]] = 
@@ -36,10 +44,22 @@ trait XmlOps0 extends Ops[Elem]{
     funs.longFromXmlNode(self)
   def extractOptionalLong(): AlmValidation[Option[Long]] = 
     funs.optionalLongFromXmlNode(self)
+  def extractBigInt(): AlmValidation[BigInt] = 
+    funs.bigIntFromXmlNode(self)
+  def extractOptionalBigInt(): AlmValidation[Option[BigInt]] = 
+    funs.optionalBigIntFromXmlNode(self)
+  def extractFloat(): AlmValidation[Float] = 
+    funs.floatFromXmlNode(self)
+  def extractOptionalFloat(): AlmValidation[Option[Float]] = 
+    funs.optionalFloatFromXmlNode(self)
   def extractDouble(): AlmValidation[Double] = 
     funs.doubleFromXmlNode(self)
   def extractOptionalDouble(): AlmValidation[Option[Double]] = 
     funs.optionalDoubleFromXmlNode(self)
+  def extractDecimal(): AlmValidation[BigDecimal] = 
+    funs.decimalFromXmlNode(self)
+  def extractOptionalDecimal(): AlmValidation[Option[BigDecimal]] = 
+    funs.optionalDecimalFromXmlNode(self)
   def extractDateTime(): AlmValidation[DateTime] = 
     funs.dateTimeFromXmlNode(self)
   def extractOptionalDateTime(): AlmValidation[Option[DateTime]] = 
@@ -48,6 +68,10 @@ trait XmlOps0 extends Ops[Elem]{
     funs.uuidFromXmlNode(self)
   def extractOptionalUuid(): AlmValidation[Option[JUUID]] = 
     funs.optionalUuidFromXmlNode(self)
+  def extractUri(): AlmValidation[java.net.URI] = 
+    funs.uriFromXmlNode(self)
+  def extractOptionalUri(): AlmValidation[Option[java.net.URI]] = 
+    funs.optionalUriFromXmlNode(self)
     
   def extractStringFromChild(label: String): AlmValidation[String] = 
     funs.stringFromChild(self, label)

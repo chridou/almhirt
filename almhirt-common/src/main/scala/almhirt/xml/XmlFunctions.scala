@@ -58,13 +58,31 @@ trait XmlFunctions {
       case err: Exception => BadDataProblem("Could not parse xml: %s".format(err.getMessage), cause = Some(err)).failure[Elem]
     }
   }
-  
+
   def stringFromXmlNode(node: Elem): AlmValidation[String] =
     notEmptyOrWhitespace(node.text)
-  
+
   def optionalStringFromXmlNode(node: Elem): Option[String] =
     notEmptyOrWhitespace(node.text).toOption
 
+  def booleanFromXmlNode(node: Elem): AlmValidation[Boolean] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseBooleanAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
+  def optionalBooleanFromXmlNode(node: Elem): AlmValidation[Option[Boolean]] =
+    if (node.text.trim.isEmpty)
+      None.success[BadDataProblem]
+    else
+      booleanFromXmlNode(node) fold (_.failure, Some(_).success)
+
+  def byteFromXmlNode(node: Elem): AlmValidation[Byte] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseByteAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
+  def optionalByteFromXmlNode(node: Elem): AlmValidation[Option[Byte]] =
+    if (node.text.trim.isEmpty)
+      None.success[BadDataProblem]
+    else
+      byteFromXmlNode(node) fold (_.failure, Some(_).success)
+      
   def intFromXmlNode(node: Elem): AlmValidation[Int] =
     notEmptyOrWhitespace(node.text) flatMap (ne => parseIntAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
@@ -83,14 +101,14 @@ trait XmlFunctions {
     else
       longFromXmlNode(node) fold (_.failure, Some(_).success)
 
-  def doubleFromXmlNode(node: Elem): AlmValidation[Double] =
-    notEmptyOrWhitespace(node.text) flatMap (ne => parseDoubleAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+  def bigIntFromXmlNode(node: Elem): AlmValidation[BigInt] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseBigIntAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 
-  def optionalDoubleFromXmlNode(node: Elem): AlmValidation[Option[Double]] =
+  def optionalBigIntFromXmlNode(node: Elem): AlmValidation[Option[BigInt]] =
     if (node.text.trim.isEmpty)
       None.success[BadDataProblem]
     else
-      doubleFromXmlNode(node) fold (_.failure, Some(_).success)
+      bigIntFromXmlNode(node) fold (_.failure, Some(_).success)
 
   def floatFromXmlNode(node: Elem): AlmValidation[Float] =
     notEmptyOrWhitespace(node.text) flatMap (ne => parseFloatAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
@@ -100,6 +118,15 @@ trait XmlFunctions {
       None.success[BadDataProblem]
     else
       floatFromXmlNode(node) fold (_.failure, Some(_).success)
+
+  def doubleFromXmlNode(node: Elem): AlmValidation[Double] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseDoubleAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
+  def optionalDoubleFromXmlNode(node: Elem): AlmValidation[Option[Double]] =
+    if (node.text.trim.isEmpty)
+      None.success[BadDataProblem]
+    else
+      doubleFromXmlNode(node) fold (_.failure, Some(_).success)
 
   def decimalFromXmlNode(node: Elem): AlmValidation[BigDecimal] =
     notEmptyOrWhitespace(node.text) flatMap (ne => parseDecimalAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
@@ -127,6 +154,15 @@ trait XmlFunctions {
       None.success[BadDataProblem]
     else
       uuidFromXmlNode(node) fold (_.failure, Some(_).success)
+
+  def uriFromXmlNode(node: Elem): AlmValidation[_root_.java.net.URI] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseUriAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
+  def optionalUriFromXmlNode(node: Elem): AlmValidation[Option[_root_.java.net.URI]] =
+    if (node.text.trim.isEmpty)
+      None.success[BadDataProblem]
+    else
+      uriFromXmlNode(node) fold (_.failure, Some(_).success)
 
   def isBooleanSetTrue(elem: Elem): AlmValidation[Boolean] =
     if (elem.text.trim.isEmpty)
