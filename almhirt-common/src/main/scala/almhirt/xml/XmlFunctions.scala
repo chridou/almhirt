@@ -240,7 +240,7 @@ trait XmlFunctions {
 
   def getAttributeValue(node: Elem, name: String): AlmValidation[String] =
     (node \ s"@$name") match {
-      case NodeSeq.Empty => NoSuchElementProblem("Attribute not found").withIdentifier(name).failure
+      case NodeSeq.Empty => NoSuchElementProblem(s"""Attribute "$name" not found on <${node.label} !$name!="...">...<${node.label}>""").withIdentifier(name).failure
       case x => x.text.success
     }
 
