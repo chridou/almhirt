@@ -65,21 +65,17 @@ class DocTreeNodeSpec extends FlatSpec with ShouldMatchers {
   """A single DocTreeNode(leaf)""" should 
     """be convertible to scalaz.Tree""" in {
       DocIt(l3b)
-      true
     }
     it should """be convertible to scalaz.TreeLoc after being converted to a tree""" in {
       DocIt(l3b).loc
-      true
     }
 
   """A DocTreeNode(tree)""" should 
     """be convertible to scalaz.Tree""" in {
       DocIt(l1)
-      true
     }
     it should """be convertible to scalaz.TreeLoc after being converted to a tree""" in {
       DocIt(l1).loc
-      true
     }
   
 }

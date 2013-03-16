@@ -47,28 +47,28 @@ abstract class AlmhirtBootstrapper {
 object AlmhirtBootstrapper {
   def runStartupSequence(bootstrapper: AlmhirtBootstrapper, startUpLogger: LoggingAdapter): AlmValidation[(Almhirt, ShutDown)] =
     for {
-      (system, cleanUp1) <- 
+      systemAndCleanUp1 <- 
       	bootstrapper.createActorSystem(startUpLogger).map(x => 
       	  (new HasActorSystem { val actorSystem = x._1 }, x._2)).bimap(prob => StartupProblem("Bootstrapper: 'createActorSystem' failed.", cause=Some(CauseIsProblem(prob))), g => g)
-      (serviceRegistry, cleanUp2) <- 
-      	bootstrapper.createServiceRegistry(system, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'createServiceRegistry' failed.", cause=Some(CauseIsProblem(prob))), g => g)
-      (almhirt, cleanUp3) <- 
-      	bootstrapper.createAlmhirt(system, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'createAlmhirt' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      serviceRegistryAndCleanUp2 <- 
+      	bootstrapper.createServiceRegistry(systemAndCleanUp1._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'createServiceRegistry' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      almhirtAndCleanUp3 <- 
+      	bootstrapper.createAlmhirt(systemAndCleanUp1._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'createAlmhirt' failed.", cause=Some(CauseIsProblem(prob))), g => g)
       cleanUp4 <- 
-      	bootstrapper.createCoreComponents(almhirt, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'createCoreComponents' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      	bootstrapper.createCoreComponents(almhirtAndCleanUp3._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'createCoreComponents' failed.", cause=Some(CauseIsProblem(prob))), g => g)
       cleanUp5 <- 
-      	bootstrapper.initializeCoreComponents(almhirt, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'initializeCoreComponents' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      	bootstrapper.initializeCoreComponents(almhirtAndCleanUp3._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'initializeCoreComponents' failed.", cause=Some(CauseIsProblem(prob))), g => g)
       cleanUp6 <- 
-      	bootstrapper.registerRepositories(almhirt, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'registerRepositories' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      	bootstrapper.registerRepositories(almhirtAndCleanUp3._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'registerRepositories' failed.", cause=Some(CauseIsProblem(prob))), g => g)
       cleanUp7 <- 
-      	bootstrapper.registerCommandHandlers(almhirt, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'registerCommandHandlers' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      	bootstrapper.registerCommandHandlers(almhirtAndCleanUp3._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'registerCommandHandlers' failed.", cause=Some(CauseIsProblem(prob))), g => g)
       cleanUp8 <- 
-      	bootstrapper.registerAndInitializeMoreComponents(almhirt, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'registerAndInitializeMoreComponents' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      	bootstrapper.registerAndInitializeMoreComponents(almhirtAndCleanUp3._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'registerAndInitializeMoreComponents' failed.", cause=Some(CauseIsProblem(prob))), g => g)
       cleanUp9 <- 
-      	bootstrapper.prepareGateways(almhirt, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'prepareGateways' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      	bootstrapper.prepareGateways(almhirtAndCleanUp3._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'prepareGateways' failed.", cause=Some(CauseIsProblem(prob))), g => g)
       cleanUp10 <- 
-      	bootstrapper.registerAndInitializeAuxServices(almhirt, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'registerAndInitializeAuxServices' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+      	bootstrapper.registerAndInitializeAuxServices(almhirtAndCleanUp3._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'registerAndInitializeAuxServices' failed.", cause=Some(CauseIsProblem(prob))), g => g)
       _ <- 
-      	bootstrapper.cleanUpTemps(almhirt, serviceRegistry, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'cleanUpTemps' failed.", cause=Some(CauseIsProblem(prob))), g => g)
-    } yield (almhirt, new ShutDown { def shutDown() { cleanUp10(); cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); cleanUp3(); cleanUp2(); cleanUp1() } })
+      	bootstrapper.cleanUpTemps(almhirtAndCleanUp3._1, serviceRegistryAndCleanUp2._1, startUpLogger).bimap(prob => StartupProblem("Bootstrapper: 'cleanUpTemps' failed.", cause=Some(CauseIsProblem(prob))), g => g)
+    } yield (almhirtAndCleanUp3._1, new ShutDown { def shutDown() { cleanUp10(); cleanUp9(); cleanUp8(); cleanUp7(); cleanUp6(); cleanUp5(); cleanUp4(); almhirtAndCleanUp3._2(); serviceRegistryAndCleanUp2._2(); systemAndCleanUp1._2() } })
 }

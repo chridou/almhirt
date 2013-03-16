@@ -3,7 +3,8 @@ package almhirt.commanding
 import java.util.{ UUID => JUUID }
 import scala.reflect.ClassTag
 import scala.concurrent.duration.FiniteDuration
-import scalaz._, Scalaz._
+//import scalaz._, Scalaz._
+import scalaz.syntax.validation._
 import scalaz.std._
 import akka.actor.ActorRef
 import almhirt.common._
@@ -147,6 +148,8 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
 
     protected def executeMutatorsOn(initial: UpdateRecorder[TAR, TEvent], actions: List[BoundMutatorAction]): AlmFuture[UpdateRecorder[TAR, TEvent]] = {
       import akka.pattern._
+      import scalaz.syntax.traverse._
+      import scalaz.std.list.listInstance
       AlmFuture {
         val actionsAndHandlersV = actions.map(action => actionHandlers.getMutatingHandler(action).toAgg.map(h => (action, h)))
         val actionsAndHandlers = actionsAndHandlersV.sequence[AlmValidationAP, (BoundMutatorAction, (BoundMutatorAction, TAR, Almhirt) => UpdateRecorder[TAR, TEvent])]
