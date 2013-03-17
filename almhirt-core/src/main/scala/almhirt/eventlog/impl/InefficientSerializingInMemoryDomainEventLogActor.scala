@@ -57,7 +57,7 @@ class InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt: Almhirt) ext
     case LogEventsQry(events, executionIdent) =>
       loggedEvents = loggedEvents ++ events
       events.foreach(event => theAlmhirt.publishDomainEvent(event))
-      sender ! CommittedDomainEventsRsp(events.toVector.success, executionIdent)
+      sender ! LoggedDomainEventsRsp(events.toVector, Vector.empty, executionIdent)
     case GetAllEventsQry(chunkSize, execIdent) =>
       sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)
     case GetEventsQry(aggId, chunkSize, execIdent) =>

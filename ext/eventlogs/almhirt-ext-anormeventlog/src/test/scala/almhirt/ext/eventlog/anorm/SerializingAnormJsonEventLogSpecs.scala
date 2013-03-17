@@ -55,7 +55,7 @@ class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers wit
     withEmptyEventLog { (eventLog, almhirt) =>
       val event = TestPersonCreated(AggregateRootRef(aggIdForEvent), "test")
       val res = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(2, "s"))
-      res.forceResult should have size 1
+      res.forceResult._1 should have size 1
     }
   }
   it should "accept an event and return exactly 1 event when queried for all events" in {

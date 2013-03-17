@@ -17,14 +17,13 @@ package almhirt.eventlog
 import scala.concurrent.duration.FiniteDuration
 import scalaz.{Validation}
 import almhirt._
+import almhirt.common._
 import almhirt.domain.DomainEvent
-import almhirt.common.AlmFuture
 
 
 /** Logs domain events. It doesn't validate them or check for consistency in any way. 
  */
 trait CanStoreDomainEvents {
   /** Log the domain events and in a case of success return them. Events must contain the events in order of occurence */
-  def storeEvents(events: IndexedSeq[DomainEvent]): AlmFuture[IndexedSeq[DomainEvent]]
-  def purgeEvents(aggRootId: java.util.UUID): AlmFuture[IndexedSeq[DomainEvent]]
+  def storeEvents(events: IndexedSeq[DomainEvent]): AlmFuture[(IndexedSeq[DomainEvent], IndexedSeq[(Problem, DomainEvent)])]
 }

@@ -103,8 +103,10 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
 
   def receive: Receive = {
     case LogEventsQry(events, executionIdent) =>
-      val res = storeEvents(events)
-      sender ! CommittedDomainEventsRsp(res, executionIdent)
+      val res = storeEvents(events).onResult(
+        fail => sender ! LoggedDomainEventsRsp(Vector.empty, events.map(prob => (fail, prob)), executionIdent),
+        succ => sender ! LoggedDomainEventsRsp(succ, Vector.empty, executionIdent))
+
     case GetAllEventsQry(chunkSize, execIdent) =>
       val res = getAllEvents()
       sender ! AllEventsRsp(DomainEventsChunk(0, true, res), execIdent)
@@ -118,6 +120,5 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
       val res = getEventsFor(aggId, Some(from), Some(to))
       sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
   }
-  
-  
+
 }
