@@ -123,13 +123,13 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
 
     protected def executeUnitOfWork(com: BoundDomainActionsCommand): AlmFuture[UpdateRecorder[TAR, TEvent]] = {
       for {
-        (initial, rest) <- option.cata(com.aggRef)(
+        initialAndRest <- option.cata(com.aggRef)(
           aggRef => startFromRepo(aggRef).map(recorder => (recorder, com.actions.asInstanceOf[List[BoundMutatorAction]])),
           {
             val creatorAction :: mutate = com.actions
             startWithNew(creatorAction.asInstanceOf[BoundCreatorAction]).map(recorder => (recorder, mutate.asInstanceOf[List[BoundMutatorAction]]))
           })
-        resultOfMutators <- executeMutatorsOn(initial, rest)
+        resultOfMutators <- executeMutatorsOn(initialAndRest._1, initialAndRest._2)
       } yield resultOfMutators
     }
 

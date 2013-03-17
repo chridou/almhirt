@@ -47,29 +47,6 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
         r => compute(r).underlying)
     }(hasExecutionContext.executionContext))
 
-  def filter(pred: R => Boolean)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[R] = {
-    ???
-//    val p = Promise[T]()
-//
-//    onComplete {
-//      case f: Failure[_] => p complete f.asInstanceOf[Failure[T]]
-//      case Success(v) =>
-//        try {
-//          if (pred(v)) p success v
-//          else p failure new NoSuchElementException("Future.filter predicate is not satisfied")
-//        } catch {
-//          case NonFatal(t) => p failure t
-//        }
-//    }(executor)
-//
-//    p.future
-  }
-
-  
-  final def withFilter(pred: R => Boolean)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[R] =
-    filter(pred)
-  
-  
   def fold[T](failure: Problem => T, success: R => T)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.map { validation => (validation fold (failure, success)).success }(hasExecutionContext.executionContext))
 
