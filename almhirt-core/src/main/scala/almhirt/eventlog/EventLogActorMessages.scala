@@ -15,4 +15,5 @@ case class GetEventsFromUntilQry(from: DateTime, until: DateTime, chunkSize: Opt
 
 sealed trait EventLogRsp
 case class EventsRsp(chunk: EventsChunk, correlationId: Option[UUID]) extends EventLogRsp
+case class EventRsp(result: AlmValidation[Event], correlationId: Option[UUID]) extends EventLogRsp
 case class LoggedDomainEventRsp(result: AlmValidation[Event], correlationId: Option[UUID]) extends EventLogRsp

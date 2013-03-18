@@ -33,7 +33,7 @@ class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: Fi
 object DomainEventLogActorHull {
   def apply(actor: ActorRef, config: Config)(implicit foundations: HasExecutionContext with HasDurations): DomainEventLog = {
     val maxCallDuration =
-      ConfigHelper.getMilliseconds(config)(ConfigPaths.eventlog + ".maximum_direct_call_duration")
+      ConfigHelper.getMilliseconds(config)(ConfigPaths.domaineventlog + ".maximum_direct_call_duration")
         .getOrElse(foundations.durations.extraLongDuration)
     DomainEventLogActorHull(actor, maxCallDuration)
   }

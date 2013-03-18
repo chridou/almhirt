@@ -40,7 +40,7 @@ object SystemHelper {
     import language.reflectiveCalls
     for {
       theConfig <- theAlmhirt.getConfig
-      eventLogConfig <- ConfigHelper.eventLog.getConfig(theConfig)
+      eventLogConfig <- ConfigHelper.domainEventLog.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(eventLogConfig)
       factory <- inTryCatch {
         theAlmhirt.log.info(s"Creating DomainEventLog using factory '$factoryName'")

@@ -34,18 +34,18 @@ import almhirt.core.Almhirt
 class DevNullEventLogFactory() extends DomainEventLogFactory {
   def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.getConfig.flatMap(config =>
-      ConfigHelper.eventLog.getConfig(config).map { subConfig =>
-        val name = ConfigHelper.eventLog.getActorName(subConfig)
-        theAlmhirt.log.info(s"EventLog is DevNullEventLog with name '$name'.")
-        theAlmhirt.log.warning("*** THE EVENT LOG IS DOES NOTHING ***")
+      ConfigHelper.domainEventLog.getConfig(config).map { subConfig =>
+        val name = ConfigHelper.domainEventLog.getActorName(subConfig)
+        theAlmhirt.log.info(s"DomainEventLog is DevNullEventLog with name '$name'.")
+        theAlmhirt.log.warning("*** THE DOMAIN EVENT LOG DOES NOTHING ***")
         val dispatcherName =
           ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
             fail => {
-              theAlmhirt.log.warning("No dispatchername found for EventLog. Using default Dispatcher")
+              theAlmhirt.log.warning("No dispatchername found for DomainEventLog. Using default Dispatcher")
               None
             },
             succ => {
-              theAlmhirt.log.info(s"EventLog is using dispatcher '$succ'")
+              theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
               Some(succ)
             })
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new DevNullEventLogActor()))

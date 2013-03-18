@@ -83,10 +83,10 @@ trait BootstrapperDefaultCoreComponents extends AlmhirtBootstrapper { self: HasC
             .forceResult
         startUpLogger.info(s"Register CommandExecutor")
         theServiceRegistry.registerService[CommandExecutor](cmdExecutor)
-        ConfigHelper.getSubConfig(config)(ConfigPaths.eventlog).foreach { _ =>
-          startUpLogger.info(s"Create EventLog")
+        ConfigHelper.getSubConfig(config)(ConfigPaths.domaineventlog).foreach { _ =>
+          startUpLogger.info(s"Create DomainEventLog")
           val eventLogActor = SystemHelper.createEventLogFromFactory.forceResult
-          startUpLogger.info(s"Register EventLog")
+          startUpLogger.info(s"Register DomainEventLog")
           theServiceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor, config))
         }
         ConfigHelper.getSubConfig(config)(ConfigPaths.commandEndpoint).foreach { _ =>

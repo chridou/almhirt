@@ -64,11 +64,17 @@ object ConfigHelper {
   def getDispatcherNameFromComponentConfig(componentConfig: Config): AlmValidation[String] =
     getString(componentConfig)(ConfigItems.dispatchername)
 
-  object eventLog {
-    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog)
-    def getActorName(eventlogConfig: Config): String = ConfigHelper.getStringOrDefault("EventLog")(eventlogConfig)(ConfigItems.actorName)
-    def factoryName(eventlogConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(eventlogConfig)
+  object domainEventLog {
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.domaineventlog)
+    def getActorName(domaineventlogConfig: Config): String = ConfigHelper.getStringOrDefault("DomainEventLog")(domaineventlogConfig)(ConfigItems.actorName)
+    def factoryName(domaineventlogConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(domaineventlogConfig)
   }
+
+//  object eventLog {
+//    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.eventlog)
+//    def getActorName(eventlogConfig: Config): String = ConfigHelper.getStringOrDefault("EventLog")(eventlogConfig)(ConfigItems.actorName)
+//    def factoryName(eventlogConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(eventlogConfig)
+//  }
 
   object operationState {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.operationState)

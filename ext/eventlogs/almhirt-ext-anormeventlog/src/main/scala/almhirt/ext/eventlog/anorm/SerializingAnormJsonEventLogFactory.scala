@@ -31,24 +31,24 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
 
   private def createEventLog(settings: AnormSettings, actorName: String, dropOnClose: Boolean, riftWarp: RiftWarp, theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.getConfig.flatMap(config =>
-      ConfigHelper.eventLog.getConfig(config).map { eventLogConfig =>
+      ConfigHelper.domainEventLog.getConfig(config).map { eventLogConfig =>
         val dispatcherName =
           ConfigHelper.getDispatcherNameFromComponentConfig(eventLogConfig).fold(
             fail => {
-              theAlmhirt.log.warning("No dispatchername found for EventLog. Using default Dispatcher")
+              theAlmhirt.log.warning("No dispatchername found for DomainEventLog. Using default Dispatcher")
               None
             },
             succ => {
-              theAlmhirt.log.info(s"EventLog is using dispatcher '$succ'")
+              theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
               Some(succ)
             })
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new SerializingAnormJsonEventLogActor(settings)(riftWarp, theAlmhirt)))
-        theAlmhirt.log.info(s"EventLog is SerializingAnormJsonEventLog with name '$actorName'. DropOnClose: $dropOnClose, Connection: ${settings.connection}")
+        theAlmhirt.log.info(s"DomainEventLog is SerializingAnormJsonEventLog with name '$actorName'. DropOnClose: $dropOnClose, Connection: ${settings.connection}")
         val actor = theAlmhirt.actorSystem.actorOf(props, actorName)
         if (dropOnClose) {
           def dropTable() = {
             DbUtil.inTransactionWithConnection(() => DbUtil.getConnection(settings.connection, settings.props)) { conn =>
-              theAlmhirt.log.info(s"Dropping eventlog table ${settings.logTableName}")
+              theAlmhirt.log.info(s"Dropping domaineventlog table ${settings.logTableName}")
               val statement = conn.createStatement()
               statement.executeUpdate("DROP TABLE %s".format(settings.logTableName))
               Unit.success
@@ -63,7 +63,7 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
 
   def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.getConfig.flatMap(config =>
-      ConfigHelper.eventLog.getConfig(config).flatMap { eventLogConfig =>
+      ConfigHelper.domainEventLog.getConfig(config).flatMap { eventLogConfig =>
         val createSchemaFun: (AnormSettings, DbTemplate) => AlmValidation[AnormSettings] =
           ConfigHelper
             .getBoolean(eventLogConfig)("create_schema")
@@ -103,7 +103,7 @@ class SerializingAnormJsonEventLogFactory extends DomainEventLogFactory {
 
         import collection.JavaConversions._
 
-        val actorName = ConfigHelper.eventLog.getActorName(eventLogConfig)
+        val actorName = ConfigHelper.domainEventLog.getActorName(eventLogConfig)
         ConfigHelper.getString(eventLogConfig)("connection").flatMap(connection =>
           theAlmhirt.getService[RiftWarp].flatMap(riftWarp =>
             dbTemplate.flatMap(dbTemplate =>

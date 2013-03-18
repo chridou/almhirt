@@ -31,10 +31,10 @@ import almhirt.core.Almhirt
 class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventLogFactory {
   def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.getConfig.flatMap(config =>
-      ConfigHelper.eventLog.getConfig(config).map { subConfig =>
-        val name = ConfigHelper.eventLog.getActorName(subConfig)
-        theAlmhirt.log.info(s"EventLog is InefficientSerializingInMemoryDomainEventLog with name '$name'.")
-        theAlmhirt.log.warning("*** THE EVENT LOG IS TRANSIENT ***")
+      ConfigHelper.domainEventLog.getConfig(config).map { subConfig =>
+        val name = ConfigHelper.domainEventLog.getActorName(subConfig)
+        theAlmhirt.log.info(s"DomainEventLog is InefficientSerializingInMemoryDomainEventLog with name '$name'.")
+        theAlmhirt.log.warning("*** THE DOMAIN EVENT LOG IS TRANSIENT ***")
         val dispatcherName =
           ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
             fail => {
@@ -42,7 +42,7 @@ class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventL
               None
             },
             succ => {
-              theAlmhirt.log.info(s"EventLog is using dispatcher '$succ'")
+              theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
               Some(succ)
             })
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt)))
