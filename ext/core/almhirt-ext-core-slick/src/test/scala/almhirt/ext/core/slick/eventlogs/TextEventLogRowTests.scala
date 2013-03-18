@@ -27,21 +27,21 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
     }
   }
 
-  //  test("The dal must create the database") {
-  //    withIsolatedDal((db, dal) => {
-  //      ()
-  //    })
-  //  }
-  //
-  //  test("The dal must store a text row the database") {
-  //    val textEventLogRow = TextEventLogRow(JUUID.randomUUID(), DateTime.now(), "TestEventType", "Nonsense", "The payload")
-  //    withIsolatedDal((db, dal) => {
-  //      import dal.profile.simple._
-  //      db.withSession { implicit session: Session =>
-  //        dal.insertTextualEventRow(textEventLogRow)
-  //      }
-  //    }).isSuccess
-  //  }
+    test("The dal must create the database") {
+      withIsolatedDal((db, dal) => {
+        ()
+      })
+    }
+  
+    test("The dal must store a text row the database") {
+      val textEventLogRow = TextEventLogRow(JUUID.randomUUID(), DateTime.now(), "TestEventType", "Nonsense", "The payload")
+      withIsolatedDal((db, dal) => {
+        import dal.profile.simple._
+        db.withSession { implicit session: Session =>
+          dal.insertEventRow(textEventLogRow)
+        }
+      }).isSuccess
+    }
 
   test("The dal must store 2 text rows the database") {
     val textEventLogRow1 = TextEventLogRow(JUUID.fromString("e762e519-66e2-4aee-9076-78bb508e46d5"), DateTime.now(), "TestEventType1", "Nonsense1", "The payload1")
@@ -49,8 +49,8 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
     withIsolatedDal((db, dal) => {
       import dal.profile.simple._
       db.withSession { implicit session: Session =>
-        dal.insertTextualEventRow(textEventLogRow1)
-        dal.insertTextualEventRow(textEventLogRow2)
+        dal.insertEventRow(textEventLogRow1)
+        dal.insertEventRow(textEventLogRow2)
       }.forceResult
     })
   }
@@ -61,13 +61,13 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
       withIsolatedDal((db, dal) => {
         import dal.profile.simple._
         db.withSession { implicit session: Session =>
-          dal.insertTextualEventRow(textEventLogRow1).flatMap { _ =>
-            dal.insertTextualEventRow(textEventLogRow2)
+          dal.insertEventRow(textEventLogRow1).flatMap { _ =>
+            dal.insertEventRow(textEventLogRow2)
           }.forceResult
         }
   
         db.withSession { implicit session: Session =>
-          val rowCount = dal.countTextualEventRows
+          val rowCount = dal.countEventRows
           rowCount.forceResult must equal(2)
         }
   
@@ -80,10 +80,10 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
         withIsolatedDal((db, dal) => {
           import dal.profile.simple._
           db.withSession { implicit session: Session =>
-            dal.insertTextualEventRow(textEventLogRow)
+            dal.insertEventRow(textEventLogRow)
           }
           db.withSession { implicit session: Session =>
-            dal.getTextualEventRowById(textEventLogRow.id)
+            dal.getEventRowById(textEventLogRow.id)
           }
         }).forceResult
       res must equal(textEventLogRow)
@@ -96,13 +96,13 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
         withIsolatedDal((db, dal) => {
           import dal.profile.simple._
           db.withSession { implicit session: Session =>
-            dal.insertTextualEventRow(textEventLogRow1).flatMap { _ =>
-              dal.insertTextualEventRow(textEventLogRow2)
+            dal.insertEventRow(textEventLogRow1).flatMap { _ =>
+              dal.insertEventRow(textEventLogRow2)
             }
           }
           db.withSession { implicit session: Session =>
-            dal.getTextualEventRowById(textEventLogRow1.id).flatMap(res1 =>
-              dal.getTextualEventRowById(textEventLogRow2.id).map(res2 =>
+            dal.getEventRowById(textEventLogRow1.id).flatMap(res1 =>
+              dal.getEventRowById(textEventLogRow2.id).map(res2 =>
                 (res1, res2)))
           }
         }).forceResult

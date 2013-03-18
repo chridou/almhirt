@@ -26,4 +26,8 @@ trait BlobStoreComponent { this: Profile =>
       }
     }
   }
+  
+  def insertBlobRow(blobRow: BlobRow)(implicit session: Session): AlmValidation[BlobRow] =
+    BlobRows.insertSafe(blobRow)
+  
 }
