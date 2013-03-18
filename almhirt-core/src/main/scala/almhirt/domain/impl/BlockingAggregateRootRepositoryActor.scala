@@ -21,9 +21,9 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
   implicit private val executionContext = theAlmhirt.executionContext
 
   private def getFromEventLog(id: java.util.UUID): AlmFuture[AR] = {
-    val future = (eventLog ? GetEventsQry(id, None, None))(timeout).mapToSuccessfulAlmFuture[EventsForAggregateRootRsp]
+    val future = (eventLog ? GetDomainEventsQry(id, None, None))(timeout).mapToSuccessfulAlmFuture[DomainEventsForAggregateRootRsp]
     future
-      .mapV { case EventsForAggregateRootRsp(id, DomainEventsChunk(idx, isLast, events), corrId) => events }
+      .mapV { case DomainEventsForAggregateRootRsp(id, DomainEventsChunk(idx, isLast, events), corrId) => events }
       .map(events => events.map(x => x.asInstanceOf[Event]))
       .mapV(events =>
         if (events.isEmpty) NotFoundProblem("No aggregate root found with id '%s'".format(id)).failure

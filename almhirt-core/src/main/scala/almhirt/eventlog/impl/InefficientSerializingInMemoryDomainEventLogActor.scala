@@ -58,13 +58,13 @@ class InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt: Almhirt) ext
       loggedEvents = loggedEvents ++ events
       events.foreach(event => theAlmhirt.publishDomainEvent(event))
       sender ! LoggedDomainEventsRsp(events.toVector, None, executionIdent)
-    case GetAllEventsQry(chunkSize, execIdent) =>
-      sender ! AllEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)
-    case GetEventsQry(aggId, chunkSize, execIdent) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.aggId == aggId).toIterable.success), execIdent)
-    case GetEventsFromQry(aggId, from, chunkSize, execIdent) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success), execIdent)
-    case GetEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success), execIdent)
+    case GetAllDomainEventsQry(chunkSize, execIdent) =>
+      sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)
+    case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
+      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.aggId == aggId).toIterable.success), execIdent)
+    case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
+      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success), execIdent)
+    case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
+      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success), execIdent)
   }
 }

@@ -107,18 +107,18 @@ class SerializingAnormJsonEventLogActor(settings: AnormSettings)(implicit riftWa
         fail => sender ! LoggedDomainEventsRsp(Vector.empty, Some((fail, events)), executionIdent),
         succ => sender ! LoggedDomainEventsRsp(succ, None, executionIdent))
 
-    case GetAllEventsQry(chunkSize, execIdent) =>
+    case GetAllDomainEventsQry(chunkSize, execIdent) =>
       val res = getAllEvents()
-      sender ! AllEventsRsp(DomainEventsChunk(0, true, res), execIdent)
-    case GetEventsQry(aggId, chunkSize, execIdent) =>
+      sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, res), execIdent)
+    case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
       val res = getEventsFor(aggId, None, None)
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
-    case GetEventsFromQry(aggId, from, chunkSize, execIdent) =>
+      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
+    case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
       val res = getEventsFor(aggId, Some(from), None)
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
-    case GetEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
+      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
+    case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
       val res = getEventsFor(aggId, Some(from), Some(to))
-      sender ! EventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
+      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, res), execIdent)
   }
 
 }
