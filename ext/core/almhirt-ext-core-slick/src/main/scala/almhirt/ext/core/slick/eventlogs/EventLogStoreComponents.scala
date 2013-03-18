@@ -7,13 +7,13 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 
 trait EventLogStoreComponent[T] {
-  def insertEventRow(eventLogRow: T)(implicit session: scala.slick.session.Session): AlmValidation[T]
-  def getEventRowById(id: JUUID)(implicit session: scala.slick.session.Session): AlmValidation[T]
-  def getAllEventRows(implicit session: scala.slick.session.Session): AlmValidation[Iterable[T]]
-  def getAllEventRowsFrom(from: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[T]]
-  def getAllEventRowsUntil(until: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[T]]
-  def getAllEventRowsFromUntil(from: DateTime, until: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[T]]
-  def countEventRows(implicit session: scala.slick.session.Session): AlmValidation[Int]
+  def insertEventRow(eventLogRow: T): AlmValidation[T]
+  def getEventRowById(id: JUUID): AlmValidation[T]
+  def getAllEventRows: AlmValidation[Iterable[T]]
+  def getAllEventRowsFrom(from: DateTime): AlmValidation[Iterable[T]]
+  def getAllEventRowsUntil(until: DateTime): AlmValidation[Iterable[T]]
+  def getAllEventRowsFromUntil(from: DateTime, until: DateTime): AlmValidation[Iterable[T]]
+  def countEventRows: AlmValidation[Int]
 }
 
 trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComponent[TextEventLogRow] { this: Profile =>
@@ -43,31 +43,45 @@ trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComp
     }
   }
 
-  override def insertEventRow(eventLogRow: TextEventLogRow)(implicit session: Session): AlmValidation[TextEventLogRow] =
-    TextEventLogRows.insertSafe(eventLogRow)
-
-  override def getEventRowById(id: JUUID)(implicit session: Session): AlmValidation[TextEventLogRow] =
+  override def insertEventRow(eventLogRow: TextEventLogRow): AlmValidation[TextEventLogRow] =
     computeSafely {
-      Query(TextEventLogRows).filter(_.id === id.bind).list.headOption match {
-        case Some(row) => row.success
-        case None => NotFoundProblem(s"""No event with id "${id.toString}" found.""").failure
+      getDb() withSession { implicit session: Session =>
+        TextEventLogRows.insertSafe(eventLogRow)
       }
     }
 
-  override def getAllEventRows(implicit session: scala.slick.session.Session): AlmValidation[Iterable[TextEventLogRow]] =
-    inTryCatch { Query(TextEventLogRows).list }
+  override def getEventRowById(id: JUUID): AlmValidation[TextEventLogRow] =
+    computeSafely {
+      getDb() withSession { implicit session: Session =>
+        Query(TextEventLogRows).filter(_.id === id.bind).list.headOption match {
+          case Some(row) => row.success
+          case None => NotFoundProblem(s"""No event with id "${id.toString}" found.""").failure
+        }
+      }
+    }
 
-  override def getAllEventRowsFrom(from: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[TextEventLogRow]] =
+  override def getAllEventRows: AlmValidation[Iterable[TextEventLogRow]] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session =>
+        Query(TextEventLogRows).list
+      }
+    }
+
+  override def getAllEventRowsFrom(from: DateTime): AlmValidation[Iterable[TextEventLogRow]] =
     ??? // inTryCatch { Query(TextEventLogRows).filter(row => row.timestamp >= from).list }
 
-  override def getAllEventRowsUntil(until: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[TextEventLogRow]] =
+  override def getAllEventRowsUntil(until: DateTime): AlmValidation[Iterable[TextEventLogRow]] =
     ???
 
-  override def getAllEventRowsFromUntil(from: DateTime, until: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[TextEventLogRow]] =
+  override def getAllEventRowsFromUntil(from: DateTime, until: DateTime): AlmValidation[Iterable[TextEventLogRow]] =
     ???
 
-  override def countEventRows(implicit session: scala.slick.session.Session): AlmValidation[Int] =
-    inTryCatchM { (for { row <- TextEventLogRows } yield row.length).first }("Could not determine count for TextEventLogRows")
+  override def countEventRows: AlmValidation[Int] =
+    inTryCatchM {
+      getDb() withSession { implicit session: Session =>
+        (for { row <- TextEventLogRows } yield row.length).first
+      }
+    }("Could not determine count for TextEventLogRows")
 
 }
 
@@ -98,31 +112,45 @@ trait BinaryEventLogStoreComponent extends SlickTypeMappers with EventLogStoreCo
     }
   }
 
-  override def insertEventRow(eventLogRow: BinaryEventLogRow)(implicit session: Session): AlmValidation[BinaryEventLogRow] =
-    BinaryEventLogRows.insertSafe(eventLogRow)
-
-  override def getEventRowById(id: JUUID)(implicit session: Session): AlmValidation[BinaryEventLogRow] =
+  override def insertEventRow(eventLogRow: BinaryEventLogRow): AlmValidation[BinaryEventLogRow] =
     computeSafely {
-      Query(BinaryEventLogRows).filter(_.id === id.bind).list.headOption match {
-        case Some(row) => row.success
-        case None => NotFoundProblem(s"""No event with id "${id.toString}" found.""").failure
+      getDb() withSession { implicit session: Session =>
+        BinaryEventLogRows.insertSafe(eventLogRow)
       }
     }
 
-  override def getAllEventRows(implicit session: scala.slick.session.Session): AlmValidation[Iterable[BinaryEventLogRow]] =
-    inTryCatch { Query(BinaryEventLogRows).list }
+  override def getEventRowById(id: JUUID): AlmValidation[BinaryEventLogRow] =
+    computeSafely {
+      getDb() withSession { implicit session: Session =>
+        Query(BinaryEventLogRows).filter(_.id === id.bind).list.headOption match {
+          case Some(row) => row.success
+          case None => NotFoundProblem(s"""No event with id "${id.toString}" found.""").failure
+        }
+      }
+    }
 
-  override def getAllEventRowsFrom(from: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[BinaryEventLogRow]] =
+  override def getAllEventRows: AlmValidation[Iterable[BinaryEventLogRow]] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session =>
+        Query(BinaryEventLogRows).list
+      }
+    }
+
+  override def getAllEventRowsFrom(from: DateTime): AlmValidation[Iterable[BinaryEventLogRow]] =
     ??? // inTryCatch { Query(TextEventLogRows).filter(row => row.timestamp >= from).list }
 
-  override def getAllEventRowsUntil(until: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[BinaryEventLogRow]] =
+  override def getAllEventRowsUntil(until: DateTime): AlmValidation[Iterable[BinaryEventLogRow]] =
     ???
 
-  override def getAllEventRowsFromUntil(from: DateTime, until: DateTime)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[BinaryEventLogRow]] =
+  override def getAllEventRowsFromUntil(from: DateTime, until: DateTime): AlmValidation[Iterable[BinaryEventLogRow]] =
     ???
 
-  override def countEventRows(implicit session: scala.slick.session.Session): AlmValidation[Int] =
-    inTryCatchM { (for { row <- BinaryEventLogRows } yield row.length).first }("Could not determine count for BinaryEventLogRows")
+  override def countEventRows: AlmValidation[Int] =
+    inTryCatchM {
+      getDb() withSession { implicit session: Session =>
+        (for { row <- BinaryEventLogRows } yield row.length).first
+      }
+    }("Could not determine count for BinaryEventLogRows")
 
 }
 

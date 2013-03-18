@@ -7,13 +7,13 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 
 trait DomainEventLogStoreComponent[T] {
-  def insertEventRow(eventLogRow: T)(implicit session: scala.slick.session.Session): AlmValidation[T]
-  def getEventRowById(id: JUUID)(implicit session: scala.slick.session.Session): AlmValidation[T]
-  def getAllEventRowsFor(aggId: JUUID)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[T]]
-  def getAllEventRowsForFrom(fromVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[T]]
-  def getAllEventRowsForTo(toVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[T]]
-  def getAllEventRowsForFromTo(fromVersion: Long, toVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[T]]
-  def countEventRows(implicit session: scala.slick.session.Session): AlmValidation[Int]
+  def insertEventRow(eventLogRow: T): AlmValidation[T]
+  def getEventRowById(id: JUUID): AlmValidation[T]
+  def getAllEventRowsFor(aggId: JUUID): AlmValidation[Iterable[T]]
+  def getAllEventRowsForFrom(fromVersion: Long): AlmValidation[Iterable[T]]
+  def getAllEventRowsForTo(toVersion: Long): AlmValidation[Iterable[T]]
+  def getAllEventRowsForFromTo(fromVersion: Long, toVersion: Long): AlmValidation[Iterable[T]]
+  def countEventRows: AlmValidation[Int]
 }
 
 trait TextDomainEventLogStoreComponent extends SlickTypeMappers with DomainEventLogStoreComponent[TextDomainEventLogRow] { this: Profile =>
@@ -46,31 +46,37 @@ trait TextDomainEventLogStoreComponent extends SlickTypeMappers with DomainEvent
     }
   }
 
-  override def insertEventRow(eventLogRow: TextDomainEventLogRow)(implicit session: scala.slick.session.Session): AlmValidation[TextDomainEventLogRow] =
-    TextDomainEventLogRows.insertSafe(eventLogRow)
-
-  override def getEventRowById(id: JUUID)(implicit session: scala.slick.session.Session): AlmValidation[TextDomainEventLogRow] =
+  override def insertEventRow(eventLogRow: TextDomainEventLogRow): AlmValidation[TextDomainEventLogRow] =
     computeSafely {
-      Query(TextDomainEventLogRows).filter(_.id === id.bind).list.headOption match {
-        case Some(row) => row.success
-        case None => NotFoundProblem(s"""No domain event with id "${id.toString}" found.""").failure
+      getDb() withSession { implicit session: Session =>
+        TextDomainEventLogRows.insertSafe(eventLogRow)
       }
     }
 
-  override def getAllEventRowsFor(aggId: JUUID)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { Query(TextDomainEventLogRows).list }
+  override def getEventRowById(id: JUUID): AlmValidation[TextDomainEventLogRow] =
+    computeSafely {
+      getDb() withSession { implicit session: Session =>
+        Query(TextDomainEventLogRows).filter(_.id === id.bind).list.headOption match {
+          case Some(row) => row.success
+          case None => NotFoundProblem(s"""No domain event with id "${id.toString}" found.""").failure
+        }
+      }
+    }
 
-  override def getAllEventRowsForFrom(fromVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { Query(TextDomainEventLogRows).filter(x => x.aggVersion >= fromVersion).list }
+  override def getAllEventRowsFor(aggId: JUUID): AlmValidation[Iterable[TextDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).list } }
 
-  override def getAllEventRowsForTo(toVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { Query(TextDomainEventLogRows).filter(x => x.aggVersion <= toVersion).list }
+  override def getAllEventRowsForFrom(fromVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggVersion >= fromVersion).list } }
 
-  override def getAllEventRowsForFromTo(fromVersion: Long, toVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { Query(TextDomainEventLogRows).filter(x => x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list }
+  override def getAllEventRowsForTo(toVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggVersion <= toVersion).list } }
 
-  override def countEventRows(implicit session: scala.slick.session.Session): AlmValidation[Int] =
-    inTryCatchM { (for { row <- TextDomainEventLogRows } yield row.length).first }("Could not determine count for TextDomainEventLogRows")
+  override def getAllEventRowsForFromTo(fromVersion: Long, toVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list } }
+
+  override def countEventRows: AlmValidation[Int] =
+    inTryCatchM { getDb() withSession { implicit session: Session => (for { row <- TextDomainEventLogRows } yield row.length).first } }("Could not determine count for TextDomainEventLogRows")
 
 }
 
@@ -104,30 +110,32 @@ trait BinaryDomainEventLogStoreComponent extends SlickTypeMappers with DomainEve
     }
   }
 
-  override def insertEventRow(eventLogRow: BinaryDomainEventLogRow)(implicit session: scala.slick.session.Session): AlmValidation[BinaryDomainEventLogRow] =
-    BinaryDomainEventLogRows.insertSafe(eventLogRow)
+  override def insertEventRow(eventLogRow: BinaryDomainEventLogRow): AlmValidation[BinaryDomainEventLogRow] =
+    computeSafely { getDb() withSession { implicit session: Session => BinaryDomainEventLogRows.insertSafe(eventLogRow) } }
 
-  override def getEventRowById(id: JUUID)(implicit session: scala.slick.session.Session): AlmValidation[BinaryDomainEventLogRow] =
+  override def getEventRowById(id: JUUID): AlmValidation[BinaryDomainEventLogRow] =
     computeSafely {
-      Query(BinaryDomainEventLogRows).filter(_.id === id.bind).list.headOption match {
-        case Some(row) => row.success
-        case None => NotFoundProblem(s"""No domain event with id "${id.toString}" found.""").failure
+      getDb() withSession { implicit session: Session =>
+        Query(BinaryDomainEventLogRows).filter(_.id === id.bind).list.headOption match {
+          case Some(row) => row.success
+          case None => NotFoundProblem(s"""No domain event with id "${id.toString}" found.""").failure
+        }
       }
     }
 
-  override def getAllEventRowsFor(aggId: JUUID)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { Query(BinaryDomainEventLogRows).list }
+  override def getAllEventRowsFor(aggId: JUUID): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).list } }
 
-  override def getAllEventRowsForFrom(fromVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { Query(BinaryDomainEventLogRows).filter(x => x.aggVersion >= fromVersion).list }
+  override def getAllEventRowsForFrom(fromVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggVersion >= fromVersion).list } }
 
-  override def getAllEventRowsForTo(toVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { Query(BinaryDomainEventLogRows).filter(x => x.aggVersion <= toVersion).list }
+  override def getAllEventRowsForTo(toVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggVersion <= toVersion).list } }
 
-  override def getAllEventRowsForFromTo(fromVersion: Long, toVersion: Long)(implicit session: scala.slick.session.Session): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { Query(BinaryDomainEventLogRows).filter(x => x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list }
+  override def getAllEventRowsForFromTo(fromVersion: Long, toVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list } }
 
-  override def countEventRows(implicit session: scala.slick.session.Session): AlmValidation[Int] =
-    inTryCatchM { (for { row <- BinaryDomainEventLogRows } yield row.length).first }("Could not determine count for TextDomainEventLogRows")
+  override def countEventRows: AlmValidation[Int] =
+    inTryCatchM { getDb() withSession { implicit session: Session => (for { row <- BinaryDomainEventLogRows } yield row.length).first } }("Could not determine count for TextDomainEventLogRows")
 
 }
