@@ -18,6 +18,7 @@ object Profiles {
       
   def createTextDomainEventLogAccess(profile: String, eventlogtablename: String, blobtablename: String): AlmValidation[TextDomainEventLogDataAccess] =
     for {
+      
       profile <- (profiles.lift >? profile)
     } yield TextDomainEventLogDataAccess()
     
