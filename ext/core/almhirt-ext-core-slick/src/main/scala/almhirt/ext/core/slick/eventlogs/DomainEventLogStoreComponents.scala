@@ -8,6 +8,7 @@ import almhirt.almvalidation.kit._
 
 trait DomainEventLogStoreComponent[T] {
   def insertEventRow(eventLogRow: T): AlmValidation[T]
+  def insertManyEventRows(eventLogRows: Seq[T]): AlmValidation[Unit]
   def getEventRowById(id: JUUID): AlmValidation[T]
   def getAllEventRowsFor(aggId: JUUID): AlmValidation[Iterable[T]]
   def getAllEventRowsForFrom(fromVersion: Long): AlmValidation[Iterable[T]]
@@ -50,6 +51,13 @@ trait TextDomainEventLogStoreComponent extends SlickTypeMappers with DomainEvent
     computeSafely {
       getDb() withSession { implicit session: Session =>
         TextDomainEventLogRows.insertSafe(eventLogRow)
+      }
+    }
+
+  override def insertManyEventRows(eventLogRows: Seq[TextDomainEventLogRow]): AlmValidation[Unit] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session =>
+        TextDomainEventLogRows.insertAll(eventLogRows: _*)
       }
     }
 
@@ -112,6 +120,13 @@ trait BinaryDomainEventLogStoreComponent extends SlickTypeMappers with DomainEve
 
   override def insertEventRow(eventLogRow: BinaryDomainEventLogRow): AlmValidation[BinaryDomainEventLogRow] =
     computeSafely { getDb() withSession { implicit session: Session => BinaryDomainEventLogRows.insertSafe(eventLogRow) } }
+
+  override def insertManyEventRows(eventLogRows: Seq[BinaryDomainEventLogRow]): AlmValidation[Unit] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session =>
+        BinaryDomainEventLogRows.insertAll(eventLogRows: _*)
+      }
+    }
 
   override def getEventRowById(id: JUUID): AlmValidation[BinaryDomainEventLogRow] =
     computeSafely {
