@@ -25,5 +25,5 @@ import almhirt.domain.DomainEvent
  */
 trait CanStoreDomainEvents {
   /** Log the domain events and in a case of success return them. Events must contain the events in order of occurence */
-  def storeEvents(events: IndexedSeq[DomainEvent]): AlmFuture[(IndexedSeq[DomainEvent], IndexedSeq[(Problem, DomainEvent)])]
+  def storeEvents(events: IndexedSeq[DomainEvent]): AlmFuture[(IndexedSeq[DomainEvent], Option[(Problem,IndexedSeq[DomainEvent])])]
 }
