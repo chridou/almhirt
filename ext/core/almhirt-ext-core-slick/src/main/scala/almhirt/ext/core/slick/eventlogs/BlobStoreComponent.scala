@@ -43,5 +43,5 @@ trait BlobStoreComponent { this: Profile =>
         }
       }
     }
-  
+
 }
