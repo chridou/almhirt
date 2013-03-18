@@ -26,8 +26,22 @@ trait BlobStoreComponent { this: Profile =>
       }
     }
   }
-  
-  def insertBlobRow(blobRow: BlobRow)(implicit session: Session): AlmValidation[BlobRow] =
-    BlobRows.insertSafe(blobRow)
+
+  def insertBlobRow(blobRow: BlobRow): AlmValidation[BlobRow] =
+    computeSafely {
+      getDb() withSession { implicit session: Session =>
+        BlobRows.insertSafe(blobRow)
+      }
+    }
+
+  def getBlobRowById(id: JUUID): AlmValidation[BlobRow] =
+    computeSafely {
+      getDb() withSession { implicit session: Session =>
+        Query(BlobRows).filter(_.id === id.bind).list.headOption match {
+          case Some(row) => row.success
+          case None => NotFoundProblem(s"""No BLOB with id "${id.toString}" found.""").failure
+        }
+      }
+    }
   
 }
