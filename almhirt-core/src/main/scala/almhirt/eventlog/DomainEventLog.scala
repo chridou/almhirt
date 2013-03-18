@@ -8,13 +8,7 @@ import almhirt.core._
 import almhirt.domain.DomainEvent
 import almhirt.core.Almhirt
 
-case class DomainEventsChunk(
-  /**
-   * Starts with Zero
-   */
-  index: Int,
-  isLast: Boolean,
-  events: AlmValidation[Iterable[DomainEvent]])
+
 
 trait DomainEventLog extends HasDomainEvents with CanStoreDomainEvents with almhirt.almakka.ActorBased
 
