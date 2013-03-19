@@ -92,7 +92,6 @@ trait AlmValidationParseFunctions {
       case err: Exception => BadDataProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
 
-
   def parseUuidAlm(toParse: String): AlmValidation[UUID] =
     try {
       UUID.fromString(toParse).success
@@ -106,7 +105,7 @@ trait AlmValidationParseFunctions {
     } catch {
       case err: Exception => BadDataProblem("Not a valid URI: %s".format(toParse)).failure
     }
-    
+
   def parseByteArrayAlm(toParse: String, sep: String): AlmValidation[Array[Byte]] =
     try {
       toParse.split(sep).map(_.toByte).success
@@ -156,6 +155,18 @@ trait AlmValidationParseFunctions {
       BadDataProblem("String must not be empty or whitespaces").failure
     else
       toTest.success
+
+  def emptyOrWhitespaceIsNone(toTest: String): Option[String] =
+    if (toTest.trim.isEmpty)
+      None
+    else
+      Some(toTest)
+
+  def someMustNotBeEmptyOrWhitespace(toTest: Option[String]): AlmValidation[Option[String]] =
+    toTest match {
+      case Some(str) => notEmptyOrWhitespace(str).map(Some(_))
+      case None => None.success
+    }
 
   private def emptyStringIsNone[T](str: String, f: String => AlmValidation[T]) =
     if (str.trim.isEmpty)

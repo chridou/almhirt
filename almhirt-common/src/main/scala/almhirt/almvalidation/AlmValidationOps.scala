@@ -62,6 +62,11 @@ trait AlmValidationOps0 extends Ops[String] {
     notEmptyOrWhitespace(self)
 }
 
+trait AlmValidationOps01 extends Ops[Option[String]] {
+  def someMustNotBeEmptyOrWhitespace(): AlmValidation[Option[String]] =  
+    funs.someMustNotBeEmptyOrWhitespace(self)
+}
+
 trait AlmValidationOps1[T] extends Ops[T] {
   def successAlm(): AlmValidation[T] = self.success[Problem]  
 }
@@ -204,6 +209,7 @@ trait AlmValidationOps13 extends Ops[Any] {
 
 trait ToAlmValidationOps {
   implicit def FromStringToAlmValidationOps0(a: String): AlmValidationOps0 = new AlmValidationOps0{ def self = a }
+  implicit def FromOptionStringToAlmValidationOps01(a: Option[String]): AlmValidationOps01 = new AlmValidationOps01{ def self = a }
   implicit def FromAnyToAlmValidationOps1[T](a: T): AlmValidationOps1[T] = new AlmValidationOps1[T]{ def self = a }
   implicit def FromOptionValidationToAlmValidationOps2[P, V](a: Option[Validation[P,V]]): AlmValidationOps2[P, V] = new AlmValidationOps2[P,V] { def self = a }
   implicit def FromValidationOptionToAlmValidationOps3[P, V](a: Validation[P,Option[V]]): AlmValidationOps3[P, V] = new AlmValidationOps3[P,V] { def self = a }
