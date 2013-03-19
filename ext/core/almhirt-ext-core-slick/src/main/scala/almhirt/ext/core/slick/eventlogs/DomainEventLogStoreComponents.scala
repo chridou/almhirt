@@ -7,7 +7,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.ext.core.slick.SlickTypeMappers
 
-trait DomainEventLogStoreComponent[T] {
+trait DomainEventLogStoreComponent[T <: DomainEventLogRow] {
   def insertEventRow(eventLogRow: T): AlmValidation[T]
   def insertManyEventRows(eventLogRows: Seq[T]): AlmValidation[Unit]
   def getEventRowById(id: JUUID): AlmValidation[T]
