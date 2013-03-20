@@ -7,12 +7,12 @@ import almhirt.serialization._
 import riftwarp._
 import scala.reflect.ClassTag
 
-class RiftSerializerOnString[TIn <: AnyRef](channel: RiftChannel, riftWarp: RiftWarp, blobStorage: Option[BlobStorage { type TBlobId = JUUID }], minBlobSize: Int)(implicit support: HasExecutionContext with CanCreateUuid) extends Serializer[TIn] {
+class RiftSerializerOnString[TIn <: AnyRef](channel: RiftChannel, riftWarp: RiftWarp, blobStorage: Option[(BlobStorage { type TBlobId = JUUID }, Int)])(implicit support: HasExecutionContext with CanCreateUuid) extends Serializer[TIn] {
   type SerializedRepr = String
 
   private val serializeWithRiftWarp: AnyRef => AlmValidation[String] =
     blobStorage match {
-      case Some(bs) =>
+      case Some((bs, minBlobSize)) =>
         def blobDivert(data: Array[Byte], ident: RiftBlobIdentifier): AlmValidation[RiftBlob] =
           if (data.length < minBlobSize)
             RiftBlobArrayValue(data).success
