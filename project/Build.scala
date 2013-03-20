@@ -248,7 +248,7 @@ object AlmHirtBuild extends Build
                        			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(common, core, riftwarp, coreExtRiftwarp % "test->test")
 
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
-                       			baseFile = file("./ext/core/almhirt-ext-core-slick")) dependsOn(core, riftwarp)
+                       			baseFile = file("./ext/core/almhirt-ext-core-slick")) dependsOn(core, riftwarp % "test->test", coreExtRiftwarp % "test->test")
 
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
