@@ -7,8 +7,8 @@ import almhirt.domain.DomainEvent
 
 
 trait SyncDomainEventStorage {
-  def storeEvent(eventLogRow: DomainEvent): AlmValidation[DomainEvent]
-  def storeManyEvents(eventLogRows: Seq[DomainEvent]): (IndexedSeq[DomainEvent], Option[(Problem, IndexedSeq[DomainEvent])])
+  def storeEvent(event: DomainEvent): AlmValidation[DomainEvent]
+  def storeManyEvents(events: IndexedSeq[DomainEvent]): (IndexedSeq[DomainEvent], Option[(Problem, IndexedSeq[DomainEvent])])
   def getEventById(id: JUUID): AlmValidation[DomainEvent]
   def getAllEvents(): AlmValidation[Iterable[DomainEvent]]
   def getAllEventsFor(aggId: JUUID): AlmValidation[Iterable[DomainEvent]]
