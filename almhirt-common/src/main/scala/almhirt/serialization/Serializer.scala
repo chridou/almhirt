@@ -14,7 +14,6 @@ trait Serializer[-TIn] extends WorksWithSerializedRepresentation{
 }
 
 trait Deserializer[+TOut] extends WorksWithSerializedRepresentation {
-  type SerializedRepr
   def deserialize(what: SerializedRepr, channel: String, typeIdent: String): AlmValidation[TOut]
   def deserializeAsync(what: SerializedRepr, channel: String, typeIdent: String): AlmFuture[TOut]
 }

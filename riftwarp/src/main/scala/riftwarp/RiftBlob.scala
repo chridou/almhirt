@@ -10,6 +10,7 @@ trait RiftBlobValue extends RiftBlob {
   def dataAsArray: AlmValidation[Array[Byte]]
 }
 
+
 case class RiftBlobArrayValue(val data: Array[Byte]) extends RiftBlobValue {
   val riftDescriptor = RiftDescriptor("RiftBlobArrayValue")
   val dataAsArray = data.success

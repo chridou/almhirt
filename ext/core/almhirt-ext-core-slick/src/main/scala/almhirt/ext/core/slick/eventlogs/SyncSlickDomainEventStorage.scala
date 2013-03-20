@@ -44,7 +44,7 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
     } yield deserialized
 
   override def getAllEvents(): AlmValidation[Vector[DomainEvent]] =
-    ???
+    dal.getAllEventRows.flatMap(deserializeManyRows)
 
   override def getAllEventsFor(aggId: JUUID): AlmValidation[Vector[DomainEvent]] =
     dal.getAllEventRowsFor(aggId).flatMap(deserializeManyRows)
