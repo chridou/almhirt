@@ -3,7 +3,7 @@ package almhirt.util
 import language.implicitConversions
 
 import java.util.{ UUID => JUUID }
-import almhirt.core.CanCreateUuid
+import almhirt.common._
 
 sealed trait ExecutionStyle
 

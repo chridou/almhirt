@@ -12,7 +12,6 @@ import almhirt.almvalidation.kit._
 import almhirt.environment.AlmhirtTestKit
 import almhirt.core.test._
 import almhirt.util.TrackingTicket
-import almhirt.core.CanCreateUuid
 
 class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll with ShouldMatchers with AlmhirtTestKit {
   val actorSystem = ActorSystem("BoundDomainActionsUnitOfWorkSpecs-System")

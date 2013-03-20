@@ -4,14 +4,7 @@ import java.util.{ UUID => JUUID }
 import almhirt.common._
 import almhirt.domain.DomainEvent
 
-trait SerializingComponent {
-  type Repr
-  type BlobIdent
-  def serialize: DomainEvent => AlmValidation[(String, String, Repr)]
-  def deserialize: (Repr, String, String) => AlmValidation[DomainEvent]
-  //def serialize: DomainEvent => AlmValidation[(String, String, Repr)]
- 
-}
+
 
 trait SyncDomainEventStorage {
   def storeEvent(eventLogRow: DomainEvent): AlmValidation[DomainEvent]

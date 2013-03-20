@@ -5,7 +5,6 @@ import almhirt.common._
 import almhirt.commanding._
 import almhirt.environment._
 import almhirt.core.Almhirt
-import almhirt.core.CanCreateUuid
 import scala.reflect.ClassTag
 import almhirt.domain.AggregateRootRef
 

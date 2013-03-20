@@ -17,6 +17,7 @@ package almhirt.domain
 import scala.language.implicitConversions
 import java.util.UUID
 import org.joda.time.DateTime
+import almhirt.common._
 import almhirt.core._
 
 /** These events can create or mutate an aggregate root in the dimension of time */

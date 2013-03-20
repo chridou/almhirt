@@ -2,7 +2,6 @@ package almhirt.util
 
 import org.joda.time.DateTime
 import almhirt.common._
-import almhirt.core.CanCreateDateTime
 import almhirt.domain.AggregateRootRef
 
 sealed trait OperationState {

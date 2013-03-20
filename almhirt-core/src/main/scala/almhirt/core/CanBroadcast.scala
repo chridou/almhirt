@@ -3,7 +3,7 @@ package almhirt.core
 import almhirt.domain.DomainEvent
 import almhirt.messaging.Message
 import almhirt.util.OperationState
-import almhirt.common.Problem
+import almhirt.common._
 import almhirt.commanding.CommandEnvelope
 
 trait CanPublishMessages {

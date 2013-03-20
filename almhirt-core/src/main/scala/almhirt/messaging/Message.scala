@@ -16,8 +16,7 @@ package almhirt.messaging
 
 import java.util.UUID
 import org.joda.time.DateTime
-import almhirt.core.CanCreateUuid
-import almhirt.core.CanCreateUuidsAndDateTimes
+import almhirt.common._
 
 /**
  * Multiple [[almhirt.messaging.Message]]s that share [[almhirt.messaging.MessageGrouping]]s with the same groupId belong to one group
@@ -58,4 +57,6 @@ object Message {
 
   def create[T <: AnyRef](payload: T): Message[T] =
      new Message[T](MessageHeader(UUID.randomUUID(), None, Map.empty, DateTime.now()), payload)
+
+     
 }

@@ -10,7 +10,6 @@ import almhirt.environment._
 import riftwarp.RiftWarp
 import riftwarp.RiftJson
 import riftwarp.DimensionCord
-import almhirt.core.CanCreateUuidsAndDateTimes
 
 case class AnormEventLogEntry(id: UUID, aggId: UUID, aggVersion: Long, timestamp: DateTime, payload: scalaz.Cord)
 

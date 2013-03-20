@@ -3,10 +3,9 @@ package almhirt.domain
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import scalaz._, Scalaz._
-import almhirt._
+import almhirt.common._
 import almhirt.syntax.almvalidation._
 import almhirt.core.test._
-import almhirt.core.CanCreateUuidsAndDateTimes
 
 class UpdateSpecsWithPerson extends FlatSpec with ShouldMatchers {
   implicit object ccuad extends CanCreateUuidsAndDateTimes  

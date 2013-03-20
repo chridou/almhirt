@@ -7,7 +7,6 @@ import scala.concurrent.duration.Duration
 import almhirt.common._
 import almhirt.syntax.almvalidation._
 import almhirt.environment._
-import almhirt.core.CanCreateDateTime
 import org.joda.time.DateTime
 import almhirt.commanding.DomainCommand
 

@@ -15,7 +15,6 @@ import almhirt.ext.core.riftwarp.RiftWarpBootstrapper
 import almhirt.core.riftwarp.test.WithTestDecomposersAndRecomposersBootstrapper
 import almhirt.core.test._
 import almhirt.domain.AggregateRootRef
-import almhirt.core.CanCreateUuidsAndDateTimes
 import com.typesafe.config.ConfigFactory
 
 class SerializingAnormJsonEventLogSpecs extends FlatSpec with ShouldMatchers with AlmhirtTestKit {

@@ -18,7 +18,6 @@ import almhirt.eventlog._
 import riftwarp.RiftJson
 import riftwarp.DimensionString
 import riftwarp.DimensionString
-import almhirt.core.CanCreateUuidsAndDateTimes
 import riftwarp.RiftWarp
 import almhirt.almakka.AlmActorLogging
 import _root_.anorm._

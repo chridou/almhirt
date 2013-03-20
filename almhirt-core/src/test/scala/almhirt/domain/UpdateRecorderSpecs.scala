@@ -4,8 +4,8 @@ import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import java.util.{ UUID => JUUID }
 import almhirt.almvalidation.kit._
+import almhirt.common._
 import almhirt.core.test._
-import almhirt.core.CanCreateUuidsAndDateTimes
 
 class UpdateRecorderSpecs extends WordSpec with ShouldMatchers {
   implicit object ccuad extends CanCreateUuidsAndDateTimes  

@@ -7,7 +7,6 @@ import almhirt.domain._
 import almhirt.domain.impl._
 import almhirt.environment._
 import almhirt.eventlog._
-import almhirt.core.CanCreateUuidsAndDateTimes
 
 case class TestPerson(ref: AggregateRootRef, name: String, address: Option[String], balance: Int) extends AggregateRootWithHandlers[TestPerson, TestPersonEvent] with AddsUpdateToAggregateRoot[TestPerson, TestPersonEvent]{
   def handlers = {

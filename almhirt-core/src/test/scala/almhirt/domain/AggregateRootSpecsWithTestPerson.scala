@@ -3,9 +3,8 @@ package almhirt.domain
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import almhirt.core.test._
-import almhirt._
+import almhirt.common._
 import almhirt.core.test.TestPerson
-import almhirt.core.CanCreateUuidsAndDateTimes
 
 class AggregateRootSpecsWithTestPerson extends FlatSpec with ShouldMatchers {
   implicit object ccuad extends CanCreateUuidsAndDateTimes  
