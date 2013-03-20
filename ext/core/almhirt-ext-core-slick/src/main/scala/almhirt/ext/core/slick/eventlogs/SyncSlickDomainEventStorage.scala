@@ -12,13 +12,13 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
   serializer: Serializer[DomainEvent] { type SerializedRepr = TRow#Repr },
   deserializer: Deserializer[DomainEvent] { type SerializedRepr = TRow#Repr }) extends SyncDomainEventStorage {
 
-  def createRow(channel: String, typeIdent: String, serializedEvent: TRow#Repr): TRow
+  def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: TRow#Repr): TRow
   def unpackRow(row: TRow): (TRow#Repr, String, String)
 
   override def storeEvent(event: DomainEvent): AlmValidation[DomainEvent] = {
     serializer.serialize(event).flatMap {
       case (channel, typeIdent, serializedEvent) =>
-        val row = createRow(channel, typeIdent, serializedEvent)
+        val row = createRow(channel, typeIdent, event, serializedEvent)
         dal.insertEventRow(row)
     }.map(_ => event)
   }
@@ -27,8 +27,10 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
     import scalaz._, Scalaz._
     (for {
       rows <- events.map(event =>
-        serializer.serialize(event).toAgg).toVector.sequence.map(serializedEvents =>
-        serializedEvents.map { case (channel, typeIdent, serializedEvent) => createRow(channel, typeIdent, serializedEvent) })
+        serializer.serialize(event).map {
+          case (channel, typeIdent, serializedEvent) =>
+            createRow(channel, typeIdent, event, serializedEvent)
+        }.toAgg).toVector.sequence
       stored <- dal.insertManyEventRows(rows)
     } yield stored).fold(
       fail => (Vector.empty, Some((fail, events))),
@@ -60,4 +62,26 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
     import scalaz._, Scalaz._
     rows.map(unpackRow).map(serialized => deserializer.deserialize(serialized._1, serialized._2, serialized._3).toAgg).toVector.sequence
   }
+}
+
+class SyncTextSlickDomainEventStorage(
+  dal: DomainEventLogStoreComponent[TextDomainEventLogRow],
+  serializer: Serializer[DomainEvent] { type SerializedRepr = String },
+  deserializer: Deserializer[DomainEvent] { type SerializedRepr = String }) extends SyncSlickDomainEventStorage[TextDomainEventLogRow](dal, serializer, deserializer) {
+
+  override def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: String): TextDomainEventLogRow =
+    TextDomainEventLogRow(event.header.id, event.header.aggRef.id, event.header.aggRef.version, event.header.timestamp, channel, typeIdent, serializedEvent)
+  override def unpackRow(row: TextDomainEventLogRow): (String, String, String) =
+    (row.payload, row.channel, row.eventtype)
+}
+    
+class SyncBinarySlickDomainEventStorage(
+  dal: DomainEventLogStoreComponent[BinaryDomainEventLogRow],
+  serializer: Serializer[DomainEvent] { type SerializedRepr = Array[Byte] },
+  deserializer: Deserializer[DomainEvent] { type SerializedRepr = Array[Byte] }) extends SyncSlickDomainEventStorage[BinaryDomainEventLogRow](dal, serializer, deserializer) {
+
+  override def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: Array[Byte]): BinaryDomainEventLogRow =
+    BinaryDomainEventLogRow(event.header.id, event.header.aggRef.id, event.header.aggRef.version, event.header.timestamp, channel, typeIdent, serializedEvent)
+  override def unpackRow(row: BinaryDomainEventLogRow): (Array[Byte], String, String) =
+    (row.payload, row.channel, row.eventtype)
 }
