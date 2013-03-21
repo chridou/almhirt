@@ -12,10 +12,12 @@ class TextDomainEventLogDataAccess(override val eventlogtablename: String, overr
   private val ddl = BlobRows.ddl ++ TextDomainEventLogRows.ddl
 
   def create(implicit session: Session): AlmValidation[Unit] =
-    inTryCatchM { getDb() withSession { implicit session: Session => ddl.create } }("Could not create schema for TextDomainEvent")
+    inTryCatch { getDb() withSession { implicit session: Session => ddl.create } }.leftMap(prob => 
+      PersistenceProblem(s"Could not create schema for TextDomainEventLog: ${prob.message}", cause = Some(prob)))
 
   def drop(implicit session: Session): AlmValidation[Unit] =
-    inTryCatchM { getDb() withSession { implicit session: Session => ddl.drop } }("Could not drop schema for TextDomainEvent")
+    inTryCatch { getDb() withSession { implicit session: Session => ddl.drop } }.leftMap(prob => 
+      PersistenceProblem(s"Could not drop schema for TextDomainEventLog: ${prob.message}", cause = Some(prob)))
 }
 
 class BinaryDomainEventLogDataAccess(override val eventlogtablename: String, override val blobtablename: String, override val getDb: Unit => Database, override val profile: scala.slick.driver.ExtendedProfile, override val hasExecutionContext: HasExecutionContext) extends BlobStoreComponent with BinaryDomainEventLogStoreComponent with Profile {
@@ -24,10 +26,12 @@ class BinaryDomainEventLogDataAccess(override val eventlogtablename: String, ove
   private val ddl = BlobRows.ddl ++ BinaryDomainEventLogRows.ddl
 
   def create: AlmValidation[Unit] =
-    inTryCatchM { getDb() withSession { implicit session: Session => ddl.create } }("Could not create schema for BinaryEventLog")
+    inTryCatch { getDb() withSession { implicit session: Session => ddl.create } }.leftMap(prob => 
+      PersistenceProblem(s"Could not create schema for BinaryDomainEventLog: ${prob.message}", cause = Some(prob)))
 
   def drop(implicit session: Session): AlmValidation[Unit] =
-    inTryCatchM { getDb() withSession { implicit session: Session => ddl.drop } }("Could not drop schema for BinaryEventLog")
+    inTryCatch { getDb() withSession { implicit session: Session => ddl.drop } }.leftMap(prob => 
+      PersistenceProblem(s"Could not drop schema for BinaryDomainEventLog: ${prob.message}", cause = Some(prob)))
 }
 
 

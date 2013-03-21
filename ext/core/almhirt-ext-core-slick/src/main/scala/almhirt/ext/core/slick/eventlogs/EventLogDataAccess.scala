@@ -12,8 +12,10 @@ class TextEventLogDataAccess(override val eventlogtablename: String, override va
   private val ddl = BlobRows.ddl ++ TextEventLogRows.ddl
 
   def create: AlmValidation[Unit] =
-    inTryCatchM { getDb() withSession { implicit session: Session => ddl.create } }("Could not create schema for TextEventLogDataAccessLayer")
+    inTryCatch { getDb() withSession { implicit session: Session => ddl.create } }.leftMap(prob => 
+      PersistenceProblem(s"Could not create schema for TextEventLog: ${prob.message}", cause = Some(prob)))
 
   def drop: AlmValidation[Unit] =
-    inTryCatchM { getDb() withSession { implicit session: Session => ddl.drop } }("Could not drop schema for TextEventLogDataAccessLayer")
+    inTryCatch { getDb() withSession { implicit session: Session => ddl.drop } }.leftMap(prob => 
+      PersistenceProblem(s"Could not drop schema for TextEventLog: ${prob.message}", cause = Some(prob)))
 }
