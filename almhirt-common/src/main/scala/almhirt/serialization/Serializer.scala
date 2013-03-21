@@ -45,6 +45,9 @@ object CanSerialize {
 trait CanSerializeAndDeserialize[-TIn, +TOut] extends CanSerialize[TIn] with CanDeserialize[TOut]
 trait CanSerializeAndDeserializeFixedToChannel[-TIn, +TOut] extends CanSerializeToFixedChannel[TIn] with CanDeserializeFromFixedChannel[TOut]
 
+trait StringSerializing[-TIn, +TOut] extends CanSerializeAndDeserialize[TIn, TOut] { type SerializedRepr = String }
+trait BinarySerializing[-TIn, +TOut] extends CanSerializeAndDeserialize[TIn, TOut] { type SerializedRepr = Array[Byte] }
+
 trait BlobStorage {
   type TBlobId
   def storeBlob(ident: TBlobId, data: Array[Byte]): AlmValidation[TBlobId]
