@@ -49,7 +49,7 @@ object ConfigHelper {
 
   def getJavaPropertiesFrom(config: Config)(path: String): Properties = {
     import collection.JavaConversions._
-    ConfigHelper.getSubConfig(config)("path").toOption match {
+    ConfigHelper.getSubConfig(config)(path).toOption match {
       case Some(config) =>
         config.entrySet()
           .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
@@ -60,7 +60,7 @@ object ConfigHelper {
 
   def getPropertiesMapFrom(config: Config)(path: String): Map[String, String] = {
     import collection.JavaConversions._
-    ConfigHelper.getSubConfig(config)("path").toOption match {
+    ConfigHelper.getSubConfig(config)(path).toOption match {
       case Some(config) =>
         config.entrySet()
           .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
