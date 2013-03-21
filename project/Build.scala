@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.101"
+  val buildVersion      = "0.0.102"
   val buildScalaVersion = "2.10.1"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -88,23 +88,6 @@ trait CoreExtRiftwarpBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
-	  libraryDependencies += scalatest
-  )
-}
-
-trait AnormEventLogBuild {
-  import Dependencies._
-  import Resolvers._
-  def anormEventLogProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += "play" %% "anorm" % "2.1.0",
-	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
-	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
 	  libraryDependencies += scalatest
   )
 }
@@ -222,7 +205,6 @@ object AlmHirtBuild extends Build
 	with CommonBuild 
 	with CoreBuild 
 	with CoreExtRiftwarpBuild 
-	with AnormEventLogBuild 
 	with CoreExtSlickBuild 
 	with RiftWarpBuild 
 	with RiftWarpAutomaticBuild 
@@ -232,7 +214,7 @@ object AlmHirtBuild extends Build
 	with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, anormEventLog, slickExtensions, app, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
+	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, slickExtensions, app, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -243,9 +225,6 @@ object AlmHirtBuild extends Build
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
 	                       		baseFile = file("./ext/core/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
 								
-
-  lazy val anormEventLog = anormEventLogProject(	name = "almhirt-ext-anormeventlog",
-                       			baseFile = file("./ext/eventlogs/almhirt-ext-anormeventlog")) dependsOn(common, core, riftwarp, coreExtRiftwarp % "test->test")
 
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/core/almhirt-ext-core-slick")) dependsOn(core, riftwarp % "test->test", coreExtRiftwarp % "test->test")
