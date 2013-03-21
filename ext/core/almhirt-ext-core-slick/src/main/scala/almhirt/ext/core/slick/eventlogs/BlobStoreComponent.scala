@@ -4,11 +4,15 @@ import java.util.{ UUID => JUUID }
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.serialization._
 
-trait BlobStoreComponent { this: Profile =>
+trait BlobStoreComponent extends BlobStorage { this: Profile =>
   import profile.simple._
 
+  type TBlobId = JUUID
+  
   val blobtablename: String
+  def hasExecutionContext: HasExecutionContext
 
   object BlobRows extends Table[BlobRow](blobtablename) {
     def id = column[JUUID]("ID", O.PrimaryKey)
@@ -44,4 +48,17 @@ trait BlobStoreComponent { this: Profile =>
       }
     }
 
+  override def storeBlob(ident: JUUID, data: Array[Byte]): AlmValidation[JUUID] =
+    insertBlobRow(BlobRow(ident, data)).map(_.id)
+    
+  override def storeBlobAsync(ident: JUUID, data: Array[Byte]): AlmFuture[JUUID] =
+    AlmFuture{ insertBlobRow(BlobRow(ident, data)).map(_.id) }(hasExecutionContext)
+    
+  override def fetchBlob(ident: JUUID): AlmValidation[Array[Byte]] =
+    getBlobRowById(ident).map(_.data)
+    
+  override def fetchBlobAsync(ident: JUUID): AlmFuture[Array[Byte]] =
+    AlmFuture{ fetchBlob(ident) }(hasExecutionContext)
+    
+  
 }

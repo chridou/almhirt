@@ -6,9 +6,11 @@ import java.util.{ UUID => JUUID }
 import org.joda.time.DateTime
 import scala.slick.session.Database
 import scala.slick.driver.H2Driver
+import almhirt.common.HasExecutionContext
 import almhirt.almvalidation.kit._
 
 class TextEventLogRowTests extends FunSuite with MustMatchers {
+  implicit val hasExecutionContext: HasExecutionContext = HasExecutionContext.single
   def withIsolatedDal[T](f: (EventLogStoreComponent[TextEventLogRow]) => T): T = {
     val dal = Profiles.createTextEventLogAccess("H2", "EVENTS", "BLOBS", driver => Database.forURL("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver)).forceResult
     dal.create
