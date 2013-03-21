@@ -92,4 +92,4 @@ trait BlobStorage {
   def fetchBlobAsync(ident: TBlobId): AlmFuture[Array[Byte]]
 }
 
-trait BlobStorageWithUuidBlobId extends BlobStorage { type TBlobId = java.util.UUID }
+trait HasBlobStorageWithUuidBlobId { def blobStorege: BlobStorageWithUuidBlobId }
