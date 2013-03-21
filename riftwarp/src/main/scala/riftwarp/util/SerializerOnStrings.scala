@@ -7,10 +7,10 @@ import almhirt.serialization._
 import riftwarp._
 import scala.reflect.ClassTag
 
-class RiftSerializerOnString[TIn <: AnyRef](channel: RiftChannel, riftWarp: RiftWarp, blobStorage: Option[(BlobStorage { type TBlobId = JUUID }, Int)])(implicit support: HasExecutionContext with CanCreateUuid) extends Serializer[TIn] {
+class RiftSerializerOnString[TIn <: AnyRef](riftWarp: RiftWarp, blobStorage: Option[(BlobStorage { type TBlobId = JUUID }, Int)])(implicit support: HasExecutionContext with CanCreateUuid) extends CanSerialize[TIn] {
   type SerializedRepr = String
 
-  private val serializeWithRiftWarp: AnyRef => AlmValidation[String] =
+  private val serializeWithRiftWarp: (AnyRef, String) => AlmValidation[String] =
     blobStorage match {
       case Some((bs, minBlobSize)) =>
         def blobDivert(data: Array[Byte], ident: RiftBlobIdentifier): AlmValidation[RiftBlob] =
@@ -18,20 +18,24 @@ class RiftSerializerOnString[TIn <: AnyRef](channel: RiftChannel, riftWarp: Rift
             RiftBlobArrayValue(data).success
           else
             bs.storeBlob(support.getUuid, data).map(id => RiftBlobRefByUuid(id))
-        (what: AnyRef) => riftWarp.prepareForWarpWithBlobs[DimensionString](blobDivert)(channel, None)(what).map(_.manifestation)
-        case None =>
-        (what: AnyRef) => riftWarp.prepareForWarp[DimensionString](channel, None)(what).map(_.manifestation)
+        (what: AnyRef, channel: String) =>
+          riftWarp.channels.getChannel(channel).flatMap(riftChannel =>
+            riftWarp.prepareForWarpWithBlobs[DimensionString](blobDivert)(riftChannel, None)(what).map(_.manifestation))
+          case None =>
+        (what: AnyRef, channel: String) =>
+          riftWarp.channels.getChannel(channel).flatMap(riftChannel =>
+            riftWarp.prepareForWarp[DimensionString](riftChannel, None)(what).map(_.manifestation))
     }
 
-  override def serialize(what: TIn): AlmValidation[(String, String, SerializedRepr)] =
-    serializeWithRiftWarp(what).map((channel.channelType, RiftDescriptor(what.getClass()).toParsableString(), _))
+  override def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(String, SerializedRepr)] =
+    serializeWithRiftWarp(what, channel).map((RiftDescriptor(what.getClass()).toParsableString(), _))
 
-  override def serializeAsync(what: TIn): AlmFuture[(String, String, SerializedRepr)] =
-    AlmFuture { serialize(what) }
+  override def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(String, SerializedRepr)] =
+    AlmFuture { serialize(channel)(what, typeHint) }
 
 }
 
-class RiftDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp, blobStorage: Option[BlobStorage { type TBlobId = JUUID }])(implicit support: HasExecutionContext, tag: ClassTag[TOut]) extends Deserializer[TOut] {
+class RiftDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp, blobStorage: Option[BlobStorage { type TBlobId = JUUID }])(implicit support: HasExecutionContext, tag: ClassTag[TOut]) extends CanDeserialize[TOut] {
   type SerializedRepr = String
 
   private val deserializeWithRiftWarp: (String, RiftChannel) => AlmValidation[TOut] =
@@ -49,12 +53,12 @@ class RiftDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp, blobStorag
         (what: String, channel: RiftChannel) => riftWarp.receiveFromWarp[DimensionString, TOut](channel, None)(DimensionString(what))
     }
 
-  override def deserialize(what: String, channel: String, typeIdent: String): AlmValidation[TOut] =
+  override def deserialize(channel: String)(what: String, typeHint: Option[String]): AlmValidation[TOut] =
     for {
       riftChannel <- riftWarp.channels.getChannel(channel)
       deserialized <- deserializeWithRiftWarp(what, riftChannel)
     } yield deserialized
 
-  override def deserializeAsync(what: SerializedRepr, channel: String, typeIdent: String): AlmFuture[TOut] =
-    AlmFuture { deserialize(what, channel, typeIdent) }
+  override def deserializeAsync(channel: String)(what: SerializedRepr, typeIdent: Option[String]): AlmFuture[TOut] =
+    AlmFuture { deserialize(channel)(what, typeIdent) }
 }

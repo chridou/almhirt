@@ -2,21 +2,48 @@ package almhirt.serialization
 
 import almhirt.common._
 
-
 trait WorksWithSerializedRepresentation {
   type SerializedRepr
 }
 
-trait Serializer[-TIn] extends WorksWithSerializedRepresentation{
-  // (channel, type, serialized)
-  def serialize(what: TIn): AlmValidation[(String, String, SerializedRepr)]
-  def serializeAsync(what: TIn): AlmFuture[(String, String, SerializedRepr)]
+trait CanSerialize[-TIn] extends WorksWithSerializedRepresentation {
+  // (type, serialized)
+  def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(String, SerializedRepr)]
+  def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(String, SerializedRepr)]
 }
 
-trait Deserializer[+TOut] extends WorksWithSerializedRepresentation {
-  def deserialize(what: SerializedRepr, channel: String, typeIdent: String): AlmValidation[TOut]
-  def deserializeAsync(what: SerializedRepr, channel: String, typeIdent: String): AlmFuture[TOut]
+
+trait CanSerializeToFixedChannel[-TIn] extends WorksWithSerializedRepresentation {
+  // (type, serialized)
+  def channel: String
+  def serialize(what: TIn, typeHint: Option[String]): AlmValidation[(String, SerializedRepr)]
+  def serializeAsync(what: TIn, typeHint: Option[String]): AlmFuture[(String, SerializedRepr)]
 }
+
+trait CanDeserialize[+TOut] extends WorksWithSerializedRepresentation {
+  def deserialize(channel: String)(what: SerializedRepr, typeHint: Option[String]): AlmValidation[TOut]
+  def deserializeAsync(channel: String)(what: SerializedRepr, typeHint: Option[String]): AlmFuture[TOut]
+}
+
+trait CanDeserializeFromFixedChannel[+TOut] extends WorksWithSerializedRepresentation {
+  def deserialize(what: SerializedRepr, typeHint: Option[String]): AlmValidation[TOut]
+  def deserializeAsync(what: SerializedRepr, typeHint: Option[String]): AlmFuture[TOut]
+}
+
+object CanSerialize {
+  implicit class CanSerializeOps[T](self: CanSerialize[T]) {
+    def bindToChannel(fixToThisChannel: String): CanSerializeToFixedChannel[T] =
+      new CanSerializeToFixedChannel[T] {
+        type SerializedRepr = self.SerializedRepr
+        val channel = fixToThisChannel
+        def serialize(what: T, typeHint: Option[String]) = self.serialize(channel)(what, typeHint)
+        def serializeAsync(what: T, typeHint: Option[String]) = self.serializeAsync(channel)(what, typeHint)
+      }
+  }
+}
+
+trait CanSerializeAndDeserialize[-TIn, +TOut] extends CanSerialize[TIn] with CanDeserialize[TOut]
+trait CanSerializeAndDeserializeFixedToChannel[-TIn, +TOut] extends CanSerializeToFixedChannel[TIn] with CanDeserializeFromFixedChannel[TOut]
 
 trait BlobStorage {
   type TBlobId
