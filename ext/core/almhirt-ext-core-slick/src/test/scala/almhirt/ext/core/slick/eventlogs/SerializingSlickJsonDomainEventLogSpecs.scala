@@ -25,13 +25,6 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
   def inLocalTestAlmhirt[T](compute: AlmhirtForExtendedTesting => T) =
     inExtendedTestAlmhirt(bootstrapper)(compute)
 
-  "An anorm SerializingAnormEventLogFactory" should
-    "create an eventlog with an SerializingAnormEventLogActor when configured" in {
-      inLocalTestAlmhirt(implicit almhirt => {
-        true
-      })
-    }
-
   val aggIdForEvent = java.util.UUID.randomUUID()
   private def withEmptyEventLog[T](f: (DomainEventLog, Almhirt) => T) =
     inLocalTestAlmhirt(almhirt => f(almhirt.eventLog, almhirt))
@@ -43,14 +36,14 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
       f(almhirt.eventLog, almhirt)
     }
 
-  "An empty anorm SerializingAnormEventLog" should
+  "An empty SerializingSlickEventLog" should
     "accept an event" in {
       withEmptyEventLog { (eventLog, almhirt) =>
         val event = TestPersonCreated(DomainEventHeader(AggregateRootRef(aggIdForEvent)), "test")
         val res = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(2, "s")).forceResult
       }
     }
-  it should "accept an event and return exactly 1 event as the commited events" in {
+  it should "accept an event and return exactly 1 event as the committed events" in {
     withEmptyEventLog { (eventLog, almhirt) =>
       val event = TestPersonCreated(AggregateRootRef(aggIdForEvent), "test")
       val res = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(2, "s"))
@@ -62,6 +55,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
       val event = TestPersonCreated(AggregateRootRef(aggIdForEvent), "test")
       val resCommit = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(2, "s"))
+      println(res)
       res.forceResult should have size 1
     }
   }

@@ -1,5 +1,6 @@
 package almhirt.environment.configuration
 
+import java.util.Properties
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 import scalaz.std._
@@ -37,6 +38,35 @@ object ConfigHelper {
 
   def getIntOrDefault(default: => Int)(config: Config)(path: String): Int = {
     getInt(config)(path).toOption.getOrElse(default)
+  }
+
+  def getJavaProperties(config: Config): Properties = {
+    import collection.JavaConversions._
+    config.entrySet()
+      .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
+      .foldLeft(new Properties)((acc, x) => { acc.setProperty(x._1, x._2); acc })
+  }
+
+  def getJavaPropertiesFrom(config: Config)(path: String): Properties = {
+    import collection.JavaConversions._
+    ConfigHelper.getSubConfig(config)("path").toOption match {
+      case Some(config) =>
+        config.entrySet()
+          .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
+          .foldLeft(new Properties)((acc, x) => { acc.setProperty(x._1, x._2); acc })
+      case None => new Properties()
+    }
+  }
+
+  def getPropertiesMapFrom(config: Config)(path: String): Map[String, String] = {
+    import collection.JavaConversions._
+    ConfigHelper.getSubConfig(config)("path").toOption match {
+      case Some(config) =>
+        config.entrySet()
+          .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
+          .foldLeft(Map.empty[String, String])((acc, x) => { acc + (x._1 -> x._2)})
+      case None => Map.empty
+    }
   }
   
   def getMilliseconds(config: Config)(path: String): AlmValidation[FiniteDuration] = {
@@ -102,11 +132,11 @@ object ConfigHelper {
 
   object problems {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.problems)
-    def minSeverity(problemsConfig: Config): AlmValidation[Severity] = 
+    def minSeverity(problemsConfig: Config): AlmValidation[Severity] =
       getString(problemsConfig)("minSeverity").flatMap(Severity.fromString(_))
     def getActorName(problemsConfig: Config): String = ConfigHelper.getStringOrDefault("ProblemLogger")(problemsConfig)(ConfigItems.actorName)
   }
-  
+
   object shared {
     def getFactoryNameFromComponentConfig(componentConfig: Config): AlmValidation[String] = ConfigHelper.getString(componentConfig)(ConfigItems.factory)
   }

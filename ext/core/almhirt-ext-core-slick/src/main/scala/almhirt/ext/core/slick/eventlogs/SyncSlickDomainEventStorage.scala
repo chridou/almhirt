@@ -68,7 +68,7 @@ class SyncTextSlickDomainEventStorage(
   serializing: StringSerializingToFixedChannel[DomainEvent, DomainEvent]) extends SyncSlickDomainEventStorage[TextDomainEventLogRow](dal, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: String): TextDomainEventLogRow =
-    TextDomainEventLogRow(event.header.id, event.header.aggRef.id, event.header.aggRef.version, event.header.timestamp, channel, typeIdent, serializedEvent)
+    TextDomainEventLogRow(event.header.id, event.header.aggRef.id, event.header.aggRef.version, event.header.timestamp, typeIdent, channel, serializedEvent)
   override def unpackRow(row: TextDomainEventLogRow): (String, String, String) =
     (row.payload, row.channel, row.eventtype)
 }

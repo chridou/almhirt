@@ -65,22 +65,26 @@ trait AlmhirtTestKit {
           AlmhirtForExtendedTesting(theAlmhirt, reg).map(anAlmhirt =>
             (anAlmhirt, shutDown)))
     }
-  
+
   def createExtendedTestAlmhirt(): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] =
-   createExtendedTestAlmhirt(createExtendedBootStrapper())
+    createExtendedTestAlmhirt(createExtendedBootStrapper())
 
   def inTestAlmhirt[T](bootstrapper: AlmhirtBootstrapper)(compute: AlmhirtForTesting => T): T = {
     val (almhirt, shutDown) = createTestAlmhirt(bootstrapper).forceResult
-    val res = compute(almhirt)
-    shutDown.shutDown
-    res
+    try {
+      compute(almhirt)
+    } finally {
+      shutDown.shutDown
+    }
   }
 
   def inExtendedTestAlmhirt[T](bootStrapper: AlmhirtBootstrapper)(compute: AlmhirtForExtendedTesting => T): T = {
     val (almhirt, shutDown) = createExtendedTestAlmhirt(bootStrapper).forceResult
-    val res = compute(almhirt)
-    shutDown.shutDown
-    res
+    try {
+      compute(almhirt)
+    } finally {
+      shutDown.shutDown
+    }
   }
 
 }
