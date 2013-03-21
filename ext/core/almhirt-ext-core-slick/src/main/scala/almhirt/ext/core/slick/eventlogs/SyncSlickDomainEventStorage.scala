@@ -9,16 +9,15 @@ import almhirt.serialization._
 
 abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
   dal: DomainEventLogStoreComponent[TRow],
-  serializer: CanSerializeToFixedChannel[DomainEvent] { type SerializedRepr = TRow#Repr },
-  deserializer: CanDeserialize[DomainEvent] { type SerializedRepr = TRow#Repr }) extends SyncDomainEventStorage {
+  serializing: CanSerializeToFixedChannelAndDeserialize[DomainEvent, DomainEvent] { type SerializedRepr = TRow#Repr }) extends SyncDomainEventStorage {
 
   def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: TRow#Repr): TRow
   def unpackRow(row: TRow): (TRow#Repr, String, String)
 
   override def storeEvent(event: DomainEvent): AlmValidation[DomainEvent] = {
-    serializer.serialize(event, None).flatMap {
+    serializing.serialize(event, None).flatMap {
       case (typeIdent, serializedEvent) =>
-        val row = createRow(serializer.channel, typeIdent, event, serializedEvent)
+        val row = createRow(serializing.channel, typeIdent, event, serializedEvent)
         dal.insertEventRow(row)
     }.map(_ => event)
   }
@@ -27,9 +26,9 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
     import scalaz._, Scalaz._
     (for {
       rows <- events.map(event =>
-        serializer.serialize(event, None).map {
+        serializing.serialize(event, None).map {
           case (typeIdent, serializedEvent) =>
-            createRow(serializer.channel, typeIdent, event, serializedEvent)
+            createRow(serializing.channel, typeIdent, event, serializedEvent)
         }.toAgg).toVector.sequence
       stored <- dal.insertManyEventRows(rows)
     } yield stored).fold(
@@ -40,7 +39,7 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
   override def getEventById(id: JUUID): AlmValidation[DomainEvent] =
     for {
       serialized <- dal.getEventRowById(id).map(unpackRow)
-      deserialized <- deserializer.deserialize(serialized._2)(serialized._1, Some(serialized._3))
+      deserialized <- serializing.deserialize(serialized._2)(serialized._1, Some(serialized._3))
     } yield deserialized
 
   override def getAllEvents(): AlmValidation[Vector[DomainEvent]] =
@@ -60,25 +59,23 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
 
   private def deserializeManyRows(rows: Iterable[TRow]): AlmValidation[Vector[DomainEvent]] = {
     import scalaz._, Scalaz._
-    rows.map(unpackRow).map(serialized => deserializer.deserialize(serialized._2)(serialized._1, Some(serialized._3)).toAgg).toVector.sequence
+    rows.map(unpackRow).map(serialized => serializing.deserialize(serialized._2)(serialized._1, Some(serialized._3)).toAgg).toVector.sequence
   }
 }
 
 class SyncTextSlickDomainEventStorage(
   dal: DomainEventLogStoreComponent[TextDomainEventLogRow],
-  serializer: CanSerializeToFixedChannel[DomainEvent] { type SerializedRepr = String },
-  deserializer: CanDeserialize[DomainEvent] { type SerializedRepr = String }) extends SyncSlickDomainEventStorage[TextDomainEventLogRow](dal, serializer, deserializer) {
+  serializing: StringSerializingToFixedChannel[DomainEvent, DomainEvent]) extends SyncSlickDomainEventStorage[TextDomainEventLogRow](dal, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: String): TextDomainEventLogRow =
     TextDomainEventLogRow(event.header.id, event.header.aggRef.id, event.header.aggRef.version, event.header.timestamp, channel, typeIdent, serializedEvent)
   override def unpackRow(row: TextDomainEventLogRow): (String, String, String) =
     (row.payload, row.channel, row.eventtype)
 }
-    
+
 class SyncBinarySlickDomainEventStorage(
   dal: DomainEventLogStoreComponent[BinaryDomainEventLogRow],
-  serializer: CanSerializeToFixedChannel[DomainEvent] { type SerializedRepr = Array[Byte] },
-  deserializer: CanDeserialize[DomainEvent] { type SerializedRepr = Array[Byte] }) extends SyncSlickDomainEventStorage[BinaryDomainEventLogRow](dal, serializer, deserializer) {
+  serializing: BinarySerializingToFixedChannel[DomainEvent, DomainEvent]) extends SyncSlickDomainEventStorage[BinaryDomainEventLogRow](dal, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: Array[Byte]): BinaryDomainEventLogRow =
     BinaryDomainEventLogRow(event.header.id, event.header.aggRef.id, event.header.aggRef.version, event.header.timestamp, channel, typeIdent, serializedEvent)
