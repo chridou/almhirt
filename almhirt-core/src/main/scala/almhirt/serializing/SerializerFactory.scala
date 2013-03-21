@@ -14,17 +14,17 @@ trait DomainEventToBinarySerializer extends BinarySerializing[DomainEvent, Domai
 
 
 trait EventToStringSerializerFactory {
-  def createSerializer: AlmValidation[EventToStringSerializer]
+  def createSerializer(storeBlobsHere: Option[(BlobStorageWithUuidBlobId, Int)])(implicit theAlmhirt: Almhirt): AlmValidation[EventToStringSerializer]
 }
 
 trait EventToBinarySerializerFactory {
-  def createSerializer: AlmValidation[EventToBinarySerializer]
+  def createSerializer(storeBlobsHere: Option[(BlobStorageWithUuidBlobId, Int)])(implicit theAlmhirt: Almhirt): AlmValidation[EventToBinarySerializer]
 }
 
 trait DomainEventToStringSerializerFactory {
-  def createSerializer: AlmValidation[DomainEventToStringSerializer]
+  def createSerializer(storeBlobsHere: Option[(BlobStorageWithUuidBlobId, Int)])(implicit theAlmhirt: Almhirt): AlmValidation[DomainEventToStringSerializer]
 }
 
 trait DomainEventToBinarySerializerFactory {
-  def createSerializer: AlmValidation[DomainEventToBinarySerializer]
+  def createSerializer(storeBlobsHere: Option[(BlobStorageWithUuidBlobId, Int)])(implicit theAlmhirt: Almhirt): AlmValidation[DomainEventToBinarySerializer]
 }

@@ -20,7 +20,6 @@ trait CanSerialize[-TIn] extends WorksWithSerializedRepresentation {
   def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(String, SerializedRepr)]
 }
 
-
 trait CanSerializeToFixedChannel[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
   def channel: String
@@ -66,8 +65,8 @@ object StringSerializing {
         val channel = fixToThisChannel
         def serialize(what: TIn, typeHint: Option[String]) = self.serialize(channel)(what, typeHint)
         def serializeAsync(what: TIn, typeHint: Option[String]) = self.serializeAsync(channel)(what, typeHint)
-		def deserialize(channel: String)(what: String, typeHint: Option[String]) = self.deserialize(channel)(what, typeHint)
-		def deserializeAsync(channel: String)(what: String, typeHint: Option[String]) = self.deserializeAsync(channel)(what, typeHint)
+        def deserialize(channel: String)(what: String, typeHint: Option[String]) = self.deserialize(channel)(what, typeHint)
+        def deserializeAsync(channel: String)(what: String, typeHint: Option[String]) = self.deserializeAsync(channel)(what, typeHint)
       }
   }
 }
@@ -79,8 +78,8 @@ object BinarySerializing {
         val channel = fixToThisChannel
         def serialize(what: TIn, typeHint: Option[String]) = self.serialize(channel)(what, typeHint)
         def serializeAsync(what: TIn, typeHint: Option[String]) = self.serializeAsync(channel)(what, typeHint)
-		def deserialize(channel: String)(what: Array[Byte], typeHint: Option[String]) = self.deserialize(channel)(what, typeHint)
-		def deserializeAsync(channel: String)(what: Array[Byte], typeHint: Option[String]) = self.deserializeAsync(channel)(what, typeHint)
+        def deserialize(channel: String)(what: Array[Byte], typeHint: Option[String]) = self.deserialize(channel)(what, typeHint)
+        def deserializeAsync(channel: String)(what: Array[Byte], typeHint: Option[String]) = self.deserializeAsync(channel)(what, typeHint)
       }
   }
 }
@@ -92,3 +91,5 @@ trait BlobStorage {
   def fetchBlob(ident: TBlobId): AlmValidation[Array[Byte]]
   def fetchBlobAsync(ident: TBlobId): AlmFuture[Array[Byte]]
 }
+
+trait BlobStorageWithUuidBlobId extends BlobStorage { type TBlobId = java.util.UUID }
