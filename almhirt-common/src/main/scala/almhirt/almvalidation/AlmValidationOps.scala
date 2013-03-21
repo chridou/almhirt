@@ -81,8 +81,24 @@ trait AlmValidationOps01 extends Ops[Option[String]] {
   @deprecated("Use someMustNotBeEmptyOrWhitespaceAlm instead for better distinguation", "0.0.101")
   def someMustNotBeEmptyOrWhitespace(): AlmValidation[Option[String]] =
     funs.someMustNotBeEmptyOrWhitespace(self)
-  def someMustNotBeEmptyOrWhitespaceAlm(): AlmValidation[Option[String]] =
+  def definedMustNotBeEmptyOrWhitespaceAlm(): AlmValidation[Option[String]] =
     funs.someMustNotBeEmptyOrWhitespace(self)
+  def definedIsConstrainedAlm(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[Option[String]] =
+    self match {
+      case Some(str) =>
+        for {
+          _ <- if (emptyOrWhiteSpace) str.success else funs.notEmptyOrWhitespace(str)
+          _ <- minLength match {
+            case Some(min) => if (min > str.length()) ConstraintViolatedProblem(s"min length is $min").failure else str.success
+            case None => str.success
+          }
+          _ <- maxLength match {
+            case Some(max) => if (max < str.length()) ConstraintViolatedProblem(s"max length is $max").failure else str.success
+            case None => str.success
+          }
+        } yield self
+      case None => None.success
+    }
 }
 
 trait AlmValidationOps1[T] extends Ops[T] {
