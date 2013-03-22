@@ -63,7 +63,7 @@ trait AlmValidationOps0 extends Ops[String] {
     notEmptyOrWhitespace(self)
 
   def constrainedAlm(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
-    constrainedString(self, minLength, maxLength, emptyOrWhiteSpace)
+    stringConstrained(self, minLength, maxLength, emptyOrWhiteSpace)
 
 }
 
@@ -75,7 +75,7 @@ trait AlmValidationOps01 extends Ops[Option[String]] {
     funs.definedMustNotBeEmptyOrWhitespace(self)
   def definedIsConstrainedAlm(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[Option[String]] =
     self match {
-      case Some(str) => funs.constrainedString(str, minLength, maxLength, emptyOrWhiteSpace).map(Some(_))
+      case Some(str) => funs.stringConstrained(str, minLength, maxLength, emptyOrWhiteSpace).map(Some(_))
       case None => None.success
     }
 }

@@ -168,7 +168,7 @@ trait AlmValidationParseFunctions {
       case None => None.success
     }
 
-  def constrainedString(toTest: String, minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
+  def stringConstrained(toTest: String, minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
     for {
       _ <- if (emptyOrWhiteSpace) toTest.success else notEmptyOrWhitespace(toTest)
       _ <- minLength match {
@@ -180,7 +180,35 @@ trait AlmValidationParseFunctions {
         case None => toTest.success
       }
     } yield toTest
-  
+
+  def numericConstrained[T](toTest: T, minimum: Option[T], maximum: Option[T])(implicit ops: Numeric[T]): AlmValidation[T] = {
+    import scalaz.std._
+    import ops._
+    for {
+      _ <- option.cata(minimum)(x => if (x > toTest) ConstraintViolatedProblem(s"minimum is ${minimum.get}").failure else ().success, ().success)
+      _ <- option.cata(maximum)(x => if (x < toTest) ConstraintViolatedProblem(s"maximum is ${maximum.get}").failure else ().success, ().success)
+    } yield toTest
+  }
+
+  def numericConstrainedToMin[T](toTest: T, minimum: T)(implicit ops: Numeric[T]): AlmValidation[T] = {
+    import ops._
+    if (minimum > toTest) ConstraintViolatedProblem(s"minimum is $minimum").failure else toTest.success
+  }
+
+  def numericConstrainedToMax[T](toTest: T, maximum: T)(implicit ops: Numeric[T]): AlmValidation[T] = {
+    import ops._
+    if (maximum < toTest) ConstraintViolatedProblem(s"maximum is maximum").failure else toTest.success
+  }
+
+  def numericConstrainedToMinMax[T](toTest: T, minimum: T, maximum: T)(implicit ops: Numeric[T]): AlmValidation[T] = {
+    import ops._
+    for {
+      _ <- if (maximum < toTest) ConstraintViolatedProblem(s"maximum is maximum").failure else ().success
+      _ <- if (minimum > toTest) ConstraintViolatedProblem(s"minimum is $minimum").failure else ().success
+    } yield toTest
+
+  }
+
   private def emptyStringIsNone[T](str: String, f: String => AlmValidation[T]) =
     if (str.trim.isEmpty)
       None.success
