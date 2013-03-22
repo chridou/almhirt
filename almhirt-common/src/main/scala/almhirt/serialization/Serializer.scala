@@ -16,15 +16,15 @@ trait WorksWithBinaryRepresentation {
 
 trait CanSerialize[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
-  def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(String, SerializedRepr)]
-  def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(String, SerializedRepr)]
+  def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(Option[String], SerializedRepr)]
+  def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(Option[String], SerializedRepr)]
 }
 
 trait CanSerializeToFixedChannel[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
   def channel: String
-  def serialize(what: TIn, typeHint: Option[String]): AlmValidation[(String, SerializedRepr)]
-  def serializeAsync(what: TIn, typeHint: Option[String]): AlmFuture[(String, SerializedRepr)]
+  def serialize(what: TIn, typeHint: Option[String]): AlmValidation[(Option[String], SerializedRepr)]
+  def serializeAsync(what: TIn, typeHint: Option[String]): AlmFuture[(Option[String], SerializedRepr)]
 }
 
 trait CanDeserialize[+TOut] extends WorksWithSerializedRepresentation {

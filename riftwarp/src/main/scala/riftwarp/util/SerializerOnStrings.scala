@@ -27,10 +27,10 @@ class RiftSerializerOnString[TIn <: AnyRef](riftWarp: RiftWarp, blobStorage: Opt
             riftWarp.prepareForWarp[DimensionString](riftChannel, None)(what).map(_.manifestation))
     }
 
-  override def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(String, SerializedRepr)] =
-    serializeWithRiftWarp(what, channel).map((RiftDescriptor(what.getClass()).toParsableString(), _))
+  override def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(Option[String], SerializedRepr)] =
+    serializeWithRiftWarp(what, channel).map((Some(RiftDescriptor(what.getClass()).toParsableString()), _))
 
-  override def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(String, SerializedRepr)] =
+  override def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(Option[String], SerializedRepr)] =
     AlmFuture { serialize(channel)(what, typeHint) }
 
 }

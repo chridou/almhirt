@@ -1,6 +1,7 @@
 package almhirt.ext.core.slick.eventlogs
 
 import java.util.{ UUID => JUUID }
+import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain.DomainEvent
@@ -16,9 +17,10 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
 
   override def storeEvent(event: DomainEvent): AlmValidation[DomainEvent] = {
     serializing.serialize(event, None).flatMap {
-      case (typeIdent, serializedEvent) =>
-        val row = createRow(serializing.channel, typeIdent, event, serializedEvent)
+      case (Some(ti), serializedEvent) =>
+        val row = createRow(serializing.channel, ti, event, serializedEvent)
         dal.insertEventRow(row)
+      case (None, _) => UnspecifiedProblem("A type identisier is required.").failure
     }.map(_ => event)
   }
 
@@ -26,9 +28,10 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
     import scalaz._, Scalaz._
     (for {
       rows <- events.map(event =>
-        serializing.serialize(event, None).map {
-          case (typeIdent, serializedEvent) =>
-            createRow(serializing.channel, typeIdent, event, serializedEvent)
+        serializing.serialize(event, None).flatMap {
+          case (Some(ti), serializedEvent) =>
+            createRow(serializing.channel, ti, event, serializedEvent).success
+          case (None, _) => UnspecifiedProblem("A type identisier is required.").failure
         }.toAgg).toVector.sequence
       stored <- dal.insertManyEventRows(rows)
     } yield stored).fold(
