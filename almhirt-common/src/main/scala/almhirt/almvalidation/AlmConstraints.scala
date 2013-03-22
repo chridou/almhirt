@@ -23,6 +23,7 @@ trait AlmStringConstraints extends Ops[String] {
   def constrainedToMinAndMaxLength(minLength: Int, maxLength: Int, emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
     funs.stringConstrained(self, Some(minLength), Some(maxLength), emptyOrWhiteSpace)
 
+  
 }
 
 trait AlmOptionStringConstraints extends Ops[Option[String]] {

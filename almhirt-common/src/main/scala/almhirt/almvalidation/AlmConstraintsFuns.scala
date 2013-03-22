@@ -5,6 +5,9 @@ import almhirt.common._
 
 
 trait AlmConstraintsFuns {
+  def mustFulfill[T](toTest: T, pred: T => Boolean, msg: String): AlmValidation[T] =
+    if(pred(toTest)) toTest.success else ConstraintViolatedProblem(msg).failure
+  
   def notEmpty(toTest: String): AlmValidation[String] =
     if (toTest.isEmpty) BadDataProblem("String must not be empty").failure else toTest.success
 
@@ -27,6 +30,16 @@ trait AlmConstraintsFuns {
       }
     } yield toTest
 
+    
+  def stringMustContain(toTest: String, mustBeContained: String): AlmValidation[String] =
+    mustFulfill[String](toTest, x => x.contains(mustBeContained), s""""$toTest" does not contain "$mustBeContained"""")
+
+  def stringMustHaveLength(toTest: String, l: Int): AlmValidation[String] =
+    mustFulfill[String](toTest, _.length == l, s""""$toTest" does not have length $l""")
+
+  def stringMustBeContainedIn(toTest: String, in: Seq[String]): AlmValidation[String] =
+    mustFulfill[String](toTest, _.contains(toTest), s""""$toTest" is not contained""")
+    
   def numericConstrained[T](toTest: T, minimum: Option[T], maximum: Option[T])(implicit ops: Numeric[T]): AlmValidation[T] = {
     import scalaz.std._
     import ops._
@@ -43,16 +56,23 @@ trait AlmConstraintsFuns {
 
   def numericConstrainedToMax[T](toTest: T, maximum: T)(implicit ops: Numeric[T]): AlmValidation[T] = {
     import ops._
-    if (maximum < toTest) ConstraintViolatedProblem(s"maximum is maximum").failure else toTest.success
+    if (maximum < toTest) ConstraintViolatedProblem(s"maximum is $maximum").failure else toTest.success
   }
 
   def numericConstrainedToMinMax[T](toTest: T, minimum: T, maximum: T)(implicit ops: Numeric[T]): AlmValidation[T] = {
     import ops._
     for {
-      _ <- if (maximum < toTest) ConstraintViolatedProblem(s"maximum is maximum").failure else ().success
+      _ <- if (maximum < toTest) ConstraintViolatedProblem(s"maximum is $maximum").failure else ().success
       _ <- if (minimum > toTest) ConstraintViolatedProblem(s"minimum is $minimum").failure else ().success
     } yield toTest
-
+  }
+  
+  def stringMustBeEmail(toTest: String): AlmValidation[String] = {
+    ???
   }
 
+  def stringMustBePhoneNumber(toTest: String): AlmValidation[String] = {
+    ???
+  }
+  
 }
