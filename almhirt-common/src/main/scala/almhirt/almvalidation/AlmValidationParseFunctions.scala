@@ -162,12 +162,25 @@ trait AlmValidationParseFunctions {
     else
       Some(toTest)
 
-  def someMustNotBeEmptyOrWhitespace(toTest: Option[String]): AlmValidation[Option[String]] =
+  def definedMustNotBeEmptyOrWhitespace(toTest: Option[String]): AlmValidation[Option[String]] =
     toTest match {
       case Some(str) => notEmptyOrWhitespace(str).map(Some(_))
       case None => None.success
     }
 
+  def constrainedString(toTest: String, minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
+    for {
+      _ <- if (emptyOrWhiteSpace) toTest.success else notEmptyOrWhitespace(toTest)
+      _ <- minLength match {
+        case Some(min) => if (min > toTest.length()) ConstraintViolatedProblem(s"min length is $min").failure else toTest.success
+        case None => toTest.success
+      }
+      _ <- maxLength match {
+        case Some(max) => if (max < toTest.length()) ConstraintViolatedProblem(s"max length is $max").failure else toTest.success
+        case None => toTest.success
+      }
+    } yield toTest
+  
   private def emptyStringIsNone[T](str: String, f: String => AlmValidation[T]) =
     if (str.trim.isEmpty)
       None.success

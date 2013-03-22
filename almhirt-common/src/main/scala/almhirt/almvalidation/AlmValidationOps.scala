@@ -63,40 +63,19 @@ trait AlmValidationOps0 extends Ops[String] {
     notEmptyOrWhitespace(self)
 
   def constrainedAlm(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
-    for {
-      _ <- if (emptyOrWhiteSpace) self.success else notEmptyOrWhitespace(self)
-      _ <- minLength match {
-        case Some(min) => if (min > self.length()) ConstraintViolatedProblem(s"min length is $min").failure else self.success
-        case None => self.success
-      }
-      _ <- maxLength match {
-        case Some(max) => if (max < self.length()) ConstraintViolatedProblem(s"max length is $max").failure else self.success
-        case None => self.success
-      }
-    } yield self
+    constrainedString(self, minLength, maxLength, emptyOrWhiteSpace)
 
 }
 
 trait AlmValidationOps01 extends Ops[Option[String]] {
   @deprecated("Use someMustNotBeEmptyOrWhitespaceAlm instead for better distinguation", "0.0.101")
   def someMustNotBeEmptyOrWhitespace(): AlmValidation[Option[String]] =
-    funs.someMustNotBeEmptyOrWhitespace(self)
+    funs.definedMustNotBeEmptyOrWhitespace(self)
   def definedMustNotBeEmptyOrWhitespaceAlm(): AlmValidation[Option[String]] =
-    funs.someMustNotBeEmptyOrWhitespace(self)
+    funs.definedMustNotBeEmptyOrWhitespace(self)
   def definedIsConstrainedAlm(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[Option[String]] =
     self match {
-      case Some(str) =>
-        for {
-          _ <- if (emptyOrWhiteSpace) str.success else funs.notEmptyOrWhitespace(str)
-          _ <- minLength match {
-            case Some(min) => if (min > str.length()) ConstraintViolatedProblem(s"min length is $min").failure else str.success
-            case None => str.success
-          }
-          _ <- maxLength match {
-            case Some(max) => if (max < str.length()) ConstraintViolatedProblem(s"max length is $max").failure else str.success
-            case None => str.success
-          }
-        } yield self
+      case Some(str) => funs.constrainedString(str, minLength, maxLength, emptyOrWhiteSpace).map(Some(_))
       case None => None.success
     }
 }

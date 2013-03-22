@@ -64,11 +64,11 @@ object ConfigHelper {
       case Some(config) =>
         config.entrySet()
           .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
-          .foldLeft(Map.empty[String, String])((acc, x) => { acc + (x._1 -> x._2)})
+          .foldLeft(Map.empty[String, String])((acc, x) => { acc + (x._1 -> x._2) })
       case None => Map.empty
     }
   }
-  
+
   def getMilliseconds(config: Config)(path: String): AlmValidation[FiniteDuration] = {
     try {
       config.getMilliseconds(path) match {
@@ -87,6 +87,13 @@ object ConfigHelper {
         case found => found.success
       }
     }
+
+  def tryGetNotDisabledSubConfig(config: Config, path: String): Option[Config] =
+    getSubConfig(config)(path).toOption.flatMap(subConf =>
+      if (isBooleanSet(subConf)("disabled"))
+        None
+      else
+        Some(subConf))
 
   def getDispatcherNameFromComponentConfigPath(rootConfig: Config)(componentConfigPath: String): AlmValidation[String] =
     getSubConfig(rootConfig)(componentConfigPath).flatMap(getDispatcherNameFromComponentConfig(_))
