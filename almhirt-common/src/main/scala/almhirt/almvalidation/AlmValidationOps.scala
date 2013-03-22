@@ -62,22 +62,7 @@ trait AlmValidationOps0 extends Ops[String] {
   def notEmptyOrWhitespaceAlm(): AlmValidation[String] =
     notEmptyOrWhitespace(self)
 
-  def constrainedAlm(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
-    stringConstrained(self, minLength, maxLength, emptyOrWhiteSpace)
 
-}
-
-trait AlmValidationOps01 extends Ops[Option[String]] {
-  @deprecated("Use someMustNotBeEmptyOrWhitespaceAlm instead for better distinguation", "0.0.101")
-  def someMustNotBeEmptyOrWhitespace(): AlmValidation[Option[String]] =
-    funs.definedMustNotBeEmptyOrWhitespace(self)
-  def definedMustNotBeEmptyOrWhitespaceAlm(): AlmValidation[Option[String]] =
-    funs.definedMustNotBeEmptyOrWhitespace(self)
-  def definedIsConstrainedAlm(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[Option[String]] =
-    self match {
-      case Some(str) => funs.stringConstrained(str, minLength, maxLength, emptyOrWhiteSpace).map(Some(_))
-      case None => None.success
-    }
 }
 
 trait AlmValidationOps1[T] extends Ops[T] {
@@ -220,7 +205,6 @@ trait AlmValidationOps13 extends Ops[Any] {
 
 trait ToAlmValidationOps {
   implicit def FromStringToAlmValidationOps0(a: String): AlmValidationOps0 = new AlmValidationOps0 { def self = a }
-  implicit def FromOptionStringToAlmValidationOps01(a: Option[String]): AlmValidationOps01 = new AlmValidationOps01 { def self = a }
   implicit def FromAnyToAlmValidationOps1[T](a: T): AlmValidationOps1[T] = new AlmValidationOps1[T] { def self = a }
   implicit def FromOptionValidationToAlmValidationOps2[P, V](a: Option[Validation[P, V]]): AlmValidationOps2[P, V] = new AlmValidationOps2[P, V] { def self = a }
   implicit def FromValidationOptionToAlmValidationOps3[P, V](a: Validation[P, Option[V]]): AlmValidationOps3[P, V] = new AlmValidationOps3[P, V] { def self = a }
