@@ -17,7 +17,7 @@ package almhirt
 package object almvalidation {
   object inst extends AlmValidationInstances
 
-  object funs extends AlmValidationFunctions with AlmValidationParseFunctions with AlmValidationCastFunctions
+  object funs extends AlmValidationFunctions with AlmValidationParseFunctions with AlmValidationCastFunctions with AlmConstraintsFuns
 
   object all 
     extends AlmValidationFunctions with AlmValidationParseFunctions with AlmValidationCastFunctions
