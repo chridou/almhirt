@@ -34,7 +34,7 @@ class BoundDomainActionsUnitOfWorkSpecs extends WordSpec with BeforeAndAfterAll 
       buffer.append(events: _*)
       map.put(ar.id, ar)
     }
-    def get(id: UUID): AlmFuture[TestPerson] = AlmFuture.promise(map.lift >? id)
+    def get(id: UUID): AlmFuture[TestPerson] = AlmFuture.promise(map.lift >! id)
 
     val uow = createUOW(get, store)
     (uow, map, buffer)

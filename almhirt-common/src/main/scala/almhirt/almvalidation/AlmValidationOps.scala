@@ -139,7 +139,7 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
 }
 
 trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
-  def >?(x: T): Validation[KeyNotFoundProblem, U] =
+  def >!(x: T): Validation[KeyNotFoundProblem, U] =
     self(x).map(_.success).getOrElse(KeyNotFoundProblem("Key not found: %s".format(x)).failure)
 }
 

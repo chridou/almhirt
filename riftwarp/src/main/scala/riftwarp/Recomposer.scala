@@ -33,14 +33,14 @@ abstract class DivertingRecomposer[+T <: AnyRef] extends Recomposer[T] {
   def divert: RiftDescriptor => Option[Recomposer[T]]
   override def recompose(from: Extractor): AlmValidation[T] =
     from.getRiftDescriptor.flatMap(rd =>
-      (divert >? rd).fold(
+      (divert >! rd).fold(
         fail => KeyNotFoundProblem(s"Recomposer for ${this.riftDescriptor.toString} could not find a Recomposer for ${rd.toString}").failure,
         recomposer => recomposer.recompose(from)))
   override def recomposeAsync(from: Extractor)(implicit hasExecContext: HasExecutionContext): AlmFuture[T] =
     from.getRiftDescriptor.fold(
       fail => AlmFuture.failed(fail),
       rd =>
-        (divert >? rd).fold(
+        (divert >! rd).fold(
           fail => AlmFuture.failed(KeyNotFoundProblem(s"Recomposer for ${this.riftDescriptor.toString} could not find a Recomposer for ${rd.toString}")),
           recomposer => recomposer.recomposeAsync(from)))
 }

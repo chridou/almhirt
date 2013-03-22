@@ -24,7 +24,7 @@ object Profiles {
       profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
       eventlogtablename <- anEventlogtablename.notEmptyOrWhitespace
       blobtablename <- aBlobtablename.notEmptyOrWhitespace
-      profile <- (profiles.lift >? profileName)
+      profile <- (profiles.lift >! profileName)
     } yield new TextEventLogDataAccess(eventlogtablename, blobtablename, Unit => createDataBase(profile.driver), profile.slickDriver, hasExecutionContext)
 
   def createTextDomainEventLogAccess(aProfile: String, anEventlogtablename: String, aBlobtablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextDomainEventLogDataAccess] =
@@ -32,7 +32,7 @@ object Profiles {
       profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
       eventlogtablename <- anEventlogtablename.notEmptyOrWhitespace
       blobtablename <- aBlobtablename.notEmptyOrWhitespace
-      profile <- (profiles.lift >? profileName)
+      profile <- (profiles.lift >! profileName)
     } yield new TextDomainEventLogDataAccess(eventlogtablename, blobtablename, Unit => createDataBase(profile.driver), profile.slickDriver, hasExecutionContext)
 
 }
