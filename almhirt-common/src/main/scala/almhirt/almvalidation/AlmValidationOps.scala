@@ -59,8 +59,6 @@ trait AlmValidationOps0 extends Ops[String] {
     parseUriAlm(self)
   def notEmptyAlm(): AlmValidation[String] =
     notEmpty(self)
-  def notEmptyOrWhitespaceAlm(): AlmValidation[String] =
-    notEmptyOrWhitespace(self)
 
 
 }

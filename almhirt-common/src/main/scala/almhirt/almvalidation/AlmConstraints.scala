@@ -8,7 +8,7 @@ trait AlmStringConstraints extends Ops[String] {
   def mustFulfill(pred: String => Boolean, msg: String): AlmValidation[String] =
     if (pred(self)) self.success else ConstraintViolatedProblem(msg).failure
 
-  def notEmptyOrWhitespaceAlm(): AlmValidation[String] =
+  def notEmptyOrWhitespace(): AlmValidation[String] =
     funs.notEmptyOrWhitespace(self)
     
   def constrained(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
@@ -27,7 +27,7 @@ trait AlmStringConstraints extends Ops[String] {
 
 trait AlmOptionStringConstraints extends Ops[Option[String]] {
     
-  def notEmptyOrWhitespaceAlm(): AlmValidation[Option[String]] =
+  def notEmptyOrWhitespace(): AlmValidation[Option[String]] =
     onSome(x => funs.notEmptyOrWhitespace(x))
   
   def mustFulfill(pred: String => Boolean, msg: String): AlmValidation[Option[String]] =
@@ -54,4 +54,12 @@ trait AlmOptionStringConstraints extends Ops[Option[String]] {
       case None => self.success
     }
     
+}
+
+import language.implicitConversions
+
+trait ToAlmValidationContraintsOps {
+    implicit def FromStringToAlmStringConstraints(a: String): AlmStringConstraints = new AlmStringConstraints { def self = a }
+    implicit def AlmOptionStringConstraints(a: Option[String]): AlmOptionStringConstraints = new AlmOptionStringConstraints { def self = a }
+
 }
