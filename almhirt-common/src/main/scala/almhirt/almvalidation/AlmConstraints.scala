@@ -11,18 +11,21 @@ trait AlmStringConstraints extends Ops[String] {
   def notEmptyOrWhitespace(): AlmValidation[String] =
     funs.notEmptyOrWhitespace(self)
     
-  def constrained(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
+  def constrainedTo(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
     funs.stringConstrained(self, minLength, maxLength, emptyOrWhiteSpace)
 
-  def constrainedToMinLength(minLength: Int, emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
-    funs.stringConstrained(self, Some(minLength), None, emptyOrWhiteSpace)
+  def withMinimumLength(minLength: Int): AlmValidation[String] =
+    funs.stringConstrained(self, Some(minLength), None, true)
 
-  def constrainedToMaxLength(maxLength: Int, emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
-    funs.stringConstrained(self, None, Some(maxLength), emptyOrWhiteSpace)
+  def withMaximumLength(maxLength: Int): AlmValidation[String] =
+    funs.stringConstrained(self, None, Some(maxLength), true)
 
-  def constrainedToMinAndMaxLength(minLength: Int, maxLength: Int, emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
-    funs.stringConstrained(self, Some(minLength), Some(maxLength), emptyOrWhiteSpace)
+  def withLengthBetweenLength(minLength: Int, maxLength: Int): AlmValidation[String] =
+    funs.stringConstrained(self, Some(minLength), Some(maxLength), true)
 
+  def withLength(length: Int): AlmValidation[String] =
+    funs.stringMustHaveLength(self, length)
+    
   
 }
 
@@ -37,18 +40,21 @@ trait AlmOptionStringConstraints extends Ops[Option[String]] {
       case None => self.success
     }
 
-  def constrained(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[Option[String]] =
-    onSome(x => funs.stringConstrained(x, minLength, maxLength, emptyOrWhiteSpace))
+  def constrainedTo(minLength: Option[Int], maxLength: Option[Int]): AlmValidation[Option[String]] =
+    onSome(x => funs.stringConstrained(x, minLength, maxLength, true))
 
-  def constrainedToMinLength(minLength: Int, emptyOrWhiteSpace: Boolean = false): AlmValidation[Option[String]] =
-    onSome(x => funs.stringConstrained(x, Some(minLength), None, emptyOrWhiteSpace))
+  def withMinimumLength(minLength: Int): AlmValidation[Option[String]] =
+    onSome(x => funs.stringConstrained(x, Some(minLength), None, true))
 
-  def constrainedToMaxLength(maxLength: Int, emptyOrWhiteSpace: Boolean = false): AlmValidation[Option[String]] =
-    onSome(x => funs.stringConstrained(x, None, Some(maxLength), emptyOrWhiteSpace))
+  def withMaximumLength(maxLength: Int): AlmValidation[Option[String]] =
+    onSome(x => funs.stringConstrained(x, None, Some(maxLength), true))
 
-  def constrainedToMinAndMaxLength(minLength: Int, maxLength: Int, emptyOrWhiteSpace: Boolean = false): AlmValidation[Option[String]] =
-    onSome(x => funs.stringConstrained(x, Some(minLength), Some(maxLength), emptyOrWhiteSpace))
+  def withLengthBetween(minLength: Int, maxLength: Int): AlmValidation[Option[String]] =
+    onSome(x => funs.stringConstrained(x, Some(minLength), Some(maxLength), true))
 
+  def withLength(length: Int): AlmValidation[Option[String]] =
+    onSome(x => funs.stringMustHaveLength(x,length))
+    
   private def onSome(test: String => AlmValidation[String]): AlmValidation[Option[String]] =
     self match {
       case Some(str) => test(str).map(Some(_))
