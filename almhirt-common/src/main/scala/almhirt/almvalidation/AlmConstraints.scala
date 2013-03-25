@@ -14,16 +14,16 @@ trait AlmStringConstraints extends Ops[String] {
   def constrainedTo(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
     funs.stringConstrained(self, minLength, maxLength, emptyOrWhiteSpace)
 
-  def withMinimumLength(minLength: Int): AlmValidation[String] =
+  def minLength(minLength: Int): AlmValidation[String] =
     funs.stringConstrained(self, Some(minLength), None, true)
 
-  def withMaximumLength(maxLength: Int): AlmValidation[String] =
+  def maxLength(maxLength: Int): AlmValidation[String] =
     funs.stringConstrained(self, None, Some(maxLength), true)
 
-  def withLengthBetweenLength(minLength: Int, maxLength: Int): AlmValidation[String] =
+  def minMaxLength(minLength: Int, maxLength: Int): AlmValidation[String] =
     funs.stringConstrained(self, Some(minLength), Some(maxLength), true)
 
-  def withLength(length: Int): AlmValidation[String] =
+  def mustHaveLength(length: Int): AlmValidation[String] =
     funs.stringMustHaveLength(self, length)
     
   
@@ -43,16 +43,16 @@ trait AlmOptionStringConstraints extends Ops[Option[String]] {
   def constrainedTo(minLength: Option[Int], maxLength: Option[Int]): AlmValidation[Option[String]] =
     onSome(x => funs.stringConstrained(x, minLength, maxLength, true))
 
-  def withMinimumLength(minLength: Int): AlmValidation[Option[String]] =
+  def minLength(minLength: Int): AlmValidation[Option[String]] =
     onSome(x => funs.stringConstrained(x, Some(minLength), None, true))
 
-  def withMaximumLength(maxLength: Int): AlmValidation[Option[String]] =
+  def maxLength(maxLength: Int): AlmValidation[Option[String]] =
     onSome(x => funs.stringConstrained(x, None, Some(maxLength), true))
 
-  def withLengthBetween(minLength: Int, maxLength: Int): AlmValidation[Option[String]] =
+  def minMaxLength(minLength: Int, maxLength: Int): AlmValidation[Option[String]] =
     onSome(x => funs.stringConstrained(x, Some(minLength), Some(maxLength), true))
 
-  def withLength(length: Int): AlmValidation[Option[String]] =
+  def mustHaveLength(length: Int): AlmValidation[Option[String]] =
     onSome(x => funs.stringMustHaveLength(x,length))
     
   private def onSome(test: String => AlmValidation[String]): AlmValidation[Option[String]] =
