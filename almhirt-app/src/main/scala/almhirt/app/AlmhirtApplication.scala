@@ -4,19 +4,19 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.core.Almhirt
 import almhirt.environment.ShutDown
-import almhirt.environment.configuration.AlmhirtBootstrapper
+import almhirt.environment.configuration.Bootstrapper
 
 trait AlmhirtApplication extends SplashMessages {
 
   private var exit = false
 
-  def run(bootStrapper: AlmhirtBootstrapper, logger: akka.event.LoggingAdapter): Int = {
+  def run(bootStrapper: Bootstrapper, logger: akka.event.LoggingAdapter): Int = {
     println(startupMessage)
     println
     println("An application built on Almhirt. Check www.almhirt.org for more information")
     println
     logger.info("Initiating startup")
-    val startupV = AlmhirtBootstrapper.runStartupSequence(bootStrapper, logger)
+    val startupV = Bootstrapper.runBootstrapper(bootStrapper)(logger)
     startupV fold (
       prob => {
         onCrash(prob)

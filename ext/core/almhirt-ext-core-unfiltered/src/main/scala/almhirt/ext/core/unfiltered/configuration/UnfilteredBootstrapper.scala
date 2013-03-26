@@ -13,24 +13,25 @@ import riftwarp.http.RiftWarpHttpFuns.RiftHttpFunsSettings
 import riftwarp.http.RiftHttpContentTypeWithoutPrefixOps
 import almhirt.ext.core.unfiltered.impl.HttpCommandEndpoint
 
-trait UnfilteredBootstrapper extends AlmhirtBootstrapper {
+trait UnfilteredBootstrapper extends PreparesGatewaysBootstrapperPhase { self: HasConfig with HasServiceRegistry =>
 
-  override def prepareGateways(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
-    for {
-      superCleanUp <- super.prepareGateways(theAlmhirt, theServiceRegistry, startUpLogger)
-      httpCommandEndpoint <- createHttpCommandEndpoint(theAlmhirt, theServiceRegistry, startUpLogger)
-      plans <- {
-        theServiceRegistry.registerService[ForwardsCommandsFromHttpRequest](httpCommandEndpoint)
-        collectPlans(theAlmhirt, theServiceRegistry, startUpLogger)
-      }
-      restCleanUp <- createRestServer(theAlmhirt, theServiceRegistry, startUpLogger, plans)
-    } yield () => { superCleanUp(); restCleanUp() }
+  override def prepareGateways(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
+    super.prepareGateways(theAlmhirt, startUpLogger).andThen {
+      (for {
+        httpCommandEndpoint <- createHttpCommandEndpoint(theAlmhirt, startUpLogger)
+        plans <- {
+          self.serviceRegistry.registerService[ForwardsCommandsFromHttpRequest](httpCommandEndpoint)
+          collectPlans(theAlmhirt, startUpLogger)
+        }
+        restCleanUp <- createRestServer(theAlmhirt, startUpLogger, plans)
+      } yield BootstrapperPhaseSuccess(restCleanUp)).toBootstrapperPhaseResult
+    }
 
-  def collectPlans(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[List[unfiltered.netty.async.Plan]] =
+  def collectPlans(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[List[unfiltered.netty.async.Plan]] =
     Nil.success
 
-  private def createRestServer(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter, plans: List[unfiltered.netty.async.Plan]): AlmValidation[CleanUpAction] = {
-    theServiceRegistry.getService[HasConfig].flatMap(hasConfig =>
+  private def createRestServer(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter, plans: List[unfiltered.netty.async.Plan]): AlmValidation[CleanUpAction] = {
+    self.serviceRegistry.getService[HasConfig].flatMap(hasConfig =>
       ConfigHelper.http.getConfig(hasConfig.config).flatMap { httpConfig =>
         val port = ConfigHelper.http.port(httpConfig).fold(fail => 8080, succ => succ)
         val maxContentLength = ConfigHelper.http.maxContentLength(httpConfig).fold(fail => 1024 * 1024, succ => succ)
@@ -39,17 +40,17 @@ trait UnfilteredBootstrapper extends AlmhirtBootstrapper {
           val http = Http(port).chunked(maxContentLength)
           val httpWithPlans = plans.foldLeft(http) { case (http, plan) => http.plan(plan) }
           val startedHttp = httpWithPlans.start
-          () => {
+          CleanUpAction(() => {
             startUpLogger.info("Stopping http endpoint")
             startedHttp.stop
-          }
+          }, "Unfiltered")
         }
       })
   }
 
-  private def createHttpCommandEndpoint(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[ForwardsCommandsFromHttpRequest] =
-    theServiceRegistry.getService[HasConfig].flatMap(hasConfig =>
-      theServiceRegistry.getService[RiftWarp].map { riftWarp =>
+  private def createHttpCommandEndpoint(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[ForwardsCommandsFromHttpRequest] =
+    self.serviceRegistry.getService[HasConfig].flatMap(hasConfig =>
+      self.serviceRegistry.getService[RiftWarp].map { riftWarp =>
         val settings = RiftHttpFunsSettings(
           riftWarp,
           false,

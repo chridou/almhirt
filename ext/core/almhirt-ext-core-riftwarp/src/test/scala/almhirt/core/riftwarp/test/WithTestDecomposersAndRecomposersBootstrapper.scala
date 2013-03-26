@@ -8,11 +8,12 @@ import almhirt.environment.configuration.impl._
 import almhirt.environment.configuration._
 import com.typesafe.config.Config
 import _root_.riftwarp.RiftWarp
+import almhirt.ext.core.riftwarp.RiftWarpBootstrapper
 
-trait WithTestDecomposersAndRecomposersBootstrapper extends AlmhirtBootstrapper {
-  override def initializeCoreComponents(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
-    super.initializeCoreComponents(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
-      theServiceRegistry.getService[RiftWarp].flatMap { riftWarp =>
+trait WithTestDecomposersAndRecomposersBootstrapper extends CreatesCoreComponentsBootstrapperPhase { self: HasServiceRegistry =>
+  override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
+    super.createCoreComponents(theAlmhirt, startUpLogger).andThen {
+      self.serviceRegistry.getService[RiftWarp].map { riftWarp =>
         riftWarp.barracks.addDecomposer(new TestPersonCreatedDecomposer)
         riftWarp.barracks.addRecomposer(new TestPersonCreatedRecomposer)
         riftWarp.barracks.addDecomposer(new TestPersonNameChangedDecomposer)
@@ -23,7 +24,7 @@ trait WithTestDecomposersAndRecomposersBootstrapper extends AlmhirtBootstrapper 
         riftWarp.barracks.addRecomposer(new TestPersonMovedRecomposer)
         riftWarp.barracks.addDecomposer(new TestPersonUnhandledEventDecomposer)
         riftWarp.barracks.addRecomposer(new TestPersonUnhandledEventRecomposer)
-        superCleanUp.success
-      }
+        BootstrapperPhaseSuccess()
+      }.toBootstrapperPhaseResult
     }
 }
