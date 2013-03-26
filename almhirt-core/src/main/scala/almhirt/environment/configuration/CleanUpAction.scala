@@ -11,11 +11,12 @@ object CleanUpAction {
   def apply(cleanUp: () => Unit, theMessage: String): CleanUpAction = new CleanUpAction { def apply() { cleanUp() }; val name = Some(theMessage) }
 
   def runCleanUps(cleanUps: List[(String, List[CleanUpAction])], startUpLogger: LoggingAdapter) {
+    startUpLogger.info("Clean-ups")
     cleanUps.foreach {
       case (msg, cleanups) =>
         startUpLogger.info(s"Executing cleanups from: $msg")
         cleanups.foreach { action =>
-          action.name.foreach(msg => startUpLogger.info(s"""Executing cleanup action "$msg""""))
+          action.name.foreach(msg => startUpLogger.info(s"""  Executing cleanup action "$msg""""))
           try {
           action()
           } catch {

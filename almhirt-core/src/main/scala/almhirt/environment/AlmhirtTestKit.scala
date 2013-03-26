@@ -3,7 +3,7 @@ package almhirt.environment
 import scalaz.syntax.validation._
 import akka.event.NoLogging
 import almhirt.common._
-import almhirt.syntax.almvalidation._
+import almhirt.almvalidation.kit._
 import almhirt.core._
 import almhirt.environment.configuration._
 import com.typesafe.config._
@@ -46,14 +46,10 @@ trait AlmhirtTestKit {
     createDefaultBootStrapper(defaultConf)
 
   def createDefaultBootStrapper(aConfig: Config): Bootstrapper =
-    new Bootstrapper with HasConfig   
-    with HasServiceRegistry
-    with CreatesActorSystemFromConfig
-    with CreatesAlmhirtFromConfigAndActorSystem{
+    new Bootstrapper with HasConfig with HasServiceRegistry with CreatesActorSystemFromConfig with CreatesAlmhirtFromConfigAndActorSystem {
       def config = aConfig
       val serviceRegistry = new SimpleConcurrentServiceRegistry()
-  }
- 
+    }
 
   def createExtendedBootStrapper(): Bootstrapper =
     createExtendedBootStrapper(defaultConf)
@@ -62,21 +58,25 @@ trait AlmhirtTestKit {
     new Bootstrapper with DefaultBootstrapperSequence {
       def config = aConfig
       val serviceRegistry = new SimpleConcurrentServiceRegistry()
-  }
-
-  def createTestAlmhirt(bootStrapper: Bootstrapper): AlmValidation[(AlmhirtForTesting, ShutDown)] =
-    Bootstrapper.runBootstrapper(bootStrapper)(NoLogging).map {
-      case (theAlmhirt, shutDown) =>
-        (AlmhirtForTesting(theAlmhirt), shutDown)
     }
 
-  def createExtendedTestAlmhirt(bootstrapper: Bootstrapper): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] =
-    Bootstrapper.runBootstrapper(bootstrapper)(NoLogging).flatMap {
+  def createTestAlmhirt(bootStrapper: Bootstrapper): AlmValidation[(AlmhirtForTesting, ShutDown)] = {
+    implicit val startupLogger = LogBackLoggingAdapter()
+    Bootstrapper.runBootstrapper(bootStrapper).map {
+      case (theAlmhirt, shutDown) =>
+        (AlmhirtForTesting(theAlmhirt), shutDown)
+    }.withFailEffect(p => startupLogger.error(p.toString))
+  }
+
+  def createExtendedTestAlmhirt(bootstrapper: Bootstrapper): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] = {
+    implicit val startupLogger = LogBackLoggingAdapter()
+    Bootstrapper.runBootstrapper(bootstrapper).flatMap {
       case (theAlmhirt, shutDown) =>
         theAlmhirt.getService[ServiceRegistry].flatMap(reg =>
           AlmhirtForExtendedTesting(theAlmhirt, reg).map(anAlmhirt =>
             (anAlmhirt, shutDown)))
-    }
+    }.withFailEffect(p => startupLogger.error(p.toString))
+  }
 
   def createExtendedTestAlmhirt(): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] =
     createExtendedTestAlmhirt(createExtendedBootStrapper())

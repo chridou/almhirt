@@ -2,6 +2,7 @@ package almhirt.environment.configuration
 
 import akka.event.LoggingAdapter
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.core._
 import almhirt.environment.ShutDown
 import almhirt.environment.configuration.impl.LogBackLoggingAdapter
@@ -10,12 +11,18 @@ sealed trait BootstrapperPhaseResult {
   def cleanUps: List[CleanUpAction]
   def andThen(what: => BootstrapperPhaseResult): BootstrapperPhaseResult =
     this match {
-      case BootstrapperPhaseSuccess(myCleanUps) =>
-        what match {
-          case BootstrapperPhaseSuccess(newCleanUps) =>
-            BootstrapperPhaseSuccess(newCleanUps ++ myCleanUps)
-          case BootstrapperPhaseFailure(cause, createdCleanUps) =>
-            BootstrapperPhaseFailure(cause, createdCleanUps ++ myCleanUps)
+      case BootstrapperPhaseSuccess(myCleanUpsSoFar) =>
+        try {
+          what match {
+            case BootstrapperPhaseSuccess(newCleanUps) =>
+              BootstrapperPhaseSuccess(newCleanUps ++ myCleanUpsSoFar)
+            case BootstrapperPhaseFailure(cause, createdCleanUps) =>
+              BootstrapperPhaseFailure(cause, createdCleanUps ++ myCleanUpsSoFar)
+          }
+        } catch {
+          case exn: Exception =>
+            val prob = ExceptionCaughtProblem(s"Caught an exception within the bootstrapper: ${exn.getMessage()}", cause = Some(exn))
+            BootstrapperPhaseFailure(prob, myCleanUpsSoFar)
         }
       case BootstrapperPhaseFailure(_, _) =>
         this
@@ -29,8 +36,8 @@ object BootstrapperPhaseResult {
   implicit class BootstrapperPhaseResultValidationOps(validation: AlmValidation[BootstrapperPhaseResult]) {
     def toBootstrapperPhaseResult(): BootstrapperPhaseResult = {
       validation.fold(
-          fail => BootstrapperPhaseFailure(fail, Nil), 
-          succ => succ)
+        fail => BootstrapperPhaseFailure(fail, Nil),
+        succ => succ)
     }
   }
 }
@@ -56,16 +63,6 @@ trait Bootstrapper
   with RegistersCommandHandlersBootstrapperPhase
   with PreparesGatewaysBootstrapperPhase
   with PostActionsBootstrapperPhase
-
-//trait BootstrapperBase extends Bootstrapper {
-//  override def preInit(startUpLogger: LoggingAdapter) = BootstrapperPhaseSuccess(Nil)
-//  override def createAlmhirt(startUpLogger: LoggingAdapter) = Left(BootstrapperPhaseFailure(NotSupportedProblem("You must create an Almhirt instance. Implement Bootstrapper.createAlmhirt."), Nil))
-//  override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter) = BootstrapperPhaseSuccess(Nil)
-//  override def createRepositories(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter) = BootstrapperPhaseSuccess(Nil)
-//  override def registerCommandHandlers(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter) = BootstrapperPhaseSuccess(Nil)
-//  override def prepareGateways(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter) = BootstrapperPhaseSuccess(Nil)
-//  override def postActions(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter) = BootstrapperPhaseSuccess(Nil)
-//}
 
 /**
  * Mix this one in as the last trait to receive additional logging information about the startup sequence
@@ -128,7 +125,7 @@ object Bootstrapper {
       startUpLogger.info("Starting bootstrapper phase 1: Pre-init")
       bootstrapper.preInit(startUpLogger) match {
         case BootstrapperPhaseFailure(prob, cleanUps) =>
-          startUpLogger.error(s"Bootstrapper phase 1(Pre-init) failed: \n${prob.toString}")
+          startUpLogger.error(s"Bootstrapper phase 1(Pre-init) failed: ${prob.message}")
           CleanUpAction.runCleanUps(("Phase1(Pre-init)", cleanUps) :: cleanUpsSoFar, startUpLogger)
           prob.failure
         case BootstrapperPhaseSuccess(cleanUps) =>
@@ -137,7 +134,7 @@ object Bootstrapper {
           startUpLogger.info("Starting bootstrapper phase 2: Create Almhirt")
           bootstrapper.createAlmhirt(startUpLogger) match {
             case Left(BootstrapperPhaseFailure(prob, cleanUps)) =>
-              startUpLogger.error(s"Bootstrapper phase 2(Create Almhirt) failed: \n${prob.toString}")
+              startUpLogger.error(s"Bootstrapper phase 2(Create Almhirt) failed: ${prob.message}")
               CleanUpAction.runCleanUps(("Phase2(Create Almhirt)", cleanUps) :: cleanUpsSoFar, startUpLogger)
               prob.failure
             case Right((theAlmhirt, cleanUps)) =>
@@ -146,7 +143,7 @@ object Bootstrapper {
               startUpLogger.info("Starting bootstrapper phase 3: Create core components")
               bootstrapper.createCoreComponents(theAlmhirt, startUpLogger) match {
                 case BootstrapperPhaseFailure(prob, cleanUps) =>
-                  startUpLogger.error(s"Bootstrapper phase 3(Create core components) failed: \n${prob.toString}")
+                  startUpLogger.error(s"Bootstrapper phase 3(Create core components) failed: ${prob.message}")
                   CleanUpAction.runCleanUps(("Phase 3(Create core components)", cleanUps) :: cleanUpsSoFar, startUpLogger)
                   prob.failure
                 case BootstrapperPhaseSuccess(cleanUps) =>
@@ -155,7 +152,7 @@ object Bootstrapper {
                   startUpLogger.info("Starting bootstrapper phase 4: Create repositories")
                   bootstrapper.createRepositories(theAlmhirt, startUpLogger) match {
                     case BootstrapperPhaseFailure(prob, cleanUps) =>
-                      startUpLogger.error(s"Bootstrapper phase 4(Create repositories) failed: \n${prob.toString}")
+                      startUpLogger.error(s"Bootstrapper phase 4(Create repositories) failed: ${prob.message}")
                       CleanUpAction.runCleanUps(("Phase 4(Create repositories)", cleanUps) :: cleanUpsSoFar, startUpLogger)
                       prob.failure
                     case BootstrapperPhaseSuccess(cleanUps) =>
@@ -164,7 +161,7 @@ object Bootstrapper {
                       startUpLogger.info("Starting bootstrapper phase 5: Register command handlers")
                       bootstrapper.registerCommandHandlers(theAlmhirt, startUpLogger) match {
                         case BootstrapperPhaseFailure(prob, cleanUps) =>
-                          startUpLogger.error(s"Bootstrapper phase 5(Register command handlers) failed: \n${prob.toString}")
+                          startUpLogger.error(s"Bootstrapper phase 5(Register command handlers) failed: ${prob.message}")
                           CleanUpAction.runCleanUps(("Phase 5(Register command handlers)", cleanUps) :: cleanUpsSoFar, startUpLogger)
                           prob.failure
                         case BootstrapperPhaseSuccess(cleanUps) =>
@@ -173,7 +170,7 @@ object Bootstrapper {
                           startUpLogger.info("Starting bootstrapper phase 6: Prepare gateways")
                           bootstrapper.prepareGateways(theAlmhirt, startUpLogger) match {
                             case BootstrapperPhaseFailure(prob, cleanUps) =>
-                              startUpLogger.error(s"Bootstrapper phase 6(Prepare gateways) failed: \n${prob.toString}")
+                              startUpLogger.error(s"Bootstrapper phase 6(Prepare gateways) failed: ${prob.message}")
                               CleanUpAction.runCleanUps(("Phase 6(Prepare gateways)", cleanUps) :: cleanUpsSoFar, startUpLogger)
                               prob.failure
                             case BootstrapperPhaseSuccess(cleanUps) =>
@@ -182,7 +179,7 @@ object Bootstrapper {
                               startUpLogger.info("Starting bootstrapper phase 7: Post actions")
                               bootstrapper.postActions(theAlmhirt, startUpLogger) match {
                                 case BootstrapperPhaseFailure(prob, cleanUps) =>
-                                  startUpLogger.error(s"Bootstrapper phase 7(Post actions) failed: \n${prob.toString}")
+                                  startUpLogger.error(s"Bootstrapper phase 7(Post actions) failed: ${prob.message}")
                                   CleanUpAction.runCleanUps(("Phase 7(Post actions)", cleanUps) :: cleanUpsSoFar, startUpLogger)
                                   prob.failure
                                 case BootstrapperPhaseSuccess(cleanUps) =>
@@ -204,6 +201,7 @@ object Bootstrapper {
               }
           }
       }
-    }(exn => s"The bootstrapper sequence failed with an exception: ${exn.getMessage()}")
+    }(exn => s"The bootstrapper sequence failed with an exception: ${exn.getMessage()}").leftMap(cause =>
+      StartupProblem("Could not complete the bootstrapper sequence.", severity = Critical, cause = Some(cause)))
   }
 }

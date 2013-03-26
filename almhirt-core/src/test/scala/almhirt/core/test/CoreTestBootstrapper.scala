@@ -43,13 +43,10 @@ trait CoreBootstrapperWithCommandHandlers extends RegistersCommandHandlersBootst
     }
 }
 
-class CoreTestBootstrapper(val config: Config)
-  extends HasConfig
-  with Bootstrapper
-  with HasServiceRegistry
-  with DefaultBootstrapperSequence
+trait CoreTestBootstrapper
+  extends DefaultBootstrapperSequence
   with CoreBootstrapperWithCommandHandlers{
   val serviceRegistry = new SimpleConcurrentServiceRegistry()
 }
 
-class BlockingRepoCoreBootstrapper(aConfig: Config) extends CoreTestBootstrapper(aConfig) with CoreBootstrapperWithBlockingRepo
+trait BlockingRepoCoreBootstrapper extends CoreTestBootstrapper with CoreBootstrapperWithBlockingRepo

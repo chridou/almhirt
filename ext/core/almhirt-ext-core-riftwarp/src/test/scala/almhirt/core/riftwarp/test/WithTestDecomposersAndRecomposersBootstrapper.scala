@@ -13,6 +13,7 @@ import almhirt.ext.core.riftwarp.RiftWarpBootstrapper
 trait WithTestDecomposersAndRecomposersBootstrapper extends CreatesCoreComponentsBootstrapperPhase { self: HasServiceRegistry =>
   override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
     super.createCoreComponents(theAlmhirt, startUpLogger).andThen {
+      startUpLogger.debug("Register RiftWarp-Decomposers and -Recomposers for testing.")
       self.serviceRegistry.getService[RiftWarp].map { riftWarp =>
         riftWarp.barracks.addDecomposer(new TestPersonCreatedDecomposer)
         riftWarp.barracks.addRecomposer(new TestPersonCreatedRecomposer)

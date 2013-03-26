@@ -16,11 +16,14 @@ import almhirt.core.riftwarp.test.WithTestDecomposersAndRecomposersBootstrapper
 import almhirt.core.test._
 import almhirt.domain.AggregateRootRef
 import com.typesafe.config.ConfigFactory
+import almhirt.environment.configuration.Bootstrapper
 
 class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatchers with AlmhirtTestKit {
   implicit object ccuad extends CanCreateUuidsAndDateTimes  
   val bootstrapper =
-    new BlockingRepoCoreBootstrapper(ConfigFactory.load()) with RiftWarpBootstrapper with WithTestDecomposersAndRecomposersBootstrapper
+    new Bootstrapper with RiftWarpBootstrapper with BlockingRepoCoreBootstrapper with WithTestDecomposersAndRecomposersBootstrapper{
+    val config = defaultConf
+  }
 
   def inLocalTestAlmhirt[T](compute: AlmhirtForExtendedTesting => T) =
     inExtendedTestAlmhirt(bootstrapper)(compute)

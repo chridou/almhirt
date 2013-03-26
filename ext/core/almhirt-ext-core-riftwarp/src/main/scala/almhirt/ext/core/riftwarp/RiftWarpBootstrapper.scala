@@ -13,6 +13,7 @@ import almhirt.core.HasServiceRegistry
 trait RiftWarpBootstrapper extends CreatesCoreComponentsBootstrapperPhase { self: HasServiceRegistry =>
   override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
     super.createCoreComponents(theAlmhirt, startUpLogger).andThen {
+      startUpLogger.debug("Create and registter RiftWarp.")
       val riftWarp = RiftWarp.concurrentWithDefaults
       addRiftWarpRegistrations(riftWarp)
       self.serviceRegistry.registerService[RiftWarp](riftWarp)

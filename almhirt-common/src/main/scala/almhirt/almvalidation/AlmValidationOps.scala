@@ -133,9 +133,6 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
 
   def toProblemOption(): Option[Problem] =
     self fold (prob => Some(prob), _ => None)
-
-  def sideEffect(f: P => Unit, s: T => Unit): Unit =
-    self fold (prob => f(prob), t => s(t))
 }
 
 trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {

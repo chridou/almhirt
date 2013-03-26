@@ -45,6 +45,11 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
         Profiles.createTextDomainEventLogAccess(profileName, eventlogtable, blobtable, createDataBase)(theAlmhirt)
       })
       _ <- computeSafely {
+        if (dropOnClose)
+          theAlmhirt.actorSystem.registerOnTermination({
+            theAlmhirt.log.info("Dropping schema for domain event log")
+            eventLogDataAccess.getDb().withSession((session: Session) => eventLogDataAccess.drop(session))
+          })
         if (createSchema) {
           theAlmhirt.log.info("Creating schema for domain event log")
           eventLogDataAccess.getDb().withSession((session: Session) =>
@@ -84,15 +89,7 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingDomainEventLogActor(syncStorage, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }
-    } yield {
-      if (dropOnClose)
-        theAlmhirt.actorSystem.registerOnTermination({
-          theAlmhirt.log.info("Dropping schema for domain event log")
-          eventLogDataAccess.getDb().withSession((session: Session) => eventLogDataAccess.drop(session))
-        })
-
-      actor
-    }
+    } yield actor
   }
 
   private def createBinaryDomainEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {

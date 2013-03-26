@@ -8,12 +8,13 @@ import almhirt.syntax.almvalidation._
 import almhirt.environment._
 import almhirt.core.test._
 import almhirt.core.test.TestPerson
+import almhirt.environment.configuration.Bootstrapper
 
 class TestAlmhirtSpecs extends FlatSpec with ShouldMatchers with AlmhirtTestKit {
   private implicit val atMost = Duration(2, "s")
   "The TestAlmhirt with a blocking repository" should
     "create and retrieve person" in {
-      inExtendedTestAlmhirt(new BlockingRepoCoreBootstrapper(this.defaultConf)) { implicit almhirt =>
+      inExtendedTestAlmhirt(new Bootstrapper with BlockingRepoCoreBootstrapper{ def config = defaultConf}) { implicit almhirt =>
         val id1 = java.util.UUID.fromString("7d3cd913-75e7-48b4-8ef4-93a847eaf6dc")
         almhirt.executeTrackedCommand(TestPersonCommand.creator(NewTestPersonAction(id1, "Harry")), "1")
         val res = almhirt.operationStateTracker.getResultFor(atMost)("1").awaitResult
