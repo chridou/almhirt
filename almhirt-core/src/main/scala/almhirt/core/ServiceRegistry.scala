@@ -28,3 +28,5 @@ object CanRegisterServices {
 }
 
 trait ServiceRegistry extends HasServices with CanRegisterServices
+
+trait HasServiceRegistry { def serviceRegistry: ServiceRegistry }

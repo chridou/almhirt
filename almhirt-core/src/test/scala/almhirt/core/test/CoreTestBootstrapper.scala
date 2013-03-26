@@ -12,38 +12,44 @@ import almhirt.parts.HasRepositories
 import almhirt.domain.AggregateRootRepository
 import almhirt.eventlog.DomainEventLog
 import almhirt.parts.HasCommandHandlers
+import almhirt.environment.configuration.bootstrappers.DefaultBootstrapperSequence
+import almhirt.core.impl.SimpleConcurrentServiceRegistry
 
-trait CoreBootstrapperWithBlockingRepo extends AlmhirtBootstrapper {
-  override def registerRepositories(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
-    super.registerRepositories(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
-      theServiceRegistry.getService[HasRepositories].flatMap { hasRepos =>
-        theServiceRegistry.getService[DomainEventLog].flatMap { eventLog =>
+trait CoreBootstrapperWithBlockingRepo extends CreatesRepositoriesBootstrapperPhase { self: HasServiceRegistry =>
+  override def createRepositories(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
+    super.createRepositories(theAlmhirt, startUpLogger).andThen {
+      self.serviceRegistry.getService[HasRepositories].flatMap { hasRepos =>
+        self.serviceRegistry.getService[DomainEventLog].map { eventLog =>
           implicit val implicitAlmhirt = theAlmhirt
-          val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent]("TestPersonRepo" ,TestPerson, eventLog.actor)
+          val personRepository = AggregateRootRepository.blocking[TestPerson, TestPersonEvent]("TestPersonRepo", TestPerson, eventLog.actor)
           hasRepos.registerForAggregateRoot(personRepository)
-          superCleanUp.success
+          BootstrapperPhaseSuccess()
         }
-      }
+      }.toBootstrapperPhaseResult
     }
 }
 
-trait CoreBootstrapperWithCommandHandlers extends AlmhirtBootstrapper {
-  override def registerCommandHandlers(theAlmhirt: Almhirt, theServiceRegistry: ServiceRegistry, startUpLogger: LoggingAdapter): AlmValidation[CleanUpAction] =
-    super.registerRepositories(theAlmhirt, theServiceRegistry, startUpLogger).flatMap { superCleanUp =>
-      theServiceRegistry.getService[HasCommandHandlers].flatMap { hasHandlers =>
+trait CoreBootstrapperWithCommandHandlers extends RegistersCommandHandlersBootstrapperPhase { self: HasServiceRegistry =>
+  override def registerCommandHandlers(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
+    super.registerCommandHandlers(theAlmhirt, startUpLogger).andThen {
+      self.serviceRegistry.getService[HasCommandHandlers].flatMap { hasHandlers =>
         for {
-          uow1 <- TestPersonContext.createBasicUowFromServices(classOf[TestPersonCommand], theServiceRegistry, None)(theAlmhirt)
+          uow1 <- TestPersonContext.createBasicUowFromServices(classOf[TestPersonCommand], self.serviceRegistry, None)(theAlmhirt)
         } yield {
           hasHandlers.addHandler(uow1)
-          superCleanUp}
-      }
+          BootstrapperPhaseSuccess()
+        }
+      }.toBootstrapperPhaseResult
     }
 }
 
-class CoreTestBootstrapper(config: Config) extends AlmhirtBaseBootstrapper(config)
-  with RegistersServiceRegistry
-  with BootstrapperWithDefaultChannels
-  with BootstrapperDefaultCoreComponents
-  with CoreBootstrapperWithCommandHandlers
-  
-class BlockingRepoCoreBootstrapper(config: Config) extends CoreTestBootstrapper(config: Config) with CoreBootstrapperWithBlockingRepo
+class CoreTestBootstrapper(val config: Config)
+  extends HasConfig
+  with Bootstrapper
+  with HasServiceRegistry
+  with DefaultBootstrapperSequence
+  with CoreBootstrapperWithCommandHandlers{
+  val serviceRegistry = new SimpleConcurrentServiceRegistry()
+}
+
+class BlockingRepoCoreBootstrapper(aConfig: Config) extends CoreTestBootstrapper(aConfig) with CoreBootstrapperWithBlockingRepo

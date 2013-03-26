@@ -17,12 +17,19 @@ class LogBackLoggingAdapter(logger: org.slf4j.Logger) extends akka.event.Logging
 }
 
 object LogBackLoggingAdapter {
-  def apply(): AlmValidation[akka.event.LoggingAdapter] = {
+  def apply(): akka.event.LoggingAdapter =
+    new LogBackLoggingAdapter(LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME))
+
+  def apply(name: String): akka.event.LoggingAdapter =
+    new LogBackLoggingAdapter(LoggerFactory.getLogger(name))
+  
+  def create(): AlmValidation[akka.event.LoggingAdapter] = {
     almhirt.almvalidation.funs.inTryCatch{LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)}.map(logger =>
       new LogBackLoggingAdapter(logger))
   }
-  def apply(name: String): AlmValidation[akka.event.LoggingAdapter] = {
+  def create(name: String): AlmValidation[akka.event.LoggingAdapter] = {
     almhirt.almvalidation.funs.inTryCatch{LoggerFactory.getLogger(name)}.map(logger =>
       new LogBackLoggingAdapter(logger))
   }
+  
 }

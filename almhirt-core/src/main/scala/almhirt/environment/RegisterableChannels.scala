@@ -10,6 +10,13 @@ import almhirt.commanding.CommandEnvelope
 import almhirt.util.OperationState
 import almhirt.common.Problem
 
+trait HasStandardChannels {
+  def commandChannel: CommandChannel
+  def domainEventsChannel: DomainEventsChannel
+  def operationStateChannel: OperationStateChannel
+  def problemChannel: ProblemChannel
+}
+
 trait CommandChannel extends MessageChannel[CommandEnvelope]
 class CommandChannelWrapper(toWrap: MessageChannel[CommandEnvelope]) extends CommandChannel {
   def actor = toWrap.actor

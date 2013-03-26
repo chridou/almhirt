@@ -26,13 +26,13 @@ object SystemHelper {
       dn => props.withDispatcher(dn),
       props)
 
-  def createBootstrapperFromConfig(config: Config): AlmValidation[AlmhirtBootstrapper] = {
+  def createBootstrapperFromConfig(config: Config): AlmValidation[Bootstrapper] = {
     ConfigHelper.getSubConfig(config)(ConfigPaths.bootstrapper).flatMap(subConf =>
       ConfigHelper.getString(subConf)(ConfigItems.className).flatMap(className =>
         inTryCatch {
           val constructor = Class.forName(className).getConstructors()(0)
           val instance = constructor.newInstance(config)
-          instance.asInstanceOf[AlmhirtBootstrapper]
+          instance.asInstanceOf[Bootstrapper]
         }))
   }
 

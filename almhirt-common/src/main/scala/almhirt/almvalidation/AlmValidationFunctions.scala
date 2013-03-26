@@ -53,6 +53,14 @@ trait AlmValidationFunctions {
       case exn: Exception => launderException(exn).withMessage(message).failure
     }
   }
+
+  def computeSafelyMM[T](a: => AlmValidation[T])(createMessage: Exception => String): AlmValidation[T] = {
+    try {
+      a
+    } catch {
+      case exn: Exception => launderException(exn).withMessage(createMessage(exn)).failure
+    }
+  }
   
   def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
     if(cond) ().success else problem.failure[Unit]
