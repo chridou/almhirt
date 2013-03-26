@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.106"
+  val buildVersion      = "0.0.107"
   val buildScalaVersion = "2.10.1"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -38,7 +38,7 @@ object Dependencies {
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "compile"
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.11" % "compile"
 
 	
     lazy val scalatest = "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"	
