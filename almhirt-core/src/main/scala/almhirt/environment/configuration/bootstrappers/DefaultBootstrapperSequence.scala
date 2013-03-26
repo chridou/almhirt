@@ -6,6 +6,8 @@ import almhirt.core.HasServiceRegistry
 trait DefaultBootstrapperSequence
   extends HasConfig
   with HasServiceRegistry
+  with RegistersConfiguration
+  with RegistersServiceRegistry
   with CreatesActorSystemFromConfig
   with CreatesAlmhirtFromConfigAndActorSystem
   with CreatesAndRegistersDefaultChannels
