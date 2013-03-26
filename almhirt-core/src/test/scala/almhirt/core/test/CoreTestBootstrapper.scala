@@ -5,7 +5,6 @@ import scalaz.syntax.validation._
 import akka.event.LoggingAdapter
 import almhirt.common._
 import almhirt.core._
-import almhirt.environment.configuration.impl._
 import almhirt.environment.configuration._
 import com.typesafe.config.Config
 import almhirt.parts.HasRepositories

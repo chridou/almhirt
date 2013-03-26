@@ -1,4 +1,4 @@
-package almhirt.environment.configuration.impl
+package almhirt.environment
 
 import almhirt.common._
 import org.slf4j.LoggerFactory

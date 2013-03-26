@@ -3,7 +3,6 @@ package almhirt.ext.core.riftwarp
 import com.typesafe.config.Config
 import almhirt.core._
 import almhirt.environment.configuration.Bootstrapper
-import almhirt.environment.configuration.impl._
 import almhirt.environment.configuration.bootstrappers._
 import almhirt.core.impl.SimpleConcurrentServiceRegistry
 

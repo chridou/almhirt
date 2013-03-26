@@ -7,7 +7,6 @@ import almhirt.almvalidation.kit._
 import almhirt.core._
 import almhirt.environment.configuration._
 import com.typesafe.config._
-import almhirt.environment.configuration.impl._
 import almhirt.environment.configuration.bootstrappers._
 import almhirt.core.impl.SimpleConcurrentServiceRegistry
 

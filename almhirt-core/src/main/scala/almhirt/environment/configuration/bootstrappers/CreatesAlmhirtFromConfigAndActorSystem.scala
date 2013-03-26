@@ -8,7 +8,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.core._
 import almhirt.environment.configuration._
-import almhirt.environment.configuration.impl.LogBackLoggingAdapter
+import almhirt.environment.LogBackLoggingAdapter
 import almhirt.messaging.MessageHub
 
 trait CreatesAlmhirtFromConfigAndActorSystem extends CreatesAlmhirtBootstrapperPhase { self: HasConfig with HasServiceRegistry with HasActorSystem =>

@@ -5,7 +5,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.core._
 import almhirt.environment.ShutDown
-import almhirt.environment.configuration.impl.LogBackLoggingAdapter
+import almhirt.environment.LogBackLoggingAdapter
 
 sealed trait BootstrapperPhaseResult {
   def cleanUps: List[CleanUpAction]
