@@ -31,7 +31,7 @@ trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComp
 
     def * = id ~ timestamp ~ eventtype ~ channel ~ payload <> (TextEventLogRow, TextEventLogRow.unapply _)
 
-    def timestampIdx = index("idx_timestamp", timestamp)
+    def timestampIdx = index(s"idx_${eventlogtablename}_timestamp", timestamp)
 
     def insertSafe(textEventLogRow: TextEventLogRow)(implicit session: Session): AlmValidation[TextEventLogRow] = {
       computeSafely {

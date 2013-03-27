@@ -23,9 +23,10 @@ import almhirt.messaging.Message
 class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers with AlmhirtTestKit {
   implicit object ccuad extends CanCreateUuidsAndDateTimes
   implicit val atMost = FiniteDuration(5, "s")
-  val aUniqueIdentifier = ccuad.getUuid
-  val baseConfig = 
-    s"""| almhirt {
+  def createConfig = {
+    val aUniqueIdentifier = ccuad.getUuid
+    val baseConfig =
+      s"""| almhirt {
     	| 	eventlog {
     	|		eventlog_table = "SLICK_EVENTLOG${aUniqueIdentifier.toString()}"
     	|	  	blob_table = "SLICK_EVENTLOG_BLOBS${aUniqueIdentifier.toString()}"
@@ -34,11 +35,12 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
     	|		eventlog_table = "SLICK_DOMAINEVENTLOG${aUniqueIdentifier.toString()}"
     	|		blob_table = "SLICK_DOMAINEVENTLOG_BLOBS${aUniqueIdentifier.toString()}"
     	|   }
-    	|}	""".stripMargin 
-  
+    	|}	""".stripMargin
+   ConfigFactory.parseString(baseConfig).withFallback(ConfigFactory.load)
+  }
   val bootstrapper =
     new Bootstrapper with RiftWarpBootstrapper with BlockingRepoCoreBootstrapper with WithTestDecomposersAndRecomposersBootstrapper {
-      val config = ConfigFactory.parseString(baseConfig).withFallback(ConfigFactory.load)
+      val config = createConfig
     }
 
   def inLocalTestAlmhirt[T](compute: AlmhirtForExtendedTesting => T) =
@@ -85,21 +87,21 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
       res
     }.isFailure must be(true)
   }
-  
+
   test("The eventlog must return all events when from is before the first events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
       val res = eventlog.getEventsFrom(events.head.header.timestamp.minusMillis(1)).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector)
   }
-  
+
   test("The eventlog must return all events when from is equal the first events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
       val res = eventlog.getEventsFrom(events.head.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector)
   }
-  
+
   test("The eventlog must return no events when from is after the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
       val res = eventlog.getEventsFrom(events.last.header.timestamp.plusMillis(1)).awaitResult
@@ -125,7 +127,7 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
     withIsolatedFilledEventLog { eventlog =>
       val res = eventlog.getEventsUntil(events.last.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
-    }.forceResult must equal(idsVector.take(idsVector.length-1))
+    }.forceResult must equal(idsVector.take(idsVector.length - 1))
   }
 
   test("The eventlog must return no events when until is equal the first events timestamp") {
@@ -134,7 +136,7 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(Vector.empty)
   }
-  
+
   test("The eventlog must return no events when until is before the first events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
       val res = eventlog.getEventsUntil(events.head.header.timestamp.minusMillis(1)).awaitResult
@@ -153,14 +155,14 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
     withIsolatedFilledEventLog { eventlog =>
       val res = eventlog.getEventsFromUntil(events.head.header.timestamp, events.last.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
-    }.forceResult must equal(idsVector.take(idsVector.length-1))
+    }.forceResult must equal(idsVector.take(idsVector.length - 1))
   }
-  
+
   test("The eventlog must return all events except the first and last when from after the first events timestamp and until the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
       val res = eventlog.getEventsFromUntil(events.head.header.timestamp.plusMillis(1), events.last.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
-    }.forceResult must equal(idsVector.take(idsVector.length-1).drop(1))
+    }.forceResult must equal(idsVector.take(idsVector.length - 1).drop(1))
   }
 
   test("The eventlog must return no events  when from is the last events events timestamp and until the first events timestamp") {
@@ -169,7 +171,7 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(Vector.empty)
   }
-  
+
   ignore("The eventlog must store the events via the messagehub and the return all events") {
     (inLocalTestAlmhirt { almhirt =>
       for {

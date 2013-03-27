@@ -20,12 +20,26 @@ import almhirt.environment.configuration.Bootstrapper
 
 class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatchers with AlmhirtTestKit {
   implicit object ccuad extends CanCreateUuidsAndDateTimes  
-  val bootstrapper =
-    new Bootstrapper with RiftWarpBootstrapper with BlockingRepoCoreBootstrapper with WithTestDecomposersAndRecomposersBootstrapper{
-    //val config = defaultConf
-    val config = ConfigFactory.load
-
+  def createConfig = {
+    val aUniqueIdentifier = ccuad.getUuid
+    val baseConfig =
+      s"""| almhirt {
+    	| 	eventlog {
+        |       disabled = true
+    	|		eventlog_table = "SLICK_EVENTLOG${aUniqueIdentifier.toString()}"
+    	|	  	blob_table = "SLICK_EVENTLOG_BLOBS${aUniqueIdentifier.toString()}"
+    	|	}
+    	|	domaineventlog {
+    	|		eventlog_table = "SLICK_DOMAINEVENTLOG${aUniqueIdentifier.toString()}"
+    	|		blob_table = "SLICK_DOMAINEVENTLOG_BLOBS${aUniqueIdentifier.toString()}"
+    	|   }
+    	|}	""".stripMargin
+   ConfigFactory.parseString(baseConfig).withFallback(ConfigFactory.load)
   }
+  val bootstrapper =
+    new Bootstrapper with RiftWarpBootstrapper with BlockingRepoCoreBootstrapper with WithTestDecomposersAndRecomposersBootstrapper {
+      val config = createConfig
+    }
 
   def inLocalTestAlmhirt[T](compute: AlmhirtForExtendedTesting => T) =
     inExtendedTestAlmhirt(bootstrapper)(compute)

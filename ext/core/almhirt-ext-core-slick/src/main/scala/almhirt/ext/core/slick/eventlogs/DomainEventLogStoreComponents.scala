@@ -35,8 +35,8 @@ trait TextDomainEventLogStoreComponent extends SlickTypeMappers with DomainEvent
 
     def * = id ~ aggId ~ aggVersion ~ timestamp ~ eventtype ~ channel ~ payload <> (TextDomainEventLogRow, TextDomainEventLogRow.unapply _)
 
-    def aggIdIdx = index("idx_agg_id", aggId)
-    def aggIdVersionIdx = index("idx_agg_id_version", (aggId, aggVersion))
+    def aggIdIdx = index(s"idx_${eventlogtablename}_agg_id", aggId)
+    def aggIdVersionIdx = index(s"idx_${eventlogtablename}_agg_id_version", (aggId, aggVersion))
 
     def insertSafe(textDomainEventLogRow: TextDomainEventLogRow)(implicit session: Session): AlmValidation[TextDomainEventLogRow] = {
       computeSafely {
