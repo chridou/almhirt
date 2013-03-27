@@ -22,7 +22,7 @@ trait AlmhirtForExtendedTesting extends AlmhirtForTesting {
   def serviceRegistry: ServiceRegistry
   def repositories: HasRepositories
   def hasCommandHandlers: HasCommandHandlers
-  def eventLog: DomainEventLog
+  def domainEventLog: DomainEventLog
   def operationStateTracker: OperationStateTracker
 }
 
@@ -72,7 +72,7 @@ object AlmhirtForExtendedTesting {
 
       override val repositories = theRepositories
       override val hasCommandHandlers = theCommandHandlers
-      override val eventLog = anEventLog
+      override val domainEventLog = anEventLog
       override val operationStateTracker = theOperationStateTracker
       
       override def log = theAlmhirt.log

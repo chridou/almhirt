@@ -46,13 +46,13 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
 
   val aggIdForEvent = java.util.UUID.randomUUID()
   private def withEmptyEventLog[T](f: (DomainEventLog, Almhirt) => T) =
-    inLocalTestAlmhirt(almhirt => f(almhirt.eventLog, almhirt))
+    inLocalTestAlmhirt(almhirt => f(almhirt.domainEventLog, almhirt))
 
   val testEventA = TestPersonCreated(DomainEventHeader(AggregateRootRef(java.util.UUID.randomUUID)), "testEventA")
   private def withEventLogWithOneTestEventA[T](f: (DomainEventLog, Almhirt) => T) =
     inLocalTestAlmhirt { almhirt =>
-      almhirt.eventLog.storeEvents(IndexedSeq(testEventA)).awaitResult(Duration(2, "s")).forceResult
-      f(almhirt.eventLog, almhirt)
+      almhirt.domainEventLog.storeEvents(IndexedSeq(testEventA)).awaitResult(Duration(2, "s")).forceResult
+      f(almhirt.domainEventLog, almhirt)
     }
 
   "An empty SerializingSlickEventLog" should
@@ -74,7 +74,6 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
       val event = TestPersonCreated(AggregateRootRef(aggIdForEvent), "test")
       val resCommit = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
       val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(2, "s"))
-      println(res)
       res.forceResult should have size 1
     }
   }
