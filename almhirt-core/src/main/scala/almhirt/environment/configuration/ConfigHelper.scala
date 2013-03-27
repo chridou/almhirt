@@ -33,6 +33,9 @@ object ConfigHelper {
   def isBooleanSet(config: Config)(path: String): Boolean =
     getBoolean(config)(path).fold(_ => false, x => x)
 
+  def isBooleanSetToFalse(config: Config)(path: String): Boolean =
+    getBoolean(config)(path).fold(x => false, x => !x)
+    
   def getInt(config: Config)(path: String): AlmValidation[Int] =
     almhirt.almvalidation.funs.inTryCatch { config.getInt(path) }
 

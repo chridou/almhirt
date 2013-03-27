@@ -21,7 +21,8 @@ trait CreatesAndRegistersDomainEventLog extends CreatesCoreComponentsBootstrappe
         startUpLogger.info(s"Create DomainEventLog")
         val eventLogActor = SystemHelper.createDomainEventLogFromFactory(theAlmhirt).forceResult
         startUpLogger.info(s"Register DomainEventLog")
-        self.serviceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor, config)(theAlmhirt))
+        myDomainEventLog = DomainEventLogActorHull(eventLogActor, config)(theAlmhirt)
+        self.serviceRegistry.registerService[DomainEventLog](myDomainEventLog)
       }
       BootstrapperPhaseSuccess()
     }

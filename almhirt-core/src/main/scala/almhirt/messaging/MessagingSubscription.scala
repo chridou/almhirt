@@ -14,6 +14,12 @@ object MessagingSubscription {
       val predicate = MessagePredicate[TPayload]
       val handler = (message: Message[AnyRef]) => actor ! (message.payload)
     }
+
+  def forActorWithFilter[TPayload <: AnyRef](actor: ActorRef, filter: TPayload => Boolean)(implicit m: ClassTag[TPayload]): MessagingSubscription =
+    new MessagingSubscription {
+      val predicate = MessagePredicate.onPayload[TPayload](filter)
+      val handler = (message: Message[AnyRef]) => actor ! (message.payload)
+    }
   
   def forActor[TPayload <: AnyRef, U](actor: ActorRef, map: TPayload => U)(implicit m: ClassTag[TPayload]): MessagingSubscription =
     new MessagingSubscription {
