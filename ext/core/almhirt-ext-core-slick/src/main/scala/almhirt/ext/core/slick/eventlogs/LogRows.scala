@@ -6,10 +6,10 @@ import org.joda.time.DateTime
 sealed trait EventLogRow {
   type Repr
 }
-final case class TextEventLogRow(id: JUUID, timestamp: DateTime, eventtype: String, channel: String, payload: String) extends EventLogRow {
+final case class TextEventLogRow(id: JUUID, timestamp: java.sql.Timestamp, eventtype: String, channel: String, payload: String) extends EventLogRow {
   type Repr = String
 }
-final case class BinaryEventLogRow(id: JUUID, timestamp: DateTime, eventtype: String, channel: String, payload: Array[Byte]) extends EventLogRow {
+final case class BinaryEventLogRow(id: JUUID, timestamp: java.sql.Timestamp, eventtype: String, channel: String, payload: Array[Byte]) extends EventLogRow {
   type Repr = Array[Byte]
 }
 

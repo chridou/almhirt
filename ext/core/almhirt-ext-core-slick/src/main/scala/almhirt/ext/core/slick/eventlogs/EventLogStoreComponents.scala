@@ -1,7 +1,7 @@
 package almhirt.ext.core.slick.eventlogs
 
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
+import java.sql.{ Timestamp => SqlTimestamp }
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -11,9 +11,9 @@ trait EventLogStoreComponent[T] {
   def insertEventRow(eventLogRow: T): AlmValidation[T]
   def getEventRowById(id: JUUID): AlmValidation[T]
   def getAllEventRows: AlmValidation[Iterable[T]]
-  def getAllEventRowsFrom(from: DateTime): AlmValidation[Iterable[T]]
-  def getAllEventRowsUntil(until: DateTime): AlmValidation[Iterable[T]]
-  def getAllEventRowsFromUntil(from: DateTime, until: DateTime): AlmValidation[Iterable[T]]
+  def getAllEventRowsFrom(from: SqlTimestamp): AlmValidation[Iterable[T]]
+  def getAllEventRowsUntil(until: SqlTimestamp): AlmValidation[Iterable[T]]
+  def getAllEventRowsFromUntil(from: SqlTimestamp, until: SqlTimestamp): AlmValidation[Iterable[T]]
   def countEventRows: AlmValidation[Int]
 }
 
@@ -24,7 +24,7 @@ trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComp
 
   object TextEventLogRows extends Table[TextEventLogRow](eventlogtablename) {
     def id = column[JUUID]("ID")
-    def timestamp = column[DateTime]("TIMESTAMP", O.NotNull)
+    def timestamp = column[java.sql.Timestamp]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
     def payload = column[String]("PAYLOAD", O.NotNull)
@@ -68,14 +68,26 @@ trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComp
       }
     }
 
-  override def getAllEventRowsFrom(from: DateTime): AlmValidation[Iterable[TextEventLogRow]] =
-    ??? // inTryCatch { Query(TextEventLogRows).filter(row => row.timestamp >= from).list }
+  override def getAllEventRowsFrom(from: java.sql.Timestamp): AlmValidation[Iterable[TextEventLogRow]] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session => 
+        Query(TextEventLogRows).where(row => row.timestamp >= from).list
+      }
+    }
 
-  override def getAllEventRowsUntil(until: DateTime): AlmValidation[Iterable[TextEventLogRow]] =
-    ???
+  override def getAllEventRowsUntil(until: SqlTimestamp): AlmValidation[Iterable[TextEventLogRow]] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session => 
+        Query(TextEventLogRows).where(row => row.timestamp < until).list
+      }
+    }
 
-  override def getAllEventRowsFromUntil(from: DateTime, until: DateTime): AlmValidation[Iterable[TextEventLogRow]] =
-    ???
+  override def getAllEventRowsFromUntil(from: SqlTimestamp, until: SqlTimestamp): AlmValidation[Iterable[TextEventLogRow]] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session => 
+        Query(TextEventLogRows).where(row => row.timestamp >= from && row.timestamp < until).list
+      }
+    }
 
   override def countEventRows: AlmValidation[Int] =
     inTryCatchM {
@@ -93,7 +105,7 @@ trait BinaryEventLogStoreComponent extends SlickTypeMappers with EventLogStoreCo
 
   object BinaryEventLogRows extends Table[BinaryEventLogRow](eventlogtablename) {
     def id = column[JUUID]("ID")
-    def timestamp = column[DateTime]("TIMESTAMP", O.NotNull)
+    def timestamp = column[SqlTimestamp]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
     def payload = column[Array[Byte]]("PAYLOAD", O.NotNull)
@@ -137,14 +149,26 @@ trait BinaryEventLogStoreComponent extends SlickTypeMappers with EventLogStoreCo
       }
     }
 
-  override def getAllEventRowsFrom(from: DateTime): AlmValidation[Iterable[BinaryEventLogRow]] =
-    ??? // inTryCatch { Query(TextEventLogRows).filter(row => row.timestamp >= from).list }
+  override def getAllEventRowsFrom(from: SqlTimestamp): AlmValidation[Iterable[BinaryEventLogRow]] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session => 
+        Query(BinaryEventLogRows).where(row => row.timestamp >= from).list
+      }
+    }
 
-  override def getAllEventRowsUntil(until: DateTime): AlmValidation[Iterable[BinaryEventLogRow]] =
-    ???
+  override def getAllEventRowsUntil(until: SqlTimestamp): AlmValidation[Iterable[BinaryEventLogRow]] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session => 
+        Query(BinaryEventLogRows).where(row => row.timestamp < until).list
+      }
+    }
 
-  override def getAllEventRowsFromUntil(from: DateTime, until: DateTime): AlmValidation[Iterable[BinaryEventLogRow]] =
-    ???
+  override def getAllEventRowsFromUntil(from: SqlTimestamp, until: SqlTimestamp): AlmValidation[Iterable[BinaryEventLogRow]] =
+    inTryCatch {
+      getDb() withSession { implicit session: Session => 
+        Query(BinaryEventLogRows).where(row => row.timestamp >= from && row.timestamp < until).list
+      }
+    }
 
   override def countEventRows: AlmValidation[Int] =
     inTryCatchM {

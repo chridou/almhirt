@@ -8,6 +8,7 @@ import almhirt.almvalidation.kit._
 import almhirt.core.Event
 import almhirt.eventlog.util.SyncEventStorage
 import almhirt.serialization._
+import almhirt.ext.core.slick.TypeConversion._
 
 abstract class SyncSlickEventStorage [TRow <: EventLogRow](
   dal: EventLogStoreComponent[TRow],
@@ -16,6 +17,7 @@ abstract class SyncSlickEventStorage [TRow <: EventLogRow](
   def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: TRow#Repr): TRow
   def unpackRow(row: TRow): (TRow#Repr, String, String)
 
+  
   override def storeEvent(event: Event): AlmValidation[Event] = {
     serializing.serialize(event, None).flatMap {
       case (Some(ti), serializedEvent) =>
@@ -35,13 +37,13 @@ abstract class SyncSlickEventStorage [TRow <: EventLogRow](
     dal.getAllEventRows.flatMap(deserializeManyRows)
 
   override def getAllEventsFrom(from: DateTime): AlmValidation[Vector[Event]] =
-    dal.getAllEventRowsFrom(from).flatMap(deserializeManyRows)
+    dal.getAllEventRowsFrom(dateTimeToTimeStamp(from)).flatMap(deserializeManyRows)
 
   override def getAllEventsUntil(until: DateTime): AlmValidation[Vector[Event]] =
-    dal.getAllEventRowsUntil(until).flatMap(deserializeManyRows)
+    dal.getAllEventRowsUntil(dateTimeToTimeStamp(until)).flatMap(deserializeManyRows)
 
   override def getAllEventsFromUntil(from: DateTime, until: DateTime): AlmValidation[Vector[Event]] =
-    dal.getAllEventRowsFromUntil(from, until).flatMap(deserializeManyRows)
+    dal.getAllEventRowsFromUntil(dateTimeToTimeStamp(from), dateTimeToTimeStamp(until)).flatMap(deserializeManyRows)
 
   private def deserializeManyRows(rows: Iterable[TRow]): AlmValidation[Vector[Event]] = {
     import scalaz._, Scalaz._
@@ -50,11 +52,12 @@ abstract class SyncSlickEventStorage [TRow <: EventLogRow](
 }
 
 class SyncTextSlickEventStorage(
+    
   dal: EventLogStoreComponent[TextEventLogRow],
   serializing: StringSerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[TextEventLogRow](dal, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: String): TextEventLogRow =
-    TextEventLogRow(event.header.id, event.header.timestamp, typeIdent, channel, serializedEvent)
+    TextEventLogRow(event.header.id, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)
   override def unpackRow(row: TextEventLogRow): (String, String, String) =
     (row.payload, row.channel, row.eventtype)
 }
@@ -64,7 +67,7 @@ class SyncBinarySlickEventStorage(
   serializing: BinarySerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[BinaryEventLogRow](dal, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: Array[Byte]): BinaryEventLogRow =
-    BinaryEventLogRow(event.header.id, event.header.timestamp, typeIdent, channel, serializedEvent)
+    BinaryEventLogRow(event.header.id, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)
   override def unpackRow(row: BinaryEventLogRow): (Array[Byte], String, String) =
     (row.payload, row.channel, row.eventtype)
 }

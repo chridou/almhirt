@@ -15,3 +15,8 @@ trait SlickTypeMappers { this: Profile =>
       dateTime => new Timestamp(dateTime.getMillis),
       timestamp => new DateTime(timestamp.getTime, DateTimeZone.UTC))
 }
+
+object TypeConversion {
+  def dateTimeToTimeStamp(dateTime: DateTime): Timestamp = new Timestamp(dateTime.getMillis)
+  def timestampToUtcDateTime(timestamp: Timestamp): DateTime = new DateTime(timestamp.getTime, DateTimeZone.UTC)
+}
