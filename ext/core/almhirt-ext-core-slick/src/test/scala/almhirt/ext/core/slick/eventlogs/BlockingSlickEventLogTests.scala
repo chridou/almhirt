@@ -23,10 +23,21 @@ import almhirt.messaging.Message
 class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers with AlmhirtTestKit {
   implicit object ccuad extends CanCreateUuidsAndDateTimes
   implicit val atMost = FiniteDuration(5, "s")
+  val aUniqueIdentifier = ccuad.getUuid
+  val baseConfig = 
+    s"""| almhirt {
+    	| 	eventlog {
+    	|		eventlog_table = "SLICK_EVENTLOG${aUniqueIdentifier.toString()}"
+    	|	  	blob_table = "SLICK_EVENTLOG_BLOBS${aUniqueIdentifier.toString()}"
+    	|	}
+    	|	domaineventlog {
+    	|		eventlog_table = "SLICK_DOMAINEVENTLOG${aUniqueIdentifier.toString()}"
+    	|		blob_table = "SLICK_DOMAINEVENTLOG_BLOBS${aUniqueIdentifier.toString()}"
+    	|   }""".stripMargin 
+  
   val bootstrapper =
     new Bootstrapper with RiftWarpBootstrapper with BlockingRepoCoreBootstrapper with WithTestDecomposersAndRecomposersBootstrapper {
-      val config = ConfigFactory.load
-
+      val config = ConfigFactory.parseString(baseConfig).withFallback(ConfigFactory.load)
     }
 
   def inLocalTestAlmhirt[T](compute: AlmhirtForExtendedTesting => T) =
