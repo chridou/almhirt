@@ -33,7 +33,8 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
     	|	domaineventlog {
     	|		eventlog_table = "SLICK_DOMAINEVENTLOG${aUniqueIdentifier.toString()}"
     	|		blob_table = "SLICK_DOMAINEVENTLOG_BLOBS${aUniqueIdentifier.toString()}"
-    	|   }""".stripMargin 
+    	|   }
+    	|}	""".stripMargin 
   
   val bootstrapper =
     new Bootstrapper with RiftWarpBootstrapper with BlockingRepoCoreBootstrapper with WithTestDecomposersAndRecomposersBootstrapper {
