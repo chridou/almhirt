@@ -26,26 +26,30 @@ trait CreatesAndRegistersEventLog extends CreatesCoreComponentsBootstrapperPhase
       implicit val atMost = Duration(1, "s")
       implicit val executionContext = theAlmhirt.executionContext
       implicit val hasExecutionContext = theAlmhirt
-      ConfigHelper.tryGetNotDisabledSubConfig(self.config, ConfigPaths.eventlog).map { eventLogConfig =>
-        startUpLogger.info(s"Create EventLog")
-        val eventLogActor = SystemHelper.createEventLogFromFactory(theAlmhirt).forceResult
-        var eventLogRegistration =
-          (if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_domain_events")) {
-            startUpLogger.info(s"The event log does NOT log domain events")
-            (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorWithFilter[Event](eventLogActor, payload => !payload.isInstanceOf[DomainEvent])))(atMost)
-          } else {
-            startUpLogger.info(s"The event log DOES log domain events")
-            (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActor[Event](eventLogActor)))(atMost)
-          })
-            .mapTo[SubscriptionRsp]
-            .map(_.registration)
-            .toAlmFuture
-            .awaitResult
-            .forceResult
-        myEventLog = EventLogActorHull(eventLogActor, config)(theAlmhirt)
-        startUpLogger.info(s"Register EventLog")
-        self.serviceRegistry.registerService[EventLog](myEventLog)
-        BootstrapperPhaseSuccess(CleanUpAction(() => eventLogRegistration.dispose(), "EventLog"))
-      }.getOrElse(BootstrapperPhaseSuccess())
+      startUpLogger.info(s"""Create EventLog from config section "${ConfigPaths.eventlog}"""")
+      ConfigHelper.tryGetNotDisabledSubConfig(self.config, ConfigPaths.eventlog) match {
+        case Some(eventLogConfig) =>
+          val eventLogActor = SystemHelper.createEventLogFromFactory(theAlmhirt).forceResult
+          var eventLogRegistration =
+            (if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_domain_events")) {
+              startUpLogger.info(s"The event log does NOT log domain events")
+              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorWithFilter[Event](eventLogActor, payload => !payload.isInstanceOf[DomainEvent])))(atMost)
+            } else {
+              startUpLogger.info(s"The event log DOES log domain events")
+              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActor[Event](eventLogActor)))(atMost)
+            })
+              .mapTo[SubscriptionRsp]
+              .map(_.registration)
+              .toAlmFuture
+              .awaitResult
+              .forceResult
+          myEventLog = EventLogActorHull(eventLogActor, config)(theAlmhirt)
+          startUpLogger.info(s"Register EventLog")
+          self.serviceRegistry.registerService[EventLog](myEventLog)
+          BootstrapperPhaseSuccess(CleanUpAction(() => eventLogRegistration.dispose(), "EventLog"))
+        case None =>
+          startUpLogger.warning("""Tried to initialize an event log, but it has no config section or is explicitly disabled with "disabled=true" in its config section.""")
+          BootstrapperPhaseSuccess()
+      }
     }
 }
