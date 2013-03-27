@@ -1,17 +1,3 @@
-/* Copyright 2012 Christian Douven
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
 package almhirt.eventlog.impl
 
 import java.util.UUID
@@ -31,13 +17,13 @@ import almhirt.eventlog._
 import almhirt.common.AlmFuture
 import almhirt.core.Almhirt
 
-class DevNullEventLogFactory() extends DomainEventLogFactory {
-  def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+class DevNullEventLogFactory() extends EventLogFactory {
+  def createEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.getConfig.flatMap(config =>
       ConfigHelper.domainEventLog.getConfig(config).map { subConfig =>
-        val name = ConfigHelper.domainEventLog.getActorName(subConfig)
-        theAlmhirt.log.info(s"DomainEventLog is DevNullEventLog with name '$name'.")
-        theAlmhirt.log.warning("*** THE DOMAIN EVENT LOG DOES NOTHING ***")
+        val name = ConfigHelper.eventLog.getActorName(subConfig)
+        theAlmhirt.log.info(s"EventLog is DevNullEventLog with name '$name'.")
+        theAlmhirt.log.warning("*** THE EVENT LOG DOES NOTHING ***")
         val dispatcherName =
           ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
             fail => {
@@ -45,7 +31,7 @@ class DevNullEventLogFactory() extends DomainEventLogFactory {
               None
             },
             succ => {
-              theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
+              theAlmhirt.log.info(s"EventLog is using dispatcher '$succ'")
               Some(succ)
             })
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new DevNullEventLogActor()))

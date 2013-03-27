@@ -33,7 +33,7 @@ object DomainEventLog {
   def devNull(aName: String)(implicit foundations: HasActorSystem with HasDurations with HasExecutionContext): DomainEventLog = devNull(Some(aName))
   def devNull(aName: Option[String])(implicit foundations: HasActorSystem with HasDurations with HasExecutionContext): DomainEventLog = {
     val name = option.cata(aName)(n => n, "eventlog")
-    DomainEventLogActorHull(foundations.actorSystem.actorOf(Props(new DevNullEventLogActor()), name), foundations.durations.extraLongDuration)
+    DomainEventLogActorHull(foundations.actorSystem.actorOf(Props(new DevNullDomainEventLogActor()), name), foundations.durations.extraLongDuration)
   }
   
 }

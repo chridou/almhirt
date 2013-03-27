@@ -40,6 +40,22 @@ object SystemHelper {
     import language.reflectiveCalls
     for {
       theConfig <- theAlmhirt.getConfig
+      eventLogConfig <- ConfigHelper.eventLog.getConfig(theConfig)
+      factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(eventLogConfig)
+      factory <- inTryCatch {
+        theAlmhirt.log.info(s"Creating EventLog using factory '$factoryName'")
+        Class.forName(factoryName)
+          .newInstance()
+          .asInstanceOf[{ def createEventLog(x: Almhirt): AlmValidation[ActorRef] }]
+      }
+      eventLog <- factory.createEventLog(theAlmhirt)
+    } yield eventLog
+  }
+  
+  def createDomainEventLogFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+    import language.reflectiveCalls
+    for {
+      theConfig <- theAlmhirt.getConfig
       eventLogConfig <- ConfigHelper.domainEventLog.getConfig(theConfig)
       factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(eventLogConfig)
       factory <- inTryCatch {

@@ -19,7 +19,7 @@ trait CreatesAndRegistersDomainEventLog extends CreatesCoreComponentsBootstrappe
     super.createCoreComponents(theAlmhirt, startUpLogger).andThen {
       ConfigHelper.tryGetNotDisabledSubConfig(self.config, ConfigPaths.domaineventlog).foreach { eventLogConfig =>
         startUpLogger.info(s"Create DomainEventLog")
-        val eventLogActor = SystemHelper.createEventLogFromFactory(theAlmhirt).forceResult
+        val eventLogActor = SystemHelper.createDomainEventLogFromFactory(theAlmhirt).forceResult
         startUpLogger.info(s"Register DomainEventLog")
         self.serviceRegistry.registerService[DomainEventLog](DomainEventLogActorHull(eventLogActor, config)(theAlmhirt))
       }

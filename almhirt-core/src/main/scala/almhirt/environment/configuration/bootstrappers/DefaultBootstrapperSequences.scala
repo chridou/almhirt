@@ -18,6 +18,7 @@ trait DefaultBootstrapperSequence
   with CreatesAndRegistersHasRepositories
   with CreatesAndRegistersHasCommandHandlers
   with CreatesAndRegistersCommandExecutor
+  with CreatesAndRegistersEventLog
   with CreatesAndRegistersDomainEventLog
   with CreatesAndRegistersCommandEndpoint
   with CreatesClassicProblemLogger
@@ -29,3 +30,23 @@ object DefaultBootstrapperSequence {
       val serviceRegistry = new SimpleConcurrentServiceRegistry()
     }
 }
+
+trait BasicBootstrapperSequence
+  extends HasConfig
+  with HasServiceRegistry
+  with RegistersConfiguration
+  with RegistersServiceRegistry
+  with CreatesActorSystemFromConfig
+  with CreatesAlmhirtFromConfigAndActorSystem
+  with CreatesAndRegistersDefaultChannels
+  with CreatesAndRegistersEventLog
+  with CreatesClassicProblemLogger
+
+object BasicBootstrapperSequence {
+  def apply(aConfig: Config): Bootstrapper =
+    new Bootstrapper with BasicBootstrapperSequence {
+      def config = aConfig
+      val serviceRegistry = new SimpleConcurrentServiceRegistry()
+    }
+}
+  
