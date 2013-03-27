@@ -20,7 +20,7 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
       case (Some(ti), serializedEvent) =>
         val row = createRow(serializing.channel, ti, event, serializedEvent)
         dal.insertEventRow(row)
-      case (None, _) => UnspecifiedProblem("A type identisier is required.").failure
+      case (None, _) => UnspecifiedProblem("A type identifier is required.").failure
     }.map(_ => event)
   }
 
@@ -31,7 +31,7 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
         serializing.serialize(event, None).flatMap {
           case (Some(ti), serializedEvent) =>
             createRow(serializing.channel, ti, event, serializedEvent).success
-          case (None, _) => UnspecifiedProblem("A type identisier is required.").failure
+          case (None, _) => UnspecifiedProblem("A type identifier is required.").failure
         }.toAgg).toVector.sequence
       stored <- dal.insertManyEventRows(rows)
     } yield stored).fold(

@@ -3,8 +3,15 @@ package almhirt.ext.core.slick.eventlogs
 import java.util.{ UUID => JUUID }
 import org.joda.time.DateTime
 
-final case class TextEventLogRow(id: JUUID, timestamp: DateTime, eventtype: String, channel: String, payload: String)
-final case class BinaryEventLogRow(id: JUUID, timestamp: DateTime, eventtype: String, channel: String, payload: Array[Byte])
+sealed trait EventLogRow {
+  type Repr
+}
+final case class TextEventLogRow(id: JUUID, timestamp: DateTime, eventtype: String, channel: String, payload: String) extends EventLogRow {
+  type Repr = String
+}
+final case class BinaryEventLogRow(id: JUUID, timestamp: DateTime, eventtype: String, channel: String, payload: Array[Byte]) extends EventLogRow {
+  type Repr = Array[Byte]
+}
 
 sealed trait DomainEventLogRow {
   type Repr
