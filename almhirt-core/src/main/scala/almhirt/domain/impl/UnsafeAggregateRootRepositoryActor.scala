@@ -36,7 +36,7 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
         },
         succ => succ.version.success).map(reqVersion =>
           validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, reqVersion))
-      committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[LoggedDomainEventsRsp]
+      committedEventsRsp <- (eventLog ? LogDomainEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[LoggedDomainEventsRsp]
       committedEvents <- AlmFuture.successful{ committedEventsRsp.committedEvents }
     } yield committedEvents).onComplete(
       fail =>

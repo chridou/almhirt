@@ -21,7 +21,7 @@ class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: Fi
   def this(actor: ActorRef)(implicit theAlmhirt: Almhirt) = this(actor, None)
 
   def storeEvents(events: IndexedSeq[DomainEvent]): AlmFuture[(IndexedSeq[DomainEvent], Option[(Problem,IndexedSeq[DomainEvent])])] =
-    (actor ? LogEventsQry(events, None))(maximumDirectCallDuration).mapTo[LoggedDomainEventsRsp].toSuccessfulAlmFuture.map (rsp =>
+    (actor ? LogDomainEventsQry(events, None))(maximumDirectCallDuration).mapTo[LoggedDomainEventsRsp].toSuccessfulAlmFuture.map (rsp =>
       (rsp.committedEvents, rsp.uncommittedEvents))
 
   def getAllEvents() = (actor ? GetAllDomainEventsQry())(maximumDirectCallDuration).mapTo[AllDomainEventsRsp].map(x => x.chunk.events)

@@ -54,17 +54,20 @@ class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventL
 class InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt: Almhirt) extends Actor {
   private var loggedEvents: IndexedSeq[DomainEvent] = IndexedSeq.empty
   def receive: Receive = {
-    case LogEventsQry(events, executionIdent) =>
-      loggedEvents = loggedEvents ++ events
-      events.foreach(event => theAlmhirt.publishDomainEvent(event))
-      sender ! LoggedDomainEventsRsp(events.toVector, None, executionIdent)
-    case GetAllDomainEventsQry(chunkSize, execIdent) =>
-      sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)
-    case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.aggId == aggId).toIterable.success), execIdent)
-    case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success), execIdent)
-    case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success), execIdent)
+    case event: DomainEventLogCmd =>
+      event match {
+        case LogDomainEventsQry(events, executionIdent) =>
+          loggedEvents = loggedEvents ++ events
+          events.foreach(event => theAlmhirt.publishDomainEvent(event))
+          sender ! LoggedDomainEventsRsp(events.toVector, None, executionIdent)
+        case GetAllDomainEventsQry(chunkSize, execIdent) =>
+          sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)
+        case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
+          sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.aggId == aggId).toIterable.success), execIdent)
+        case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
+          sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success), execIdent)
+        case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
+          sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success), execIdent)
+      }
   }
 }

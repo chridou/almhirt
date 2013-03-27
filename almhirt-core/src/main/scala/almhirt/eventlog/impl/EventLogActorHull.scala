@@ -17,7 +17,7 @@ class EventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: FiniteDu
   private implicit def executionContext = hasExecutionContext.executionContext
 
   def storeEvent(event: Event): AlmFuture[Event] =
-    (actor ? LogEvent(event, None))(maximumDirectCallDuration).mapTo[LoggedDomainEventRsp].toSuccessfulAlmFuture.mapV(rsp =>
+    (actor ? LogEventQry(event, None))(maximumDirectCallDuration).mapTo[LoggedEventRsp].toSuccessfulAlmFuture.mapV(rsp =>
       rsp.result.fold(
         fail => fail.failure,
         succ => succ.success))

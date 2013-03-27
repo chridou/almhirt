@@ -40,7 +40,7 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
           },
           succ => succ.version.success).map(reqVersion =>
             validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, reqVersion))
-        committedEventsRsp <- (eventLog ? LogEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[LoggedDomainEventsRsp]
+        committedEventsRsp <- (eventLog ? LogDomainEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[LoggedDomainEventsRsp]
       } yield committedEventsRsp.committedEvents).andThen(
         fail =>
           updateFailedOperationState(fail, ticket),

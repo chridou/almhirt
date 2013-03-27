@@ -56,16 +56,19 @@ class DevNullDomainEventLogFactory() extends DomainEventLogFactory {
 
 class DevNullDomainEventLogActor() extends Actor {
   def receive = {
-    case LogEventsQry(events, _) =>
-      sender ! LoggedDomainEventsRsp(events.toVector, None, None)
-    case GetAllDomainEventsQry(chunkSize, execIdent) =>
-      sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
-    case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
-    case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
-    case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+    case event: DomainEventLogCmd =>
+      event match {
+        case LogDomainEventsQry(events, _) =>
+          sender ! LoggedDomainEventsRsp(events.toVector, None, None)
+        case GetAllDomainEventsQry(chunkSize, execIdent) =>
+          sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+        case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
+          sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+        case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
+          sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+        case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
+          sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+      }
   }
 }
 

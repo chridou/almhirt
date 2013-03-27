@@ -42,16 +42,21 @@ class DevNullEventLogFactory() extends EventLogFactory {
 
 class DevNullEventLogActor() extends Actor {
   def receive = {
-    case LogEventsQry(events, _) =>
-      sender ! LoggedDomainEventsRsp(events.toVector, None, None)
-    case GetAllDomainEventsQry(chunkSize, execIdent) =>
-      sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
-    case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
-    case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
-    case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
-      sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+    case cmd: EventLogCmd =>
+      cmd match {
+        case LogEventQry(event, correlationId) =>
+          sender ! LoggedEventRsp(event.success, correlationId)
+        case GetAllEventsQry(chunkSize, correlationId) =>
+          sender ! EventsRsp(EventsChunk(0, true, Iterable.empty.success), correlationId)
+        case GetEventQry(eventId, chunkSize, correlationId) =>
+          sender ! EventRsp(NotFoundProblem(s"Event with id: ${eventId.toString()}. Remember that this is the devnull-Eventstore!").failure, correlationId)
+        case GetEventsFromQry(from, chunkSize, correlationId) =>
+          sender ! EventsRsp(EventsChunk(0, true, Iterable.empty.success), correlationId)
+        case GetEventsUntilQry(until, chunkSize, correlationId) =>
+          sender ! EventsRsp(EventsChunk(0, true, Iterable.empty.success), correlationId)
+        case GetEventsFromUntilQry(from, until, chunkSize, correlationId) =>
+          sender ! EventsRsp(EventsChunk(0, true, Iterable.empty.success), correlationId)
+      }
   }
 }
 
