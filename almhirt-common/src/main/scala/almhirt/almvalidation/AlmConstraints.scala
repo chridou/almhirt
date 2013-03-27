@@ -26,7 +26,11 @@ trait AlmStringConstraints extends Ops[String] {
   def mustHaveLength(length: Int): AlmValidation[String] =
     funs.stringMustHaveLength(self, length)
     
-  
+  def allUpperCase(): AlmValidation[String] =
+    funs.stringMustBeAllUpperCaseLetters(self)
+
+  def allLowerCase(): AlmValidation[String] =
+    funs.stringMustBeAllLowerCaseLetters(self)
 }
 
 trait AlmOptionStringConstraints extends Ops[Option[String]] {
@@ -54,6 +58,12 @@ trait AlmOptionStringConstraints extends Ops[Option[String]] {
 
   def mustHaveLength(length: Int): AlmValidation[Option[String]] =
     onSome(x => funs.stringMustHaveLength(x,length))
+
+  def allUpperCase(): AlmValidation[Option[String]] =
+    onSome(x => funs.stringMustBeAllUpperCaseLetters(x))
+
+  def allLowerCase(): AlmValidation[Option[String]] =
+    onSome(x => funs.stringMustBeAllLowerCaseLetters(x))
     
   private def onSome(test: String => AlmValidation[String]): AlmValidation[Option[String]] =
     self match {

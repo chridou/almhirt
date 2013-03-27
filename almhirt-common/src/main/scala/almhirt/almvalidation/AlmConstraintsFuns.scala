@@ -75,4 +75,18 @@ trait AlmConstraintsFuns {
     ???
   }
   
+  def stringMustBeAllUpperCaseLetters(toTest: String): AlmValidation[String] = {
+    if(!toTest.forall(c => c.isLetter && c.isUpper))
+      ConstraintViolatedProblem(s"""All characters must be upper case letters but this is not the case for "$toTest"""").failure 
+      else 
+        toTest.success
+  }
+
+  def stringMustBeAllLowerCaseLetters(toTest: String): AlmValidation[String] = {
+    if(!toTest.forall(c => c.isLetter && c.isLower))
+      ConstraintViolatedProblem(s"""All characters must be lower case letters but this is not the case for "$toTest"""").failure 
+      else 
+        toTest.success
+  }
+  
 }
