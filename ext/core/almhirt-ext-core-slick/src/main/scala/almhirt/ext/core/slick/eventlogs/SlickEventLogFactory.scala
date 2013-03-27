@@ -6,32 +6,32 @@ import akka.actor._
 import scala.slick.session.{ Database, Session }
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.eventlog.DomainEventLogFactory
-import almhirt.core.Almhirt
-import almhirt.eventlog.util.SyncDomainEventStorage
+import almhirt.eventlog.EventLogFactory
+import almhirt.core._
+import almhirt.eventlog.util.SyncEventStorage
 import almhirt.core.HasConfig
 import almhirt.environment.configuration.{ ConfigHelper, SystemHelper }
 import almhirt.serialization.BlobStorageWithUuidBlobId
-import almhirt.serializing.DomainEventToStringSerializer
-import almhirt.eventlog.util.BlockingDomainEventLogActor
+import almhirt.serializing.EventToStringSerializer
+import almhirt.eventlog.util.BlockingEventLogActor
 import com.typesafe.config.Config
 
-class SlickDomainEventLogFactory extends DomainEventLogFactory {
-  def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    theAlmhirt.log.info("Starting to create a SLICK domain event log")
+class SlickEventLogFactory extends EventLogFactory {
+  def createEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+    theAlmhirt.log.info("Starting to create a SLICK event log")
     for {
       config <- theAlmhirt.getService[HasConfig].map(_.config)
-      eventLogConfig <- ConfigHelper.domainEventLog.getConfig(config)
+      eventLogConfig <- ConfigHelper.eventLog.getConfig(config)
       actor <- ConfigHelper.getString(eventLogConfig)("storage_mode").flatMap(mode =>
         mode.toLowerCase() match {
-          case "text" => createTextDomainEventLog(theAlmhirt, eventLogConfig)
-          case "binary" => createBinaryDomainEventLog(theAlmhirt, eventLogConfig)
+          case "text" => createTextEventLog(theAlmhirt, eventLogConfig)
+          case "binary" => createBinaryEventLog(theAlmhirt, eventLogConfig)
           case x => UnspecifiedProblem(s"""$x is not a valid storage mode""").failure
         })
     } yield actor
   }
 
-  private def createTextDomainEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {
+  private def createTextEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {
     for {
       channel <- ConfigHelper.getString(eventLogConfig)("channel")
       connection <- ConfigHelper.getString(eventLogConfig)("connection")
@@ -42,18 +42,17 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
       eventLogDataAccess <- ConfigHelper.getString(eventLogConfig)("profile").flatMap(profileName => {
         val props = ConfigHelper.getPropertiesMapFrom(eventLogConfig)("properties")
         val createDataBase: String => Database = (driver => Database.forURL(connection, props))
-        Profiles.createTextDomainEventLogAccess(profileName, eventlogtable, blobtable, createDataBase)(theAlmhirt)
+        Profiles.createTextEventLogAccess(profileName, eventlogtable, blobtable, createDataBase)(theAlmhirt)
       })
       _ <- computeSafely {
         if (dropOnClose)
           theAlmhirt.actorSystem.registerOnTermination({
-            theAlmhirt.log.info("Dropping schema for domain event log")
-            eventLogDataAccess.getDb().withSession((session: Session) => eventLogDataAccess.drop(session))
+            theAlmhirt.log.info("Dropping schema for event log")
+            eventLogDataAccess.drop
           })
         if (createSchema) {
-          theAlmhirt.log.info("Creating schema for domain event log")
-          eventLogDataAccess.getDb().withSession((session: Session) =>
-            eventLogDataAccess.create(session))
+          theAlmhirt.log.info("Creating schema for event log")
+          eventLogDataAccess.create
         } else
           ().success
       }
@@ -61,7 +60,7 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
       serializerFactory <- inTryCatch {
         Class.forName(serializerFactoryName)
           .newInstance()
-          .asInstanceOf[{ def createSerializer(storeBlobsHere: Option[(BlobStorageWithUuidBlobId, Int)], anAlmhirt: Almhirt): AlmValidation[DomainEventToStringSerializer] }]
+          .asInstanceOf[{ def createSerializer(storeBlobsHere: Option[(BlobStorageWithUuidBlobId, Int)], anAlmhirt: Almhirt): AlmValidation[EventToStringSerializer] }]
 
       }
       serializer <- computeSafely {
@@ -74,25 +73,25 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
       }
       actor <- inTryCatch {
         val name = ConfigHelper.domainEventLog.getActorName(eventLogConfig)
-        theAlmhirt.log.info(s"DomainEventLog is text based SlickDomainEventLog with name '$name'.")
+        theAlmhirt.log.info(s"EventLog is text based SlickEventLog with name '$name'.")
         val dispatcherName =
           ConfigHelper.getDispatcherNameFromComponentConfig(eventLogConfig).fold(
             fail => {
-              theAlmhirt.log.warning("No dispatchername found for DomainEventLog. Using default Dispatcher")
+              theAlmhirt.log.warning("No dispatchername found for EventLog. Using default Dispatcher")
               None
             },
             succ => {
               theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
               Some(succ)
             })
-        val syncStorage = new SyncTextSlickDomainEventStorage(eventLogDataAccess, serializer.serializeToChannel(channel))
-        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingDomainEventLogActor(syncStorage, theAlmhirt)))
+        val syncStorage = new SyncTextSlickEventStorage(eventLogDataAccess, serializer.serializeToChannel(channel))
+        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingEventLogActor(syncStorage, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }
     } yield actor
   }
 
-  private def createBinaryDomainEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {
+  private def createBinaryEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {
     ???
   }
 
