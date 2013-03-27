@@ -12,21 +12,40 @@ import almhirt.util.OperationState
 import almhirt.domain.DomainEvent
 import almhirt.environment._
 
-trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapperPhase with HasStandardChannels{ self: HasServiceRegistry =>
-  
-  override def commandChannel: CommandChannel = myCommandChannel
-  override def eventsChannel: EventsChannel = myEventsChannel
-  override def domainEventsChannel: DomainEventsChannel = myDomainEventsChannel
-  override def operationStateChannel: OperationStateChannel = myOperationStateChannel
-  override def problemChannel: ProblemChannel = myProblemChannel
-  
+trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapperPhase with HasStandardChannels { self: HasServiceRegistry =>
+
+  override def commandChannel: CommandChannel = {
+    if(myCommandChannel == null)
+      throw new Exception("You are trying to access the CommandChannel. It has not yet been initialized. A solution might be to adjust the ordering of the bootstrapper traits.")
+    myCommandChannel
+  }
+  override def eventsChannel: EventsChannel = {
+    if(myCommandChannel == null)
+      throw new Exception("You are trying to access the EventsChannel. It has not yet been initialized. A solution might be to adjust the ordering of the bootstrapper traits.")
+    myEventsChannel
+  }
+  override def domainEventsChannel: DomainEventsChannel = {
+    if(myCommandChannel == null)
+      throw new Exception("You are trying to access the DomainEventsChannel. It has not yet been initialized. A solution might be to adjust the ordering of the bootstrapper traits.")
+    myDomainEventsChannel
+  }
+  override def operationStateChannel: OperationStateChannel = {
+    if(myCommandChannel == null)
+      throw new Exception("You are trying to access the OperationStateChannel. It has not yet been initialized. A solution might be to adjust the ordering of the bootstrapper traits.")
+    myOperationStateChannel
+  }
+  override def problemChannel: ProblemChannel = {
+    if(myCommandChannel == null)
+      throw new Exception("You are trying to access the ProblemChannel. It has not yet been initialized. A solution might be to adjust the ordering of the bootstrapper traits.")
+    myProblemChannel
+  }
+
   private var myCommandChannel: CommandChannel = null
   private var myEventsChannel: EventsChannel = null
   private var myDomainEventsChannel: DomainEventsChannel = null
   private var myOperationStateChannel: OperationStateChannel = null
   private var myProblemChannel: ProblemChannel = null
-  
-  
+
   override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
     super.createCoreComponents(theAlmhirt, startUpLogger).andThen(createChannels(theAlmhirt, startUpLogger))
 
@@ -35,14 +54,14 @@ trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapp
       implicit val dur = Duration(1, "s")
       implicit val hasExecContext = theAlmhirt
       startUpLogger.info("Create CommandChannel, OperationStateChannel, DomainEventsChannel, ProblemsChannel")
-      
+
       val commandChannelFuture = theAlmhirt.messageHub.createMessageChannel[CommandEnvelope]("CommandChannel")
       val operationStateChannelFuture = theAlmhirt.messageHub.createMessageChannel[OperationState]("OperationStateChannel")
-      val eventsChannelChannelFuture =  theAlmhirt.messageHub.createMessageChannel[Event]("EventsChannel")
-      val domainEventsChannelFuture = 
+      val eventsChannelChannelFuture = theAlmhirt.messageHub.createMessageChannel[Event]("EventsChannel")
+      val domainEventsChannelFuture =
         eventsChannelChannelFuture.flatMap(eventsChannel => eventsChannel.createSubChannel[DomainEvent]("DomainEventsChannel"))
       val problemsChannelFuture = theAlmhirt.messageHub.createMessageChannel[Problem]("ProblemsChannel")
-      
+
       val channels =
         (for {
           commandChannel <- commandChannelFuture

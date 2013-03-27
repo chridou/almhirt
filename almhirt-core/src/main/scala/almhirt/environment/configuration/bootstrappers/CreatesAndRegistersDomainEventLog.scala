@@ -8,7 +8,11 @@ import almhirt.eventlog.DomainEventLog
 import almhirt.eventlog.impl.DomainEventLogActorHull
 
 trait CreatesAndRegistersDomainEventLog extends CreatesCoreComponentsBootstrapperPhase with HasDomainEventLog { self: HasServiceRegistry with HasConfig =>
-  override def domainEventLog: DomainEventLog = myDomainEventLog
+  override def domainEventLog: DomainEventLog = {
+    if(myDomainEventLog == null)
+      throw new Exception("You are trying to access the DomainEventLog. It has not yet been initialized. A solution might be to adjust the ordering of the bootstrapper traits.")
+    myDomainEventLog
+  }
   private var myDomainEventLog: DomainEventLog = null
 
   override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
