@@ -15,11 +15,13 @@ import almhirt.environment._
 trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapperPhase with HasStandardChannels{ self: HasServiceRegistry =>
   
   override def commandChannel: CommandChannel = myCommandChannel
+  override def eventsChannel: EventsChannel = myEventsChannel
   override def domainEventsChannel: DomainEventsChannel = myDomainEventsChannel
   override def operationStateChannel: OperationStateChannel = myOperationStateChannel
   override def problemChannel: ProblemChannel = myProblemChannel
   
   private var myCommandChannel: CommandChannel = null
+  private var myEventsChannel: EventsChannel = null
   private var myDomainEventsChannel: DomainEventsChannel = null
   private var myOperationStateChannel: OperationStateChannel = null
   private var myProblemChannel: ProblemChannel = null
@@ -33,27 +35,40 @@ trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapp
       implicit val dur = Duration(1, "s")
       implicit val hasExecContext = theAlmhirt
       startUpLogger.info("Create CommandChannel, OperationStateChannel, DomainEventsChannel, ProblemsChannel")
+      
+      val commandChannelFuture = theAlmhirt.messageHub.createMessageChannel[CommandEnvelope]("CommandChannel")
+      val operationStateChannelFuture = theAlmhirt.messageHub.createMessageChannel[OperationState]("OperationStateChannel")
+      val eventsChannelChannelFuture =  theAlmhirt.messageHub.createMessageChannel[Event]("EventsChannel")
+      val domainEventsChannelFuture = 
+        eventsChannelChannelFuture.flatMap(eventsChannel => eventsChannel.createSubChannel[DomainEvent]("DomainEventsChannel"))
+      val problemsChannelFuture = theAlmhirt.messageHub.createMessageChannel[Problem]("ProblemsChannel")
+      
       val channels =
         (for {
-          commandChannel <- theAlmhirt.messageHub.createMessageChannel[CommandEnvelope]("CommandChannel")
-          operationStateChannel <- theAlmhirt.messageHub.createMessageChannel[OperationState]("OperationStateChannel")
-          domainEventsChannel <- theAlmhirt.messageHub.createMessageChannel[DomainEvent]("DomainEventsChannel")
-          problemsChannel <- theAlmhirt.messageHub.createMessageChannel[Problem]("ProblemsChannel")
+          commandChannel <- commandChannelFuture
+          operationStateChannel <- operationStateChannelFuture
+          eventsChannel <- eventsChannelChannelFuture
+          domainEventsChannel <- domainEventsChannelFuture
+          problemsChannel <- problemsChannelFuture
         } yield (
           new CommandChannelWrapper(commandChannel),
           new OperationStateChannelWrapper(operationStateChannel),
+          new EventsChannelWrapper(eventsChannel),
           new DomainEventsChannelWrapper(domainEventsChannel),
           new ProblemChannelWrapper(problemsChannel))).awaitResult
 
       channels.foreach { x =>
         myCommandChannel = x._1
         myOperationStateChannel = x._2
-        myDomainEventsChannel = x._3
-        myProblemChannel = x._4
+        myEventsChannel = x._3
+        myDomainEventsChannel = x._4
+        myProblemChannel = x._5
         startUpLogger.info("Register CommandChannel")
         self.serviceRegistry.registerService[CommandChannel](myCommandChannel)
         startUpLogger.info("Register OperationStateChannel")
         self.serviceRegistry.registerService[OperationStateChannel](myOperationStateChannel)
+        startUpLogger.info("Register EventsChannel")
+        self.serviceRegistry.registerService[EventsChannel](myEventsChannel)
         startUpLogger.info("Register DomainEventsChannel")
         self.serviceRegistry.registerService[DomainEventsChannel](myDomainEventsChannel)
         startUpLogger.info("Register ProblemsChannel")
