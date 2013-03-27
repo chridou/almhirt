@@ -19,27 +19,31 @@ trait CreatesClassicProblemLogger extends CreatesCoreComponentsBootstrapperPhase
       implicit val executionContext = theAlmhirt.executionContext
       implicit val hasExecutionContext = theAlmhirt
       inTryCatch {
-        ConfigHelper.tryGetNotDisabledSubConfig(config, ConfigPaths.problems).map { subConf =>
-          startUpLogger.info("Create ProblemLogger")
-          val minSeverity =
-            ConfigHelper.problems.minSeverity(subConf).fold(
-              fail => {
-                startUpLogger.warning(s"Could not determine minSeverity: ${fail.message}. Using Minor as minSeverity")
-                Minor
-              },
-              succ => succ)
-          val actorName = ConfigHelper.problems.getActorName(subConf)
-          val problemLogger = theAlmhirt.actorSystem.actorOf(Props(new almhirt.util.impl.ProblemLogger(minSeverity)), actorName)
-          val problemloggerRegistration =
-            (problemChannel.actor ? SubscribeQry(MessagingSubscription.forActor[Problem](problemLogger)))(atMost)
-              .mapTo[SubscriptionRsp]
-              .map(_.registration)
-              .toAlmFuture
-              .awaitResult
-              .forceResult
-          startUpLogger.info(s"ProblemLogger has path ${problemLogger.path.toString()}")
-          BootstrapperPhaseSuccess(CleanUpAction(() => problemloggerRegistration.dispose, "ClassicProblemLogger"))
-        }.getOrElse(BootstrapperPhaseSuccess())
+        startUpLogger.info(s"""Create classic problem logger state tracker from config section "${ConfigPaths.problems}"""")
+        ConfigHelper.tryGetNotDisabledSubConfig(config, ConfigPaths.problems) match {
+          case Some(subConf) =>
+            val minSeverity =
+              ConfigHelper.problems.minSeverity(subConf).fold(
+                fail => {
+                  startUpLogger.warning(s"Could not determine minSeverity: ${fail.message}. Using Minor as minSeverity")
+                  Minor
+                },
+                succ => succ)
+            val actorName = ConfigHelper.problems.getActorName(subConf)
+            val problemLogger = theAlmhirt.actorSystem.actorOf(Props(new almhirt.util.impl.ProblemLogger(minSeverity)), actorName)
+            val problemloggerRegistration =
+              (problemChannel.actor ? SubscribeQry(MessagingSubscription.forActor[Problem](problemLogger)))(atMost)
+                .mapTo[SubscriptionRsp]
+                .map(_.registration)
+                .toAlmFuture
+                .awaitResult
+                .forceResult
+            startUpLogger.info(s"ProblemLogger has path ${problemLogger.path.toString()}")
+            BootstrapperPhaseSuccess(CleanUpAction(() => problemloggerRegistration.dispose, "ClassicProblemLogger"))
+          case None =>
+            startUpLogger.warning("""Tried to initialize a classic problem logger, but it has no config section or is explicitly disabled with "disabled=true" in its config section.""")
+            BootstrapperPhaseSuccess()
+        }
       }.toBootstrapperPhaseResult
     }
 }

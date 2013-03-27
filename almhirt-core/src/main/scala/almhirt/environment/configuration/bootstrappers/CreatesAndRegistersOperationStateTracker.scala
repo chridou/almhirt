@@ -18,20 +18,24 @@ trait CreatesAndRegistersOperationStateTracker extends CreatesCoreComponentsBoot
       implicit val executionContext = theAlmhirt.executionContext
       implicit val hasExecutionContext = theAlmhirt
       inTryCatch {
-        ConfigHelper.tryGetNotDisabledSubConfig(config, ConfigPaths.operationState).map { subConf =>
-          startUpLogger.info(s"Create operation state tracker ...")
-          val tracker = SystemHelper.createOperationStateTrackerFromFactory(theAlmhirt).forceResult
-          val trackerRegistartion =
-            (self.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker)))(atMost)
-              .mapTo[SubscriptionRsp]
-              .map(_.registration)
-              .toAlmFuture
-              .awaitResult
-              .forceResult
-          startUpLogger.info(s"Register operation state tracker")
-          self.serviceRegistry.registerService[OperationStateTracker](almhirt.util.impl.OperationStateTrackerActorHull(tracker))
-          BootstrapperPhaseSuccess(CleanUpAction(() => trackerRegistartion.dispose, "OperationStateTracker"))
-        }.getOrElse(BootstrapperPhaseSuccess())
+        startUpLogger.info(s"""Create operation state tracker from config section "${ConfigPaths.operationState}"""")
+        ConfigHelper.tryGetNotDisabledSubConfig(config, ConfigPaths.operationState) match {
+          case Some(subConf) =>
+            val tracker = SystemHelper.createOperationStateTrackerFromFactory(theAlmhirt).forceResult
+            val trackerRegistartion =
+              (self.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker)))(atMost)
+                .mapTo[SubscriptionRsp]
+                .map(_.registration)
+                .toAlmFuture
+                .awaitResult
+                .forceResult
+            startUpLogger.info(s"Register operation state tracker")
+            self.serviceRegistry.registerService[OperationStateTracker](almhirt.util.impl.OperationStateTrackerActorHull(tracker))
+            BootstrapperPhaseSuccess(CleanUpAction(() => trackerRegistartion.dispose, "OperationStateTracker"))
+          case None =>
+            startUpLogger.warning("""Tried to initialize an operation state tracker, but it has no config section or is explicitly disabled with "disabled=true" in its config section.""")
+            BootstrapperPhaseSuccess()
+        }
       }.toBootstrapperPhaseResult
     }
 }

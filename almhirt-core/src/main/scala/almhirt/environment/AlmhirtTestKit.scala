@@ -9,12 +9,13 @@ import almhirt.environment.configuration._
 import com.typesafe.config._
 import almhirt.environment.configuration.bootstrappers._
 import almhirt.core.impl.SimpleConcurrentServiceRegistry
+import akka.event.LoggingAdapter
 
 trait AlmhirtTestKit {
   private val configText =
     """  
       akka {
-		loglevel = ERROR
+		loglevel = INFO
       }
       almhirt {
 		bootstrapper { 
@@ -28,6 +29,9 @@ trait AlmhirtTestKit {
 		  extralong = 20000
 		  	}
 		  eventlog {
+		  	factory = "almhirt.eventlog.impl.DevNullEventLogFactory"
+		  }
+		  domaineventlog {
 		  	factory = "almhirt.eventlog.impl.InefficientSerializingInMemoryDomainEventLogFactory"
 		  }
         operationstate {
@@ -60,7 +64,7 @@ trait AlmhirtTestKit {
     }
 
   def createTestAlmhirt(bootStrapper: Bootstrapper): AlmValidation[(AlmhirtForTesting, ShutDown)] = {
-    implicit val startupLogger = LogBackLoggingAdapter()
+    implicit val startupLogger: LoggingAdapter = LogBackLoggingAdapter()
     Bootstrapper.runBootstrapper(bootStrapper).map {
       case (theAlmhirt, shutDown) =>
         (AlmhirtForTesting(theAlmhirt), shutDown)
@@ -68,7 +72,7 @@ trait AlmhirtTestKit {
   }
 
   def createExtendedTestAlmhirt(bootstrapper: Bootstrapper): AlmValidation[(AlmhirtForExtendedTesting, ShutDown)] = {
-    implicit val startupLogger = LogBackLoggingAdapter()
+    implicit val startupLogger: LoggingAdapter = LogBackLoggingAdapter()
     Bootstrapper.runBootstrapper(bootstrapper).flatMap {
       case (theAlmhirt, shutDown) =>
         theAlmhirt.getService[ServiceRegistry].flatMap(reg =>

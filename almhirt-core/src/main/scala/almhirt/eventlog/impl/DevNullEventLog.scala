@@ -20,7 +20,7 @@ import almhirt.core.Almhirt
 class DevNullEventLogFactory() extends EventLogFactory {
   def createEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.getConfig.flatMap(config =>
-      ConfigHelper.domainEventLog.getConfig(config).map { subConfig =>
+      ConfigHelper.eventLog.getConfig(config).map { subConfig =>
         val name = ConfigHelper.eventLog.getActorName(subConfig)
         theAlmhirt.log.info(s"EventLog is DevNullEventLog with name '$name'.")
         theAlmhirt.log.warning("*** THE EVENT LOG DOES NOTHING ***")
