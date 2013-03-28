@@ -14,7 +14,7 @@ class MessageChannelActor(messageChannelDispatcherName: Option[String]) extends 
 
   def receive = {
     case PostMessageCmd(message) =>
-      subscriptions.filter(_._2.predicate(message)).foreach(x => { x._2.handler(message) })
+      subscriptions.filter(_._2.predicate(message)).foreach(x => x._2.handler(message))
       subChannels.filter(_._3(message)).foreach(_._2 ! PostMessageCmd(message))
     case SubscribeQry(subscription) =>
       val registrationToken = UUID.randomUUID

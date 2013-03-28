@@ -12,6 +12,7 @@ import almhirt.environment.HasStandardChannels
 import almhirt.domain.DomainEvent
 import almhirt.eventlog.EventLog
 import almhirt.eventlog.impl.EventLogActorHull
+import almhirt.eventlog.LogEventQry
 
 trait CreatesAndRegistersEventLog extends CreatesCoreComponentsBootstrapperPhase with HasEventLog { self: HasServiceRegistry with HasConfig with HasStandardChannels =>
   override def eventLog: EventLog = {
@@ -33,10 +34,15 @@ trait CreatesAndRegistersEventLog extends CreatesCoreComponentsBootstrapperPhase
           var eventLogRegistration =
             (if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_domain_events")) {
               startUpLogger.info(s"The event log does NOT log domain events")
-              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorWithFilter[Event](eventLogActor, payload => !payload.isInstanceOf[DomainEvent])))(atMost)
+              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorMappedWithFilter[Event, LogEventQry](
+                eventLogActor,
+                event => LogEventQry(event, None),
+                event => !event.isInstanceOf[DomainEvent])))(atMost)
             } else {
               startUpLogger.info(s"The event log DOES log domain events")
-              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActor[Event](eventLogActor)))(atMost)
+              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorMapped[Event, LogEventQry](
+                eventLogActor,
+                event => LogEventQry(event, None))))(atMost)
             })
               .mapTo[SubscriptionRsp]
               .map(_.registration)
