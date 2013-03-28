@@ -13,6 +13,7 @@ object ConfigPaths {
   val commandDispatcher = "almhirt.client.commanddispatcher"
     
   val futures = "almhirt.futures"
+  val cruncher = "almhirt.cruncher"
     
   val http = "almhirt.http"
   val problems = "almhirt.problems"

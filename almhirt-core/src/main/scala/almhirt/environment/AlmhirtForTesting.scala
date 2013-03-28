@@ -35,7 +35,7 @@ object AlmhirtForTesting {
       override val messageHub = theAlmhirt.messageHub
 
       override def executeCommand(cmdEnv: CommandEnvelope) { theAlmhirt.publishCommandEnvelope(cmdEnv) }
-
+      override def cruncher = theAlmhirt.cruncher
       override val durations = theAlmhirt.durations
 
       override def getRepositories = theAlmhirt.getService[HasRepositories]
@@ -62,6 +62,7 @@ object AlmhirtForExtendedTesting {
 
       override val serviceRegistry = aServiceRegistry
       override def executeCommand(cmdEnv: CommandEnvelope) { theAlmhirt.publishCommandEnvelope(cmdEnv) }
+      override def cruncher = theAlmhirt.cruncher
 
       override val durations = theAlmhirt.durations
 

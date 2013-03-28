@@ -23,6 +23,7 @@ trait Almhirt extends HasActorSystem
   with CanPublishMessages
   with CanPublishItems {
   def log: akka.event.LoggingAdapter
+  def cruncher: HasExecutionContext
 }
 
 object Almhirt {
@@ -64,6 +65,7 @@ object Almhirt {
       override def getServiceByType(clazz: Class[_ <: AnyRef]) = getService(clazz)
       override val log = Logging(actorSystem, classOf[Almhirt])
       override def createSuffixedName(aName: String) = getName(name)
+      override val cruncher = HasExecutionContext(theActorSystem.dispatchers.defaultGlobalDispatcher)
       override def dispose() = { theMessageHub.close(); disposer() }
     }
   }

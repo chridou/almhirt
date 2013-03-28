@@ -15,18 +15,16 @@ trait CreatesAlmhirtFromConfigAndActorSystem extends CreatesAlmhirtBootstrapperP
   override def createAlmhirt(startUpLogger: LoggingAdapter): Either[BootstrapperPhaseFailure, (Almhirt, List[CleanUpAction])] =
     createTheAlmhirt(startUpLogger)
 
-
-  private def createFuturesExecutionContext(actorSystem: ActorSystem, startUpLogger: LoggingAdapter): AlmValidation[HasExecutionContext] = {
+  private def createExecutionContext(actorSystem: ActorSystem, startUpLogger: LoggingAdapter, configPath: String): AlmValidation[HasExecutionContext] = {
     inTryCatch {
-      startUpLogger.info("Creating FuturesExecutionContext...")
       val dispatcherName =
-        ConfigHelper.getDispatcherNameFromComponentConfigPath(config)(ConfigPaths.futures).fold(
+        ConfigHelper.getDispatcherNameFromComponentConfigPath(config)(configPath).fold(
           fail => {
-            startUpLogger.warning("No dispatchername found for FuturesExecutionContext. Using default Dispatcher")
+            startUpLogger.warning("No dispatchername found. Using default Dispatcher")
             None
           },
           succ => {
-            startUpLogger.info(s"FuturesExecutionContext is using dispatcher '$succ'")
+            startUpLogger.info(s"ExecutionContext is using dispatcher '$succ'")
             Some(succ)
           })
       val dispatcher = ConfigHelper.lookUpDispatcher(actorSystem)(dispatcherName)
@@ -34,6 +32,16 @@ trait CreatesAlmhirtFromConfigAndActorSystem extends CreatesAlmhirtBootstrapperP
     }
   }
 
+  private def createFuturesExecutionContext(actorSystem: ActorSystem, startUpLogger: LoggingAdapter): AlmValidation[HasExecutionContext] = {
+    startUpLogger.info("Creating FuturesExecutionContext ...")
+    createExecutionContext(actorSystem, startUpLogger, ConfigPaths.futures)
+  }
+
+  private def createCruncherExecutionContext(actorSystem: ActorSystem, startUpLogger: LoggingAdapter): AlmValidation[HasExecutionContext] = {
+    startUpLogger.info("Creating Cruncher ...")
+    createExecutionContext(actorSystem, startUpLogger, ConfigPaths.cruncher)
+  }
+  
   private def createTheAlmhirt(startUpLogger: LoggingAdapter): Either[BootstrapperPhaseFailure, (Almhirt, List[CleanUpAction])] = {
     val theDurations = Durations(config)
     startUpLogger.info(s"Durations have been set to: ${theDurations.toString()}")
@@ -47,11 +55,13 @@ trait CreatesAlmhirtFromConfigAndActorSystem extends CreatesAlmhirtBootstrapperP
         LogBackLoggingAdapter(ConfigHelper.getString(config)("almhirt.systemname").getOrElse("almhirt")).success
       }
       hasExecutionContext <- createFuturesExecutionContext(self.actorSystem, startUpLogger)
+      theCruncher <- createCruncherExecutionContext(self.actorSystem, startUpLogger)
       theMessageHub <- MessageHub("MessageHub", config)(self.actorSystem, hasExecutionContext).success
     } yield {
       val theAlmhirt = new Almhirt with PublishesOnMessageHub {
         override val actorSystem = self.actorSystem
         override val executionContext = hasExecutionContext.executionContext
+        override val cruncher = theCruncher
         override val messageHub = theMessageHub
         override def getServiceByType(clazz: Class[_ <: AnyRef]) = self.serviceRegistry.getServiceByType(clazz)
         override val durations = theDurations
