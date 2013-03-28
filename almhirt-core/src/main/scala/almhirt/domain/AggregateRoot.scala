@@ -20,13 +20,18 @@ import almhirt.core._
 import almhirt.common._
 import almhirt.syntax.almvalidation._
 
+trait IsAggregateRoot {
+  def id: UUID
+  def version: Long
+}
+
 /**
  * An aggregate root is the topmost entity of an aggregate. It aggregates those entities and value objects which cannot exist without the whole.
  * All entities within the aggregate should only be accessible via the aggregate root. Only an aggregate root justifies a repository.
  *
  *
  */
-trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {
+trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] with IsAggregateRoot {
   /**
    * The combination of id and version that uniquely identifies an aggregate root in space and time.
    * 
