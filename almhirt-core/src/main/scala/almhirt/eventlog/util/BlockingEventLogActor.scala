@@ -18,6 +18,7 @@ import almhirt.almakka.AlmActorLogging
 class BlockingEventLogActor(eventStorage: SyncEventStorage, theAlmhirt: Almhirt) extends Actor with CanLogProblems with AlmActorLogging {
   def receive: Receive = {
     case cmd: EventLogCmd =>
+      println(cmd)
       cmd match {
         case LogEventQry(event, correlationId) =>
           val res = eventStorage.storeEvent(event)
