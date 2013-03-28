@@ -118,7 +118,7 @@ object AlmFuture {
   }
 
   def promise[T](what: => AlmValidation[T]) = new AlmFuture[T](Future.successful { what })
-  def successful[T](result: T) = new AlmFuture[T](Future.successful { result.success })
+  def successful[T](result: => T) = new AlmFuture[T](Future.successful { result.success })
   def failed[T](prob: Problem) = new AlmFuture[T](Future.successful { prob.failure })
   
 }
