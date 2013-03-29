@@ -13,5 +13,5 @@ final case class RemoveAggregateRootFromCacheCmd(id: JUUID) extends AggregateRoo
 final case class ContainsCachedAggregateRootQry(id: JUUID) extends AggregateRootCacheReq
 
 sealed trait AggregateRootCacheRsp extends AggregateRootCacheMessage
-final case class AggregateRootFromCacheRsp(ar: Option[IsAggregateRoot], queriedId: JUUID)
-final case class ContainsCachedAggregateRootRsp(isContained: Boolean, queriedId: JUUID)
+final case class AggregateRootFromCacheRsp(ar: Option[IsAggregateRoot], queriedId: JUUID) extends AggregateRootCacheRsp
+final case class ContainsCachedAggregateRootRsp(isContained: Boolean, queriedId: JUUID) extends AggregateRootCacheRsp

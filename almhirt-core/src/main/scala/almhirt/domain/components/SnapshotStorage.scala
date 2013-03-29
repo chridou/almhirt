@@ -6,10 +6,10 @@ import almhirt.domain.IsAggregateRoot
 
 sealed trait SnapshotStorageMessage
 sealed trait SnapshotStorageReq extends SnapshotStorageMessage
-final case class GetSnapshotQry(id: JUUID) extends SnapshotStorageMessage
-final case class PutSnapshotCmd(ar: IsAggregateRoot) extends SnapshotStorageMessage
-final case class ContainsSnapshotQry(ar: IsAggregateRoot) extends SnapshotStorageMessage
-final case class GetVersionForSnapshot(id: JUUID) extends SnapshotStorageMessage
+final case class GetSnapshotQry(id: JUUID) extends SnapshotStorageReq
+final case class PutSnapshotCmd(ar: IsAggregateRoot) extends SnapshotStorageReq
+final case class ContainsSnapshotQry(id: JUUID) extends SnapshotStorageReq
+final case class GetVersionForSnapshot(id: JUUID) extends SnapshotStorageReq
 
 sealed trait SnapshotStorageRsp extends SnapshotStorageMessage
 final case class SnapshotRsp(snapshot: Option[IsAggregateRoot], queriedId: JUUID) extends SnapshotStorageMessage

@@ -24,20 +24,23 @@ import almhirt.problem._
 package object common {
   /** A registration using a UUID as a token */
   type RegistrationUUID = Registration[java.util.UUID]
-  
-//  type AlmValidation[+α] = ({type λ[α] = Validation[Problem, α]})#λ[α]
-//  type AlmValidationAP[+α] = ({type λ[α] = Validation[AggregateProblem, α]})#λ[α]
-//  type AlmValidationSBD[+α] = ({type λ[α] = Validation[SingleBadDataProblem, α]})#λ[α]
-//  type AlmValidationMBD[+α] = ({type λ[α] = Validation[MultipleBadDataProblem, α]})#λ[α]
+
+  //  type AlmValidation[+α] = ({type λ[α] = Validation[Problem, α]})#λ[α]
+  //  type AlmValidationAP[+α] = ({type λ[α] = Validation[AggregateProblem, α]})#λ[α]
+  //  type AlmValidationSBD[+α] = ({type λ[α] = Validation[SingleBadDataProblem, α]})#λ[α]
+  //  type AlmValidationMBD[+α] = ({type λ[α] = Validation[MultipleBadDataProblem, α]})#λ[α]
   type AlmValidation[+α] = Validation[Problem, α]
-  type AlmValidationAP[+α] = Validation[AggregateProblem, α]  
-  
-  
-  implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T]{  def equal(p1: T, p2: T): Boolean = p1 == p2 }
-    
+  type AlmValidationAP[+α] = Validation[AggregateProblem, α]
+
+  implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T] { def equal(p1: T, p2: T): Boolean = p1 == p2 }
+
   def launderException(exn: Exception): Problem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
   def handleThrowable(throwable: Throwable): Problem =
     throwable match {
-    case exn: Exception => launderException(exn)
+      case exn: Exception => launderException(exn)
+    }
+
+  implicit object DateTimeOrdering extends Ordering[org.joda.time.DateTime] {
+    def compare(a: org.joda.time.DateTime, b: org.joda.time.DateTime) = a.compareTo(b)
   }
 }
