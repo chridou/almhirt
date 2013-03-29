@@ -116,6 +116,18 @@ object ConfigHelper {
     def factoryName(eventlogConfig: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(eventlogConfig)
   }
 
+  object aggregateRootCache {
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.aggregateRootCache)
+    def getActorName(configSection: Config): String = ConfigHelper.getStringOrDefault("AggregateRootCache")(configSection)(ConfigItems.actorName)
+    def factoryName(configSection: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(configSection)
+  }
+
+  object snapshotStorage {
+    def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.snapshotStorage)
+    def getActorName(configSection: Config): String = ConfigHelper.getStringOrDefault("Snapshots")(configSection)(ConfigItems.actorName)
+    def factoryName(configSection: Config): AlmValidation[String] = shared.getFactoryNameFromComponentConfig(configSection)
+  }
+  
   object operationState {
     def getConfig(config: Config): AlmValidation[Config] = getSubConfig(config)(ConfigPaths.operationState)
     def getActorName(operationStateConfig: Config): String = ConfigHelper.getStringOrDefault("OperationStateTracker")(operationStateConfig)(ConfigItems.actorName)

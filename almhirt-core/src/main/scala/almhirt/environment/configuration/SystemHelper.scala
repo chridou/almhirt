@@ -68,6 +68,38 @@ object SystemHelper {
     } yield eventLog
   }
 
+  def createAggregateRootCacheFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+    import language.reflectiveCalls
+    for {
+      theConfig <- theAlmhirt.getConfig
+      configSection <- ConfigHelper.aggregateRootCache.getConfig(theConfig)
+      factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(configSection)
+      factory <- inTryCatch {
+        theAlmhirt.log.info(s"Creating AggregateRootCache using factory '$factoryName'")
+        Class.forName(factoryName)
+          .newInstance()
+          .asInstanceOf[{ def createAggregateRootCache(x: Almhirt): AlmValidation[ActorRef] }]
+      }
+      eventLog <- factory.createAggregateRootCache(theAlmhirt)
+    } yield eventLog
+  }
+
+  def createSnapshotStorageFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+    import language.reflectiveCalls
+    for {
+      theConfig <- theAlmhirt.getConfig
+      configSection <- ConfigHelper.snapshotStorage.getConfig(theConfig)
+      factoryName <- ConfigHelper.shared.getFactoryNameFromComponentConfig(configSection)
+      factory <- inTryCatch {
+        theAlmhirt.log.info(s"Creating SnapshotStorage using factory '$factoryName'")
+        Class.forName(factoryName)
+          .newInstance()
+          .asInstanceOf[{ def createSnapshotStorage(x: Almhirt): AlmValidation[ActorRef] }]
+      }
+      eventLog <- factory.createSnapshotStorage(theAlmhirt)
+    } yield eventLog
+  }
+   
   def createOperationStateTrackerFromFactory(implicit theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     import language.reflectiveCalls
     for {

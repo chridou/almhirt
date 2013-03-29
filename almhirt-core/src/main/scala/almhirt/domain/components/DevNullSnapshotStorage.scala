@@ -1,8 +1,10 @@
 package almhirt.domain.components
 
+import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
 import almhirt.core._
+import almhirt.environment.configuration._
 
 class DevNullSnapshotStorage extends Actor {
   override def receive: Receive = {
@@ -14,4 +16,28 @@ class DevNullSnapshotStorage extends Actor {
         case GetVersionForSnapshot(id) => sender ! VersionForSnapshotRsp(None, id)
       }
   }
+}
+
+class DevNullSnapshotStorageFactory extends SnapshotStorageFactory {
+  def createSnapshotStorage(theAlmhirt: Almhirt): AlmValidation[ActorRef] = 
+    theAlmhirt.getService[HasConfig].flatMap(c => ConfigHelper.getSubConfig(c.config)(ConfigPaths.snapshotStorage)).fold(
+      fail => {
+        theAlmhirt.log.warning(s"No configuration(${ConfigPaths.snapshotStorage}) found. Using default Dispatcher")
+        theAlmhirt.actorSystem.actorOf(Props(new DevNullSnapshotStorage()), "Snapshots")
+      },
+      configSection => {
+        val actorname = ConfigHelper.snapshotStorage.getActorName(configSection)
+        val dispatcherName =
+          ConfigHelper.getDispatcherNameFromComponentConfig(configSection).fold(
+            fail => {
+              theAlmhirt.log.warning("No dispatchername found for SnapshotStorage. Using default Dispatcher")
+              None
+            },
+            succ => {
+              theAlmhirt.log.info(s"SnapshotStorage is using dispatcher '$succ'")
+              Some(succ)
+            })
+        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new DevNullSnapshotStorage()))
+        theAlmhirt.actorSystem.actorOf(props, actorname)
+      }).success
 }

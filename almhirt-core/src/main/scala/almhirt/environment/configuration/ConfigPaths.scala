@@ -8,6 +8,8 @@ object ConfigPaths {
   val domaineventlog = "almhirt.domaineventlog"
   val commandexecutor = "almhirt.commandexecutor"
   val repositories = "almhirt.repositories"
+  val aggregateRootCache = "almhirt.repositories.cache"
+  val snapshotStorage = "almhirt.repositories.snapshots"
   val operationState = "almhirt.operationstate"
   val commandEndpoint = "almhirt.commandendpoint"
   val commandDispatcher = "almhirt.client.commanddispatcher"
