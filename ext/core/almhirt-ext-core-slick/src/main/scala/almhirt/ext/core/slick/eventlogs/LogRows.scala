@@ -22,5 +22,3 @@ final case class TextDomainEventLogRow(id: JUUID, aggId: JUUID, aggVersion: Long
 final case class BinaryDomainEventLogRow(id: JUUID, aggId: JUUID, aggVersion: Long, timestamp: DateTime, eventtype: String, channel: String, payload: Array[Byte]) extends DomainEventLogRow {
   type Repr = Array[Byte]
 }
-
-final case class BlobRow(id: JUUID, data: Array[Byte])

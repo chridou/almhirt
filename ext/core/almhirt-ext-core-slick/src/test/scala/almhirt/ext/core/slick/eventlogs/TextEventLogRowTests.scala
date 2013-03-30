@@ -8,6 +8,7 @@ import scala.slick.session.Database
 import scala.slick.driver.H2Driver
 import almhirt.common.HasExecutionContext
 import almhirt.almvalidation.kit._
+import almhirt.ext.core.slick.shared.Profiles
 
 class TextEventLogRowTests extends FunSuite with MustMatchers {
   import scala.language.implicitConversions

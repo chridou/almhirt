@@ -4,7 +4,7 @@ import scalaz.syntax.validation._
 import org.joda.time.{DateTime, DateTimeZone}
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.ext.core.slick.eventlogs.Profile
+import almhirt.ext.core.slick.shared.Profile
 import java.sql.Timestamp
 
 trait SlickTypeMappers { this: Profile =>

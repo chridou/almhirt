@@ -6,6 +6,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.ext.core.slick.SlickTypeMappers
+import almhirt.ext.core.slick.shared.Profile
 
 trait DomainEventLogStoreComponent[T <: DomainEventLogRow] {
   def insertEventRow(eventLogRow: T): AlmValidation[T]
@@ -26,8 +27,8 @@ trait TextDomainEventLogStoreComponent extends SlickTypeMappers with DomainEvent
 
   object TextDomainEventLogRows extends Table[TextDomainEventLogRow](eventlogtablename) {
     def id = column[JUUID]("ID")
-    def aggId = column[JUUID]("AGG_ID")
-    def aggVersion = column[Long]("AGG_VERSION")
+    def aggId = column[JUUID]("AGG_ID", O.NotNull)
+    def aggVersion = column[Long]("AGG_VERSION", O.NotNull)
     def timestamp = column[DateTime]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
@@ -100,8 +101,8 @@ trait BinaryDomainEventLogStoreComponent extends SlickTypeMappers with DomainEve
 
   object BinaryDomainEventLogRows extends Table[BinaryDomainEventLogRow](eventlogtablename) {
     def id = column[JUUID]("ID")
-    def aggId = column[JUUID]("AGG_ID")
-    def aggVersion = column[Long]("AGG_VERSION")
+    def aggId = column[JUUID]("AGG_ID", O.NotNull)
+    def aggVersion = column[Long]("AGG_VERSION", O.NotNull)
     def timestamp = column[DateTime]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)

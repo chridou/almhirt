@@ -1,17 +1,17 @@
-package almhirt.ext.core.slick.eventlogs
+package almhirt.ext.core.slick.shared
 
 import java.util.{ UUID => JUUID }
 import scalaz.syntax.validation._
 import almhirt.common._
-import almhirt.almvalidation.kit._
+import almhirt.almvalidation.funs._
 import almhirt.serialization._
+import almhirt.ext.core.slick.shared.Profile
 
 trait BlobStoreComponent extends BlobStorage { this: Profile =>
   import profile.simple._
 
   type TBlobId = JUUID
-  
-  val blobtablename: String
+  def blobtablename: String
   def hasExecutionContext: HasExecutionContext
 
   object BlobRows extends Table[BlobRow](blobtablename) {

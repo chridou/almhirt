@@ -5,6 +5,8 @@ import scala.slick.session.Database
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.ext.core.slick.shared.BlobStoreComponent
+import almhirt.ext.core.slick.shared.Profile
 
 class TextDomainEventLogDataAccess(override val eventlogtablename: String, override val blobtablename: String, override val getDb: Unit => Database, override val profile: scala.slick.driver.ExtendedProfile, override val hasExecutionContext: HasExecutionContext) extends BlobStoreComponent with TextDomainEventLogStoreComponent with Profile {
   import profile.simple._

@@ -15,6 +15,7 @@ import almhirt.serialization.BlobStorageWithUuidBlobId
 import almhirt.serializing.EventToStringSerializer
 import almhirt.eventlog.util.BlockingEventLogActor
 import com.typesafe.config.Config
+import almhirt.ext.core.slick.shared.Profiles
 
 class SlickEventLogFactory extends EventLogFactory {
   def createEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {

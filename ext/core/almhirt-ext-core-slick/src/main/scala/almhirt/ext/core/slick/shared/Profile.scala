@@ -1,4 +1,4 @@
-package almhirt.ext.core.slick.eventlogs
+package almhirt.ext.core.slick.shared
 
 import scala.slick.driver.ExtendedProfile
 import scala.slick.driver.H2Driver
@@ -6,6 +6,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.almvalidation.constraints._
 import scala.slick.session.Database
+import almhirt.ext.core.slick.eventlogs._
 
 trait Profile {
   val profile: ExtendedProfile

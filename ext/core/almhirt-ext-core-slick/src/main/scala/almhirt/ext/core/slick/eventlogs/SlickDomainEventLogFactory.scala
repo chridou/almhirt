@@ -15,6 +15,7 @@ import almhirt.serialization.BlobStorageWithUuidBlobId
 import almhirt.serializing.DomainEventToStringSerializer
 import almhirt.eventlog.util.BlockingDomainEventLogActor
 import com.typesafe.config.Config
+import almhirt.ext.core.slick.shared.Profiles
 
 class SlickDomainEventLogFactory extends DomainEventLogFactory {
   def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {

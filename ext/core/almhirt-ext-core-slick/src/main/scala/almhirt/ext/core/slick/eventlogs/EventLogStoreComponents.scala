@@ -6,6 +6,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.ext.core.slick.SlickTypeMappers
+import almhirt.ext.core.slick.shared.Profile
 
 trait EventLogStoreComponent[T] {
   def insertEventRow(eventLogRow: T): AlmValidation[T]
@@ -23,7 +24,7 @@ trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComp
   val eventlogtablename: String
 
   object TextEventLogRows extends Table[TextEventLogRow](eventlogtablename) {
-    def id = column[JUUID]("ID")
+    def id = column[JUUID]("ID", O.PrimaryKey)
     def timestamp = column[java.sql.Timestamp]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
@@ -104,7 +105,7 @@ trait BinaryEventLogStoreComponent extends SlickTypeMappers with EventLogStoreCo
   val eventlogtablename: String
 
   object BinaryEventLogRows extends Table[BinaryEventLogRow](eventlogtablename) {
-    def id = column[JUUID]("ID")
+    def id = column[JUUID]("ID", O.PrimaryKey)
     def timestamp = column[SqlTimestamp]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
