@@ -8,7 +8,7 @@ import almhirt.almvalidation.kit._
 import almhirt.ext.core.slick.shared.BlobStoreComponent
 import almhirt.ext.core.slick.shared.Profile
 
-class TextEventLogDataAccess(override val eventlogtablename: String, override val blobtablename: String, override val getDb: Unit => Database, override val profile: scala.slick.driver.ExtendedProfile, override val hasExecutionContext: HasExecutionContext) extends BlobStoreComponent with TextEventLogStoreComponent with Profile {
+class TextEventLogDataAccess(override val eventlogTablename: String, override val blobTablename: String, override val getDb: Unit => Database, override val profile: scala.slick.driver.ExtendedProfile, override val hasExecutionContext: HasExecutionContext) extends BlobStoreComponent with TextEventLogStoreComponent with Profile {
   import profile.simple._
 
   private val ddl = BlobRows.ddl ++ TextEventLogRows.ddl

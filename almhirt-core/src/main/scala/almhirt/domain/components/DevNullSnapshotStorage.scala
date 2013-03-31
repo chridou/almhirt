@@ -13,7 +13,7 @@ class DevNullSnapshotStorage extends Actor {
         case GetSnapshotQry(id) => sender ! SnapshotRsp(None, id)
         case PutSnapshotCmd(ar) => ()
         case ContainsSnapshotQry(id) => sender ! ContainsSnapshotRsp(false, id)
-        case GetVersionForSnapshot(id) => sender ! VersionForSnapshotRsp(None, id)
+        case GetVersionForSnapshotQry(id) => sender ! VersionForSnapshotRsp(None, id)
       }
   }
 }

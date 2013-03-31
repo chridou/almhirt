@@ -7,6 +7,16 @@ import scala.concurrent.ExecutionContext
 
 trait HasExecutionContext {
   def executionContext: scala.concurrent.ExecutionContext
+  def execute(action: => Unit) {
+    executionContext.execute(new Runnable {
+      def run() { action }
+    })
+  }
+  def compute[T](compute: => AlmValidation[T]): AlmFuture[T] = AlmFuture { compute }(this.executionContext)
+  def computeSafely[T](compute: => AlmValidation[T]): AlmFuture[T] =
+    AlmFuture { almhirt.almvalidation.funs.computeSafely(compute) }(this.executionContext)
+  def computFromExceptional[T](compute: => T): AlmFuture[T] =
+    AlmFuture { almhirt.almvalidation.funs.inTryCatch(compute) }(this.executionContext)
 }
 
 trait HasCachedExecutionContext extends HasExecutionContext {
@@ -39,8 +49,7 @@ object HasExecutionContext {
   def fixed(nThreads: Int): HasExecutionContext = new HasExecutionContext {
     val executionContext = scala.concurrent.ExecutionContext.fromExecutor(Executors.newFixedThreadPool(nThreads))
   }
-  
+
   implicit def hasExecutionContext2ExecutionContext(hasExecutionContext: HasExecutionContext): ExecutionContext = hasExecutionContext.executionContext
   implicit def executionContext2HasExecutionContext(executionContext: ExecutionContext): HasExecutionContext = HasExecutionContext(executionContext)
-  
 }

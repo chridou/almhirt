@@ -9,9 +9,17 @@ sealed trait SnapshotStorageReq extends SnapshotStorageMessage
 final case class GetSnapshotQry(id: JUUID) extends SnapshotStorageReq
 final case class PutSnapshotCmd(ar: IsAggregateRoot) extends SnapshotStorageReq
 final case class ContainsSnapshotQry(id: JUUID) extends SnapshotStorageReq
-final case class GetVersionForSnapshot(id: JUUID) extends SnapshotStorageReq
+final case class GetVersionForSnapshotQry(id: JUUID) extends SnapshotStorageReq
 
 sealed trait SnapshotStorageRsp extends SnapshotStorageMessage
 final case class SnapshotRsp(snapshot: Option[IsAggregateRoot], queriedId: JUUID) extends SnapshotStorageMessage
 final case class ContainsSnapshotRsp(isContained: Boolean, queriedId: JUUID) extends SnapshotStorageMessage
 final case class VersionForSnapshotRsp(version: Option[Long], queriedId: JUUID) extends SnapshotStorageMessage
+
+trait SyncSnapshotStorage {
+  def getSnapshot(id: JUUID): AlmValidation[IsAggregateRoot]
+  def putSnapshot(ar: IsAggregateRoot): AlmValidation[IsAggregateRoot]
+  def containsSnapshot(id: JUUID): AlmValidation[Boolean]
+  def getVersionForSnapshot(id: JUUID): AlmValidation[Long]
+}
+

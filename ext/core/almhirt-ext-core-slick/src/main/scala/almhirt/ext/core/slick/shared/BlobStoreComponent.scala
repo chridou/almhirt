@@ -5,16 +5,15 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.serialization._
-import almhirt.ext.core.slick.shared.Profile
 
 trait BlobStoreComponent extends BlobStorage { this: Profile =>
   import profile.simple._
 
   type TBlobId = JUUID
-  def blobtablename: String
+  def blobTablename: String
   def hasExecutionContext: HasExecutionContext
 
-  object BlobRows extends Table[BlobRow](blobtablename) {
+  object BlobRows extends Table[BlobRow](blobTablename) {
     def id = column[JUUID]("ID", O.PrimaryKey)
     def data = column[Array[Byte]]("DATA", O.NotNull)
 

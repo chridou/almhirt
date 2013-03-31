@@ -7,6 +7,7 @@ import almhirt.almvalidation.kit._
 import almhirt.almvalidation.constraints._
 import scala.slick.session.Database
 import almhirt.ext.core.slick.eventlogs._
+import almhirt.ext.core.slick.snapshots.TextSnapshotsDataAccess
 
 trait Profile {
   val profile: ExtendedProfile
@@ -36,4 +37,12 @@ object Profiles {
       profile <- (profiles.lift >! profileName)
     } yield new TextDomainEventLogDataAccess(eventlogtablename, blobtablename, Unit => createDataBase(profile.driver), profile.slickDriver, hasExecutionContext)
 
+  def createTextSnapshotsAccess(aProfile: String, aSnapshotsTablename: String, aBlobTablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextSnapshotsDataAccess] =
+    for {
+      profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
+      snapshotstablename <- aSnapshotsTablename.notEmptyOrWhitespace
+      blobtablename <- aBlobTablename.notEmptyOrWhitespace
+      profile <- (profiles.lift >! profileName)
+    } yield new TextSnapshotsDataAccess(snapshotstablename, blobtablename, Unit => createDataBase(profile.driver), profile.slickDriver, hasExecutionContext)
+    
 }

@@ -17,7 +17,7 @@ class InMemorySnapshotStorage extends Actor {
         case GetSnapshotQry(id) => sender ! SnapshotRsp(snapshots.get(id), id)
         case PutSnapshotCmd(ar) => snapshots.put(ar.id, ar)
         case ContainsSnapshotQry(id) => sender ! ContainsSnapshotRsp(snapshots.contains(id), id)
-        case GetVersionForSnapshot(id) => sender ! VersionForSnapshotRsp(snapshots.get(id).map(_.version), id)
+        case GetVersionForSnapshotQry(id) => sender ! VersionForSnapshotRsp(snapshots.get(id).map(_.version), id)
       }
   }
 }

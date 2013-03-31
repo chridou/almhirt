@@ -9,6 +9,7 @@ import almhirt.ext.core.slick.SlickTypeMappers
 import almhirt.ext.core.slick.shared.Profile
 
 trait EventLogStoreComponent[T] {
+  def eventlogTablename: String
   def insertEventRow(eventLogRow: T): AlmValidation[T]
   def getEventRowById(id: JUUID): AlmValidation[T]
   def getAllEventRows: AlmValidation[Iterable[T]]
@@ -21,9 +22,8 @@ trait EventLogStoreComponent[T] {
 trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComponent[TextEventLogRow] { this: Profile =>
   import profile.simple._
 
-  val eventlogtablename: String
 
-  object TextEventLogRows extends Table[TextEventLogRow](eventlogtablename) {
+  object TextEventLogRows extends Table[TextEventLogRow](eventlogTablename) {
     def id = column[JUUID]("ID", O.PrimaryKey)
     def timestamp = column[java.sql.Timestamp]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
@@ -32,7 +32,7 @@ trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComp
 
     def * = id ~ timestamp ~ eventtype ~ channel ~ payload <> (TextEventLogRow, TextEventLogRow.unapply _)
 
-    def timestampIdx = index(s"idx_${eventlogtablename}_timestamp", timestamp)
+    def timestampIdx = index(s"idx_${eventlogTablename}_timestamp", timestamp)
 
     def insertSafe(textEventLogRow: TextEventLogRow)(implicit session: Session): AlmValidation[TextEventLogRow] = {
       computeSafely {
@@ -102,9 +102,7 @@ trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComp
 trait BinaryEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComponent[BinaryEventLogRow] { this: Profile =>
   import profile.simple._
 
-  val eventlogtablename: String
-
-  object BinaryEventLogRows extends Table[BinaryEventLogRow](eventlogtablename) {
+  object BinaryEventLogRows extends Table[BinaryEventLogRow](eventlogTablename) {
     def id = column[JUUID]("ID", O.PrimaryKey)
     def timestamp = column[SqlTimestamp]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)

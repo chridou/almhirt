@@ -18,8 +18,6 @@ trait SnapshotStorageComponent[T <: SnapshotRow] {
 trait TextSnapshotStorageComponent extends SnapshotStorageComponent[TextSnapshotRow] { this: Profile =>
   import profile.simple._
 
-  override val snapshotsTablename: String
-
   object TextSnapshotRows extends Table[TextSnapshotRow](snapshotsTablename) {
     def arId = column[JUUID]("AR_ID", O.PrimaryKey)
     def arVersion = column[Long]("AR_VERSION", O.NotNull)
@@ -88,8 +86,6 @@ trait TextSnapshotStorageComponent extends SnapshotStorageComponent[TextSnapshot
 
 trait BinarySnapshotStorageComponent extends SnapshotStorageComponent[BinarySnapshotRow] { this: Profile =>
   import profile.simple._
-
-  override val snapshotsTablename: String
 
   object BinarySnapshotRows extends Table[BinarySnapshotRow](snapshotsTablename) {
     def arId = column[JUUID]("AR_ID", O.PrimaryKey)
