@@ -15,12 +15,11 @@ import almhirt.util.ExecutionStyle
 
 sealed trait AggregateRootRepositoryCmd
 case class GetAggregateRootQry(aggId: JUUID) extends AggregateRootRepositoryCmd
-// How to do this better(Replace the AnyRef with something related to an AggregateRoot)? 
-case class StoreAggregateRootCmd(ar: AnyRef, uncommittedEvents: IndexedSeq[DomainEvent], style: ExecutionStyle) extends AggregateRootRepositoryCmd
+case class StoreAggregateRootCmd(ar: IsAggregateRoot, uncommittedEvents: IndexedSeq[DomainEvent], style: ExecutionStyle) extends AggregateRootRepositoryCmd
 
 sealed trait AggregateRootRepositoryRsp
-case class GetAggregateRootRsp(quriedId: JUUID, ar: AlmValidation[AggregateRoot[_, _]]) extends AggregateRootRepositoryRsp
-case class StoreAggregateRootRsp(ar: AlmValidation[AggregateRoot[_, _]]) extends AggregateRootRepositoryRsp
+case class GetAggregateRootRsp(quriedId: JUUID, ar: AlmValidation[IsAggregateRoot]) extends AggregateRootRepositoryRsp
+case class StoreAggregateRootRsp(ar: AlmValidation[IsAggregateRoot]) extends AggregateRootRepositoryRsp
 
 trait AggregateRootRepository[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends HasAggregateRoots[AR, Event] with StoresAggregateRoots[AR, Event] with ActorBased
 
