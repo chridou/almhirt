@@ -15,7 +15,7 @@
 package almhirt.common
 
 /** A problem that just lives of its message or other contained data */
-case class UnspecifiedProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class UnspecifiedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = UnspecifiedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -30,7 +30,7 @@ case class UnspecifiedProblem(message: String, severity: Severity = Major, categ
  *
  * The order of the aggregated problems is defined as having no meaning
  */
-case class AggregateProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None, problems: List[Problem] = Nil) extends Problem {
+case class AggregateProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None, problems: List[Problem] = Nil) extends Problem {
   type T = AggregateProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -167,7 +167,7 @@ case class ArgumentProblem(message: String, severity: Severity = Major, category
 /**
  * A collection is empty but at least one element was required
  */
-case class EmptyCollectionProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class EmptyCollectionProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = EmptyCollectionProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -215,7 +215,7 @@ case class NotSupportedProblem(message: String, severity: Severity = Major, cate
 /**
  * Some data structure couldn't be mapped from one to another. The key is giving the name of the field that caused the problem.
  */
-case class MappingProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class MappingProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = MappingProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -227,7 +227,7 @@ case class MappingProblem(message: String, severity: Severity = Minor, category:
 /**
  * Some data couldn't be serialized
  */
-case class SerializationProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class SerializationProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = SerializationProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -239,7 +239,7 @@ case class SerializationProblem(message: String, severity: Severity = Minor, cat
 /**
  * The application couldn't be started
  */
-case class StartupProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class StartupProblem(message: String, severity: Severity = Critical, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = StartupProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -251,7 +251,7 @@ case class StartupProblem(message: String, severity: Severity = Minor, category:
 /**
  * The application couldn't be started
  */
-case class IndexOutOfBoundsProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class IndexOutOfBoundsProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = IndexOutOfBoundsProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
