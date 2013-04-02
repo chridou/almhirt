@@ -15,7 +15,7 @@
 package almhirt.common
 
 /** A problem that just lives of its message or other contained data */
-case class UnspecifiedProblem(message: String, severity: Severity = Minor, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
+case class UnspecifiedProblem(message: String, severity: Severity = Major, category: ProblemCategory = SystemProblem, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) extends Problem {
   type T = UnspecifiedProblem
   def withMessage(newMessage: String) = copy(message = newMessage)
   def withSeverity(severity: Severity) = copy(severity = severity)
@@ -24,6 +24,15 @@ case class UnspecifiedProblem(message: String, severity: Severity = Minor, categ
   def mapMessage(mapOp: String => String) = copy(message = mapOp(message))
 }
 
+object UnspecifiedSystemProblem {
+  def apply(message: String, severity: Severity = Major, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) =
+    UnspecifiedProblem(message: String, severity, SystemProblem, args, cause)
+}
+
+object UnspecifiedApplicationProblem {
+  def apply(message: String, severity: Severity = Minor, args: Map[String, Any] = Map(), cause: Option[ProblemCause] = None) =
+    UnspecifiedProblem(message: String, severity, ApplicationProblem, args, cause)
+}
 /**
  * Multiple problems that occurred during an operation under the hood of one aggregating problem.
  * The cause property is usually None
