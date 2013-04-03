@@ -8,9 +8,19 @@ trait AlmConstraintsFuns {
   def mustFulfill[T](toTest: T, pred: T => Boolean, msg: String): AlmValidation[T] =
     if(pred(toTest)) toTest.success else ConstraintViolatedProblem(msg).failure
   
+  def mustBeTrue(toTest: Boolean): AlmValidation[Boolean] =
+    if(toTest) toTest.success else ConstraintViolatedProblem("Must be true").failure
+
+  def mustBeFalse(toTest: Boolean): AlmValidation[Boolean] =
+    if(!toTest) toTest.success else ConstraintViolatedProblem("Must be false").failure
+    
   def notEmpty(toTest: String): AlmValidation[String] =
     if (toTest.isEmpty) BadDataProblem("String must not be empty").failure else toTest.success
 
+  def collectionNotEmpty[T](toTest: Traversable[T]): AlmValidation[Traversable[T]] =
+    if (toTest.isEmpty) BadDataProblem("Collection must not be empty").failure else toTest.success
+    
+    
   def notEmptyOrWhitespace(toTest: String): AlmValidation[String] =
     if (toTest.trim.isEmpty)
       BadDataProblem("String must not be empty or whitespaces").failure
