@@ -42,14 +42,14 @@ trait XmlFunctions {
     elems(elem)(label) match {
       case Seq() => None.success
       case Seq(x) => Some(x).success
-      case _ => UnspecifiedProblem("More than one child element found for: %s".format(label)).failure
+      case _ => UnspecifiedProblem(s"""More than one child element found for label "$label" in element "${elem.label}".""".format(label)).failure
     }
 
   def getChild(elem: Elem)(label: String): AlmValidation[Elem] =
     tryGetChild(elem)(label).flatMap(childOpt =>
       option.cata(childOpt)(
         e => e.success,
-        UnspecifiedProblem("The element did not contain a child labeled %s".format(label)).failure))
+        UnspecifiedProblem(s"""The element "${elem.label}" did not contain a child labeled "$label".""").failure))
 
   def xmlFromString(xmlString: String): AlmValidation[Elem] = {
     try {
