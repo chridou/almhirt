@@ -43,7 +43,7 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
         updateFailedOperationState(theAlmhirt, fail, ticket),
       succ => {
         val action: PerformedAction =
-          if (succ.isEmpty) PerformedUnspecifiedAction
+          if (succ.isEmpty) PerformedNoAction("There were no events to store")
           else if (succ.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
           else PerformedUpdateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
         ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))

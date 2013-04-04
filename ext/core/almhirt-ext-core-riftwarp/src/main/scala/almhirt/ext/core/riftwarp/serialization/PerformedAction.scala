@@ -33,19 +33,11 @@ object PerformedDeleteActionDecomposer extends Decomposer[PerformedDeleteAction]
   }
 }
 
-object PerformedUnspecifiedActionDecomposer extends Decomposer[PerformedUnspecifiedAction.type] {
-  val riftDescriptor = RiftDescriptor("almhirt.util.PerformedUnspecifiedAction")
+object PerformedNoActionDecomposer extends Decomposer[PerformedNoAction] {
+  val riftDescriptor = RiftDescriptor(classOf[PerformedNoAction])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedUnspecifiedAction.type, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor).ok
-  }
-}
-
-object PerformedNoActionDecomposer extends Decomposer[PerformedNoAction.type] {
-  val riftDescriptor = RiftDescriptor("almhirt.util.PerformedNoAction")
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedNoAction.type, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor).ok
+  def decompose[TDimension <: RiftDimension](what: PerformedNoAction, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
+    into.addRiftDescriptor(this.riftDescriptor).addString("reason", what.reason).ok
   }
 }
 
@@ -57,8 +49,7 @@ object PerformedActionDecomposer extends Decomposer[PerformedAction] {
       case act : PerformedCreateAction => into.includeDirect(act, PerformedCreateActionDecomposer)
       case act : PerformedUpdateAction => into.includeDirect(act, PerformedUpdateActionDecomposer)
       case act : PerformedDeleteAction => into.includeDirect(act, PerformedDeleteActionDecomposer)
-      case act : PerformedUnspecifiedAction.type => into.includeDirect(act, PerformedUnspecifiedActionDecomposer)
-      case act : PerformedNoAction.type => into.includeDirect(act, PerformedNoActionDecomposer)
+      case act : PerformedNoAction => into.includeDirect(act, PerformedNoActionDecomposer)
     }
   }
 }
@@ -87,19 +78,11 @@ object PerformedDeleteActionRecomposer extends Recomposer[PerformedDeleteAction]
   }
 }
 
-object PerformedUnspecifiedActionRecomposer extends Recomposer[PerformedUnspecifiedAction.type] {
-  val riftDescriptor = RiftDescriptor("almhirt.util.PerformedUnspecifiedAction")
+object PerformedNoActionRecomposer extends Recomposer[PerformedNoAction] {
+  val riftDescriptor = RiftDescriptor(classOf[PerformedNoAction])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PerformedUnspecifiedAction.type] = {
-    PerformedUnspecifiedAction.success
-  }
-}
-
-object PerformedNoActionRecomposer extends Recomposer[PerformedNoAction.type] {
-  val riftDescriptor = RiftDescriptor("almhirt.util.PerformedNoAction")
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PerformedNoAction.type] = {
-    PerformedNoAction.success
+  def recompose(from: Extractor): AlmValidation[PerformedNoAction] = {
+    from.getString("reason").map(PerformedNoAction)
   }
 }
 
@@ -111,6 +94,5 @@ object PerformedActionRecomposer extends DivertingRecomposer[PerformedAction] {
       PerformedCreateActionRecomposer.riftDescriptor -> PerformedCreateActionRecomposer,
       PerformedUpdateActionRecomposer.riftDescriptor -> PerformedUpdateActionRecomposer,
       PerformedDeleteActionRecomposer.riftDescriptor -> PerformedDeleteActionRecomposer,
-      PerformedUnspecifiedActionRecomposer.riftDescriptor -> PerformedUnspecifiedActionRecomposer,
       PerformedNoActionRecomposer.riftDescriptor -> PerformedNoActionRecomposer).lift
 }
