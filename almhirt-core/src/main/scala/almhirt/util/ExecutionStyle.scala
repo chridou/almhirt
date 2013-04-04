@@ -5,6 +5,9 @@ import language.implicitConversions
 import java.util.{ UUID => JUUID }
 import almhirt.common._
 
+/**
+ * If the receiver accepts this, tell her how she should treat the result.
+ */
 sealed trait ExecutionStyle
 
 object ExecutionStyle {
@@ -27,6 +30,23 @@ object ExecutionStyle {
     apply(correlationId)
 }
 
-case object FireAndForget extends ExecutionStyle
-final case class Correlated(correlationId: JUUID) extends ExecutionStyle
+/**
+ * The receiver can execute your command in a fire and forget manner or send you a result with a correlationId
+ */
+sealed trait UntrackedExecutionStyle extends ExecutionStyle
+
+/**
+ * The sender signals, that he is not interested in any result and knows that no one else is. Just do it! If you fail... well, maybe log it..
+ */
+case object FireAndForget extends UntrackedExecutionStyle
+
+/**
+ * The sender signals, that he is interested in the result. Send it back with the given correlation id.
+ */
+final case class Correlated(correlationId: JUUID) extends UntrackedExecutionStyle
+
+/**
+ * The sender himself is not interested in the result but knows that someone else is. 
+ * If you are the last one in the chain of operations who can accept [[Tracked]], publish the result as a [[ResultOperationState]]
+ */
 final case class Tracked(ticket: TrackingTicket) extends ExecutionStyle

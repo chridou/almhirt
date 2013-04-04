@@ -12,7 +12,6 @@ sealed trait OperationState {
   def tryGetAction: Option[PerformedAction]
 }
 
-sealed trait ResultOperationState extends OperationState
 
 final case class InProcess(ticket: TrackingTicket, commandInfo: CommandInfo, timestamp: DateTime) extends OperationState {
   val isFinished = false
@@ -26,6 +25,8 @@ object InProcess {
   def apply(ticket: TrackingTicket, commandInfo: CommandInfo)(implicit createsDateTimes: CanCreateDateTime): InProcess =
     apply(ticket, commandInfo, createsDateTimes.getDateTime)
 }
+
+sealed trait ResultOperationState extends OperationState
 
 case class Executed(ticket: TrackingTicket, action: PerformedAction, timestamp: DateTime) extends ResultOperationState {
   val isFinished = true
