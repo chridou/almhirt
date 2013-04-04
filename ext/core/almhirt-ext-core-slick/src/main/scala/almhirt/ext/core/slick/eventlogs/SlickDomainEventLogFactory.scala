@@ -62,7 +62,7 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
       serializerFactory <- inTryCatch {
         Class.forName(serializerFactoryName)
           .newInstance()
-          .asInstanceOf[{ def createSerializer(storeBlobsHere: Option[(BlobStorageWithUuidBlobId, Int)], anAlmhirt: Almhirt): AlmValidation[DomainEventToStringSerializer] }]
+          .asInstanceOf[{ def createSerializer(anAlmhirt: Almhirt): AlmValidation[DomainEventToStringSerializer] }]
 
       }
       serializer <- computeSafely {
@@ -71,7 +71,7 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
             Some((eventLogDataAccess, ConfigHelper.getIntOrDefault(32000)(eventLogConfig)("min_blob_size_for_separation")))
           else
             None
-        serializerFactory.createSerializer(blobSettings, theAlmhirt)
+        serializerFactory.createSerializer(theAlmhirt)
       }
       actor <- inTryCatch {
         val name = ConfigHelper.domainEventLog.getActorName(eventLogConfig)

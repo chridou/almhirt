@@ -67,7 +67,9 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
   }
 
   test("The eventlog must store the events") {
-    withIsolatedFilledEventLog(eventlog => true.success).isSuccess must be(true)
+    val res = withIsolatedFilledEventLog(eventlog => true.success)
+    println(res)
+    res.isSuccess must be(true)
   }
 
   test("The eventlog must store and read the events") {

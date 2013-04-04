@@ -44,9 +44,12 @@ object ToJsonCordWarpSequencer extends WarpSequencerFactory[DimensionCord] {
   val channel = RiftJson()
   val tDimension = classOf[DimensionCord].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
-  def apply(state: Cord, collectedBlobReferences: Vector[ExtractedBlobReference], blobPolicy: BlobSerializationPolicy)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = apply(Cord.empty, blobPolicy)
-  def apply(state: Cord, blobPolicy: BlobSerializationPolicy)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = new ToJsonCordWarpSequencer(state, Vector.empty, blobPolicy)
-  def apply(blobPolicy: BlobSerializationPolicy)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = new ToJsonCordWarpSequencer(Cord.empty, Vector.empty, blobPolicy)
+  def apply(state: Cord, collectedBlobReferences: Vector[ExtractedBlobReference], blobPolicy: BlobSerializationPolicy)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = 
+    apply(state, blobPolicy)
+  def apply(state: Cord, blobPolicy: BlobSerializationPolicy)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = 
+    new ToJsonCordWarpSequencer(state, Vector.empty, blobPolicy)
+  def apply(blobPolicy: BlobSerializationPolicy)(implicit hasDecomposers: HasDecomposers): ToJsonCordWarpSequencer = 
+    new ToJsonCordWarpSequencer(Cord.empty, Vector.empty, blobPolicy)
   def createWarpSequencer(blobPolicy: BlobSerializationPolicy)(implicit hasDecomposers: HasDecomposers): AlmValidation[ToJsonCordWarpSequencer] =
     apply(blobPolicy).success
 }
