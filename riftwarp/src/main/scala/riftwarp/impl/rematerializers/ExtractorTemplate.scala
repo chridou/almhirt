@@ -1,18 +1,21 @@
 package riftwarp.impl.rematerializers
 
 import language.higherKinds
-
 import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.serialization._
 import riftwarp._
 import riftwarp.components.HasRecomposers
+import riftwarp.serialization.common.BlobRepresentationRecomposer
 
-abstract class ExtractorTemplate[TDimension <: RiftDimension](val path: List[String], fetchBlobData: BlobFetch)(implicit hasRecomposers: HasRecomposers) extends Extractor {
+abstract class ExtractorTemplate[TDimension <: RiftDimension](val path: List[String])(implicit hasRecomposers: HasRecomposers) extends Extractor {
   type Remat = Rematerializer[TDimension]
   def rematerializer: Remat
+
+  def blobPolicy: BlobDeserializationPolicy
 
   def getValue(ident: String): AlmValidation[Remat#ValueRepr]
   def spawnNew(ident: String)(value: Remat#ValueRepr): AlmValidation[Extractor]
@@ -179,12 +182,19 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](val path: List[Str
     } yield tree
 
   override def getBlob(ident: String): AlmValidation[Array[Byte]] =
-    for {
-      value <- getValue(ident)
-      blobExtractor <- spawnNew(ident)(value)
-      blob <- RiftBlobRecomposer.recompose(blobExtractor)
-      data <- fetchBlobData(blob)
-    } yield data
+    blobPolicy match {
+      case BlobIntegrationDisabled => getByteArrayFromBlobEncoding(ident)
+      case BlobIntegrationEnabled(unpacker) =>
+        for {
+          value <- getValue(ident)
+          blobExtractor <- spawnNew(ident)(value)
+          blob <- BlobRepresentationRecomposer.recompose(blobExtractor)
+          data <- blob match {
+            case blobVal: BlobValue => blobVal.dataAsArray.success
+            case ref: BlobReference => unpacker(ref)
+          }  
+        } yield data
+    }
 
   private def extractComplexWithLookup[T <: AnyRef](extractor: Extractor, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[T] =
     for {
@@ -199,7 +209,7 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](val path: List[Str
       casted <- almCast[T](recomposed)
     } yield casted
 
-  private def extractPrimitiveOrComplexWithLookup(ident:String, value: Remat#ValueRepr, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Any] =
+  private def extractPrimitiveOrComplexWithLookup(ident: String, value: Remat#ValueRepr, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Any] =
     if (rematerializer.isPrimitive(value))
       rematerializer.primitiveFromValue(value)
     else

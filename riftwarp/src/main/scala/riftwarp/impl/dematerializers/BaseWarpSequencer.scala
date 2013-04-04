@@ -3,19 +3,20 @@ package riftwarp.impl.dematerializers
 import scala.collection.IterableLike
 import scala.reflect.ClassTag
 import scalaz._, Scalaz._
+import almhirt.serialization._
 import scalaz.std._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.components._
+import riftwarp.serialization.common._
 
 /**
  * Does not implement the up most '...Optional' methods, because they might differ in behaviour.
  */
-abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], hasDecomposers: HasDecomposers) extends WarpSequencer[TDimension] {
+abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Class[_ <: RiftDimension], override val collectedBlobReferences: Vector[ExtractedBlobReference], hasDecomposers: HasDecomposers) extends WarpSequencer[TDimension] {
   def dematerializer: Dematerializer[TDimension]
   type ValueRepr = TDimension#Under
-  protected def divertBlob: BlobDivert
   /**
    * Creates a new instance of a warpSequencer. It should respect divertBlob when creating the new instance.
    *
@@ -24,12 +25,31 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
 
   protected def addReprValue(ident: String, value: ValueRepr): WarpSequencer[TDimension]
 
-  protected def getDematerializedBlob(ident: String, aValue: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]] =
-    divertBlob(aValue, blobIdentifier).flatMap(blob =>
-      blob.decompose(spawnNew())).map(sequencer =>
-      insertWarpSequencer(ident, sequencer))
+  protected def getDematerializedBlob(ident: String, aValue: Array[Byte], blobIdentifier: BlobIdentifier): AlmValidation[WarpSequencer[TDimension]] =
+    blobPolicy match {
+      case BlobSeparationDisabled =>
+        addByteArrayBlobEncoded(ident, aValue).success
+      case BlobSeparationEnabled(blobPacker) =>
+        blobPacker(aValue, blobIdentifier).flatMap { blobRepr =>
+          (blobRepr match {
+            case ref: BlobReference =>
+              BlobReferenceDecomposer.decompose[TDimension](ref, spawnNew()).map(sequencer => (sequencer, Some(ref)))
+            case blobVal: BlobValue =>
+              blobVal match {
+                case arrVal: BlobArrayValue =>
+                  BlobArrayValueDecomposer.decompose[TDimension](arrVal, spawnNew()).map(sequencer => (sequencer, None))
+                case otherRepr: BlobValue =>
+                  BlobArrayValueDecomposer.decompose[TDimension](BlobArrayValue(otherRepr.dataAsArray), spawnNew()).map(sequencer => (sequencer, None))
+              }
+          }).map {
+            case (sequencer, blobRef) =>
+              val collectedSoFar = collectedBlobReferences ++ blobRef.map(ref => Vector(ExtractedBlobReference(ref, aValue))).getOrElse(Vector.empty)
+              insertWarpSequencer(ident, sequencer, collectedSoFar)
+          }
+        }
+    }
 
-  protected def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[TDimension]): WarpSequencer[TDimension]
+  protected def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[TDimension], collectedBlobReferences: Vector[ExtractedBlobReference]): WarpSequencer[TDimension]
 
   override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[WarpSequencer[TDimension]] = decomposer.decompose(what, this)
   override def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
@@ -61,14 +81,14 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
 
   override def addUuid(ident: String, aValue: _root_.java.util.UUID): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getUuidRepr(aValue))
 
-  override def addBlob(ident: String, what: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]] =
+  override def addBlob(ident: String, what: Array[Byte], blobIdentifier: BlobIdentifier): AlmValidation[WarpSequencer[TDimension]] =
     getDematerializedBlob(ident, what, blobIdentifier)
   override def addBlob(ident: String, what: Array[Byte]): AlmValidation[WarpSequencer[TDimension]] =
-    addBlob(ident, what, RiftBlobIdentifierSimple(ident))
+    addBlob(ident, what, BlobIdentifierFieldName(ident))
   override def addBlob(ident: String, what: Array[Byte], name: String): AlmValidation[WarpSequencer[TDimension]] =
-    addBlob(ident, what, RiftBlobIdentifierWithName(ident, name))
-  override def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, String]): AlmValidation[WarpSequencer[TDimension]] =
-    addBlob(ident, what, RiftBlobIdentifierWithArgs(ident, identifiers))
+    addBlob(ident, what, BlobIdentifierWithName(name))
+  override def addBlob(ident: String, what: Array[Byte], args: Map[String, Any]): AlmValidation[WarpSequencer[TDimension]] =
+    addBlob(ident, what, BlobIdentifierWithArgs(args))
 
   override def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))
@@ -123,13 +143,12 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
   override def addTree[A](ident: String, what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getTreeRepr[A](what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
 
-
 }
 
-abstract class ToStringWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionString](classOf[DimensionCord], hasDecomposers)
+abstract class ToStringWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, collectedBlobReferences: Vector[ExtractedBlobReference], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionString](classOf[DimensionCord], collectedBlobReferences, hasDecomposers)
 
-abstract class ToCordWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionCord](classOf[DimensionCord], hasDecomposers)
+abstract class ToCordWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, collectedBlobReferences: Vector[ExtractedBlobReference], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionCord](classOf[DimensionCord], collectedBlobReferences, hasDecomposers)
 
-abstract class ToBinaryWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionBinary](classOf[DimensionBinary], hasDecomposers)
+abstract class ToBinaryWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, collectedBlobReferences: Vector[ExtractedBlobReference], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionBinary](classOf[DimensionBinary], collectedBlobReferences, hasDecomposers)
 
-abstract class ToRawMapWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionRawMap](classOf[DimensionRawMap], hasDecomposers)
+abstract class ToRawMapWarpSequencer(val channel: RiftChannel, val toolGroup: ToolGroup, collectedBlobReferences: Vector[ExtractedBlobReference], hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionRawMap](classOf[DimensionRawMap], collectedBlobReferences, hasDecomposers)

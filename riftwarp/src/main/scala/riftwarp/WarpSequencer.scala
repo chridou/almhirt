@@ -6,6 +6,7 @@ import scala.collection.{IterableLike, MapLike }
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.serialization._
 import riftwarp._
 import riftwarp.components._
 
@@ -15,6 +16,8 @@ trait RawWarpSequencer {
   def toolGroup: ToolGroup
   /** Path to the root */
   def dematerializeRaw: RiftDimension
+  def blobPolicy: BlobSerializationPolicy
+  def collectedBlobReferences: Vector[ExtractedBlobReference]
 }
 
 trait WarpSequencer[+TDimension <: RiftDimension] extends RawWarpSequencer {
@@ -61,14 +64,14 @@ trait WarpSequencer[+TDimension <: RiftDimension] extends RawWarpSequencer {
   def addUuid(ident: String, aValue: _root_.java.util.UUID): WarpSequencer[TDimension]
   def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]): WarpSequencer[TDimension]
 
-  def addBlob(ident: String, what: Array[Byte], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]]
+  def addBlob(ident: String, what: Array[Byte], blobIdentifier: BlobIdentifier): AlmValidation[WarpSequencer[TDimension]]
   def addBlob(ident: String, what: Array[Byte]): AlmValidation[WarpSequencer[TDimension]]
   def addBlob(ident: String, what: Array[Byte], name: String): AlmValidation[WarpSequencer[TDimension]]
-  def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, String]): AlmValidation[WarpSequencer[TDimension]]
-  def addOptionalBlob(ident: String, what: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier): AlmValidation[WarpSequencer[TDimension]]
+  def addBlob(ident: String, what: Array[Byte], identifiers: Map[String, Any]): AlmValidation[WarpSequencer[TDimension]]
+  def addOptionalBlob(ident: String, what: Option[Array[Byte]], blobIdentifier: BlobIdentifier): AlmValidation[WarpSequencer[TDimension]]
   def addOptionalBlob(ident: String, what: Option[Array[Byte]]): AlmValidation[WarpSequencer[TDimension]]
   def addOptionalBlob(ident: String, what: Option[Array[Byte]], name: String): AlmValidation[WarpSequencer[TDimension]]
-  def addOptionalBlob(ident: String, what: Option[Array[Byte]], identifiers: Map[String, String]): AlmValidation[WarpSequencer[TDimension]]
+  def addOptionalBlob(ident: String, what: Option[Array[Byte]], identifiers: Map[String, Any]): AlmValidation[WarpSequencer[TDimension]]
 
   def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]]
   def addOptionalWith[A](ident: String, what: Option[A], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]]

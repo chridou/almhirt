@@ -1,6 +1,7 @@
 package riftwarp.components
 
 import almhirt.common._
+import almhirt.serialization._
 import riftwarp._
 
 trait ExtractorFactory[TDimension <: RiftDimension] {
@@ -10,10 +11,10 @@ trait ExtractorFactory[TDimension <: RiftDimension] {
   def channel: RiftChannel
   def tDimension: Class[_ <: RiftDimension]
   def toolGroup: ToolGroup
-  def createExtractor(from: TDimension, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor]
-  def createExtractorRaw(from: AnyRef, fetchBlobs: BlobFetch)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = 
-    createExtractor(from.asInstanceOf[TDimension], fetchBlobs)(hasRecomposers)
-  def createExtractor(from: TDimension)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = createExtractor(from, NoFetchBlobFetch)(hasRecomposers)
+  def createExtractor(from: TDimension, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor]
+  def createExtractorRaw(from: AnyRef, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = 
+    createExtractor(from.asInstanceOf[TDimension], blobPolicy)(hasRecomposers)
+  def createExtractor(from: TDimension)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = createExtractor(from, BlobIntegrationDisabled)(hasRecomposers)
   def createExtractorRaw(from: AnyRef)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = 
-    createExtractorRaw(from, NoFetchBlobFetch)(hasRecomposers)
+    createExtractorRaw(from, BlobIntegrationDisabled)(hasRecomposers)
 }

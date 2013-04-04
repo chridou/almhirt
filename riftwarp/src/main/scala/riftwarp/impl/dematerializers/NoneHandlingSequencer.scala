@@ -6,6 +6,7 @@ import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.serialization._
 import riftwarp._
 import riftwarp.components._
 
@@ -35,10 +36,10 @@ trait NoneIsHandledUnified[TDimension <: RiftDimension] { warpSequencer: WarpSeq
 
   override def addOptionalUuid(ident: String, anOptionalValue: Option[_root_.java.util.UUID]) = option.cata(anOptionalValue)(addUuid(ident, _), noneHandler(ident))
 
-  override def addOptionalBlob(ident: String, what: Option[Array[Byte]], blobIdentifier: RiftBlobIdentifier) = option.cata(what)(addBlob(ident, _, blobIdentifier), noneHandler(ident).success)
+  override def addOptionalBlob(ident: String, what: Option[Array[Byte]], blobIdentifier: BlobIdentifier) = option.cata(what)(addBlob(ident, _, blobIdentifier), noneHandler(ident).success)
   override def addOptionalBlob(ident: String, what: Option[Array[Byte]]): AlmValidation[WarpSequencer[TDimension]] = option.cata(what)(addBlob(ident, _), noneHandler(ident).success)
   override def addOptionalBlob(ident: String, what: Option[Array[Byte]], name: String): AlmValidation[WarpSequencer[TDimension]] = option.cata(what)(addBlob(ident, _, name), noneHandler(ident).success)
-  override def addOptionalBlob(ident: String, what: Option[Array[Byte]], identifiers: Map[String, String]): AlmValidation[WarpSequencer[TDimension]] = option.cata(what)(addBlob(ident, _, identifiers), noneHandler(ident).success)
+  override def addOptionalBlob(ident: String, what: Option[Array[Byte]], identifiers: Map[String, Any]): AlmValidation[WarpSequencer[TDimension]] = option.cata(what)(addBlob(ident, _, identifiers), noneHandler(ident).success)
 
   override def addOptionalWith[A](ident: String, what: Option[A], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] = option.cata(what)(addWith(ident, _, decomposes), noneHandler(ident).success)
   override def addOptionalComplex[A <: AnyRef](ident: String, what: Option[A], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] = option.cata(what)(addComplex(ident, _, backupRiftDescriptor), noneHandler(ident).success)

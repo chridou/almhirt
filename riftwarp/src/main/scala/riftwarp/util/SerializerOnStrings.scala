@@ -7,58 +7,45 @@ import almhirt.serialization._
 import riftwarp._
 import scala.reflect.ClassTag
 
-class RiftSerializerOnString[TIn <: AnyRef](riftWarp: RiftWarp, blobStorage: Option[(BlobStorage { type TBlobId = JUUID }, Int)])(implicit support: HasExecutionContext with CanCreateUuid) extends CanSerialize[TIn] {
+class RiftSerializerOnString[TIn <: AnyRef](riftWarp: RiftWarp)(implicit support: HasExecutionContext) extends CanSerialize[TIn] {
   type SerializedRepr = String
 
-  private val serializeWithRiftWarp: (AnyRef, String) => AlmValidation[String] =
-    blobStorage match {
-      case Some((bs, minBlobSize)) =>
-        def blobDivert(data: Array[Byte], ident: RiftBlobIdentifier): AlmValidation[RiftBlob] =
-          if (data.length < minBlobSize)
-            RiftBlobArrayValue(data).success
-          else
-            bs.storeBlob(support.getUuid, data).map(id => RiftBlobRefByUuid(id))
-        (what: AnyRef, channel: String) =>
-          riftWarp.channels.getChannel(channel).flatMap(riftChannel =>
-            riftWarp.prepareForWarpWithBlobs[DimensionString](blobDivert)(riftChannel, None)(what).map(_.manifestation))
-          case None =>
-        (what: AnyRef, channel: String) =>
-          riftWarp.channels.getChannel(channel).flatMap(riftChannel =>
-            riftWarp.prepareForWarp[DimensionString](riftChannel, None)(what).map(_.manifestation))
-    }
+  private def serializeWithRiftWarp(what: TIn, channel: String, blobPolicy: BlobSerializationPolicy): AlmValidation[(String, Vector[ExtractedBlobReference])] =
+    riftWarp.channels.getChannel(channel).flatMap(riftChannel =>
+      riftWarp.prepareForWarpWithBlobs[DimensionString](blobPolicy)(riftChannel, None)(what).map(x => (x._1.manifestation, x._2)))
 
   override def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(Option[String], SerializedRepr)] =
-    serializeWithRiftWarp(what, channel).map((Some(RiftDescriptor(what.getClass()).toParsableString()), _))
+    serializeWithRiftWarp(what, channel, BlobSeparationDisabled).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x._1))
 
   override def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(Option[String], SerializedRepr)] =
     AlmFuture { serialize(channel)(what, typeHint) }
 
+  override def serializeBlobSeparating(blobPolicy: BlobSerializationPolicy)(channel: String)(what: TIn, typeHint: Option[String]) =
+    serializeWithRiftWarp(what, channel, BlobSeparationDisabled).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x._1, x._2))
+
+  override def serializeBlobSeparatingAsync(blobPolicy: BlobSerializationPolicy)(channel: String)(what: TIn, typeHint: Option[String]) =
+    AlmFuture { serializeBlobSeparating(blobPolicy)(channel)(what, typeHint) }
 }
 
-class RiftDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp, blobStorage: Option[BlobStorage { type TBlobId = JUUID }])(implicit support: HasExecutionContext, tag: ClassTag[TOut]) extends CanDeserialize[TOut] {
+class RiftDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp)(implicit support: HasExecutionContext, tag: ClassTag[TOut]) extends CanDeserialize[TOut] {
   type SerializedRepr = String
-
-  private val deserializeWithRiftWarp: (String, RiftChannel) => AlmValidation[TOut] =
-    blobStorage match {
-      case Some(bs) =>
-        def blobFetch(blob: RiftBlob): AlmValidation[Array[Byte]] =
-          blob match {
-            case RiftBlobRefByUuid(uuid) =>
-              bs.fetchBlob(uuid)
-            case x =>
-              UnspecifiedProblem(s"Can only recreate blobs from RiftBlobRefByUuid. Got '${x.getClass().getName}'").failure
-          }
-        (what: String, channel: RiftChannel) => riftWarp.receiveFromWarpWithBlobs[DimensionString, TOut](blobFetch)(channel, None)(DimensionString(what))
-        case None =>
-        (what: String, channel: RiftChannel) => riftWarp.receiveFromWarp[DimensionString, TOut](channel, None)(DimensionString(what))
-    }
 
   override def deserialize(channel: String)(what: String, typeHint: Option[String]): AlmValidation[TOut] =
     for {
       riftChannel <- riftWarp.channels.getChannel(channel)
-      deserialized <- deserializeWithRiftWarp(what, riftChannel)
+      deserialized <- riftWarp.receiveFromWarp[DimensionString, TOut](riftChannel, None)(DimensionString(what))
     } yield deserialized
 
   override def deserializeAsync(channel: String)(what: SerializedRepr, typeIdent: Option[String]): AlmFuture[TOut] =
     AlmFuture { deserialize(channel)(what, typeIdent) }
+
+  override def deserializeBlobIntegrating(blobPolicy: BlobDeserializationPolicy)(channel: String)(what: SerializedRepr, typeIdent: Option[String]) =
+    for {
+      riftChannel <- riftWarp.channels.getChannel(channel)
+      deserialized <- riftWarp.receiveFromWarpWithBlobs[DimensionString, TOut](blobPolicy)(riftChannel, None)(DimensionString(what))
+    } yield deserialized
+
+  override def deserializeBlobIntegratingAsync(blobPolicy: BlobDeserializationPolicy)(channel: String)(what: SerializedRepr, typeIdent: Option[String]): AlmFuture[TOut] =
+    AlmFuture { deserializeBlobIntegrating(blobPolicy)(channel)(what, typeIdent) }
+
 }
