@@ -19,7 +19,7 @@ trait CreatesClassicProblemLogger extends CreatesCoreComponentsBootstrapperPhase
       implicit val executionContext = theAlmhirt.executionContext
       implicit val hasExecutionContext = theAlmhirt
       inTryCatch {
-        startUpLogger.info(s"""Create classic problem logger state tracker from config section "${ConfigPaths.problems}"""")
+        startUpLogger.info(s"""Create classic problem logger from config section "${ConfigPaths.problems}"""")
         ConfigHelper.tryGetNotDisabledSubConfig(config, ConfigPaths.problems) match {
           case Some(subConf) =>
             val minSeverity =
@@ -30,7 +30,7 @@ trait CreatesClassicProblemLogger extends CreatesCoreComponentsBootstrapperPhase
                 },
                 succ => succ)
             val actorName = ConfigHelper.problems.getActorName(subConf)
-            val problemLogger = theAlmhirt.actorSystem.actorOf(Props(new almhirt.util.impl.ProblemLogger(minSeverity)), actorName)
+            val problemLogger = theAlmhirt.actorSystem.actorOf(Props(new almhirt.util.impl.ClassicProblemLogger(minSeverity)), actorName)
             val problemloggerRegistration =
               (problemChannel.actor ? SubscribeQry(MessagingSubscription.forActor[Problem](problemLogger)))(atMost)
                 .mapTo[SubscriptionRsp]
