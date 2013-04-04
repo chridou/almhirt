@@ -37,24 +37,27 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
         succ => succ.version.success).map(reqVersion =>
           validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, reqVersion))
       committedEventsRsp <- (eventLog ? LogDomainEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[LoggedDomainEventsRsp]
-      committedEvents <- AlmFuture.successful{ committedEventsRsp.committedEvents }
-    } yield committedEvents).onComplete(
+    } yield committedEventsRsp).onComplete(
       fail =>
-        updateFailedOperationState(theAlmhirt, fail, ticket),
-      succ => {
-        val action: PerformedAction =
-          if (succ.isEmpty) PerformedNoAction("There were no events to store")
-          else if (succ.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
-          else PerformedUpdateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
-        ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
-        succ.foreach(event => theAlmhirt.publishDomainEvent(event))
+        updateFailedOperationState(fail, ticket),
+      {
+        case LoggedDomainEventsRsp(committedEvents, Some((cause, failedEvents)), _) =>
+          val prob = PersistenceProblem(s"${failedEvents.length} domain events out of ${uncommittedEvents.length} couldn't be stored. ${committedEvents.length} domain events have been stored.", cause = Some(cause))
+          updateFailedOperationState(prob, ticket)
+        case LoggedDomainEventsRsp(committedEvents, None, _) =>
+          val action: PerformedAction =
+            if (committedEvents.isEmpty) PerformedNoAction("There were no events to store")
+            else if (committedEvents.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
+            else PerformedUpdateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
+          ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
+          committedEvents.foreach(event => theAlmhirt.publishDomainEvent(event))
       })
   }
 
-  private def updateFailedOperationState(almhirt: Almhirt, p: Problem, ticket: Option[TrackingTicket]) {
-    almhirt.publishProblem(p)
+  private def updateFailedOperationState(p: Problem, ticket: Option[TrackingTicket]) {
+    theAlmhirt.publishProblem(p)
     ticket match {
-      case Some(t) => almhirt.publishOperationState(NotExecuted(t, p))
+      case Some(t) => theAlmhirt.publishOperationState(NotExecuted(t, p))
       case None => ()
     }
   }

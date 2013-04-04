@@ -41,16 +41,20 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
           succ => succ.version.success).map(reqVersion =>
             validator.validateAggregateRootAgainstEvents(ar, uncommittedEvents, reqVersion))
         committedEventsRsp <- (eventLog ? LogDomainEventsQry(uncommittedEvents, None))(timeout).mapToSuccessfulAlmFuture[LoggedDomainEventsRsp]
-      } yield committedEventsRsp.committedEvents).andThen(
+      } yield committedEventsRsp).andThen(
         fail =>
           updateFailedOperationState(fail, ticket),
-        succ => {
-          val action: PerformedAction =
-            if (succ.isEmpty) PerformedNoAction("There were no events to store")
-            else if (succ.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
-            else PerformedUpdateAction(AggregateRootRef(ar.id, succ.last.aggVersion + 1))
-          ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
-          succ.foreach(event => theAlmhirt.publishDomainEvent(event))
+        {
+          case LoggedDomainEventsRsp(committedEvents, Some((cause, failedEvents)), _) =>
+            val prob = PersistenceProblem(s"${failedEvents.length} domain events out of ${uncommittedEvents.length} couldn't be stored. ${committedEvents.length} domain events have been stored.", cause = Some(cause))
+            updateFailedOperationState(prob, ticket)
+          case LoggedDomainEventsRsp(committedEvents, None, _) =>
+            val action: PerformedAction =
+              if (committedEvents.isEmpty) PerformedNoAction("There were no events to store")
+              else if (committedEvents.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
+              else PerformedUpdateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
+            ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
+            committedEvents.foreach(event => theAlmhirt.publishDomainEvent(event))
         }).awaitResult
     }(s"Could not store ${uncommittedEvents.size} events for aggregate root ${ar.id}").onFailure(p => updateFailedOperationState(p, ticket))
   }
