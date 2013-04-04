@@ -74,8 +74,8 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
           style match {
             case Tracked(ticket) => storeToEventLog(typedAr, uncommittedEvents.asInstanceOf[IndexedSeq[Event]], Some(ticket))
             case FireAndForget => storeToEventLog(typedAr, uncommittedEvents.asInstanceOf[IndexedSeq[Event]], None)
-            case Correlated(corrId) =>
-              theAlmhirt.publishProblem(NotSupportedProblem(s"BlockingAggregateRootRepositoryActor can not store an AR with a Correlated($corrId) style."))
+            case NeedResponseExectionStyle(a) =>
+              theAlmhirt.publishProblem(NotSupportedProblem(s"BlockingAggregateRootRepositoryActor can not store an AR with a Correlated(${a.toString}) style."))
           })
   }
 }

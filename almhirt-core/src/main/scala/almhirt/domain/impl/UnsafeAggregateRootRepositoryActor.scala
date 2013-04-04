@@ -70,8 +70,8 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
           style match {
             case Tracked(ticket) => storeToEventLog(typedAr, uncommittedEvents.asInstanceOf[IndexedSeq[Event]], Some(ticket))
             case FireAndForget => storeToEventLog(typedAr, uncommittedEvents.asInstanceOf[IndexedSeq[Event]], None)
-            case Correlated(corrId) =>
-              theAlmhirt.publishProblem(NotSupportedProblem(s"UnsafeAggregateRootRepositoryActor can not store an AR with a Correlated($corrId) style."))
+            case NeedResponseExectionStyle(a) =>
+              theAlmhirt.publishProblem(NotSupportedProblem(s"UnsafeAggregateRootRepositoryActor can not store an AR with a Correlated(${a.toString}) style."))
           })
 
   }

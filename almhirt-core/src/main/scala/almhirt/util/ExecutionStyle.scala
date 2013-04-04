@@ -30,6 +30,13 @@ object ExecutionStyle {
     apply(correlationId)
 }
 
+
+/**
+ * The sender himself is not interested in the result but knows that someone else is. 
+ * If you are the last one in the chain of operations who can accept [[Tracked]], publish the result as a [[ResultOperationState]]
+ */
+final case class Tracked(ticket: TrackingTicket) extends ExecutionStyle
+
 /**
  * The receiver can execute your command in a fire and forget manner or send you a result with a correlationId
  */
@@ -41,12 +48,27 @@ sealed trait UntrackedExecutionStyle extends ExecutionStyle
 case object FireAndForget extends UntrackedExecutionStyle
 
 /**
- * The sender signals, that he is interested in the result. Send it back with the given correlation id.
+ * I need a result.
  */
-final case class Correlated(correlationId: JUUID) extends UntrackedExecutionStyle
+trait NeedResponseExectionStyle extends UntrackedExecutionStyle
+
+object NeedResponseExectionStyle {
+  def unapply(style: NeedResponseExectionStyle): Option[Option[JUUID]] =
+    style match {
+    case Uncorrelated => Some(None)
+    case Correlated(id) => Some(Some(id)) 
+  }
+    
+}
 
 /**
- * The sender himself is not interested in the result but knows that someone else is. 
- * If you are the last one in the chain of operations who can accept [[Tracked]], publish the result as a [[ResultOperationState]]
+ * The sender signals, that he is interested in the result. Send it back.
  */
-final case class Tracked(ticket: TrackingTicket) extends ExecutionStyle
+case object Uncorrelated extends NeedResponseExectionStyle
+
+/**
+ * The sender signals, that he is interested in the result. Send it back with the given correlation id.
+ */
+final case class Correlated(correlationId: JUUID) extends NeedResponseExectionStyle
+
+
