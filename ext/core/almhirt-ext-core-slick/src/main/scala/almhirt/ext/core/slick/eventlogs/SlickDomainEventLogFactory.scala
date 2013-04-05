@@ -49,12 +49,11 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
         if (dropOnClose)
           theAlmhirt.actorSystem.registerOnTermination({
             theAlmhirt.log.info("Dropping schema for domain event log")
-            eventLogDataAccess.getDb().withSession((session: Session) => eventLogDataAccess.drop(session))
+            eventLogDataAccess.drop
           })
         if (createSchema) {
           theAlmhirt.log.info("Creating schema for domain event log")
-          eventLogDataAccess.getDb().withSession((session: Session) =>
-            eventLogDataAccess.create(session))
+          eventLogDataAccess.create
         } else
           ().success
       }
