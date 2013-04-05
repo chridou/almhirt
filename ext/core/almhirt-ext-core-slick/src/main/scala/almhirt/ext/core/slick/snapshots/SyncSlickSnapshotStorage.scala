@@ -6,9 +6,11 @@ import almhirt.common._
 import almhirt.serialization._
 import almhirt.domain.components.SyncSnapshotStorage
 import almhirt.domain.IsAggregateRoot
+import almhirt.ext.core.slick.shared.BlobStoreComponent
 
 abstract class SyncSlickSnapshotStorageBase[TRow <: SnapshotRow](
-  dal: SnapshotStorageComponent[TRow],
+  dal: SnapshotStorageComponent[TRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
   serializing: CanSerializeToFixedChannelAndDeserialize[IsAggregateRoot, IsAggregateRoot] { type SerializedRepr = TRow#Repr }) extends SyncSnapshotStorage {
 
   def createRow(channel: String, typeIdent: String, ar: IsAggregateRoot, serializedEvent: TRow#Repr): TRow
@@ -37,8 +39,9 @@ abstract class SyncSlickSnapshotStorageBase[TRow <: SnapshotRow](
 }
 
 class SlickSyncTextSnapshotStorage(
-  dal: SnapshotStorageComponent[TextSnapshotRow],
-  serializing: StringSerializingToFixedChannel[IsAggregateRoot, IsAggregateRoot]) extends SyncSlickSnapshotStorageBase[TextSnapshotRow](dal, serializing) {
+  dal: SnapshotStorageComponent[TextSnapshotRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
+  serializing: StringSerializingToFixedChannel[IsAggregateRoot, IsAggregateRoot]) extends SyncSlickSnapshotStorageBase[TextSnapshotRow](dal, blobPolicy, serializing) {
   override def createRow(channel: String, typeIdent: String, ar: IsAggregateRoot, serializedAr: String): TextSnapshotRow =
     TextSnapshotRow(ar.id, ar.version, typeIdent, channel, serializedAr)
   override def unpackRow(row: TextSnapshotRow): (String, String, String) =
@@ -46,8 +49,9 @@ class SlickSyncTextSnapshotStorage(
 }
 
 class SlickSyncBinarySnapshotStorage(
-  dal: SnapshotStorageComponent[BinarySnapshotRow],
-  serializing: BinarySerializingToFixedChannel[IsAggregateRoot, IsAggregateRoot]) extends SyncSlickSnapshotStorageBase[BinarySnapshotRow](dal, serializing) {
+  dal: SnapshotStorageComponent[BinarySnapshotRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
+  serializing: BinarySerializingToFixedChannel[IsAggregateRoot, IsAggregateRoot]) extends SyncSlickSnapshotStorageBase[BinarySnapshotRow](dal, blobPolicy, serializing) {
   override def createRow(channel: String, typeIdent: String, ar: IsAggregateRoot, serializedAr: Array[Byte]): BinarySnapshotRow =
     BinarySnapshotRow(ar.id, ar.version, typeIdent, channel, serializedAr)
   override def unpackRow(row: BinarySnapshotRow): (Array[Byte], String, String) =

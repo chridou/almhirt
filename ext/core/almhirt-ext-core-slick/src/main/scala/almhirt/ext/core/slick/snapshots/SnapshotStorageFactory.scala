@@ -7,6 +7,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.core._
+import almhirt.serialization.BlobPolicies
 import almhirt.domain.components._
 import almhirt.environment.configuration._
 import almhirt.serializing._
@@ -59,17 +60,10 @@ class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
       serializerFactory <- inTryCatch {
         Class.forName(serializerFactoryName)
           .newInstance()
-          .asInstanceOf[{ def createSerializer(storeBlobsHere: Option[(BlobStorageWithUuidBlobId, Int)], anAlmhirt: Almhirt): AlmValidation[AggregateRootToStringSerializer] }]
+          .asInstanceOf[{ def createSerializer(anAlmhirt: Almhirt): AlmValidation[AggregateRootToStringSerializer] }]
 
       }
-      serializer <- computeSafely {
-        val blobSettings =
-          if (ConfigHelper.isBooleanSet(configSection)("with_blobs_stored_separately"))
-            Some((snapshotsDataAccess, ConfigHelper.getIntOrDefault(32000)(configSection)("min_blob_size_for_separation")))
-          else
-            None
-        serializerFactory.createSerializer(blobSettings, theAlmhirt)
-      }
+      serializer <- computeSafely { serializerFactory.createSerializer(theAlmhirt) }
       actor <- inTryCatch {
         val name = ConfigHelper.snapshotStorage.getActorName(configSection)
         theAlmhirt.log.info(s"DomainEventLog is text based SlickDomainEventLog with name '$name'.")
@@ -83,7 +77,14 @@ class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
               theAlmhirt.log.info(s"SnapshotsStorage is using dispatcher '$succ'")
               Some(succ)
             })
-        val syncStorage = new SlickSyncTextSnapshotStorage(snapshotsDataAccess, serializer.serializeToChannel(channel))
+        val blobPolicy =
+          if (ConfigHelper.isBooleanSet(configSection)("with_blobs_stored_separately")) {
+            val minBlobSize = ConfigHelper.getIntOrDefault(0)(configSection)("min_blob_size_for_separation")
+            theAlmhirt.log.info(s"Minimum BLOB size for DomainEventLog is det to '$minBlobSize' bytes.")
+            BlobPolicies.uuidRefs(snapshotsDataAccess, minBlobSize)(theAlmhirt)
+          } else
+            BlobPolicies.disabled
+        val syncStorage = new SlickSyncTextSnapshotStorage(snapshotsDataAccess, blobPolicy, serializer.serializeToChannel(channel))
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new SyncSnapshotStorageActor(syncStorage, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }
