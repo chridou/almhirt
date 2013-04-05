@@ -16,6 +16,7 @@ import almhirt.serializing.EventToStringSerializer
 import almhirt.eventlog.util.BlockingEventLogActor
 import com.typesafe.config.Config
 import almhirt.ext.core.slick.shared.Profiles
+import almhirt.serialization.BlobPolicies
 
 class SlickEventLogFactory extends EventLogFactory {
   def createEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
@@ -65,11 +66,6 @@ class SlickEventLogFactory extends EventLogFactory {
 
       }
       serializer <- computeSafely {
-        val blobSettings =
-          if (ConfigHelper.isBooleanSet(eventLogConfig)("with_blobs_stored_separately"))
-            Some((eventLogDataAccess, ConfigHelper.getIntOrDefault(32000)(eventLogConfig)("min_blob_size_for_separation")))
-          else
-            None
         serializerFactory.createSerializer(theAlmhirt)
       }
       actor <- inTryCatch {
@@ -85,7 +81,14 @@ class SlickEventLogFactory extends EventLogFactory {
               theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
               Some(succ)
             })
-        val syncStorage = new SyncTextSlickEventStorage(eventLogDataAccess, serializer.serializeToChannel(channel))
+        val blobPolicy =
+          if (ConfigHelper.isBooleanSet(eventLogConfig)("with_blobs_stored_separately")) {
+            val minBlobSize = ConfigHelper.getIntOrDefault(0)(eventLogConfig)("min_blob_size_for_separation")
+            theAlmhirt.log.info(s"Minimum BLOB size for DomainEventLog is det to '$minBlobSize' bytes.")
+            BlobPolicies.uuidRefs(eventLogDataAccess, minBlobSize)(theAlmhirt)
+          } else
+            BlobPolicies.disabled
+        val syncStorage = new SyncTextSlickEventStorage(eventLogDataAccess, blobPolicy, serializer.serializeToChannel(channel))
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingEventLogActor(syncStorage, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }

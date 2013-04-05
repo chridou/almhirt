@@ -9,9 +9,11 @@ import almhirt.core.Event
 import almhirt.eventlog.util.SyncEventStorage
 import almhirt.serialization._
 import almhirt.ext.core.slick.TypeConversion._
+import almhirt.ext.core.slick.shared.BlobStoreComponent
 
 abstract class SyncSlickEventStorage [TRow <: EventLogRow](
-  dal: EventLogStoreComponent[TRow],
+  dal: EventLogStoreComponent[TRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
   serializing: CanSerializeToFixedChannelAndDeserialize[Event, Event] { type SerializedRepr = TRow#Repr }) extends SyncEventStorage {
 
   def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: TRow#Repr): TRow
@@ -53,8 +55,9 @@ abstract class SyncSlickEventStorage [TRow <: EventLogRow](
 
 class SyncTextSlickEventStorage(
     
-  dal: EventLogStoreComponent[TextEventLogRow],
-  serializing: StringSerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[TextEventLogRow](dal, serializing) {
+  dal: EventLogStoreComponent[TextEventLogRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
+  serializing: StringSerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[TextEventLogRow](dal, blobPolicy, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: String): TextEventLogRow =
     TextEventLogRow(event.header.id, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)
@@ -63,8 +66,9 @@ class SyncTextSlickEventStorage(
 }
 
 class SyncBinarySlickEventStorage(
-  dal: EventLogStoreComponent[BinaryEventLogRow],
-  serializing: BinarySerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[BinaryEventLogRow](dal, serializing) {
+  dal: EventLogStoreComponent[BinaryEventLogRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
+  serializing: BinarySerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[BinaryEventLogRow](dal, blobPolicy, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: Array[Byte]): BinaryEventLogRow =
     BinaryEventLogRow(event.header.id, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)

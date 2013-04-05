@@ -7,9 +7,11 @@ import almhirt.almvalidation.kit._
 import almhirt.domain.DomainEvent
 import almhirt.eventlog.util.SyncDomainEventStorage
 import almhirt.serialization._
+import almhirt.ext.core.slick.shared.{BlobStoreComponent, BlobRow }
 
 abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
-  dal: DomainEventLogStoreComponent[TRow],
+  dal: DomainEventLogStoreComponent[TRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
   serializing: CanSerializeToFixedChannelAndDeserialize[DomainEvent, DomainEvent] { type SerializedRepr = TRow#Repr }) extends SyncDomainEventStorage {
 
   def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: TRow#Repr): TRow
@@ -67,8 +69,9 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
 }
 
 class SyncTextSlickDomainEventStorage(
-  dal: DomainEventLogStoreComponent[TextDomainEventLogRow],
-  serializing: StringSerializingToFixedChannel[DomainEvent, DomainEvent]) extends SyncSlickDomainEventStorage[TextDomainEventLogRow](dal, serializing) {
+  dal: DomainEventLogStoreComponent[TextDomainEventLogRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
+  serializing: StringSerializingToFixedChannel[DomainEvent, DomainEvent]) extends SyncSlickDomainEventStorage[TextDomainEventLogRow](dal, blobPolicy, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: String): TextDomainEventLogRow =
     TextDomainEventLogRow(event.header.id, event.header.aggRef.id, event.header.aggRef.version, event.header.timestamp, typeIdent, channel, serializedEvent)
@@ -77,8 +80,9 @@ class SyncTextSlickDomainEventStorage(
 }
 
 class SyncBinarySlickDomainEventStorage(
-  dal: DomainEventLogStoreComponent[BinaryDomainEventLogRow],
-  serializing: BinarySerializingToFixedChannel[DomainEvent, DomainEvent]) extends SyncSlickDomainEventStorage[BinaryDomainEventLogRow](dal, serializing) {
+  dal: DomainEventLogStoreComponent[BinaryDomainEventLogRow] with BlobStoreComponent,
+  blobPolicy: BlobPolicy,
+  serializing: BinarySerializingToFixedChannel[DomainEvent, DomainEvent]) extends SyncSlickDomainEventStorage[BinaryDomainEventLogRow](dal, blobPolicy, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: DomainEvent, serializedEvent: Array[Byte]): BinaryDomainEventLogRow =
     BinaryDomainEventLogRow(event.header.id, event.header.aggRef.id, event.header.aggRef.version, event.header.timestamp, channel, typeIdent, serializedEvent)

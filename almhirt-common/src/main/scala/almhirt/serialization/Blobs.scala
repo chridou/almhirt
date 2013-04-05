@@ -11,6 +11,21 @@ sealed trait BlobDeserializationPolicy
 final case class BlobIntegrationEnabled(unpacker: BlobUnpacker) extends BlobDeserializationPolicy
 case object BlobIntegrationDisabled extends BlobDeserializationPolicy
 
+sealed trait BlobPolicy {
+  def serializationPolicy: BlobSerializationPolicy
+  def deserializationPolicy: BlobDeserializationPolicy
+}
+
+case class BlobHandlingEnabled(packer: BlobPacker, unpacker: BlobUnpacker) extends BlobPolicy {
+  val serializationPolicy = BlobSeparationEnabled(packer)
+  val deserializationPolicy = BlobIntegrationEnabled(unpacker)
+}
+
+case object BlobHandlingDisabled extends BlobPolicy {
+  val serializationPolicy = BlobSeparationDisabled
+  val deserializationPolicy = BlobIntegrationDisabled
+}
+
 final case class ExtractedBlobReference(reference: BlobReference, binaryData: Array[Byte])
 
 sealed trait BlobRepresentation
