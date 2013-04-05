@@ -82,7 +82,7 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
         val blobPolicy =
           if (ConfigHelper.isBooleanSet(eventLogConfig)("with_blobs_stored_separately")) {
             val minBlobSize = ConfigHelper.getIntOrDefault(0)(eventLogConfig)("min_blob_size_for_separation")
-            theAlmhirt.log.info(s"Minimum BLOB size for DomainEventLog is det to '$minBlobSize' bytes.")
+            theAlmhirt.log.info(s"Minimum BLOB size for DomainEventLog is set to '$minBlobSize' bytes.")
             BlobPolicies.uuidRefs(eventLogDataAccess, minBlobSize)(theAlmhirt)
           } else
             BlobPolicies.disabled

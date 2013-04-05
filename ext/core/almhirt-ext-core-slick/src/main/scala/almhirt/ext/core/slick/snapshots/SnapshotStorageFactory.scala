@@ -80,7 +80,7 @@ class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
         val blobPolicy =
           if (ConfigHelper.isBooleanSet(configSection)("with_blobs_stored_separately")) {
             val minBlobSize = ConfigHelper.getIntOrDefault(0)(configSection)("min_blob_size_for_separation")
-            theAlmhirt.log.info(s"Minimum BLOB size for DomainEventLog is det to '$minBlobSize' bytes.")
+            theAlmhirt.log.info(s"Minimum BLOB size for SnapshotsStorage is set to '$minBlobSize' bytes.")
             BlobPolicies.uuidRefs(snapshotsDataAccess, minBlobSize)(theAlmhirt)
           } else
             BlobPolicies.disabled
