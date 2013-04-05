@@ -45,14 +45,11 @@ class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
       })
       _ <- computeSafely {
         if (dropOnClose)
-          theAlmhirt.actorSystem.registerOnTermination({
-            theAlmhirt.log.info("Dropping schema for snapshots")
-            snapshotsDataAccess.getDb().withSession((session: Session) => snapshotsDataAccess.drop(session))
-          })
+          theAlmhirt.log.info("Dropping schema for snapshots")
+          theAlmhirt.actorSystem.registerOnTermination{snapshotsDataAccess.drop}
         if (createSchema) {
           theAlmhirt.log.info("Creating schema for snapshots")
-          snapshotsDataAccess.getDb().withSession((session: Session) =>
-            snapshotsDataAccess.create(session))
+          snapshotsDataAccess.create
         } else
           ().success
       }
