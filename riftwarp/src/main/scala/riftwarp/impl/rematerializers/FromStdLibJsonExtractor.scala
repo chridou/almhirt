@@ -48,7 +48,7 @@ object FromStdLibJsonExtractor extends ExtractorFactory[DimensionStdLibJson] {
   def create(from: Any, path: List[String], blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
     from match {
       case m: Map[_, _] => (new FromStdLibJsonExtractor(m.asInstanceOf[Map[String, Any]], path, blobPolicy)).success
-      case x => InvalidCastProblem(s"Cannot create a FromStdLibJsonExtractor beacuse '${x.getClass.getName()}' is not a Map[String, Any]").failure
+      case x => InvalidCastProblem(s"""Cannot create a FromStdLibJsonExtractor because '${x.getClass.getName()}' is not a Map[String, Any]. The path is "${path.mkString("/")}"""").failure
     }
   override def createExtractor(from: DimensionStdLibJson, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
     create(from.manifestation, Nil, blobPolicy)
