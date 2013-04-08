@@ -21,7 +21,7 @@ class RiftSerializerOnString[TIn <: AnyRef](riftWarp: RiftWarp)(implicit support
     AlmFuture { serialize(channel)(what, typeHint) }
 
   override def serializeBlobSeparating(blobPolicy: BlobSerializationPolicy)(channel: String)(what: TIn, typeHint: Option[String]) =
-    serializeWithRiftWarp(what, channel, BlobSeparationDisabled).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x._1, x._2))
+    serializeWithRiftWarp(what, channel, blobPolicy).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x._1, x._2))
 
   override def serializeBlobSeparatingAsync(blobPolicy: BlobSerializationPolicy)(channel: String)(what: TIn, typeHint: Option[String]) =
     AlmFuture { serializeBlobSeparating(blobPolicy)(channel)(what, typeHint) }
