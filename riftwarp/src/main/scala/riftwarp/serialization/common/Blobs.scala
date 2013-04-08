@@ -8,7 +8,9 @@ object BlobArrayValueDecomposer extends Decomposer[BlobArrayValue] {
   val riftDescriptor = RiftDescriptor(classOf[BlobArrayValue])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: BlobArrayValue, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addByteArrayBlobEncoded("data", what.data).ok
+    into
+      .addRiftDescriptor(this.riftDescriptor)
+      .addByteArrayBlobEncoded("data", what.data).ok
   }
 }
 
@@ -25,7 +27,7 @@ object BlobValueDecomposer extends Decomposer[BlobValue] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: BlobValue, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     what match {
-      case act : BlobArrayValue => into.includeDirect(act, BlobArrayValueDecomposer)
+      case act: BlobArrayValue => into.includeDirect(act, BlobArrayValueDecomposer)
     }
   }
 }
@@ -38,12 +40,13 @@ object BlobValueRecomposer extends DivertingRecomposer[BlobValue] {
       BlobArrayValueRecomposer.riftDescriptor -> BlobArrayValueRecomposer).lift
 }
 
-
 object BlobRefFilePathDecomposer extends Decomposer[BlobRefFilePath] {
   val riftDescriptor = RiftDescriptor(classOf[BlobRefFilePath])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: BlobRefFilePath, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addString("path", what.path).ok
+    into
+      .addRiftDescriptor(this.riftDescriptor)
+      .addString("path", what.path).ok
   }
 }
 
@@ -59,7 +62,9 @@ object BlobRefByNameDecomposer extends Decomposer[BlobRefByName] {
   val riftDescriptor = RiftDescriptor(classOf[BlobRefByName])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: BlobRefByName, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addString("name", what.name).ok
+    into
+      .addRiftDescriptor(this.riftDescriptor)
+      .addString("name", what.name).ok
   }
 }
 
@@ -75,7 +80,9 @@ object BlobRefByUuidDecomposer extends Decomposer[BlobRefByUuid] {
   val riftDescriptor = RiftDescriptor(classOf[BlobRefByUuid])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: BlobRefByUuid, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addUuid("uuid", what.uuid).ok
+    into
+      .addRiftDescriptor(this.riftDescriptor)
+      .addUuid("uuid", what.uuid).ok
   }
 }
 
@@ -91,7 +98,9 @@ object BlobRefByUriDecomposer extends Decomposer[BlobRefByUri] {
   val riftDescriptor = RiftDescriptor(classOf[BlobRefByUri])
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: BlobRefByUri, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addUri("uri", what.uri).ok
+    into
+      .addRiftDescriptor(this.riftDescriptor)
+      .addUri("uri", what.uri).ok
   }
 }
 
@@ -108,10 +117,10 @@ object BlobReferenceDecomposer extends Decomposer[BlobReference] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: BlobReference, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     what match {
-      case act : BlobRefFilePath => into.includeDirect(act, BlobRefFilePathDecomposer)
-      case act : BlobRefByName => into.includeDirect(act, BlobRefByNameDecomposer)
-      case act : BlobRefByUuid => into.includeDirect(act, BlobRefByUuidDecomposer)
-      case act : BlobRefByUri => into.includeDirect(act, BlobRefByUriDecomposer)
+      case act: BlobRefFilePath => into.includeDirect(act, BlobRefFilePathDecomposer)
+      case act: BlobRefByName => into.includeDirect(act, BlobRefByNameDecomposer)
+      case act: BlobRefByUuid => into.includeDirect(act, BlobRefByUuidDecomposer)
+      case act: BlobRefByUri => into.includeDirect(act, BlobRefByUriDecomposer)
     }
   }
 }
@@ -132,8 +141,8 @@ object BlobRepresentationDecomposer extends Decomposer[BlobRepresentation] {
   val alternativeRiftDescriptors = Nil
   def decompose[TDimension <: RiftDimension](what: BlobRepresentation, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
     what match {
-      case act : BlobValue => into.includeDirect(act, BlobValueDecomposer)
-      case act : BlobReference => into.includeDirect(act, BlobReferenceDecomposer)
+      case act: BlobValue => into.includeDirect(act, BlobValueDecomposer)
+      case act: BlobReference => into.includeDirect(act, BlobReferenceDecomposer)
     }
   }
 }
