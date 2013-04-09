@@ -9,13 +9,10 @@ import almhirt.almvalidation.kit._
 import almhirt.serialization._
 import riftwarp._
 import riftwarp.components.HasRecomposers
-import riftwarp.serialization.common.BlobRepresentationRecomposer
 
 abstract class ExtractorTemplate[TDimension <: RiftDimension](val path: List[String])(implicit hasRecomposers: HasRecomposers) extends Extractor {
   type Remat = Rematerializer[TDimension]
   def rematerializer: Remat
-
-  def blobPolicy: BlobDeserializationPolicy
 
   def getValue(ident: String): AlmValidation[Remat#ValueRepr]
   def spawnNew(ident: String)(value: Remat#ValueRepr): AlmValidation[Extractor]
@@ -180,21 +177,6 @@ abstract class ExtractorTemplate[TDimension <: RiftDimension](val path: List[Str
       value <- getValue(ident)
       tree <- rematerializer.remappedTree(value, v => extractPrimitiveOrComplexWithLookup(ident, v, backupDescriptor))
     } yield tree
-
-  override def getBlob(ident: String): AlmValidation[Array[Byte]] =
-    blobPolicy match {
-      case BlobIntegrationDisabled => getByteArrayFromBlobEncoding(ident)
-      case BlobIntegrationEnabled(unpacker) =>
-        for {
-          value <- getValue(ident)
-          blobExtractor <- spawnNew(ident)(value)
-          blob <- BlobRepresentationRecomposer.recompose(blobExtractor)
-          data <- blob match {
-            case blobVal: BlobValue => blobVal.dataAsArray.success
-            case ref: BlobReference => unpacker(ref)
-          }  
-        } yield data
-    }
 
   private def extractComplexWithLookup[T <: AnyRef](extractor: Extractor, backupDescriptor: Option[RiftDescriptor])(implicit tag: ClassTag[T]): AlmValidation[T] =
     for {

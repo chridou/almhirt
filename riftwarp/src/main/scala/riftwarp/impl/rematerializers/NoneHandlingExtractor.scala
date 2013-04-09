@@ -96,8 +96,4 @@ trait NoneHandlingExtractor extends Extractor {
     if (hasValue(ident)) getTreeOfComplexByTag[T](ident, backupDescriptor).map(Some(_)) else None.success
   override def tryGetTree(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Option[Tree[Any]]] =
     if (hasValue(ident)) getTree(ident, backupDescriptor).map(Some(_)) else None.success
-    
-    
-  override def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]] =
-    if (hasValue(ident)) getBlob(ident).map(Some(_)) else None.success
 }

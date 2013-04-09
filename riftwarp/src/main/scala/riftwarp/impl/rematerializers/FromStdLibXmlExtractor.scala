@@ -9,12 +9,12 @@ import riftwarp._
 import riftwarp.components.HasRecomposers
 import riftwarp.components.ExtractorFactory
 
-class FromStdLibXmlExtractor(current: XmlElem, path: List[String], override val blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers) extends ExtractorTemplate[DimensionXmlElem](path) with NoneHandlingExtractor {
+class FromStdLibXmlExtractor(current: XmlElem, path: List[String])(implicit hasRecomposers: HasRecomposers) extends ExtractorTemplate[DimensionXmlElem](path) with NoneHandlingExtractor {
   override val rematerializer = FromStdLibXmlRematerializer
 
   override def getValue(ident: String): AlmValidation[XmlElem] = (current \! ident).flatMap(getFirstChildNode(_))
 
-  override def spawnNew(ident: String)(value: XmlElem): AlmValidation[Extractor] = (new FromStdLibXmlExtractor(value, ident :: path, blobPolicy)).success
+  override def spawnNew(ident: String)(value: XmlElem): AlmValidation[Extractor] = (new FromStdLibXmlExtractor(value, ident :: path)).success
 
   override def hasValue(ident: String) = getValue(ident: String).isSuccess
 
@@ -33,12 +33,10 @@ object FromStdLibXmlExtractor extends ExtractorFactory[DimensionXmlElem] {
   val tDimension = classOf[DimensionXmlElem].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
 
-  def apply(current: XmlElem, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): FromStdLibXmlExtractor =
-    new FromStdLibXmlExtractor(current, current.label :: Nil, blobPolicy)
   def apply(current: XmlElem)(implicit hasRecomposers: HasRecomposers): FromStdLibXmlExtractor =
-    new FromStdLibXmlExtractor(current, current.label :: Nil, BlobIntegrationDisabled)
-  def createExtractor(from: DimensionXmlElem, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
-    apply(from.manifestation, blobPolicy).success
+    new FromStdLibXmlExtractor(current, current.label :: Nil)
+  def createExtractor(from: DimensionXmlElem)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
+    apply(from.manifestation).success
 }
 
 object FromStdLibXmlStringExtractor extends ExtractorFactory[DimensionString] {
@@ -46,11 +44,11 @@ object FromStdLibXmlStringExtractor extends ExtractorFactory[DimensionString] {
   val tDimension = classOf[DimensionString].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
 
-  def apply(from: String, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
-    xmlFromString(from).map(xml => FromStdLibXmlExtractor(xml, blobPolicy))
+  def apply(from: String)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
+    xmlFromString(from).map(xml => FromStdLibXmlExtractor(xml))
 
-  def createExtractor(from: DimensionString, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
-    apply(from.manifestation, blobPolicy)(hasRecomposers)
+  def createExtractor(from: DimensionString)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
+    apply(from.manifestation)(hasRecomposers)
 }
 
 object FromStdLibXmlCordExtractor extends ExtractorFactory[DimensionCord] {
@@ -59,9 +57,9 @@ object FromStdLibXmlCordExtractor extends ExtractorFactory[DimensionCord] {
   val toolGroup = ToolGroupStdLib()
 
   import scalaz.Cord
-  def apply(from: Cord, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
-    FromStdLibXmlStringExtractor(from.toString, blobPolicy)
+  def apply(from: Cord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
+    FromStdLibXmlStringExtractor(from.toString)
 
-  def createExtractor(from: DimensionCord, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
-    apply(from.manifestation, blobPolicy)(hasRecomposers)
+  def createExtractor(from: DimensionCord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibXmlExtractor] =
+    apply(from.manifestation)(hasRecomposers)
 }

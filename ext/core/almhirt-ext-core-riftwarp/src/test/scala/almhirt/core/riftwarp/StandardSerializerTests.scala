@@ -43,12 +43,8 @@ class StandardSerializerTests extends FunSuite with MustMatchers {
       new EventToStringSerializer {
         def serialize(channel: String)(what: Event, typeHint: Option[String]) = serializer.serialize(channel)(what, typeHint)
         def serializeAsync(channel: String)(what: Event, typeHint: Option[String]) = serializer.serializeAsync(channel)(what, typeHint)
-        def serializeBlobSeparating(blobPolicy: BlobSerializationPolicy)(channel: String)(what: Event, typeHint: Option[String]) = serializer.serializeBlobSeparating(blobPolicy)(channel)(what, typeHint)
-        def serializeBlobSeparatingAsync(blobPolicy: BlobSerializationPolicy)(channel: String)(what: Event, typeHint: Option[String]) = serializer.serializeBlobSeparatingAsync(blobPolicy)(channel)(what, typeHint)
         def deserialize(channel: String)(what: String, typeHint: Option[String]) = serializer.deserialize(channel)(what, typeHint)
         def deserializeAsync(channel: String)(what: String, typeHint: Option[String]) = serializer.deserializeAsync(channel)(what, typeHint)
-        def deserializeBlobIntegrating(blobPolicy: BlobDeserializationPolicy)(channel: String)(what: SerializedRepr, typeHint: Option[String]) = serializer.deserializeBlobIntegrating(blobPolicy)(channel)(what, typeHint)
-        def deserializeBlobIntegratingAsync(blobPolicy: BlobDeserializationPolicy)(channel: String)(what: SerializedRepr, typeHint: Option[String]): AlmFuture[Event] = serializer.deserializeBlobIntegratingAsync(blobPolicy)(channel)(what, typeHint)
       }
    }
    

@@ -96,10 +96,6 @@ trait Extractor {
   def getTree(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Tree[Any]]
   def tryGetTree(ident: String, backupDescriptor: Option[RiftDescriptor]): AlmValidation[Option[Tree[Any]]]
   
-  
-  def getBlob(ident: String): AlmValidation[Array[Byte]]
-  def tryGetBlob(ident: String): AlmValidation[Option[Array[Byte]]]
-  
   def getRiftDescriptor: AlmValidation[RiftDescriptor]
   def tryGetRiftDescriptor: AlmValidation[Option[RiftDescriptor]]
 }

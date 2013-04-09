@@ -7,7 +7,7 @@ import riftwarp._
 import riftwarp.components.HasRecomposers
 import riftwarp.components.ExtractorFactory
 
-class FromStdLibJsonExtractor(values: Map[String, Any], path: List[String], override val blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers) extends ExtractorTemplate[DimensionStdLibJson](path) with NoneHandlingExtractor {
+class FromStdLibJsonExtractor(values: Map[String, Any], path: List[String])(implicit hasRecomposers: HasRecomposers) extends ExtractorTemplate[DimensionStdLibJson](path) with NoneHandlingExtractor {
   override val rematerializer = FromStdLibJsonRematerializer
 
   override def getValue(ident: String): AlmValidation[Any] =
@@ -16,7 +16,7 @@ class FromStdLibJsonExtractor(values: Map[String, Any], path: List[String], over
       case None => KeyNotFoundProblem(s"No value found for key '$ident'").failure
     }
 
-  override def spawnNew(ident: String)(value: Any): AlmValidation[Extractor] = FromStdLibJsonExtractor.create(value, ident :: path, blobPolicy)
+  override def spawnNew(ident: String)(value: Any): AlmValidation[Extractor] = FromStdLibJsonExtractor.create(value, ident :: path)
 
   override def hasValue(ident: String) = {
     values.get(ident) match {
@@ -39,19 +39,17 @@ object FromStdLibJsonExtractor extends ExtractorFactory[DimensionStdLibJson] {
   val tDimension = classOf[DimensionStdLibJson].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
 
-  def apply(stdLibJsonMap: Map[String, Any], path: List[String], blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): FromStdLibJsonExtractor =
-    new FromStdLibJsonExtractor(stdLibJsonMap, path, blobPolicy)
-  def apply(stdLibJsonMap: Map[String, Any], blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): FromStdLibJsonExtractor =
-    new FromStdLibJsonExtractor(stdLibJsonMap, Nil, blobPolicy)
+  def apply(stdLibJsonMap: Map[String, Any], path: List[String])(implicit hasRecomposers: HasRecomposers): FromStdLibJsonExtractor =
+    new FromStdLibJsonExtractor(stdLibJsonMap, path)
   def apply(stdLibJsonMap: Map[String, Any])(implicit hasRecomposers: HasRecomposers): FromStdLibJsonExtractor =
-    new FromStdLibJsonExtractor(stdLibJsonMap, Nil, BlobIntegrationDisabled)
-  def create(from: Any, path: List[String], blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
+    new FromStdLibJsonExtractor(stdLibJsonMap, Nil)
+  def create(from: Any, path: List[String])(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
     from match {
-      case m: Map[_, _] => (new FromStdLibJsonExtractor(m.asInstanceOf[Map[String, Any]], path, blobPolicy)).success
+      case m: Map[_, _] => (new FromStdLibJsonExtractor(m.asInstanceOf[Map[String, Any]], path)).success
       case x => InvalidCastProblem(s"""Cannot create a FromStdLibJsonExtractor because '${x.getClass.getName()}' is not a Map[String, Any]. The path is "${path.mkString("/")}"""").failure
     }
-  override def createExtractor(from: DimensionStdLibJson, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
-    create(from.manifestation, Nil, blobPolicy)
+  override def createExtractor(from: DimensionStdLibJson)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
+    create(from.manifestation, Nil)
 }
 
 object FromStdLibJsonStringExtractor extends ExtractorFactory[DimensionString] {
@@ -60,7 +58,7 @@ object FromStdLibJsonStringExtractor extends ExtractorFactory[DimensionString] {
   val toolGroup = ToolGroupStdLib()
   import scala.util.parsing.json._
 
-  def apply(json: String, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] = {
+  def apply(json: String)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] = {
     def transformMap(m: Map[String, Any]) =
       m.transform {
         case (k, v) => resolveType(v)
@@ -77,7 +75,7 @@ object FromStdLibJsonStringExtractor extends ExtractorFactory[DimensionString] {
       case parser.Success(result, _) =>
         result match {
           case JSONObject(data) =>
-            FromStdLibJsonExtractor(transformMap(data), blobPolicy).success
+            FromStdLibJsonExtractor(transformMap(data)).success
           case x =>
             UnspecifiedProblem("'%s' is not valid for dematerializing. A Map[String, Any] is required".format(x)).failure
         }
@@ -87,8 +85,8 @@ object FromStdLibJsonStringExtractor extends ExtractorFactory[DimensionString] {
     }
   }
 
-  override def createExtractor(from: DimensionString, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
-    apply(from.manifestation, blobPolicy)(hasRecomposers)
+  override def createExtractor(from: DimensionString)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
+    apply(from.manifestation)(hasRecomposers)
 }
 
 object FromStdLibJsonCordExtractor extends ExtractorFactory[DimensionCord] {
@@ -98,11 +96,11 @@ object FromStdLibJsonCordExtractor extends ExtractorFactory[DimensionCord] {
 
   import scalaz.Cord
 
-  def apply(json: Cord, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
-    FromStdLibJsonStringExtractor.createExtractor(DimensionString(json.toString), blobPolicy)(hasRecomposers)
-  def apply(json: DimensionCord, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
-    FromStdLibJsonStringExtractor.createExtractor(DimensionString(json.manifestation.toString), blobPolicy)(hasRecomposers)
-  override def createExtractor(from: DimensionCord, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
-    apply(from, blobPolicy)(hasRecomposers)
+  def apply(json: Cord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
+    FromStdLibJsonStringExtractor.createExtractor(DimensionString(json.toString))(hasRecomposers)
+  def apply(json: DimensionCord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
+    FromStdLibJsonStringExtractor.createExtractor(DimensionString(json.manifestation.toString))(hasRecomposers)
+  override def createExtractor(from: DimensionCord)(implicit hasRecomposers: HasRecomposers): AlmValidation[FromStdLibJsonExtractor] =
+    apply(from)(hasRecomposers)
 }
 

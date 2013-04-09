@@ -16,8 +16,8 @@ class TestObjectADecomposer extends Decomposer[TestObjectA] {
     into
       .addRiftDescriptor(riftDescriptor)
       .addByteArray("arrayByte", what.arrayByte)
-      .addBlob("blob", what.blob)
-      .flatMap(_.addComplex("primitiveTypes", what.primitiveTypes, None))
+      .addByteArrayBlobEncoded("blob", what.blob)
+      .addComplex("primitiveTypes", what.primitiveTypes, None)
       .flatMap(_.addComplex("primitiveListMAs", what.primitiveListMAs, None))
       .flatMap(_.addComplex("primitiveVectorMAs", what.primitiveVectorMAs, None))
       .flatMap(_.addOptionalComplex("primitiveSetMAs", what.primitiveSetMAs, None))
@@ -36,7 +36,7 @@ class TestObjectARecomposer extends Recomposer[TestObjectA] {
   def recompose(from: Extractor): AlmValidation[TestObjectA] = {
     for {
       arrayByte <- from.getByteArray("arrayByte")
-      blob <- from.getBlob("blob")
+      blob <- from.getByteArrayFromBlobEncoding("blob")
       primitiveTypes <- from.getComplexByTag[PrimitiveTypes]("primitiveTypes", None)
       primitiveListMAs <- from.getComplexByTag[PrimitiveListMAs]("primitiveListMAs", None)
       primitiveVectorMAs <- from.getComplexByTag[PrimitiveVectorMAs]("primitiveVectorMAs", None)

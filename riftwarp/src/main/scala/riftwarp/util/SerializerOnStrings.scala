@@ -10,21 +10,15 @@ import scala.reflect.ClassTag
 class RiftSerializerOnString[TIn <: AnyRef](riftWarp: RiftWarp)(implicit support: HasExecutionContext) extends CanSerialize[TIn] {
   type SerializedRepr = String
 
-  private def serializeWithRiftWarp(what: TIn, channel: String, blobPolicy: BlobSerializationPolicy): AlmValidation[(String, Vector[ExtractedBlobReference])] =
+  private def serializeWithRiftWarp(what: TIn, channel: String): AlmValidation[String] =
     riftWarp.channels.getChannel(channel).flatMap(riftChannel =>
-      riftWarp.prepareForWarpWithBlobs[DimensionString](blobPolicy)(riftChannel, None)(what).map(x => (x._1.manifestation, x._2)))
+      riftWarp.prepareForWarp[DimensionString](riftChannel, None)(what).map(_.manifestation))
 
   override def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(Option[String], SerializedRepr)] =
-    serializeWithRiftWarp(what, channel, BlobSeparationDisabled).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x._1))
+    serializeWithRiftWarp(what, channel).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x))
 
   override def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(Option[String], SerializedRepr)] =
     AlmFuture { serialize(channel)(what, typeHint) }
-
-  override def serializeBlobSeparating(blobPolicy: BlobSerializationPolicy)(channel: String)(what: TIn, typeHint: Option[String]) =
-    serializeWithRiftWarp(what, channel, blobPolicy).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x._1, x._2))
-
-  override def serializeBlobSeparatingAsync(blobPolicy: BlobSerializationPolicy)(channel: String)(what: TIn, typeHint: Option[String]) =
-    AlmFuture { serializeBlobSeparating(blobPolicy)(channel)(what, typeHint) }
 }
 
 class RiftDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp)(implicit support: HasExecutionContext, tag: ClassTag[TOut]) extends CanDeserialize[TOut] {
@@ -38,14 +32,4 @@ class RiftDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp)(implicit s
 
   override def deserializeAsync(channel: String)(what: SerializedRepr, typeIdent: Option[String]): AlmFuture[TOut] =
     AlmFuture { deserialize(channel)(what, typeIdent) }
-
-  override def deserializeBlobIntegrating(blobPolicy: BlobDeserializationPolicy)(channel: String)(what: SerializedRepr, typeIdent: Option[String]) =
-    for {
-      riftChannel <- riftWarp.channels.getChannel(channel)
-      deserialized <- riftWarp.receiveFromWarpWithBlobs[DimensionString, TOut](blobPolicy)(riftChannel, None)(DimensionString(what))
-    } yield deserialized
-
-  override def deserializeBlobIntegratingAsync(blobPolicy: BlobDeserializationPolicy)(channel: String)(what: SerializedRepr, typeIdent: Option[String]): AlmFuture[TOut] =
-    AlmFuture { deserializeBlobIntegrating(blobPolicy)(channel)(what, typeIdent) }
-
 }

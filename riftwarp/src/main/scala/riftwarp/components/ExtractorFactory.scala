@@ -11,10 +11,7 @@ trait ExtractorFactory[TDimension <: RiftDimension] {
   def channel: RiftChannel
   def tDimension: Class[_ <: RiftDimension]
   def toolGroup: ToolGroup
-  def createExtractor(from: TDimension, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor]
-  def createExtractorRaw(from: AnyRef, blobPolicy: BlobDeserializationPolicy)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = 
-    createExtractor(from.asInstanceOf[TDimension], blobPolicy)(hasRecomposers)
-  def createExtractor(from: TDimension)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = createExtractor(from, BlobIntegrationDisabled)(hasRecomposers)
+  def createExtractor(from: TDimension)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor]
   def createExtractorRaw(from: AnyRef)(implicit hasRecomposers: HasRecomposers): AlmValidation[Extractor] = 
-    createExtractorRaw(from, BlobIntegrationDisabled)(hasRecomposers)
+    createExtractor(from.asInstanceOf[TDimension])(hasRecomposers)
 }

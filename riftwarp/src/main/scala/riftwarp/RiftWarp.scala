@@ -16,30 +16,16 @@ trait RiftWarp {
 
   def prepareForWarp[TDimension <: RiftDimension](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit cDim: ClassTag[TDimension]): AlmValidation[TDimension] =
     barracks.getRawDecomposerFor(what).flatMap(decomposer =>
-      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(BlobSeparationDisabled)(this, cDim).flatMap(fun =>
-        fun(what, decomposer).map(_._1)))
-
-  def prepareForWarpWithBlobs[TDimension <: RiftDimension](blobPolicy: BlobSerializationPolicy)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(what: AnyRef)(implicit cDim: ClassTag[TDimension]): AlmValidation[(TDimension, Vector[ExtractedBlobReference])] =
-    barracks.getRawDecomposerFor(what).flatMap(decomposer =>
-      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(blobPolicy)(this, cDim).flatMap(fun =>
+      RiftWarpFuns.getDematerializationFun[TDimension](channel, toolGroup)(this, cDim).flatMap(fun =>
         fun(what, decomposer)))
 
   def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit cDim: ClassTag[TDimension], cTarget: ClassTag[T]): AlmValidation[T] = {
     def findRecomposer(remat: Extractor) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
     for {
-      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(BlobIntegrationDisabled)(cDim, cTarget, this)
+      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(cDim, cTarget, this)
       recomposed <- recomposeFun(warpStream)
     } yield recomposed
   }
-
-  def receiveFromWarpWithBlobs[TDimension <: RiftDimension, T <: AnyRef](blobPolicy: BlobDeserializationPolicy)(channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit cDim: ClassTag[TDimension], cTarget: ClassTag[T]): AlmValidation[T] = {
-    def findRecomposer(remat: Extractor) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
-    for {
-      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(blobPolicy)(cDim, cTarget, this)
-      recomposed <- recomposeFun(warpStream)
-    } yield recomposed
-  }
-
 }
 
 object RiftWarp {
@@ -101,24 +87,7 @@ object RiftWarp {
     riftWarp.barracks.addRecomposer(riftwarp.serialization.common.HasAThrowableDescribedRecomposer)
     riftWarp.barracks.addRecomposer(riftwarp.serialization.common.CauseIsProblemRecomposer)
     riftWarp.barracks.addRecomposer(riftwarp.serialization.common.ProblemCauseRecomposer)
-
-    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.BlobArrayValueDecomposer)
-    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.BlobArrayValueRecomposer)
-    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.BlobValueDecomposer)
-    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.BlobValueRecomposer)
-    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.BlobRefFilePathDecomposer)
-    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.BlobRefFilePathRecomposer)
-    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.BlobRefByNameDecomposer)
-    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.BlobRefByNameRecomposer)
-    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.BlobRefByUuidDecomposer)
-    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.BlobRefByUuidRecomposer)
-    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.BlobRefByUriDecomposer)
-    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.BlobRefByUriRecomposer)
-    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.BlobReferenceDecomposer)
-    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.BlobReferenceRecomposer)
-    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.BlobRepresentationDecomposer)
-    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.BlobRepresentationRecomposer)
-    
+   
     RiftChannel.register(riftWarp.channels)
   }
 }

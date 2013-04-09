@@ -35,7 +35,7 @@ object RiftWarpHttpFuns {
     val td = option.cata(contentType.tryGetRiftDescriptor)(td => td, RiftDescriptor(mResult.runtimeClass))
     for {
       data <- content.toRiftDimension
-      recompose <- RiftWarpFuns.getRecomposeFun[To](contentType.channel, data.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[To](remat, Some(td)))(BlobIntegrationDisabled)(mResult, riftWarp)
+      recompose <- RiftWarpFuns.getRecomposeFun[To](contentType.channel, data.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(remat => riftWarp.barracks.lookUpFromRematerializer[To](remat, Some(td)))(mResult, riftWarp)
       recomposed <- recompose(data)
     } yield recomposed
   }
@@ -44,10 +44,10 @@ object RiftWarpHttpFuns {
     (for {
       decomposer <- settings.riftWarp.barracks.getDecomposerFor[Problem](what)
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
-      dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(BlobSeparationDisabled)(settings.riftWarp)
+      dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
       contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
-      response <- dematerialized._1.toHttpData(contentType)
+      response <- dematerialized.toHttpData(contentType)
     } yield response).fold(
       prob => {
         settings.reportProblem(prob)
@@ -60,10 +60,10 @@ object RiftWarpHttpFuns {
     for {
       decomposer <- settings.riftWarp.barracks.getDecomposerFor[TResp](what)
       channel <- option.cata(optReqChannel)(identity, settings.defaultChannel).success
-      dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(BlobSeparationDisabled)(settings.riftWarp)
+      dematerialzeFun <- RiftWarpFuns.getDematerializationFun(channel, channel.httpDimensionType(settings.nice), None)(settings.riftWarp)
       dematerialized <- dematerialzeFun(what, decomposer)
       contentType <- RiftHttpContentType(decomposer.riftDescriptor, channel, Map.empty[String, String]).success
-      response <- dematerialized._1.toHttpData(contentType)
+      response <- dematerialized.toHttpData(contentType)
     } yield response
 
   def withRequestData[TEntity <: AnyRef](settings: RiftHttpFunsSettings, httpData: RiftHttpDataWithContent, computeResponse: (TEntity) => RiftHttpResponse)(implicit mEntity: ClassTag[TEntity]): RiftHttpResponse =
@@ -187,7 +187,7 @@ object RiftWarpHttpFuns {
       exploded <- response.explode
       recompose <- {
         def getRecomposer(remat: Extractor) = settings.riftWarp.barracks.lookUpFromRematerializer[AnyRef](remat, exploded._3)
-        RiftWarpFuns.getRecomposeFun[AnyRef](exploded._2, exploded._4.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(getRecomposer)(BlobIntegrationDisabled)(manifest[AnyRef], settings.riftWarp)
+        RiftWarpFuns.getRecomposeFun[AnyRef](exploded._2, exploded._4.getClass().asInstanceOf[Class[_ <: RiftDimension]], None)(getRecomposer)(manifest[AnyRef], settings.riftWarp)
       }
       recomposed <- recompose(exploded._4)
       retyped <- recomposed match {
