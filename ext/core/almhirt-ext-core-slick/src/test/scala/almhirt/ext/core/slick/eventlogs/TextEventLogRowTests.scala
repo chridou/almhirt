@@ -15,7 +15,7 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
   implicit def dateTimeToTimeStamp(dateTime: DateTime): java.sql.Timestamp = almhirt.ext.core.slick.TypeConversion.dateTimeToTimeStamp(dateTime)
   implicit val hasExecutionContext: HasExecutionContext = HasExecutionContext.single
   def withIsolatedDal[T](f: (EventLogStoreComponent[TextEventLogRow]) => T): T = {
-    val dal = Profiles.createTextEventLogAccess("H2", "EVENTS", "BLOBS", driver => Database.forURL("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver)).forceResult
+    val dal = Profiles.createTextEventLogAccess("H2", "EVENTS", driver => Database.forURL("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver)).forceResult
     dal.create
     try {
       f(dal)

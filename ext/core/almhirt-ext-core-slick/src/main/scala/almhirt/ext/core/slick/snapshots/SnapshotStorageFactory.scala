@@ -7,11 +7,9 @@ import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.core._
-import almhirt.serialization.BlobPolicies
 import almhirt.domain.components._
 import almhirt.environment.configuration._
 import almhirt.serializing._
-import almhirt.serialization.BlobStorageWithUuidBlobId
 import almhirt.ext.core.slick.shared.Profiles
 import com.typesafe.config.Config
 
@@ -35,13 +33,12 @@ class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
       channel <- ConfigHelper.getString(configSection)("channel")
       connection <- ConfigHelper.getString(configSection)("connection")
       snapshotstable <- ConfigHelper.getString(configSection)("snapshots_table")
-      blobtable <- ConfigHelper.getString(configSection)("blob_table")
       createSchema <- ConfigHelper.getBoolean(configSection)("create_schema")
       dropOnClose <- ConfigHelper.getBoolean(configSection)("drop_on_close")
       snapshotsDataAccess <- ConfigHelper.getString(configSection)("profile").flatMap(profileName => {
         val props = ConfigHelper.getPropertiesMapFrom(configSection)("properties")
         val createDataBase: String => Database = (driver => Database.forURL(connection, props))
-        Profiles.createTextSnapshotsAccess(profileName, snapshotstable, blobtable, createDataBase)(theAlmhirt)
+        Profiles.createTextSnapshotsAccess(profileName, snapshotstable, createDataBase)(theAlmhirt)
       })
       _ <- computeSafely {
         if (dropOnClose)
@@ -74,14 +71,7 @@ class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
               theAlmhirt.log.info(s"SnapshotsStorage is using dispatcher '$succ'")
               Some(succ)
             })
-        val blobPolicy =
-          if (ConfigHelper.isBooleanSet(configSection)("with_blobs_stored_separately")) {
-            val minBlobSize = ConfigHelper.getIntOrDefault(0)(configSection)("min_blob_size_for_separation")
-            theAlmhirt.log.info(s"Minimum BLOB size for SnapshotsStorage is set to '$minBlobSize' bytes.")
-            BlobPolicies.uuidRefs(snapshotsDataAccess, minBlobSize)(theAlmhirt)
-          } else
-            BlobPolicies.disabled
-        val syncStorage = new SlickSyncTextSnapshotStorage(snapshotsDataAccess, blobPolicy, serializer.serializeToChannel(channel))
+        val syncStorage = new SlickSyncTextSnapshotStorage(snapshotsDataAccess, serializer.serializeToChannel(channel))
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new SyncSnapshotStorageActor(syncStorage, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }

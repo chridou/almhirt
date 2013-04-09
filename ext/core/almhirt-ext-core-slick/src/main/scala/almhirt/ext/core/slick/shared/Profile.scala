@@ -21,28 +21,25 @@ object Profiles {
     Map(
       "h2" -> ProfileSettings("org.h2.Driver", H2Driver))
 
-  def createTextEventLogAccess(aProfile: String, anEventlogtablename: String, aBlobtablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextEventLogDataAccess] =
+  def createTextEventLogAccess(aProfile: String, anEventlogtablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextEventLogDataAccess] =
     for {
       profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
       eventlogtablename <- anEventlogtablename.notEmptyOrWhitespace
-      blobtablename <- aBlobtablename.notEmptyOrWhitespace
       profile <- (profiles.lift >! profileName)
-    } yield new TextEventLogDataAccess(eventlogtablename, blobtablename, Unit => createDataBase(profile.driver), profile.slickDriver, hasExecutionContext)
+    } yield new TextEventLogDataAccess(eventlogtablename, Unit => createDataBase(profile.driver), profile.slickDriver)
 
-  def createTextDomainEventLogAccess(aProfile: String, anEventlogtablename: String, aBlobtablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextDomainEventLogDataAccess] =
+  def createTextDomainEventLogAccess(aProfile: String, anEventlogtablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextDomainEventLogDataAccess] =
     for {
       profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
       eventlogtablename <- anEventlogtablename.notEmptyOrWhitespace
-      blobtablename <- aBlobtablename.notEmptyOrWhitespace
       profile <- (profiles.lift >! profileName)
-    } yield new TextDomainEventLogDataAccess(eventlogtablename, blobtablename, Unit => createDataBase(profile.driver), profile.slickDriver, hasExecutionContext)
+    } yield new TextDomainEventLogDataAccess(eventlogtablename, Unit => createDataBase(profile.driver), profile.slickDriver)
 
-  def createTextSnapshotsAccess(aProfile: String, aSnapshotsTablename: String, aBlobTablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextSnapshotsDataAccess] =
+  def createTextSnapshotsAccess(aProfile: String, aSnapshotsTablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextSnapshotsDataAccess] =
     for {
       profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
       snapshotstablename <- aSnapshotsTablename.notEmptyOrWhitespace
-      blobtablename <- aBlobTablename.notEmptyOrWhitespace
       profile <- (profiles.lift >! profileName)
-    } yield new TextSnapshotsDataAccess(snapshotstablename, blobtablename, Unit => createDataBase(profile.driver), profile.slickDriver, hasExecutionContext)
+    } yield new TextSnapshotsDataAccess(snapshotstablename, Unit => createDataBase(profile.driver), profile.slickDriver)
     
 }
