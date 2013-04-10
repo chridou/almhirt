@@ -118,11 +118,10 @@ object ToXmlElemDematerializer extends DematerializerTemplate[DimensionXmlElem]{
   override def getByteArrayRepr(aValue: Array[Byte]) = <bytes>{aValue.mkString(",")}</bytes>
   override def getBase64EncodedByteArrayRepr(aValue: Array[Byte]) = {
     val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    mapString(base64)
+    <v type="Base64">{scala.xml.PCData(base64)}</v>
   }
   override def getByteArrayBlobEncodedRepr(aValue: Array[Byte]) = {
-    val theBlob = org.apache.commons.codec.binary.Base64.encodeBase64String(aValue)
-    mapString(theBlob)
+    getBase64EncodedByteArrayRepr(aValue)
   }
   override def getDateTimeRepr(aValue: org.joda.time.DateTime) = mapDateTime(aValue)
   override def getUriRepr(aValue: _root_.java.net.URI) = mapUri(aValue)

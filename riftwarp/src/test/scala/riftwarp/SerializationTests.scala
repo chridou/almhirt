@@ -48,6 +48,7 @@ class SerializationTests extends FunSuite with MustMatchers {
 
     backFromWarpV.isSuccess must be(true)
   }
+
   
   test("RiftWarp must deserialize the testObject's complex collections to Xml and the reserialize without error") {
     val warpStream = riftWarp.prepareForWarp[DimensionString](RiftXml())(testObject.complexMAs).forceResult
