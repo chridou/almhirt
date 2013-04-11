@@ -110,7 +110,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
 
     protected def handleBoundActionsCommand(com: BoundDomainActionsCommand, ticket: Option[TrackingTicket])(implicit theAlmhirt: Almhirt) {
       com.actions match {
-        case Nil => ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, PerformedNoAction("The command contained no actions")), Map.empty))
+        case Nil => ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, PerformedNoAction("The command contained no actions")), None, Map.empty))
         case _ => prevalidate(com).fold(
           prob => reportFailure(prob, ticket),
           succ => executeUnitOfWork(com).onComplete(

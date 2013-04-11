@@ -39,11 +39,20 @@ final case class DomainEventHeader(
   /** The affected aggregate root */
   aggRef: AggregateRootRef,
   /** The events timestamp of creation */
-  timestamp: DateTime) extends EventHeader
+  timestamp: DateTime,
+  sender: Option[String]) extends EventHeader
 
 object DomainEventHeader {
   def apply(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
-    apply(ccuad.getUuid, aggRef, ccuad.getDateTime)
+    apply(ccuad.getUuid, aggRef, ccuad.getDateTime, None)
+  def apply(aggRef: AggregateRootRef, sender: String)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(ccuad.getUuid, aggRef, ccuad.getDateTime, Some(sender))
+  def apply(aggRef: AggregateRootRef, sender: Option[String])(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(ccuad.getUuid, aggRef, ccuad.getDateTime, sender)
+  def apply(arId: java.util.UUID, version: Long)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(ccuad.getUuid, AggregateRootRef(arId, version), ccuad.getDateTime, None)
+  def apply(id: java.util.UUID, aggRef: AggregateRootRef, timestamp: DateTime): DomainEventHeader =
+    apply(id, aggRef, timestamp, None)
 
   implicit def aggregateRootRef2DomainEventHeader(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
     apply(aggRef)

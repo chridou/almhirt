@@ -23,7 +23,10 @@ trait CreatesAndRegistersOperationStateTracker extends CreatesCoreComponentsBoot
           case Some(subConf) =>
             val tracker = SystemHelper.createOperationStateTrackerFromFactory(theAlmhirt).forceResult
             val trackerRegistartion =
-              (self.operationStateChannel.actor ? SubscribeQry(MessagingSubscription.forActor[OperationState](tracker)))(atMost)
+              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorMappedWithFilter[OperationStateEvent, OperationState](
+                  tracker, 
+                  event => event.operationState,
+                  x => x.isInstanceOf[OperationStateEvent])))(atMost)
                 .mapTo[SubscriptionRsp]
                 .map(_.registration)
                 .toAlmFuture

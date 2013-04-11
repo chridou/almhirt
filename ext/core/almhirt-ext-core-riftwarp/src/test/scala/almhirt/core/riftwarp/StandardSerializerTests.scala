@@ -49,13 +49,13 @@ class StandardSerializerTests extends FunSuite with MustMatchers {
    }
    
    test("""The EventSerializer must serialize a "TestPersonCreated"-Event to JSON""") {
-     val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader(support.getUuid, 0L), "test"), None)
+     val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader((support.getUuid, 0L)), "test"), None)
      println(res)
      res.isSuccess must be(true)
    }
 
    ignore("""The EventSerializer must deserialize a "TestPersonCreated"-Event from JSON which he created""") {
-     val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader(support.getUuid, 0L), "test"), None)
+     val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader((support.getUuid, 0L)), "test"), None)
      println(res)
      res.isSuccess must be(true)
    }

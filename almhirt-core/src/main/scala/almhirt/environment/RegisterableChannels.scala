@@ -15,7 +15,6 @@ trait HasStandardChannels {
   def commandChannel: CommandChannel
   def eventsChannel: EventsChannel
   def domainEventsChannel: DomainEventsChannel
-  def operationStateChannel: OperationStateChannel
 }
 
 trait CommandChannel extends MessageChannel[CommandEnvelope]
@@ -44,16 +43,6 @@ class DomainEventsChannelWrapper(toWrap: MessageChannel[DomainEvent]) extends Do
   def <-* (handler: Message[DomainEvent] => Unit, classifier: Message[DomainEvent] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
   def post[U <: DomainEvent](message: Message[U]) = toWrap.post(message)
   def createSubChannel[U <: DomainEvent](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
-    toWrap.createSubChannel[U](name, classifier)
-  def close = toWrap.close
-}
-
-trait OperationStateChannel extends MessageChannel[OperationState]
-class OperationStateChannelWrapper(toWrap: MessageChannel[OperationState]) extends OperationStateChannel {
-  def actor = toWrap.actor
-  def <-* (handler: Message[OperationState] => Unit, classifier: Message[OperationState] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
-  def post[U <: OperationState](message: Message[U]) = toWrap.post(message)
-  def createSubChannel[U <: OperationState](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
     toWrap.createSubChannel[U](name, classifier)
   def close = toWrap.close
 }

@@ -14,7 +14,8 @@ object BasicEventHeaderDecomposer extends Decomposer[BasicEventHeader] {
     into
       .addRiftDescriptor(this.riftDescriptor)
       .addUuid("id", what.id)
-      .addDateTime("timestamp", what.timestamp).ok
+      .addDateTime("timestamp", what.timestamp)
+      .addOptionalString("sender", what.sender).ok
   }
 }
 
@@ -24,7 +25,8 @@ object BasicEventHeaderRecomposer extends Recomposer[BasicEventHeader] {
   def recompose(from: Extractor): AlmValidation[BasicEventHeader] = {
     val id = from.getUuid("id").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| timestamp)(BasicEventHeader.apply)
+    val sender = from.tryGetString("sender").toAgg
+    (id |@| timestamp |@| sender)(BasicEventHeader.apply)
   }
 }
 
@@ -37,7 +39,8 @@ object DomainEventHeaderDecomposer extends Decomposer[DomainEventHeader] {
       .addUuid("id", what.id)
       .addUuid("aggId", what.aggRef.id)
       .addLong("aggVersion", what.aggRef.version)
-      .addDateTime("timestamp", what.timestamp).ok
+      .addDateTime("timestamp", what.timestamp)
+      .addOptionalString("sender", what.sender).ok
   }
 }
 
@@ -49,8 +52,9 @@ object DomainEventHeaderRecomposer extends Recomposer[DomainEventHeader] {
     val aggId = from.getUuid("aggId").toAgg
     val aggVersion = from.getLong("aggVersion").toAgg
     val timestamp = from.getDateTime("timestamp").toAgg
-    (id |@| aggId |@| aggVersion |@| timestamp)((id, aggId, aggVersion, timestamp) =>
-      DomainEventHeader(id, AggregateRootRef(aggId, aggVersion), timestamp))
+    val sender = from.tryGetString("sender").toAgg
+    (id |@| aggId |@| aggVersion |@| timestamp |@| sender)((id, aggId, aggVersion, timestamp, sender) =>
+      DomainEventHeader(id, AggregateRootRef(aggId, aggVersion), timestamp, sender))
   }
 }
 
