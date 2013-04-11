@@ -1,7 +1,7 @@
 package almhirt.eventlog.impl
 
+import java.util.{ UUID => JUUID }
 import scala.concurrent.duration.FiniteDuration
-import java.util.UUID
 import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
@@ -20,14 +20,16 @@ class DomainEventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: Fi
   def this(actor: ActorRef, maximumDirectCallDuration: Option[FiniteDuration])(implicit theAlmhirt: Almhirt) = this(actor, maximumDirectCallDuration.getOrElse(FiniteDuration(5, "seconds")))
   def this(actor: ActorRef)(implicit theAlmhirt: Almhirt) = this(actor, None)
 
-  def storeEvents(events: IndexedSeq[DomainEvent]): AlmFuture[(IndexedSeq[DomainEvent], Option[(Problem,IndexedSeq[DomainEvent])])] =
-    (actor ? LogDomainEventsQry(events, None))(maximumDirectCallDuration).mapTo[LoggedDomainEventsRsp].toSuccessfulAlmFuture.map (rsp =>
+  def storeEvents(events: IndexedSeq[DomainEvent]): AlmFuture[(IndexedSeq[DomainEvent], Option[(Problem, IndexedSeq[DomainEvent])])] =
+    (actor ? LogDomainEventsQry(events, None))(maximumDirectCallDuration).mapTo[LoggedDomainEventsRsp].toSuccessfulAlmFuture.map(rsp =>
       (rsp.committedEvents, rsp.uncommittedEvents))
 
+  def getEventById(id: JUUID): AlmFuture[DomainEvent] = (actor ? GetDomainEventByIdQry(id))(maximumDirectCallDuration).mapTo[DomainEventByIdRsp].map(x => x.event)
   def getAllEvents() = (actor ? GetAllDomainEventsQry())(maximumDirectCallDuration).mapTo[AllDomainEventsRsp].map(x => x.chunk.events)
-  def getEvents(id: UUID) = (actor ? GetDomainEventsQry(id))(maximumDirectCallDuration).mapTo[DomainEventsForAggregateRootRsp].map(x => x.chunk.events)
-  def getEvents(id: UUID, fromVersion: Long) = (actor ? GetDomainEventsFromQry(id, fromVersion))(maximumDirectCallDuration).mapTo[DomainEventsForAggregateRootRsp].map(x => x.chunk.events)
-  def getEvents(id: UUID, fromVersion: Long, toVersion: Long) = (actor ? GetDomainEventsFromToQry(id, fromVersion, toVersion))(maximumDirectCallDuration).mapTo[DomainEventsForAggregateRootRsp].map(x => x.chunk.events)
+  def getAllEventsFor(aggId: JUUID) = (actor ? GetDomainEventsQry(aggId))(maximumDirectCallDuration).mapTo[DomainEventsForAggregateRootRsp].map(x => x.chunk.events)
+  def getAllEventsForFrom(aggId: JUUID, fromVersion: Long) = (actor ? GetDomainEventsFromQry(aggId, fromVersion))(maximumDirectCallDuration).mapTo[DomainEventsForAggregateRootRsp].map(x => x.chunk.events)
+  def getAllEventsForTo(aggId: JUUID, toVersion: Long) = (actor ? GetDomainEventsToQry(aggId, toVersion))(maximumDirectCallDuration).mapTo[DomainEventsForAggregateRootRsp].map(x => x.chunk.events)
+  def getAllEventsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long) = (actor ? GetDomainEventsFromToQry(aggId, fromVersion, toVersion))(maximumDirectCallDuration).mapTo[DomainEventsForAggregateRootRsp].map(x => x.chunk.events)
 }
 
 object DomainEventLogActorHull {

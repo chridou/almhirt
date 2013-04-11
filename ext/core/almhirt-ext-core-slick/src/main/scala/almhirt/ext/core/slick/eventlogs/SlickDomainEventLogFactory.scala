@@ -8,13 +8,13 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.eventlog.DomainEventLogFactory
 import almhirt.core.Almhirt
-import almhirt.eventlog.util.SyncDomainEventStorage
+import almhirt.eventlog.SyncDomainEventStorage
 import almhirt.core.HasConfig
 import almhirt.environment.configuration.{ ConfigHelper, SystemHelper }
 import almhirt.serialization._
 import almhirt.ext.core.slick.shared.Profiles
 import almhirt.serializing.DomainEventToStringSerializer
-import almhirt.eventlog.util.BlockingDomainEventLogActor
+import almhirt.eventlog.impl.BlockingDomainEventLogActor
 import com.typesafe.config.Config
 
 class SlickDomainEventLogFactory extends DomainEventLogFactory {

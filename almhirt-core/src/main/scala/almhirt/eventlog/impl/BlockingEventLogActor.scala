@@ -1,40 +1,33 @@
-package almhirt.eventlog.util
+package almhirt.eventlog.impl
 
-import java.util.{ UUID => JUUID }
-import scala.concurrent.duration.FiniteDuration
-import scalaz.syntax.validation._
 import scalaz.std._
-import org.joda.time.DateTime
 import akka.actor._
 import akka.pattern._
-import akka.util.Timeout
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.almfuture.all._
 import almhirt.core._
 import almhirt.eventlog._
-import almhirt.almakka.AlmActorLogging
+import almhirt.util._
+import almhirt.eventlog.SyncEventStorage
 
 class BlockingEventLogActor(eventStorage: SyncEventStorage, predicate: Event => Boolean, theAlmhirt: Almhirt) extends Actor {
   private def publishProblem(problem: Problem) {
     theAlmhirt.publishProblemWithSender(problem, self.path.name)
   }
 
+  private def launderEvent(event: Event): Event =
+    event match {
+      case OperationStateEvent(header, InProcess(ticket, FullComandInfo(cmd), timestamp)) =>
+        OperationStateEvent(header, InProcess(ticket, HeadCommandInfo(cmd), timestamp))
+      case x =>
+        x
+    }
+
   def receive: Receive = {
     case cmd: EventLogCmd =>
       cmd match {
         case LogEventQry(event, correlationId) =>
-          if (predicate(event)) {
-            if (event.header.sender != Some(self.path.name)) {
-              val res = eventStorage.storeEvent(event)
-              res.onFailure(publishProblem)
-              sender ! LoggedEventRsp(res, correlationId)
-            } else {
-              sender ! LoggedEventRsp(event.success, correlationId)
-            }
-          } else {
-            sender ! LoggedEventRsp(event.success, correlationId)
-          }
+          eventStorage.consume(launderEvent(event))
         case GetAllEventsQry(chunkSize, correlationId) =>
           val res = eventStorage.getAllEvents
           res.onFailure(publishProblem)

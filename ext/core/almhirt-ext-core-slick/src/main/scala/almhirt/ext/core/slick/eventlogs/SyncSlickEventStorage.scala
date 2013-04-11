@@ -2,28 +2,46 @@ package almhirt.ext.core.slick.eventlogs
 
 import java.util.{ UUID => JUUID }
 import scalaz.syntax.validation._
+import akka.event.LoggingAdapter
 import org.joda.time.DateTime
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.core.Event
-import almhirt.eventlog.util.SyncEventStorage
+import almhirt.eventlog.SyncEventStorage
 import almhirt.serialization._
 import almhirt.ext.core.slick.TypeConversion._
+import almhirt.core.CanPublishEvents
+import almhirt.core.ProblemEvent
 
 abstract class SyncSlickEventStorage[TRow <: EventLogRow](
+  name: String,
   dal: EventLogStoreComponent[TRow],
+  support: CanPublishEvents with CanCreateUuidsAndDateTimes,
+  logger: LoggingAdapter,
   serializing: CanSerializeToFixedChannelAndDeserialize[Event, Event] { type SerializedRepr = TRow#Repr }) extends SyncEventStorage {
 
   def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: TRow#Repr): TRow
   def unpackRow(row: TRow): (TRow#Repr, String, String)
 
-  override final def storeEvent(event: Event): AlmValidation[Event] = {
+  final def storeEvent(event: Event): AlmValidation[Event] = {
     serializing.serialize(event, None).flatMap {
       case (Some(ti), serializedEvent) =>
         val row = createRow(serializing.channel, ti, event, serializedEvent)
-          dal.insertEventRow(row)
+        dal.insertEventRow(row)
       case (None, _) => UnspecifiedProblem("A type identifier is required.").failure
     }.map(_ => event)
+  }
+
+  override def consume(event: Event) {
+    if (event.header.sender != Some(name)) {
+      val res = storeEvent(event)
+      res.onFailure(prob => {
+        val event = ProblemEvent(prob, Some(name))(support)
+        support.publishEvent(event)
+        storeEvent(event).onFailure(prob =>
+          logger.error(s"""SyncSlickEventStorage with name "$name" could not store the problem event, it has just created. The Problem was: ${prob.toString}"""))
+      })
+    }
   }
 
   override def getEventById(id: JUUID): AlmValidation[Event] =
@@ -51,8 +69,11 @@ abstract class SyncSlickEventStorage[TRow <: EventLogRow](
 }
 
 class SyncTextSlickEventStorage(
+  name: String,
   dal: EventLogStoreComponent[TextEventLogRow],
-  serializing: StringSerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[TextEventLogRow](dal, serializing) {
+  support: CanPublishEvents with CanCreateUuidsAndDateTimes,
+  logger: LoggingAdapter,
+  serializing: StringSerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[TextEventLogRow](name, dal, support, logger, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: String): TextEventLogRow =
     TextEventLogRow(event.header.id, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)
@@ -61,8 +82,11 @@ class SyncTextSlickEventStorage(
 }
 
 class SyncBinarySlickEventStorage(
+  name: String,
   dal: EventLogStoreComponent[BinaryEventLogRow],
-  serializing: BinarySerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[BinaryEventLogRow](dal, serializing) {
+  support: CanPublishEvents with CanCreateUuidsAndDateTimes,
+  logger: LoggingAdapter,
+  serializing: BinarySerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[BinaryEventLogRow](name, dal, support, logger, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: Array[Byte]): BinaryEventLogRow =
     BinaryEventLogRow(event.header.id, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)

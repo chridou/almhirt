@@ -73,7 +73,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
     withEmptyEventLog { (eventLog, almhirt) =>
       val event = TestPersonCreated(AggregateRootRef(aggIdForEvent), "test")
       val resCommit = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
-      val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(2, "s"))
+      val res = eventLog.getAllEventsFor(aggIdForEvent).awaitResult(Duration(2, "s"))
       res.forceResult should have size 1
     }
   }
@@ -81,7 +81,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
     withEmptyEventLog { (eventLog, almhirt) =>
       val event = TestPersonCreated(AggregateRootRef(aggIdForEvent), "test")
       val resCommit = eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(1, "s")).forceResult
-      val res = eventLog.getEvents(aggIdForEvent).awaitResult(Duration(2, "s")).forceResult
+      val res = eventLog.getAllEventsFor(aggIdForEvent).awaitResult(Duration(2, "s")).forceResult
       res.headOption should equal(Some(event))
     }
   }
@@ -91,7 +91,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
       val firstEvent = TestPersonCreated(AggregateRootRef(aggId), "testEvent0")
       val events = firstEvent +: (for (i <- 1 until 100) yield TestPersonNameChanged(AggregateRootRef(aggId, i.toLong), "testEvent%d".format(i)))
       val resCommit = eventLog.storeEvents(events).awaitResult(Duration(2, "s")).forceResult
-      val res = eventLog.getEvents(aggId).awaitResult(Duration(2, "s")).withFailEffect(p => println(p))
+      val res = eventLog.getAllEventsFor(aggId).awaitResult(Duration(2, "s")).withFailEffect(p => println(p))
       res.forceResult should equal(events)
     }
   }
@@ -103,7 +103,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
       val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(AggregateRootRef(almhirt.getUuid), "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(2, "s")).forceResult
-      val res = eventLog.getEvents(aggId).awaitResult(Duration(2, "s")).withFailEffect(p => println(p)).forceResult
+      val res = eventLog.getAllEventsFor(aggId).awaitResult(Duration(2, "s")).withFailEffect(p => println(p)).forceResult
       res should equal(events)
     }
   }
@@ -115,7 +115,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
       val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(AggregateRootRef(almhirt.getUuid), "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(2, "s")).forceResult
-      val res = eventLog.getEvents(aggId, 90).awaitResult(Duration(2, "s")).withFailEffect(p => println(p)).forceResult
+      val res = eventLog.getAllEventsForFrom(aggId, 90).awaitResult(Duration(2, "s")).withFailEffect(p => println(p)).forceResult
       res should equal(events.drop(90))
     }
   }
@@ -127,7 +127,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
       val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(AggregateRootRef(almhirt.getUuid), "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(1, "s")).forceResult
-      val res = eventLog.getEvents(aggId, 0, 9).awaitResult(Duration(2, "s")).withFailEffect(p => println(p)).forceResult
+      val res = eventLog.getAllEventsForFromTo(aggId, 0, 9).awaitResult(Duration(2, "s")).withFailEffect(p => println(p)).forceResult
       res should equal(events.take(10))
     }
   }
@@ -139,7 +139,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
       val eventsToShuffleIn = (for (i <- 0 until 100) yield TestPersonCreated(AggregateRootRef(almhirt.getUuid), "shuffle%d".format(i)).asInstanceOf[DomainEvent]).toList
       val shuffled = events.reverse.zip(eventsToShuffleIn.reverse).foldLeft(List.empty[DomainEvent])((acc, elem) => elem._1 :: elem._2 :: acc)
       val resCommit = eventLog.storeEvents(shuffled.toVector).awaitResult(Duration(2, "s")).forceResult
-      val res = eventLog.getEvents(aggId, 40, 59).awaitResult(Duration(2, "s")).withFailEffect(p => println(p)).forceResult
+      val res = eventLog.getAllEventsForFromTo(aggId, 40, 59).awaitResult(Duration(2, "s")).withFailEffect(p => println(p)).forceResult
       res should equal(events.drop(40).take(20))
     }
   }
@@ -147,7 +147,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
   "An anorm SerializingAnormEventLogwhen already containing an event with version 0L when nothing else is added" should
     "return exactly 1 event when queried for all events for the given id(the one that was already present)" in {
       withEventLogWithOneTestEventA { (eventLog, almhirt) =>
-        val res = eventLog.getEvents(testEventA.aggId).awaitResult(Duration(2, "s")).forceResult
+        val res = eventLog.getAllEventsFor(testEventA.aggId).awaitResult(Duration(2, "s")).forceResult
         res should have size 1
       }
     }
@@ -171,7 +171,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
     withEventLogWithOneTestEventA { (eventLog, almhirt) =>
       val event = TestPersonCreated(AggregateRootRef(almhirt.getUuid), "test")
       eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(2, "s")).forceResult
-      val res = eventLog.getEvents(testEventA.aggId).awaitResult(Duration(2, "s")).forceResult
+      val res = eventLog.getAllEventsFor(testEventA.aggId).awaitResult(Duration(2, "s")).forceResult
       res should have size 1
     }
   }
@@ -179,7 +179,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
     withEventLogWithOneTestEventA { (eventLog, almhirt) =>
       val event = TestPersonCreated(AggregateRootRef(almhirt.getUuid), "test")
       eventLog.storeEvents(IndexedSeq(event)).awaitResult(Duration(2, "s")).forceResult
-      val res = eventLog.getEvents(event.aggId).awaitResult(Duration(2, "s")).forceResult
+      val res = eventLog.getAllEventsFor(event.aggId).awaitResult(Duration(2, "s")).forceResult
       res should have size 1
     }
   }

@@ -8,11 +8,11 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.eventlog.EventLogFactory
 import almhirt.core._
-import almhirt.eventlog.util.SyncEventStorage
+import almhirt.eventlog.SyncEventStorage
 import almhirt.core.HasConfig
 import almhirt.environment.configuration.{ ConfigHelper, SystemHelper }
 import almhirt.serializing.EventToStringSerializer
-import almhirt.eventlog.util.BlockingEventLogActor
+import almhirt.eventlog.impl.BlockingEventLogActor
 import almhirt.ext.core.slick.shared.Profiles
 import almhirt.domain.DomainEvent
 import almhirt.util.OperationStateEvent
@@ -81,7 +81,7 @@ class SlickEventLogFactory extends EventLogFactory {
               Some(succ)
             })
         val eventLogPredicate = createEventPredicate(theAlmhirt, eventLogConfig)
-        val syncStorage = new SyncTextSlickEventStorage(eventLogDataAccess, serializer.serializeToChannel(channel))
+        val syncStorage = new SyncTextSlickEventStorage(name, eventLogDataAccess, theAlmhirt, theAlmhirt.log, serializer.serializeToChannel(channel))
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingEventLogActor(syncStorage, eventLogPredicate, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }

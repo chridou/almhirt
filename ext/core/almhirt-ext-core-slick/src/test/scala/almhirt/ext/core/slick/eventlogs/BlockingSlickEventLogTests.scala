@@ -60,7 +60,7 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
     inLocalTestAlmhirt { almhirt =>
       for {
         eventlog <- almhirt.getService[EventLog]
-        _ <- inTryCatch { events.foreach(eventlog.storeEvent(_)) }
+        _ <- inTryCatch { events.foreach(eventlog.consume(_)) }
         res <- f(eventlog)
       } yield res
     }
@@ -81,98 +81,98 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
 
   test("The eventlog must return the first event when queried with its id") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEvent(events.head.header.id).awaitResult
+      val res = eventlog.getEventById(events.head.header.id).awaitResult
       res
     }.forceResult.header.id must equal(idsVector.head)
   }
 
   test("The eventlog fail when queried for an unknown id") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEvent(ccuad.getUuid).awaitResult
+      val res = eventlog.getEventById(ccuad.getUuid).awaitResult
       res
     }.isFailure must be(true)
   }
 
   test("The eventlog must return all events when from is before the first events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsFrom(events.head.header.timestamp.minusMillis(1)).awaitResult
+      val res = eventlog.getAllEventsFrom(events.head.header.timestamp.minusMillis(1)).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector)
   }
 
   test("The eventlog must return all events when from is equal the first events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsFrom(events.head.header.timestamp).awaitResult
+      val res = eventlog.getAllEventsFrom(events.head.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector)
   }
 
   test("The eventlog must return no events when from is after the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsFrom(events.last.header.timestamp.plusMillis(1)).awaitResult
+      val res = eventlog.getAllEventsFrom(events.last.header.timestamp.plusMillis(1)).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(Vector.empty)
   }
 
   test("The eventlog must return the event when from is equal to the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsFrom(events.last.header.timestamp).awaitResult
+      val res = eventlog.getAllEventsFrom(events.last.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(Vector(idsVector.last))
   }
 
   test("The eventlog must return all events when until is after the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsUntil(events.last.header.timestamp.plusMillis(1)).awaitResult
+      val res = eventlog.getAllEventsUntil(events.last.header.timestamp.plusMillis(1)).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector)
   }
 
   test("The eventlog must return all events except the last when until is equal to the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsUntil(events.last.header.timestamp).awaitResult
+      val res = eventlog.getAllEventsUntil(events.last.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector.take(idsVector.length - 1))
   }
 
   test("The eventlog must return no events when until is equal the first events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsUntil(events.head.header.timestamp).awaitResult
+      val res = eventlog.getAllEventsUntil(events.head.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(Vector.empty)
   }
 
   test("The eventlog must return no events when until is before the first events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsUntil(events.head.header.timestamp.minusMillis(1)).awaitResult
+      val res = eventlog.getAllEventsUntil(events.head.header.timestamp.minusMillis(1)).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(Vector.empty)
   }
 
   test("The eventlog must return all events when from is the first events timestamp and until is after the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsFromUntil(events.head.header.timestamp, events.last.header.timestamp.plusMillis(1)).awaitResult
+      val res = eventlog.getAllEventsFromUntil(events.head.header.timestamp, events.last.header.timestamp.plusMillis(1)).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector)
   }
 
   test("The eventlog must return all events except the last when from is the first events timestamp and until the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsFromUntil(events.head.header.timestamp, events.last.header.timestamp).awaitResult
+      val res = eventlog.getAllEventsFromUntil(events.head.header.timestamp, events.last.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector.take(idsVector.length - 1))
   }
 
   test("The eventlog must return all events except the first and last when from after the first events timestamp and until the last events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsFromUntil(events.head.header.timestamp.plusMillis(1), events.last.header.timestamp).awaitResult
+      val res = eventlog.getAllEventsFromUntil(events.head.header.timestamp.plusMillis(1), events.last.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(idsVector.take(idsVector.length - 1).drop(1))
   }
 
   test("The eventlog must return no events  when from is the last events events timestamp and until the first events timestamp") {
     withIsolatedFilledEventLog { eventlog =>
-      val res = eventlog.getEventsFromUntil(events.last.header.timestamp, events.head.header.timestamp).awaitResult
+      val res = eventlog.getAllEventsFromUntil(events.last.header.timestamp, events.head.header.timestamp).awaitResult
       res.map(events => events.map(_.header.id).toVector)
     }.forceResult must equal(Vector.empty)
   }

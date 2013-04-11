@@ -5,7 +5,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain.DomainEvent
-import almhirt.eventlog.util.SyncDomainEventStorage
+import almhirt.eventlog.SyncDomainEventStorage
 import almhirt.serialization._
 
 abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
@@ -24,7 +24,7 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
     }.map(_ => event)
   }
 
-  override final def storeManyEvents(events: IndexedSeq[DomainEvent]): (IndexedSeq[DomainEvent], Option[(Problem, IndexedSeq[DomainEvent])]) = {
+  override final def storeEvents(events: IndexedSeq[DomainEvent]): (IndexedSeq[DomainEvent], Option[(Problem, IndexedSeq[DomainEvent])]) = {
     import scalaz._, Scalaz._
     (for {
       rows <- events.map(event =>

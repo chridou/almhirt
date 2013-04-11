@@ -60,11 +60,15 @@ class DevNullDomainEventLogActor() extends Actor {
       event match {
         case LogDomainEventsQry(events, _) =>
           sender ! LoggedDomainEventsRsp(events.toVector, None, None)
+        case GetDomainEventByIdQry(id, correlationId) =>
+          sender ! DomainEventByIdRsp(NotFoundProblem(s"The DevNullDomainEventLog could not find the event with id ${id.toString()}. In fact, it cannot find anything!").failure, correlationId)
         case GetAllDomainEventsQry(chunkSize, execIdent) =>
           sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
         case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
           sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
         case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
+          sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
+        case GetDomainEventsToQry(aggId, to, chunkSize, execIdent) =>
           sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)
         case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
           sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, Iterable.empty.success), execIdent)

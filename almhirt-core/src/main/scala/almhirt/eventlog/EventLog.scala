@@ -5,16 +5,12 @@ import org.joda.time.DateTime
 import almhirt.core.Event
 import almhirt.common.AlmFuture
 
-trait CanStoreEvents {
-  def storeEvent(event: Event): AlmFuture[Event]
-}
-
 trait HasEvents {
-  def getAllEvents: AlmFuture[Iterable[Event]]
-  def getEvent(eventId: JUUID): AlmFuture[Event]
-  def getEventsFrom(from: DateTime): AlmFuture[Iterable[Event]]
-  def getEventsUntil(until: DateTime): AlmFuture[Iterable[Event]]
-  def getEventsFromUntil(from: DateTime, until: DateTime): AlmFuture[Iterable[Event]]
+  def getEventById(id: JUUID): AlmFuture[Event]
+  def getAllEvents(): AlmFuture[Iterable[Event]]
+  def getAllEventsFrom(from: DateTime): AlmFuture[Iterable[Event]]
+  def getAllEventsUntil(until: DateTime): AlmFuture[Iterable[Event]]
+  def getAllEventsFromUntil(from: DateTime, until: DateTime): AlmFuture[Iterable[Event]]
 }
 
-trait EventLog extends CanStoreEvents with HasEvents with almhirt.almakka.ActorBased
+trait EventLog extends AsyncEventStorage with almhirt.almakka.ActorBased

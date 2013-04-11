@@ -52,6 +52,7 @@ class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventL
 }
 
 class InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt: Almhirt) extends Actor {
+  import almhirt.almvalidation.kit._
   private var loggedEvents: IndexedSeq[DomainEvent] = IndexedSeq.empty
   def receive: Receive = {
     case event: DomainEventLogCmd =>
@@ -60,12 +61,17 @@ class InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt: Almhirt) ext
           loggedEvents = loggedEvents ++ events
           events.foreach(event => theAlmhirt.publishEvent(event))
           sender ! LoggedDomainEventsRsp(events.toVector, None, executionIdent)
+        case GetDomainEventByIdQry(id, correlationId) =>
+          val res = loggedEvents.find(_.id == id).noneIsNotFound
+          sender ! DomainEventByIdRsp(res, correlationId)
         case GetAllDomainEventsQry(chunkSize, execIdent) =>
           sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, loggedEvents.toIterable.success), execIdent)
         case GetDomainEventsQry(aggId, chunkSize, execIdent) =>
           sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(_.aggId == aggId).toIterable.success), execIdent)
         case GetDomainEventsFromQry(aggId, from, chunkSize, execIdent) =>
           sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from).toIterable.success), execIdent)
+        case GetDomainEventsToQry(aggId, to, chunkSize, execIdent) =>
+          sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion <= to).toIterable.success), execIdent)
         case GetDomainEventsFromToQry(aggId, from, to, chunkSize, execIdent) =>
           sender ! DomainEventsForAggregateRootRsp(aggId, DomainEventsChunk(0, true, loggedEvents.view.filter(x => x.aggId == aggId && x.aggVersion >= from && x.aggVersion <= to).toIterable.success), execIdent)
       }

@@ -18,4 +18,3 @@ final case class GetEventsFromUntilQry(from: DateTime, until: DateTime, chunkSiz
 sealed trait EventLogRsp extends EventLogMessage
 final case class EventsRsp(chunk: EventsChunk, correlationId: Option[UUID]) extends EventLogRsp
 final case class EventRsp(result: AlmValidation[Event], correlationId: Option[UUID]) extends EventLogRsp
-final case class LoggedEventRsp(result: AlmValidation[Event], correlationId: Option[UUID]) extends EventLogRsp

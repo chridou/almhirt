@@ -14,14 +14,16 @@
 */
 package almhirt.eventlog
 
-import java.util.UUID
+import java.util.{ UUID => JUUID }
 import scalaz.Validation
 import almhirt.common._
 import almhirt.domain.DomainEvent
 
 trait HasDomainEvents {
-  def getAllEvents: AlmFuture[Iterable[DomainEvent]]
-  def getEvents(aggRootId: UUID): AlmFuture[Iterable[DomainEvent]]
-  def getEvents(aggRootId: UUID, fromVersion: Long): AlmFuture[Iterable[DomainEvent]]
-  def getEvents(aggRootId: UUID, fromVersion: Long, toVersion: Long): AlmFuture[Iterable[DomainEvent]]
+  def getEventById(id: JUUID): AlmFuture[DomainEvent]
+  def getAllEvents(): AlmFuture[Iterable[DomainEvent]]
+  def getAllEventsFor(aggId: JUUID): AlmFuture[Iterable[DomainEvent]]
+  def getAllEventsForFrom(aggId: JUUID, fromVersion: Long): AlmFuture[Iterable[DomainEvent]]
+  def getAllEventsForTo(aggId: JUUID, toVersion: Long): AlmFuture[Iterable[DomainEvent]]
+  def getAllEventsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmFuture[Iterable[DomainEvent]]
 }

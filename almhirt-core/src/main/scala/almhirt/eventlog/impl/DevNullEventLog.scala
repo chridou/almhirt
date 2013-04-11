@@ -45,7 +45,7 @@ class DevNullEventLogActor() extends Actor {
     case cmd: EventLogCmd =>
       cmd match {
         case LogEventQry(event, correlationId) =>
-          sender ! LoggedEventRsp(event.success, correlationId)
+          ()
         case GetAllEventsQry(chunkSize, correlationId) =>
           sender ! EventsRsp(EventsChunk(0, true, Iterable.empty.success), correlationId)
         case GetEventQry(eventId, chunkSize, correlationId) =>

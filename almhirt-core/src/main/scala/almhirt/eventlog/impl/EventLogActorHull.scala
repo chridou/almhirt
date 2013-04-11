@@ -16,21 +16,19 @@ import almhirt.environment.configuration._
 class EventLogActorHull(val actor: ActorRef, maximumDirectCallDuration: FiniteDuration)(implicit hasExecutionContext: HasExecutionContext) extends EventLog {
   private implicit def executionContext = hasExecutionContext.executionContext
 
-  def storeEvent(event: Event): AlmFuture[Event] =
-    (actor ? LogEventQry(event, None))(maximumDirectCallDuration).mapTo[LoggedEventRsp].toSuccessfulAlmFuture.mapV(rsp =>
-      rsp.result.fold(
-        fail => fail.failure,
-        succ => succ.success))
+  def consume(event: Event) {
+    actor ! LogEventQry(event, None)
+  }
 
   def getAllEvents: AlmFuture[Iterable[Event]] =
     (actor ? GetAllEventsQry())(maximumDirectCallDuration).mapToSuccessfulAlmFuture[EventsRsp].mapV(x => x.chunk.events)
-  def getEvent(eventId: JUUID): AlmFuture[Event] =
+  def getEventById(eventId: JUUID): AlmFuture[Event] =
     (actor ? GetEventQry(eventId))(maximumDirectCallDuration).mapToSuccessfulAlmFuture[EventRsp].mapV(x => x.result)
-  def getEventsFrom(from: DateTime): AlmFuture[Iterable[Event]] =
+  def getAllEventsFrom(from: DateTime): AlmFuture[Iterable[Event]] =
     (actor ? GetEventsFromQry(from))(maximumDirectCallDuration).mapToSuccessfulAlmFuture[EventsRsp].mapV(x => x.chunk.events)
-  def getEventsUntil(until: DateTime): AlmFuture[Iterable[Event]] =
+  def getAllEventsUntil(until: DateTime): AlmFuture[Iterable[Event]] =
     (actor ? GetEventsUntilQry(until))(maximumDirectCallDuration).mapToSuccessfulAlmFuture[EventsRsp].mapV(x => x.chunk.events)
-  def getEventsFromUntil(from: DateTime, until: DateTime): AlmFuture[Iterable[Event]] =
+  def getAllEventsFromUntil(from: DateTime, until: DateTime): AlmFuture[Iterable[Event]] =
     (actor ? GetEventsFromUntilQry(from, until))(maximumDirectCallDuration).mapToSuccessfulAlmFuture[EventsRsp].mapV(x => x.chunk.events)
 }
 
