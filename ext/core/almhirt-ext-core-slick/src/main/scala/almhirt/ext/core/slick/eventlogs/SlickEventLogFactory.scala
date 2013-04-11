@@ -90,13 +90,13 @@ class SlickEventLogFactory extends EventLogFactory {
 
   private def createEventPredicate(theAlmhirt: Almhirt, eventLogConfig: Config): Event => Boolean = {
     val logDomainEventsPredicate: Event => Boolean =
-      if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_domain_events")) {
-        theAlmhirt.log.info(s"The event log does NOT log domain events.")
-        x => !x.isInstanceOf[DomainEvent]
-      }
-      else {
+      if (ConfigHelper.isBooleanSet(eventLogConfig)("log_domain_events")) {
         theAlmhirt.log.info(s"The event log DOES log domain events.")
         x => true
+      }
+      else {
+        theAlmhirt.log.info(s"The event log does NOT log domain events.")
+        x => !x.isInstanceOf[DomainEvent]
       }
     val logProblemEventsPredicate: Event => Boolean =
       if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_problem_events")) {
@@ -117,7 +117,7 @@ class SlickEventLogFactory extends EventLogFactory {
         x => true
       }
     
-    event => logDomainEventsPredicate(event) || logProblemEventsPredicate(event) || logOperationStateEventsPredicate(event)
+    event => logDomainEventsPredicate(event) && logProblemEventsPredicate(event) && logOperationStateEventsPredicate(event)
   }
 
   private def createBinaryEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] =
