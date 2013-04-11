@@ -34,17 +34,11 @@ trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapp
       throw new Exception("You are trying to access the OperationStateChannel. It has not yet been initialized. A solution might be to adjust the ordering of the bootstrapper traits.")
     myOperationStateChannel
   }
-  override def problemChannel: ProblemChannel = {
-    if(myCommandChannel == null)
-      throw new Exception("You are trying to access the ProblemChannel. It has not yet been initialized. A solution might be to adjust the ordering of the bootstrapper traits.")
-    myProblemChannel
-  }
 
   private var myCommandChannel: CommandChannel = null
   private var myEventsChannel: EventsChannel = null
   private var myDomainEventsChannel: DomainEventsChannel = null
   private var myOperationStateChannel: OperationStateChannel = null
-  private var myProblemChannel: ProblemChannel = null
 
   override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
     super.createCoreComponents(theAlmhirt, startUpLogger).andThen(createChannels(theAlmhirt, startUpLogger))
@@ -73,15 +67,13 @@ trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapp
           new CommandChannelWrapper(commandChannel),
           new OperationStateChannelWrapper(operationStateChannel),
           new EventsChannelWrapper(eventsChannel),
-          new DomainEventsChannelWrapper(domainEventsChannel),
-          new ProblemChannelWrapper(problemsChannel))).awaitResult
+          new DomainEventsChannelWrapper(domainEventsChannel))).awaitResult
 
       channels.foreach { x =>
         myCommandChannel = x._1
         myOperationStateChannel = x._2
         myEventsChannel = x._3
         myDomainEventsChannel = x._4
-        myProblemChannel = x._5
         startUpLogger.info("Register CommandChannel")
         self.serviceRegistry.registerService[CommandChannel](myCommandChannel)
         startUpLogger.info("Register OperationStateChannel")
@@ -90,8 +82,6 @@ trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapp
         self.serviceRegistry.registerService[EventsChannel](myEventsChannel)
         startUpLogger.info("Register DomainEventsChannel")
         self.serviceRegistry.registerService[DomainEventsChannel](myDomainEventsChannel)
-        startUpLogger.info("Register ProblemsChannel")
-        self.serviceRegistry.registerService[ProblemChannel](myProblemChannel)
       }
       BootstrapperPhaseSuccess()
     }.toBootstrapperPhaseResult

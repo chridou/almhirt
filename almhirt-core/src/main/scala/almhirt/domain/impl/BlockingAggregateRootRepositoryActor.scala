@@ -54,7 +54,7 @@ abstract class BlockingAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Even
               else if (committedEvents.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
               else PerformedUpdateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
             ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
-            committedEvents.foreach(event => theAlmhirt.publishDomainEvent(event))
+            committedEvents.foreach(event => theAlmhirt.publishEvent(event))
         }).awaitResult
     }(s"Could not store ${uncommittedEvents.size} events for aggregate root ${ar.id}").onFailure(p => updateFailedOperationState(p, ticket))
   }

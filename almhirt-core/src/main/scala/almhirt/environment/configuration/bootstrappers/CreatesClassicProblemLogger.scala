@@ -32,7 +32,7 @@ trait CreatesClassicProblemLogger extends CreatesCoreComponentsBootstrapperPhase
             val actorName = ConfigHelper.problems.getActorName(subConf)
             val problemLogger = theAlmhirt.actorSystem.actorOf(Props(new almhirt.util.impl.ClassicProblemLogger(minSeverity)), actorName)
             val problemloggerRegistration =
-              (problemChannel.actor ? SubscribeQry(MessagingSubscription.forActor[Problem](problemLogger)))(atMost)
+              (eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorMapped[ProblemEvent, Problem](problemLogger, event => event.problem)))(atMost)
                 .mapTo[SubscriptionRsp]
                 .map(_.registration)
                 .toAlmFuture

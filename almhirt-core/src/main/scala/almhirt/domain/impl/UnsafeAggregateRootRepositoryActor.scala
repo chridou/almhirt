@@ -50,7 +50,7 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
             else if (committedEvents.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
             else PerformedUpdateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
           ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
-          committedEvents.foreach(event => theAlmhirt.publishDomainEvent(event))
+          committedEvents.foreach(event => theAlmhirt.publishEvent(event))
       })
   }
 

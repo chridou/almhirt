@@ -16,14 +16,13 @@ trait HasStandardChannels {
   def eventsChannel: EventsChannel
   def domainEventsChannel: DomainEventsChannel
   def operationStateChannel: OperationStateChannel
-  def problemChannel: ProblemChannel
 }
 
 trait CommandChannel extends MessageChannel[CommandEnvelope]
 class CommandChannelWrapper(toWrap: MessageChannel[CommandEnvelope]) extends CommandChannel {
   def actor = toWrap.actor
   def <-* (handler: Message[CommandEnvelope] => Unit, classifier: Message[CommandEnvelope] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
-  def post[U <: CommandEnvelope](message: Message[U]) = { println("xxxxxxxxxxxxxxxxxxxxxxx\n"+message);toWrap.post(message) }
+  def post[U <: CommandEnvelope](message: Message[U]) = { toWrap.post(message) }
   def createSubChannel[U <: CommandEnvelope](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
     toWrap.createSubChannel[U](name, classifier)
   def close = toWrap.close
@@ -55,16 +54,6 @@ class OperationStateChannelWrapper(toWrap: MessageChannel[OperationState]) exten
   def <-* (handler: Message[OperationState] => Unit, classifier: Message[OperationState] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
   def post[U <: OperationState](message: Message[U]) = toWrap.post(message)
   def createSubChannel[U <: OperationState](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
-    toWrap.createSubChannel[U](name, classifier)
-  def close = toWrap.close
-}
-
-trait ProblemChannel extends MessageChannel[Problem]
-class ProblemChannelWrapper(toWrap: MessageChannel[Problem]) extends ProblemChannel {
-  def actor = toWrap.actor
-  def <-* (handler: Message[Problem] => Unit, classifier: Message[Problem] => Boolean)(implicit atMost: FiniteDuration) = toWrap.<-*(handler)
-  def post[U <: Problem](message: Message[U]) = toWrap.post(message)
-  def createSubChannel[U <: Problem](name: String, classifier: Message[U] => Boolean)(implicit atMost: FiniteDuration, m: ClassTag[U]) =
     toWrap.createSubChannel[U](name, classifier)
   def close = toWrap.close
 }

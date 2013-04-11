@@ -58,7 +58,7 @@ trait CreatesAlmhirtFromConfigAndActorSystem extends CreatesAlmhirtBootstrapperP
       theCruncher <- createCruncherExecutionContext(self.actorSystem, startUpLogger)
       theMessageHub <- MessageHub("MessageHub", config)(self.actorSystem, hasExecutionContext).success
     } yield {
-      val theAlmhirt = new Almhirt with PublishesOnMessageHub {
+      val theAlmhirt = new Almhirt with PostsOnMessageHub {
         override val actorSystem = self.actorSystem
         override val executionContext = hasExecutionContext.executionContext
         override val cruncher = theCruncher

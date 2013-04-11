@@ -1,6 +1,7 @@
 package almhirt.core
 
 import org.joda.time.DateTime
+import almhirt.common._
 
 trait EventHeader {
   /** The events unique identifier */
@@ -9,7 +10,7 @@ trait EventHeader {
   def timestamp: DateTime  
 }
 
-case class BasicEventHeader(id: java.util.UUID, timestamp: DateTime) extends EventHeader
+final case class BasicEventHeader(id: java.util.UUID, timestamp: DateTime) extends EventHeader
 
 object EventHeader {
   def apply(anId: java.util.UUID, aTimestamp: DateTime): EventHeader = BasicEventHeader(anId, aTimestamp)
@@ -17,4 +18,11 @@ object EventHeader {
 
 trait Event {
   def header: EventHeader
+}
+
+final case class ProblemEvent(header: EventHeader, problem: Problem) extends Event
+
+object ProblemEvent {
+  def apply(problem: Problem)(implicit ccuad: CanCreateUuidsAndDateTimes): ProblemEvent =
+    ProblemEvent(EventHeader(ccuad.getUuid, ccuad.getDateTime), problem)
 }

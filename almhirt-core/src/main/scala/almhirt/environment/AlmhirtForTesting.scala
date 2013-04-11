@@ -28,7 +28,7 @@ trait AlmhirtForExtendedTesting extends AlmhirtForTesting {
 
 object AlmhirtForTesting {
   def apply(theAlmhirt: Almhirt): AlmhirtForTesting =
-    new AlmhirtForTesting with PublishesOnMessageHub {
+    new AlmhirtForTesting with PostsOnMessageHub {
       override val actorSystem = theAlmhirt.actorSystem
       override val executionContext = theAlmhirt.executionContext
       override def getServiceByType(clazz: Class[_ <: AnyRef]) = theAlmhirt.getServiceByType(clazz)
@@ -54,7 +54,7 @@ object AlmhirtForExtendedTesting {
       theCommandHandlers <- theAlmhirt.getService[HasCommandHandlers]
       anEventLog <- theAlmhirt.getService[DomainEventLog]
       theOperationStateTracker <- theAlmhirt.getService[OperationStateTracker]
-    } yield new AlmhirtForExtendedTesting with PublishesOnMessageHub {
+    } yield new AlmhirtForExtendedTesting with PostsOnMessageHub {
       override val actorSystem = theAlmhirt.actorSystem
       override val executionContext = theAlmhirt.executionContext
       override def getServiceByType(clazz: Class[_ <: AnyRef]) = theAlmhirt.getServiceByType(clazz)

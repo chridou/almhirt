@@ -58,7 +58,7 @@ object Almhirt {
 
     val theMessageHub = MessageHub(getName("MessageHub"))(theActorSystem, theActorSystem.dispatchers.defaultGlobalDispatcher)
 
-    new Almhirt with Disposable with HasDefaultDurations with PublishesOnMessageHub with CanCreateSuffixedName {
+    new Almhirt with Disposable with HasDefaultDurations with PostsOnMessageHub with CanCreateSuffixedName {
       override val actorSystem = theActorSystem
       override val messageHub = theMessageHub
       override val executionContext = theActorSystem.dispatchers.defaultGlobalDispatcher
