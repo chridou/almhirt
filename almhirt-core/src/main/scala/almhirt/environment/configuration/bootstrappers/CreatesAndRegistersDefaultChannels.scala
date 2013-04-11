@@ -41,7 +41,7 @@ trait CreatesAndRegistersDefaultChannels extends CreatesCoreComponentsBootstrapp
     inTryCatch {
       implicit val dur = Duration(1, "s")
       implicit val hasExecContext = theAlmhirt
-      startUpLogger.info("Create CommandChannel, OperationStateChannel, DomainEventsChannel, ProblemsChannel")
+      startUpLogger.info("Create CommandChannel, DomainEventsChannel and EventsChannel")
 
       val commandChannelFuture = theAlmhirt.messageHub.createMessageChannel[CommandEnvelope]("CommandChannel")
       val eventsChannelChannelFuture = theAlmhirt.messageHub.createMessageChannel[Event]("EventsChannel")
