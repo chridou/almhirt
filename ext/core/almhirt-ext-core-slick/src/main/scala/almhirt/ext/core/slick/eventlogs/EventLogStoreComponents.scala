@@ -25,12 +25,13 @@ trait TextEventLogStoreComponent extends SlickTypeMappers with EventLogStoreComp
 
   object TextEventLogRows extends Table[TextEventLogRow](eventlogTablename) {
     def id = column[JUUID]("ID", O.PrimaryKey)
+    def sender = column[Option[String]]("SENDER")
     def timestamp = column[java.sql.Timestamp]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
     def payload = column[String]("PAYLOAD", O.NotNull)
 
-    def * = id ~ timestamp ~ eventtype ~ channel ~ payload <> (TextEventLogRow, TextEventLogRow.unapply _)
+    def * = id ~ sender ~ timestamp ~ eventtype ~ channel ~ payload <> (TextEventLogRow, TextEventLogRow.unapply _)
 
     def timestampIdx = index(s"idx_${eventlogTablename}_timestamp", timestamp)
 
@@ -104,12 +105,13 @@ trait BinaryEventLogStoreComponent extends SlickTypeMappers with EventLogStoreCo
 
   object BinaryEventLogRows extends Table[BinaryEventLogRow](eventlogTablename) {
     def id = column[JUUID]("ID", O.PrimaryKey)
+    def sender = column[Option[String]]("SENDER")
     def timestamp = column[SqlTimestamp]("TIMESTAMP", O.NotNull)
     def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
     def payload = column[Array[Byte]]("PAYLOAD", O.NotNull)
 
-    def * = id ~ timestamp ~ eventtype ~ channel ~ payload <> (BinaryEventLogRow, BinaryEventLogRow.unapply _)
+    def * = id ~sender ~ timestamp ~ eventtype ~ channel ~ payload <> (BinaryEventLogRow, BinaryEventLogRow.unapply _)
 
     def timestampIdx = index("idx_timestamp", timestamp)
 

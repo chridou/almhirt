@@ -31,15 +31,15 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
   }
 
   test("The dal must store a text row the database") {
-    val textEventLogRow = TextEventLogRow(JUUID.randomUUID(), DateTime.now(), "TestEventType", "Nonsense", "The payload")
+    val textEventLogRow = TextEventLogRow(JUUID.randomUUID(), Some("the sender"), DateTime.now(), "TestEventType", "Nonsense", "The payload")
     withIsolatedDal(dal => {
       dal.insertEventRow(textEventLogRow)
     }).isSuccess
   }
 
   test("The dal must store 2 text rows the database") {
-    val textEventLogRow1 = TextEventLogRow(JUUID.fromString("e762e519-66e2-4aee-9076-78bb508e46d5"), DateTime.now(), "TestEventType1", "Nonsense1", "The payload1")
-    val textEventLogRow2 = TextEventLogRow(JUUID.fromString("b3102d20-0d7d-4267-af05-a7b2eff3c7c1"), DateTime.now(), "TestEventType2", "Nonsense2", "The payload2")
+    val textEventLogRow1 = TextEventLogRow(JUUID.fromString("e762e519-66e2-4aee-9076-78bb508e46d5"), None, DateTime.now(), "TestEventType1", "Nonsense1", "The payload1")
+    val textEventLogRow2 = TextEventLogRow(JUUID.fromString("b3102d20-0d7d-4267-af05-a7b2eff3c7c1"), None, DateTime.now(), "TestEventType2", "Nonsense2", "The payload2")
     withIsolatedDal(dal => {
       dal.insertEventRow(textEventLogRow1).flatMap(_ =>
         dal.insertEventRow(textEventLogRow2))
@@ -47,8 +47,8 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
   }
 
   test("The dal must store 2 text rows the database and contain two rows afterwards") {
-    val textEventLogRow1 = TextEventLogRow(JUUID.randomUUID(), DateTime.now(), "TestEventType1", "Nonsense1", "The payload1")
-    val textEventLogRow2 = TextEventLogRow(JUUID.randomUUID(), DateTime.now(), "TestEventType2", "Nonsense2", "The payload2")
+    val textEventLogRow1 = TextEventLogRow(JUUID.randomUUID(), None, DateTime.now(), "TestEventType1", "Nonsense1", "The payload1")
+    val textEventLogRow2 = TextEventLogRow(JUUID.randomUUID(), Some("the sender"), DateTime.now(), "TestEventType2", "Nonsense2", "The payload2")
     withIsolatedDal(dal => {
       dal.insertEventRow(textEventLogRow1).flatMap { _ =>
         dal.insertEventRow(textEventLogRow2)
@@ -60,7 +60,7 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
   }
 
   ignore("The dal must store a text row the database and retrieve the same row") {
-    val textEventLogRow = TextEventLogRow(JUUID.randomUUID(), DateTime.now(), "TestEventType", "Nonsense", "The payload")
+    val textEventLogRow = TextEventLogRow(JUUID.randomUUID(), Some("the sender"), DateTime.now(), "TestEventType", "Nonsense", "The payload")
     val res =
       withIsolatedDal(dal => {
         dal.insertEventRow(textEventLogRow)
@@ -70,8 +70,8 @@ class TextEventLogRowTests extends FunSuite with MustMatchers {
   }
 
   ignore("The dal must store 2 text rows the database and retrieve both originals") {
-    val textEventLogRow1 = TextEventLogRow(JUUID.randomUUID(), DateTime.now(), "TestEventType1", "Nonsense1", "The payload1")
-    val textEventLogRow2 = TextEventLogRow(JUUID.randomUUID(), DateTime.now(), "TestEventType2", "Nonsense2", "The payload2")
+    val textEventLogRow1 = TextEventLogRow(JUUID.randomUUID(), Some("the sender"), DateTime.now(), "TestEventType1", "Nonsense1", "The payload1")
+    val textEventLogRow2 = TextEventLogRow(JUUID.randomUUID(), None, DateTime.now(), "TestEventType2", "Nonsense2", "The payload2")
     val (res1, res2) =
       withIsolatedDal(dal => {
         dal.insertEventRow(textEventLogRow1).flatMap { _ =>

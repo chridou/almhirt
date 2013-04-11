@@ -76,7 +76,7 @@ class SyncTextSlickEventStorage(
   serializing: StringSerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[TextEventLogRow](name, dal, support, logger, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: String): TextEventLogRow =
-    TextEventLogRow(event.header.id, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)
+    TextEventLogRow(event.header.id, event.header.sender, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)
   override def unpackRow(row: TextEventLogRow): (String, String, String) =
     (row.payload, row.channel, row.eventtype)
 }
@@ -89,7 +89,7 @@ class SyncBinarySlickEventStorage(
   serializing: BinarySerializingToFixedChannel[Event, Event]) extends SyncSlickEventStorage[BinaryEventLogRow](name, dal, support, logger, serializing) {
 
   override def createRow(channel: String, typeIdent: String, event: Event, serializedEvent: Array[Byte]): BinaryEventLogRow =
-    BinaryEventLogRow(event.header.id, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)
+    BinaryEventLogRow(event.header.id, event.header.sender, dateTimeToTimeStamp(event.header.timestamp), typeIdent, channel, serializedEvent)
   override def unpackRow(row: BinaryEventLogRow): (Array[Byte], String, String) =
     (row.payload, row.channel, row.eventtype)
 }
