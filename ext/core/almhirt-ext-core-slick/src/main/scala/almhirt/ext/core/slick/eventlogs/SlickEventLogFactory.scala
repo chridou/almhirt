@@ -13,8 +13,10 @@ import almhirt.core.HasConfig
 import almhirt.environment.configuration.{ ConfigHelper, SystemHelper }
 import almhirt.serializing.EventToStringSerializer
 import almhirt.eventlog.util.BlockingEventLogActor
-import com.typesafe.config.Config
 import almhirt.ext.core.slick.shared.Profiles
+import almhirt.domain.DomainEvent
+import almhirt.util.OperationStateEvent
+import com.typesafe.config.Config
 
 class SlickEventLogFactory extends EventLogFactory {
   def createEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
@@ -78,15 +80,46 @@ class SlickEventLogFactory extends EventLogFactory {
               theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
               Some(succ)
             })
+        val eventLogPredicate = createEventPredicate(theAlmhirt, eventLogConfig)
         val syncStorage = new SyncTextSlickEventStorage(eventLogDataAccess, serializer.serializeToChannel(channel))
-        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingEventLogActor(syncStorage, theAlmhirt)))
+        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingEventLogActor(syncStorage, eventLogPredicate, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }
     } yield actor
   }
 
-  private def createBinaryEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {
-    ???
+  private def createEventPredicate(theAlmhirt: Almhirt, eventLogConfig: Config): Event => Boolean = {
+    val logDomainEventsPredicate: Event => Boolean =
+      if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_domain_events")) {
+        theAlmhirt.log.info(s"The event log does NOT log domain events.")
+        x => !x.isInstanceOf[DomainEvent]
+      }
+      else {
+        theAlmhirt.log.info(s"The event log DOES log domain events.")
+        x => true
+      }
+    val logProblemEventsPredicate: Event => Boolean =
+      if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_problem_events")) {
+        theAlmhirt.log.info(s"The event log does NOT log problem events.")
+        x => !x.isInstanceOf[ProblemEvent]
+      }
+      else {
+        theAlmhirt.log.info(s"The event log DOES log problem events.")
+        x => true
+      }
+    val logOperationStateEventsPredicate: Event => Boolean =
+      if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_operationstate_events")) {
+        theAlmhirt.log.info(s"The event log does NOT log operation state events.")
+        x => !x.isInstanceOf[OperationStateEvent]
+      }
+      else {
+        theAlmhirt.log.info(s"The event log DOES log operation state events.")
+        x => true
+      }
+    
+    event => logDomainEventsPredicate(event) || logProblemEventsPredicate(event) || logOperationStateEventsPredicate(event)
   }
 
+  private def createBinaryEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] =
+    ???
 }

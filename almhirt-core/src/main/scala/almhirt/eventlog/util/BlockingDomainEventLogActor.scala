@@ -23,7 +23,6 @@ class BlockingDomainEventLogActor(domainEventStorage: SyncDomainEventStorage, th
         case LogDomainEventsQry(events, executionIdent) =>
           val res = domainEventStorage.storeManyEvents(events)
           sender ! LoggedDomainEventsRsp(res._1, res._2, executionIdent)
-
         case GetAllDomainEventsQry(chunkSize, execIdent) =>
           val res = domainEventStorage.getAllEvents
           sender ! AllDomainEventsRsp(DomainEventsChunk(0, true, res), execIdent)

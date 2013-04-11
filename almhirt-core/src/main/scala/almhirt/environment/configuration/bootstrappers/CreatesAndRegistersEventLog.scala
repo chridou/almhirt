@@ -32,18 +32,9 @@ trait CreatesAndRegistersEventLog extends CreatesCoreComponentsBootstrapperPhase
         case Some(eventLogConfig) =>
           val eventLogActor = SystemHelper.createEventLogFromFactory(theAlmhirt).forceResult
           var eventLogRegistration =
-            (if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_domain_events")) {
-              startUpLogger.info(s"The event log does NOT log domain events")
-              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorMappedWithFilter[Event, LogEventQry](
-                eventLogActor,
-                event => LogEventQry(event, None),
-                event => !event.isInstanceOf[DomainEvent])))(atMost)
-            } else {
-              startUpLogger.info(s"The event log DOES log domain events")
-              (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorMapped[Event, LogEventQry](
-                eventLogActor,
-                event => LogEventQry(event, None))))(atMost)
-            })
+            (self.eventsChannel.actor ? SubscribeQry(MessagingSubscription.forActorMapped[Event, LogEventQry](
+              eventLogActor,
+              event => LogEventQry(event, None))))(atMost)
               .mapTo[SubscriptionRsp]
               .map(_.registration)
               .toAlmFuture

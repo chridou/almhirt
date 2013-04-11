@@ -15,7 +15,7 @@ import almhirt.core._
 import almhirt.eventlog._
 import almhirt.almakka.AlmActorLogging
 
-class BlockingEventLogActor(eventStorage: SyncEventStorage, theAlmhirt: Almhirt) extends Actor {
+class BlockingEventLogActor(eventStorage: SyncEventStorage, predicate: Event => Boolean, theAlmhirt: Almhirt) extends Actor {
   private def publishProblem(problem: Problem) {
     theAlmhirt.publishProblemWithSender(problem, self.path.name)
   }
@@ -24,10 +24,14 @@ class BlockingEventLogActor(eventStorage: SyncEventStorage, theAlmhirt: Almhirt)
     case cmd: EventLogCmd =>
       cmd match {
         case LogEventQry(event, correlationId) =>
-          if (event.header.sender != Some(self.path.name)) {
-            val res = eventStorage.storeEvent(event)
-            res.onFailure(publishProblem)
-            sender ! LoggedEventRsp(res, correlationId)
+          if (predicate(event)) {
+            if (event.header.sender != Some(self.path.name)) {
+              val res = eventStorage.storeEvent(event)
+              res.onFailure(publishProblem)
+              sender ! LoggedEventRsp(res, correlationId)
+            } else {
+              sender ! LoggedEventRsp(event.success, correlationId)
+            }
           } else {
             sender ! LoggedEventRsp(event.success, correlationId)
           }
