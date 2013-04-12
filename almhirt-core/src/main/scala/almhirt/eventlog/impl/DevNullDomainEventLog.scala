@@ -20,6 +20,7 @@ import akka.actor.{ ActorRefFactory, Actor, ActorRef, Props }
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.messaging.Message
 import almhirt.core._
 import almhirt.almakka._
@@ -32,25 +33,26 @@ import almhirt.common.AlmFuture
 import almhirt.core.Almhirt
 
 class DevNullDomainEventLogFactory() extends DomainEventLogFactory {
-  def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    theAlmhirt.getConfig.flatMap(config =>
-      ConfigHelper.domainEventLog.getConfig(config).map { subConfig =>
-        val name = ConfigHelper.domainEventLog.getActorName(subConfig)
-        theAlmhirt.log.info(s"DomainEventLog is DevNullDomainEventLog with name '$name'.")
-        theAlmhirt.log.warning("*** THE DOMAIN EVENT LOG DOES NOTHING ***")
-        val dispatcherName =
-          ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
-            fail => {
-              theAlmhirt.log.warning("No dispatchername found for DomainEventLog. Using default Dispatcher")
-              None
-            },
-            succ => {
-              theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
-              Some(succ)
-            })
-        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new DevNullDomainEventLogActor()))
-        theAlmhirt.actorSystem.actorOf(props, name)
-      })
+  def createDomainEventLog(args: Map[String, Any]): AlmValidation[ActorRef] = {
+    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt =>
+      theAlmhirt.getConfig.flatMap(config =>
+        ConfigHelper.domainEventLog.getConfig(config).map { subConfig =>
+          val name = ConfigHelper.domainEventLog.getActorName(subConfig)
+          theAlmhirt.log.info(s"DomainEventLog is DevNullDomainEventLog with name '$name'.")
+          theAlmhirt.log.warning("*** THE DOMAIN EVENT LOG DOES NOTHING ***")
+          val dispatcherName =
+            ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
+              fail => {
+                theAlmhirt.log.warning("No dispatchername found for DomainEventLog. Using default Dispatcher")
+                None
+              },
+              succ => {
+                theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
+                Some(succ)
+              })
+          val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new DevNullDomainEventLogActor()))
+          theAlmhirt.actorSystem.actorOf(props, name)
+        })))
   }
 }
 

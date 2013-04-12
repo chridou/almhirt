@@ -46,9 +46,9 @@ object SystemHelper {
         theAlmhirt.log.info(s"Creating EventLog using factory '$factoryName'")
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createEventLog(x: Almhirt): AlmValidation[ActorRef] }]
+          .asInstanceOf[EventLogFactory]
       }
-      eventLog <- factory.createEventLog(theAlmhirt)
+      eventLog <- factory.createEventLog(Map("almhirt" -> theAlmhirt))
     } yield eventLog
   }
   
@@ -62,9 +62,9 @@ object SystemHelper {
         theAlmhirt.log.info(s"Creating DomainEventLog using factory '$factoryName'")
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createDomainEventLog(x: Almhirt): AlmValidation[ActorRef] }]
+          .asInstanceOf[DomainEventLogFactory]
       }
-      eventLog <- factory.createDomainEventLog(theAlmhirt)
+      eventLog <- factory.createDomainEventLog(Map("almhirt" -> theAlmhirt))
     } yield eventLog
   }
 

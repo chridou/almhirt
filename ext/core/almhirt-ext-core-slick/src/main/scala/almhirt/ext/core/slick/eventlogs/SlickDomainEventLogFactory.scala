@@ -18,18 +18,20 @@ import almhirt.eventlog.impl.BlockingDomainEventLogActor
 import com.typesafe.config.Config
 
 class SlickDomainEventLogFactory extends DomainEventLogFactory {
-  def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    theAlmhirt.log.info("Starting to create a SLICK domain event log")
-    for {
-      config <- theAlmhirt.getService[HasConfig].map(_.config)
-      eventLogConfig <- ConfigHelper.domainEventLog.getConfig(config)
-      actor <- ConfigHelper.getString(eventLogConfig)("storage_mode").flatMap(mode =>
-        mode.toLowerCase() match {
-          case "text" => createTextDomainEventLog(theAlmhirt, eventLogConfig)
-          case "binary" => createBinaryDomainEventLog(theAlmhirt, eventLogConfig)
-          case x => UnspecifiedProblem(s"""$x is not a valid storage mode""").failure
-        })
-    } yield actor
+  def createDomainEventLog(args: Map[String, Any]): AlmValidation[ActorRef] = {
+    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt => {
+      theAlmhirt.log.info("Starting to create a SLICK domain event log")
+      for {
+        config <- theAlmhirt.getService[HasConfig].map(_.config)
+        eventLogConfig <- ConfigHelper.domainEventLog.getConfig(config)
+        actor <- ConfigHelper.getString(eventLogConfig)("storage_mode").flatMap(mode =>
+          mode.toLowerCase() match {
+            case "text" => createTextDomainEventLog(theAlmhirt, eventLogConfig)
+            case "binary" => createBinaryDomainEventLog(theAlmhirt, eventLogConfig)
+            case x => UnspecifiedProblem(s"""$x is not a valid storage mode""").failure
+          })
+      } yield actor
+    }))
   }
 
   private def createTextDomainEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {

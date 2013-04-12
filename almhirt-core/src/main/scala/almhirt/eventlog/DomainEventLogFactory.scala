@@ -6,5 +6,5 @@ import almhirt.environment._
 import almhirt.core.Almhirt
 
 trait DomainEventLogFactory {
-  def createDomainEventLog(almhirt: Almhirt): AlmValidation[ActorRef]
+  def createDomainEventLog(args: Map[String, Any]): AlmValidation[ActorRef]
 }

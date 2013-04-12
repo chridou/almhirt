@@ -19,18 +19,20 @@ import almhirt.util.OperationStateEvent
 import com.typesafe.config.Config
 
 class SlickEventLogFactory extends EventLogFactory {
-  def createEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    theAlmhirt.log.info("Starting to create a SLICK event log")
-    for {
-      config <- theAlmhirt.getService[HasConfig].map(_.config)
-      eventLogConfig <- ConfigHelper.eventLog.getConfig(config)
-      actor <- ConfigHelper.getString(eventLogConfig)("storage_mode").flatMap(mode =>
-        mode.toLowerCase() match {
-          case "text" => createTextEventLog(theAlmhirt, eventLogConfig)
-          case "binary" => createBinaryEventLog(theAlmhirt, eventLogConfig)
-          case x => UnspecifiedProblem(s"""$x is not a valid storage mode""").failure
-        })
-    } yield actor
+  def createEventLog(args: Map[String, Any], filterPredicate: Option[Event => Boolean]): AlmValidation[ActorRef] = {
+    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt => {
+      theAlmhirt.log.info("Starting to create a SLICK event log")
+      for {
+        config <- theAlmhirt.getService[HasConfig].map(_.config)
+        eventLogConfig <- ConfigHelper.eventLog.getConfig(config)
+        actor <- ConfigHelper.getString(eventLogConfig)("storage_mode").flatMap(mode =>
+          mode.toLowerCase() match {
+            case "text" => createTextEventLog(theAlmhirt, eventLogConfig)
+            case "binary" => createBinaryEventLog(theAlmhirt, eventLogConfig)
+            case x => UnspecifiedProblem(s"""$x is not a valid storage mode""").failure
+          })
+      } yield actor
+    }))
   }
 
   private def createTextEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {
@@ -93,8 +95,7 @@ class SlickEventLogFactory extends EventLogFactory {
       if (ConfigHelper.isBooleanSet(eventLogConfig)("log_domain_events")) {
         theAlmhirt.log.info(s"The event log DOES log domain events.")
         x => true
-      }
-      else {
+      } else {
         theAlmhirt.log.info(s"The event log does NOT log domain events.")
         x => !x.isInstanceOf[DomainEvent]
       }
@@ -102,8 +103,7 @@ class SlickEventLogFactory extends EventLogFactory {
       if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_problem_events")) {
         theAlmhirt.log.info(s"The event log does NOT log problem events.")
         x => !x.isInstanceOf[ProblemEvent]
-      }
-      else {
+      } else {
         theAlmhirt.log.info(s"The event log DOES log problem events.")
         x => true
       }
@@ -111,12 +111,11 @@ class SlickEventLogFactory extends EventLogFactory {
       if (ConfigHelper.isBooleanSetToFalse(eventLogConfig)("log_operationstate_events")) {
         theAlmhirt.log.info(s"The event log does NOT log operation state events.")
         x => !x.isInstanceOf[OperationStateEvent]
-      }
-      else {
+      } else {
         theAlmhirt.log.info(s"The event log DOES log operation state events.")
         x => true
       }
-    
+
     event => logDomainEventsPredicate(event) && logProblemEventsPredicate(event) && logOperationStateEventsPredicate(event)
   }
 

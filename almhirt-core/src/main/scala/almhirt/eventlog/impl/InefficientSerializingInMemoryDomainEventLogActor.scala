@@ -20,6 +20,7 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.messaging.Message
 import almhirt.environment._
 import almhirt.environment.configuration._
@@ -29,25 +30,26 @@ import almhirt.eventlog._
 import almhirt.core.Almhirt
 
 class InefficientSerializingInMemoryDomainEventLogFactory() extends DomainEventLogFactory {
-  def createDomainEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    theAlmhirt.getConfig.flatMap(config =>
-      ConfigHelper.domainEventLog.getConfig(config).map { subConfig =>
-        val name = ConfigHelper.domainEventLog.getActorName(subConfig)
-        theAlmhirt.log.info(s"DomainEventLog is InefficientSerializingInMemoryDomainEventLog with name '$name'.")
-        theAlmhirt.log.warning("*** THE DOMAIN EVENT LOG IS TRANSIENT ***")
-        val dispatcherName =
-          ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
-            fail => {
-              theAlmhirt.log.warning("No dispatchername found for EventLog. Using default Dispatcher")
-              None
-            },
-            succ => {
-              theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
-              Some(succ)
-            })
-        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt)))
-        theAlmhirt.actorSystem.actorOf(props, name)
-      })
+  def createDomainEventLog(args: Map[String, Any]): AlmValidation[ActorRef] = {
+    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt =>
+      theAlmhirt.getConfig.flatMap(config =>
+        ConfigHelper.domainEventLog.getConfig(config).map { subConfig =>
+          val name = ConfigHelper.domainEventLog.getActorName(subConfig)
+          theAlmhirt.log.info(s"DomainEventLog is InefficientSerializingInMemoryDomainEventLog with name '$name'.")
+          theAlmhirt.log.warning("*** THE DOMAIN EVENT LOG IS TRANSIENT ***")
+          val dispatcherName =
+            ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
+              fail => {
+                theAlmhirt.log.warning("No dispatchername found for EventLog. Using default Dispatcher")
+                None
+              },
+              succ => {
+                theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
+                Some(succ)
+              })
+          val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new InefficientSerializingInMemoryDomainEventLogActor(theAlmhirt)))
+          theAlmhirt.actorSystem.actorOf(props, name)
+        })))
   }
 }
 

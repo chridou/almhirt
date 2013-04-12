@@ -6,6 +6,7 @@ import akka.actor.{ ActorRefFactory, Actor, ActorRef, Props }
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.messaging.Message
 import almhirt.core._
 import almhirt.almakka._
@@ -18,7 +19,8 @@ import almhirt.common.AlmFuture
 import almhirt.core.Almhirt
 
 class DevNullEventLogFactory() extends EventLogFactory {
-  def createEventLog(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+  def createEventLog(args: Map[String, Any], filterPredicate: Option[Event => Boolean]): AlmValidation[ActorRef] = {
+    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt =>
     theAlmhirt.getConfig.flatMap(config =>
       ConfigHelper.eventLog.getConfig(config).map { subConfig =>
         val name = ConfigHelper.eventLog.getActorName(subConfig)
@@ -36,7 +38,7 @@ class DevNullEventLogFactory() extends EventLogFactory {
             })
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new DevNullEventLogActor()))
         theAlmhirt.actorSystem.actorOf(props, name)
-      })
+      })))
   }
 }
 
