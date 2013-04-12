@@ -188,7 +188,7 @@ class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers wit
     }).forceResult must equal(idsVector)
   }
   
-  test("The eventlog must store the events via the messagehub and then return all events") {
+  ignore("The eventlog must store the events via the messagehub and then return all events") {
     (inLocalTestAlmhirt { almhirt => 
       for {
         eventlog <- almhirt.getService[EventLog]
