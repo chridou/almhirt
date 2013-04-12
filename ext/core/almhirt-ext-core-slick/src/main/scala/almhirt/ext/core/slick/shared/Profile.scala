@@ -8,6 +8,7 @@ import almhirt.almvalidation.constraints._
 import scala.slick.session.Database
 import almhirt.ext.core.slick.eventlogs._
 import almhirt.ext.core.slick.snapshots.TextSnapshotsDataAccess
+import scala.slick.driver._
 
 trait Profile {
   val profile: ExtendedProfile
@@ -19,7 +20,14 @@ final case class ProfileSettings(driver: String, slickDriver: ExtendedProfile)
 object Profiles {
   val profiles: Map[String, ProfileSettings] =
     Map(
-      "h2" -> ProfileSettings("org.h2.Driver", H2Driver))
+      "h2" -> ProfileSettings("org.h2.Driver", H2Driver),
+      "postgres" -> ProfileSettings("org.postgresql.Driver", PostgresDriver),
+      "derby" -> ProfileSettings("org.apache.derby.jdbc.ClientDriver", DerbyDriver),
+      "derbyembedded" -> ProfileSettings("org.apache.derby.jdbc.EmbeddedDriver", DerbyDriver),
+      "mssql" -> ProfileSettings("com.microsoft.sqlserver.jdbc.SQLServerDriver", SQLServerDriver),
+      "hsqldb" -> ProfileSettings("hSql.hDriver ", HsqldbDriver),
+      "mysql" -> ProfileSettings("com.mysql.jdbc.Driver", MySQLDriver),
+      "sqlite" -> ProfileSettings("org.sqlite.JDBC", SQLiteDriver))
 
   def createTextEventLogAccess(aProfile: String, anEventlogtablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextEventLogDataAccess] =
     for {
