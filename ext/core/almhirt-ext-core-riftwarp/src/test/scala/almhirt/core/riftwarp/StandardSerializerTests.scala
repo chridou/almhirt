@@ -41,28 +41,25 @@ class StandardSerializerTests extends FunSuite with MustMatchers {
    val eventSerializer = {
       val serializer = Serializers.createForStrings[Event, Event](riftWarp)
       new EventToStringSerializer {
-        def serialize(channel: String)(what: Event, typeHint: Option[String]) = serializer.serialize(channel)(what, typeHint)
-        def serializeAsync(channel: String)(what: Event, typeHint: Option[String]) = serializer.serializeAsync(channel)(what, typeHint)
-        def deserialize(channel: String)(what: String, typeHint: Option[String]) = serializer.deserialize(channel)(what, typeHint)
-        def deserializeAsync(channel: String)(what: String, typeHint: Option[String]) = serializer.deserializeAsync(channel)(what, typeHint)
+        def serialize(channel: String)(what: Event, typeHint: Option[String], args: Map[String, Any])  = serializer.serialize(channel)(what, typeHint, args)
+        def serializeAsync(channel: String)(what: Event, typeHint: Option[String], args: Map[String, Any]) = serializer.serializeAsync(channel)(what, typeHint, args)
+        def deserialize(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any]) = serializer.deserialize(channel)(what, typeHint, args)
+        def deserializeAsync(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any]) = serializer.deserializeAsync(channel)(what, typeHint, args)
       }
    }
    
    test("""The EventSerializer must serialize a "TestPersonCreated"-Event to JSON""") {
      val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader((support.getUuid, 0L)), "test"), None)
-     println(res)
      res.isSuccess must be(true)
    }
 
    ignore("""The EventSerializer must deserialize a "TestPersonCreated"-Event from JSON which he created""") {
      val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader((support.getUuid, 0L)), "test"), None)
-     println(res)
      res.isSuccess must be(true)
    }
    
    test("""The EventSerializer must serialize a "TestPersonCreated"-Event to XML""") {
      val res = eventSerializer.serialize("xml")(TestPersonCreated(DomainEventHeader(support.getUuid, 0L), "test"), None)
-     println(res)
      res.isSuccess must be(true)
    }
 }

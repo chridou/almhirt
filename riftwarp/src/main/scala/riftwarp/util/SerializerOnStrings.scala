@@ -10,26 +10,26 @@ import scala.reflect.ClassTag
 class RiftSerializerOnString[TIn <: AnyRef](riftWarp: RiftWarp)(implicit support: HasExecutionContext) extends CanSerialize[TIn] {
   type SerializedRepr = String
 
-  private def serializeWithRiftWarp(what: TIn, channel: String): AlmValidation[String] =
+  private def serializeWithRiftWarp(what: TIn, channel: String, args: Map[String, Any]): AlmValidation[String] =
     riftWarp.channels.getChannel(channel).flatMap(riftChannel =>
       riftWarp.prepareForWarp[DimensionString](riftChannel, None)(what).map(_.manifestation))
 
-  override def serialize(channel: String)(what: TIn, typeHint: Option[String]): AlmValidation[(Option[String], SerializedRepr)] =
-    serializeWithRiftWarp(what, channel).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x))
+  override def serialize(channel: String)(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmValidation[(Option[String], SerializedRepr)] =
+    serializeWithRiftWarp(what, channel, args).map(x => (Some(RiftDescriptor(what.getClass()).toParsableString()), x))
 
-  override def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]): AlmFuture[(Option[String], SerializedRepr)] =
-    AlmFuture { serialize(channel)(what, typeHint) }
+  override def serializeAsync(channel: String)(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmFuture[(Option[String], SerializedRepr)] =
+    AlmFuture { serialize(channel)(what, typeHint, args) }
 }
 
 class RiftDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp)(implicit support: HasExecutionContext, tag: ClassTag[TOut]) extends CanDeserialize[TOut] {
   type SerializedRepr = String
 
-  override def deserialize(channel: String)(what: String, typeHint: Option[String]): AlmValidation[TOut] =
+  override def deserialize(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmValidation[TOut] =
     for {
       riftChannel <- riftWarp.channels.getChannel(channel)
       deserialized <- riftWarp.receiveFromWarp[DimensionString, TOut](riftChannel, None)(DimensionString(what))
     } yield deserialized
 
-  override def deserializeAsync(channel: String)(what: SerializedRepr, typeIdent: Option[String]): AlmFuture[TOut] =
+  override def deserializeAsync(channel: String)(what: SerializedRepr, typeIdent: Option[String], args: Map[String, Any] = Map.empty): AlmFuture[TOut] =
     AlmFuture { deserialize(channel)(what, typeIdent) }
 }

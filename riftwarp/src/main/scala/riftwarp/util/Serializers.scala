@@ -11,10 +11,10 @@ object Serializers {
     val serializer = new RiftSerializerOnString[TIn](riftWarp)
     val deserializer = new RiftDeserializerFromStrings[TOut](riftWarp)
     new StringSerializing[TIn, TOut] {
-      def serialize(channel: String)(what: TIn, typeHint: Option[String]) = serializer.serialize(channel)(what, typeHint)
-      def serializeAsync(channel: String)(what: TIn, typeHint: Option[String]) = serializer.serializeAsync(channel)(what, typeHint)
-      def deserialize(channel: String)(what: SerializedRepr, typeHint: Option[String]) = deserializer.deserialize(channel)(what, typeHint)
-      def deserializeAsync(channel: String)(what: SerializedRepr, typeHint: Option[String]) = deserializer.deserializeAsync(channel)(what, typeHint)
+      def serialize(channel: String)(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.serialize(channel)(what, typeHint, args)
+      def serializeAsync(channel: String)(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.serializeAsync(channel)(what, typeHint, args)
+      def deserialize(channel: String)(what: SerializedRepr, typeHint: Option[String], args: Map[String, Any] = Map.empty) = deserializer.deserialize(channel)(what, typeHint, args)
+      def deserializeAsync(channel: String)(what: SerializedRepr, typeHint: Option[String], args: Map[String, Any] = Map.empty) = deserializer.deserializeAsync(channel)(what, typeHint, args)
     }
   }
 }

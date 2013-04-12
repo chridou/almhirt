@@ -14,10 +14,10 @@ class RiftWarpEventToStringSerializerFactory extends EventToStringSerializerFact
     theAlmhirt.getService[RiftWarp].map(riftWarp => {
       val serializer = Serializers.createForStrings[Event, Event](riftWarp)(theAlmhirt, implicitly[ClassTag[Event]])
       new EventToStringSerializer {
-        def serialize(channel: String)(what: Event, typeHint: Option[String]) = serializer.serialize(channel)(what, typeHint)
-        def serializeAsync(channel: String)(what: Event, typeHint: Option[String]) = serializer.serializeAsync(channel)(what, typeHint)
-        def deserialize(channel: String)(what: String, typeHint: Option[String]) = serializer.deserialize(channel)(what, typeHint)
-        def deserializeAsync(channel: String)(what: String, typeHint: Option[String]) = serializer.deserializeAsync(channel)(what, typeHint)
+        def serialize(channel: String)(what: Event, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.serialize(channel)(what, typeHint, args)
+        def serializeAsync(channel: String)(what: Event, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.serializeAsync(channel)(what, typeHint, args)
+        def deserialize(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.deserialize(channel)(what, typeHint, args)
+        def deserializeAsync(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.deserializeAsync(channel)(what, typeHint, args)
       }
     })
 }
@@ -33,10 +33,10 @@ class RiftWarpDomainEventToStringSerializerFactory extends DomainEventToStringSe
       {
         val serializer = Serializers.createForStrings[DomainEvent, DomainEvent](riftWarp)(theAlmhirt, implicitly[ClassTag[DomainEvent]])
         new DomainEventToStringSerializer {
-          def serialize(channel: String)(what: DomainEvent, typeHint: Option[String]) = serializer.serialize(channel)(what, typeHint)
-          def serializeAsync(channel: String)(what: DomainEvent, typeHint: Option[String]) = serializer.serializeAsync(channel)(what, typeHint)
-          def deserialize(channel: String)(what: String, typeHint: Option[String]) = serializer.deserialize(channel)(what, typeHint)
-          def deserializeAsync(channel: String)(what: String, typeHint: Option[String]) = serializer.deserializeAsync(channel)(what, typeHint)
+          def serialize(channel: String)(what: DomainEvent, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.serialize(channel)(what, typeHint, args)
+          def serializeAsync(channel: String)(what: DomainEvent, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.serializeAsync(channel)(what, typeHint, args)
+          def deserialize(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.deserialize(channel)(what, typeHint)
+          def deserializeAsync(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any] = Map.empty) = serializer.deserializeAsync(channel)(what, typeHint, args)
         }
 
       })
