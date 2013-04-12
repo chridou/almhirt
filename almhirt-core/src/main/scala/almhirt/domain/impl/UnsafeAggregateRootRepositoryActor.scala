@@ -49,8 +49,8 @@ abstract class UnsafeAggregateRootRepositoryActor[AR <: AggregateRoot[AR, Event]
             if (committedEvents.isEmpty) PerformedNoAction("No events have been stored")
             else if (committedEvents.head.isInstanceOf[CreatingNewAggregateRootEvent]) PerformedCreateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
             else PerformedUpdateAction(AggregateRootRef(ar.id, committedEvents.last.aggVersion + 1))
-          ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
           committedEvents.foreach(event => theAlmhirt.publishEvent(event))
+          ticket.foreach(t => theAlmhirt.publishOperationState(Executed(t, action)))
       })
   }
 
