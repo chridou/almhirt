@@ -12,6 +12,8 @@ import almhirt.core.Almhirt
 import almhirt.common.UnspecifiedProblem
 import almhirt.common.CauseIsProblem
 import com.typesafe.config.Config
+import almhirt.util.OperationStateTrackerFactory
+import almhirt.domain.components.SnapshotStorageFactory
 
 object SystemHelper {
   def addDispatcherToPropsFromComponentPath(rootConfig: Config)(pathToComponentConfig: String)(props: Props): AlmValidation[Props] =
@@ -94,7 +96,7 @@ object SystemHelper {
         theAlmhirt.log.info(s"Creating SnapshotStorage using factory '$factoryName'")
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createSnapshotStorage(x: Almhirt): AlmValidation[ActorRef] }]
+          .asInstanceOf[SnapshotStorageFactory]
       }
       eventLog <- factory.createSnapshotStorage(theAlmhirt)
     } yield eventLog
@@ -110,7 +112,7 @@ object SystemHelper {
         theAlmhirt.log.info(s"Creating OperationStateTracker using factory '$factoryName'")
         Class.forName(factoryName)
           .newInstance()
-          .asInstanceOf[{ def createOperationStateTracker(x: Almhirt): AlmValidation[ActorRef] }]
+          .asInstanceOf[OperationStateTrackerFactory]
       }
       tracker <- factory.createOperationStateTracker(theAlmhirt)
     } yield tracker

@@ -4,7 +4,9 @@ import akka.actor.ActorRef
 import almhirt.common._
 import almhirt.environment._
 import almhirt.core.Almhirt
+import almhirt.environment.configuration.ActorRefComponentFactory
 
-trait OperationStateTrackerFactory {
-  def createOperationStateTracker(almhirt: Almhirt): AlmValidation[ActorRef]
+trait OperationStateTrackerFactory extends ActorRefComponentFactory {
+  def createActorRefComponent(args: Map[String, Any]): AlmValidation[ActorRef]
+  def createOperationStateTracker(theAlmhirt: Almhirt): AlmValidation[ActorRef] = createActorRefComponent(Map(("almhirt" -> theAlmhirt)))
 }

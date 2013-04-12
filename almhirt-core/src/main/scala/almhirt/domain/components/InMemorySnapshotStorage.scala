@@ -23,7 +23,11 @@ class InMemorySnapshotStorage extends Actor {
 }
 
 class InMemorySnapshotStorageFactory extends SnapshotStorageFactory {
-  def createSnapshotStorage(theAlmhirt: Almhirt): AlmValidation[ActorRef] = 
+  import almhirt.almvalidation.kit._
+  override def createActorRefComponent(args: Map[String, Any]): AlmValidation[ActorRef] =
+    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt => createSnapshotStorage(theAlmhirt)))
+    
+  override def createSnapshotStorage(theAlmhirt: Almhirt): AlmValidation[ActorRef] = 
     theAlmhirt.getService[HasConfig].flatMap(c => ConfigHelper.getSubConfig(c.config)(ConfigPaths.snapshotStorage)).fold(
       fail => {
         theAlmhirt.log.warning(s"No configuration(${ConfigPaths.snapshotStorage}) found. Using default Dispatcher")

@@ -27,7 +27,7 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
   def receive: Receive = {
     case opState: OperationState =>
       opState match {
-        case inProcess @ InProcess(ticket, _,_) =>
+        case inProcess @ InProcess(ticket, _, _) =>
           if (collectedResults.contains(ticket)) {
             log.warning("InProcess state for ticket %s cannot be set because there is already a result!".format(ticket))
           } else {
@@ -74,23 +74,23 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
 }
 
 class OperationStateTrackerWithoutTimeoutFactory extends OperationStateTrackerFactory {
-  def createOperationStateTracker(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
-    theAlmhirt.getConfig.flatMap(config =>
-      ConfigHelper.operationState.getConfig(config).map { subConfig =>
-        val name = ConfigHelper.operationState.getActorName(subConfig)
-        val dispatcherName =
-          ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
-            fail => {
-              theAlmhirt.log.warning("No dispatchername found for OperationStateTracker. Using default Dispatcher")
-              None
-            },
-            succ => {
-              theAlmhirt.log.info(s"OperationStateTracker is using dispatcher '$succ'")
-              Some(succ)
-            })
-        val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
-        theAlmhirt.log.info(s"OperationStateTracker is OperationStateTrackerWithoutTimeout. Name is '$name'")
-        theAlmhirt.actorSystem.actorOf(props, name)
-      })
-  }
+  override def createActorRefComponent(args: Map[String, Any]): AlmValidation[ActorRef] =
+    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt =>
+      theAlmhirt.getConfig.flatMap(config =>
+        ConfigHelper.operationState.getConfig(config).map { subConfig =>
+          val name = ConfigHelper.operationState.getActorName(subConfig)
+          val dispatcherName =
+            ConfigHelper.getDispatcherNameFromComponentConfig(subConfig).fold(
+              fail => {
+                theAlmhirt.log.warning("No dispatchername found for OperationStateTracker. Using default Dispatcher")
+                None
+              },
+              succ => {
+                theAlmhirt.log.info(s"OperationStateTracker is using dispatcher '$succ'")
+                Some(succ)
+              })
+          val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new OperationStateTrackerWithoutTimeoutActor()(theAlmhirt)))
+          theAlmhirt.log.info(s"OperationStateTracker is OperationStateTrackerWithoutTimeout. Name is '$name'")
+          theAlmhirt.actorSystem.actorOf(props, name)
+        })))
 }

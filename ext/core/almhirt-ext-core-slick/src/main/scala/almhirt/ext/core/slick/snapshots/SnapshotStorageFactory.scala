@@ -14,7 +14,11 @@ import almhirt.ext.core.slick.shared.Profiles
 import com.typesafe.config.Config
 
 class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
-  def createSnapshotStorage(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
+  import almhirt.almvalidation.kit._
+  override def createActorRefComponent(args: Map[String, Any]): AlmValidation[ActorRef] =
+    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt => createSnapshotStorage(theAlmhirt)))
+
+  override def createSnapshotStorage(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.log.info("Starting to create a SLICK snapshot storage log")
     for {
       config <- theAlmhirt.getService[HasConfig].map(_.config)
@@ -43,7 +47,7 @@ class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
       _ <- computeSafely {
         if (dropOnClose)
           theAlmhirt.log.info("Dropping schema for snapshots")
-          theAlmhirt.actorSystem.registerOnTermination{snapshotsDataAccess.drop}
+        theAlmhirt.actorSystem.registerOnTermination { snapshotsDataAccess.drop }
         if (createSchema) {
           theAlmhirt.log.info("Creating schema for snapshots")
           snapshotsDataAccess.create
