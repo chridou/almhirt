@@ -11,7 +11,7 @@ import almhirt.serialization._
 import riftwarp._
 import riftwarp.components._
 
-class ToXmlElemWarpSequencer(state: NodeSeq, descriptor: Option[RiftDescriptor])(implicit hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionXmlElem](classOf[DimensionXmlElem], hasDecomposers: HasDecomposers) with NoneIsHandledUnified[DimensionXmlElem] {
+class ToXmlElemWarpSequencer(state: NodeSeq, descriptor: Option[RiftDescriptor], override val isRoot: Boolean, override val path: List[String])(implicit hasDecomposers: HasDecomposers) extends BaseWarpSequencer[DimensionXmlElem](classOf[DimensionXmlElem], hasDecomposers: HasDecomposers) with NoneIsHandledUnified[DimensionXmlElem] {
   val channel = RiftChannel.Xml
   val toolGroup = ToolGroup.StdLib
   
@@ -25,7 +25,7 @@ class ToXmlElemWarpSequencer(state: NodeSeq, descriptor: Option[RiftDescriptor])
   
   protected def noneHandler(ident: String): ToXmlElemWarpSequencer = this
 
-  protected def spawnNew(): ToXmlElemWarpSequencer = new ToXmlElemWarpSequencer(NodeSeq.Empty, None)
+  protected def spawnNew(pathPrefix: List[String]): ToXmlElemWarpSequencer = new ToXmlElemWarpSequencer(NodeSeq.Empty, None, false, pathPrefix ++ path)
 
   protected override def addReprValue(ident: String, value: XmlElem): WarpSequencer[DimensionXmlElem] = addPart(ident, value)
   
@@ -34,18 +34,21 @@ class ToXmlElemWarpSequencer(state: NodeSeq, descriptor: Option[RiftDescriptor])
 
   def addPart(ident: String, part: XmlElem): ToXmlElemWarpSequencer = {
     val nextPart = XmlElem(null, ident, Null, TopScope, true, part)
-    new ToXmlElemWarpSequencer(state ++ nextPart, descriptor)
+    new ToXmlElemWarpSequencer(state ++ nextPart, descriptor, isRoot, path)
   }
 
   override def addRiftDescriptor(descriptor: RiftDescriptor) = 
-    new ToXmlElemWarpSequencer(state, Some(descriptor))
+    new ToXmlElemWarpSequencer(state, Some(descriptor), isRoot, path)
 }
 
 object ToXmlElemWarpSequencer extends WarpSequencerFactory[DimensionXmlElem] {
   val channel = RiftXml()
   val tDimension = classOf[DimensionXmlElem].asInstanceOf[Class[_ <: RiftDimension]]
   val toolGroup = ToolGroupStdLib()
-  def apply()(implicit hasDecomposers: HasDecomposers): ToXmlElemWarpSequencer = new ToXmlElemWarpSequencer(NodeSeq.Empty, None)
+  def apply(path: List[String])(implicit hasDecomposers: HasDecomposers): ToXmlElemWarpSequencer = 
+    new ToXmlElemWarpSequencer(NodeSeq.Empty, None, true, path)
+  def apply(isRoot: Boolean, path: List[String])(implicit hasDecomposers: HasDecomposers): ToXmlElemWarpSequencer = 
+    new ToXmlElemWarpSequencer(NodeSeq.Empty, None, isRoot, path)
   def createWarpSequencer(implicit hasDecomposers: HasDecomposers): AlmValidation[ToXmlElemWarpSequencer] =
-    apply().success
+    apply(true, Nil).success
 }

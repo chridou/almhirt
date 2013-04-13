@@ -21,13 +21,16 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
    * Creates a new instance of a warpSequencer. It should respect divertBlob when creating the new instance.
    *
    */
-  protected def spawnNew(): WarpSequencer[TDimension]
+  protected def spawnNew(pathPrefix: List[String]): WarpSequencer[TDimension]
+  protected final def spawnNew(pathItem: String): WarpSequencer[TDimension] = spawnNew(List(pathItem))
+  protected final def spawnNew(): WarpSequencer[TDimension] = spawnNew(Nil)
 
   protected def addReprValue(ident: String, value: ValueRepr): WarpSequencer[TDimension]
 
   protected def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[TDimension]): WarpSequencer[TDimension]
 
-  override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[WarpSequencer[TDimension]] = decomposer.decompose(what, this)
+  override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[WarpSequencer[TDimension]] = 
+    decomposer.decompose(what, this)
   override def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
     hasDecomposers.getRawDecomposerFor(what, riftDescriptor).flatMap(decomposer => decomposer.decomposeRaw(what, this))
   override def include[T <: AnyRef](what: T)(implicit tag: ClassTag[T]): AlmValidation[WarpSequencer[TDimension]] =
@@ -58,13 +61,13 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
   override def addUuid(ident: String, aValue: _root_.java.util.UUID): WarpSequencer[TDimension] = addReprValue(ident, dematerializer.getUuidRepr(aValue))
 
   override def addWith[A](ident: String, what: A, decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] =
-    dematerializer.getWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))
+    dematerializer.getWithRepr(what, decomposes, () => spawnNew(ident)).map(addReprValue(ident, _))
 
   override def addComplex[A <: AnyRef](ident: String, what: A, backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
-    dematerializer.getComplexRepr(what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
+    dematerializer.getComplexRepr(what, backupRiftDescriptor, () => spawnNew(ident))(hasDecomposers).map(addReprValue(ident, _))
 
   override def addComplexByTag[A <: AnyRef](ident: String, what: A)(implicit tag: ClassTag[A]): AlmValidation[WarpSequencer[TDimension]] =
-    dematerializer.getComplexByTagRepr(what, spawnNew)(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
+    dematerializer.getComplexByTagRepr(what, () => spawnNew(ident))(implicitly[ClassTag[A]], hasDecomposers).map(addReprValue(ident, _))
 
   override def addIterableAllWith[A, Coll](ident: String, what: IterableLike[A, Coll], decomposes: Decomposes[A]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getIterableAllWithRepr(what, decomposes, spawnNew).map(addReprValue(ident, _))

@@ -8,6 +8,7 @@ import almhirt.common._
 
 trait Extractor {
   def path: List[String]
+  def isRoot: Boolean
   
   def getString(ident: String): AlmValidation[String]
   def tryGetString(ident: String): AlmValidation[Option[String]]

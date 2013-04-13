@@ -12,9 +12,11 @@ import riftwarp.components._
 
 trait RawWarpSequencer {
   def channel: RiftChannel
+  /** Path to the root */
+  def path: List[String]
+  def isRoot: Boolean
   def tDimension: Class[_ <: RiftDimension]
   def toolGroup: ToolGroup
-  /** Path to the root */
   def dematerializeRaw: RiftDimension
 }
 
