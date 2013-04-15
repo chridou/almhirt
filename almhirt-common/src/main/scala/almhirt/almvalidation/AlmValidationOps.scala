@@ -137,7 +137,15 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
 
 trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
   def >!(x: T): Validation[KeyNotFoundProblem, U] =
-    self(x).map(_.success).getOrElse(KeyNotFoundProblem("Key not found: %s".format(x)).failure)
+    self(x).map(_.success).getOrElse(KeyNotFoundProblem(s"Key not found: ${x.toString}".format(x)).failure)
+}
+
+trait AlmValidationOps6A[A, B] extends Ops[Map[A, B]] {
+  def >!(key: A): Validation[KeyNotFoundProblem, B] =
+    if(self.contains(key))
+      self(key).success
+    else
+      KeyNotFoundProblem(s"The map does not contain a value for key ${key.toString}").failure
 }
 
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
@@ -206,6 +214,7 @@ trait ToAlmValidationOps {
   implicit def FromValidationStringTToAlmValidationOps4[T](a: Validation[String, T]): AlmValidationOps4[T] = new AlmValidationOps4[T] { def self = a }
   implicit def FromvalidationProblemToAlmValidationOps5[P <: Problem, T](a: Validation[P, T]): AlmValidationOps5[P, T] = new AlmValidationOps5[P, T] { def self = a }
   implicit def FromFunOptToAlmValidationOps6[T, U](a: T => Option[U]): AlmValidationOps6[T, U] = new AlmValidationOps6[T, U] { def self = a }
+  implicit def FromFunOptToAlmValidationOps6A[A, B](a: Map[A, B]): AlmValidationOps6A[A, B] = new AlmValidationOps6A[A, B] { def self = a }
   implicit def FromOptionTOAlmAlmValidationOps7[T](a: Option[T]): AlmValidationOps7[T] = new AlmValidationOps7[T] { def self = a }
   //  implicit def FromBadDataProblemValidationToAlmValidationOps8[T](a: AlmValidationSBD[T]): AlmValidationOps8[T] = new AlmValidationOps8[T] { def self = a }
   implicit def FromAlmValidationToAlmValidationOps9[T](a: AlmValidation[T]): AlmValidationOps9[T] = new AlmValidationOps9[T] { def self = a }
