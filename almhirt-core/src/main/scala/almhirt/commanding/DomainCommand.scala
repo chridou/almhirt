@@ -15,11 +15,7 @@
 package almhirt.commanding
 
 import java.util.UUID
+import almhirt.common.Command
 import almhirt.domain.AggregateRootRef
 
-trait DomainCommand { def id: UUID; def aggRef: Option[AggregateRootRef] }
-
-
-
-
-//trait FreestyleCommand extends DomainCommand
+trait DomainCommand extends Command { def id: UUID; def aggRef: Option[AggregateRootRef] }
