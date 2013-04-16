@@ -19,7 +19,7 @@ import com.typesafe.config.ConfigFactory
 import almhirt.environment.configuration.Bootstrapper
 import org.joda.time.DateTime
 import almhirt.messaging.Message
-import almhirt.core.Event
+
 class BlockingSlickEventLogOnAlmhirtTests extends FunSuite with MustMatchers with AlmhirtTestKit {
   implicit object ccuad extends CanCreateUuidsAndDateTimes
   implicit val atMost = FiniteDuration(5, "s")

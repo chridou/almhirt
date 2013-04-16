@@ -4,7 +4,6 @@ import akka.actor.ActorRef
 import almhirt.common._
 import almhirt.environment._
 import almhirt.core.Almhirt
-import almhirt.core.Event
 import almhirt.environment.configuration.ActorRefComponentFactory
 
 trait EventLogFactory extends ActorRefComponentFactory {

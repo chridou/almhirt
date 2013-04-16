@@ -1,7 +1,6 @@
 package almhirt.eventlog
 
-import almhirt.common.AlmValidation
-import almhirt.core.Event
+import almhirt.common._
 
 case class EventsChunk(
   /**

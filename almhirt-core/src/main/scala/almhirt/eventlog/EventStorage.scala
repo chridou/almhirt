@@ -3,7 +3,6 @@ package almhirt.eventlog
 import java.util.{ UUID => JUUID }
 import org.joda.time.DateTime
 import almhirt.common._
-import almhirt.core.Event
 import almhirt.core.Almhirt
 
 trait SyncEventStorage extends EventSink {

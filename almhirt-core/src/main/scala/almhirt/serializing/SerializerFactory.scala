@@ -3,7 +3,6 @@ package almhirt.serializing
 import almhirt.common._
 import almhirt.serialization._
 import almhirt.core.Almhirt
-import almhirt.core.Event
 import almhirt.domain.DomainEvent
 import almhirt.domain.IsAggregateRoot
 

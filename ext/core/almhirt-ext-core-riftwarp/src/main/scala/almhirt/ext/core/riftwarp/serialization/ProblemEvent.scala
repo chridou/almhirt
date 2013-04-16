@@ -3,7 +3,6 @@ package almhirt.ext.core.riftwarp.serialization
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.core.ProblemEvent
 import riftwarp._
 
 object ProblemEventDecomposer extends Decomposer[ProblemEvent] {

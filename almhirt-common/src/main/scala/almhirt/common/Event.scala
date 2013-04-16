@@ -1,4 +1,4 @@
-package almhirt.core
+package almhirt.common
 
 import org.joda.time.DateTime
 import almhirt.common._

@@ -3,7 +3,6 @@ package almhirt.ext.core.riftwarp.serialization
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.core.{ EventHeader, BasicEventHeader }
 import riftwarp._
 import almhirt.domain.{ DomainEventHeader, AggregateRootRef }
 

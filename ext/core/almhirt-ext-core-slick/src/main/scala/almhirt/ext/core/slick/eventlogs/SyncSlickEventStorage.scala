@@ -6,12 +6,10 @@ import akka.event.LoggingAdapter
 import org.joda.time.DateTime
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.core.Event
 import almhirt.eventlog.SyncEventStorage
 import almhirt.serialization._
 import almhirt.ext.core.slick.TypeConversion._
 import almhirt.core.CanPublishEvents
-import almhirt.core.ProblemEvent
 
 abstract class SyncSlickEventStorage[TRow <: EventLogRow](
   name: String,

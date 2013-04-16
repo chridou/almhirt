@@ -3,7 +3,6 @@ package almhirt.eventlog
 import java.util.UUID
 import org.joda.time.DateTime
 import almhirt.common._
-import almhirt.core.Event
 
 sealed trait EventLogMessage
 

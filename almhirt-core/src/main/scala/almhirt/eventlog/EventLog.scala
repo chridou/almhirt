@@ -2,8 +2,7 @@ package almhirt.eventlog
 
 import java.util.{ UUID => JUUID }
 import org.joda.time.DateTime
-import almhirt.core.Event
-import almhirt.common.AlmFuture
+import almhirt.common._
 
 trait HasEvents {
   def getEventById(id: JUUID): AlmFuture[Event]

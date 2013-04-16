@@ -1,8 +1,7 @@
 package almhirt.util
 
-import almhirt.core.{Event, EventHeader }
 import org.joda.time.DateTime
-import almhirt.common.CanCreateUuidsAndDateTimes
+import almhirt.common._
 
 final case class OperationStateEvent(header: EventHeader, operationState: OperationState) extends Event
 

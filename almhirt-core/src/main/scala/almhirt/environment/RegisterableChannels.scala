@@ -4,7 +4,7 @@ import scala.reflect.ClassTag
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 import almhirt.common.Problem
-import almhirt.core.Event
+import almhirt.common.Event
 import almhirt.messaging.MessageChannel
 import almhirt.domain.DomainEvent
 import almhirt.messaging.Message

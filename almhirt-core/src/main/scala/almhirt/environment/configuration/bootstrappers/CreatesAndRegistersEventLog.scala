@@ -3,6 +3,7 @@ package almhirt.environment.configuration.bootstrappers
 import scala.concurrent.duration.Duration
 import akka.pattern._
 import akka.event.LoggingAdapter
+import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
 import almhirt.core._
