@@ -76,6 +76,7 @@ trait AlmValidationOps2[P, V] extends Ops[Option[Validation[P, V]]] {
         validation.fold(f => f.failure[Option[V]], _.success[P].map(Some(_)))
       case None => None.success[P]
     }
+  
 }
 
 /** Implicits for a validation that contains an option*/
@@ -206,6 +207,12 @@ trait AlmValidationOps13 extends Ops[Any] {
   def castTo[To](implicit tag: ClassTag[To]): AlmValidation[To] = almhirt.almvalidation.funs.almCast[To](self)
 }
 
+trait AlmValidationOps14 extends Ops[AlmValidation[Boolean]] {
+  def isExplicitlyTrue = self fold (_ => false, x => true == x)
+  def isExplicitlyFalse = self fold (_ => false, x => false == x)
+  def isFalseOrFailure = self fold (_ => true, x => false == x)
+}
+
 trait ToAlmValidationOps {
   implicit def FromStringToAlmValidationOps0(a: String): AlmValidationOps0 = new AlmValidationOps0 { def self = a }
   implicit def FromAnyToAlmValidationOps1[T](a: T): AlmValidationOps1[T] = new AlmValidationOps1[T] { def self = a }
@@ -222,4 +229,5 @@ trait ToAlmValidationOps {
   implicit def FromEitherThrowableToAlmValidationOps11[T](a: Either[Throwable, T]): AlmValidationOps11[T] = new AlmValidationOps11[T] { def self = a }
   implicit def FromListValidationToAlmValidationOps12[R](a: List[AlmValidation[R]]): AlmValidationOps12[R] = new AlmValidationOps12[R] { def self = a }
   implicit def FromAnyToAlmValidationOps13(a: Any): AlmValidationOps13 = new AlmValidationOps13 { def self = a }
+  implicit def FromAnyToAlmValidationOps14(a: AlmValidation[Boolean]): AlmValidationOps14 = new AlmValidationOps14 { def self = a }
 }

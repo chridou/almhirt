@@ -33,5 +33,38 @@ trait ArgsFuns {
 
   def getValueFromPropertyPath[T](path: String, theMap: Map[String, Any])(implicit tag: ClassTag[T]): AlmValidation[T] =
     getFromPropertyPath(path, theMap).flatMap(_.castTo[T])
+    
+  def isBooleanTrue(ident: String, theMap: Map[String, Any]): Boolean =
+    theMap.get(ident) match {
+    case Some(x) => 
+      x.castTo[Boolean].isExplicitlyTrue
+    case None => 
+      false
+  }
 
+  def isBooleanFalse(ident: String, theMap: Map[String, Any]): Boolean =
+    theMap.get(ident) match {
+    case Some(x) => 
+      x.castTo[Boolean].isExplicitlyFalse
+    case None => 
+      false
+  }
+  
+  def isBooleanNotTrue(ident: String, theMap: Map[String, Any]): Boolean =
+    theMap.get(ident) match {
+    case Some(x) => 
+      !(x.castTo[Boolean].isExplicitlyTrue)
+    case None => 
+      true
+  }
+  
+def isBooleanNotFalse(ident: String, theMap: Map[String, Any]): Boolean =
+    theMap.get(ident) match {
+    case Some(x) => 
+      !(x.castTo[Boolean].isExplicitlyFalse)
+    case None => 
+      true
+  }  
+  
+  
 }

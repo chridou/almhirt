@@ -9,6 +9,11 @@ trait ArgsOps1 extends Ops[Map[String, Any]] {
   def fromPath(path: String, sep: Char): AlmValidation[Any] = funs.getFromPath(path, sep, self)
   def fromPropertyPath(path: String): AlmValidation[Any] = funs.getFromPropertyPath(path, self)
   def valueFromPropertyPath[T](path: String)(implicit tag: ClassTag[T]): AlmValidation[T] = funs.getValueFromPropertyPath(path, self)
+  
+  def isSetTrue(ident: String): Boolean = funs.isBooleanTrue(ident, self)
+  def isSetFalse(ident: String): Boolean = funs.isBooleanFalse(ident, self)
+  def isNotSetTrue(ident: String): Boolean = funs.isBooleanNotTrue(ident, self)
+  def isNotSetFalse(ident: String): Boolean = funs.isBooleanNotFalse(ident, self)
 }
 
 import language.implicitConversions
