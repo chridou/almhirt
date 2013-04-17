@@ -5,6 +5,7 @@ import scalaz.syntax.validation._
 import akka.actor._
 import scala.slick.session.{ Database, Session }
 import almhirt.common._
+import almhirt.syntax.args._
 import almhirt.almvalidation.kit._
 import almhirt.eventlog.DomainEventLogFactory
 import almhirt.core.Almhirt
@@ -19,7 +20,7 @@ import com.typesafe.config.Config
 
 class SlickDomainEventLogFactory extends DomainEventLogFactory {
   def createDomainEventLog(args: Map[String, Any]): AlmValidation[ActorRef] = {
-    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt => {
+    args.value[Almhirt]("almhirt").flatMap(theAlmhirt => {
       theAlmhirt.log.info("Starting to create a SLICK domain event log")
       for {
         config <- theAlmhirt.getService[HasConfig].map(_.config)
@@ -31,7 +32,7 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
             case x => UnspecifiedProblem(s"""$x is not a valid storage mode""").failure
           })
       } yield actor
-    }))
+    })
   }
 
   private def createTextDomainEventLog(theAlmhirt: Almhirt, eventLogConfig: Config): AlmValidation[ActorRef] = {

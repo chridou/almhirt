@@ -5,6 +5,7 @@ import scala.slick.session._
 import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
+import almhirt.syntax.args._
 import almhirt.almvalidation.funs._
 import almhirt.core._
 import almhirt.domain.components._
@@ -16,7 +17,7 @@ import com.typesafe.config.Config
 class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
   import almhirt.almvalidation.kit._
   override def createActorRefComponent(args: Map[String, Any]): AlmValidation[ActorRef] =
-    (args.lift >! "almhirt").flatMap(_.castTo[Almhirt].flatMap(theAlmhirt => createSnapshotStorage(theAlmhirt)))
+    args.value[Almhirt]("almhirt").flatMap(createSnapshotStorage)
 
   override def createSnapshotStorage(theAlmhirt: Almhirt): AlmValidation[ActorRef] = {
     theAlmhirt.log.info("Starting to create a SLICK snapshot storage log")
