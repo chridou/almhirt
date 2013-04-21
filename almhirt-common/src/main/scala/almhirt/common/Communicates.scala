@@ -8,12 +8,12 @@ trait CommunicatesOneWay[-A] {
   def send(what: A): Unit
 }
 
-trait CommunicatesTwoWay[-A, +B] {
-  def ask(what: A): AlmFuture[B]
-  def askForReply(what: A, replyTo: AlmValidation[B] => Unit): Unit
+trait CommunicatesTwoWay[-B, +C] {
+  def ask(what: B): AlmFuture[C]
+  def askForReply(what: B, replyTo: AlmValidation[C] => Unit): Unit
 }
 
-trait Communicates[-A, +B] extends CommunicatesOneWay[A] with CommunicatesTwoWay[A, B]
+trait Communicates[-A, -B, +C] extends CommunicatesOneWay[A] with CommunicatesTwoWay[B, C]
 
 //trait DefaultTwoWayCommunicator[-A, +B] extends CommunicatesTwoWay[A, B] {
 //  
