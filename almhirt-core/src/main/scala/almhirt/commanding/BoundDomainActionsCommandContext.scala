@@ -174,7 +174,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
       }
     }
 
-    protected def reportSuccess(action: PerformedAction, ticket: Option[TrackingTicket]) {
+    protected def reportSuccess(action: PerformedDomainAction, ticket: Option[TrackingTicket]) {
       ticket match {
         case Some(t) => theAlmhirt.publishOperationState(Executed(t, action))
         case None => ()
