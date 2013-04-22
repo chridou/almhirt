@@ -39,7 +39,7 @@ trait CanDeserializeFromFixedChannel[+TOut] extends WorksWithSerializedRepresent
 
 object CanSerialize {
   implicit class CanSerializeOps[TIn](self: CanSerialize[TIn]) {
-    def bindToChannel(fixToThisChannel: String): CanSerializeToFixedChannel[TIn] =
+    def serializeToChannel(fixToThisChannel: String): CanSerializeToFixedChannel[TIn] =
       new CanSerializeToFixedChannel[TIn] {
         type SerializedRepr = self.SerializedRepr
         val channel = fixToThisChannel
