@@ -80,7 +80,7 @@ class SlickDomainEventLogFactory extends DomainEventLogFactory {
               theAlmhirt.log.info(s"DomainEventLog is using dispatcher '$succ'")
               Some(succ)
             })
-        val syncStorage = new SyncTextSlickDomainEventStorage(eventLogDataAccess, serializer.serializeToChannel(channel))
+        val syncStorage = new SyncTextSlickDomainEventStorage(eventLogDataAccess, serializer.serializingToChannel(channel))
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingDomainEventLogActor(syncStorage, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }

@@ -76,7 +76,7 @@ class SlickSnapshotStorageFactory extends SnapshotStorageFactory {
               theAlmhirt.log.info(s"SnapshotsStorage is using dispatcher '$succ'")
               Some(succ)
             })
-        val syncStorage = new SlickSyncTextSnapshotStorage(snapshotsDataAccess, serializer.serializeToChannel(channel))
+        val syncStorage = new SlickSyncTextSnapshotStorage(snapshotsDataAccess, serializer.serializingToChannel(channel))
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new SyncSnapshotStorageActor(syncStorage, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }

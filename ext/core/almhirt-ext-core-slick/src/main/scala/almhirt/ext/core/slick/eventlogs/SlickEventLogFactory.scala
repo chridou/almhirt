@@ -84,7 +84,7 @@ class SlickEventLogFactory extends EventLogFactory {
               Some(succ)
             })
         val eventLogPredicate = createEventPredicate(theAlmhirt, eventLogConfig)
-        val syncStorage = new SyncTextSlickEventStorage(name, eventLogDataAccess, theAlmhirt, theAlmhirt.log, serializer.serializeToChannel(channel))
+        val syncStorage = new SyncTextSlickEventStorage(name, eventLogDataAccess, theAlmhirt, theAlmhirt.log, serializer.serializingToChannel(channel))
         val props = SystemHelper.addDispatcherByNameToProps(dispatcherName)(Props(new BlockingEventLogActor(syncStorage, eventLogPredicate, theAlmhirt)))
         theAlmhirt.actorSystem.actorOf(props, name)
       }

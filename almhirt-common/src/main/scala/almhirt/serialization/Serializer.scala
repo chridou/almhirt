@@ -39,7 +39,7 @@ trait CanDeserializeFromFixedChannel[+TOut] extends WorksWithSerializedRepresent
 
 object CanSerialize {
   implicit class CanSerializeOps[TIn](self: CanSerialize[TIn]) {
-    def serializeToChannel(fixToThisChannel: String): CanSerializeToFixedChannel[TIn] =
+    def serializingToChannel(fixToThisChannel: String): CanSerializeToFixedChannel[TIn] =
       new CanSerializeToFixedChannel[TIn] {
         type SerializedRepr = self.SerializedRepr
         val channel = fixToThisChannel
@@ -60,7 +60,7 @@ trait BinarySerializingToFixedChannel[-TIn, +TOut] extends CanSerializeToFixedCh
 
 object StringSerializing {
   implicit class StringSerializingOps[TIn, TOut](self: StringSerializing[TIn, TOut]) {
-    def serializeToChannel(fixToThisChannel: String): StringSerializingToFixedChannel[TIn, TOut] =
+    def serializingToChannel(fixToThisChannel: String): StringSerializingToFixedChannel[TIn, TOut] =
       new StringSerializingToFixedChannel[TIn, TOut] {
         val channel = fixToThisChannel
         def serialize(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.serialize(channel)(what, typeHint, args)
@@ -73,7 +73,7 @@ object StringSerializing {
 
 object BinarySerializing {
   implicit class StringSerializingOps[TIn, TOut](self: BinarySerializing[TIn, TOut]) {
-    def serializeToChannel(fixToThisChannel: String): BinarySerializingToFixedChannel[TIn, TOut] =
+    def serializingToChannel(fixToThisChannel: String): BinarySerializingToFixedChannel[TIn, TOut] =
       new BinarySerializingToFixedChannel[TIn, TOut] {
         val channel = fixToThisChannel
         def serialize(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.serialize(channel)(what, typeHint, args)
