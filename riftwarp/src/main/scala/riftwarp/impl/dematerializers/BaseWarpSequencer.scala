@@ -29,7 +29,7 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
 
   protected def insertWarpSequencer(ident: String, warpSequencer: WarpSequencer[TDimension]): WarpSequencer[TDimension]
 
-  override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[WarpSequencer[TDimension]] = 
+  override def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[WarpSequencer[TDimension]] =
     decomposer.decompose(what, this)
   override def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
     hasDecomposers.getRawDecomposerFor(what, riftDescriptor).flatMap(decomposer => decomposer.decomposeRaw(what, this))
@@ -112,6 +112,9 @@ abstract class BaseWarpSequencer[TDimension <: RiftDimension](val tDimension: Cl
     dematerializer.getTreeOfPrimitivesRepr[A](what)(implicitly[ClassTag[A]]).map(addReprValue(ident, _))
   override def addTree[A](ident: String, what: scalaz.Tree[A], backupRiftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]] =
     dematerializer.getTreeRepr[A](what, backupRiftDescriptor, spawnNew)(hasDecomposers).map(addReprValue(ident, _))
+
+  override def flatMap(f: WarpSequencer[TDimension] => AlmValidation[WarpSequencer[TDimension]]): AlmValidation[WarpSequencer[TDimension]] =
+    f(this)
 
 }
 
