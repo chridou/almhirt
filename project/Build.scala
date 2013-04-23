@@ -30,7 +30,7 @@ object Dependencies {
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0-RC2" % "compile"
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0" % "compile"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % "2.1.0"
 

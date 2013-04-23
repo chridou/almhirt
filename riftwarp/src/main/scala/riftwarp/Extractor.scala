@@ -99,6 +99,8 @@ trait Extractor {
   
   def getRiftDescriptor: AlmValidation[RiftDescriptor]
   def tryGetRiftDescriptor: AlmValidation[Option[RiftDescriptor]]
+  
+  //def extractWith[T](f: Extractor => State[T, Int])
 }
 
 object Extractor {
