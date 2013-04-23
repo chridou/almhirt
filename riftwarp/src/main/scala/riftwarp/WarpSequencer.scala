@@ -179,7 +179,7 @@ trait WarpSequencer[TDimension <: RiftDimension] extends RawWarpSequencer {
   def includeDirect[T <: AnyRef](what: T, decomposer: Decomposer[T]): AlmValidation[WarpSequencer[TDimension]]
   def include(what: AnyRef, riftDescriptor: Option[RiftDescriptor]): AlmValidation[WarpSequencer[TDimension]]
   def include[T <: AnyRef](what: T)(implicit tag: ClassTag[T]): AlmValidation[WarpSequencer[TDimension]]
-  def flatMap(f: WarpSequencer[TDimension] => AlmValidation[WarpSequencer[TDimension]]): AlmValidation[WarpSequencer[TDimension]]
+  def includeWith(f: WarpSequencer[TDimension] => AlmValidation[WarpSequencer[TDimension]]): AlmValidation[WarpSequencer[TDimension]]
 
   def fail(prob: Problem): AlmValidation[WarpSequencer[TDimension]] = prob.failure
   def ok: AlmValidation[WarpSequencer[TDimension]] = this.success
