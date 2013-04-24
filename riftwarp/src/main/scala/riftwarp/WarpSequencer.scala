@@ -9,6 +9,7 @@ import almhirt.common._
 import almhirt.serialization._
 import riftwarp._
 import riftwarp.components._
+import riftwarp.warpsequence.WarpValue
 
 trait RawWarpSequencer {
   def channel: RiftChannel
@@ -26,6 +27,8 @@ trait WarpSequencer[TDimension <: RiftDimension] extends RawWarpSequencer {
   def dematerialize: TDimension
   override def dematerializeRaw: RiftDimension = dematerialize.asInstanceOf[RiftDimension]
 
+  //def writeAll(values: Seq[WarpValue]): WarpSequencer[TDimension]
+  
   def addString(ident: String, aValue: String): WarpSequencer[TDimension]
   def addOptionalString(ident: String, anOptionalValue: Option[String]): WarpSequencer[TDimension]
 
