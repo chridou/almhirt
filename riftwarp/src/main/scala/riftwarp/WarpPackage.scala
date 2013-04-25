@@ -1,11 +1,9 @@
 package riftwarp
 
 trait WarpPackage
+final case class WarpElement(label: String, value: Option[WarpPackage])
 
-trait WarpValue extends WarpPackage
-final case class WarpElement(label: String, value: Option[WarpValue]) extends WarpPackage
-
-trait WarpPrimitive extends WarpValue
+trait WarpPrimitive extends WarpPackage
 final case class WarpBoolean(value: Boolean) extends WarpPrimitive
 final case class WarpString(value: String) extends WarpPrimitive
 final case class WarpByte(value: Byte) extends WarpPrimitive
@@ -19,12 +17,34 @@ final case class WarpUuid(value: java.util.UUID) extends WarpPrimitive
 final case class WarpUri(value: java.net.URI) extends WarpPrimitive
 final case class WarpDateTime(value: org.joda.time.DateTime) extends WarpPrimitive
 
-final case class WarpObject(riftDescriptor: Option[RiftDescriptor], elements: Vector[WarpElement]) extends WarpValue
-final case class WarpCollection(items: Vector[WarpValue]) extends WarpValue
-final case class WarpTree(tree: scalaz.Tree[WarpValue]) extends WarpValue
-final case class WarpAssociativeCollection(items: Vector[(WarpPrimitive, WarpValue)]) extends WarpValue
-final case class WarpBase64(bytes: Array[Byte]) extends WarpValue
-final case class WarpCompressed(bytes: Array[Byte]) extends WarpValue
-final case class WarpByteArray(bytes: Array[Byte]) extends WarpValue
+final case class WarpObject(elements: Vector[WarpElement], riftDescriptor: Option[RiftDescriptor]) extends WarpPackage
+final case class WarpCollection(items: Vector[WarpPackage]) extends WarpPackage
+final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
+final case class WarpAssociativeCollection(items: Vector[(WarpPrimitive, WarpPackage)]) extends WarpPackage
+final case class WarpBase64(bytes: Array[Byte]) extends WarpPackage
+final case class WarpCompressed(bytes: Array[Byte]) extends WarpPackage
+final case class WarpByteArray(bytes: Array[Byte]) extends WarpPackage
+
+object WarpElement {
+  def apply(label: String): WarpElement = WarpElement(label, None)
+  def apply(label: String, value: WarpPackage): WarpElement = WarpElement(label, Some(value))
+}
+
+object WarpObject {
+  def apply(): WarpObject = WarpObject(Vector.empty, None)
+  def apply(elements: Vector[WarpElement]): WarpObject = WarpObject(elements, None)
+  def apply(riftDescriptor: RiftDescriptor): WarpObject = WarpObject(Vector.empty, Some(riftDescriptor))
+  def apply(elements: Vector[WarpElement], riftDescriptor: RiftDescriptor): WarpObject = WarpObject(elements, Some(riftDescriptor))
+}
+
+object WarpCollection {
+  def apply(): WarpCollection = WarpCollection(Vector.empty)
+}
+
+object WarpAssociativeCollection {
+  def apply(): WarpAssociativeCollection = WarpAssociativeCollection(Vector.empty)
+}
+
+object WarpPackage extends WarpPackageFuns
 
 
