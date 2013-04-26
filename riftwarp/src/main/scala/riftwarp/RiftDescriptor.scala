@@ -65,5 +65,10 @@ object RiftDescriptor {
         ParsingProblem("Not a valid RiftDescriptor format. The provided delimeter for name and version was '%s'".format(versionDelim)).withInput(toParse).failure
     }
   }
+  
+  import language.implicitConversions
+
+  implicit def string2RiftDescriptor(descriptor: String): RiftDescriptor = RiftDescriptor(descriptor)
+  implicit def class2RiftDescriptor(clazz: Class[_]): RiftDescriptor = RiftDescriptor(clazz.getName())
 
 }

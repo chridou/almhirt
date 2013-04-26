@@ -1,8 +1,9 @@
 package riftwarp
 
+import scala.reflect.ClassTag
+import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import scala.reflect.ClassTag
 
 trait WarpPackers extends Function1[RiftDescriptor, AlmValidation[BlindWarpPacker]] {
   def apply(descriptor: RiftDescriptor): AlmValidation[BlindWarpPacker]
@@ -20,4 +21,8 @@ trait WarpPackers extends Function1[RiftDescriptor, AlmValidation[BlindWarpPacke
       })
   def getByTagTyped[T](implicit tag: ClassTag[T]): AlmValidation[WarpPacker[T]] =
     getTyped[T](RiftDescriptor(tag.runtimeClass))
+}
+
+object WarpPackers {
+  val NoWarpPackers = new WarpPackers { override def apply(descriptor: RiftDescriptor) = UnspecifiedSystemProblem("NoWarpPackers has no packers").failure}
 }

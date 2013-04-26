@@ -20,7 +20,7 @@ final case class WarpDateTime(value: org.joda.time.DateTime) extends WarpPrimiti
 final case class WarpObject(elements: Vector[WarpElement], riftDescriptor: Option[RiftDescriptor]) extends WarpPackage
 final case class WarpCollection(items: Vector[WarpPackage]) extends WarpPackage
 final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
-final case class WarpAssociativeCollection(items: Vector[(WarpPrimitive, WarpPackage)]) extends WarpPackage
+final case class WarpAssociativeCollection(items: Vector[(WarpPackage, WarpPackage)]) extends WarpPackage
 final case class WarpBase64(bytes: Array[Byte]) extends WarpPackage
 final case class WarpCompressed(bytes: Array[Byte]) extends WarpPackage
 final case class WarpByteArray(bytes: Array[Byte]) extends WarpPackage
