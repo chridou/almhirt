@@ -17,12 +17,11 @@ final case class WarpUuid(value: java.util.UUID) extends WarpPrimitive
 final case class WarpUri(value: java.net.URI) extends WarpPrimitive
 final case class WarpDateTime(value: org.joda.time.DateTime) extends WarpPrimitive
 
-final case class WarpObject(elements: Vector[WarpElement], riftDescriptor: Option[RiftDescriptor]) extends WarpPackage
+final case class WarpObject(riftDescriptor: Option[RiftDescriptor], elements: Vector[WarpElement]) extends WarpPackage
 final case class WarpCollection(items: Vector[WarpPackage]) extends WarpPackage
-final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
 final case class WarpAssociativeCollection(items: Vector[(WarpPackage, WarpPackage)]) extends WarpPackage
+final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
 final case class WarpBase64(bytes: Array[Byte]) extends WarpPackage
-final case class WarpCompressed(bytes: Array[Byte]) extends WarpPackage
 final case class WarpByteArray(bytes: Array[Byte]) extends WarpPackage
 
 object WarpElement {
@@ -31,10 +30,10 @@ object WarpElement {
 }
 
 object WarpObject {
-  def apply(): WarpObject = WarpObject(Vector.empty, None)
-  def apply(elements: Vector[WarpElement]): WarpObject = WarpObject(elements, None)
-  def apply(riftDescriptor: RiftDescriptor): WarpObject = WarpObject(Vector.empty, Some(riftDescriptor))
-  def apply(elements: Vector[WarpElement], riftDescriptor: RiftDescriptor): WarpObject = WarpObject(elements, Some(riftDescriptor))
+  def apply(): WarpObject = WarpObject(None, Vector.empty)
+  def apply(elements: Vector[WarpElement]): WarpObject = WarpObject(None, elements)
+  def apply(riftDescriptor: RiftDescriptor): WarpObject = WarpObject(Some(riftDescriptor), Vector.empty)
+  def apply(elements: Vector[WarpElement], riftDescriptor: RiftDescriptor): WarpObject = WarpObject(Some(riftDescriptor), elements)
 }
 
 object WarpCollection {
