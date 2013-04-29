@@ -104,67 +104,86 @@ trait PackageBuilderFuns {
   // def xxx() = WarpElement("", None) ++ WarpElement("", None)
 
   def E(label: String, what: WarpPackage): AlmValidation[WarpElement] =
-    WarpElement(label, what).success  
-    
+    WarpElement(label, what).success
+
   def P(label: String, what: Any): AlmValidation[WarpElement] =
     toWarpPrimitive(what).map(WarpElement(label, _))
 
   def POpt(label: String, what: Option[Any]): AlmValidation[WarpElement] =
     what match {
-    case Some(v) => toWarpPrimitive(v).map(WarpElement(label, _))
-    case None => WarpElement(label).success
-  }
-    
+      case Some(v) => toWarpPrimitive(v).map(WarpElement(label, _))
+      case None => WarpElement(label).success
+    }
+
   def PC[A](label: String, what: Traversable[A])(implicit tag: ClassTag[A]): AlmValidation[WarpElement] =
     toWarpPrimitivesCollection(what).map(WarpElement(label, _))
 
   def PCOpt[A](label: String, what: Option[Traversable[A]])(implicit tag: ClassTag[A]): AlmValidation[WarpElement] =
     what match {
-    case Some(v) => toWarpPrimitivesCollection(v).map(WarpElement(label, _))
-    case None => WarpElement(label).success
-  }
- 
+      case Some(v) => toWarpPrimitivesCollection(v).map(WarpElement(label, _))
+      case None => WarpElement(label).success
+    }
+
   def With[T](label: String, what: T, packer: WarpPacker[T])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     packer(what).map(WarpElement(label, _))
 
   def WithOpt[T](label: String, what: Option[T], packer: WarpPacker[T])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
-    case Some(v) => packer(v).map(WarpElement(label, _))
-    case None => WarpElement(label).success
-  }
+      case Some(v) => packer(v).map(WarpElement(label, _))
+      case None => WarpElement(label).success
+    }
+
+  def LookUp(label: String, what: Any)(implicit packers: WarpPackers): AlmValidation[WarpElement] =
+    funs.pack(what).map(WarpElement(label, _))
+    
+  def LookUpOpt[T](label: String, what: Option[Any])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) => funs.pack(v).map(WarpElement(label, _))
+      case None => WarpElement(label).success
+    }
     
 }
 
 trait PackageBuilderOps {
   implicit class WarpElementOps(self: WarpElement) {
-    def ~+(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
+    def ~>(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
         succ => WarpObject(None, Vector(self, succ)).success)
+
+    def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
+
   }
 
   implicit class WarpObjectOps(self: WarpObject) {
-    def ~+(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
+    def ~>(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
         succ => WarpObject(self.riftDescriptor, self.elements :+ succ).success)
+
+    def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
   }
 
   implicit class RiftDescriptorOps(self: RiftDescriptor) {
-    def ~+(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
+    def ~>(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
         succ => WarpObject(Some(self), Vector(succ)).success)
+
+    def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
   }
 
   implicit class WarpObjectVOps(self: AlmValidation[WarpObject]) {
-    def ~+(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
+    def ~>(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
       self.fold(
         fail => fail.failure,
         succObj =>
           next.fold(
             fail => fail.failure,
             succ => WarpObject(succObj.riftDescriptor, succObj.elements :+ succ).success))
+
+    def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
+
   }
 
 }

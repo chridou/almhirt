@@ -11,60 +11,59 @@ object HasAThrowableDescribedPacker extends WarpPacker[HasAThrowableDescribed] w
   val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
   val alternativeRiftDescriptors = Nil
   override def pack(what: HasAThrowableDescribed)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    this.riftDescriptor ~+
-      P("classname", what.classname) ~+
-      P("mesage", what.message) ~+
-      P("stacktrace", what.stacktrace) ~+
+    this.riftDescriptor ⟿
+      P("classname", what.classname) ⟿
+      P("mesage", what.message) ⟿
+      P("stacktrace", what.stacktrace) ⟿
       WithOpt("cause", what.cause, this)
   }
 }
 
-//object HasAThrowableDecomposer extends Decomposer[HasAThrowable] {
-//  val riftDescriptor = RiftDescriptor(classOf[HasAThrowable])
-//  val alternativeRiftDescriptors = Nil
-//  def decompose[TDimension <: RiftDimension](what: HasAThrowable, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-//    into.includeDirect(what.toDescription, HasAThrowableDescribedDecomposer)
-//  }
-//}
-//
-//object ThrowableRepresentationDecomposer extends Decomposer[ThrowableRepresentation] {
-//  val riftDescriptor = RiftDescriptor(classOf[ThrowableRepresentation])
-//  val alternativeRiftDescriptors = Nil
-//  def decompose[TDimension <: RiftDimension](what: ThrowableRepresentation, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-//    what match {
-//      case hat @ HasAThrowable(_) => into.includeDirect(hat, HasAThrowableDecomposer)
-//      case hatd @ HasAThrowableDescribed(_, _, _, _) => into.includeDirect(hatd, HasAThrowableDescribedDecomposer)
-//    }
-//  }
-//}
-//
-//object CauseIsThrowableDecomposer extends Decomposer[CauseIsThrowable] {
-//  val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
-//  val alternativeRiftDescriptors = Nil
-//  def decompose[TDimension <: RiftDimension](what: CauseIsThrowable, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-//    into.addRiftDescriptor(this.riftDescriptor)
-//      .addWith("representation", what.representation, ThrowableRepresentationDecomposer)
-//  }
-//}
-//
-//object CauseIsProblemDecomposer extends Decomposer[CauseIsProblem] {
-//  val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
-//  val alternativeRiftDescriptors = Nil
-//  def decompose[TDimension <: RiftDimension](what: CauseIsProblem, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-//    into.addRiftDescriptor(this.riftDescriptor).addComplex("problem", what.problem, None)
-//  }
-//}
-//
-//object ProblemCauseDecomposer extends Decomposer[ProblemCause] {
-//  val riftDescriptor = RiftDescriptor(classOf[ProblemCause])
-//  val alternativeRiftDescriptors = Nil
-//  def decompose[TDimension <: RiftDimension](what: ProblemCause, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-//    what match {
-//      case cip @ CauseIsProblem(_) => into.includeDirect(cip, CauseIsProblemDecomposer)
-//      case cit @ CauseIsThrowable(_) => into.includeDirect(cit, CauseIsThrowableDecomposer)
-//    }
-//  }
-//}
+object HasAThrowablePacker extends WarpPacker[HasAThrowable] with SimpleWarpPacker[HasAThrowable] with RegisterableWarpPacker {
+  val riftDescriptor = RiftDescriptor(classOf[HasAThrowable])
+  val alternativeRiftDescriptors = Nil
+  override def pack(what: HasAThrowable)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    HasAThrowableDescribedPacker { what.toDescription }
+  }
+}
+
+object ThrowableRepresentationPacker extends WarpPacker[ThrowableRepresentation] with SimpleWarpPacker[ThrowableRepresentation] with RegisterableWarpPacker {
+  val riftDescriptor = RiftDescriptor(classOf[ThrowableRepresentation])
+  val alternativeRiftDescriptors = Nil
+  override def pack(what: ThrowableRepresentation)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    what match {
+      case hat: HasAThrowable => HasAThrowablePacker(hat)
+      case hatd: HasAThrowableDescribed => HasAThrowableDescribedPacker(hatd)
+    }
+  }
+}
+
+object CauseIsThrowablePacker extends WarpPacker[CauseIsThrowable] with SimpleWarpPacker[CauseIsThrowable] with RegisterableWarpPacker {
+  val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
+  val alternativeRiftDescriptors = Nil
+  override def pack(what: CauseIsThrowable)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.riftDescriptor ⟿ With("representation", what.representation, ThrowableRepresentationPacker)
+  }
+}
+
+object CauseIsProblemPacker extends WarpPacker[CauseIsProblem] with RegisterableWarpPacker {
+  val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
+  val alternativeRiftDescriptors = Nil
+  override def pack(what: CauseIsProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.riftDescriptor ⟿ LookUp("problem", what.problem)
+  }
+}
+
+object ProblemCausePacker extends WarpPacker[ProblemCause] with RegisterableWarpPacker {
+  val riftDescriptor = RiftDescriptor(classOf[ProblemCause])
+  val alternativeRiftDescriptors = Nil
+  override def pack(what: ProblemCause)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    what match {
+      case cip : CauseIsProblem => CauseIsProblemPacker(cip)
+      case cit : CauseIsThrowable => CauseIsThrowablePacker(cit)
+    }
+  }
+}
 //
 //object HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribed] {
 //  val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
