@@ -3,7 +3,7 @@ package riftwarp
 trait WarpPackage
 final case class WarpElement(label: String, value: Option[WarpPackage])
 
-trait WarpPrimitive extends WarpPackage
+sealed trait WarpPrimitive extends WarpPackage
 final case class WarpBoolean(value: Boolean) extends WarpPrimitive
 final case class WarpString(value: String) extends WarpPrimitive
 final case class WarpByte(value: Byte) extends WarpPrimitive
@@ -21,8 +21,11 @@ final case class WarpObject(riftDescriptor: Option[RiftDescriptor], elements: Ve
 final case class WarpCollection(items: Vector[WarpPackage]) extends WarpPackage
 final case class WarpAssociativeCollection(items: Vector[(WarpPackage, WarpPackage)]) extends WarpPackage
 final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
-final case class WarpBase64(bytes: Array[Byte]) extends WarpPackage
-final case class WarpByteArray(bytes: Array[Byte]) extends WarpPackage
+
+sealed trait BinaryWarpPackage extends WarpPackage
+final case class WarpBytes(bytes: Array[Byte]) extends BinaryWarpPackage
+final case class WarpBase64(bytes: Array[Byte]) extends BinaryWarpPackage
+final case class WarpBlob(bytes: Array[Byte]) extends BinaryWarpPackage
 
 object WarpElement {
   def apply(label: String): WarpElement = WarpElement(label, None)

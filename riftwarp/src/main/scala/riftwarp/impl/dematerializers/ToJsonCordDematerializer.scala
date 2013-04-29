@@ -14,9 +14,11 @@ import almhirt.almvalidation.kit._
 import almhirt.common._
 import riftwarp._
 
-object ToJsonCordDematerializer extends DematerializerTemplate[DimensionCord] {
-  protected def valueReprToDim(repr: Cord): DimensionCord =
-    DimensionCord(repr)
+object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.Json] {
+  type ValueRepr = Cord
+  
+  protected def valueReprToDim(repr: Cord): Cord @@ WarpTags.Json =
+    WarpTags.JsonCord(repr)
 
   protected override final def getPrimitiveRepr(prim: WarpPrimitive): Cord =
     prim match {
@@ -34,23 +36,44 @@ object ToJsonCordDematerializer extends DematerializerTemplate[DimensionCord] {
       case WarpDateTime(value) => Cord(mapStringLike(value.toString))
     }
 
-  protected def getObjectRepr(rd: Option[RiftDescriptor], elems: Vector[(String, Option[ValueRepr])]) =
-    ???
+  protected override def getObjectRepr(warpObject: WarpObject): Cord = {
+    val head =
+      warpObject.riftDescriptor match {
+        case Some(rd) => Cord(s"""{"${RiftDescriptor.defaultKey}":"${rd.toParsableString(";")}"""")
+        case None => Cord("{")
+      }
+    val elements =
+      if (warpObject.elements.isEmpty)
+        Cord("")
+      else {
+        val items = warpObject.elements.map(elem => createElemRepr(elem))
+        items.drop(1).fold(items.head) { case (acc, x) => (acc :- ',') ++ x }
+      }
+    head ++ elements :- '}'
+  }
 
-  protected def foldReprs(elems: Traversable[ValueRepr]) =
+  protected override def foldReprs(elems: Traversable[ValueRepr]): Cord =
     foldParts(elems.toList)
 
-  protected def foldTupleReprs(tuple: (ValueRepr, ValueRepr)) =
+  protected override def foldTupleReprs(tuple: (ValueRepr, ValueRepr)): Cord =
     foldParts(tuple._1 :: tuple._2 :: Nil)
 
-  protected def foldTreeRepr(tree: scalaz.Tree[ValueRepr]) =
+  protected override def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): Cord =
     foldParts(tree.rootLabel :: foldParts(tree.subForest.map(foldTreeRepr).toList) :: Nil)
 
-  protected def foldByteArrayRepr(bytes: Array[Byte]) =
+  protected override def foldByteArrayRepr(bytes: Array[Byte]): Cord =
     foldParts(bytes.map(b => Cord(b.toString)).toList)
 
-  protected def foldBase64Repr(bytes: Array[Byte]) =
+  protected override def foldBase64Repr(bytes: Array[Byte]): Cord =
     Cord(org.apache.commons.codec.binary.Base64.encodeBase64String(bytes))
+
+  protected override def foldBlobRepr(bytes: Array[Byte]): Cord = foldBase64Repr(bytes)
+
+  private def createElemRepr(elem: WarpElement): Cord =
+    elem.value match {
+      case Some(v) => s""""${elem.label}":""" + transform(v)
+      case None => s""""${elem.label}":null"""
+    }
 
   /*
  * Parts of "launderString" are taken from Lift-JSON:

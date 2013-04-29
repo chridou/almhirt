@@ -9,36 +9,39 @@ import riftwarp._
 import riftwarp.components.HasDecomposers
 import riftwarp.warpsequence.TypeDescriptorWarpAction
 
-trait DematerializerTemplate[TDimension <: RiftDimension] extends Dematerializer[TDimension] {
-  type ValueRepr = TDimension#Under
+trait DematerializerTemplate[T] extends Dematerializer[T] {
+  type ValueRepr
 
-  private def transform(what: WarpPackage): ValueRepr =
+  def transform(what: WarpPackage): ValueRepr =
     what match {
       case prim: WarpPrimitive =>
         getPrimitiveRepr(prim)
-      case WarpObject(riftDescriptor, elems) =>
-        getObjectRepr(riftDescriptor, elems.map(elem => (elem.label, elem.value.map(transform(_)))))
+      case obj: WarpObject =>
+        getObjectRepr(obj)
       case WarpCollection(items) =>
         foldReprs(items.map(transform))
       case WarpAssociativeCollection(items) =>
         foldReprs(items.map(item => foldTupleReprs((transform(item._1), transform(item._2)))))
       case WarpTree(tree) =>
         foldTreeRepr(tree.map(transform))
-      case WarpByteArray(bytes) =>
+      case WarpBytes(bytes) =>
         foldByteArrayRepr(bytes)
       case WarpBase64(bytes) =>
         foldBase64Repr(bytes)
+      case WarpBlob(bytes) =>
+        foldBlobRepr(bytes)
     }
 
-  override def write(what: WarpPackage): TDimension =
+  override def dematerialize(what: WarpPackage): T =
     valueReprToDim(transform(what))
     
-  protected def valueReprToDim(repr: ValueRepr): TDimension
+  protected def valueReprToDim(repr: ValueRepr): T
   protected def getPrimitiveRepr(prim: WarpPrimitive): ValueRepr
-  protected def getObjectRepr(rd: Option[RiftDescriptor], elems: Vector[(String, Option[ValueRepr])]): ValueRepr
+  protected def getObjectRepr(warpObject: WarpObject): ValueRepr
   protected def foldReprs(elems: Traversable[ValueRepr]): ValueRepr
   protected def foldTupleReprs(tuple: (ValueRepr, ValueRepr)): ValueRepr
   protected def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): ValueRepr
   protected def foldByteArrayRepr(bytes: Array[Byte]): ValueRepr
   protected def foldBase64Repr(bytes: Array[Byte]): ValueRepr
+  protected def foldBlobRepr(bytes: Array[Byte]): ValueRepr
 }
