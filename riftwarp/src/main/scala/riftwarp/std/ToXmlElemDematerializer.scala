@@ -1,13 +1,12 @@
-package riftwarp.impl.dematerializers
-
-import java.util.{ UUID => JUUID }
-import scala.reflect.ClassTag
+package riftwarp.std
 import scala.annotation.tailrec
 import scala.xml.{ Elem => XmlElem, NodeSeq, Null, TopScope, UnprefixedAttribute }
-import scalaz._, Scalaz._
-import org.joda.time.DateTime
+import scalaz._
 import almhirt.common._
 import riftwarp._
+import riftwarp.std.DematerializerTemplate
+import scala.xml.{<none> => _*}
+import scala.xml.{Elem => XmlElem}
 
 object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   type ValueRepr = XmlElem

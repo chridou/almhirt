@@ -1,13 +1,9 @@
-package riftwarp.impl.dematerializers
-
-import scala.reflect.ClassTag
-import scala.collection.IterableLike
-import scalaz._, Scalaz._
+package riftwarp.std
+import scalaz._
+import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
-import riftwarp.components.HasDecomposers
-import riftwarp.warpsequence.TypeDescriptorWarpAction
 
 trait DematerializerTemplate[T] extends Dematerializer[T] {
   type ValueRepr

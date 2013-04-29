@@ -1,9 +1,12 @@
-package riftwarp.impl.rematerializers
+package riftwarp.std
 
-import scalaz._, Scalaz._
+import scalaz._
+import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
+import scala.util.parsing.json.JSONArray
+import scala.util.parsing.json.JSONObject
 
 object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonStdLib] {
   import scala.util.parsing.json._

@@ -1,4 +1,4 @@
-package riftwarp.impl.rematerializers
+package riftwarp.std
 
 import scalaz.syntax.validation._
 import almhirt.common._

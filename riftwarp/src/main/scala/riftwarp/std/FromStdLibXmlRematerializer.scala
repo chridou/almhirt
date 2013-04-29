@@ -1,19 +1,15 @@
-package riftwarp.impl.rematerializers
-
-import java.util.{ UUID => JUUID }
-import java.net.{ URI => JURI }
-import scala.reflect.ClassTag
-import scala.collection.generic.CanBuildFrom
-import scala.xml.{ Elem => XmlElem, NodeSeq }
-import org.joda.time.DateTime
+package riftwarp.std
+import scala.xml.{ Elem => XmlElem }
 import scalaz._
-import scalaz.syntax.validation._
+import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.xml.all._
 import riftwarp._
+import scala.Array.canBuildFrom
+import scala.xml.{ Elem => XmlElem }
 
-object FromStdLibXmlRematerializer extends RematerializerTemplate[XmlElem] {
+object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
   override def rematerialize(what: XmlElem): AlmValidation[WarpPackage] =
     extract(what)
 
@@ -27,18 +23,24 @@ object FromStdLibXmlRematerializer extends RematerializerTemplate[XmlElem] {
     }
 
   private def extractObject(what: XmlElem): AlmValidation[WarpObject] =
-    ???
+    for {
+      td <- (what \@? "type").map(tstr => RiftDescriptor.parse(tstr)).validationOut
+      elems <- what.elems.map(elem =>
+        (elem.elems.headOption match {
+          case Some(v) => extract(v).map(x => (elem.label, Some(x)))
+          case None => (elem.label, None).success
+        }).toAgg).toVector.sequence
+    } yield WarpObject(td, elems.map(x => WarpElement(x._1, x._2)))
 
   private def extractCollection(what: XmlElem): AlmValidation[WarpCollection] =
-    ???
+    what.elems.map(elem => extract(elem).toAgg).toVector.sequence.map(WarpCollection(_))
 
   private def extractBytes(what: XmlElem): AlmValidation[WarpBytes] =
-    ???
-    
-  private def extractBase64(what: XmlElem): AlmValidation[WarpBytes] =
-    ???
-  
-    
+    what.text.split(",").map(_.toByteAlm.toAgg).toVector.sequence.map(x => WarpBytes(x.toArray))
+
+  private def extractBase64(what: XmlElem): AlmValidation[WarpBase64] =
+    ParseFuns.parseBase64Alm(what.text).map(WarpBase64(_))
+
   def unescapeString(str: String): String = {
     //scala.xml.Utility.unescape(str, new StringBuilder).result
     str
@@ -62,7 +64,7 @@ object FromStdLibXmlRematerializer extends RematerializerTemplate[XmlElem] {
         case "Uri" => extractUri(value)
         case x => BadDataProblem(s"Could not extract a primitive from an XmlElem because its attribute 'type' specifies an unknown data type '$x'. The element was: ${value.label}").failure
       })
-  
+
   private def extractString(value: XmlElem): AlmValidation[WarpPrimitive] = WarpString(unescapeString(value.text)).success
   private def extractBoolean(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractBoolean.map(WarpBoolean(_))
   private def extractByte(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractByte.map(WarpByte(_))
@@ -75,5 +77,5 @@ object FromStdLibXmlRematerializer extends RematerializerTemplate[XmlElem] {
   private def extractDateTime(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractDateTime.map(WarpDateTime(_))
   private def extractUuid(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractUuid.map(WarpUuid(_))
   private def extractUri(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractUri.map(WarpUri(_))
-    
+
 }

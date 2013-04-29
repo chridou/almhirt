@@ -58,9 +58,9 @@ object RiftWarp {
     riftWarp.toolShed.addExtractorFactory(impl.rematerializers.FromStdLibJsonExtractor)
     riftWarp.toolShed.addExtractorFactory(impl.rematerializers.FromStdLibJsonStringExtractor)
     riftWarp.toolShed.addExtractorFactory(impl.rematerializers.FromStdLibJsonCordExtractor)
-    riftWarp.toolShed.addExtractorFactory(impl.rematerializers.FromStdLibXmlExtractor)
-    riftWarp.toolShed.addExtractorFactory(impl.rematerializers.FromStdLibXmlStringExtractor)
-    riftWarp.toolShed.addExtractorFactory(impl.rematerializers.FromStdLibXmlCordExtractor)
+    riftWarp.toolShed.addExtractorFactory(riftwarp.std.FromStdLibXmlExtractor)
+    riftWarp.toolShed.addExtractorFactory(riftwarp.std.FromStdLibXmlStringExtractor)
+    riftWarp.toolShed.addExtractorFactory(riftwarp.std.FromStdLibXmlCordExtractor)
 
     riftWarp.converters.addConverter(DimensionNiceStringToString)
     riftWarp.converters.addConverter(DimensionNiceCordToCord)

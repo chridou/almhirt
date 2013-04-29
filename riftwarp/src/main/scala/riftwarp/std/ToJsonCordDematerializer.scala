@@ -1,18 +1,13 @@
-package riftwarp.impl.dematerializers
-
-import language.higherKinds
-import java.util.{ UUID => JUUID }
+package riftwarp.std
 import scala.annotation.tailrec
-import scala.reflect.ClassTag
-import scala.collection.IterableLike
-import org.joda.time.DateTime
-import scalaz._, Scalaz._
+import scalaz._
 import scalaz.Cord
 import scalaz.Cord._
 import scalaz.std._
 import almhirt.almvalidation.kit._
 import almhirt.common._
 import riftwarp._
+import scala.Array.canBuildFrom
 
 object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.Json] {
   type ValueRepr = Cord
