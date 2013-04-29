@@ -16,4 +16,5 @@ object ParseFuns {
       None.success
     else
       parseBase64Alm(toParse).map(Some(_))
+      
 }

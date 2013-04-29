@@ -80,9 +80,9 @@ object DateTimeWarpPacker extends WarpPacker[DateTime] with SimpleWarpPacker[Dat
 }
 
 object ByteArrayWarpPacker extends WarpPacker[Array[Byte]] with SimpleWarpPacker[Array[Byte]] with RegisterableWarpPacker {
-  override val riftDescriptor = RiftDescriptor("ByteArray")
+  override val riftDescriptor = RiftDescriptor("Bytes")
   override val alternateDescriptors = Nil
-  override def packSimple(what: Array[Byte]): AlmValidation[WarpByteArray] = WarpByteArray(what).success
+  override def packSimple(what: Array[Byte]): AlmValidation[WarpBytes] = WarpBytes(what).success
 }
 
 object Base64WarpPacker extends WarpPacker[Array[Byte]] with SimpleWarpPacker[Array[Byte]] with RegisterableWarpPacker {
@@ -91,8 +91,3 @@ object Base64WarpPacker extends WarpPacker[Array[Byte]] with SimpleWarpPacker[Ar
   override def packSimple(what: Array[Byte]): AlmValidation[WarpBase64] = WarpBase64(what).success
 }
 
-object CompressedWarpPacker extends WarpPacker[Array[Byte]] with SimpleWarpPacker[Array[Byte]] with RegisterableWarpPacker {
-  override val riftDescriptor = RiftDescriptor("Compressed")
-  override val alternateDescriptors = Nil
-  override def packSimple(what: Array[Byte]): AlmValidation[WarpCompressed] = WarpCompressed(what).success
-}

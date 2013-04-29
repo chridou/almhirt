@@ -4,9 +4,6 @@ import scala.xml.{ Elem => XmlElem, NodeSeq, Null, TopScope, UnprefixedAttribute
 import scalaz._
 import almhirt.common._
 import riftwarp._
-import riftwarp.std.DematerializerTemplate
-import scala.xml.{<none> => _*}
-import scala.xml.{Elem => XmlElem}
 
 object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   type ValueRepr = XmlElem
