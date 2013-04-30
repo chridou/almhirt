@@ -104,44 +104,52 @@ trait PackageBuilderFuns {
   // def xxx() = WarpElement("", None) ++ WarpElement("", None)
 
   def E(label: String, what: WarpPackage): AlmValidation[WarpElement] =
-    WarpElement(label, what).success
+    WarpElement(label, Some(what)).success
 
   def P(label: String, what: Any): AlmValidation[WarpElement] =
-    toWarpPrimitive(what).map(WarpElement(label, _))
+    toWarpPrimitive(what).map(x => WarpElement(label, Some(x)))
 
   def POpt(label: String, what: Option[Any]): AlmValidation[WarpElement] =
     what match {
-      case Some(v) => toWarpPrimitive(v).map(WarpElement(label, _))
+      case Some(v) => toWarpPrimitive(v).map(x => WarpElement(label, Some(x)))
       case None => WarpElement(label).success
     }
 
   def PC[A](label: String, what: Traversable[A])(implicit tag: ClassTag[A]): AlmValidation[WarpElement] =
-    toWarpPrimitivesCollection(what).map(WarpElement(label, _))
+    toWarpPrimitivesCollection(what).map(x => WarpElement(label, Some(x)))
 
   def PCOpt[A](label: String, what: Option[Traversable[A]])(implicit tag: ClassTag[A]): AlmValidation[WarpElement] =
     what match {
-      case Some(v) => toWarpPrimitivesCollection(v).map(WarpElement(label, _))
+      case Some(v) => toWarpPrimitivesCollection(v).map(x => WarpElement(label, Some(x)))
       case None => WarpElement(label).success
     }
 
   def With[T](label: String, what: T, packer: WarpPacker[T])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
-    packer(what).map(WarpElement(label, _))
+    packer(what).map(x => WarpElement(label, Some(x)))
 
   def WithOpt[T](label: String, what: Option[T], packer: WarpPacker[T])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
-      case Some(v) => packer(v).map(WarpElement(label, _))
+      case Some(v) => packer(v).map(x => WarpElement(label, Some(x)))
       case None => WarpElement(label).success
     }
 
   def LookUp(label: String, what: Any)(implicit packers: WarpPackers): AlmValidation[WarpElement] =
-    funs.pack(what).map(WarpElement(label, _))
+    funs.pack(what).map(x => WarpElement(label, Some(x)))
     
   def LookUpOpt[T](label: String, what: Option[Any])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what match {
-      case Some(v) => funs.pack(v).map(WarpElement(label, _))
+      case Some(v) => funs.pack(v).map(x => WarpElement(label, Some(x)))
       case None => WarpElement(label).success
     }
     
+  def Bytes(label:String, bytes: Array[Byte]): AlmValidation[WarpElement] = BytesOpt(label, Some(bytes))
+  def BytesOpt(label:String, bytes: Option[Array[Byte]]): AlmValidation[WarpElement] = WarpElement(label, bytes.map(WarpBytes(_))).success
+
+  def Base64(label:String, bytes: Array[Byte]): AlmValidation[WarpElement] = Base64Opt(label, Some(bytes))
+  def Base64Opt(label:String, bytes: Option[Array[Byte]]): AlmValidation[WarpElement] = WarpElement(label, bytes.map(WarpBytes(_))).success
+
+  def Blob(label:String, bytes: Array[Byte]): AlmValidation[WarpElement] = BlobOpt(label, Some(bytes))
+  def BlobOpt(label:String, bytes: Option[Array[Byte]]): AlmValidation[WarpElement] = WarpElement(label, bytes.map(WarpBytes(_))).success
 }
 
 trait PackageBuilderOps {

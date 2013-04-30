@@ -6,8 +6,8 @@ import scala.reflect.macros.Context
 import almhirt.common._
 import riftwarp._
 
-object GeneratedDecomposerImpl {
-  final def decomposeUncurried[TTWhat <: AnyRef, TTDimension <: RiftDimension](what: TTWhat, into: WarpSequencer[TTDimension]): AlmValidation[WarpSequencer[TTDimension]] = ??? // macro decomposeUncurriedImpl[TTWhat, TTDimension]
+//object GeneratedDecomposerImpl {
+//  final def decomposeUncurried[TTWhat <: AnyRef, TTDimension <: RiftDimension](what: TTWhat, into: WarpSequencer[TTDimension]): AlmValidation[WarpSequencer[TTDimension]] = ??? // macro decomposeUncurriedImpl[TTWhat, TTDimension]
 
 //  final def decomposeUncurriedImpl[TTWhat <: AnyRef: c.WeakTypeTag, TTDimension <: RiftDimension](c: Context)(what: c.Expr[TTWhat], into: c.Expr[WarpSequencer[TTDimension]]): c.Expr[AlmValidation[WarpSequencer[TTDimension]]] = {
 //    import c.universe._
@@ -29,4 +29,4 @@ object GeneratedDecomposerImpl {
 //  }
 //
 //  //  final def getPrimitiveAdder[TTWhat <: AnyRef](c: Context)(what: c.Expr[TTWhat]
-}
+//}

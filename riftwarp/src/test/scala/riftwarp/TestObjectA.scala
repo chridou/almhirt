@@ -6,7 +6,6 @@ import scalaz._, Scalaz._
 import almhirt.common.AlmValidation
 import java.util.UUID
 import org.joda.time.DateTime
-import riftwarp.components._
 
 case class UnknownObject(what: Any)
 
@@ -90,7 +89,7 @@ case class TestObjectA(
   primitiveMaps: PrimitiveMaps,
   complexMaps: ComplexMaps,
   addressOpt: Option[TestAddress],
-  trees: Trees) extends HasDefaultRiftDescriptor
+  trees: Trees)
 
 object TestObjectA {
   val pete: TestObjectA =
@@ -152,7 +151,7 @@ object TestObjectA {
       trees = Trees())
 }
 
-case class TestAddress(city: String, street: String) extends HasDefaultRiftDescriptor
+case class TestAddress(city: String, street: String)
 object TestAddress {
   val someAddresses = List(TestAddress("Hamburg", "Am Hafen"), TestAddress("New York", "Broadway"), TestAddress("Los Angeles ", "Sunset Boulevard"))
 }

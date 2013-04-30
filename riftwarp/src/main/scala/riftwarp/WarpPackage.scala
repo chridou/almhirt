@@ -1,9 +1,20 @@
 package riftwarp
 
-trait WarpPackage
+import scalaz.syntax.validation._
+import almhirt.common._
+import riftwarp.std.WarpPrimitiveConverter
+
+sealed trait WarpPackage {
+  def asWarpObject: AlmValidation[WarpObject] =
+    this match {
+    case wo: WarpObject => wo.success
+    case _ => UnspecifiedProblem("No WarpObject").failure
+  }
+}
+
 final case class WarpElement(label: String, value: Option[WarpPackage])
 
-sealed trait WarpPrimitive extends WarpPackage
+sealed trait WarpPrimitive extends WarpPackage { def as[T](implicit conv: WarpPrimitiveConverter[T]): AlmValidation[T] = conv.convert(this) }
 final case class WarpBoolean(value: Boolean) extends WarpPrimitive
 final case class WarpString(value: String) extends WarpPrimitive
 final case class WarpByte(value: Byte) extends WarpPrimitive
@@ -17,7 +28,14 @@ final case class WarpUuid(value: java.util.UUID) extends WarpPrimitive
 final case class WarpUri(value: java.net.URI) extends WarpPrimitive
 final case class WarpDateTime(value: org.joda.time.DateTime) extends WarpPrimitive
 
-final case class WarpObject(riftDescriptor: Option[RiftDescriptor], elements: Vector[WarpElement]) extends WarpPackage
+final case class WarpObject(riftDescriptor: Option[RiftDescriptor], elements: Vector[WarpElement]) extends WarpPackage {
+  def getRiftDescriptor: AlmValidation[RiftDescriptor] =
+    riftDescriptor match {
+    case Some(rd) => rd.success
+    case None => NoSuchElementProblem("Object has no RiftDescriptor").failure
+  }
+}
+
 final case class WarpCollection(items: Vector[WarpPackage]) extends WarpPackage
 final case class WarpAssociativeCollection(items: Vector[(WarpPackage, WarpPackage)]) extends WarpPackage
 final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
@@ -29,7 +47,6 @@ final case class WarpBlob(bytes: Array[Byte]) extends BinaryWarpPackage
 
 object WarpElement {
   def apply(label: String): WarpElement = WarpElement(label, None)
-  def apply(label: String, value: WarpPackage): WarpElement = WarpElement(label, Some(value))
 }
 
 object WarpObject {

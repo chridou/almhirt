@@ -5,16 +5,16 @@ import scalaz.std._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
-import riftwarp.std.warpbuilder._
+import riftwarp.std.kit._
 
 object HasAThrowableDescribedPacker extends WarpPacker[HasAThrowableDescribed] with SimpleWarpPacker[HasAThrowableDescribed] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
   val alternativeRiftDescriptors = Nil
   override def pack(what: HasAThrowableDescribed)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    this.riftDescriptor ⟿
-      P("classname", what.classname) ⟿
-      P("mesage", what.message) ⟿
-      P("stacktrace", what.stacktrace) ⟿
+    this.riftDescriptor ~>
+      P("classname", what.classname) ~>
+      P("mesage", what.message) ~>
+      P("stacktrace", what.stacktrace) ~>
       WithOpt("cause", what.cause, this)
   }
 }
@@ -42,7 +42,7 @@ object CauseIsThrowablePacker extends WarpPacker[CauseIsThrowable] with SimpleWa
   val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
   val alternativeRiftDescriptors = Nil
   override def pack(what: CauseIsThrowable)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    this.riftDescriptor ⟿ With("representation", what.representation, ThrowableRepresentationPacker)
+    this.riftDescriptor ~> With("representation", what.representation, ThrowableRepresentationPacker)
   }
 }
 
@@ -50,7 +50,7 @@ object CauseIsProblemPacker extends WarpPacker[CauseIsProblem] with Registerable
   val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
   val alternativeRiftDescriptors = Nil
   override def pack(what: CauseIsProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    this.riftDescriptor ⟿ LookUp("problem", what.problem)
+    this.riftDescriptor ~> LookUp("problem", what.problem)
   }
 }
 
@@ -59,52 +59,62 @@ object ProblemCausePacker extends WarpPacker[ProblemCause] with RegisterableWarp
   val alternativeRiftDescriptors = Nil
   override def pack(what: ProblemCause)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case cip : CauseIsProblem => CauseIsProblemPacker(cip)
-      case cit : CauseIsThrowable => CauseIsThrowablePacker(cit)
+      case cip: CauseIsProblem => CauseIsProblemPacker(cip)
+      case cit: CauseIsThrowable => CauseIsThrowablePacker(cit)
     }
   }
 }
-//
-//object HasAThrowableDescribedRecomposer extends Recomposer[HasAThrowableDescribed] {
-//  val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
-//  val alternativeRiftDescriptors = Nil
-//  def recompose(from: Extractor): AlmValidation[HasAThrowableDescribed] = {
-//    val classname = from.getString("classname").toAgg
-//    val message = from.getString("message").toAgg
-//    val stacktrace = from.getString("stacktrace").toAgg
-//    val cause = from.tryGetWith[HasAThrowableDescribed]("cause", this.recompose).toAgg
-//    (classname |@| message |@| stacktrace |@| cause)(HasAThrowableDescribed.apply)
-//  }
-//}
-//
-//object CauseIsThrowableRecomposer extends Recomposer[CauseIsThrowable] {
-//  val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
-//  val alternativeRiftDescriptors = Nil
-//  def recompose(from: Extractor): AlmValidation[CauseIsThrowable] = {
-//    from.getWith("representation", HasAThrowableDescribedRecomposer.recompose).map(desc =>
-//      CauseIsThrowable(desc))
-//  }
-//}
-//
-//object CauseIsProblemRecomposer extends Recomposer[CauseIsProblem] {
-//  val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
-//  val alternativeRiftDescriptors = Nil
-//  def recompose(from: Extractor): AlmValidation[CauseIsProblem] = {
-//    from.getComplexByTag[Problem]("problem", None).map(prob =>
-//      CauseIsProblem(prob))
-//  }
-//}
-//
-//object ProblemCauseRecomposer extends Recomposer[ProblemCause] {
-//  val riftDescriptor = RiftDescriptor(classOf[ProblemCause])
-//  val alternativeRiftDescriptors = Nil
-//  def recompose(from: Extractor): AlmValidation[ProblemCause] = {
-//    from.getRiftDescriptor.flatMap(desc =>
-//      if (desc == RiftDescriptor(classOf[CauseIsProblem]))
-//        CauseIsProblemRecomposer.recompose(from)
-//      else if (desc == RiftDescriptor(classOf[CauseIsThrowable]))
-//        CauseIsThrowableRecomposer.recompose(from)
-//      else
-//        BadDataProblem(s"'$desc' is not a valid identifier for ProblemCause").withIdentifier("type").failure)
-//  }
-//}
+
+object HasAThrowableDescribedUnpacker extends RegisterableWarpUnpacker[HasAThrowableDescribed] {
+  val riftDescriptor = RiftDescriptor(classOf[HasAThrowableDescribed])
+  val alternativeRiftDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[HasAThrowableDescribed] = {
+    withFastLookUp(from) { lookup =>
+      for {
+        classname <- lookup.getAs[String]("classname")
+        message <- lookup.getAs[String]("message")
+        stacktrace <- lookup.getAs[String]("stacktrace")
+        cause <- lookup.tryGetObjWith("cause", HasAThrowableDescribedUnpacker)
+      } yield HasAThrowableDescribed(classname, message, stacktrace, cause)
+    }
+  }
+}
+
+object CauseIsThrowableUnpacker extends RegisterableWarpUnpacker[CauseIsThrowable] {
+  val riftDescriptor = RiftDescriptor(classOf[CauseIsThrowable])
+  val alternativeRiftDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CauseIsThrowable] = {
+    withFastLookUp(from) { lookup =>
+      lookup.getObjWith("representation", HasAThrowableDescribedUnpacker).map(desc =>
+        CauseIsThrowable(desc))
+    }
+  }
+}
+
+object CauseIsProblemUnpacker extends RegisterableWarpUnpacker[CauseIsProblem] {
+  val riftDescriptor = RiftDescriptor(classOf[CauseIsProblem])
+  val alternativeRiftDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CauseIsProblem] = {
+    withFastLookUp(from) { lookup =>
+      lookup.getObjByTag[Problem]("problem").map(prob =>
+        CauseIsProblem(prob))
+    }
+  }
+}
+
+object ProblemCauseUnpacker extends RegisterableWarpUnpacker[ProblemCause] {
+  val riftDescriptor = RiftDescriptor(classOf[ProblemCause])
+  val alternativeRiftDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[ProblemCause] = {
+    for {
+      wo <- from.asWarpObject
+      desc <- wo.getRiftDescriptor
+      res <- if (desc == RiftDescriptor(classOf[CauseIsProblem]))
+        CauseIsProblemUnpacker.unpack(from)
+      else if (desc == RiftDescriptor(classOf[CauseIsThrowable]))
+        CauseIsThrowableUnpacker.unpack(from)
+      else
+        BadDataProblem(s"'$desc' is not a valid identifier for ProblemCause").withIdentifier("type").failure
+    } yield res
+  }
+}

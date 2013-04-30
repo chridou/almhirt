@@ -6,48 +6,49 @@ import scalaz._, Scalaz._
 import almhirt.common.AlmValidation
 import java.util.UUID
 import org.joda.time.DateTime
-import riftwarp.inst._
-import riftwarp.components._
+import riftwarp._
+import riftwarp.std.kit._
 
-class TestObjectADecomposer extends Decomposer[TestObjectA] {
+object TestObjectAPacker extends WarpPacker[TestObjectA] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: TestObjectA, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addRiftDescriptor(riftDescriptor)
-      .addByteArray("arrayByte", what.arrayByte)
-      .addByteArrayBlobEncoded("blob", what.blob)
-      .addComplex("primitiveTypes", what.primitiveTypes, None)
-      .flatMap(_.addComplex("primitiveListMAs", what.primitiveListMAs, None))
-      .flatMap(_.addComplex("primitiveVectorMAs", what.primitiveVectorMAs, None))
-      .flatMap(_.addOptionalComplex("primitiveSetMAs", what.primitiveSetMAs, None))
-      .flatMap(_.addComplex("primitiveIterableMAs", what.primitiveIterableMAs, None))
-      .flatMap(_.addComplex("complexMAs", what.complexMAs, None))
-      .flatMap(_.addComplex("primitiveMaps", what.primitiveMaps, None))
-      .flatMap(_.addComplex("complexMaps", what.complexMaps, None))
-      .flatMap(_.addOptionalComplex("addressOpt", what.addressOpt, None))
-      .flatMap(_.addComplex("trees", what.trees, None))
+  def pack(what: TestObjectA)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    riftDescriptor ~>
+      Bytes("arrayByte", what.arrayByte) ~>
+      Blob("blob", what.blob) ~>
+      LookUp("primitiveTypes", what.primitiveTypes) ~>
+      LookUp("primitiveListMAs", what.primitiveListMAs) ~>
+      LookUp("primitiveVectorMAs", what.primitiveVectorMAs) ~>
+      LookUpOpt("primitiveSetMAs", what.primitiveSetMAs) ~>
+      LookUp("primitiveIterableMAs", what.primitiveIterableMAs) ~>
+      LookUp("complexMAs", what.complexMAs) ~>
+      LookUp("primitiveMaps", what.primitiveMaps) ~>
+      LookUp("complexMaps", what.complexMaps) ~>
+      LookUpOpt("addressOpt", what.addressOpt) ~>
+      LookUp("trees", what.trees)
   }
 }
 
-class TestObjectARecomposer extends Recomposer[TestObjectA] {
+object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
   val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[TestObjectA] = {
-    for {
-      arrayByte <- from.getByteArray("arrayByte")
-      blob <- from.getByteArrayFromBlobEncoding("blob")
-      primitiveTypes <- from.getComplexByTag[PrimitiveTypes]("primitiveTypes", None)
-      primitiveListMAs <- from.getComplexByTag[PrimitiveListMAs]("primitiveListMAs", None)
-      primitiveVectorMAs <- from.getComplexByTag[PrimitiveVectorMAs]("primitiveVectorMAs", None)
-      primitiveSetMAs <- from.tryGetComplexByTag[PrimitiveSetMAs]("primitiveSetMAs", None)
-      primitiveIterableMAs <- from.getComplexByTag[PrimitiveIterableMAs]("primitiveIterableMAs", None)
-      complexMAs <- from.getComplexByTag[ComplexMAs]("complexMAs", None)
-      primitiveMaps <- from.getComplexByTag[PrimitiveMaps]("primitiveMaps", None)
-      complexMaps <- from.getComplexByTag[ComplexMaps]("complexMaps", None)
-      addressOpt <- from.tryGetComplexByTag[TestAddress]("addressOpt", None)
-      trees <- from.getComplexByTag[Trees]("trees", None)
-    } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, primitiveVectorMAs, primitiveSetMAs, primitiveIterableMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, trees)
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
+    withFastLookUp(from) { lookup =>
+      for {
+        arrayByte <- lookup.getBytes("arrayByte")
+        blob <- lookup.getBytes("blob")
+        primitiveTypes <- lookup.getObjByTag[PrimitiveTypes]("primitiveTypes")
+        primitiveListMAs <- lookup.getObjByTag[PrimitiveListMAs]("primitiveListMAs")
+        primitiveVectorMAs <- lookup.getObjByTag[PrimitiveVectorMAs]("primitiveVectorMAs")
+        primitiveSetMAs <- lookup.tryGetObjByTag[PrimitiveSetMAs]("primitiveSetMAs")
+        primitiveIterableMAs <- lookup.getObjByTag[PrimitiveIterableMAs]("primitiveIterableMAs")
+        complexMAs <- lookup.getObjByTag[ComplexMAs]("complexMAs")
+        primitiveMaps <- lookup.getObjByTag[PrimitiveMaps]("primitiveMaps")
+        complexMaps <- lookup.getObjByTag[ComplexMaps]("complexMaps")
+        addressOpt <- lookup.tryGetObjByTag[TestAddress]("addressOpt")
+        trees <- lookup.getObjByTag[Trees]("trees")
+      } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, primitiveVectorMAs, primitiveSetMAs, primitiveIterableMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, trees)
+    }
   }
 }
 

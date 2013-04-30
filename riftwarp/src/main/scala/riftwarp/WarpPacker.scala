@@ -19,8 +19,9 @@ trait SimpleWarpPacker[T] { self: WarpPacker[T] =>
 
 trait RegisterableWarpPacker {
   def riftDescriptor: RiftDescriptor
-  def alternateDescriptors: List[RiftDescriptor]
+  def alternativeRiftDescriptors: List[RiftDescriptor]
 }
+
 
 
 
