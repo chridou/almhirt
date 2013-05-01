@@ -7,19 +7,21 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 
 trait WarpPrimitiveConverter[T] {
-  def convert(what: WarpPrimitive): AlmValidation[T]
+  def convert(what: WarpPackage): AlmValidation[T]
+  def convertBack(what: T): WarpPrimitive
 }
 
 trait WarpPrimitiveToBooleanConverter extends WarpPrimitiveConverter[Boolean] {
-  def convert(what: WarpPrimitive): AlmValidation[Boolean] =
+  override def convert(what: WarpPackage): AlmValidation[Boolean] =
     what match {
       case WarpBoolean(value) => value.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Boolean""").failure
     }
+  override def convertBack(what: Boolean) = WarpBoolean(what)
 }
 
 trait WarpPrimitiveToStringConverter extends WarpPrimitiveConverter[String] {
-  def convert(what: WarpPrimitive): AlmValidation[String] =
+  override def convert(what: WarpPackage): AlmValidation[String] =
     what match {
       case WarpBoolean(value) => value.toString.success
       case WarpString(value) => value.success
@@ -33,11 +35,14 @@ trait WarpPrimitiveToStringConverter extends WarpPrimitiveConverter[String] {
       case WarpUuid(value) => value.toString.success
       case WarpUri(value) => value.toString.success
       case WarpDateTime(value) => value.toString().success
+      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a DateTime""").failure
     }
+  override def convertBack(what: String) = WarpString(what)
+  
 }
 
 trait WarpPrimitiveToByteConverter extends WarpPrimitiveConverter[Byte] {
-  def convert(what: WarpPrimitive): AlmValidation[Byte] =
+  override def convert(what: WarpPackage): AlmValidation[Byte] =
     what match {
       case WarpString(value) => value.toByteAlm
       case WarpByte(value) => value.success
@@ -47,10 +52,11 @@ trait WarpPrimitiveToByteConverter extends WarpPrimitiveConverter[Byte] {
       case WarpDouble(value) => value.toByte.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Byte""").failure
     }
+  override def convertBack(what: Boolean) = WarpBoolean(what)
 }
 
 trait WarpPrimitiveToIntConverter extends WarpPrimitiveConverter[Int] {
-  def convert(what: WarpPrimitive): AlmValidation[Int] =
+  override def convert(what: WarpPackage): AlmValidation[Int] =
     what match {
       case WarpString(value) => value.toIntAlm
       case WarpByte(value) => value.toInt.success
@@ -60,10 +66,11 @@ trait WarpPrimitiveToIntConverter extends WarpPrimitiveConverter[Int] {
       case WarpDouble(value) => value.toInt.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be an Int""").failure
     }
+  override def convertBack(what: Int) = WarpInt(what)
 }
 
 trait WarpPrimitiveToLongConverter extends WarpPrimitiveConverter[Long] {
-  def convert(what: WarpPrimitive): AlmValidation[Long] =
+  override def convert(what: WarpPackage): AlmValidation[Long] =
     what match {
       case WarpString(value) => value.toLongAlm
       case WarpByte(value) => value.toLong.success
@@ -73,10 +80,11 @@ trait WarpPrimitiveToLongConverter extends WarpPrimitiveConverter[Long] {
       case WarpDouble(value) => value.toLong.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Long""").failure
     }
+  override def convertBack(what: Long) = WarpLong(what)
 }
 
 trait WarpPrimitiveToBigIntConverter extends WarpPrimitiveConverter[BigInt] {
-  def convert(what: WarpPrimitive): AlmValidation[BigInt] =
+  override def convert(what: WarpPackage): AlmValidation[BigInt] =
     what match {
       case WarpString(value) => value.toBigIntAlm
       case WarpByte(value) => BigInt(value).success
@@ -87,10 +95,11 @@ trait WarpPrimitiveToBigIntConverter extends WarpPrimitiveConverter[BigInt] {
       case WarpDouble(value) => BigInt(value.toLong).success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a BigInt""").failure
     }
+  override def convertBack(what: BigInt) = WarpBigInt(what)
 }
 
 trait WarpPrimitiveToFloatConverter extends WarpPrimitiveConverter[Float] {
-  def convert(what: WarpPrimitive): AlmValidation[Float] =
+  override def convert(what: WarpPackage): AlmValidation[Float] =
     what match {
       case WarpString(value) => value.toFloatAlm
       case WarpByte(value) => value.toFloat.success
@@ -102,10 +111,11 @@ trait WarpPrimitiveToFloatConverter extends WarpPrimitiveConverter[Float] {
       case WarpBigDecimal(value) => value.toFloat.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Float""").failure
     }
+  override def convertBack(what: Float) = WarpFloat(what)
 }
 
 trait WarpPrimitiveToDoubleConverter extends WarpPrimitiveConverter[Double] {
-  def convert(what: WarpPrimitive): AlmValidation[Double] =
+  override def convert(what: WarpPackage): AlmValidation[Double] =
     what match {
       case WarpString(value) => value.toDoubleAlm
       case WarpByte(value) => value.toDouble.success
@@ -117,10 +127,11 @@ trait WarpPrimitiveToDoubleConverter extends WarpPrimitiveConverter[Double] {
       case WarpBigDecimal(value) => value.toDouble.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Double""").failure
     }
+  override def convertBack(what: Double) = WarpDouble(what)
 }
 
 trait WarpPrimitiveToBigDecimalConverter extends WarpPrimitiveConverter[BigDecimal] {
-  def convert(what: WarpPrimitive): AlmValidation[BigDecimal] =
+  override def convert(what: WarpPackage): AlmValidation[BigDecimal] =
     what match {
       case WarpString(value) => value.toDecimalAlm
       case WarpByte(value) => BigDecimal(value).success
@@ -132,31 +143,35 @@ trait WarpPrimitiveToBigDecimalConverter extends WarpPrimitiveConverter[BigDecim
       case WarpBigDecimal(value) => value.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a BigDecimal""").failure
     }
+  override def convertBack(what: BigDecimal) = WarpBigDecimal(what)
 }
 
 trait WarpPrimitiveToUuidConverter extends WarpPrimitiveConverter[JUUID] {
-  def convert(what: WarpPrimitive): AlmValidation[JUUID] =
+  override def convert(what: WarpPackage): AlmValidation[JUUID] =
     what match {
       case WarpString(value) => value.toUuidAlm
       case WarpUuid(value) => value.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a UUID""").failure
     }
+  override def convertBack(what: JUUID) = WarpUuid(what)
 }
 
 trait WarpPrimitiveToUriConverter extends WarpPrimitiveConverter[java.net.URI] {
-  def convert(what: WarpPrimitive): AlmValidation[java.net.URI] =
+  override def convert(what: WarpPackage): AlmValidation[java.net.URI] =
     what match {
       case WarpString(value) => value.toUriAlm
       case WarpUri(value) => value.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be an URI""").failure
     }
+  override def convertBack(what: java.net.URI) = WarpUri(what)
 }
 
 trait WarpPrimitiveToDateTimeConverter extends WarpPrimitiveConverter[org.joda.time.DateTime] {
-  def convert(what: WarpPrimitive): AlmValidation[org.joda.time.DateTime] =
+  override def convert(what: WarpPackage): AlmValidation[org.joda.time.DateTime] =
     what match {
       case WarpString(value) => value.toDateTimeAlm
       case WarpDateTime(value) => value.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a DateTime""").failure
     }
+  override def convertBack(what: org.joda.time.DateTime) = WarpDateTime(what)
 }

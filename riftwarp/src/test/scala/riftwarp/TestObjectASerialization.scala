@@ -8,6 +8,7 @@ import java.util.UUID
 import org.joda.time.DateTime
 import riftwarp._
 import riftwarp.std.kit._
+import riftwarp.std.DoubleWarpPacker
 
 object TestObjectAPacker extends WarpPacker[TestObjectA] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
@@ -52,175 +53,71 @@ object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
   }
 }
 
-class PrimitiveTypesDecomposer extends Decomposer[PrimitiveTypes] {
+class PrimitiveTypesPacker extends WarpPacker[PrimitiveTypes] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveTypes, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addString("str", what.str)
-      .addBoolean("bool", what.bool)
-      .addByte("byte", what.byte)
-      .addInt("int", what.int)
-      .addLong("long", what.long)
-      .addBigInt("bigInt", what.bigInt)
-      .addFloat("float", what.float)
-      .addDouble("double", what.double)
-      .addBigDecimal("bigDec", what.bigDec)
-      .addDateTime("dateTime", what.dateTime)
-      .addUuid("uuid", what.uuid).ok
-  }
+  def pack(what: PrimitiveTypes)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+    riftDescriptor ~>
+      P("str", what.str) ~>
+      P("bool", what.bool) ~>
+      P("byte", what.byte) ~>
+      P("int", what.int) ~>
+      P("long", what.long) ~>
+      P("bigInt", what.bigInt) ~>
+      P("float", what.float) ~>
+      P("double", what.double) ~>
+      P("bigDec", what.bigDec) ~>
+      P("dateTime", what.dateTime) ~>
+      P("uuid", what.uuid)
 }
 
-class PrimitiveTypesRecomposer extends Recomposer[PrimitiveTypes] {
+class PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PrimitiveTypes] = {
-    val str = from.getString("str").toAgg
-    val bool = from.getBoolean("bool").toAgg
-    val byte = from.getByte("byte").toAgg
-    val int = from.getInt("int").toAgg
-    val long = from.getLong("long").toAgg
-    val bigInt = from.getBigInt("bigInt").toAgg
-    val float = from.getFloat("float").toAgg
-    val double = from.getDouble("double").toAgg
-    val bigDec = from.getBigDecimal("bigDec").toAgg
-    val dateTime = from.getDateTime("dateTime").toAgg
-    val uuid = from.getUuid("uuid").toAgg
-    (str
-      |@| bool
-      |@| byte
-      |@| int
-      |@| long
-      |@| bigInt
-      |@| float
-      |@| double
-      |@| bigDec
-      |@| dateTime
-      |@| uuid)(PrimitiveTypes.apply)
-  }
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) =
+    withFastLookUp(from) { lookup =>
+      for {
+        str <- lookup.getAs[String]("str")
+        bool <- lookup.getAs[Boolean]("bool")
+        byte <- lookup.getAs[Byte]("byte")
+        int <- lookup.getAs[Int]("int")
+        long <- lookup.getAs[Long]("long")
+        bigInt <- lookup.getAs[BigInt]("bigInt")
+        float <- lookup.getAs[Float]("float")
+        double <- lookup.getAs[Double]("double")
+        bigDec <- lookup.getAs[BigDecimal]("bigDec")
+        dateTime <- lookup.getAs[DateTime]("dateTime")
+        uuid <- lookup.getAs[UUID]("uuid")
+      } yield PrimitiveTypes(str, bool, byte, int, long, bigInt, float, double, bigDec, dateTime, uuid)
+    }
 }
 
-class PrimitiveListMAsDecomposer extends Decomposer[PrimitiveListMAs] {
+class PrimitiveListMAsPacker extends WarpPacker[PrimitiveListMAs] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveListMAs, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addRiftDescriptor(riftDescriptor)
-      .addIterableOfPrimitives("listString", what.listString)
-      .flatMap(_.addIterableOfPrimitives("listInt", what.listInt))
-      .flatMap(_.addIterableOfPrimitives("listDouble", what.listDouble))
-      .flatMap(_.addIterableOfPrimitives("listBigDecimal", what.listBigDecimal))
-      .flatMap(_.addIterableOfPrimitives("listDateTime", what.listDateTime))
+  def pack(what: PrimitiveListMAs)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    riftDescriptor ~>
+      CP("listString", what.listString) ~>
+      CLookUp("listInt", what.listInt) ~>
+      CWith("listDouble", what.listDouble, DoubleWarpPacker) ~>
+      CLookUp("listBigDecimal", what.listBigDecimal) ~>
+      CLookUp("listDateTime", what.listDateTime)
   }
 }
 
-class PrimitiveListMAsRecomposer extends Recomposer[PrimitiveListMAs] {
+class PrimitiveListMAsRecomposer extends RegisterableWarpUnpacker[PrimitiveListMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PrimitiveListMAs] = {
-    val listString = from.getManyPrimitives[List, String]("listString").toAgg
-    val listInt = from.getManyPrimitives[List, Int]("listInt").toAgg
-    val listDouble = from.getManyPrimitives[List, Double]("listDouble").toAgg
-    val listBigDecimal = from.getManyPrimitives[List, BigDecimal]("listBigDecimal").toAgg
-    val listDateTime = from.getManyPrimitives[List, DateTime]("listDateTime").toAgg
-    (listString
-      |@| listInt
-      |@| listDouble
-      |@| listBigDecimal
-      |@| listDateTime)(PrimitiveListMAs.apply)
-  }
-}
-
-class PrimitiveVectorMAsDecomposer extends Decomposer[PrimitiveVectorMAs] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveVectorMAs])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveVectorMAs, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addIterableOfPrimitives("vectorString", what.vectorString)
-      .flatMap(_.addIterableOfPrimitives("vectorInt", what.vectorInt))
-      .flatMap(_.addIterableOfPrimitives("vectorDouble", what.vectorDouble))
-      .flatMap(_.addIterableOfPrimitives("vectorBigDecimal", what.vectorBigDecimal))
-      .flatMap(_.addIterableOfPrimitives("vectorDateTime", what.vectorDateTime))
-  }
-}
-
-class PrimitiveVectorMAsRecomposer extends Recomposer[PrimitiveVectorMAs] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveVectorMAs])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PrimitiveVectorMAs] = {
-
-    val vectorString = from.getManyPrimitives[Vector, String]("vectorString").toAgg
-    val vectorInt = from.getManyPrimitives[Vector, Int]("vectorInt").toAgg
-    val vectorDouble = from.getManyPrimitives[Vector, Double]("vectorDouble").toAgg
-    val vectorBigDecimal = from.getManyPrimitives[Vector, BigDecimal]("vectorBigDecimal").toAgg
-    val vectorDateTime = from.getManyPrimitives[Vector, DateTime]("vectorDateTime").toAgg
-    (vectorString
-      |@| vectorInt
-      |@| vectorDouble
-      |@| vectorBigDecimal
-      |@| vectorDateTime)(PrimitiveVectorMAs.apply)
-  }
-}
-
-class PrimitiveSetMAsDecomposer extends Decomposer[PrimitiveSetMAs] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveSetMAs])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveSetMAs, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addIterableOfPrimitives("setString", what.setString)
-      .flatMap(_.addIterableOfPrimitives("setInt", what.setInt))
-      .flatMap(_.addIterableOfPrimitives("setDouble", what.setDouble))
-      .flatMap(_.addIterableOfPrimitives("setBigDecimal", what.setBigDecimal))
-      .flatMap(_.addOptionalIterableOfPrimitives("setDateTime", what.setDateTime))
-  }
-}
-
-class PrimitiveSetMAsRecomposer extends Recomposer[PrimitiveSetMAs] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveSetMAs])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PrimitiveSetMAs] = {
-
-    val setString = from.getManyPrimitives[Set, String]("setString").toAgg
-    val setInt = from.getManyPrimitives[Set, Int]("setInt").toAgg
-    val setDouble = from.getManyPrimitives[Set, Double]("setDouble").toAgg
-    val setBigDecimal = from.getManyPrimitives[Set, BigDecimal]("setBigDecimal").toAgg
-    val setDateTime = from.tryGetManyPrimitives[Set, DateTime]("setDateTime").toAgg
-    (setString
-      |@| setInt
-      |@| setDouble
-      |@| setBigDecimal
-      |@| setDateTime)(PrimitiveSetMAs.apply)
-  }
-}
-
-class PrimitiveIterableMAsDecomposer extends Decomposer[PrimitiveIterableMAs] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveIterableMAs])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveIterableMAs, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addIterableOfPrimitives("iterableString", what.iterableString)
-      .flatMap(_.addIterableOfPrimitives("iterableInt", what.iterableInt))
-      .flatMap(_.addIterableOfPrimitives("iterableDouble", what.iterableDouble))
-      .flatMap(_.addIterableOfPrimitives("iterableBigDecimal", what.iterableBigDecimal))
-      .flatMap(_.addIterableOfPrimitives("iterableDateTime", what.iterableDateTime))
-  }
-}
-
-class PrimitiveIterableMAsRecomposer extends Recomposer[PrimitiveIterableMAs] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveIterableMAs])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PrimitiveIterableMAs] = {
-
-    val iterableString = from.getManyPrimitives[Set, String]("iterableString").toAgg
-    val iterableInt = from.getManyPrimitives[Set, Int]("iterableInt").toAgg
-    val iterableDouble = from.getManyPrimitives[Set, Double]("iterableDouble").toAgg
-    val iterableBigDecimal = from.getManyPrimitives[Set, BigDecimal]("iterableBigDecimal").toAgg
-    val iterableDateTime = from.getManyPrimitives[Set, DateTime]("iterableDateTime").toAgg
-    (iterableString
-      |@| iterableInt
-      |@| iterableDouble
-      |@| iterableBigDecimal
-      |@| iterableDateTime)(PrimitiveIterableMAs.apply)
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
+    withFastLookUp(from) { lookup =>
+      for {
+        listString <- lookup.getPrimitives[String]("listString").map(_.toList)
+        listInt <- lookup.getPrimitives[Int]("listInt").map(_.toList)
+        listDouble <- lookup.getPrimitives[Double]("listDouble").map(_.toList)
+        listBigDecimal <- lookup.getPrimitives[BigDecimal]("listBigDecimal").map(_.toList)
+        listDateTime <- lookup.getPrimitives[DateTime]("listDateTime").map(_.toList)
+      } yield PrimitiveListMAs(listString, listInt, listDouble, listBigDecimal, listDateTime)
+    }
   }
 }
 
