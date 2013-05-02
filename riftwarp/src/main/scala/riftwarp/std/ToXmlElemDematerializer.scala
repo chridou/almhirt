@@ -47,12 +47,10 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   protected override def foldByteArrayRepr(bytes: Array[Byte]): XmlElem =
     <bytes type="Bytes">{ bytes.mkString(",") }</bytes>
 
-  protected override def foldBase64Repr(bytes: Array[Byte]): XmlElem = {
+  protected override def foldBlobRepr(bytes: Array[Byte]): XmlElem = {
     val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(bytes)
     <base64 type="Base64">{ scala.xml.PCData(base64) }</base64>
   }
-
-  protected override def foldBlobRepr(bytes: Array[Byte]): XmlElem = foldBase64Repr(bytes)
 
   private def createElemRepr(elem: WarpElement): XmlElem =
     elem.value match {

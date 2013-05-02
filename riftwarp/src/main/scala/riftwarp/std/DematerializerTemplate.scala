@@ -22,8 +22,6 @@ trait DematerializerTemplate[T] extends Dematerializer[T] {
         foldTreeRepr(tree.map(transform))
       case WarpBytes(bytes) =>
         foldByteArrayRepr(bytes)
-      case WarpBase64(bytes) =>
-        foldBase64Repr(bytes)
       case WarpBlob(bytes) =>
         foldBlobRepr(bytes)
     }
@@ -38,6 +36,5 @@ trait DematerializerTemplate[T] extends Dematerializer[T] {
   protected def foldTupleReprs(tuple: (ValueRepr, ValueRepr)): ValueRepr
   protected def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): ValueRepr
   protected def foldByteArrayRepr(bytes: Array[Byte]): ValueRepr
-  protected def foldBase64Repr(bytes: Array[Byte]): ValueRepr
   protected def foldBlobRepr(bytes: Array[Byte]): ValueRepr
 }

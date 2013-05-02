@@ -15,7 +15,14 @@ object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonS
 
   private def extract(what: Any): AlmValidation[WarpPackage] =
     what match {
-      case obj: JSONObject => extractObject(obj)
+      case obj: JSONObject =>
+        extractObject(obj).flatMap(pkg =>
+          pkg.warpDescriptor match {
+            case Some(Base64BlobWarpUnpacker.warpDescriptor) =>
+              Base64BlobWarpUnpacker.unpack(pkg)(WarpUnpackers.NoWarpUnpackers).map(WarpBlob(_))
+            case _ =>
+              pkg.success
+          })
       case arr: JSONArray => extractCollection(arr)
       case other => extractPrimitive(other)
     }
@@ -37,9 +44,9 @@ object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonS
       objElems <- mapJsonMapToWarpElement(descriptorAndRest._2)
     } yield WarpObject(descriptorAndRest._1, objElems)
   }
-  
+
   private def mapJsonMapToWarpElement(jsonElems: Map[String, Any]): AlmValidation[Vector[WarpElement]] =
-    jsonElems.map(labelAndValue => 
+    jsonElems.map(labelAndValue =>
       labelAndValue._2 match {
         case null => WarpElement(labelAndValue._1, None).success
         case v => extract(v).map(x => WarpElement(labelAndValue._1, Some(x))).toAgg

@@ -215,18 +215,28 @@ object ByteArrayWarpUnpacker extends RegisterableWarpUnpacker[Array[Byte]] {
   }
 }
 
-object Base64WarpPacker extends WarpPacker[Array[Byte]] with SimpleWarpPacker[Array[Byte]] with RegisterableWarpPacker {
-  override val warpDescriptor = WarpDescriptor("Base64")
+object Base64BlobWarpPacker extends WarpPacker[Array[Byte]] with SimpleWarpPacker[Array[Byte]] with RegisterableWarpPacker {
+  override val warpDescriptor = WarpDescriptor("Base64Blob")
   override val alternativeWarpDescriptors = Nil
-  override def pack(what: Array[Byte])(implicit packers: WarpPackers): AlmValidation[WarpBase64] = WarpBase64(what).success
+  override def pack(what: Array[Byte])(implicit packers: WarpPackers): AlmValidation[WarpBlob] = WarpBlob(what).success
+  def asWarpObject(bytes: Array[Byte]) = {
+    val elem = WarpElement("data", Some(WarpString(org.apache.commons.codec.binary.Base64.encodeBase64String(bytes))))
+    val wd = WarpDescriptor("Base64Blob")
+    WarpObject(Some(wd), Vector(elem))
+  }
 }
 
-object Base64WarpUnpacker extends RegisterableWarpUnpacker[Array[Byte]] {
-  override val warpDescriptor = WarpDescriptor("Base64")
+object Base64BlobWarpUnpacker extends RegisterableWarpUnpacker[Array[Byte]] {
+  override val warpDescriptor = WarpDescriptor("Base64Blob")
   override val alternativeWarpDescriptors = Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Array[Byte]] = 
     what match {
-    case WarpBase64(v) => v.success
+    case WarpBlob(v) => v.success
+    case WarpObject(Some(WarpDescriptor("Base64Blob")), elems) => 
+      elems.headOption match {
+        case Some(WarpElement("data", Some(WarpString(data)))) => ParseFuns.parseBase64Alm(data)
+        case _ => UnspecifiedProblem(s""""${what.getClass().getName()}" can not be unpacked to an Array[Byte] from a WarpObject because it is empty, has no element labeled "data" or its content is not a WarpString""").failure
+      }
     case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Array[Byte]""").failure
   }
 }

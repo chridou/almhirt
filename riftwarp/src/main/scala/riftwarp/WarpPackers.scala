@@ -47,7 +47,7 @@ object WarpPackers {
     packers.addTyped(UriWarpPacker)
     packers.addTyped(DateTimeWarpPacker)
     packers.addTyped(ByteArrayWarpPacker)
-    packers.addTyped(Base64WarpPacker)
+    packers.addTyped(Base64BlobWarpPacker)
  
     packers.addTyped(HasAThrowableDescribedPacker)
     packers.addTyped(HasAThrowablePacker)

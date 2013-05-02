@@ -75,10 +75,8 @@ trait WarpObjectLookUp {
   def tryGetBytes(label: String): AlmValidation[Option[Array[Byte]]] =
     getAndCheck(label) {
       case wb: WarpBytes => wb.bytes.success
-      case wb: WarpBase64 => wb.bytes.success
       case wb: WarpBlob => wb.bytes.success
       case wc: WarpCollection => wc.items.map(WarpPrimitiveToByteConverterInst.convert(_).toAgg).sequence.map(_.toArray)
-      case ws: WarpString => ???
       case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a byte array representation""").failure
     }
 

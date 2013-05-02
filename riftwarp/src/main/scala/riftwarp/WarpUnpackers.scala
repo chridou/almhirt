@@ -54,7 +54,7 @@ object WarpUnpackers {
     unpackers.addTyped(UriWarpUnpacker)
     unpackers.addTyped(DateTimeWarpUnpacker)
     unpackers.addTyped(ByteArrayWarpUnpacker)
-    unpackers.addTyped(Base64WarpUnpacker)
+    unpackers.addTyped(Base64BlobWarpUnpacker)
  
     unpackers.addTyped(HasAThrowableDescribedUnpacker)
     unpackers.addTyped(CauseIsThrowableUnpacker)

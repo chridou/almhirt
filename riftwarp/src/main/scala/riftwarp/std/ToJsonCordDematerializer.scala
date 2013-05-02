@@ -60,10 +60,8 @@ object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.
   protected override def foldByteArrayRepr(bytes: Array[Byte]): Cord =
     foldParts(bytes.map(b => Cord(b.toString)).toList)
 
-  protected override def foldBase64Repr(bytes: Array[Byte]): Cord =
-    Cord(org.apache.commons.codec.binary.Base64.encodeBase64String(bytes))
-
-  protected override def foldBlobRepr(bytes: Array[Byte]): Cord = foldBase64Repr(bytes)
+  protected override def foldBlobRepr(bytes: Array[Byte]): Cord = 
+    getObjectRepr(Base64BlobWarpPacker.asWarpObject(bytes))
 
   private def createElemRepr(elem: WarpElement): Cord =
     elem.value match {
