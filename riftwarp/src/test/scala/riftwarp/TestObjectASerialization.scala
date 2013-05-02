@@ -234,3 +234,29 @@ object TreesUnpacker extends RegisterableWarpUnpacker[Trees] {
     }
   }
 }
+
+object Serialization {
+  def addPackers(to: WarpPackers): WarpPackers = {
+    to.addTyped(TestObjectAPacker)
+    to.addTyped(PrimitiveTypesPacker)
+    to.addTyped(PrimitiveListMAsPacker)
+    to.addTyped(ComplexMAsPacker)
+    to.addTyped(PrimitiveMapsPacker)
+    to.addTyped(ComplexMapsPacker)
+    to.addTyped(TestAddressPacker)
+    to.addTyped(TreesPacker)
+    to
+  }
+  
+  def addUnpackers(to: WarpUnpackers): WarpUnpackers = {
+    to.addTyped(TestObjectAUnpacker)
+    to.addTyped(PrimitiveTypesUnpacker)
+    to.addTyped(PrimitiveListMAsUnpacker)
+    to.addTyped(ComplexMAsUnpacker)
+    to.addTyped(PrimitiveMapsUnpacker)
+    to.addTyped(ComplexMapsUnpacker)
+    to.addTyped(TestAddressUnpacker)
+    to.addTyped(TreesUnpacker)
+    to
+  }
+}

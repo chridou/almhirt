@@ -13,6 +13,9 @@ import riftwarp.std.default._
 import SerializationDefaults._
 
 class JsonSerialization extends FunSuite with MustMatchers {
+  implicit val packers = Serialization.addPackers(WarpPackers())
+  implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
+  
   test("A WarpString must dematerialize to the corresponding JSON String") {
     val res = WarpString("hallo").dematerialize[String @@ WarpTags.Json]
     res must equal(""""hallo"""")
@@ -92,12 +95,34 @@ class JsonSerialization extends FunSuite with MustMatchers {
     result must equal(TestObjectA.pete.primitiveTypes)
   }
 
+    test("WarpObject(PrimitiveListMAs) dematerialized must rematerialize to an equal instance") {
+    val objV = TestObjectA.pete.primitiveListMAs.pack
+    val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Json]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    val result = rematerialized.unpackFlat[PrimitiveListMAs].forceResult
+    result must equal(TestObjectA.pete.primitiveListMAs)
+  }
+
   test("WarpObject(PrimitiveMaps) dematerialized must rematerialize to an equal instance") {
     val objV = TestObjectA.pete.primitiveMaps.packFlat
     val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Json]
     val rematerializedV = dematerialized.rematerialize
     val resultV = rematerializedV.forceResult.unpackFlat[PrimitiveMaps]
     resultV.forceResult must equal(TestObjectA.pete.primitiveMaps)
+  }
+
+    test("WarpObject(TestObjectA) must be dematrielized succesfully") {
+    val objV = TestObjectA.pete.pack
+    val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Json]
+  }
+
+  test("WarpObject(TestObjectA) dematerialized must rematerialize to an equal instance") {
+    val objV = TestObjectA.pete.pack
+    val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Json]
+    val rematerializedV = dematerialized.rematerialize
+    val resultV = rematerializedV.forceResult.unpack[TestObjectA]
+    println(resultV)
+    resultV.forceResult must equal(TestObjectA.pete)
   }
   
 }

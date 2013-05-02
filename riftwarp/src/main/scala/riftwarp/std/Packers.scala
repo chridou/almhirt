@@ -10,13 +10,13 @@ import almhirt.common.UnspecifiedProblem
 
 object BooleanWarpPacker extends WarpPacker[Boolean] with SimpleWarpPacker[Boolean] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("Boolean")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Boolean]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Boolean]) :: WarpDescriptor(classOf[java.lang.Boolean]) :: Nil
   override def pack(what: Boolean)(implicit packers: WarpPackers): AlmValidation[WarpBoolean] = WarpBoolean(what).success
 }
 
 object BooleanWarpUnpacker extends RegisterableWarpUnpacker[Boolean] {
   override val warpDescriptor = WarpDescriptor("Boolean")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Boolean]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Boolean]) :: WarpDescriptor(classOf[java.lang.Boolean]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Boolean] = 
     what match {
     case WarpBoolean(v) => v.success
@@ -26,13 +26,13 @@ object BooleanWarpUnpacker extends RegisterableWarpUnpacker[Boolean] {
 
 object StringWarpPacker extends WarpPacker[String] with SimpleWarpPacker[String] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("String")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[String]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[String]) :: WarpDescriptor(classOf[java.lang.String]) :: Nil
   override def pack(what: String)(implicit packers: WarpPackers): AlmValidation[WarpString] = WarpString(what).success
 }
 
 object StringWarpUnpacker extends RegisterableWarpUnpacker[String] {
   override val warpDescriptor = WarpDescriptor("String")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[String]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[String]) :: WarpDescriptor(classOf[java.lang.String]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[String] = 
     what match {
     case WarpString(v) => v.success
@@ -42,13 +42,13 @@ object StringWarpUnpacker extends RegisterableWarpUnpacker[String] {
 
 object ByteWarpPacker extends WarpPacker[Byte] with SimpleWarpPacker[Byte] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("Byte")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Byte]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Byte]) :: WarpDescriptor(classOf[java.lang.Byte]) :: Nil
   override def pack(what: Byte)(implicit packers: WarpPackers): AlmValidation[WarpByte] = WarpByte(what).success
 }
 
 object ByteWarpUnpacker extends RegisterableWarpUnpacker[Byte] {
   override val warpDescriptor = WarpDescriptor("Byte")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Byte]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Byte]) :: WarpDescriptor(classOf[java.lang.Byte]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Byte] = 
     what match {
     case WarpByte(v) => v.success
@@ -57,13 +57,13 @@ object ByteWarpUnpacker extends RegisterableWarpUnpacker[Byte] {
 }
 object IntWarpPacker extends WarpPacker[Int] with SimpleWarpPacker[Int] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("Int")
-  override val alternativeWarpDescriptors = WarpDescriptor("Integer") :: WarpDescriptor(classOf[Int]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor("Integer") :: WarpDescriptor(classOf[Int]) :: WarpDescriptor(classOf[java.lang.Integer]) :: Nil
   override def pack(what: Int)(implicit packers: WarpPackers): AlmValidation[WarpInt] = WarpInt(what).success
 }
 
 object IntWarpUnpacker extends RegisterableWarpUnpacker[Int] {
   override val warpDescriptor = WarpDescriptor("Int")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Int]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor("Integer") :: WarpDescriptor(classOf[Int]) :: WarpDescriptor(classOf[java.lang.Integer]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Int] = 
     what match {
     case WarpInt(v) => v.success
@@ -73,13 +73,13 @@ object IntWarpUnpacker extends RegisterableWarpUnpacker[Int] {
 
 object LongWarpPacker extends WarpPacker[Long] with SimpleWarpPacker[Long] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("Long")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Long]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Long]) :: WarpDescriptor(classOf[java.lang.Long]) :: Nil
   override def pack(what: Long)(implicit packers: WarpPackers): AlmValidation[WarpLong] = WarpLong(what).success
 }
 
 object LongWarpUnpacker extends RegisterableWarpUnpacker[Long] {
   override val warpDescriptor = WarpDescriptor("Long")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Long]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Long]) :: WarpDescriptor(classOf[java.lang.Long]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Long] = 
     what match {
     case WarpLong(v) => v.success
@@ -105,13 +105,13 @@ object BigIntWarpUnpacker extends RegisterableWarpUnpacker[BigInt] {
 
 object FloatWarpPacker extends WarpPacker[Float] with SimpleWarpPacker[Float] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("Float")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Float]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Float]) :: WarpDescriptor(classOf[java.lang.Float]) :: Nil
   override def pack(what: Float)(implicit packers: WarpPackers): AlmValidation[WarpFloat] = WarpFloat(what).success
 }
 
 object FloatWarpUnpacker extends RegisterableWarpUnpacker[Float] {
   override val warpDescriptor = WarpDescriptor("Float")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Float]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Float]) :: WarpDescriptor(classOf[java.lang.Float]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Float] = 
     what match {
     case WarpFloat(v) => v.success
@@ -121,13 +121,13 @@ object FloatWarpUnpacker extends RegisterableWarpUnpacker[Float] {
 
 object DoubleWarpPacker extends WarpPacker[Double] with SimpleWarpPacker[Double] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("Double")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Double]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Double]) :: WarpDescriptor(classOf[java.lang.Double]) :: Nil
   override def pack(what: Double)(implicit packers: WarpPackers): AlmValidation[WarpDouble] = WarpDouble(what).success
 }
 
 object DoubleWarpUnpacker extends RegisterableWarpUnpacker[Double] {
   override val warpDescriptor = WarpDescriptor("Double")
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Double]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[Double]) :: WarpDescriptor(classOf[java.lang.Double]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Double] = 
     what match {
     case WarpDouble(v) => v.success
