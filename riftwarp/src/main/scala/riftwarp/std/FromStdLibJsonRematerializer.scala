@@ -34,10 +34,16 @@ object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonS
         } yield (Some(rd), elements - RiftDescriptor.defaultKey)
       else
         (None, elements).success
-      objElems <- descriptorAndRest._2.map(labelAndValue => extract(labelAndValue._2).map((labelAndValue._1, _)).toAgg)
-        .toVector.sequence
-    } yield WarpObject(descriptorAndRest._1, objElems.map(x => WarpElement(x._1, x._2)))
+      objElems <- mapJsonMapToWarpElement(descriptorAndRest._2)
+    } yield WarpObject(descriptorAndRest._1, objElems)
   }
+  
+  private def mapJsonMapToWarpElement(jsonElems: Map[String, Any]): AlmValidation[Vector[WarpElement]] =
+    jsonElems.map(labelAndValue => 
+      labelAndValue._2 match {
+        case null => WarpElement(labelAndValue._1, None).success
+        case v => extract(v).map(x => WarpElement(labelAndValue._1, Some(x))).toAgg
+      }).toVector.sequence
 
   private def extractCollection(what: JSONArray): AlmValidation[WarpCollection] =
     what.list.map(item => extract(item).toAgg).sequence.map(x => WarpCollection(x.toVector))

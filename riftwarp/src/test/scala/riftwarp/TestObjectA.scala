@@ -42,8 +42,7 @@ case class PrimitiveMaps(
 
 case class ComplexMaps(
   mapIntTestAddress1: Map[Int, TestAddress],
-  mapIntAny: Map[Int, AnyRef],
-  mapStringAnyWithUnknown: Map[String, Any])
+  mapIntAny: Map[Int, AnyRef])
 
 case class Trees(
   intTree: scalaz.Tree[Int],
@@ -101,8 +100,7 @@ object TestObjectA {
         Map(UUID.randomUUID() -> DateTime.now(), UUID.randomUUID() -> DateTime.now().plusDays(1), UUID.randomUUID() -> DateTime.now().plusDays(2))),
       complexMaps = ComplexMaps(
         TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
-        TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
-        TestAddress.someAddresses.zipWithIndex.map(x => (x._2.toString, x._1)).toMap + ("unknownType" -> UnknownObject(1)) + ("unspecifiedProblem" -> UnspecifiedProblem("Test", args = Map("arg1" -> 95))) + ("x" -> UUID.randomUUID()) + ("y" -> UUID.randomUUID()) + ("z" -> DateTime.now())),
+        TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap),
       addressOpt = Some(TestAddress("Berlin", "At the wall 89")),
       trees = Trees())
 }

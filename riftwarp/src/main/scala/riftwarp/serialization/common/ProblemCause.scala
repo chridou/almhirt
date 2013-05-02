@@ -74,7 +74,7 @@ object HasAThrowableDescribedUnpacker extends RegisterableWarpUnpacker[HasAThrow
         classname <- lookup.getAs[String]("classname")
         message <- lookup.getAs[String]("message")
         stacktrace <- lookup.getAs[String]("stacktrace")
-        cause <- lookup.tryGetObjWith("cause", HasAThrowableDescribedUnpacker)
+        cause <- lookup.tryGetWith("cause", HasAThrowableDescribedUnpacker)
       } yield HasAThrowableDescribed(classname, message, stacktrace, cause)
     }
   }
@@ -85,7 +85,7 @@ object CauseIsThrowableUnpacker extends RegisterableWarpUnpacker[CauseIsThrowabl
   val alternativeRiftDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CauseIsThrowable] = {
     withFastLookUp(from) { lookup =>
-      lookup.getObjWith("representation", HasAThrowableDescribedUnpacker).map(desc =>
+      lookup.getWith("representation", HasAThrowableDescribedUnpacker).map(desc =>
         CauseIsThrowable(desc))
     }
   }
@@ -96,7 +96,7 @@ object CauseIsProblemUnpacker extends RegisterableWarpUnpacker[CauseIsProblem] {
   val alternativeRiftDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CauseIsProblem] = {
     withFastLookUp(from) { lookup =>
-      lookup.getObjByTag[Problem]("problem").map(prob =>
+      lookup.getTyped[Problem]("problem").map(prob =>
         CauseIsProblem(prob))
     }
   }

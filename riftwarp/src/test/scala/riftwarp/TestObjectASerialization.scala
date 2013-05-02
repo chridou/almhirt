@@ -1,14 +1,13 @@
 package riftwarp
 
-import almhirt.common._
-import almhirt.almvalidation.kit._
-import scalaz._, Scalaz._
-import almhirt.common.AlmValidation
 import java.util.UUID
 import org.joda.time.DateTime
+import scalaz._, Scalaz._
+import almhirt.common._
+import almhirt.almvalidation.kit._
 import riftwarp._
+import riftwarp.std._
 import riftwarp.std.kit._
-import riftwarp.std.DoubleWarpPacker
 
 object TestObjectAPacker extends WarpPacker[TestObjectA] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
@@ -19,9 +18,6 @@ object TestObjectAPacker extends WarpPacker[TestObjectA] with RegisterableWarpPa
       Blob("blob", what.blob) ~>
       LookUp("primitiveTypes", what.primitiveTypes) ~>
       LookUp("primitiveListMAs", what.primitiveListMAs) ~>
-      LookUp("primitiveVectorMAs", what.primitiveVectorMAs) ~>
-      LookUpOpt("primitiveSetMAs", what.primitiveSetMAs) ~>
-      LookUp("primitiveIterableMAs", what.primitiveIterableMAs) ~>
       LookUp("complexMAs", what.complexMAs) ~>
       LookUp("primitiveMaps", what.primitiveMaps) ~>
       LookUp("complexMaps", what.complexMaps) ~>
@@ -38,22 +34,19 @@ object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
       for {
         arrayByte <- lookup.getBytes("arrayByte")
         blob <- lookup.getBytes("blob")
-        primitiveTypes <- lookup.getObjByTag[PrimitiveTypes]("primitiveTypes")
-        primitiveListMAs <- lookup.getObjByTag[PrimitiveListMAs]("primitiveListMAs")
-        primitiveVectorMAs <- lookup.getObjByTag[PrimitiveVectorMAs]("primitiveVectorMAs")
-        primitiveSetMAs <- lookup.tryGetObjByTag[PrimitiveSetMAs]("primitiveSetMAs")
-        primitiveIterableMAs <- lookup.getObjByTag[PrimitiveIterableMAs]("primitiveIterableMAs")
-        complexMAs <- lookup.getObjByTag[ComplexMAs]("complexMAs")
-        primitiveMaps <- lookup.getObjByTag[PrimitiveMaps]("primitiveMaps")
-        complexMaps <- lookup.getObjByTag[ComplexMaps]("complexMaps")
-        addressOpt <- lookup.tryGetObjByTag[TestAddress]("addressOpt")
-        trees <- lookup.getObjByTag[Trees]("trees")
-      } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, primitiveVectorMAs, primitiveSetMAs, primitiveIterableMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, trees)
+        primitiveTypes <- lookup.getTyped[PrimitiveTypes]("primitiveTypes")
+        primitiveListMAs <- lookup.getTyped[PrimitiveListMAs]("primitiveListMAs")
+        complexMAs <- lookup.getTyped[ComplexMAs]("complexMAs")
+        primitiveMaps <- lookup.getTyped[PrimitiveMaps]("primitiveMaps")
+        complexMaps <- lookup.getTyped[ComplexMaps]("complexMaps")
+        addressOpt <- lookup.tryGetTyped[TestAddress]("addressOpt")
+        trees <- lookup.getTyped[Trees]("trees")
+      } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, trees)
     }
   }
 }
 
-class PrimitiveTypesPacker extends WarpPacker[PrimitiveTypes] with RegisterableWarpPacker {
+object PrimitiveTypesPacker extends WarpPacker[PrimitiveTypes] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
   val alternativeRiftDescriptors = Nil
   def pack(what: PrimitiveTypes)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
@@ -71,7 +64,7 @@ class PrimitiveTypesPacker extends WarpPacker[PrimitiveTypes] with RegisterableW
       P("uuid", what.uuid)
 }
 
-class PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
+object PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
   val alternativeRiftDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) =
@@ -92,7 +85,7 @@ class PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
     }
 }
 
-class PrimitiveListMAsPacker extends WarpPacker[PrimitiveListMAs] with RegisterableWarpPacker {
+object PrimitiveListMAsPacker extends WarpPacker[PrimitiveListMAs] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
   val alternativeRiftDescriptors = Nil
   def pack(what: PrimitiveListMAs)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
@@ -105,7 +98,7 @@ class PrimitiveListMAsPacker extends WarpPacker[PrimitiveListMAs] with Registera
   }
 }
 
-class PrimitiveListMAsRecomposer extends RegisterableWarpUnpacker[PrimitiveListMAs] {
+object PrimitiveListMAsUnpacker extends RegisterableWarpUnpacker[PrimitiveListMAs] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
   val alternativeRiftDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
@@ -121,113 +114,123 @@ class PrimitiveListMAsRecomposer extends RegisterableWarpUnpacker[PrimitiveListM
   }
 }
 
-class ComplexMAsDecomposer extends Decomposer[ComplexMAs] {
+object ComplexMAsPacker extends WarpPacker[ComplexMAs] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[ComplexMAs])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: ComplexMAs, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addIterableAllWith("addresses1", what.addresses1, new TestAddressDecomposer())
-      .flatMap(_.addIterableStrict("addresses2", what.addresses2, None))
-      .flatMap(_.addIterableOfComplex("addresses3", what.addresses3, None))
-      .flatMap(_.addIterable("anything", what.anything, None))
+  def pack(what: ComplexMAs)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    riftDescriptor ~>
+      CWith("addresses1", what.addresses1, TestAddressPacker) ~>
+      CLookUp("addresses2", what.addresses2) ~>
+      CLookUp("addresses3", what.addresses3) ~>
+      CLookUp("anything", what.anything)
   }
 }
 
-class ComplexMAsRecomposer extends Recomposer[ComplexMAs] {
+object ComplexMAsUnpacker extends RegisterableWarpUnpacker[ComplexMAs] {
   val riftDescriptor = RiftDescriptor(classOf[ComplexMAs])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[ComplexMAs] = {
-    val addresses1 = from.getManyComplexByTag[List, TestAddress]("addresses1", None).toAgg
-    val addresses2 = from.getManyComplexByTag[Vector, TestAddress]("addresses2", None).toAgg
-    val addresses3 = from.getManyComplexByTag[Set, TestAddress]("addresses3", None).toAgg
-    val anything = from.getMany[List]("anything", None).toAgg
-    (addresses1
-      |@| addresses2
-      |@| addresses3
-      |@| anything)(ComplexMAs(_, _, _, _))
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
+    withFastLookUp(from) { lookup =>
+      for {
+        addresses1 <- lookup.getManyWith("addresses1", TestAddressUnpacker).map(_.toList)
+        addresses2 <- lookup.getManyTyped[TestAddress]("addresses2")
+        addresses3 <- lookup.getManyTyped[TestAddress]("addresses3").map(_.toSet)
+        anything <- lookup.getMany("anything").map(_.toList)
+      } yield ComplexMAs(addresses1, addresses2, addresses3, anything)
+    }
   }
 }
 
-class PrimitiveMapsDecomposer extends Decomposer[PrimitiveMaps] {
+object PrimitiveMapsPacker extends WarpPacker[PrimitiveMaps] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveMaps])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PrimitiveMaps, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addMapOfPrimitives("mapIntInt", what.mapIntInt)
-      .flatMap(_.addMapOfPrimitives("mapStringInt", what.mapStringInt))
-      .flatMap(_.addMapOfPrimitives("mapUuidDateTime", what.mapUuidDateTime))
+  def pack(what: PrimitiveMaps)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    riftDescriptor ~>
+      MP("mapIntInt", what.mapIntInt) ~>
+      MP("mapStringInt", what.mapStringInt) ~>
+      MP("mapUuidDateTime", what.mapUuidDateTime)
   }
 }
 
-class PrimitiveMapsRecomposer extends Recomposer[PrimitiveMaps] {
+object PrimitiveMapsUnpacker extends RegisterableWarpUnpacker[PrimitiveMaps] {
   val riftDescriptor = RiftDescriptor(classOf[PrimitiveMaps])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PrimitiveMaps] = {
-    val mapIntInt = from.getMapOfPrimitives[Int, Int]("mapIntInt").toAgg
-    val mapStringInt = from.getMapOfPrimitives[String, Int]("mapStringInt").toAgg
-    val mapUuidDateTime = from.getMapOfPrimitives[UUID, DateTime]("mapUuidDateTime").toAgg
-    (mapIntInt |@| mapStringInt |@| mapUuidDateTime)(PrimitiveMaps.apply)
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
+    withFastLookUp(from) { lookup =>
+      for {
+        mapIntInt <- lookup.getPrimitiveAssocs[Int, Int]("mapIntInt").map(_.toMap)
+        mapStringInt <- lookup.getPrimitiveAssocs[String, Int]("mapStringInt").map(_.toMap)
+        mapUuidDateTime <- lookup.getPrimitiveAssocs[UUID, DateTime]("mapUuidDateTime").map(_.toMap)
+      } yield PrimitiveMaps(mapIntInt, mapStringInt, mapUuidDateTime)
+    }
   }
 }
 
-class ComplexMapsDecomposer extends Decomposer[ComplexMaps] {
+object ComplexMapsPacker extends WarpPacker[ComplexMaps] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[ComplexMaps])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: ComplexMaps, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addMapOfComplex("mapIntTestAddress1", what.mapIntTestAddress1, None)
-      .flatMap(_.addMap("mapIntAny", what.mapIntAny, None))
-      .flatMap(_.addMapLiberate("mapStringAnyWithUnknown", what.mapStringAnyWithUnknown, None))
+  def pack(what: ComplexMaps)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    riftDescriptor ~>
+      MWith("mapIntTestAddress1", what.mapIntTestAddress1, TestAddressPacker) ~>
+      MLookUp("mapIntAny", what.mapIntAny)
   }
 }
 
-class ComplexMapsRecomposer extends Recomposer[ComplexMaps] {
+object ComplexMapsUnpacker extends RegisterableWarpUnpacker[ComplexMaps] {
   val riftDescriptor = RiftDescriptor(classOf[ComplexMaps])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[ComplexMaps] = {
-    val mapIntTestAddress1 = from.getMapComplexByTag[Int, TestAddress]("mapIntTestAddress1", None).toAgg
-    val mapIntAny = from.getMapComplexByTag[Int, AnyRef]("mapIntAny", None).toAgg
-    val mapStringAnyWithUnknown = from.getMap[String]("mapStringAnyWithUnknown", None).toAgg
-    (mapIntTestAddress1 |@| mapIntAny |@| mapStringAnyWithUnknown)(ComplexMaps.apply)
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
+    withFastLookUp(from) { lookup =>
+      for {
+        mapIntTestAddress1 <- lookup.getAssocsWith[Int, TestAddress]("mapIntTestAddress1", TestAddressUnpacker).map(_.toMap)
+        mapIntAny <- lookup.getAssocsTyped[Int, AnyRef]("mapIntAny").map(_.toMap)
+      } yield ComplexMaps(mapIntTestAddress1, mapIntAny)
+    }
   }
 }
 
-class TestAddressDecomposer extends Decomposer[TestAddress] {
+object TestAddressPacker extends WarpPacker[TestAddress] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[TestAddress])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: TestAddress, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addString("city", what.city)
-      .addString("street", what.street).ok
+  override def pack(what: TestAddress)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    riftDescriptor ~>
+      P("city", what.city) ~>
+      P("street", what.street)
   }
 }
 
-class TestAddressRecomposer extends Recomposer[TestAddress] {
+object TestAddressUnpacker extends RegisterableWarpUnpacker[TestAddress] {
   val riftDescriptor = RiftDescriptor(classOf[TestAddress])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[TestAddress] = {
-    val city = from.getString("city").toAgg
-    val street = from.getString("street").toAgg
-    (city |@| street)(TestAddress.apply)
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TestAddress] = {
+    withFastLookUp(from) { lookup =>
+      for {
+        city <- lookup.getAs[String]("city")
+        street <- lookup.getAs[String]("street")
+      } yield TestAddress(city, street)
+    }
   }
 }
 
-class TreesDecomposer extends Decomposer[Trees] {
+object TreesPacker extends WarpPacker[Trees] with RegisterableWarpPacker {
   val riftDescriptor = RiftDescriptor(classOf[Trees])
   val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: Trees, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(riftDescriptor)
-      .addTreeOfPrimitives("intTree", what.intTree).flatMap(
-        _.addTreeOfComplex("addressTree", what.addressTree, None))
+  def pack(what: Trees)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    riftDescriptor ~>
+      TP("intTree", what.intTree) ~>
+      TLookUp("addressTree", what.addressTree)
   }
 }
 
-class TreesRecomposer extends Recomposer[Trees] {
+object TreesUnpacker extends RegisterableWarpUnpacker[Trees] {
   val riftDescriptor = RiftDescriptor(classOf[Trees])
   val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[Trees] = {
-    val intTree = from.getTreeOfPrimitives[Int]("intTree").toAgg
-    val addressTree = from.getTreeOfComplexByTag[TestAddress]("addressTree", None).toAgg
-    (intTree |@| addressTree)(Trees.apply)
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Trees] = {
+    withFastLookUp(from) { lookup =>
+      for {
+        intTree <- lookup.getPrimitivesTree[Int]("intTree")
+        addressTree <- lookup.getTreeTyped[TestAddress]("addressTree")
+      } yield Trees(intTree, addressTree)
+    }
   }
 }

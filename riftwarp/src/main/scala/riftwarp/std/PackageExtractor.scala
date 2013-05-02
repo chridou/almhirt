@@ -106,7 +106,7 @@ trait WarpObjectLookUp {
   def tryGetTyped[T](label: String, overrideDescriptor: Option[RiftDescriptor] = None)(implicit unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[Option[T]] =
     getAndCheck(label) { what => unpack(what, overrideDescriptor, Some(RiftDescriptor(tag.runtimeClass))).flatMap(_.castTo[T]) }
 
-  def getByTyped[T](label: String, overrideDescriptor: Option[RiftDescriptor] = None)(implicit unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[T] =
+  def getTyped[T](label: String, overrideDescriptor: Option[RiftDescriptor] = None)(implicit unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[T] =
     getMandatory(label, x => tryGetTyped(x, overrideDescriptor))
 
   def tryGetPrimitives[T](label: String)(implicit conv: WarpPrimitiveConverter[T]): AlmValidation[Option[Vector[T]]] =
@@ -154,15 +154,24 @@ trait WarpObjectLookUp {
   def getPrimitiveAssocs[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter](label: String): AlmValidation[Vector[(A, B)]] =
     getMandatory(label, x => tryGetPrimitiveAssocs[A, B](x))
     
-  def tryGetAssocsWith[A, B](label: String, unpackerA: WarpUnpacker[A], unpackerB: WarpUnpacker[B])(implicit unpackers: WarpUnpackers): AlmValidation[Option[Vector[(A, B)]]] =
+  def tryGetAssocsEachWith[A, B](label: String, unpackerA: WarpUnpacker[A], unpackerB: WarpUnpacker[B])(implicit unpackers: WarpUnpackers): AlmValidation[Option[Vector[(A, B)]]] =
     getAndCheck(label) {
       case wa: WarpAssociativeCollection => wa.items.map(item => unpackerA(item._1).flatMap(a => unpackerB(item._2).map(b => (a, b))).toAgg).sequence
       case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpAssociativeCollection""").failure
     }
 
-  def getAssocsWith[A, B](label: String, unpackerA: WarpUnpacker[A], unpackerB: WarpUnpacker[B])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] =
-    getMandatory(label, x => tryGetAssocsWith(x, unpackerA, unpackerB))
+  def getAssocsEachWith[A, B](label: String, unpackerA: WarpUnpacker[A], unpackerB: WarpUnpacker[B])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] =
+    getMandatory(label, x => tryGetAssocsEachWith(x, unpackerA, unpackerB))
 
+  def tryGetAssocsWith[A, B](label: String, unpackerB: WarpUnpacker[B])(implicit convA: WarpPrimitiveConverter[A], unpackers: WarpUnpackers): AlmValidation[Option[Vector[(A, B)]]] =
+    getAndCheck(label) {
+      case wa: WarpAssociativeCollection => wa.items.map(item => convA.convert(item._1).flatMap(a => unpackerB(item._2).map(b => (a, b))).toAgg).sequence
+      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpAssociativeCollection""").failure
+    }
+
+  def getAssocsWith[A: WarpPrimitiveConverter, B](label: String, unpackerB: WarpUnpacker[B])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] =
+    getMandatory(label, x => tryGetAssocsWith[A, B](x, unpackerB))
+    
   def tryGetAssocs[A](label: String, overrideDescriptor: Option[RiftDescriptor] = None, backUpDescriptor: Option[RiftDescriptor] = None)(implicit unpackers: WarpUnpackers, conv: WarpPrimitiveConverter[A]): AlmValidation[Option[Vector[(A, Any)]]] =
     getAndCheck(label) {
       case wa: WarpAssociativeCollection => wa.items.map(item => conv.convert(item._1).flatMap(a => unpack(item._2, overrideDescriptor, backUpDescriptor).map(b => (a, b))).toAgg).sequence
