@@ -10,10 +10,10 @@ import riftwarp.std._
 import riftwarp.std.kit._
 
 object TestObjectAPacker extends WarpPacker[TestObjectA] with RegisterableWarpPacker {
-  val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[TestObjectA])
+  val alternativeWarpDescriptors = Nil
   def pack(what: TestObjectA)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    riftDescriptor ~>
+    warpDescriptor ~>
       Bytes("arrayByte", what.arrayByte) ~>
       Blob("blob", what.blob) ~>
       LookUp("primitiveTypes", what.primitiveTypes) ~>
@@ -27,8 +27,8 @@ object TestObjectAPacker extends WarpPacker[TestObjectA] with RegisterableWarpPa
 }
 
 object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
-  val riftDescriptor = RiftDescriptor(classOf[TestObjectA])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[TestObjectA])
+  val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup =>
       for {
@@ -47,10 +47,10 @@ object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
 }
 
 object PrimitiveTypesPacker extends WarpPacker[PrimitiveTypes] with RegisterableWarpPacker {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[PrimitiveTypes])
+  val alternativeWarpDescriptors = Nil
   def pack(what: PrimitiveTypes)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
-    riftDescriptor ~>
+    warpDescriptor ~>
       P("str", what.str) ~>
       P("bool", what.bool) ~>
       P("byte", what.byte) ~>
@@ -65,8 +65,8 @@ object PrimitiveTypesPacker extends WarpPacker[PrimitiveTypes] with Registerable
 }
 
 object PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveTypes])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[PrimitiveTypes])
+  val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) =
     withFastLookUp(from) { lookup =>
       for {
@@ -86,10 +86,10 @@ object PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
 }
 
 object PrimitiveListMAsPacker extends WarpPacker[PrimitiveListMAs] with RegisterableWarpPacker {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[PrimitiveListMAs])
+  val alternativeWarpDescriptors = Nil
   def pack(what: PrimitiveListMAs)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    riftDescriptor ~>
+    warpDescriptor ~>
       CP("listString", what.listString) ~>
       CLookUp("listInt", what.listInt) ~>
       CWith("listDouble", what.listDouble, DoubleWarpPacker) ~>
@@ -99,8 +99,8 @@ object PrimitiveListMAsPacker extends WarpPacker[PrimitiveListMAs] with Register
 }
 
 object PrimitiveListMAsUnpacker extends RegisterableWarpUnpacker[PrimitiveListMAs] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveListMAs])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[PrimitiveListMAs])
+  val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup =>
       for {
@@ -115,10 +115,10 @@ object PrimitiveListMAsUnpacker extends RegisterableWarpUnpacker[PrimitiveListMA
 }
 
 object ComplexMAsPacker extends WarpPacker[ComplexMAs] with RegisterableWarpPacker {
-  val riftDescriptor = RiftDescriptor(classOf[ComplexMAs])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[ComplexMAs])
+  val alternativeWarpDescriptors = Nil
   def pack(what: ComplexMAs)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    riftDescriptor ~>
+    warpDescriptor ~>
       CWith("addresses1", what.addresses1, TestAddressPacker) ~>
       CLookUp("addresses2", what.addresses2) ~>
       CLookUp("addresses3", what.addresses3) ~>
@@ -127,8 +127,8 @@ object ComplexMAsPacker extends WarpPacker[ComplexMAs] with RegisterableWarpPack
 }
 
 object ComplexMAsUnpacker extends RegisterableWarpUnpacker[ComplexMAs] {
-  val riftDescriptor = RiftDescriptor(classOf[ComplexMAs])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[ComplexMAs])
+  val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup =>
       for {
@@ -142,10 +142,10 @@ object ComplexMAsUnpacker extends RegisterableWarpUnpacker[ComplexMAs] {
 }
 
 object PrimitiveMapsPacker extends WarpPacker[PrimitiveMaps] with RegisterableWarpPacker {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveMaps])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[PrimitiveMaps])
+  val alternativeWarpDescriptors = Nil
   def pack(what: PrimitiveMaps)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    riftDescriptor ~>
+    warpDescriptor ~>
       MP("mapIntInt", what.mapIntInt) ~>
       MP("mapStringInt", what.mapStringInt) ~>
       MP("mapUuidDateTime", what.mapUuidDateTime)
@@ -153,8 +153,8 @@ object PrimitiveMapsPacker extends WarpPacker[PrimitiveMaps] with RegisterableWa
 }
 
 object PrimitiveMapsUnpacker extends RegisterableWarpUnpacker[PrimitiveMaps] {
-  val riftDescriptor = RiftDescriptor(classOf[PrimitiveMaps])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[PrimitiveMaps])
+  val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup =>
       for {
@@ -167,18 +167,18 @@ object PrimitiveMapsUnpacker extends RegisterableWarpUnpacker[PrimitiveMaps] {
 }
 
 object ComplexMapsPacker extends WarpPacker[ComplexMaps] with RegisterableWarpPacker {
-  val riftDescriptor = RiftDescriptor(classOf[ComplexMaps])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[ComplexMaps])
+  val alternativeWarpDescriptors = Nil
   def pack(what: ComplexMaps)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    riftDescriptor ~>
+    warpDescriptor ~>
       MWith("mapIntTestAddress1", what.mapIntTestAddress1, TestAddressPacker) ~>
       MLookUp("mapIntAny", what.mapIntAny)
   }
 }
 
 object ComplexMapsUnpacker extends RegisterableWarpUnpacker[ComplexMaps] {
-  val riftDescriptor = RiftDescriptor(classOf[ComplexMaps])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[ComplexMaps])
+  val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup =>
       for {
@@ -190,18 +190,18 @@ object ComplexMapsUnpacker extends RegisterableWarpUnpacker[ComplexMaps] {
 }
 
 object TestAddressPacker extends WarpPacker[TestAddress] with RegisterableWarpPacker {
-  val riftDescriptor = RiftDescriptor(classOf[TestAddress])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[TestAddress])
+  val alternativeWarpDescriptors = Nil
   override def pack(what: TestAddress)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    riftDescriptor ~>
+    warpDescriptor ~>
       P("city", what.city) ~>
       P("street", what.street)
   }
 }
 
 object TestAddressUnpacker extends RegisterableWarpUnpacker[TestAddress] {
-  val riftDescriptor = RiftDescriptor(classOf[TestAddress])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[TestAddress])
+  val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TestAddress] = {
     withFastLookUp(from) { lookup =>
       for {
@@ -213,18 +213,18 @@ object TestAddressUnpacker extends RegisterableWarpUnpacker[TestAddress] {
 }
 
 object TreesPacker extends WarpPacker[Trees] with RegisterableWarpPacker {
-  val riftDescriptor = RiftDescriptor(classOf[Trees])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[Trees])
+  val alternativeWarpDescriptors = Nil
   def pack(what: Trees)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    riftDescriptor ~>
+    warpDescriptor ~>
       TP("intTree", what.intTree) ~>
       TLookUp("addressTree", what.addressTree)
   }
 }
 
 object TreesUnpacker extends RegisterableWarpUnpacker[Trees] {
-  val riftDescriptor = RiftDescriptor(classOf[Trees])
-  val alternativeRiftDescriptors = Nil
+  val warpDescriptor = WarpDescriptor(classOf[Trees])
+  val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Trees] = {
     withFastLookUp(from) { lookup =>
       for {

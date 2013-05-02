@@ -23,15 +23,15 @@ object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonS
   private def extractObject(what: JSONObject): AlmValidation[WarpObject] = {
     val elements = what.obj
     for {
-      descriptorAndRest <- if (elements.contains(RiftDescriptor.defaultKey))
+      descriptorAndRest <- if (elements.contains(WarpDescriptor.defaultKey))
         for {
-          rdElem <- extractPrimitive(elements(RiftDescriptor.defaultKey))
+          rdElem <- extractPrimitive(elements(WarpDescriptor.defaultKey))
           rdStr <- rdElem match {
             case WarpString(rd) => rd.success
             case x => UnspecifiedProblem(s"${x.toString()} is not valid as a riftdescriptor").failure
           }
-          rd <- RiftDescriptor.parse(rdStr)
-        } yield (Some(rd), elements - RiftDescriptor.defaultKey)
+          rd <- WarpDescriptor.parse(rdStr)
+        } yield (Some(rd), elements - WarpDescriptor.defaultKey)
       else
         (None, elements).success
       objElems <- mapJsonMapToWarpElement(descriptorAndRest._2)

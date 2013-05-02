@@ -20,7 +20,7 @@
 //        fun(what, decomposer)))
 //
 //  def receiveFromWarp[TDimension <: RiftDimension, T <: AnyRef](channel: RiftChannel, toolGroup: Option[ToolGroup] = None)(warpStream: TDimension)(implicit cDim: ClassTag[TDimension], cTarget: ClassTag[T]): AlmValidation[T] = {
-//    def findRecomposer(remat: Extractor) = barracks.lookUpFromRematerializer[T](remat, Some(RiftDescriptor(cTarget.runtimeClass)))
+//    def findRecomposer(remat: Extractor) = barracks.lookUpFromRematerializer[T](remat, Some(WarpDescriptor(cTarget.runtimeClass)))
 //    for {
 //      recomposeFun <- RiftWarpFuns.getRecomposeFun[TDimension, T](channel, toolGroup)(findRecomposer)(cDim, cTarget, this)
 //      recomposed <- recomposeFun(warpStream)
@@ -75,8 +75,8 @@
 //
 //    serialization.common.Problems.registerAllCommonProblems(riftWarp)
 //
-//    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.RiftDescriptorDecomposer)
-//    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.RiftDescriptorRecomposer)
+//    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.WarpDescriptorDecomposer)
+//    riftWarp.barracks.addRecomposer(riftwarp.serialization.common.WarpDescriptorRecomposer)
 //
 //    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.HasAThrowableDescribedDecomposer)
 //    riftWarp.barracks.addDecomposer(riftwarp.serialization.common.HasAThrowableDecomposer)

@@ -18,7 +18,7 @@ trait PackageBuilderFuns {
 
   def toWarpCollectionLookUp(what: Traversable[Any])(implicit packers: WarpPackers): AlmValidation[WarpCollection] =
     what.map(item =>
-      packers(RiftDescriptor(item.getClass)).flatMap(_.packBlind(item)).toAgg)
+      packers(WarpDescriptor(item.getClass)).flatMap(_.packBlind(item)).toAgg)
       .toVector
       .sequence
       .map(WarpCollection.apply)
@@ -102,7 +102,7 @@ trait PackageBuilderFuns {
   def MLookUp[A, B](label: String, what: Map[A, B])(implicit convA: WarpPrimitiveConverter[A], packers: WarpPackers): AlmValidation[WarpElement] =
     what.map {
       case (a, b) =>
-        packers(RiftDescriptor(b.getClass)).flatMap(packer =>
+        packers(WarpDescriptor(b.getClass)).flatMap(packer =>
           packer.packBlind(b).map(wb =>
             (convA.convertBack(a), wb))).toAgg
     }.toVector.sequence.map(items =>
@@ -134,7 +134,7 @@ trait PackageBuilderFuns {
 
   def TLookUp[A](label: String, what: Tree[A])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
     what.map(x =>
-      packers(RiftDescriptor(x.getClass)).flatMap(packer =>
+      packers(WarpDescriptor(x.getClass)).flatMap(packer =>
         packer.packBlind(x)).toAgg).sequence.map(x =>
       WarpElement(label, Some(WarpTree(x))))
 
@@ -168,12 +168,12 @@ trait PackageBuilderOps {
     def ~>(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
-        succ => WarpObject(self.riftDescriptor, self.elements :+ succ).success)
+        succ => WarpObject(self.warpDescriptor, self.elements :+ succ).success)
 
     def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
   }
 
-  implicit class RiftDescriptorOps(self: RiftDescriptor) {
+  implicit class WarpDescriptorOps(self: WarpDescriptor) {
     def ~>(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
@@ -189,7 +189,7 @@ trait PackageBuilderOps {
         succObj =>
           next.fold(
             fail => fail.failure,
-            succ => WarpObject(succObj.riftDescriptor, succObj.elements :+ succ).success))
+            succ => WarpObject(succObj.warpDescriptor, succObj.elements :+ succ).success))
 
     def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
 

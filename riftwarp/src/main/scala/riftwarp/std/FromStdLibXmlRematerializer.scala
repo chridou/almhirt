@@ -24,7 +24,7 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
 
   private def extractObject(what: XmlElem): AlmValidation[WarpObject] =
     for {
-      td <- (what \@? "type").map(tstr => RiftDescriptor.parse(tstr)).validationOut
+      td <- (what \@? "type").map(tstr => WarpDescriptor.parse(tstr)).validationOut
       elems <- what.elems.map(elem =>
         (elem.elems.headOption match {
           case Some(v) => extract(v).map(x => (elem.label, Some(x)))

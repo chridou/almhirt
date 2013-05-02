@@ -9,6 +9,6 @@ trait WarpUnpacker[+T] {
 }
 
 trait RegisterableWarpUnpacker[+T] extends WarpUnpacker[T] {
-  def riftDescriptor: RiftDescriptor
-  def alternativeRiftDescriptors: List[RiftDescriptor]
+  def warpDescriptor: WarpDescriptor
+  def alternativeWarpDescriptors: List[WarpDescriptor]
 }

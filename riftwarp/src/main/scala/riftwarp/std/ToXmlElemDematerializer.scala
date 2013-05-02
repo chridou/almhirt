@@ -29,7 +29,7 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
 
   protected override def getObjectRepr(warpObject: WarpObject): XmlElem = {
     val elems = warpObject.elements.map(createElemRepr)
-    warpObject.riftDescriptor match {
+    warpObject.warpDescriptor match {
       case Some(desc) => XmlElem(null, desc.unqualifiedName, new UnprefixedAttribute("type", desc.toParsableString(), new UnprefixedAttribute("style", "noisy", Null)), TopScope, true, elems: _*)
       case None => XmlElem(null, "Something", new UnprefixedAttribute("style", "noisy", Null), TopScope, true, elems: _*)
     }

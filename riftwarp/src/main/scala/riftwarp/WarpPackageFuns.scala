@@ -34,22 +34,22 @@ trait WarpPackageFuns {
       .sequence
       .map(WarpAssociativeCollection(_))
 
-  def packByDescriptor(what: Any, descriptor: RiftDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+  def packByDescriptor(what: Any, descriptor: WarpDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     packers(descriptor).flatMap(_.packBlind(what))
 
-  def packObjectByDescriptor(what: AnyRef, descriptor: RiftDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+  def packObjectByDescriptor(what: AnyRef, descriptor: WarpDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     packers(descriptor).flatMap(_.packBlind(what)).flatMap {
       case o: WarpObject => o.success
-      case x => SerializationProblem(s"${x.getClass.getName} is not allowed. A WarpObject is required. Choose the correct RiftDescriptor.").failure
+      case x => SerializationProblem(s"${x.getClass.getName} is not allowed. A WarpObject is required. Choose the correct WarpDescriptor.").failure
     }
 
-  def packCollectionByDescriptor(what: Traversable[Any], descriptor: RiftDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpCollection] =
+  def packCollectionByDescriptor(what: Traversable[Any], descriptor: WarpDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpCollection] =
     packers(descriptor).flatMap(packer =>
       what.toVector.map(packer.packBlind(_).toAgg)
         .sequence
         .map(WarpCollection(_)))
 
-  def packAssociativeCollectionByDescriptors[A, B](what: Traversable[(A, B)], descriptorA: RiftDescriptor, descriptorB: RiftDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpAssociativeCollection] =
+  def packAssociativeCollectionByDescriptors[A, B](what: Traversable[(A, B)], descriptorA: WarpDescriptor, descriptorB: WarpDescriptor)(implicit packers: WarpPackers): AlmValidation[WarpAssociativeCollection] =
     for {
       packerA <- packers(descriptorA)
       packerB <- packers(descriptorB)

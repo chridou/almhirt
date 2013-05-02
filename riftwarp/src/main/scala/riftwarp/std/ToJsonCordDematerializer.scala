@@ -1,4 +1,5 @@
 package riftwarp.std
+
 import scala.annotation.tailrec
 import scalaz._
 import scalaz.Cord
@@ -7,7 +8,6 @@ import scalaz.std._
 import almhirt.almvalidation.kit._
 import almhirt.common._
 import riftwarp._
-import scala.Array.canBuildFrom
 
 object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.Json] {
   type ValueRepr = Cord
@@ -33,8 +33,9 @@ object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.
 
   protected override def getObjectRepr(warpObject: WarpObject): Cord = {
     val head =
-      warpObject.riftDescriptor match {
-        case Some(rd) => Cord(s"""{"${RiftDescriptor.defaultKey}":"${rd.toParsableString(";")}"""")
+      warpObject.warpDescriptor match {
+        case Some(rd) => 
+          Cord(s"""{"${WarpDescriptor.defaultKey}":"${rd.toParsableString(";")}"""") ++ (if(warpObject.elements.isEmpty) Cord.empty else Cord(","))
         case None => Cord("{")
       }
     val elements =

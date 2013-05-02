@@ -52,7 +52,7 @@ trait WarpPrimitiveToByteConverter extends WarpPrimitiveConverter[Byte] {
       case WarpDouble(value) => value.toByte.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Byte""").failure
     }
-  override def convertBack(what: Boolean) = WarpBoolean(what)
+  override def convertBack(what: Byte) = WarpByte(what)
 }
 
 trait WarpPrimitiveToIntConverter extends WarpPrimitiveConverter[Int] {
