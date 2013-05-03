@@ -60,6 +60,11 @@ object WarpUnpackers {
     unpackers.addTyped(CauseIsThrowableUnpacker)
     unpackers.addTyped(CauseIsProblemUnpacker)
     unpackers.addTyped(ProblemCauseUnpacker)
+
+    unpackers.addTyped(WarpDescriptorUnpacker)
+    
+    serialization.common.Problems.registerAllCommonProblems(WarpPackers.NoWarpPackers, unpackers)
+    
     unpackers
   }
   

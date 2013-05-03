@@ -7,5 +7,5 @@ import almhirt.common._
 
 trait Dematerializer[T] extends Function1[WarpPackage, T]{
   final def apply(what: WarpPackage): T = dematerialize(what)
-  def dematerialize(what: WarpPackage): T
+  def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): T
 }

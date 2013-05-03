@@ -114,6 +114,24 @@ trait PackageBuilderFuns {
       case None => WarpElement(label).success
     }
 
+  def MLookUpForgiving[A, B](label: String, what: Map[A, B])(implicit convA: WarpPrimitiveConverter[A], packers: WarpPackers): AlmValidation[WarpElement] =
+    what.map {
+      case (a, b) =>
+        packers(WarpDescriptor(b.getClass)).fold(
+          fail =>
+            None,
+          packer =>
+            packer.packBlind(b).map(wb =>
+              (convA.convertBack(a), wb)).toAgg.some)
+    }.flatten.toVector.sequence.map(items =>
+      WarpElement(label, Some(WarpAssociativeCollection(items))))
+
+  def MLookUpForgivingOpt[A: WarpPrimitiveConverter, B](label: String, what: Option[Map[A, B]])(implicit packers: WarpPackers): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) => MLookUpForgiving(label, v)
+      case None => WarpElement(label).success
+    }
+
   def TP[A](label: String, what: Tree[A])(implicit conv: WarpPrimitiveConverter[A]): AlmValidation[WarpElement] =
     WarpElement(label, Some(WarpTree(what.map(conv.convertBack(_))))).success
 

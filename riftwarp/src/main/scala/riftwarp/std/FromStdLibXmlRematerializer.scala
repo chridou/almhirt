@@ -10,7 +10,7 @@ import scala.Array.canBuildFrom
 import scala.xml.{ Elem => XmlElem }
 
 object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
-  override def rematerialize(what: XmlElem): AlmValidation[WarpPackage] =
+  override def rematerialize(what: XmlElem, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
     extract(what)
 
   private def extract(what: XmlElem): AlmValidation[WarpPackage] =

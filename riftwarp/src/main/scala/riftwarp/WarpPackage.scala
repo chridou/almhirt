@@ -1,6 +1,7 @@
 package riftwarp
 
 import scalaz._, Scalaz._
+import scalaz.Tree._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp.std.WarpPrimitiveConverter
@@ -70,6 +71,17 @@ object WarpObject {
 object WarpCollection {
   def apply(): WarpCollection = WarpCollection(Vector.empty)
 
+  def tree(wc: WarpCollection): AlmValidation[Tree[WarpPackage]] =
+    wc match {
+      case WarpCollection(Vector(l, WarpCollection(subForest))) =>
+        val sfV = subForest.map {
+          case aTree: WarpCollection => tree(aTree).toAgg
+          case _ => ???
+        }
+        sfV.sequence.map(sf => l.node(sf: _*))
+      case x => UnspecifiedProblem(s""""${x.toString()}" can not be converted to a tree element""").failure
+    }
+
   implicit class WarpCollectionOps(self: WarpCollection) {
     def associative: AlmValidation[WarpAssociativeCollection] =
       self.items.map(item =>
@@ -81,6 +93,9 @@ object WarpCollection {
               UnspecifiedProblem("An inner item must have a length of to, when tranforming a WarpCollection to a WarpAssociativeCollection").failure
           case _ => UnspecifiedProblem("An inner item must be a WarpCollection of WarpCollections in order to transform a WarpCollection to a WarpAssociativeCollection").failure
         }).toAgg).sequence.map(WarpAssociativeCollection(_))
+
+    def warpTree: AlmValidation[WarpTree] =
+      WarpCollection.tree(self).map(x => WarpTree(x))
   }
 }
 

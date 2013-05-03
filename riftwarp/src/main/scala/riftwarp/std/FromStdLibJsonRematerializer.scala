@@ -10,7 +10,7 @@ import scala.util.parsing.json.JSONObject
 
 object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonStdLib] {
   import scala.util.parsing.json._
-  override def rematerialize(what: Any @@ WarpTags.JsonStdLib): AlmValidation[WarpPackage] =
+  override def rematerialize(what: Any @@ WarpTags.JsonStdLib, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
     extract(what)
 
   private def extract(what: Any): AlmValidation[WarpPackage] =

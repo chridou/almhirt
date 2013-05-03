@@ -26,7 +26,7 @@ trait DematerializerTemplate[T] extends Dematerializer[T] {
         foldBlobRepr(bytes)
     }
 
-  override def dematerialize(what: WarpPackage): T =
+  override def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): T =
     valueReprToDim(transform(what))
     
   protected def valueReprToDim(repr: ValueRepr): T
