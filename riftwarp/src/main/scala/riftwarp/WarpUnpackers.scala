@@ -68,6 +68,8 @@ object WarpUnpackers {
     unpackers
   }
   
+  def empty: WarpUnpackers = new WarpUnpackerRegistry()
+  
   val NoWarpUnpackers = new WarpUnpackers {
     override def get(descriptor: WarpDescriptor) = UnspecifiedSystemProblem("NoWarpUnpackers has no unpackers").failure
     override def add(unpacker: RegisterableWarpUnpacker[Any]) {}

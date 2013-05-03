@@ -62,6 +62,7 @@ object WarpPackers {
     packers
   }
   
+  def empty: WarpPackers = new WarpPackerRegistry()
   
   val NoWarpPackers: WarpPackers = new WarpPackers {
     override def get(descriptor: WarpDescriptor) = UnspecifiedSystemProblem("NoWarpPackers has no packers").failure
