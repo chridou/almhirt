@@ -45,9 +45,9 @@ final case class WarpCollection(items: Vector[WarpPackage]) extends WarpPackage
 final case class WarpAssociativeCollection(items: Vector[(WarpPackage, WarpPackage)]) extends WarpPackage
 final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
 
-sealed trait BinaryWarpPackage extends WarpPackage { def bytes: Array[Byte] }
-final case class WarpBytes(override val bytes: Array[Byte]) extends BinaryWarpPackage
-final case class WarpBlob(override val bytes: Array[Byte]) extends BinaryWarpPackage
+sealed trait BinaryWarpPackage extends WarpPackage { def bytes: IndexedSeq[Byte] }
+final case class WarpBytes(override val bytes: IndexedSeq[Byte]) extends BinaryWarpPackage
+final case class WarpBlob(override val bytes: IndexedSeq[Byte]) extends BinaryWarpPackage
 
 object WarpBigInt {
   def apply(strRepr: String): WarpBigInt = WarpBigInt(BigInt(strRepr))

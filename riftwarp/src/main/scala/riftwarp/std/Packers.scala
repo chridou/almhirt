@@ -199,42 +199,42 @@ object DateTimeWarpUnpacker extends RegisterableWarpUnpacker[DateTime] {
   }
 }
 
-object ByteArrayWarpPacker extends WarpPacker[Array[Byte]] with SimpleWarpPacker[Array[Byte]] with RegisterableWarpPacker {
+object ByteArrayWarpPacker extends WarpPacker[IndexedSeq[Byte]] with SimpleWarpPacker[IndexedSeq[Byte]] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("Bytes")
   override val alternativeWarpDescriptors = Nil
-  override def pack(what: Array[Byte])(implicit packers: WarpPackers): AlmValidation[WarpBytes] = WarpBytes(what).success
+  override def pack(what: IndexedSeq[Byte])(implicit packers: WarpPackers): AlmValidation[WarpBytes] = WarpBytes(what).success
 }
 
-object ByteArrayWarpUnpacker extends RegisterableWarpUnpacker[Array[Byte]] {
+object ByteArrayWarpUnpacker extends RegisterableWarpUnpacker[IndexedSeq[Byte]] {
   override val warpDescriptor = WarpDescriptor("Bytes")
   override val alternativeWarpDescriptors = Nil
-  override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Array[Byte]] = 
+  override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[IndexedSeq[Byte]] = 
     what match {
     case WarpBytes(v) => v.success
     case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Array[Byte]""").failure
   }
 }
 
-object Base64BlobWarpPacker extends WarpPacker[Array[Byte]] with SimpleWarpPacker[Array[Byte]] with RegisterableWarpPacker {
+object Base64BlobWarpPacker extends WarpPacker[IndexedSeq[Byte]] with SimpleWarpPacker[IndexedSeq[Byte]] with RegisterableWarpPacker {
   override val warpDescriptor = WarpDescriptor("Base64Blob")
   override val alternativeWarpDescriptors = Nil
-  override def pack(what: Array[Byte])(implicit packers: WarpPackers): AlmValidation[WarpBlob] = WarpBlob(what).success
-  def asWarpObject(bytes: Array[Byte]) = {
-    val elem = WarpElement("data", Some(WarpString(org.apache.commons.codec.binary.Base64.encodeBase64String(bytes))))
+  override def pack(what: IndexedSeq[Byte])(implicit packers: WarpPackers): AlmValidation[WarpBlob] = WarpBlob(what).success
+  def asWarpObject(bytes: IndexedSeq[Byte]) = {
+    val elem = WarpElement("data", Some(WarpString(org.apache.commons.codec.binary.Base64.encodeBase64String(bytes.toArray))))
     val wd = WarpDescriptor("Base64Blob")
     WarpObject(Some(wd), Vector(elem))
   }
 }
 
-object Base64BlobWarpUnpacker extends RegisterableWarpUnpacker[Array[Byte]] {
+object Base64BlobWarpUnpacker extends RegisterableWarpUnpacker[IndexedSeq[Byte]] {
   override val warpDescriptor = WarpDescriptor("Base64Blob")
   override val alternativeWarpDescriptors = Nil
-  override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Array[Byte]] = 
+  override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[IndexedSeq[Byte]] = 
     what match {
     case WarpBlob(v) => v.success
     case WarpObject(Some(WarpDescriptor("Base64Blob")), elems) => 
       elems.headOption match {
-        case Some(WarpElement("data", Some(WarpString(data)))) => ParseFuns.parseBase64Alm(data)
+        case Some(WarpElement("data", Some(WarpString(data)))) => ParseFuns.parseBase64Alm(data).map(IndexedSeq(_: _*))
         case _ => UnspecifiedProblem(s""""${what.getClass().getName()}" can not be unpacked to an Array[Byte] from a WarpObject because it is empty, has no element labeled "data" or its content is not a WarpString""").failure
       }
     case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Array[Byte]""").failure

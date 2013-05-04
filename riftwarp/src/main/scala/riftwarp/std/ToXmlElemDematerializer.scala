@@ -44,11 +44,11 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   protected override def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): XmlElem =
     foldParts(tree.rootLabel :: foldParts(tree.subForest.map(foldTreeRepr).toList) :: Nil)
 
-  protected override def foldByteArrayRepr(bytes: Array[Byte]): XmlElem =
+  protected override def foldByteArrayRepr(bytes: IndexedSeq[Byte]): XmlElem =
     <bytes type="Bytes">{ bytes.mkString(",") }</bytes>
 
-  protected override def foldBlobRepr(bytes: Array[Byte]): XmlElem = {
-    val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(bytes)
+  protected override def foldBlobRepr(bytes: IndexedSeq[Byte]): XmlElem = {
+    val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(bytes.toArray)
     <base64 type="Base64">{ scala.xml.PCData(base64) }</base64>
   }
 

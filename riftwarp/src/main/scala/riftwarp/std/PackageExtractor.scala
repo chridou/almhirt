@@ -72,7 +72,7 @@ trait WarpObjectLookUp {
   def getWarpTree(label: String): AlmValidation[WarpTree] =
     getMandatory(label, tryGetWarpTree)
 
-  def tryGetBytes(label: String): AlmValidation[Option[Array[Byte]]] =
+  def tryGetBytes(label: String): AlmValidation[Option[IndexedSeq[Byte]]] =
     getAndCheck(label) {
       case wb: WarpBytes => wb.bytes.success
       case wb: WarpBlob => wb.bytes.success
@@ -80,7 +80,7 @@ trait WarpObjectLookUp {
       case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a byte array representation""").failure
     }
 
-  def getBytes(label: String): AlmValidation[Array[Byte]] =
+  def getBytes(label: String): AlmValidation[IndexedSeq[Byte]] =
     getMandatory(label, tryGetBytes)
 
   def tryGetAs[T: WarpPrimitiveConverter](label: String): AlmValidation[Option[T]] =

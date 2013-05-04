@@ -14,7 +14,7 @@ object TestObjectAPacker extends WarpPacker[TestObjectA] with RegisterableWarpPa
   val alternativeWarpDescriptors = Nil
   def pack(what: TestObjectA)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     warpDescriptor ~>
-      Bytes("arrayByte", what.arrayByte) ~>
+      Bytes("bytes", what.bytes) ~>
       Blob("blob", what.blob) ~>
       LookUp("primitiveTypes", what.primitiveTypes) ~>
       LookUp("primitiveListMAs", what.primitiveListMAs) ~>
@@ -32,7 +32,7 @@ object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
     withFastLookUp(from) { lookup =>
       for {
-        arrayByte <- lookup.getBytes("arrayByte")
+        bytes <- lookup.getBytes("bytes")
         blob <- lookup.getBytes("blob")
         primitiveTypes <- lookup.getTyped[PrimitiveTypes]("primitiveTypes")
         primitiveListMAs <- lookup.getTyped[PrimitiveListMAs]("primitiveListMAs")
@@ -41,7 +41,7 @@ object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
         complexMaps <- lookup.getTyped[ComplexMaps]("complexMaps")
         addressOpt <- lookup.tryGetTyped[TestAddress]("addressOpt")
         trees <- lookup.getTyped[Trees]("trees")
-      } yield TestObjectA(arrayByte, blob, primitiveTypes, primitiveListMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, trees)
+      } yield TestObjectA(bytes.toVector, blob.toVector, primitiveTypes, primitiveListMAs, complexMAs, primitiveMaps, complexMaps, addressOpt, trees)
     }
   }
 }

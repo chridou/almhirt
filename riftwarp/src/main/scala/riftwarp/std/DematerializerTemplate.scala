@@ -35,6 +35,6 @@ trait DematerializerTemplate[T] extends Dematerializer[T] {
   protected def foldReprs(elems: Traversable[ValueRepr]): ValueRepr
   protected def foldTupleReprs(tuple: (ValueRepr, ValueRepr)): ValueRepr
   protected def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): ValueRepr
-  protected def foldByteArrayRepr(bytes: Array[Byte]): ValueRepr
-  protected def foldBlobRepr(bytes: Array[Byte]): ValueRepr
+  protected def foldByteArrayRepr(bytes: IndexedSeq[Byte]): ValueRepr
+  protected def foldBlobRepr(bytes: IndexedSeq[Byte]): ValueRepr
 }

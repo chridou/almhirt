@@ -57,10 +57,10 @@ object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.
   protected override def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): Cord =
     foldParts(tree.rootLabel :: foldParts(tree.subForest.map(foldTreeRepr).toList) :: Nil)
 
-  protected override def foldByteArrayRepr(bytes: Array[Byte]): Cord =
+  protected override def foldByteArrayRepr(bytes: IndexedSeq[Byte]): Cord =
     foldParts(bytes.map(b => Cord(b.toString)).toList)
 
-  protected override def foldBlobRepr(bytes: Array[Byte]): Cord = 
+  protected override def foldBlobRepr(bytes: IndexedSeq[Byte]): Cord = 
     getObjectRepr(Base64BlobWarpPacker.asWarpObject(bytes))
 
   private def createElemRepr(elem: WarpElement): Cord =
