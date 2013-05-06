@@ -18,28 +18,32 @@ object ToNoisyXmlStringDematerializer extends Dematerializer[String @@ WarpTags.
 object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Json] {
   import scala.util.parsing.json._
   def rematerialize(what: String @@ WarpTags.Json, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] = {
-    val parser = new scala.util.parsing.json.Parser
-    parser.phrase(parser.root)(new parser.lexical.Scanner(what)) match {
-      case parser.Success(result, _) =>
-        FromStdLibJsonRematerializer.rematerialize(WarpTags.JsonStdLib(result))
-      case parser.NoSuccess(msg, _) =>
-        ParsingProblem(msg).withInput(what).failure
+    if (what.startsWith("{") || what.startsWith("[")) {
+      val parser = new scala.util.parsing.json.Parser
+      parser.phrase(parser.root)(new parser.lexical.Scanner(what)) match {
+        case parser.Success(result, _) =>
+          FromStdLibJsonRematerializer.rematerialize(WarpTags.JsonStdLib(result))
+        case parser.NoSuccess(msg, _) =>
+          ParsingProblem(msg).withInput(what).failure
+      }
+    } else if (what.startsWith("\"") && what.endsWith("\"")) {
+      WarpString(what.substring(1, what.length() - 1)).success
+    } else if (what == "true") {
+      WarpBoolean(true).success
+    } else if (what == "false") {
+      WarpBoolean(false).success
+    } else if (what.toDoubleAlm.isSuccess) {
+      WarpDouble(what.toDoubleAlm.forceResult).success
+    } else {
+      ParsingProblem("Input is no JSON nor a primitive type").withInput(what).failure
     }
   }
 }
 
 object FromJsonCordRematerializer extends Rematerializer[Cord @@ WarpTags.Json] {
   import scala.util.parsing.json._
-  def rematerialize(what: Cord @@ WarpTags.Json, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] = {
-    val input = what.toString
-    val parser = new scala.util.parsing.json.Parser
-    parser.phrase(parser.root)(new parser.lexical.Scanner(input)) match {
-      case parser.Success(result, _) =>
-        FromStdLibJsonRematerializer.rematerialize(WarpTags.JsonStdLib(result))
-      case parser.NoSuccess(msg, _) =>
-        ParsingProblem(msg).withInput(input).failure
-    }
-  }
+  def rematerialize(what: Cord @@ WarpTags.Json, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
+    FromJsonStringRematerializer.rematerialize(WarpTags.JsonString(what.toString), options)
 }
 
 object FromXmlStringRematerializer extends Rematerializer[String @@ WarpTags.Xml] {
