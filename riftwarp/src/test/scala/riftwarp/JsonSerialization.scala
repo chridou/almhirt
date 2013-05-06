@@ -184,5 +184,11 @@ class JsonSerialization extends FunSuite with MustMatchers {
     val resV = serializer.serialize(uuid)
     resV.forceResult must equal(("\""+uuid.toString()+"\"", Some(WarpDescriptor("UUID").toParsableString())))
   }
+
+  test("SerializerOnStrings must serialize a Boolean") {
+    val serializer = new WarpSerializerToString[Boolean](RiftWarp(packers, unpackers))(HasExecutionContext.single).serializingToChannel("json")
+    val resV = serializer.serialize(true)
+    resV.forceResult must equal(("true", Some(WarpDescriptor("Boolean").toParsableString())))
+  }
   
 }
