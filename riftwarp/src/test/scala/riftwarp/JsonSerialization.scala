@@ -9,6 +9,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
 import riftwarp.std._
+import riftwarp.std.kit._
 import riftwarp.std.default._
 import SerializationDefaults._
 
@@ -131,6 +132,23 @@ class JsonSerialization extends FunSuite with MustMatchers {
     val resultV = rematerializedV.forceResult.unpack[TestObjectA]
     println(resultV)
     resultV.forceResult must equal(TestObjectA.pete)
+  }
+  
+  test("RiftWarpFuns must dematerialize a DateTime") {
+    val dt = DateTime.now
+    val resV = prepareFlatDeparture[DateTime, String @@ WarpTags.Json](dt)
+    resV.forceResult must equal("\""+dt.toString()+"\"")
+  }
+  
+  test("RiftWarpFuns must dematerialize the PrimitiveTypes without a failure") {
+    val resV = prepareFlatDeparture[PrimitiveTypes, String @@ WarpTags.Json](TestObjectA.pete.primitiveTypes)
+    resV.isSuccess must be(true)
+  }
+
+  test("RiftWarpFuns must dematerialize the PrimitiveTypes and rematerieliz them") {
+    val dematV = prepareFlatDeparture[PrimitiveTypes, String @@ WarpTags.Json](TestObjectA.pete.primitiveTypes)
+    val resV = handleArrival[String @@ WarpTags.Json, PrimitiveTypes](dematV.forceResult)
+    resV.forceResult must equal(TestObjectA.pete.primitiveTypes)
   }
   
 }

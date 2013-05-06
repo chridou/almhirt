@@ -5,7 +5,7 @@ import almhirt.common._
 package object std {
   object funs extends WarpPackageFuns with PackageBuilderFuns with PackageExtractorFuns
   object warpbuilder extends WarpPackageFuns with PackageBuilderFuns with PackageBuilderOps
-  object kit extends WarpPackageFuns with PackageBuilderFuns with PackageBuilderOps with PackageExtractorFuns
+  object kit extends WarpPackageFuns with PackageBuilderFuns with PackageBuilderOps with PackageExtractorFuns with RiftWarpFuns
 
   object default {
     implicit val StdLibJsonCordDematerializer = ToJsonCordDematerializer
