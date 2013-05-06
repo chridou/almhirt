@@ -145,9 +145,15 @@ class JsonSerialization extends FunSuite with MustMatchers {
     resV.isSuccess must be(true)
   }
 
-  test("RiftWarpFuns must dematerialize the PrimitiveTypes and rematerieliz them") {
+  test("RiftWarpFuns must dematerialize the PrimitiveTypes and rematerielize them") {
     val dematV = prepareFlatDeparture[PrimitiveTypes, String @@ WarpTags.Json](TestObjectA.pete.primitiveTypes)
     val resV = handleArrival[String @@ WarpTags.Json, PrimitiveTypes](dematV.forceResult)
+    resV.forceResult must equal(TestObjectA.pete.primitiveTypes)
+  }
+
+  test("RiftWarpFuns must dematerialize the PrimitiveTypes and rematerielize them by lookup") {
+    val dematV = prepareFreeDeparture[String @@ WarpTags.Json](TestObjectA.pete.primitiveTypes)
+    val resV = handleTypedArrival[String @@ WarpTags.Json, PrimitiveTypes](dematV.forceResult)
     resV.forceResult must equal(TestObjectA.pete.primitiveTypes)
   }
   
