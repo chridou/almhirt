@@ -16,25 +16,25 @@ trait WorksWithBinaryRepresentation {
 
 trait CanSerialize[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
-  def serialize(channel: String)(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmValidation[(Option[String], SerializedRepr)]
-  def serializeAsync(channel: String)(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmFuture[(Option[String], SerializedRepr)]
+  def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(Option[String], SerializedRepr)]
+  def serializeAsync(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmFuture[(Option[String], SerializedRepr)]
 }
 
 trait CanSerializeToFixedChannel[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
   def channel: String
-  def serialize(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmValidation[(Option[String], SerializedRepr)]
-  def serializeAsync(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmFuture[(Option[String], SerializedRepr)]
+  def serialize(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(Option[String], SerializedRepr)]
+  def serializeAsync(what: TIn, options: Map[String, Any] = Map.empty): AlmFuture[(Option[String], SerializedRepr)]
 }
 
 trait CanDeserialize[+TOut] extends WorksWithSerializedRepresentation {
-  def deserialize(channel: String)(what: SerializedRepr, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmValidation[TOut]
-  def deserializeAsync(channel: String)(what: SerializedRepr, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmFuture[TOut]
+  def deserialize(channel: String)(what: SerializedRepr, options: Map[String, Any] = Map.empty): AlmValidation[TOut]
+  def deserializeAsync(channel: String)(what: SerializedRepr, options: Map[String, Any] = Map.empty): AlmFuture[TOut]
 }
 
 trait CanDeserializeFromFixedChannel[+TOut] extends WorksWithSerializedRepresentation {
-  def deserialize(what: SerializedRepr, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmValidation[TOut]
-  def deserializeAsync(what: SerializedRepr, typeHint: Option[String], args: Map[String, Any] = Map.empty): AlmFuture[TOut]
+  def deserialize(what: SerializedRepr, options: Map[String, Any] = Map.empty): AlmValidation[TOut]
+  def deserializeAsync(what: SerializedRepr, options: Map[String, Any] = Map.empty): AlmFuture[TOut]
 }
 
 object CanSerialize {
@@ -43,8 +43,8 @@ object CanSerialize {
       new CanSerializeToFixedChannel[TIn] {
         type SerializedRepr = self.SerializedRepr
         val channel = fixToThisChannel
-        def serialize(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.serialize(channel)(what, typeHint, args)
-        def serializeAsync(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, typeHint, args)
+        def serialize(what: TIn, options: Map[String, Any] = Map.empty) = self.serialize(channel)(what, options)
+        def serializeAsync(what: TIn, options: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, options)
       }
   }
 }
@@ -63,10 +63,10 @@ object StringSerializing {
     def serializingToChannel(fixToThisChannel: String): StringSerializingToFixedChannel[TIn, TOut] =
       new StringSerializingToFixedChannel[TIn, TOut] {
         val channel = fixToThisChannel
-        def serialize(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.serialize(channel)(what, typeHint, args)
-        def serializeAsync(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, typeHint, args)
-        def deserialize(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.deserialize(channel)(what, typeHint, args)
-        def deserializeAsync(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.deserializeAsync(channel)(what, typeHint, args)
+        def serialize(what: TIn, options: Map[String, Any] = Map.empty) = self.serialize(channel)(what, options)
+        def serializeAsync(what: TIn, options: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, options)
+        def deserialize(channel: String)(what: String, options: Map[String, Any] = Map.empty) = self.deserialize(channel)(what, options)
+        def deserializeAsync(channel: String)(what: String, options: Map[String, Any] = Map.empty) = self.deserializeAsync(channel)(what, options)
       }
   }
 }
@@ -76,10 +76,10 @@ object BinarySerializing {
     def serializingToChannel(fixToThisChannel: String): BinarySerializingToFixedChannel[TIn, TOut] =
       new BinarySerializingToFixedChannel[TIn, TOut] {
         val channel = fixToThisChannel
-        def serialize(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.serialize(channel)(what, typeHint, args)
-        def serializeAsync(what: TIn, typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, typeHint, args)
-        def deserialize(channel: String)(what: Array[Byte], typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.deserialize(channel)(what, typeHint, args)
-        def deserializeAsync(channel: String)(what: Array[Byte], typeHint: Option[String], args: Map[String, Any] = Map.empty) = self.deserializeAsync(channel)(what, typeHint, args)
+        def serialize(what: TIn, options: Map[String, Any] = Map.empty) = self.serialize(channel)(what, options)
+        def serializeAsync(what: TIn, options: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, options)
+        def deserialize(channel: String)(what: Array[Byte], options: Map[String, Any] = Map.empty) = self.deserialize(channel)(what, options)
+        def deserializeAsync(channel: String)(what: Array[Byte], options: Map[String, Any] = Map.empty) = self.deserializeAsync(channel)(what, options)
       }
   }
 }
