@@ -33,8 +33,11 @@ trait RiftWarpFuns {
     rematerializer.rematerialize(from, options).flatMap(pkg => 
       unpack(pkg, overrideDescriptor, Some(WarpDescriptor(tag.runtimeClass))).flatMap(res =>
         res.castTo[T]))
-    
-  private def unpack(what: WarpPackage, overrideDescriptor: Option[WarpDescriptor], backUpDescriptor: Option[WarpDescriptor])(implicit unpackers: WarpUnpackers): AlmValidation[Any] = {
+
+  def handleFreeArrivalWith(from: Any, rematerialize: (Any, Map[String, Any]) => AlmValidation[WarpPackage], overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit unpackers: WarpUnpackers): AlmValidation[Any] =
+    rematerialize(from, options).flatMap(pkg => unpack(pkg, overrideDescriptor, backUpDescriptor))
+        
+  def unpack(what: WarpPackage, overrideDescriptor: Option[WarpDescriptor], backUpDescriptor: Option[WarpDescriptor])(implicit unpackers: WarpUnpackers): AlmValidation[Any] = {
     overrideDescriptor match {
       case Some(pd) =>
         unpackers.get(pd).leftMap(_.mapMessage(old => s"WarpDescriptor has been overriden: $old")).flatMap(_(what))

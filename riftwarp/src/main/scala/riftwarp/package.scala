@@ -6,5 +6,5 @@ package object riftwarp {
 //    import riftwarp.components._
 //    object hasRecomposers extends HasRecomposersFuns 
 //  }
-  
+
 }
