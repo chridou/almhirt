@@ -12,6 +12,7 @@ import riftwarp.std._
 import riftwarp.std.kit._
 import riftwarp.std.default._
 import SerializationDefaults._
+import riftwarp.util.WarpSerializerToString
 
 class JsonSerialization extends FunSuite with MustMatchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
@@ -137,7 +138,7 @@ class JsonSerialization extends FunSuite with MustMatchers {
   test("RiftWarpFuns must dematerialize a DateTime") {
     val dt = DateTime.now
     val resV = prepareFlatDeparture[DateTime, String @@ WarpTags.Json](dt)
-    resV.forceResult must equal("\""+dt.toString()+"\"")
+    resV.forceResult._1 must equal("\""+dt.toString()+"\"")
   }
   
   test("RiftWarpFuns must dematerialize the PrimitiveTypes without a failure") {
@@ -147,13 +148,13 @@ class JsonSerialization extends FunSuite with MustMatchers {
 
   test("RiftWarpFuns must dematerialize the PrimitiveTypes and rematerialize them") {
     val dematV = prepareFlatDeparture[PrimitiveTypes, String @@ WarpTags.Json](TestObjectA.pete.primitiveTypes)
-    val resV = handleArrival[String @@ WarpTags.Json, PrimitiveTypes](dematV.forceResult)
+    val resV = handleArrival[String @@ WarpTags.Json, PrimitiveTypes](dematV.forceResult._1)
     resV.forceResult must equal(TestObjectA.pete.primitiveTypes)
   }
 
   test("RiftWarpFuns must dematerialize the PrimitiveTypes and rematerialize them by lookup") {
     val dematV = prepareFreeDeparture[String @@ WarpTags.Json](TestObjectA.pete.primitiveTypes)
-    val resV = handleTypedArrival[String @@ WarpTags.Json, PrimitiveTypes](dematV.forceResult)
+    val resV = handleTypedArrival[String @@ WarpTags.Json, PrimitiveTypes](dematV.forceResult._1)
     resV.forceResult must equal(TestObjectA.pete.primitiveTypes)
   }
 
@@ -166,8 +167,22 @@ class JsonSerialization extends FunSuite with MustMatchers {
   test("RiftWarp must dematerialize the PrimitiveTypes and rematerialize them") {
     val riftwarp = RiftWarp(packers, unpackers)
     val dematV = riftwarp.departureTyped[String]("json", TestObjectA.pete.primitiveTypes)
-    val resV = riftwarp.arrivalTyped[String, PrimitiveTypes]("json", dematV.forceResult)
+    val resV = riftwarp.arrivalTyped[String, PrimitiveTypes]("json", dematV.forceResult._1)
     resV.forceResult must equal(TestObjectA.pete.primitiveTypes)
+  }
+
+  test("RiftWarp must dematerialize a UUID") {
+    val riftwarp = RiftWarp(packers, unpackers)
+    val uuid = JUUID.randomUUID()
+    val dematV = riftwarp.departureTyped[String]("json", uuid)
+    dematV.forceResult must equal(("\""+uuid.toString()+"\"", WarpDescriptor("UUID")))
+  }
+
+  test("SerializerOnStrings must serialize a UUID") {
+    val serializer = new WarpSerializerToString[JUUID](RiftWarp(packers, unpackers))(HasExecutionContext.single).serializingToChannel("json")
+    val uuid = JUUID.randomUUID()
+    val resV = serializer.serialize(uuid)
+    resV.forceResult must equal(("\""+uuid.toString()+"\"", Some(WarpDescriptor("UUID").toParsableString())))
   }
   
 }

@@ -16,15 +16,15 @@ trait RiftWarp {
   def dematerializers: Dematerializers
   def rematerializers: Rematerializers
 
-  def departure(dimension: String, channel: String, what: Any, options: Map[String, Any] = Map.empty): AlmValidation[Any] =
+  def departure(dimension: String, channel: String, what: Any, options: Map[String, Any] = Map.empty): AlmValidation[(Any, WarpDescriptor)] =
     for {
       packer <- packers.get(WarpDescriptor(what.getClass))
       packed <- packer.packBlind(what)(packers)
       dematerialize <- dematerializers.get(dimension, channel)
-    } yield dematerialize(packed, options)
+    } yield (dematerialize(packed, options), packer.warpDescriptor)
 
-  def departureTyped[TDim](channel: String, what: Any, options: Map[String, Any] = Map.empty)(implicit tag: ClassTag[TDim]): AlmValidation[TDim] =
-    departure(tag.runtimeClass.getName(), channel, what, options).flatMap(_.castTo[TDim])
+  def departureTyped[TDim](channel: String, what: Any, options: Map[String, Any] = Map.empty)(implicit tag: ClassTag[TDim]): AlmValidation[(TDim, WarpDescriptor)] =
+    departure(tag.runtimeClass.getName(), channel, what, options).flatMap(x => x._1.castTo[TDim].map((_, x._2)))
 
   def arrival(dimension: String, channel: String, from: Any, options: Map[String, Any] = Map.empty): AlmValidation[Any] =
     for {

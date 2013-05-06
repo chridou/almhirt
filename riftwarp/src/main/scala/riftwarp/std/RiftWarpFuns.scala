@@ -7,17 +7,17 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 
 trait RiftWarpFuns {
-  def prepareDeparture[T, U](what: T, options: Map[String, Any] = Map.empty)(implicit packer: WarpPacker[T], packers: WarpPackers, dematerializer: Dematerializer[U]): AlmValidation[U] =
-    packer.pack(what).map(pkg => dematerializer.dematerialize(pkg, options))
+  def prepareDeparture[T, U](what: T, options: Map[String, Any] = Map.empty)(implicit packer: WarpPacker[T], packers: WarpPackers, dematerializer: Dematerializer[U]): AlmValidation[(U, WarpDescriptor)] =
+    packer.pack(what).map(pkg => (dematerializer.dematerialize(pkg, options), packer.warpDescriptor))
 
-  def prepareFlatDeparture[T, U](what: T, options: Map[String, Any] = Map.empty)(implicit packer: WarpPacker[T], dematerializer: Dematerializer[U]): AlmValidation[U] =
-    packer.pack(what)(WarpPackers.NoWarpPackers).map(pkg => dematerializer.dematerialize(pkg, options))
+  def prepareFlatDeparture[T, U](what: T, options: Map[String, Any] = Map.empty)(implicit packer: WarpPacker[T], dematerializer: Dematerializer[U]): AlmValidation[(U, WarpDescriptor)] =
+    packer.pack(what)(WarpPackers.NoWarpPackers).map(pkg => (dematerializer.dematerialize(pkg, options), packer.warpDescriptor))
 
-  def prepareFreeDeparture[U](what: Any, overrideDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit packers: WarpPackers, dematerializer: Dematerializer[U]): AlmValidation[U] = {
+  def prepareFreeDeparture[U](what: Any, overrideDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit packers: WarpPackers, dematerializer: Dematerializer[U]): AlmValidation[(U, WarpDescriptor)] = {
     val wd = overrideDescriptor.getOrElse(WarpDescriptor(what.getClass()))
     packers.get(wd).flatMap(packer =>
       packer.packBlind(what).map(pkg =>
-        dematerializer.dematerialize(pkg, options)))
+        (dematerializer.dematerialize(pkg, options), packer.warpDescriptor)))
   }
 
   def handleArrival[U, T](from: U, options: Map[String, Any] = Map.empty)(implicit rematerializer: Rematerializer[U], unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[T] =

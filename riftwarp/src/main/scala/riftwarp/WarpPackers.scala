@@ -24,6 +24,7 @@ trait WarpPackers extends Function1[WarpDescriptor, AlmValidation[BlindWarpPacke
 
   protected def blindToTyped[T](blindPacker: BlindWarpPacker) =
     new WarpPacker[T] {
+      override val warpDescriptor = blindPacker.warpDescriptor
       override def pack(what: T)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
         computeSafely {
           blindPacker.packBlind(what)

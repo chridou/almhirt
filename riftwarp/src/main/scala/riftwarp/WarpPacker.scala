@@ -4,6 +4,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 
 trait BlindWarpPacker {
+  def warpDescriptor: WarpDescriptor
   def packBlind(what: Any)(implicit lookup: WarpPackers): AlmValidation[WarpPackage]
 }
 
@@ -18,7 +19,6 @@ trait SimpleWarpPacker[T] { self: WarpPacker[T] =>
 }
 
 trait RegisterableWarpPacker {
-  def warpDescriptor: WarpDescriptor
   def alternativeWarpDescriptors: List[WarpDescriptor]
 }
 
