@@ -20,7 +20,7 @@ class WarpSerializerToString[TIn <: AnyRef](riftWarp: RiftWarp)(implicit support
     AlmFuture { serialize(channel)(what, options) }
 }
 
-class WarpDeserializerFromStrings[TOut <: AnyRef](riftWarp: RiftWarp)(implicit support: HasExecutionContext, tag: ClassTag[TOut]) extends CanDeserialize[TOut] {
+class WarpDeserializerFromString[TOut <: AnyRef](riftWarp: RiftWarp)(implicit support: HasExecutionContext, tag: ClassTag[TOut]) extends CanDeserialize[TOut] {
   type SerializedRepr = String
 
   override def deserialize(channel: String)(what: String, options: Map[String, Any] = Map.empty): AlmValidation[TOut] =
