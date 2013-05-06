@@ -19,3 +19,4 @@ object Serializers {
   
   def createSpecificForStrings[T](riftWarp: RiftWarp)(implicit support: HasExecutionContext, tag: ClassTag[T]): StringSerializing[T, T] = 
     createForStrings[T, T](riftWarp)
+}
