@@ -15,7 +15,7 @@ trait RiftWarpFuns {
 
   def prepareFreeDeparture[U](what: Any, overrideDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit packers: WarpPackers, dematerializer: Dematerializer[U]): AlmValidation[(U, WarpDescriptor)] = {
     val wd = overrideDescriptor.getOrElse(WarpDescriptor(what.getClass()))
-    packers.get(wd).flatMap(packer =>
+    packers.getFor(what, None, None).flatMap(packer =>
       packer.packBlind(what).map(pkg =>
         (dematerializer.dematerialize(pkg, options), packer.warpDescriptor)))
   }

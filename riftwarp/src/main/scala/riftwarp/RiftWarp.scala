@@ -18,7 +18,7 @@ trait RiftWarp {
 
   def departure(dimension: String, channel: String, what: Any, options: Map[String, Any] = Map.empty): AlmValidation[(Any, WarpDescriptor)] =
     for {
-      packer <- packers.get(WarpDescriptor(what.getClass))
+      packer <- packers.getFor(what, None, None)
       packed <- packer.packBlind(what)(packers)
       dematerialize <- dematerializers.get(dimension, channel)
     } yield (dematerialize(packed, options), packer.warpDescriptor)
