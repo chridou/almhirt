@@ -11,7 +11,6 @@ trait HttpInstances {
   def channelExtractor: ChannelExtractor
   def classifiesChannels: ClassifiesChannels
   def errorResponseGenerator: HttpErrorResponseGenerator
-  def problemConsumer: Consumer[Problem]
 }
 
 object DirectHttpContext {
