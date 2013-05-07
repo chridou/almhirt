@@ -69,12 +69,12 @@ object Problem {
   }
 }
 
-object SystemProblem {
+object IsSystemProblem {
   def unapply[T <: Problem](prob: T): Option[T] =
     if(prob.isSystemProblem) Some(prob) else None
 }
 
-object ApplicationProblem {
+object IsApplicationProblem {
   def unapply[T <: Problem](prob: T): Option[T] =
     if(!prob.isSystemProblem) Some(prob) else None
 }
