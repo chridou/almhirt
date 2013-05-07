@@ -6,6 +6,7 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.serialization._
+import almhirt.http.HttpContent
 import riftwarp.std.RiftWarpFuns
 
 trait RiftWarp {
@@ -39,6 +40,9 @@ trait RiftWarp {
       arrived <- myFuns.unpack(rematerialized, None, None)(unpackers)
       arrivedTyped <- arrived.castTo[U]
     } yield arrivedTyped
+
+  def httpArrival[T](from: HttpContent, options: Map[String, Any] = Map.empty)(implicit tag: ClassTag[T]): AlmValidation[T] =
+    myFuns.handleHttpArrival[T](from, options)(rematerializers, unpackers, tag)
 }
 
 object RiftWarp {

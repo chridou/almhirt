@@ -4,6 +4,7 @@ import scala.reflect.ClassTag
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.http._
 import riftwarp._
 
 trait RiftWarpFuns {
@@ -30,13 +31,21 @@ trait RiftWarpFuns {
     rematerializer.rematerialize(from, options).flatMap(pkg => unpack(pkg, overrideDescriptor, backUpDescriptor))
 
   def handleTypedArrival[U, T](from: U, overrideDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit rematerializer: Rematerializer[U], unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[T] =
-    rematerializer.rematerialize(from, options).flatMap(pkg => 
+    rematerializer.rematerialize(from, options).flatMap(pkg =>
       unpack(pkg, overrideDescriptor, Some(WarpDescriptor(tag.runtimeClass))).flatMap(res =>
         res.castTo[T]))
 
   def handleFreeArrivalWith(from: Any, rematerialize: (Any, Map[String, Any]) => AlmValidation[WarpPackage], overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit unpackers: WarpUnpackers): AlmValidation[Any] =
     rematerialize(from, options).flatMap(pkg => unpack(pkg, overrideDescriptor, backUpDescriptor))
-        
+
+  def handleHttpArrival[T](from: HttpContent, options: Map[String, Any] = Map.empty)(implicit rematerializers: Rematerializers, unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[T] =
+    for {
+      channelAndDescriptor <- from.contentType.channelAndDescriptor
+      rematerializer <- rematerializers.get(from.payload.data.getClass.getName(), channelAndDescriptor._1)
+      result <- handleFreeArrivalWith(from.payload.data, rematerializer, None, channelAndDescriptor._2, options)
+      typedResult <- result.castTo[T]
+    } yield (typedResult)
+
   def unpack(what: WarpPackage, overrideDescriptor: Option[WarpDescriptor], backUpDescriptor: Option[WarpDescriptor])(implicit unpackers: WarpUnpackers): AlmValidation[Any] = {
     overrideDescriptor match {
       case Some(pd) =>
@@ -75,5 +84,5 @@ trait RiftWarpFuns {
         }
     }
   }
-    
+
 }
