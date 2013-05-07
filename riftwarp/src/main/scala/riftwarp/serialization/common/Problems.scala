@@ -119,6 +119,8 @@ object Problems {
     createAndRegisterDefaultPackerAndUnpacker[NoSuchElementProblem](packers, unpackers)(WarpDescriptor(classOf[NoSuchElementProblem].getName), NoSuchElementProblem.tupled)
 
     createAndRegisterDefaultPackerAndUnpacker[RiftWarpProblem](packers, unpackers)(WarpDescriptor(classOf[RiftWarpProblem].getName), RiftWarpProblem.tupled)
+  
+    packers.addPredicated(x => x.isInstanceOf[Problem], createDefaultPacker[Problem](classOf[Problem]))
   }
 
   def registerAllCommonProblems(packers: WarpPackers, unpackers: WarpUnpackers) {
