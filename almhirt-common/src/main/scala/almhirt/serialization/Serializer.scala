@@ -17,24 +17,20 @@ trait WorksWithBinaryRepresentation {
 trait CanSerialize[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
   def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(SerializedRepr, Option[String])]
-  def serializeAsync(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmFuture[(SerializedRepr, Option[String])]
 }
 
 trait CanSerializeToFixedChannel[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
   def channel: String
   def serialize(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(SerializedRepr, Option[String])]
-  def serializeAsync(what: TIn, options: Map[String, Any] = Map.empty): AlmFuture[(SerializedRepr, Option[String])]
 }
 
 trait CanDeserialize[+TOut] extends WorksWithSerializedRepresentation {
   def deserialize(channel: String)(what: SerializedRepr, options: Map[String, Any] = Map.empty): AlmValidation[TOut]
-  def deserializeAsync(channel: String)(what: SerializedRepr, options: Map[String, Any] = Map.empty): AlmFuture[TOut]
 }
 
 trait CanDeserializeFromFixedChannel[+TOut] extends WorksWithSerializedRepresentation {
   def deserialize(what: SerializedRepr, options: Map[String, Any] = Map.empty): AlmValidation[TOut]
-  def deserializeAsync(what: SerializedRepr, options: Map[String, Any] = Map.empty): AlmFuture[TOut]
 }
 
 object CanSerialize {
@@ -44,7 +40,6 @@ object CanSerialize {
         type SerializedRepr = self.SerializedRepr
         val channel = fixToThisChannel
         def serialize(what: TIn, options: Map[String, Any] = Map.empty) = self.serialize(channel)(what, options)
-        def serializeAsync(what: TIn, options: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, options)
       }
   }
 }
@@ -64,9 +59,7 @@ object StringSerializing {
       new StringSerializingToFixedChannel[TIn, TOut] {
         val channel = fixToThisChannel
         def serialize(what: TIn, options: Map[String, Any] = Map.empty) = self.serialize(channel)(what, options)
-        def serializeAsync(what: TIn, options: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, options)
         def deserialize(channel: String)(what: String, options: Map[String, Any] = Map.empty) = self.deserialize(channel)(what, options)
-        def deserializeAsync(channel: String)(what: String, options: Map[String, Any] = Map.empty) = self.deserializeAsync(channel)(what, options)
       }
   }
 }
@@ -77,9 +70,7 @@ object BinarySerializing {
       new BinarySerializingToFixedChannel[TIn, TOut] {
         val channel = fixToThisChannel
         def serialize(what: TIn, options: Map[String, Any] = Map.empty) = self.serialize(channel)(what, options)
-        def serializeAsync(what: TIn, options: Map[String, Any] = Map.empty) = self.serializeAsync(channel)(what, options)
         def deserialize(channel: String)(what: Array[Byte], options: Map[String, Any] = Map.empty) = self.deserialize(channel)(what, options)
-        def deserializeAsync(channel: String)(what: Array[Byte], options: Map[String, Any] = Map.empty) = self.deserializeAsync(channel)(what, options)
       }
   }
 }

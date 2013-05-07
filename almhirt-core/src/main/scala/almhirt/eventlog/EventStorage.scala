@@ -5,7 +5,7 @@ import org.joda.time.DateTime
 import almhirt.common._
 import almhirt.core.Almhirt
 
-trait SyncEventStorage extends EventSink {
+trait SyncEventStorage extends EventConsumer {
   def getEventById(id: JUUID): AlmValidation[Event]
   def getAllEvents(): AlmValidation[Iterable[Event]]
   def getAllEventsFrom(from: DateTime): AlmValidation[Iterable[Event]]
@@ -13,7 +13,7 @@ trait SyncEventStorage extends EventSink {
   def getAllEventsFromUntil(from: DateTime, until: DateTime): AlmValidation[Iterable[Event]]
 }
 
-trait AsyncEventStorage extends EventSink with HasEvents
+trait AsyncEventStorage extends EventConsumer with HasEvents
 
 object SyncEventStorage {
   def wrapAsync(syncEventStorage: SyncEventStorage)(implicit hasExecutionContext: HasExecutionContext): AsyncEventStorage = {

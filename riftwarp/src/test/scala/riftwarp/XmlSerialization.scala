@@ -180,14 +180,14 @@ class XmlSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings must serialize a UUID") {
-    val serializer = new WarpSerializerToString[JUUID](RiftWarp(packers, unpackers))(HasExecutionContext.single).serializingToChannel("xml")
+    val serializer = new WarpSerializerToString[JUUID](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val uuid = JUUID.randomUUID()
     val resV = serializer.serialize(uuid)
     resV.forceResult must equal(("\""+uuid.toString()+"\"", Some(WarpDescriptor("UUID").toParsableString())))
   }
 
   test("SerializerOnStrings must serialize a Boolean") {
-    val serializer = new WarpSerializerToString[Boolean](RiftWarp(packers, unpackers))(HasExecutionContext.single).serializingToChannel("xml")
+    val serializer = new WarpSerializerToString[Boolean](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val resV = serializer.serialize(true)
     resV.forceResult must equal(("true", Some(WarpDescriptor("Boolean").toParsableString())))
   }
