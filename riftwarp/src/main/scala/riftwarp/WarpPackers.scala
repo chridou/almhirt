@@ -11,16 +11,39 @@ import riftwarp.std._
 trait WarpPackers extends Function1[WarpDescriptor, AlmValidation[BlindWarpPacker]] {
   final def apply(descriptor: WarpDescriptor): AlmValidation[BlindWarpPacker] = get(descriptor)
   def get(descriptor: WarpDescriptor): AlmValidation[BlindWarpPacker]
+  def getByPredicate(what: Any): AlmValidation[BlindWarpPacker]
+
   def getByTag[T](implicit tag: ClassTag[T]): AlmValidation[BlindWarpPacker] =
     apply(WarpDescriptor(tag.runtimeClass))
+
   def getTyped[T](descriptor: WarpDescriptor): AlmValidation[WarpPacker[T]] =
     get(descriptor).map(blindPacker => blindToTyped[T](blindPacker))
 
   def getByTagTyped[T](implicit tag: ClassTag[T]): AlmValidation[WarpPacker[T]] =
     getTyped[T](WarpDescriptor(tag.runtimeClass))
 
+  def getFor(what: Any, overrideDescriptor: Option[WarpDescriptor], backupDescriptor: Option[WarpDescriptor]): AlmValidation[BlindWarpPacker] =
+    overrideDescriptor match {
+      case Some(ord) =>
+        get(ord)
+      case None =>
+        get(WarpDescriptor(what.getClass)).fold(
+          fail =>
+            backupDescriptor match {
+              case Some(bd) =>
+                get(bd).fold(
+                  fail => getByPredicate(what),
+                  succ => succ.success)
+              case None =>
+                getByPredicate(what)
+            },
+          succ =>
+            succ.success)
+    }
+
   def add(blindPacker: BlindWarpPacker with RegisterableWarpPacker)
   def addTyped[T](packer: WarpPacker[T] with RegisterableWarpPacker)
+  def addPredicated(pred: Any => Boolean, packer: BlindWarpPacker)
 
   protected def blindToTyped[T](blindPacker: BlindWarpPacker) =
     new WarpPacker[T] {
@@ -49,7 +72,7 @@ object WarpPackers {
     packers.addTyped(DateTimeWarpPacker)
     packers.addTyped(ByteArrayWarpPacker)
     packers.addTyped(Base64BlobWarpPacker)
- 
+
     packers.addTyped(HasAThrowableDescribedPacker)
     packers.addTyped(HasAThrowablePacker)
     packers.addTyped(ThrowableRepresentationPacker)
@@ -62,12 +85,14 @@ object WarpPackers {
     serialization.common.Problems.registerAllCommonProblems(packers, WarpUnpackers.NoWarpUnpackers)
     packers
   }
-  
+
   def empty: WarpPackers = new WarpPackerRegistry()
-  
+
   val NoWarpPackers: WarpPackers = new WarpPackers {
     override def get(descriptor: WarpDescriptor) = UnspecifiedSystemProblem("NoWarpPackers has no packers").failure
+    override def getByPredicate(what: Any) = UnspecifiedSystemProblem("NoWarpPackers has no packers").failure
     override def add(blindPacker: BlindWarpPacker with RegisterableWarpPacker) {}
     override def addTyped[T](packer: WarpPacker[T] with RegisterableWarpPacker) {}
+    override def addPredicated(pred: Any => Boolean, packer: BlindWarpPacker) {}
   }
 }
