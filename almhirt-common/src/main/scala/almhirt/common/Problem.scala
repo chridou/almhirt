@@ -16,55 +16,65 @@ package almhirt.common
 
 import almhirt.problem.funs
 
-trait Problem{
+trait Problem {
   type T <: Problem
   def message: String
   def severity: Severity
   def category: ProblemCategory
   def args: Map[String, Any]
   def cause: Option[ProblemCause]
- 
+
   def withSeverity(severity: Severity): T
   def withArg(key: String, value: Any): T
   def withMessage(newMessage: String): T
   def withCause(cause: ProblemCause): T
   def mapMessage(mapOp: String => String): T
-  
+
   def isSystemProblem = category == SystemProblem
-  
+
   protected def baseInfo(): StringBuilder = {
-      val builder = new StringBuilder()
-      builder.append("%s\n".format(this.getClass.getName))
-      builder.append("%s\n".format(message))
-      builder.append("Category: %s\n".format(category))
-      builder.append("Severity: %s\n".format(severity))
-      builder.append("Arguments: %s\n".format(args))
-      cause match {
-      	case None => 
-      	  ()
-      	case Some(CauseIsThrowable(HasAThrowable(exn))) => 
-          builder.append("Message: %s\n".format(exn.toString))
-          builder.append("Stacktrace:\n%s\n".format(exn.getStackTraceString))
-      	case Some(CauseIsThrowable(desc @ HasAThrowableDescribed(_,_,_,_))) => 
-          builder.append("Description: %s\n".format(desc.toString))
-      	case Some(CauseIsProblem(prob)) => 
-          builder.append("Problem: %s\n".format(prob.toString))
-      }
-      builder
+    val builder = new StringBuilder()
+    builder.append("%s\n".format(this.getClass.getName))
+    builder.append("%s\n".format(message))
+    builder.append("Category: %s\n".format(category))
+    builder.append("Severity: %s\n".format(severity))
+    builder.append("Arguments: %s\n".format(args))
+    cause match {
+      case None =>
+        ()
+      case Some(CauseIsThrowable(HasAThrowable(exn))) =>
+        builder.append("Message: %s\n".format(exn.toString))
+        builder.append("Stacktrace:\n%s\n".format(exn.getStackTraceString))
+      case Some(CauseIsThrowable(desc @ HasAThrowableDescribed(_, _, _, _))) =>
+        builder.append("Description: %s\n".format(desc.toString))
+      case Some(CauseIsProblem(prob)) =>
+        builder.append("Problem: %s\n".format(prob.toString))
+    }
+    builder
   }
-  
+
   override def toString() = baseInfo.result
 }
 
 object Problem {
   implicit class ProblemOps[T <: Problem](prob: T) {
-  def withIdentifier(ident: String): T = almhirt.problem.funs.withIdentifier(prob, ident)
+    def withIdentifier(ident: String): T = almhirt.problem.funs.withIdentifier(prob, ident)
 
-  def markLogged(): T = prob.withArg("isLogged", true).asInstanceOf[T]
-  def isLogged(): Boolean = prob.args.contains("isLogged") && prob.args("isLogged") == true
+    def markLogged(): T = prob.withArg("isLogged", true).asInstanceOf[T]
+    def isLogged(): Boolean = prob.args.contains("isLogged") && prob.args("isLogged") == true
 
-  def setTag(tag: String): T = prob.withArg("tag", tag).asInstanceOf[T]
-  def isTagged(): Boolean = prob.args.contains("tag") && prob.args("tag").isInstanceOf[String]
-  def tryGetTag(): Option[String] = if (isTagged) Some(prob.args("tag").asInstanceOf[String]) else None
+    def setTag(tag: String): T = prob.withArg("tag", tag).asInstanceOf[T]
+    def isTagged(): Boolean = prob.args.contains("tag") && prob.args("tag").isInstanceOf[String]
+    def tryGetTag(): Option[String] = if (isTagged) Some(prob.args("tag").asInstanceOf[String]) else None
+  }
 }
+
+object SystemProblem {
+  def unapply[T <: Problem](prob: T): Option[T] =
+    if(prob.isSystemProblem) Some(prob) else None
+}
+
+object ApplicationProblem {
+  def unapply[T <: Problem](prob: T): Option[T] =
+    if(!prob.isSystemProblem) Some(prob) else None
 }

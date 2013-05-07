@@ -6,17 +6,23 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 
 object ToJsonStringDematerializer extends Dematerializer[String @@ WarpTags.Json] {
+  val channel = "json"
+  val dimension = classOf[String].getName()
   def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): String @@ WarpTags.Json =
     WarpTags.JsonString(ToJsonCordDematerializer.dematerialize(what).toString)
 }
 
 object ToNoisyXmlStringDematerializer extends Dematerializer[String @@ WarpTags.Xml] {
+  val channel = "xml"
+  val dimension = classOf[String].getName()
   def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): String @@ WarpTags.Xml =
     WarpTags.XmlString(ToNoisyXmlElemDematerializer.dematerialize(what).toString)
 }
 
 object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Json] {
   import scala.util.parsing.json._
+  val channel = "json"
+  val dimension = classOf[String].getName()
   def rematerialize(what: String @@ WarpTags.Json, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] = {
     if (what.startsWith("{") || what.startsWith("[")) {
       val parser = new scala.util.parsing.json.Parser

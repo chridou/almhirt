@@ -21,6 +21,23 @@ trait RiftWarpFuns {
         (dematerializer.dematerialize(pkg, options), packer.warpDescriptor)))
   }
 
+  def prepareHttpDeparture(channel: String, what: Any, overrideDescriptor: Option[WarpDescriptor] = None, backupDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit packers: WarpPackers, dematerializers: Dematerializers, classifies: ClassifiesChannels): AlmValidation[HttpContent] =
+    for {
+      packer <- packers.getFor(what, overrideDescriptor, backupDescriptor)
+      dimensionClassifier <- classifies(channel)
+      dematerializer <- dematerializers.get(dimensionClassifier.transportType.getName(), channel)
+      packed <- packer.packBlind(what)
+      dematerialized <- dematerializer.apply(packed, options).success
+      contentType <- packer.warpDescriptor.version match {
+        case Some(version) => HttpContentType(s"${packer.warpDescriptor.identifier}+$channel", Map("version" -> version.toString)).success
+        case None => HttpContentType(s"${packer.warpDescriptor.identifier}+$channel", Map.empty).success
+      }
+      payload <- dimensionClassifier match {
+        case BinaryChannel => dematerialized.castTo[Array[Byte]].map(BinaryPayload(_))
+        case TextChannel => dematerialized.castTo[String].map(TextPayload(_))
+      }
+    } yield HttpContent(contentType, payload)
+
   def handleArrival[U, T](from: U, options: Map[String, Any] = Map.empty)(implicit rematerializer: Rematerializer[U], unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[T] =
     rematerializer.rematerialize(from, options).flatMap(pkg => unpacker.unpack(pkg))
 

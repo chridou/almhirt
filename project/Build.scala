@@ -138,17 +138,16 @@ trait RiftWarpAutomaticBuild {
   )
 }
 
-trait RiftWarpExtLiftJsonBuild {
+trait RiftWarpExtUnfilteredBuild {
   import Dependencies._
   import Resolvers._
-  def riftwarpExtLiftJsonProject(name: String, baseFile: java.io.File) = 
+  def riftwarpExtUnfilteredProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
-	  libraryDependencies += "net.liftweb" %% "lift-json" % "2.5-M2",
-	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += "net.databinder" %% "unfiltered-netty-server" % "0.6.7",
 	  libraryDependencies += scalatest
   )
 }
@@ -208,13 +207,13 @@ object AlmHirtBuild extends Build
 	with CoreExtSlickBuild 
 	with RiftWarpBuild 
 	with RiftWarpAutomaticBuild 
-	with RiftWarpExtLiftJsonBuild 
+	with RiftWarpExtUnfilteredBuild 
 	with UnfilteredBuild 
 	with ClientDispatchBuild 
 	with AppBuild with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, slickExtensions, app, docit, riftwarp, riftwarpAutomatic, unfiltered, clientDispatch)
+	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, slickExtensions, app, docit, riftwarp, riftwarpExtUnfiltered, riftwarpAutomatic, unfiltered, clientDispatch)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -236,8 +235,8 @@ object AlmHirtBuild extends Build
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp/riftwarp-automatic")) dependsOn(common, riftwarp)
 
- // lazy val riftwarpExtLiftJson = riftwarpExtLiftJsonProject(	name = "riftwarp-ext-liftjson",
- //                      			baseFile = file("./ext/riftwarp/riftwarp-ext-liftjson")) dependsOn(riftwarp)
+  lazy val riftwarpExtUnfiltered = riftwarpExtUnfilteredProject(	name = "riftwarp-ext-unfiltered",
+                       			baseFile = file("./ext/riftwarp/riftwarp-ext-unfiltered")) dependsOn(riftwarp)
 
 
   lazy val docit = docitProject(	name = "almhirt-docit",

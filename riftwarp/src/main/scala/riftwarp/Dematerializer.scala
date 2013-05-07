@@ -5,7 +5,9 @@ import scala.collection.IterableLike
 import scalaz.Tree
 import almhirt.common._
 
-trait Dematerializer[T] extends Function1[WarpPackage, T]{
-  final def apply(what: WarpPackage): T = dematerialize(what)
+trait Dematerializer[+T] extends Function2[WarpPackage, Map[String, Any], T]{
+  def channel: String
+  def dimension: String
+  final def apply(what: WarpPackage, options: Map[String, Any] = Map.empty): T = dematerialize(what, options)
   def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): T
 }

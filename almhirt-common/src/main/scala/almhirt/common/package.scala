@@ -25,10 +25,6 @@ package object common {
   /** A registration using a UUID as a token */
   type RegistrationUUID = Registration[java.util.UUID]
 
-  //  type AlmValidation[+α] = ({type λ[α] = Validation[Problem, α]})#λ[α]
-  //  type AlmValidationAP[+α] = ({type λ[α] = Validation[AggregateProblem, α]})#λ[α]
-  //  type AlmValidationSBD[+α] = ({type λ[α] = Validation[SingleBadDataProblem, α]})#λ[α]
-  //  type AlmValidationMBD[+α] = ({type λ[α] = Validation[MultipleBadDataProblem, α]})#λ[α]
   type AlmValidation[+α] = Validation[Problem, α]
   type AlmValidationAP[+α] = Validation[AggregateProblem, α]
 

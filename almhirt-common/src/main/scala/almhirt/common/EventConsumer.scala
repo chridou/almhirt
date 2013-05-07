@@ -1,5 +1,5 @@
 package almhirt.common
 
-trait EventSink {
+trait EventConsumer extends Consumer[Event] {
   def consume(event: Event): Unit
 }

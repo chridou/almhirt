@@ -6,13 +6,13 @@ import riftwarp._
 import riftwarp.std._
 
 class DematerializersRegistry extends Dematerializers {
-  private val dematerializers = new _root_.java.util.concurrent.ConcurrentHashMap[(String, String), (WarpPackage, Map[String, Any]) => Any](32)
+  private val dematerializers = new _root_.java.util.concurrent.ConcurrentHashMap[(String, String), Dematerializer[Any]](32)
 
-  override def add(dimension: String, channel: String, dematerialize: (WarpPackage, Map[String, Any]) => Any) {
-    dematerializers.put((channel, dimension), dematerialize)
+  override def add[T](dematerializer: Dematerializer[T]) {
+    dematerializers.put((dematerializer.channel, dematerializer.dimension), dematerializer)
   }
     
-  override def get(dimension: String, channel: String): AlmValidation[(WarpPackage, Map[String, Any]) => Any] =
+  override def get(dimension: String, channel: String): AlmValidation[Dematerializer[Any]] =
     dematerializers.get((channel, dimension)) match {
       case null => KeyNotFoundProblem(s"""No Dematerialzer found  found for channel "$channel" and dimension "$dimension"""").failure
       case x => x.success
@@ -23,8 +23,8 @@ class DematerializersRegistry extends Dematerializers {
 object DematerializersRegistry {
   def apply(): DematerializersRegistry = {
     val reg = new DematerializersRegistry()
-    reg.addTyped("json", (what: WarpPackage, options: Map[String, Any]) => ToJsonStringDematerializer.dematerialize(what, options))
-    reg.addTyped("xml", (what: WarpPackage, options: Map[String, Any]) => ToNoisyXmlStringDematerializer.dematerialize(what, options))
+    reg.add(ToJsonStringDematerializer)
+    reg.add(ToNoisyXmlStringDematerializer)
     reg
   }
   
