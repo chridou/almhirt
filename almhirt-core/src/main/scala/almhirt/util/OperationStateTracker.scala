@@ -17,7 +17,7 @@ import almhirt.common.AlmFuture
 import almhirt.core.Almhirt
 
 trait OperationStateTrackerCmd
-case class RegisterResultCallbackQry(ticket: TrackingTicket, atMost: FiniteDuration) extends OperationStateTrackerCmd
+case class RegisterResultCallbackQry(ticket: TrackingTicket) extends OperationStateTrackerCmd
 case class GetStateQry(ticket: TrackingTicket) extends OperationStateTrackerCmd
 
 trait OperationStateTrackerRsp

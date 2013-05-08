@@ -9,6 +9,8 @@ import almhirt.serialization._
 import almhirt.http.HttpContent
 import almhirt.http.{ HttpMarshaller, HttpUnmarshaller, HttpContent, ClassifiesChannels }
 import riftwarp.std.RiftWarpFuns
+import almhirt.http.HasHttpMarshallers
+import almhirt.http.HasHttpUnmarshallers
 
 trait RiftWarp {
   private object myFuns extends RiftWarpFuns
@@ -75,6 +77,12 @@ object RiftWarp {
     def createHttpUnmarshaller[T: ClassTag](options: Map[String, Any] = Map.empty): HttpUnmarshaller[T] =
       new HttpUnmarshaller[T] {
         override def unmarshal(from: HttpContent) = self.httpArrival[T](from, options)
+      }
+
+    def createMarschallingFactory(classifies: ClassifiesChannels, options: Map[String, Any] = Map.empty): HasHttpMarshallers with HasHttpUnmarshallers =
+      new HasHttpMarshallers with HasHttpUnmarshallers {
+		  def getMarschaller[T](implicit tag: ClassTag[T]): AlmValidation[HttpMarshaller[T]] = createHttpMarshaller[T](options)(tag, classifies).success
+		  def getUnmarschaller[T](implicit tag: ClassTag[T]): AlmValidation[HttpUnmarshaller[T]] = createHttpUnmarshaller[T](options).success
       }
   }
 }

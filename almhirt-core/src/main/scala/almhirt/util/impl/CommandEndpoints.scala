@@ -16,7 +16,6 @@ import almhirt.parts.CommandExecutor
 import almhirt.core.Almhirt
 
 class CommandEndpointWithUuidTickets(forwardCommand: CommandEnvelope => Unit, operationStateTracker: ActorRef, theAlmhirt: Almhirt) extends CommandEndpoint {
-  private case class RegisterForTicket(ticket: TrackingTicket, callback: AlmValidation[ResultOperationState] => Unit, atMost: FiniteDuration)
   implicit val hasExecutionContext = theAlmhirt
 
   def execute(cmd: DomainCommand) { forwardCommand(CommandEnvelope(cmd, None)) }
@@ -26,10 +25,11 @@ class CommandEndpointWithUuidTickets(forwardCommand: CommandEnvelope => Unit, op
     ticket
   }
 
-  def executeWithResult(atMost: FiniteDuration)(cmd: DomainCommand): AlmFuture[ResultOperationState] = {
+  def executeWithResult(cmd: CommandWithMaxResponseDuration): AlmFuture[ResultOperationState] = {
+    val dur = cmd.maxResponseDuration.getOrElse(theAlmhirt.durations.extraLongDuration)
     val ticket = UuidTrackingTicket(theAlmhirt.getUuid)
-    val future = (operationStateTracker ? RegisterResultCallbackQry(ticket, atMost))(atMost)
-    forwardCommand(CommandEnvelope(cmd, Some(ticket)))
+    val future = (operationStateTracker ? RegisterResultCallbackQry(ticket))(dur)
+    forwardCommand(CommandEnvelope(cmd.command, Some(ticket)))
     future.mapToSuccessfulAlmFuture[OperationStateResultRsp].mapV(x => x.state)
   }
 }
@@ -39,23 +39,11 @@ class CommandEndpointWithUuidTicketsFactory {
     for {
       rootConf <- theAlmhirt.getConfig
       componentConfig <- ConfigHelper.commandEndpoint.getConfig(rootConf)
-      modeStr <- ConfigHelper.getString(componentConfig)("mode")
-      mode <- CommandEndpointForwardMode.fromString(modeStr)
-      forwardAction <- mode match {
-        case BroadcastCommandOnMessageHub =>
-          ((cmdEnv: CommandEnvelope) => theAlmhirt.messageHub.broadcast(theAlmhirt.createMessage(cmdEnv))).success
-        case PostCommandOnMessageHub =>
-          ((cmdEnv: CommandEnvelope) => theAlmhirt.messageHub.post(theAlmhirt.createMessage(cmdEnv))).success
-        case PostCommandOnCommandChannel =>
-          theAlmhirt.getService[CommandChannel].map(channel => (cmdEnv: CommandEnvelope) => channel.post(theAlmhirt.createMessage(cmdEnv)))
-        case PushCommandDirectlyToExecutor =>
-          theAlmhirt.getService[CommandExecutor].map(executor => (cmdEnv: CommandEnvelope) => executor.executeCommand(cmdEnv))
-      }
       operationStateActorName <- ConfigHelper.operationState.getActorName(componentConfig).success
       trackerActor <- inTryCatch { theAlmhirt.actorSystem.actorFor("/user/" + operationStateActorName) }
     } yield {
-      theAlmhirt.log.info(s"CommandEndpoint is CommandEndpointWithUuidTickets. Name of used OperationStateTracker is '$operationStateActorName', mode is '$mode'")
-      new CommandEndpointWithUuidTickets(forwardAction, trackerActor, theAlmhirt)
+      theAlmhirt.log.info(s"CommandEndpoint is CommandEndpointWithUuidTickets. Name of used OperationStateTracker is '$operationStateActorName'")
+      new CommandEndpointWithUuidTickets((cmdEnv: CommandEnvelope) => theAlmhirt.messageHub.post(theAlmhirt.createMessage(cmdEnv)), trackerActor, theAlmhirt)
     }
   }
 

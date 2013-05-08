@@ -27,8 +27,9 @@ class OperationStateTrackerActorHull(private val operationStateTracker: ActorRef
   def queryStateFor(atMost: FiniteDuration)(ticket: TrackingTicket): AlmFuture[Option[OperationState]] =
     (operationStateTracker.ask(GetStateQry(ticket))(atMost)).mapTo[OperationStateRsp].map(_.state)
 
-  def getResultFor(atMost: FiniteDuration)(ticket: TrackingTicket): AlmFuture[ResultOperationState] = {
-    val future = (operationStateTracker ? RegisterResultCallbackQry(ticket, atMost))(atMost)
+  def getResultFor()(ticket: TrackingTicket, atMost: Option[FiniteDuration] = None): AlmFuture[ResultOperationState] = {
+    val dur = atMost.getOrElse(theAlmhirt.durations.extraLongDuration)
+    val future = (operationStateTracker ? RegisterResultCallbackQry(ticket))(dur)
     future.mapToSuccessfulAlmFuture[OperationStateResultRsp].mapV(x => x.state)
   }
 }

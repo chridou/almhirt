@@ -31,7 +31,7 @@ import almhirt.environment.configuration._
 import almhirt.almakka.ActorBased
 import com.typesafe.config.Config
 
-trait MessageHub extends CreatesMessageChannels with CanBroadcastMessages with ActorBased with Closeable {
+trait MessageHub extends CreatesMessageChannels with ActorBased with Closeable {
   def post(message: Message[AnyRef]): Unit
 }
 

@@ -8,9 +8,6 @@ import almhirt.environment.configuration._
 import almhirt.util.CommandEndpoint
 import almhirt.ext.core.unfiltered.ForwardsCommandsFromHttpRequest
 import unfiltered.netty._
-import riftwarp._
-import riftwarp.http.RiftWarpHttpFuns.RiftHttpFunsSettings
-import riftwarp.http.RiftHttpContentTypeWithoutPrefixOps
 import almhirt.ext.core.unfiltered.impl.HttpCommandEndpoint
 
 trait UnfilteredBootstrapper extends PreparesGatewaysBootstrapperPhase { self: HasConfig with HasServiceRegistry with UnfilteredBootstrapperPlansCollector =>

@@ -20,7 +20,7 @@ import almhirt.core.Almhirt
  */
 class JustFireCommandExecutorActor(handlers: HasCommandHandlers, repositories: HasRepositories)(implicit theAlmhirt: Almhirt) extends Actor {
 
-  private def executeCommand(command: DomainCommand, ticket: Option[TrackingTicket]) {
+  private def executeCommand(command: Command, ticket: Option[TrackingTicket]) {
     ticket foreach { t => theAlmhirt.publishOperationState(InProcess(t, CommandInfo(command))) }
     handlers.getHandlerByType(command.getClass).fold(
       fail => {

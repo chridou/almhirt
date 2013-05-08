@@ -4,6 +4,7 @@ import java.util.{ UUID => JUUID }
 import almhirt.commanding.DomainCommand
 import almhirt.domain.AggregateRootRef
 import almhirt.domain.AggregateRootRef
+import almhirt.common.Command
 
 sealed trait CommandInfo {
   def aggRef: Option[AggregateRootRef]
@@ -17,13 +18,16 @@ sealed trait CommandInfo {
 }
 
 object CommandInfo {
-  def apply(command: DomainCommand): CommandInfo = FullComandInfo(command)
+  def apply(command: Command): CommandInfo = FullComandInfo(command)
   def apply(commandId: JUUID, commandType: String, aggRef: Option[AggregateRootRef]): CommandInfo = HeadCommandInfo(commandId, commandType, aggRef)
 }
 
-final case class FullComandInfo(command: DomainCommand) extends CommandInfo {
+final case class FullComandInfo(command: Command) extends CommandInfo {
   def commandId = command.id
-  def aggRef = command.aggRef
+  def aggRef = command match {
+    case dc: DomainCommand => dc.aggRef
+    case x => None
+  }
   def commandType = command.getClass().getName()
 }
 

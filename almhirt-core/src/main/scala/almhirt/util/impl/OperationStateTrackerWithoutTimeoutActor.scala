@@ -53,7 +53,7 @@ class OperationStateTrackerWithoutTimeoutActor(implicit almhirt: Almhirt) extend
             }
           }
       }
-    case RegisterResultCallbackQry(ticket, atMost) =>
+    case RegisterResultCallbackQry(ticket) =>
       if (collectedResults.contains(ticket)) {
         sender ! OperationStateResultRsp(ticket, collectedResults(ticket).success)
       } else {

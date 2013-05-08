@@ -4,7 +4,7 @@ import almhirt.common._
 
 object RequestAcceptWorkflowBlox {
   import HttpBuildingBlox._
-  def toResponse[TFrom, T](f: T => Unit, acceptCode: HttpStatusCode)(implicit context: HttpRequestExtractor[TFrom], instances: HttpInstances, unmarshaller: HttpUnmarshaller[T], problemConsumer: Consumer[Problem]): TFrom => HttpResponse =
+  def toResponse[TFrom, T](f: T => Unit, acceptCode: HttpStatusCode)(implicit extractor: HttpRequestExtractor[TFrom], instances: HttpInstances, unmarshaller: HttpUnmarshaller[T], problemConsumer: Consumer[Problem]): TFrom => HttpResponse =
     (source: TFrom) =>
       extractRequest(source).flatMap(req =>
         instances.channelExtractor(req.preferredContentType).map((req, _))).fold(

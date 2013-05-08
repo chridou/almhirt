@@ -8,27 +8,10 @@ import almhirt.core.Almhirt
 import almhirt.common.AlmValidation
 import almhirt.common.UnspecifiedProblem
 
-trait CommandEndpointForwardMode
-case object BroadcastCommandOnMessageHub extends CommandEndpointForwardMode
-case object PostCommandOnMessageHub extends CommandEndpointForwardMode
-case object PostCommandOnCommandChannel extends CommandEndpointForwardMode
-case object PushCommandDirectlyToExecutor extends CommandEndpointForwardMode
-
-object CommandEndpointForwardMode {
-  def fromString(str: String): AlmValidation[CommandEndpointForwardMode] =
-    str.toLowerCase() match {
-      case "broadcast" => BroadcastCommandOnMessageHub.success
-      case "post" => PostCommandOnMessageHub.success
-      case "commandchannel" => PostCommandOnCommandChannel.success
-      case "executor" => PushCommandDirectlyToExecutor.success
-      case x => BadDataProblem("%s does not match any CommandEndpointForwardMode".format(x)).failure
-    }
-}
-
 trait CommandEndpoint {
-  def execute(cmd: DomainCommand): Unit
-  def executeTracked(cmd: DomainCommand): TrackingTicket
-  def executeWithResult(atMost: FiniteDuration)(cmd: DomainCommand): AlmFuture[ResultOperationState]
+  def execute(cmd: Command): Unit
+  def executeTracked(cmd: Command): TrackingTicket
+  def executeWithResult(cmd: CommandWithMaxResponseDuration): AlmFuture[ResultOperationState]
 }
 
 object CommandEndpoint {

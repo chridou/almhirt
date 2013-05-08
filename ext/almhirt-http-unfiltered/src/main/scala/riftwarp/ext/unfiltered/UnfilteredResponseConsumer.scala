@@ -1,4 +1,4 @@
-package riftwarp.ext.unfiltered
+package almhirt.http.unfiltered
 
 import scalaz.syntax.validation._
 import almhirt.common._
