@@ -70,6 +70,9 @@ object Almhirt {
     }
   }
 
-  implicit class AlmhirtOps(theAlmhirt: Almhirt) {
+  implicit class AlmhirtOps(self: Almhirt) {
+    def createProblemConsumer(sender: Option[String], metaData: Map[String, String] = Map.empty): Consumer[Problem] = Consumer((p: Problem) => self.publishProblem(p, sender, metaData))
+    def createEventConsumer(metaData: Map[String, String] = Map.empty): Consumer[Event] = Consumer((e: Event) => self.publishEvent(e, metaData))
+    def createOperationStateConsumer(sender: Option[String], metaData: Map[String, String] = Map.empty): Consumer[OperationState] = Consumer((os: OperationState) => self.publishOperationState(os, sender, metaData))
   }
 }

@@ -43,26 +43,8 @@ trait UnfilteredBootstrapper extends PreparesGatewaysBootstrapperPhase { self: H
   }
 
   private def createHttpCommandEndpoint(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): AlmValidation[ForwardsCommandsFromHttpRequest] =
-    self.serviceRegistry.getService[HasConfig].flatMap(hasConfig =>
-      self.serviceRegistry.getService[RiftWarp].map { riftWarp =>
-        val settings = RiftHttpFunsSettings(
-          riftWarp,
-          false,
-          almhirt.http.impl.JustForTestingProblemLaundry,
-          prob => theAlmhirt.publishProblem(prob),
-          RiftChannel.Json,
-          new RiftHttpContentTypeWithoutPrefixOps(riftWarp.channels))
+    self.serviceRegistry.getService[HasConfig].flatMap{hasConfig =>
         startUpLogger.info("Create HttpCommandEndpoint")
-        val maxSyncCallDuration =
-          (ConfigHelper.http.getConfig(hasConfig.config).flatMap(ConfigHelper.http.maxSyncCommandDuration(_))).fold(
-            fail => {
-              startUpLogger.info(s"""MaxSyncCommandDuration could not be determined: ${fail.message}. Defaulting to long duration(${theAlmhirt.durations.longDuration.toString})""")
-              theAlmhirt.durations.longDuration
-            },
-            succ => {
-              startUpLogger.info(s"""MaxSyncCommandDuration has been set to ${succ.toString}""")
-              succ
-            })
         new HttpCommandEndpoint(() => theAlmhirt.getService[CommandEndpoint], settings, theAlmhirt, maxSyncCallDuration)
-      })
+      }
 }
