@@ -99,7 +99,7 @@ trait BoundDomainActionsCommandContext[TAR <: AggregateRoot[TAR, TEvent], TEvent
     protected def getAR(id: JUUID): AlmFuture[TAR]
     protected def storeAR(ar: TAR, uncommittedEvents: IndexedSeq[TEvent], ticket: Option[TrackingTicket]): Unit
     def actionHandlers: HasActionHandlers
-    def handle(com: DomainCommand, ticket: Option[TrackingTicket]) {
+    def handle(com: Command, ticket: Option[TrackingTicket]) {
       com match {
         case bcmd: BoundDomainActionsCommand =>
           handleBoundActionsCommand(bcmd, ticket)(theAlmhirt)

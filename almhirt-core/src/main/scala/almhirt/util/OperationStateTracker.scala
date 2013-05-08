@@ -26,8 +26,8 @@ case class OperationStateResultRsp(ticket: TrackingTicket, state: AlmValidation[
 
 trait OperationStateTracker extends ActorBased {
   def updateState(opState: OperationState): Unit
-  def queryStateFor(within: FiniteDuration)(ticket: TrackingTicket): AlmFuture[Option[OperationState]]
-  def getResultFor(within: FiniteDuration)(ticket: TrackingTicket): AlmFuture[ResultOperationState]
+  def queryStateFor(ticket: TrackingTicket, within: Option[FiniteDuration] = None): AlmFuture[Option[OperationState]]
+  def getResultFor(ticket: TrackingTicket, within: Option[FiniteDuration] = None): AlmFuture[ResultOperationState]
 }
 
 object OperationStateTracker {

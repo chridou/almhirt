@@ -9,7 +9,7 @@ import almhirt.commanding.DomainCommand
 class DirectDispatcher(endpoint: CommandEndpoint) extends CommandDispatcher {
   override def dispatch(cmd: DomainCommand): AlmFuture[Unit] = AlmFuture.successful(endpoint.execute(cmd))
   override def dispatchTracked(cmd: DomainCommand) = AlmFuture.successful(endpoint.executeTracked(cmd))
-  override def dispatchAndGetState(cmd: DomainCommand) = endpoint.executeWithResult(cmd)
+  override def dispatchAndGetResult(cmd: CommandWithMaxResponseDuration) = endpoint.executeWithResult(cmd)
 }
 
 class DirectDispatcherFactory extends CommandDispatcherFactory {

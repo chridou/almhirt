@@ -43,28 +43,28 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
     "return an Some(InProcess) with a HeadCommandInfo" in {
       withTrackerInTestContext { tracker =>
         tracker.updateState(InProcess("test", dummyInfo))
-        tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(InProcess("test", dummyInfo.toHeadCommandInfo)))
+        tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(InProcess("test", dummyInfo.toHeadCommandInfo)))
       }
     }
   it should "return an Some(InProcess) with a HeadCommandInfo even when is InProcess is submitted more than once" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(InProcess("test", dummyInfo))
       tracker.updateState(InProcess("test", dummyInfo))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(InProcess("test", dummyInfo.toHeadCommandInfo)))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(InProcess("test", dummyInfo.toHeadCommandInfo)))
     }
   }
   it should "return a Some(Executed) when updated to Executed" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(InProcess("test", dummyInfo))
       tracker.updateState(Executed("test", PerformedNoAction("")))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
     }
   }
   it should "return a Some(NotExecuted) when updated to NotExecuted" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(InProcess("test", dummyInfo))
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
     }
   }
 
@@ -72,28 +72,28 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
     "return an Some(Executed)" in {
       withTrackerInTestContext { tracker =>
         tracker.updateState(Executed("test", PerformedNoAction("")))
-        tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
+        tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
       }
     }
   it should "return an Some(Executed) even when is Executed is submitted more than once" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(Executed("test", PerformedNoAction("")))
       tracker.updateState(Executed("test", PerformedNoAction("")))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
     }
   }
   it should "return a Some(Executed) when updated to NotExecuted" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(Executed("test", PerformedNoAction("")))
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
     }
   }
   it should "return a Some(Executed) when updated to InProcess" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(Executed("test", PerformedNoAction("")))
       tracker.updateState(InProcess("test", dummyInfo))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(Executed("test", PerformedNoAction(""))))
     }
   }
 
@@ -101,28 +101,28 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
     "return an Some(NotExecuted)" in {
       withTrackerInTestContext { tracker =>
         tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-        tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
+        tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
       }
     }
   it should "return an Some(NotExecuted) even when is NotExecuted is submitted more than once" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
     }
   }
   it should "return a Some(NotExecuted) when updated to Executed" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
       tracker.updateState(Executed("test", PerformedNoAction("")))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
     }
   }
   it should "return a Some(NotExecuted) when updated to InProcess" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
       tracker.updateState(InProcess("test", dummyInfo))
-      tracker.queryStateFor(atMost)("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
+      tracker.queryStateFor("test").awaitResult.forceResult should equal(Some(NotExecuted("test", UnspecifiedProblem(""))))
     }
   }
 
@@ -130,13 +130,13 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
     "fail" in {
       withTrackerInTestContext { tracker =>
         tracker.updateState(InProcess("test", dummyInfo))
-        tracker.getResultFor(atMost)("test").awaitResult.isFailure should be(true)
+        tracker.getResultFor("test").awaitResult.isFailure should be(true)
       }
     }
   it should "fail with a timeout" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(InProcess("test", dummyInfo))
-      tracker.getResultFor(atMost)("test").awaitResult.forceProblem.isInstanceOf[OperationTimedOutProblem] should be(true)
+      tracker.getResultFor("test").awaitResult.forceProblem.isInstanceOf[OperationTimedOutProblem] should be(true)
     }
   }
 
@@ -144,13 +144,13 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
     "succeed" in {
       withTrackerInTestContext { tracker =>
         tracker.updateState(Executed("test", PerformedNoAction("")))
-        tracker.getResultFor(atMost)("test").awaitResult.isSuccess should be(true)
+        tracker.getResultFor("test").awaitResult.isSuccess should be(true)
       }
     }
   it should "succeed with a Executed" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(Executed("test", PerformedNoAction("")))
-      tracker.getResultFor(atMost)("test").awaitResult.forceResult should equal(Executed("test", PerformedNoAction("")))
+      tracker.getResultFor("test").awaitResult.forceResult should equal(Executed("test", PerformedNoAction("")))
     }
   }
 
@@ -158,13 +158,13 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
     "succeed" in {
       withTrackerInTestContext { tracker =>
         tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-        tracker.getResultFor(atMost)("test").awaitResult.isSuccess
+        tracker.getResultFor("test").awaitResult.isSuccess
       }
     }
   it should "succeed with a Executed" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-      tracker.getResultFor(atMost)("test").awaitResult.forceResult === NotExecuted("test", UnspecifiedProblem(""))
+      tracker.getResultFor("test").awaitResult.forceResult === NotExecuted("test", UnspecifiedProblem(""))
     }
   }
 
@@ -173,14 +173,14 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
       withTrackerInTestContext { tracker =>
         tracker.updateState(InProcess("test", dummyInfo))
         tracker.updateState(Executed("test", PerformedNoAction("")))
-        tracker.getResultFor(atMost)("test").awaitResult.isSuccess
+        tracker.getResultFor("test").awaitResult.isSuccess
       }
     }
   it should "succeed with a Executed" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(InProcess("test", dummyInfo))
       tracker.updateState(Executed("test", PerformedNoAction("")))
-      tracker.getResultFor(atMost)("test").awaitResult.forceResult === Executed("test", PerformedNoAction(""))
+      tracker.getResultFor("test").awaitResult.forceResult === Executed("test", PerformedNoAction(""))
     }
   }
 
@@ -189,14 +189,14 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
       withTrackerInTestContext { tracker =>
         tracker.updateState(InProcess("test", dummyInfo))
         tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-        tracker.getResultFor(atMost)("test").awaitResult.isSuccess
+        tracker.getResultFor("test").awaitResult.isSuccess
       }
     }
   it should "succeed with a NotExecuted" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(InProcess("test", dummyInfo))
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-      tracker.getResultFor(atMost)("test").awaitResult.forceResult === NotExecuted("test", UnspecifiedProblem(""))
+      tracker.getResultFor("test").awaitResult.forceResult === NotExecuted("test", UnspecifiedProblem(""))
     }
   }
 
@@ -205,14 +205,14 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
       withTrackerInTestContext { tracker =>
         tracker.updateState(Executed("test", PerformedNoAction("")))
         tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-        tracker.getResultFor(atMost)("test").awaitResult.isSuccess
+        tracker.getResultFor("test").awaitResult.isSuccess
       }
     }
   it should "succeed with a Executed" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(Executed("test", PerformedNoAction("")))
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
-      tracker.getResultFor(atMost)("test").awaitResult.forceResult === Executed("test", PerformedNoAction(""))
+      tracker.getResultFor("test").awaitResult.forceResult === Executed("test", PerformedNoAction(""))
     }
   }
 
@@ -221,14 +221,14 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
       withTrackerInTestContext { tracker =>
         tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
         tracker.updateState(Executed("test", PerformedNoAction("")))
-        tracker.getResultFor(atMost)("test").awaitResult.isSuccess
+        tracker.getResultFor("test").awaitResult.isSuccess
       }
     }
   it should "succeed with a NotExecuted" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
       tracker.updateState(Executed("test", PerformedNoAction("")))
-      tracker.getResultFor(atMost)("test").awaitResult.forceResult === NotExecuted("test", UnspecifiedProblem(""))
+      tracker.getResultFor("test").awaitResult.forceResult === NotExecuted("test", UnspecifiedProblem(""))
     }
   }
 
@@ -237,14 +237,14 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
       withTrackerInTestContext { tracker =>
         tracker.updateState(Executed("test", PerformedNoAction("")))
         tracker.updateState(InProcess("test", dummyInfo))
-        tracker.getResultFor(atMost)("test").awaitResult.isSuccess
+        tracker.getResultFor("test").awaitResult.isSuccess
       }
     }
   it should "succeed with a Executed" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(Executed("test", PerformedNoAction("")))
       tracker.updateState(InProcess("test", dummyInfo))
-      tracker.getResultFor(atMost)("test").awaitResult.forceResult === Executed("test", PerformedNoAction(""))
+      tracker.getResultFor("test").awaitResult.forceResult === Executed("test", PerformedNoAction(""))
     }
   }
 
@@ -253,14 +253,14 @@ class OperationStateTrackerSpecs extends FlatSpec with ShouldMatchers with Almhi
       withTrackerInTestContext { tracker =>
         tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
         tracker.updateState(InProcess("test", dummyInfo))
-        tracker.getResultFor(atMost)("test").awaitResult.isSuccess
+        tracker.getResultFor("test").awaitResult.isSuccess
       }
     }
   it should "succeed with a NotExecuted" in {
     withTrackerInTestContext { tracker =>
       tracker.updateState(NotExecuted("test", UnspecifiedProblem("")))
       tracker.updateState(InProcess("test", dummyInfo))
-      tracker.getResultFor(atMost)("test").awaitResult.forceResult === NotExecuted("test", UnspecifiedProblem(""))
+      tracker.getResultFor("test").awaitResult.forceResult === NotExecuted("test", UnspecifiedProblem(""))
     }
   }
 

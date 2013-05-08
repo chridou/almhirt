@@ -11,6 +11,7 @@ import almhirt.common.AlmFuture
 import almhirt.domain._
 import almhirt.commanding._
 import org.scalatest._
+import almhirt.util.TrackingTicket
 
 class TestAlmhirtMassSpecs extends FlatSpec with AlmhirtTestKit {
   private implicit val atMost = Duration(5, "s")
@@ -18,7 +19,7 @@ class TestAlmhirtMassSpecs extends FlatSpec with AlmhirtTestKit {
     "create, modify and retrieve 100 persons when actions for all entities are processed as sequenced blocks (A)" in {
       inExtendedTestAlmhirt(new Bootstrapper with BlockingRepoCoreBootstrapper{ def config = defaultConf}) { implicit almhirt =>
 
-        val getResultFor = almhirt.operationStateTracker.getResultFor(atMost)_
+        val getResultFor = (ticket: TrackingTicket) => almhirt.operationStateTracker.getResultFor(ticket)
 
         val idsAndNamesAndAdresses = Vector((for (i <- 1 to 100) yield (i, almhirt.getUuid, "Name%s".format(i), "Address%s".format(i))): _*)
 

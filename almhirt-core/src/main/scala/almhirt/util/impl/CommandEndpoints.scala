@@ -18,8 +18,8 @@ import almhirt.core.Almhirt
 class CommandEndpointWithUuidTickets(forwardCommand: CommandEnvelope => Unit, operationStateTracker: ActorRef, theAlmhirt: Almhirt) extends CommandEndpoint {
   implicit val hasExecutionContext = theAlmhirt
 
-  def execute(cmd: DomainCommand) { forwardCommand(CommandEnvelope(cmd, None)) }
-  def executeTracked(cmd: DomainCommand) = {
+  def execute(cmd: Command) { forwardCommand(CommandEnvelope(cmd, None)) }
+  def executeTracked(cmd: Command) = {
     val ticket = UuidTrackingTicket(theAlmhirt.getUuid)
     forwardCommand(CommandEnvelope(cmd, Some(ticket)))
     ticket

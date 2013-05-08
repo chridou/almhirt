@@ -17,7 +17,7 @@ class TestAlmhirtSpecs extends FlatSpec with ShouldMatchers with AlmhirtTestKit 
       inExtendedTestAlmhirt(new Bootstrapper with BlockingRepoCoreBootstrapper{ def config = defaultConf}) { implicit almhirt =>
         val id1 = java.util.UUID.fromString("7d3cd913-75e7-48b4-8ef4-93a847eaf6dc")
         almhirt.executeTrackedCommand(TestPersonCommand.creator(NewTestPersonAction(id1, "Harry")), "1")
-        val res = almhirt.operationStateTracker.getResultFor(atMost)("1").awaitResult
+        val res = almhirt.operationStateTracker.getResultFor("1").awaitResult
         almhirt.repositories.getForAggregateRoot[TestPerson, TestPersonEvent]
           .forceResult
           .get(id1)

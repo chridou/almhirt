@@ -36,6 +36,6 @@ final case class HeadCommandInfo(commandId: JUUID, commandType: String, aggRef: 
 object HeadCommandInfo {
   def apply(fullInfo: FullComandInfo): HeadCommandInfo =
     HeadCommandInfo(fullInfo.commandId, fullInfo.commandType, fullInfo.aggRef)
-  def apply(command: DomainCommand): HeadCommandInfo =
+  def apply(command: Command): HeadCommandInfo =
     apply(FullComandInfo(command))
 }

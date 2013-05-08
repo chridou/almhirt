@@ -11,12 +11,8 @@ trait CanPublishMessages {
   def publish(msg: Message[AnyRef]): Unit
 }
 
-trait PostsOnMessageHub { self: CanPublishMessages with HasMessageHub =>
+trait PublishesOnMessageHub { self: CanPublishMessages with HasMessageHub =>
   override def publish(msg: Message[AnyRef]) { messageHub.post(msg) }
-}
-
-trait BroadcastsOnMessageHub { self: CanPublishMessages with HasMessageHub =>
-  override def publish(msg: Message[AnyRef]) { messageHub.broadcast(msg) }
 }
 
 trait CanPublishEvents{ self: CanPublishMessages with CanCreateUuidsAndDateTimes =>
