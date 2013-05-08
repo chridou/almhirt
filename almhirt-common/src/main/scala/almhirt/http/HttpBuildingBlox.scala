@@ -21,7 +21,7 @@ object HttpBuildingBlox {
       fail => instances.errorResponseGenerator(fail, channel),
       succ => succ)
 
-  def respond[T](response: HttpResponse, responder: T)(implicit consumer: HttpResponseConsumer[T]) {
+  def respond[T](response: HttpResponse, responder: T)(implicit consumer: ResponseConsumer[T]) {
     consumer(responder, response)
   }
 

@@ -16,12 +16,4 @@ object RequestAcceptWorkflowBlox {
                f(succ)
                HttpResponse(acceptCode, HttpNoContent)
              }))
-
-  def finishTerminal[TFrom, T, U, TTo](toResponse: (TFrom) => HttpResponse)(implicit respConsumer: HttpResponseConsumer[TTo]): (TFrom, TTo) => Unit =
-    (source: TFrom, dest: TTo) =>
-      respConsumer(dest, toResponse(source))
-
-  def finishWithResponseResult[TFrom, T, U, TRes](toResponse: (TFrom) => HttpResponse)(implicit gen: SpecialResponseGenerator[TRes]): (TFrom) => AlmValidation[TRes] =
-    (source: TFrom) =>
-      gen(toResponse(source))
 }
