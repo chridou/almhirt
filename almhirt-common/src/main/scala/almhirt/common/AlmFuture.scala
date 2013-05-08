@@ -52,6 +52,13 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
   def foldV[T](failure: Problem => AlmValidation[T], success: R => AlmValidation[T])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.map { validation => (validation fold (failure, success)) }(hasExecutionContext.executionContext))
+
+  def foldF[T](failure: Problem => AlmFuture[T], success: R => AlmFuture[T])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] =
+    new AlmFuture(underlying.flatMap { validation =>
+      validation fold (
+        f => failure(f).underlying,
+        r => success(r).underlying)
+    }(hasExecutionContext.executionContext))
   
   def onComplete(handler: AlmValidation[R] => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit = {
     underlying.onComplete {

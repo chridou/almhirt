@@ -1,8 +1,19 @@
 package almhirt.http
 
-trait HttpMessage {
-  def content: HttpContent
+sealed trait HttpMessage{
+  def content: HttpContentContainer
 }
 
-final case class HttpRequest(content: HttpContent, acceptsContent: List[String])
-final case class HttpResponse(status: HttpStatusCode, content: HttpContent)
+final case class HttpRequest(content: HttpContentContainer, acceptsContent: List[(HttpContentType, Option[Double])]) extends HttpMessage {
+  def preferredContentType: HttpContentType =
+    acceptsContent match {
+      case x :: xs => x._1
+      case Nil => 
+        content match {
+          case HttpNoContent => HttpContentType("text/plain", Map.empty)
+          case HttpContent(ct,_) => ct
+        }
+    }
+}
+
+final case class HttpResponse(status: HttpStatusCode, content: HttpContentContainer) extends HttpMessage
