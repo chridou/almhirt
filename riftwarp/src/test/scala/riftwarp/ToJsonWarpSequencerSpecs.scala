@@ -12,7 +12,7 @@
 //
 //class ToJsonWarpSequencerSpecs extends WordSpec with ShouldMatchers {
 //  val riftWarp = RiftWarp.concurrentWithDefaults()
-//  implicit val hasRecomposers = riftWarp.barracks
+//  implicit val hasWarpUnpackers = riftWarp.barracks
 //  implicit val toolShed = riftWarp.toolShed
 //
 //  private sealed trait ComplexType

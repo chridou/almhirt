@@ -5,21 +5,24 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain._
 import riftwarp._
+import riftwarp.std.kit._
+import riftwarp.std.WarpObjectLookUp
 
-trait DomainEventDecomposer[TEvent <: DomainEvent] extends Decomposer[TEvent] {
-  override def decompose[TDimension <: RiftDimension](what: TEvent, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addRiftDescriptor(this.riftDescriptor)
-      .addWith("header", what.header, DomainEventHeaderDecomposer).flatMap(addEventParams(what, _))
+trait DomainEventWarpPacker[TEvent <: DomainEvent] extends WarpPacker[TEvent] {
+  override def pack(what: TEvent)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    (this.warpDescriptor ~> With("header", what.header, DomainEventHeaderWarpPacker)).flatMap(obj =>
+      addEventParams(what, obj))
   }
 
-  def addEventParams[TDimension <: RiftDimension](what: TEvent, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]]
+  def addEventParams(what: TEvent, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage]
 }
 
-trait DomainEventRecomposer[TEvent <: DomainEvent] extends Recomposer[TEvent] {
-  def recompose(from: Extractor): AlmValidation[TEvent] = 
-    from.getWith("header", DomainEventHeaderRecomposer.recompose).flatMap(header =>
-      extractEventParams(from, header))
-  
-  def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TEvent]
+trait DomainEventWarpUnpacker[TEvent <: DomainEvent] extends RegisterableWarpUnpacker[TEvent] {
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TEvent] =
+    withFastLookUp(from) { lookup =>
+      lookup.getWith("header", DomainEventHeaderWarpUnpacker).flatMap(header =>
+        extractEventParams(lookup, header))
+    }
+
+  def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TEvent]
 }

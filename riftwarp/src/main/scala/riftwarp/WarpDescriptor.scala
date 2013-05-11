@@ -6,7 +6,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 
 /**
- * A tag used for looking up a Decomposer or Recomposer.
+ * A tag used for looking up a Decomposer or WarpUnpacker.
  */
 sealed class WarpDescriptor private (val identifier: String, val version: Option[Int]) extends Equals {
   private lazy val hash = {{

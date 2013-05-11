@@ -9,21 +9,21 @@ import com.typesafe.config.Config
 import _root_.riftwarp.RiftWarp
 import almhirt.ext.core.riftwarp.RiftWarpBootstrapper
 
-trait WithTestDecomposersAndRecomposersBootstrapper extends CreatesCoreComponentsBootstrapperPhase { self: HasServiceRegistry =>
+trait WithTestDecomposersAndWarpUnpackersBootstrapper extends CreatesCoreComponentsBootstrapperPhase { self: HasServiceRegistry =>
   override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =
     super.createCoreComponents(theAlmhirt, startUpLogger).andThen {
-      startUpLogger.debug("Register RiftWarp-Decomposers and -Recomposers for testing.")
-      self.serviceRegistry.getService[RiftWarp].map { riftWarp =>
-        riftWarp.barracks.addDecomposer(new TestPersonCreatedDecomposer)
-        riftWarp.barracks.addRecomposer(new TestPersonCreatedRecomposer)
-        riftWarp.barracks.addDecomposer(new TestPersonNameChangedDecomposer)
-        riftWarp.barracks.addRecomposer(new TestPersonNameChangedRecomposer)
-        riftWarp.barracks.addDecomposer(new TestPersonAddressAquiredDecomposer)
-        riftWarp.barracks.addRecomposer(new TestPersonAddressAquiredRecomposer)
-        riftWarp.barracks.addDecomposer(new TestPersonMovedDecomposer)
-        riftWarp.barracks.addRecomposer(new TestPersonMovedRecomposer)
-        riftWarp.barracks.addDecomposer(new TestPersonUnhandledEventDecomposer)
-        riftWarp.barracks.addRecomposer(new TestPersonUnhandledEventRecomposer)
+      startUpLogger.debug("Register RiftWarp-Decomposers and -WarpUnpackers for testing.")
+      self.serviceRegistry.getService[RiftWarp].map { rw =>
+        rw.packers.addTyped(TestPersonCreatedPacker)
+        rw.unpackers.addTyped(TestPersonCreatedWarpUnpacker)
+        rw.packers.addTyped(TestPersonNameChangedPacker)
+        rw.unpackers.addTyped(TestPersonNameChangedWarpUnpacker)
+        rw.packers.addTyped(TestPersonAddressAquiredPacker)
+        rw.unpackers.addTyped(TestPersonAddressAquiredWarpUnpacker)
+        rw.packers.addTyped(TestPersonMovedPacker)
+        rw.unpackers.addTyped(TestPersonMovedWarpUnpacker)
+        rw.packers.addTyped(TestPersonUnhandledEventPacker)
+        rw.unpackers.addTyped(TestPersonUnhandledEventWarpUnpacker)
         BootstrapperPhaseSuccess()
       }.toBootstrapperPhaseResult
     }

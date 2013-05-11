@@ -4,25 +4,26 @@ import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
+import riftwarp.std.kit._
 
-object ProblemEventDecomposer extends Decomposer[ProblemEvent] {
-  val riftDescriptor = RiftDescriptor(classOf[ProblemEvent])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: ProblemEvent, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addRiftDescriptor(this.riftDescriptor)
-      .addWith("header", what.header, EventHeaderDecomposer).flatMap(
-        _.addComplex("problem", what.problem, None))
+object ProblemEventWarpPacker extends WarpPacker[ProblemEvent] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[ProblemEvent])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: ProblemEvent)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      With("header", what.header, EventHeaderWarpPacker) ~>
+      LookUp("problem", what.problem)
   }
 }
 
-object ProblemEventRecomposer extends Recomposer[ProblemEvent] {
-  val riftDescriptor = RiftDescriptor(classOf[ProblemEvent])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[ProblemEvent] = {
-    for {
-      header <- from.getWith("header", EventHeaderRecomposer.recompose)
-      problem <- from.getComplexByTag[Problem]("problem", None)
-    } yield ProblemEvent(header, problem)
-  }
+object ProblemEventWarpUnpacker extends RegisterableWarpUnpacker[ProblemEvent] {
+  val warpDescriptor = WarpDescriptor(classOf[ProblemEvent])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[ProblemEvent] =
+    withFastLookUp(from) { lookup =>
+      for {
+        header <- lookup.getWith("header", EventHeaderWarpUnpacker)
+        problem <- lookup.getTyped[Problem]("problem", None)
+      } yield ProblemEvent(header, problem)
+    }
 }

@@ -13,15 +13,15 @@
 //    val rw = RiftWarp.concurrentWithDefaults()
 //
 //    rw.barracks.addDecomposer(new PrimitiveListMAsDecomposer())
-//    rw.barracks.addRecomposer(new PrimitiveListMAsRecomposer())
+//    rw.barracks.addWarpUnpacker(new PrimitiveListMAsWarpUnpacker())
 //    rw.barracks.addDecomposer(new PrimitiveVectorMAsDecomposer())
-//    rw.barracks.addRecomposer(new PrimitiveVectorMAsRecomposer())
+//    rw.barracks.addWarpUnpacker(new PrimitiveVectorMAsWarpUnpacker())
 //    rw.barracks.addDecomposer(new PrimitiveSetMAsDecomposer())
-//    rw.barracks.addRecomposer(new PrimitiveSetMAsRecomposer())
+//    rw.barracks.addWarpUnpacker(new PrimitiveSetMAsWarpUnpacker())
 //    rw.barracks.addDecomposer(new PrimitiveIterableMAsDecomposer())
-//    rw.barracks.addRecomposer(new PrimitiveIterableMAsRecomposer())
+//    rw.barracks.addWarpUnpacker(new PrimitiveIterableMAsWarpUnpacker())
 //    rw.barracks.addDecomposer(new ComplexMAsDecomposer())
-//    rw.barracks.addRecomposer(new ComplexMAsRecomposer())
+//    rw.barracks.addWarpUnpacker(new ComplexMAsWarpUnpacker())
 //    rw
 //  }
 //

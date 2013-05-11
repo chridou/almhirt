@@ -8,82 +8,82 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain._
 import riftwarp._
+import riftwarp.std._
+import riftwarp.std.kit._
 import almhirt.core.test._
-import riftwarp.components.HasNoAlternativeRiftDescriptors
 import almhirt.ext.core.riftwarp.serialization._
 
-class TestPersonCreatedDecomposer extends DomainEventDecomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonCreated, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addString("name", what.name).ok
+object TestPersonCreatedPacker extends DomainEventWarpPacker[TestPersonCreated] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonCreated])
+  val alternativeWarpDescriptors = Nil
+  override def addEventParams(what: TestPersonCreated, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+  	into ~> ("name" -> what.name)
+}
+
+object TestPersonCreatedWarpUnpacker extends DomainEventWarpUnpacker[TestPersonCreated] {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonCreated])
+  val alternativeWarpDescriptors = Nil
+  def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TestPersonCreated] = {
+    from.getAs[String]("name").map(TestPersonCreated(header, _))
   }
 }
 
-class TestPersonCreatedRecomposer extends DomainEventRecomposer[TestPersonCreated] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonCreated])
-  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonCreated] = {
-    from.getString("name").map(TestPersonCreated(header, _))
+object TestPersonNameChangedPacker extends DomainEventWarpPacker[TestPersonNameChanged] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonNameChanged])
+  val alternativeWarpDescriptors = Nil
+  override def addEventParams(what: TestPersonNameChanged, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+    into ~> ("newName", what.newName)
+}
+
+object TestPersonNameChangedWarpUnpacker extends DomainEventWarpUnpacker[TestPersonNameChanged] {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonNameChanged])
+  val alternativeWarpDescriptors = Nil
+  def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TestPersonNameChanged] = {
+    from.getAs[String]("newName").map(TestPersonNameChanged(header, _))
   }
 }
 
-class TestPersonNameChangedDecomposer extends DomainEventDecomposer[TestPersonNameChanged] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonNameChanged, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addString("newName", what.newName)
-      .addDateTime("timestamp", what.timestamp).ok
+object TestPersonAddressAquiredPacker extends DomainEventWarpPacker[TestPersonAddressAquired] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonAddressAquired])
+  val alternativeWarpDescriptors = Nil
+  override def addEventParams(what: TestPersonAddressAquired, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+    into ~> ("aquiredAddress", what.aquiredAddress)
+}
+
+object TestPersonAddressAquiredWarpUnpacker extends DomainEventWarpUnpacker[TestPersonAddressAquired] {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonAddressAquired])
+  val alternativeWarpDescriptors = Nil
+  def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TestPersonAddressAquired] = {
+    from.getAs[String]("aquiredAddress").map(TestPersonAddressAquired(header, _))
   }
 }
 
-class TestPersonNameChangedRecomposer extends DomainEventRecomposer[TestPersonNameChanged] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonNameChanged])
-  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonNameChanged] = {
-    from.getString("newName").map(TestPersonNameChanged(header, _))
+object TestPersonMovedPacker extends DomainEventWarpPacker[TestPersonMoved] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonMoved])
+  val alternativeWarpDescriptors = Nil
+  override def addEventParams(what: TestPersonMoved, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+    into ~> ("newAddress", what.newAddress) ~> ("timestamp", what.timestamp)
+}
+
+object TestPersonMovedWarpUnpacker extends DomainEventWarpUnpacker[TestPersonMoved] {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonMoved])
+  val alternativeWarpDescriptors = Nil
+  def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TestPersonMoved] = {
+    from.getAs[String]("newAddress").map(str => TestPersonMoved(header, str))
   }
 }
 
-class TestPersonAddressAquiredDecomposer extends DomainEventDecomposer[TestPersonAddressAquired] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonAddressAquired, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addString("aquiredAddress", what.aquiredAddress)
-      .addDateTime("timestamp", what.timestamp).ok
-  }
+object TestPersonUnhandledEventPacker extends DomainEventWarpPacker[TestPersonUnhandledEvent] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonUnhandledEvent])
+  val alternativeWarpDescriptors = Nil
+  override def addEventParams(what: TestPersonUnhandledEvent, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+    into.success
 }
 
-class TestPersonAddressAquiredRecomposer extends DomainEventRecomposer[TestPersonAddressAquired] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonAddressAquired])
-  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonAddressAquired] = {
-    from.getString("aquiredAddress").map(TestPersonAddressAquired(header, _))
-  }
-}
-
-class TestPersonMovedDecomposer extends DomainEventDecomposer[TestPersonMoved] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonMoved, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addString("newAddress", what.newAddress)
-      .addDateTime("timestamp", what.timestamp).ok
-  }
-}
-
-class TestPersonMovedRecomposer extends DomainEventRecomposer[TestPersonMoved] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonMoved])
-  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonMoved] = {
-    from.getString("newAddress").map(str => TestPersonMoved(header, str))
-  }
-}
-
-class TestPersonUnhandledEventDecomposer extends DomainEventDecomposer[TestPersonUnhandledEvent] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
-  override def addEventParams[TDimension <: RiftDimension](what: TestPersonUnhandledEvent, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.ok
-  }
-}
-
-class TestPersonUnhandledEventRecomposer extends DomainEventRecomposer[TestPersonUnhandledEvent] with HasNoAlternativeRiftDescriptors {
-  val riftDescriptor = RiftDescriptor(classOf[TestPersonUnhandledEvent])
-  override def extractEventParams(from: Extractor, header: DomainEventHeader): AlmValidation[TestPersonUnhandledEvent] = {
+object TestPersonUnhandledEventWarpUnpacker extends DomainEventWarpUnpacker[TestPersonUnhandledEvent] {
+  val warpDescriptor = WarpDescriptor(classOf[TestPersonUnhandledEvent])
+  val alternativeWarpDescriptors = Nil
+  def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TestPersonUnhandledEvent] = {
     TestPersonUnhandledEvent(header).success
   }
 }

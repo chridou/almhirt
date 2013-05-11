@@ -134,7 +134,7 @@ trait WarpObjectLookUp {
       case x => UnspecifiedApplicationProblem(s"""[tryGetMany("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
     }
 
-  def getMany[T](label: String, overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers): AlmValidation[Vector[Any]] =
+  def getMany(label: String, overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers): AlmValidation[Vector[Any]] =
     getMandatory(label, x => tryGetMany(x, overrideDescriptor, backUpDescriptor))
 
   def tryGetManyTyped[T](label: String, overrideDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[Option[Vector[T]]] =

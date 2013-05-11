@@ -31,7 +31,6 @@ final case class MessageGrouping(groupId: UUID, seq: Int, isLast: Boolean)
  * id: A unique identifier
  * grouping: Defines whether this message belongs to a group of messages
  * metaData: Any meta data that can be serialized into a String. Key-value pairs
- * topic: An optional topic for messaging scenarios
  */
 final case class MessageHeader(id: UUID, grouping: Option[MessageGrouping], metaData: Map[String, Any], timestamp: DateTime)
 

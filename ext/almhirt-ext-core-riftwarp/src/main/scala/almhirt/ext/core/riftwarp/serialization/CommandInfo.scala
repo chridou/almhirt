@@ -1,68 +1,75 @@
 package almhirt.ext.core.riftwarp.serialization
 
+import java.util.{ UUID => JUUID }
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.util._
 import riftwarp._
+import riftwarp.std.kit._
 import almhirt.commanding.DomainCommand
 import almhirt.domain.AggregateRootRef
 
-object FullComandInfoDecomposer extends Decomposer[FullComandInfo] {
-  val riftDescriptor = RiftDescriptor(classOf[FullComandInfo])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: FullComandInfo, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor)
-      .addComplex("command", what.command, None)
+object FullComandInfoWarpPacker extends WarpPacker[FullComandInfo] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[FullComandInfo])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: FullComandInfo)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      LookUp("command", what.command)
   }
 }
 
-object HeadCommandInfoDecomposer extends Decomposer[HeadCommandInfo] {
-  val riftDescriptor = RiftDescriptor(classOf[HeadCommandInfo])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: HeadCommandInfo, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor)
-      .addUuid("commandId", what.commandId)
-      .addString("commandType", what.commandType)
-      .addOptionalWith("aggRef", what.aggRef, AggregateRootRefDecomposer)
+object HeadCommandInfoWarpPacker extends WarpPacker[HeadCommandInfo] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[HeadCommandInfo])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: HeadCommandInfo)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      P("commandId", what.commandId) ~>
+      P("commandType", what.commandType) ~>
+      WithOpt("aggRef", what.aggRef, AggregateRootRefWarpPacker)
   }
 }
 
-object CommandInfoDecomposer extends Decomposer[CommandInfo] {
-  val riftDescriptor = RiftDescriptor(classOf[CommandInfo])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: CommandInfo, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
+object CommandInfoWarpPacker extends WarpPacker[CommandInfo] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[CommandInfo])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: CommandInfo)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case ci: FullComandInfo => into.includeDirect(ci, FullComandInfoDecomposer)
-      case ci: HeadCommandInfo => into.includeDirect(ci, HeadCommandInfoDecomposer)
+      case ci: FullComandInfo => FullComandInfoWarpPacker.pack(ci)
+      case ci: HeadCommandInfo => HeadCommandInfoWarpPacker.pack(ci)
     }
   }
 }
 
-object FullComandInfoRecomposer extends Recomposer[FullComandInfo] {
-  val riftDescriptor = RiftDescriptor(classOf[FullComandInfo])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[FullComandInfo] = {
-    from.getComplexByTag[DomainCommand]("command", None).map(FullComandInfo.apply)
+object FullComandInfoWarpUnpacker extends RegisterableWarpUnpacker[FullComandInfo] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[FullComandInfo])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[FullComandInfo] = {
+    withFastLookUp(from) { lookup =>
+      lookup.getTyped("command", None).map(FullComandInfo.apply)
+    }
   }
 }
 
-object HeadCommandInfoRecomposer extends Recomposer[HeadCommandInfo] {
-  val riftDescriptor = RiftDescriptor(classOf[HeadCommandInfo])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[HeadCommandInfo] = {
-    val commandId = from.getUuid("commandId").toAgg
-    val commandType = from.getString("commandType").toAgg
-    val aggRef = from.tryGetWith[AggregateRootRef]("aggRef", AggregateRootRefRecomposer.recompose).toAgg
-    (commandId |@| commandType |@| aggRef)(HeadCommandInfo.apply)
+object HeadCommandInfoWarpUnpacker extends RegisterableWarpUnpacker[HeadCommandInfo] {
+  val warpDescriptor = WarpDescriptor(classOf[HeadCommandInfo])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[HeadCommandInfo] = {
+    withFastLookUp(from) { lookup =>
+      for {
+        commandId <- lookup.getAs[JUUID]("commandId")
+        commandType <- lookup.getAs[String]("commandType")
+        aggRef <- lookup.tryGetWith[AggregateRootRef]("aggRef", AggregateRootRefWarpUnpacker)
+      } yield HeadCommandInfo(commandId, commandType, aggRef)
+    }
   }
 }
 
-object CommandInfoRecomposer extends DivertingRecomposer[CommandInfo] {
-  val riftDescriptor = RiftDescriptor(classOf[CommandInfo])
-  val alternativeRiftDescriptors = Nil
+object CommandInfoWarpUnpacker extends RegisterableWarpUnpacker[CommandInfo] with DivertingWarpUnpacker[CommandInfo] {
+  val warpDescriptor = WarpDescriptor(classOf[CommandInfo])
+  val alternativeWarpDescriptors = Nil
   val divert =
     Map(
-      FullComandInfoRecomposer.riftDescriptor -> FullComandInfoRecomposer,
-      HeadCommandInfoRecomposer.riftDescriptor -> HeadCommandInfoRecomposer).lift
+      FullComandInfoWarpUnpacker.warpDescriptor -> FullComandInfoWarpUnpacker,
+      HeadCommandInfoWarpUnpacker.warpDescriptor -> HeadCommandInfoWarpUnpacker).lift
 }

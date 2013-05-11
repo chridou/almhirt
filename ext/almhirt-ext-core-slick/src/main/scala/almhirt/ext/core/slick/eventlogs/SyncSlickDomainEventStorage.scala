@@ -16,11 +16,11 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
   def unpackRow(row: TRow): (TRow#Repr, String, String)
 
   override final def storeEvent(event: DomainEvent): AlmValidation[DomainEvent] = {
-    serializing.serialize(event, None).flatMap {
-      case (Some(ti), serializedEvent) =>
+    serializing.serialize(event).flatMap {
+      case (serializedEvent, Some(ti)) =>
         val row = createRow(serializing.channel, ti, event, serializedEvent)
           dal.insertEventRow(row)
-      case (None, _) => UnspecifiedProblem("A type identifier is required.").failure
+      case (_, None) => UnspecifiedProblem("A type identifier is required.").failure
     }.map(_ => event)
   }
 
@@ -28,10 +28,10 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
     import scalaz._, Scalaz._
     (for {
       rows <- events.map(event =>
-        serializing.serialize(event, None).flatMap {
-          case (Some(ti), serializedEvent) =>
+        serializing.serialize(event).flatMap {
+          case (serializedEvent, Some(ti)) =>
             (createRow(serializing.channel, ti, event, serializedEvent)).success
-          case (None, _) => UnspecifiedProblem("A type identifier is required.").failure
+          case (_, None) => UnspecifiedProblem("A type identifier is required.").failure
         }.toAgg).toVector.sequence
       stored <- dal.insertManyEventRows(rows)
     } yield stored).fold(
@@ -42,7 +42,7 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
   override def getEventById(id: JUUID): AlmValidation[DomainEvent] =
     for {
       serialized <- dal.getEventRowById(id).map(unpackRow)
-      deserialized <- serializing.deserialize(serialized._2)(serialized._1, Some(serialized._3))
+      deserialized <- serializing.deserialize(serialized._2)(serialized._1)
     } yield deserialized
 
   override def getAllEvents(): AlmValidation[Vector[DomainEvent]] =
@@ -62,7 +62,7 @@ abstract class SyncSlickDomainEventStorage[TRow <: DomainEventLogRow](
 
   private def deserializeManyRows(rows: Iterable[TRow]): AlmValidation[Vector[DomainEvent]] = {
     import scalaz._, Scalaz._
-    rows.map(unpackRow).map(serialized => serializing.deserialize(serialized._2)(serialized._1, Some(serialized._3)).toAgg).toVector.sequence
+    rows.map(unpackRow).map(serialized => serializing.deserialize(serialized._2)(serialized._1).toAgg).toVector.sequence
   }
 }
 

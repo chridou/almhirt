@@ -22,11 +22,11 @@ abstract class SyncSlickEventStorage[TRow <: EventLogRow](
   def unpackRow(row: TRow): (TRow#Repr, String, String)
 
   final def storeEvent(event: Event): AlmValidation[Event] = {
-    serializing.serialize(event, None).flatMap {
-      case (Some(ti), serializedEvent) =>
+    serializing.serialize(event).flatMap {
+      case (serializedEvent, Some(ti)) =>
         val row = createRow(serializing.channel, ti, event, serializedEvent)
         dal.insertEventRow(row)
-      case (None, _) => UnspecifiedProblem("A type identifier is required.").failure
+      case (_, None) => UnspecifiedProblem("A type identifier is required.").failure
     }.map(_ => event)
   }
 
@@ -45,7 +45,7 @@ abstract class SyncSlickEventStorage[TRow <: EventLogRow](
   override def getEventById(id: JUUID): AlmValidation[Event] =
     for {
       serialized <- dal.getEventRowById(id).map(unpackRow)
-      deserialized <- serializing.deserialize(serialized._2)(serialized._1, Some(serialized._3))
+      deserialized <- serializing.deserialize(serialized._2)(serialized._1)
     } yield deserialized
 
   override def getAllEvents(): AlmValidation[Vector[Event]] =
@@ -62,7 +62,7 @@ abstract class SyncSlickEventStorage[TRow <: EventLogRow](
 
   private def deserializeManyRows(rows: Iterable[TRow]): AlmValidation[Vector[Event]] = {
     import scalaz._, Scalaz._
-    rows.map(unpackRow).map(serialized => serializing.deserialize(serialized._2)(serialized._1, Some(serialized._3)).toAgg).toVector.sequence
+    rows.map(unpackRow).map(serialized => serializing.deserialize(serialized._2)(serialized._1).toAgg).toVector.sequence
   }
 }
 

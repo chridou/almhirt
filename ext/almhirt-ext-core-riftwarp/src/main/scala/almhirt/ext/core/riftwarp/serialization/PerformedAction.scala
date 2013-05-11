@@ -4,116 +4,122 @@ import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
+import riftwarp.std.kit._
 import almhirt.util._
 
-object PerformedCreateActionDecomposer extends Decomposer[PerformedCreateAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedCreateAction])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedCreateAction, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor)
-      .addWith("aggRef", what.aggRef, AggregateRootRefDecomposer)
+object PerformedCreateActionWarpPacker extends WarpPacker[PerformedCreateAction] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedCreateAction])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: PerformedCreateAction)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      With("aggRef", what.aggRef, AggregateRootRefWarpPacker)
   }
 }
 
-object PerformedUpdateActionDecomposer extends Decomposer[PerformedUpdateAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedUpdateAction])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedUpdateAction, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor)
-      .addWith("aggRef", what.aggRef, AggregateRootRefDecomposer)
+object PerformedUpdateActionWarpPacker extends WarpPacker[PerformedUpdateAction] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedUpdateAction])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: PerformedUpdateAction)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      With("aggRef", what.aggRef, AggregateRootRefWarpPacker)
   }
 }
 
-object PerformedDeleteActionDecomposer extends Decomposer[PerformedDeleteAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedDeleteAction])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedDeleteAction, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor)
-      .addWith("aggRef", what.aggRef, AggregateRootRefDecomposer)
+object PerformedDeleteActionWarpPacker extends WarpPacker[PerformedDeleteAction] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedDeleteAction])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: PerformedDeleteAction)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      With("aggRef", what.aggRef, AggregateRootRefWarpPacker)
   }
 }
 
-object PerformedNoActionDecomposer extends Decomposer[PerformedNoAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedNoAction])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedNoAction, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into.addRiftDescriptor(this.riftDescriptor).addString("reason", what.reason).ok
+object PerformedNoActionWarpPacker extends WarpPacker[PerformedNoAction] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedNoAction])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: PerformedNoAction)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      P("reason", what.reason)
   }
 }
 
-object PerformedDomainActionDecomposer extends Decomposer[PerformedDomainAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedDomainAction])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedDomainAction, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
+object PerformedDomainActionWarpPacker extends WarpPacker[PerformedDomainAction] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedDomainAction])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: PerformedDomainAction)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case act: PerformedCreateAction => into.includeDirect(act, PerformedCreateActionDecomposer)
-      case act: PerformedUpdateAction => into.includeDirect(act, PerformedUpdateActionDecomposer)
-      case act: PerformedDeleteAction => into.includeDirect(act, PerformedDeleteActionDecomposer)
-      case act: PerformedNoAction => into.includeDirect(act, PerformedNoActionDecomposer)
+      case act: PerformedCreateAction => PerformedCreateActionWarpPacker(act)
+      case act: PerformedUpdateAction => PerformedUpdateActionWarpPacker(act)
+      case act: PerformedDeleteAction => PerformedDeleteActionWarpPacker(act)
+      case act: PerformedNoAction => PerformedNoActionWarpPacker(act)
     }
   }
 }
 
-object PerformedActionDecomposer extends Decomposer[PerformedAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedAction])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: PerformedAction, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
+object PerformedActionWarpPacker extends WarpPacker[PerformedAction] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedAction])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: PerformedAction)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case act: PerformedDomainAction => into.includeDirect(act, PerformedDomainActionDecomposer)
+      case act: PerformedDomainAction => PerformedDomainActionWarpPacker(act)
     }
   }
 }
 
-object PerformedCreateActionRecomposer extends Recomposer[PerformedCreateAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedCreateAction])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PerformedCreateAction] = {
-    from.getWith("aggRef", AggregateRootRefRecomposer.recompose).map(PerformedCreateAction.apply)
+object PerformedCreateActionWarpUnpacker extends RegisterableWarpUnpacker[PerformedCreateAction] {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedCreateAction])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[PerformedCreateAction] =
+    withFastLookUp(from) { lookup =>
+      lookup.getWith("aggRef", AggregateRootRefWarpUnpacker).map(PerformedCreateAction.apply)
   }
 }
 
-object PerformedUpdateActionRecomposer extends Recomposer[PerformedUpdateAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedUpdateAction])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PerformedUpdateAction] = {
-    from.getWith("aggRef", AggregateRootRefRecomposer.recompose).map(PerformedUpdateAction.apply)
+object PerformedUpdateActionWarpUnpacker extends RegisterableWarpUnpacker[PerformedUpdateAction] {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedUpdateAction])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[PerformedUpdateAction] =
+    withFastLookUp(from) { lookup =>
+      lookup.getWith("aggRef", AggregateRootRefWarpUnpacker).map(PerformedUpdateAction.apply)
   }
 }
 
-object PerformedDeleteActionRecomposer extends Recomposer[PerformedDeleteAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedDeleteAction])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PerformedDeleteAction] = {
-    from.getWith("aggRef", AggregateRootRefRecomposer.recompose).map(PerformedDeleteAction.apply)
+object PerformedDeleteActionWarpUnpacker extends RegisterableWarpUnpacker[PerformedDeleteAction] {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedDeleteAction])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[PerformedDeleteAction] =
+    withFastLookUp(from) { lookup =>
+      lookup.getWith("aggRef", AggregateRootRefWarpUnpacker).map(PerformedDeleteAction.apply)
   }
 }
 
-object PerformedNoActionRecomposer extends Recomposer[PerformedNoAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedNoAction])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[PerformedNoAction] = {
-    from.getString("reason").map(PerformedNoAction)
+object PerformedNoActionWarpUnpacker extends RegisterableWarpUnpacker[PerformedNoAction] {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedNoAction])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[PerformedNoAction] =
+    withFastLookUp(from) { lookup =>
+      lookup.getAs[String]("reason").map(PerformedNoAction)
   }
 }
 
-object PerformedDomainActionRecomposer extends DivertingRecomposer[PerformedDomainAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedDomainAction])
-  val alternativeRiftDescriptors = Nil
+object PerformedDomainActionWarpUnpacker extends  RegisterableWarpUnpacker[PerformedDomainAction] with DivertingWarpUnpacker[PerformedDomainAction] {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedDomainAction])
+  val alternativeWarpDescriptors = Nil
   val divert =
     Map(
-      PerformedCreateActionRecomposer.riftDescriptor -> PerformedCreateActionRecomposer,
-      PerformedUpdateActionRecomposer.riftDescriptor -> PerformedUpdateActionRecomposer,
-      PerformedDeleteActionRecomposer.riftDescriptor -> PerformedDeleteActionRecomposer,
-      PerformedNoActionRecomposer.riftDescriptor -> PerformedNoActionRecomposer).lift
+      PerformedCreateActionWarpUnpacker.warpDescriptor -> PerformedCreateActionWarpUnpacker,
+      PerformedUpdateActionWarpUnpacker.warpDescriptor -> PerformedUpdateActionWarpUnpacker,
+      PerformedDeleteActionWarpUnpacker.warpDescriptor -> PerformedDeleteActionWarpUnpacker,
+      PerformedNoActionWarpUnpacker.warpDescriptor -> PerformedNoActionWarpUnpacker).lift
 }
 
-object PerformedActionRecomposer extends DivertingRecomposer[PerformedAction] {
-  val riftDescriptor = RiftDescriptor(classOf[PerformedAction])
-  val alternativeRiftDescriptors = Nil
+object PerformedActionWarpUnpacker extends RegisterableWarpUnpacker[PerformedAction] with DivertingWarpUnpacker[PerformedAction] {
+  val warpDescriptor = WarpDescriptor(classOf[PerformedAction])
+  val alternativeWarpDescriptors = Nil
   val divert =
     Map(
-      PerformedCreateActionRecomposer.riftDescriptor -> PerformedCreateActionRecomposer,
-      PerformedUpdateActionRecomposer.riftDescriptor -> PerformedUpdateActionRecomposer,
-      PerformedDeleteActionRecomposer.riftDescriptor -> PerformedDeleteActionRecomposer,
-      PerformedNoActionRecomposer.riftDescriptor -> PerformedNoActionRecomposer).lift
+      PerformedCreateActionWarpUnpacker.warpDescriptor -> PerformedCreateActionWarpUnpacker,
+      PerformedUpdateActionWarpUnpacker.warpDescriptor -> PerformedUpdateActionWarpUnpacker,
+      PerformedDeleteActionWarpUnpacker.warpDescriptor -> PerformedDeleteActionWarpUnpacker,
+      PerformedNoActionWarpUnpacker.warpDescriptor -> PerformedNoActionWarpUnpacker).lift
 }

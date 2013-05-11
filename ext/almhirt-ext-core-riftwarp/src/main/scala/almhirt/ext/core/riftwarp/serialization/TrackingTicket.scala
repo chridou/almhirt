@@ -1,62 +1,64 @@
 package almhirt.ext.core.riftwarp.serialization
 
+import java.util.{UUID => JUUID}
 import scalaz._
 import scalaz.Scalaz._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
+import riftwarp.std.kit._
 import almhirt.util._
 import almhirt.util.StringTrackingTicket
 
-object StringTrackingTicketDecomposer extends Decomposer[StringTrackingTicket] {
-  val riftDescriptor = RiftDescriptor(classOf[StringTrackingTicket])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: StringTrackingTicket, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] =
-    into
-      .addRiftDescriptor(this.riftDescriptor)
-      .addString("ident", what.ident).ok
+object StringTrackingTicketWarpPacker extends WarpPacker[StringTrackingTicket] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[StringTrackingTicket])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: StringTrackingTicket)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = 
+    this.warpDescriptor ~> P("ident", what.ident)
 }
 
-object UuidTrackingTicketDecomposer extends Decomposer[UuidTrackingTicket] {
-  val riftDescriptor = RiftDescriptor(classOf[UuidTrackingTicket])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: UuidTrackingTicket, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] =
-    into
-      .addRiftDescriptor(this.riftDescriptor)
-      .addUuid("ident", what.ident).ok
+object UuidTrackingTicketWarpPacker extends WarpPacker[UuidTrackingTicket] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[UuidTrackingTicket])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: UuidTrackingTicket)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = 
+    this.warpDescriptor ~> P("ident", what.ident)
 }
 
-object TrackingTicketDecomposer extends Decomposer[TrackingTicket] {
-  val riftDescriptor = RiftDescriptor(classOf[TrackingTicket])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: TrackingTicket, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
+object TrackingTicketWarpPacker extends WarpPacker[TrackingTicket] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[TrackingTicket])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: TrackingTicket)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case ticket @ UuidTrackingTicket(_) => into.includeDirect(ticket, UuidTrackingTicketDecomposer)
-      case ticket @ StringTrackingTicket(_) => into.includeDirect(ticket, StringTrackingTicketDecomposer)
+      case ticket : UuidTrackingTicket => UuidTrackingTicketWarpPacker(ticket)
+      case ticket : StringTrackingTicket => StringTrackingTicketWarpPacker(ticket)
     }
   }
 }
 
-object StringTrackingTicketRecomposer extends Recomposer[StringTrackingTicket] {
-  val riftDescriptor = RiftDescriptor(classOf[StringTrackingTicket])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[StringTrackingTicket] =
-    from.getString("ident").map(StringTrackingTicket.apply)
+object StringTrackingTicketWarpUnpacker extends RegisterableWarpUnpacker[StringTrackingTicket] {
+  val warpDescriptor = WarpDescriptor(classOf[StringTrackingTicket])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[StringTrackingTicket] =
+    withFastLookUp(from) { lookup =>
+    lookup.getAs[String]("ident").map(StringTrackingTicket.apply)
+  }
 }
 
-object UuidTrackingTicketRecomposer extends Recomposer[UuidTrackingTicket] {
-  val riftDescriptor = RiftDescriptor(classOf[UuidTrackingTicket])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[UuidTrackingTicket] =
-    from.getUuid("ident").map(UuidTrackingTicket.apply)
+object UuidTrackingTicketWarpUnpacker extends RegisterableWarpUnpacker[UuidTrackingTicket] {
+  val warpDescriptor = WarpDescriptor(classOf[UuidTrackingTicket])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[UuidTrackingTicket] =
+    withFastLookUp(from) { lookup =>
+    lookup.getAs[JUUID]("ident").map(UuidTrackingTicket.apply)
+  }
 }
 
-object TrackingTicketRecomposer extends DivertingRecomposer[TrackingTicket] {
-  val riftDescriptor = RiftDescriptor(classOf[TrackingTicket])
-  val alternativeRiftDescriptors = Nil
+object TrackingTicketWarpUnpacker extends RegisterableWarpUnpacker[TrackingTicket] with DivertingWarpUnpacker[TrackingTicket] {
+  val warpDescriptor = WarpDescriptor(classOf[TrackingTicket])
+  val alternativeWarpDescriptors = Nil
   val divert =
     Map(
-      StringTrackingTicketRecomposer.riftDescriptor -> StringTrackingTicketRecomposer,
-      UuidTrackingTicketRecomposer.riftDescriptor -> UuidTrackingTicketRecomposer).lift
+      StringTrackingTicketWarpUnpacker.warpDescriptor -> StringTrackingTicketWarpUnpacker,
+      UuidTrackingTicketWarpUnpacker.warpDescriptor -> UuidTrackingTicketWarpUnpacker).lift
 }

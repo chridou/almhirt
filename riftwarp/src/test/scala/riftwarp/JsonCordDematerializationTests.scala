@@ -14,14 +14,14 @@
 //
 //  test("It must be possible to create a ToJsonCordWarpSequencer"){
 //    val riftWarp = RiftWarp.concurrentWithDefaults()
-//    implicit val hasRecomposers = riftWarp.barracks
+//    implicit val hasWarpUnpackers = riftWarp.barracks
 //    implicit val toolShed = riftWarp.toolShed
 //    val sequencer = ToJsonCordWarpSequencer()
 //   }
 //  
 //  test("""ToJsonCordWarpSequencer give a value for "hello"""") {
 //    val riftWarp = RiftWarp.concurrentWithDefaults()
-//    implicit val hasRecomposers = riftWarp.barracks
+//    implicit val hasWarpUnpackers = riftWarp.barracks
 //    implicit val toolShed = riftWarp.toolShed
 //    val sequencer = ToJsonCordWarpSequencer()
 //    val res = sequencer.addString("v", "hello").dematerialize.manifestation.toString

@@ -15,17 +15,17 @@ abstract class SyncSlickSnapshotStorageBase[TRow <: SnapshotRow](
   def unpackRow(row: TRow): (TRow#Repr, String, String)
 
   def putSnapshot(ar: IsAggregateRoot): AlmValidation[IsAggregateRoot] =
-    serializing.serialize(ar, None).flatMap {
-      case (Some(ti), serializedAr) =>
+    serializing.serialize(ar).flatMap {
+      case (serializedAr, Some(ti)) =>
         val row = createRow(serializing.channel, ti, ar, serializedAr)
         dal.insertSnapshotRow(row)
-      case (None, _) => UnspecifiedProblem("A type identifier is required.").failure
+      case (_, None) => UnspecifiedProblem("A type identifier is required.").failure
     }.map(_ => ar)
 
   def getSnapshot(id: JUUID): AlmValidation[IsAggregateRoot] =
     for {
       serialized <- dal.getSnapshotRowById(id).map(unpackRow)
-      deserialized <- serializing.deserialize(serialized._2)(serialized._1, Some(serialized._3))
+      deserialized <- serializing.deserialize(serialized._2)(serialized._1)
     } yield deserialized
 
   def containsSnapshot(id: JUUID): AlmValidation[Boolean] =

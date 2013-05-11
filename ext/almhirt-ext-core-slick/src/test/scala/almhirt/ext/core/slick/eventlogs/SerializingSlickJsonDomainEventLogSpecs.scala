@@ -12,7 +12,7 @@ import almhirt.eventlog._
 import almhirt.domain._
 import almhirt.core.test.BlockingRepoCoreBootstrapper
 import almhirt.ext.core.riftwarp.RiftWarpBootstrapper
-import almhirt.core.riftwarp.test.WithTestDecomposersAndRecomposersBootstrapper
+import almhirt.core.riftwarp.test.WithTestDecomposersAndWarpUnpackersBootstrapper
 import almhirt.core.test._
 import almhirt.domain.AggregateRootRef
 import com.typesafe.config.ConfigFactory
@@ -37,7 +37,7 @@ class SerializingSlickJsonDomainEventLogSpecs extends FlatSpec with ShouldMatche
    ConfigFactory.parseString(baseConfig).withFallback(ConfigFactory.load)
   }
   val bootstrapper =
-    new Bootstrapper with RiftWarpBootstrapper with BlockingRepoCoreBootstrapper with WithTestDecomposersAndRecomposersBootstrapper {
+    new Bootstrapper with RiftWarpBootstrapper with BlockingRepoCoreBootstrapper with WithTestDecomposersAndWarpUnpackersBootstrapper {
       val config = createConfig
     }
 

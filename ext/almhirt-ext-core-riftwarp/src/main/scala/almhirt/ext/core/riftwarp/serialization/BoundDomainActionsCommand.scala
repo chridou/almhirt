@@ -6,26 +6,28 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.commanding._
 import riftwarp._
-import riftwarp.inst._
+import riftwarp.std.kit._
 import almhirt.domain._
 
-class BoundDomainActionsCommandDecomposer[TCom <: BoundDomainActionsCommandContext[TAR, TEvent]#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val riftDescriptor: RiftDescriptor) extends Decomposer[TCom] {
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: TCom, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addRiftDescriptor(this.riftDescriptor)
-      .addUuid("id", what.id)
-      .addOptionalComplex("aggRef", what.aggRef, Some(classOf[AggregateRootRef])).flatMap(
-        _.addIterableOfComplex("actions", what.actions, None))
+class BoundDomainActionsCommandWarpPacker[TCom <: BoundDomainActionsCommandContext[TAR, TEvent]#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val warpDescriptor: WarpDescriptor) extends WarpPacker[TCom] {
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: TCom)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      P("id", what.id) ~>
+      WithOpt("aggRef", what.aggRef, AggregateRootRefWarpPacker) ~>
+      CLookUp("actions", what.actions)
   }
 }
 
-class BoundDomainActionsCommandRecomposer[TContext <: BoundDomainActionsCommandContext[TAR, TEvent], TCom <: TContext#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val riftDescriptor: RiftDescriptor, construct: (JUUID, Option[AggregateRootRef], List[TContext#BoundCommandAction]) => TCom) extends Recomposer[TCom] {
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[TCom] = {
-    val id = from.getUuid("id").toAgg
-    val aggRef = from.tryGetComplexByTag[AggregateRootRef]("aggRef", None).toAgg
-    val actions = from.getManyComplexOfType[List, TContext#BoundCommandAction]("actions", None).toAgg
-    (id |@| aggRef |@| actions)(construct)
+class BoundDomainActionsCommandWarpUnpacker[TContext <: BoundDomainActionsCommandContext[TAR, TEvent], TCom <: TContext#BoundDomainActionsCommand, TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](val warpDescriptor: WarpDescriptor, construct: (JUUID, Option[AggregateRootRef], List[TContext#BoundCommandAction]) => TCom) extends RegisterableWarpUnpacker[TCom] {
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TCom] = {
+    withFastLookUp(from) { lookup =>
+      for {
+        id <- lookup.getAs[JUUID]("id").toAgg
+        aggRef <- lookup.tryGetWith("aggRef", AggregateRootRefWarpUnpacker)
+        actions <- lookup.getManyTyped[TContext#BoundCommandAction]("actions").map(_.toList)
+      } yield construct(id, aggRef, actions)
+    }
   }
 }

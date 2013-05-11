@@ -1,78 +1,82 @@
 package almhirt.ext.core.riftwarp.serialization
 
+import java.util.{ UUID => JUUID }
+import org.joda.time.DateTime
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import riftwarp._
 import almhirt.domain.{ DomainEventHeader, AggregateRootRef }
+import riftwarp._
+import riftwarp.std.kit._
 
-object BasicEventHeaderDecomposer extends Decomposer[BasicEventHeader] {
-  val riftDescriptor = RiftDescriptor(classOf[BasicEventHeader])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: BasicEventHeader, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addRiftDescriptor(this.riftDescriptor)
-      .addUuid("id", what.id)
-      .addDateTime("timestamp", what.timestamp)
-      .addOptionalString("sender", what.sender).ok
+object BasicEventHeaderWarpPacker extends WarpPacker[BasicEventHeader] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[BasicEventHeader])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: BasicEventHeader)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      P("id", what.id) ~>
+      P("timestamp", what.timestamp) ~>
+      POpt("sender", what.sender)
   }
 }
 
-object BasicEventHeaderRecomposer extends Recomposer[BasicEventHeader] {
-  val riftDescriptor = RiftDescriptor(classOf[BasicEventHeader])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[BasicEventHeader] = {
-    val id = from.getUuid("id").toAgg
-    val timestamp = from.getDateTime("timestamp").toAgg
-    val sender = from.tryGetString("sender").toAgg
-    (id |@| timestamp |@| sender)(BasicEventHeader.apply)
+object BasicEventHeaderWarpUnpacker extends RegisterableWarpUnpacker[BasicEventHeader] {
+  val warpDescriptor = WarpDescriptor(classOf[BasicEventHeader])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[BasicEventHeader] =
+    withFastLookUp(from) { lookup =>
+      for {
+        id <- lookup.getAs[JUUID]("id")
+        timestamp <- lookup.getAs[DateTime]("timestamp")
+        sender <- lookup.tryGetAs[String]("sender")
+      } yield BasicEventHeader(id, timestamp, sender)
+    }
+}
+
+object DomainEventHeaderWarpPacker extends WarpPacker[DomainEventHeader] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[DomainEventHeader])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: DomainEventHeader)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      P("id", what.id) ~>
+      P("aggId", what.aggRef.id) ~>
+      P("aggVersion", what.aggRef.version) ~>
+      P("timestamp", what.timestamp) ~>
+      POpt("sender", what.sender)
   }
 }
 
-object DomainEventHeaderDecomposer extends Decomposer[DomainEventHeader] {
-  val riftDescriptor = RiftDescriptor(classOf[DomainEventHeader])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: DomainEventHeader, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addRiftDescriptor(this.riftDescriptor)
-      .addUuid("id", what.id)
-      .addUuid("aggId", what.aggRef.id)
-      .addLong("aggVersion", what.aggRef.version)
-      .addDateTime("timestamp", what.timestamp)
-      .addOptionalString("sender", what.sender).ok
-  }
+object DomainEventHeaderWarpUnpacker extends RegisterableWarpUnpacker[DomainEventHeader] {
+  val warpDescriptor = WarpDescriptor(classOf[DomainEventHeader])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[DomainEventHeader] =
+    withFastLookUp(from) { lookup =>
+      for {
+        id <- lookup.getAs[JUUID]("id")
+        aggId <- lookup.getAs[JUUID]("aggId")
+        aggVersion <- lookup.getAs[Long]("aggVersion")
+        timestamp <- lookup.getAs[DateTime]("timestamp")
+        sender <- lookup.tryGetAs[String]("sender")
+      } yield DomainEventHeader(id, AggregateRootRef(aggId, aggVersion), timestamp, sender)
+    }
 }
 
-object DomainEventHeaderRecomposer extends Recomposer[DomainEventHeader] {
-  val riftDescriptor = RiftDescriptor(classOf[DomainEventHeader])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[DomainEventHeader] = {
-    val id = from.getUuid("id").toAgg
-    val aggId = from.getUuid("aggId").toAgg
-    val aggVersion = from.getLong("aggVersion").toAgg
-    val timestamp = from.getDateTime("timestamp").toAgg
-    val sender = from.tryGetString("sender").toAgg
-    (id |@| aggId |@| aggVersion |@| timestamp |@| sender)((id, aggId, aggVersion, timestamp, sender) =>
-      DomainEventHeader(id, AggregateRootRef(aggId, aggVersion), timestamp, sender))
-  }
-}
-
-object EventHeaderDecomposer extends Decomposer[EventHeader] {
-  val riftDescriptor = RiftDescriptor(classOf[EventHeader])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: EventHeader, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
+object EventHeaderWarpPacker extends WarpPacker[EventHeader] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[EventHeader])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: EventHeader)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case header: BasicEventHeader => into.includeDirect(header, BasicEventHeaderDecomposer)
-      case header: DomainEventHeader => into.includeDirect(header, DomainEventHeaderDecomposer)
+      case header: BasicEventHeader => BasicEventHeaderWarpPacker.pack(header)
+      case header: DomainEventHeader => DomainEventHeaderWarpPacker.pack(header)
     }
   }
 }
 
-object EventHeaderRecomposer extends DivertingRecomposer[EventHeader] {
-  val riftDescriptor = RiftDescriptor(classOf[EventHeader])
-  val alternativeRiftDescriptors = Nil
+object EventHeaderWarpUnpacker extends RegisterableWarpUnpacker[EventHeader] with DivertingWarpUnpacker[EventHeader] {
+  val warpDescriptor = WarpDescriptor(classOf[EventHeader])
+  val alternativeWarpDescriptors = Nil
   val recomposers = Map(
-    BasicEventHeaderRecomposer.riftDescriptor -> BasicEventHeaderRecomposer,
-    DomainEventHeaderRecomposer.riftDescriptor -> DomainEventHeaderRecomposer)
+    BasicEventHeaderWarpUnpacker.warpDescriptor -> BasicEventHeaderWarpUnpacker,
+    DomainEventHeaderWarpUnpacker.warpDescriptor -> DomainEventHeaderWarpUnpacker)
   val divert = recomposers.lift
 }

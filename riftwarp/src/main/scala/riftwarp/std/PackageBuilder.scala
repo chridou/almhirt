@@ -26,6 +26,16 @@ trait PackageBuilderFuns {
   def E(label: String, what: WarpPackage): AlmValidation[WarpElement] =
     WarpElement(label, Some(what)).success
 
+  def TypeClass[A](label: String, what: A)(implicit packer: WarpPacker[A], packers: WarpPackers): AlmValidation[WarpElement] =
+    With[A](label, what, packer)    
+
+  def TypeClassOpt[A](label: String, what: Option[A])(implicit packer: WarpPacker[A], packers: WarpPackers): AlmValidation[WarpElement] =
+    WithOpt[A](label, what, packer)    
+
+  def TypeClassFlatOpt[A](label: String, what: Option[A])(implicit packer: WarpPacker[A]): AlmValidation[WarpElement] =
+    WithOpt[A](label, what, packer)(WarpPackers.NoWarpPackers)    
+    
+    
   def P[A: WarpPrimitiveConverter](label: String, what: A): AlmValidation[WarpElement] =
     WarpElement(label, Some(toWarpPrimitive(what))).success
 
@@ -173,13 +183,38 @@ trait PackageBuilderFuns {
 }
 
 trait PackageBuilderOps {
+  import language.implicitConversions
+  
+  implicit def tuple2WarpElement[T](tuple: (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpElement] =
+    tuple._2 match {
+    case None => WarpElement(tuple._1, None).success
+    case Some(x) => packer(x).map(x => WarpElement(tuple._1, Some(x)))
+  }
+
+  implicit class Tuple2Ops[T](self: Tuple2[String, T]) {
+    def ~>(next: => AlmValidation[WarpElement])(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      next.fold(
+        fail => fail.failure,
+        succ => packer(self._2).map(x => WarpObject(None, Vector(WarpElement(self._1, Some(x)), succ))))
+
+    def ⟿(next: => AlmValidation[WarpElement])(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~>(next)
+  }
+  
   implicit class WarpElementOps(self: WarpElement) {
     def ~>(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
         succ => WarpObject(None, Vector(self, succ)).success)
 
+    def ~?>[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      ~>(tuple2WarpElement(next))
+
+    def ~>[T](next: => (String, T))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      ~?>((next._1, Some(next._2)))
+      
     def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
+    def ⟿?[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~?>(next)
+    def ⟿[T](next: => (String, T))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~>[T](next)
   }
 
   implicit class WarpObjectOps(self: WarpObject) {
@@ -188,7 +223,15 @@ trait PackageBuilderOps {
         fail => fail.failure,
         succ => WarpObject(self.warpDescriptor, self.elements :+ succ).success)
 
+    def ~?>[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      ~>(tuple2WarpElement(next))
+
+    def ~>[T](next: => (String, T))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      ~?>((next._1, Some(next._2)))
+      
     def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
+    def ⟿?[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~?>[T](next)
+    def ⟿[T](next: => (String, T))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~>[T](next)
   }
 
   implicit class WarpDescriptorOps(self: WarpDescriptor) {
@@ -197,7 +240,15 @@ trait PackageBuilderOps {
         fail => fail.failure,
         succ => WarpObject(Some(self), Vector(succ)).success)
 
+    def ~?>[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      ~>(tuple2WarpElement(next))
+
+    def ~>[T](next: => (String, T))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      ~?>((next._1, Some(next._2)))
+      
     def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
+    def ⟿?[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~?>[T](next)
+    def ⟿[T](next: => (String, T))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~>[T](next)
   }
 
   implicit class WarpObjectVOps(self: AlmValidation[WarpObject]) {
@@ -209,7 +260,15 @@ trait PackageBuilderOps {
             fail => fail.failure,
             succ => WarpObject(succObj.warpDescriptor, succObj.elements :+ succ).success))
 
+    def ~?>[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      ~>(tuple2WarpElement(next))
+        
+    def ~>[T](next: => (String, T))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
+      ~?>((next._1, Some(next._2)))
+        
     def ⟿(next: => AlmValidation[WarpElement]): AlmValidation[WarpObject] = ~>(next)
+    def ⟿?[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~?>[T](next)
+    def ⟿[T](next: => (String, T))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] = ~>[T](next)
 
   }
 

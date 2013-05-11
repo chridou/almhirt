@@ -76,16 +76,16 @@ object Problems {
     }
   }
 
-  def createDefaultDecomposerAndRecomposer[T <: Problem](creator: DefaultProblemCreator[T])(implicit tag: ClassTag[T]) =
+  def createDefaultDecomposerAndWarpUnpacker[T <: Problem](creator: DefaultProblemCreator[T])(implicit tag: ClassTag[T]) =
     (createDefaultPacker[T](tag.runtimeClass), createDefaultUnpacker[T](tag.runtimeClass, creator))
 
   def createAndRegisterDefaultPackerAndUnpacker[T <: Problem : ClassTag](packers: WarpPackers, unpackers: WarpUnpackers)(creator: DefaultProblemCreator[T]) {
-    val (packer, unpacker) = createDefaultDecomposerAndRecomposer(creator)
+    val (packer, unpacker) = createDefaultDecomposerAndWarpUnpacker(creator)
     packers.addTyped[T](packer)
     unpackers.addTyped[T](unpacker)
   }
 
-  def createAndRegisterAllDefaultDecomposersAndRecomposers(packers: WarpPackers, unpackers: WarpUnpackers) {
+  def createAndRegisterAllDefaultDecomposersAndWarpUnpackers(packers: WarpPackers, unpackers: WarpUnpackers) {
     createAndRegisterDefaultPackerAndUnpacker[Problem](packers, unpackers)(UnspecifiedProblem.tupled)
     createAndRegisterDefaultPackerAndUnpacker[UnspecifiedProblem](packers, unpackers)(UnspecifiedProblem.tupled)
     createAndRegisterDefaultPackerAndUnpacker[ExceptionCaughtProblem](packers, unpackers)(ExceptionCaughtProblem.tupled)
@@ -125,7 +125,7 @@ object Problems {
   }
 
   def registerAllCommonProblems(packers: WarpPackers, unpackers: WarpUnpackers) {
-    createAndRegisterAllDefaultDecomposersAndRecomposers(packers, unpackers)
+    createAndRegisterAllDefaultDecomposersAndWarpUnpackers(packers, unpackers)
     packers.addTyped(createAggregateProblemPacker())
     unpackers.addTyped(createAggregateProblemUnpacker())
   }

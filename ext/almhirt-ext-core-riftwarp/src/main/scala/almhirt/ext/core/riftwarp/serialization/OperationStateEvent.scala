@@ -5,25 +5,26 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.util.OperationStateEvent
 import riftwarp._
+import riftwarp.std.kit._
 
-object  OperationStateEventDecomposer extends Decomposer[OperationStateEvent] {
-  val riftDescriptor = RiftDescriptor(classOf[OperationStateEvent])
-  val alternativeRiftDescriptors = Nil
-  def decompose[TDimension <: RiftDimension](what: OperationStateEvent, into: WarpSequencer[TDimension]): AlmValidation[WarpSequencer[TDimension]] = {
-    into
-      .addRiftDescriptor(this.riftDescriptor)
-      .addWith("header", what.header, EventHeaderDecomposer).flatMap(
-        _.addWith("operationState", what.operationState, OperationStateDecomposer))
+object OperationStateEventWarpPacker extends WarpPacker[OperationStateEvent] with RegisterableWarpPacker {
+  val warpDescriptor = WarpDescriptor(classOf[OperationStateEvent])
+  val alternativeWarpDescriptors = Nil
+  override def pack(what: OperationStateEvent)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+    this.warpDescriptor ~>
+      With("header", what.header, EventHeaderWarpPacker) ~>
+      With("operationState", what.operationState, OperationStateWarpPacker)
   }
 }
 
-object  OperationStateEventRecomposer extends Recomposer[OperationStateEvent] {
-  val riftDescriptor = RiftDescriptor(classOf[OperationStateEvent])
-  val alternativeRiftDescriptors = Nil
-  def recompose(from: Extractor): AlmValidation[OperationStateEvent] = {
-    for {
-      header <- from.getWith("header", EventHeaderRecomposer.recompose)
-      operationState <- from.getWith("operationState", OperationStateRecomposer.recompose)
-    } yield OperationStateEvent(header, operationState)
-  }
+object OperationStateEventWarpUnpacker extends RegisterableWarpUnpacker[OperationStateEvent] {
+  val warpDescriptor = WarpDescriptor(classOf[OperationStateEvent])
+  val alternativeWarpDescriptors = Nil
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[OperationStateEvent] =
+    withFastLookUp(from) { lookup =>
+      for {
+        header <- lookup.getWith("header", EventHeaderWarpUnpacker)
+        operationState <- lookup.getWith("operationState", OperationStateWarpUnpacker)
+      } yield OperationStateEvent(header, operationState)
+    }
 }

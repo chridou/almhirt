@@ -83,4 +83,21 @@ trait WarpPackageFuns {
         } yield (packedA, packedB)).toAgg
     }.toVector.sequence.map(WarpAssociativeCollection(_))
 
+  def tryGetWarpDescriptor(pkg: WarpPackage): Option[WarpDescriptor] =
+    pkg match {
+      case WarpObject(wd, _) => wd
+      case p: WarpBoolean => Some(riftwarp.std.BooleanWarpPacker.warpDescriptor)
+      case p: WarpString => Some(riftwarp.std.StringWarpPacker.warpDescriptor)
+      case p: WarpByte => Some(riftwarp.std.ByteWarpPacker.warpDescriptor)
+      case p: WarpInt => Some(riftwarp.std.IntWarpPacker.warpDescriptor)
+      case p: WarpLong => Some(riftwarp.std.LongWarpPacker.warpDescriptor)
+      case p: WarpBigInt => Some(riftwarp.std.BigIntWarpPacker.warpDescriptor)
+      case p: WarpFloat => Some(riftwarp.std.FloatWarpPacker.warpDescriptor)
+      case p: WarpDouble => Some(riftwarp.std.DoubleWarpPacker.warpDescriptor)
+      case p: WarpBigDecimal => Some(riftwarp.std.BigDecimalWarpPacker.warpDescriptor)
+      case p: WarpUuid => Some(riftwarp.std.UuidWarpPacker.warpDescriptor)
+      case p: WarpUri => Some(riftwarp.std.UriWarpPacker.warpDescriptor)
+      case p: WarpDateTime => Some(riftwarp.std.DateTimeWarpPacker.warpDescriptor)
+      case _ => None
+    }
 }

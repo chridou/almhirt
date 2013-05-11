@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.0.137"
+  val buildVersion      = "0.1.0"
   val buildScalaVersion = "2.10.1"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -165,24 +165,12 @@ trait DocItBuild {
   )
 }
 
-
 trait ExtCoreUnfilteredBuild {
   import Dependencies._
   import Resolvers._
   def extCoreUnfilteredProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += "net.databinder" %% "unfiltered-netty-server" % "0.6.7",
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases)
-  
-}
-
-trait ClientDispatchBuild {
-  import Dependencies._
-  import Resolvers._
-  def clientDispatchProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += "net.databinder.dispatch" %% "dispatch-core" % "0.9.5",
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases)
   
@@ -208,11 +196,11 @@ object AlmHirtBuild extends Build
 	with RiftWarpAutomaticBuild 
 	with AlmhirtExtHttpUnfilteredBuild 
 	with ExtCoreUnfilteredBuild 
-	with ClientDispatchBuild 
-	with AppBuild with DocItBuild {
+	with AppBuild
+	with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, slickExtensions, app, docit, riftwarp, almhirtExtHttpUnfiltered, riftwarpAutomatic, almhirtExtCoreUnfiltered, clientDispatch)
+	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, slickExtensions, app, docit, riftwarp, almhirtExtHttpUnfiltered, riftwarpAutomatic, almhirtExtCoreUnfiltered)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -245,10 +233,6 @@ object AlmHirtBuild extends Build
  lazy val almhirtExtCoreUnfiltered = extCoreUnfilteredProject(	name = "almhirt-ext-core-unfiltered",
 	                       				baseFile = file("./ext/almhirt-ext-core-unfiltered")) dependsOn(core, almhirtExtHttpUnfiltered)
 
- lazy val clientDispatch = clientDispatchProject(	name = "almhirt-ext-client-dispatch",
-	                       				baseFile = file("./ext/almhirt-ext-client-dispatch")) dependsOn(core, riftwarp)
-
-
- lazy val app = appProject(	name = "almhirt-app",
+ val app = appProject(	name = "almhirt-app",
 	                       	baseFile = file("almhirt-app")) dependsOn(core)										
 }

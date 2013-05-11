@@ -24,42 +24,40 @@ class StandardSerializerTests extends FunSuite with MustMatchers {
    }
    
    val riftWarp = {
-     val rw = RiftWarp.concurrentWithDefaults
-        rw.barracks.addDecomposer(new TestPersonCreatedDecomposer)
-        rw.barracks.addRecomposer(new TestPersonCreatedRecomposer)
-        rw.barracks.addDecomposer(new TestPersonNameChangedDecomposer)
-        rw.barracks.addRecomposer(new TestPersonNameChangedRecomposer)
-        rw.barracks.addDecomposer(new TestPersonAddressAquiredDecomposer)
-        rw.barracks.addRecomposer(new TestPersonAddressAquiredRecomposer)
-        rw.barracks.addDecomposer(new TestPersonMovedDecomposer)
-        rw.barracks.addRecomposer(new TestPersonMovedRecomposer)
-        rw.barracks.addDecomposer(new TestPersonUnhandledEventDecomposer)
-        rw.barracks.addRecomposer(new TestPersonUnhandledEventRecomposer)
-     rw
+     val rw = RiftWarp()
+    rw.packers.addTyped(TestPersonCreatedPacker)
+    rw.unpackers.addTyped(TestPersonCreatedWarpUnpacker)
+    rw.packers.addTyped(TestPersonNameChangedPacker)
+    rw.unpackers.addTyped(TestPersonNameChangedWarpUnpacker)
+    rw.packers.addTyped(TestPersonAddressAquiredPacker)
+    rw.unpackers.addTyped(TestPersonAddressAquiredWarpUnpacker)
+    rw.packers.addTyped(TestPersonMovedPacker)
+    rw.unpackers.addTyped(TestPersonMovedWarpUnpacker)
+    rw.packers.addTyped(TestPersonUnhandledEventPacker)
+    rw.unpackers.addTyped(TestPersonUnhandledEventWarpUnpacker)
+    rw
    }
    
    val eventSerializer = {
       val serializer = Serializers.createForStrings[Event, Event](riftWarp)
       new EventToStringSerializer {
-        def serialize(channel: String)(what: Event, typeHint: Option[String], args: Map[String, Any])  = serializer.serialize(channel)(what, typeHint, args)
-        def serializeAsync(channel: String)(what: Event, typeHint: Option[String], args: Map[String, Any]) = serializer.serializeAsync(channel)(what, typeHint, args)
-        def deserialize(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any]) = serializer.deserialize(channel)(what, typeHint, args)
-        def deserializeAsync(channel: String)(what: String, typeHint: Option[String], args: Map[String, Any]) = serializer.deserializeAsync(channel)(what, typeHint, args)
+        def serialize(channel: String)(what: Event, options: Map[String, Any] = Map.empty) = serializer.serialize(channel)(what, options)
+        def deserialize(channel: String)(what: SerializedRepr, options: Map[String, Any] = Map.empty) = serializer.deserialize(channel)(what, options)
       }
    }
    
    test("""The EventSerializer must serialize a "TestPersonCreated"-Event to JSON""") {
-     val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader((support.getUuid, 0L)), "test"), None)
+     val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader((support.getUuid, 0L)), "test"))
      res.isSuccess must be(true)
    }
 
    ignore("""The EventSerializer must deserialize a "TestPersonCreated"-Event from JSON which he created""") {
-     val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader((support.getUuid, 0L)), "test"), None)
+     val res = eventSerializer.serialize("json")(TestPersonCreated(DomainEventHeader((support.getUuid, 0L)), "test"))
      res.isSuccess must be(true)
    }
    
    test("""The EventSerializer must serialize a "TestPersonCreated"-Event to XML""") {
-     val res = eventSerializer.serialize("xml")(TestPersonCreated(DomainEventHeader(support.getUuid, 0L), "test"), None)
+     val res = eventSerializer.serialize("xml")(TestPersonCreated(DomainEventHeader(support.getUuid, 0L), "test"))
      res.isSuccess must be(true)
    }
 }
