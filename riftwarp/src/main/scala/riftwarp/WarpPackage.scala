@@ -32,6 +32,7 @@ final case class WarpBigDecimal(override val value: BigDecimal) extends WarpPrim
 final case class WarpUuid(override val value: java.util.UUID) extends WarpPrimitive
 final case class WarpUri(override val value: java.net.URI) extends WarpPrimitive
 final case class WarpDateTime(override val value: org.joda.time.DateTime) extends WarpPrimitive
+final case class WarpDuration(override val value: scala.concurrent.duration.FiniteDuration) extends WarpPrimitive
 
 final case class WarpObject(warpDescriptor: Option[WarpDescriptor], elements: Vector[WarpElement]) extends WarpPackage {
   def getWarpDescriptor: AlmValidation[WarpDescriptor] =

@@ -57,6 +57,7 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
         case "Double" => extractDouble(value)
         case "BigDecimal" => extractBigDecimal(value)
         case "DateTime" => extractDateTime(value)
+        case "Duration" => extractDuration(value)
         case "Uuid" => extractUuid(value)
         case "Uri" => extractUri(value)
         case x => BadDataProblem(s"Could not extract a primitive from an XmlElem because its attribute 'type' specifies an unknown data type '$x'. The element was: ${value.label}").failure
@@ -72,6 +73,7 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
   private def extractDouble(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractDouble.map(WarpDouble(_))
   private def extractBigDecimal(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractDecimal.map(WarpBigDecimal(_))
   private def extractDateTime(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractDateTime.map(WarpDateTime(_))
+  private def extractDuration(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractDuration.map(WarpDuration(_))
   private def extractUuid(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractUuid.map(WarpUuid(_))
   private def extractUri(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractUri.map(WarpUri(_))
 

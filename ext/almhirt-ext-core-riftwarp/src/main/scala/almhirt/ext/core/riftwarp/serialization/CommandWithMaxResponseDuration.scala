@@ -1,11 +1,11 @@
 package almhirt.ext.core.riftwarp.serialization
 
 import java.util.{ UUID => JUUID }
+import scala.concurrent.duration._
 import almhirt.common._
 import almhirt.util._
 import riftwarp._
 import riftwarp.std.kit._
-import scala.concurrent.duration.Duration
 
 object CommandWithMaxResponseDurationWarpPacker extends WarpPacker[CommandWithMaxResponseDuration] with RegisterableWarpPacker {
   val warpDescriptor = WarpDescriptor("CommandWithMaxResponseDuration")
@@ -13,7 +13,7 @@ object CommandWithMaxResponseDurationWarpPacker extends WarpPacker[CommandWithMa
   override def pack(what: CommandWithMaxResponseDuration)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     this.warpDescriptor ~>
       LookUp("command", what.command) ~>
-      POpt("maxResponseDuration", what.maxResponseDuration.map(_.toSeconds))
+      POpt("maxResponseDuration", what.maxResponseDuration)
   }
 }
 
@@ -24,7 +24,7 @@ object CommandWithMaxResponseDurationUnpacker extends RegisterableWarpUnpacker[C
     withFastLookUp(from) { lookup =>
       for {
         command <- lookup.getTyped[Command]("command")
-        maxResponseDuration <- lookup.tryGetAs[Long]("commandType").map(_.map(Duration.create(_, "s")))
+        maxResponseDuration <- lookup.tryGetAs[FiniteDuration]("commandType")
       } yield CommandWithMaxResponseDuration(command, maxResponseDuration)
     }
   }

@@ -1,6 +1,7 @@
 package riftwarp.std
 
 import java.util.{ UUID => JUUID }
+import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -174,4 +175,14 @@ trait WarpPrimitiveToDateTimeConverter extends WarpPrimitiveConverter[org.joda.t
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a DateTime""").failure
     }
   override def convertBack(what: org.joda.time.DateTime) = WarpDateTime(what)
+}
+
+trait WarpPrimitiveToDurationConverter extends WarpPrimitiveConverter[FiniteDuration] {
+  override def convert(what: WarpPackage): AlmValidation[FiniteDuration] =
+    what match {
+      case WarpString(value) => value.toDurationAlm
+      case WarpDuration(value) => value.success
+      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a DateTime""").failure
+    }
+  override def convertBack(what: FiniteDuration) = WarpDuration(what)
 }

@@ -15,6 +15,7 @@
 package almhirt.xml
 
 import java.util.{ UUID => JUUID }
+import scala.concurrent.duration._
 import scalaz._, Scalaz._
 import scalaz.std._
 import org.joda.time.DateTime
@@ -146,6 +147,15 @@ trait XmlFunctions {
     else
       dateTimeFromXmlNode(node) fold (_.failure, Some(_).success)
 
+  def durationFromXmlNode(node: Elem): AlmValidation[FiniteDuration] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseDurationAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
+
+  def optionalDurationFromXmlNode(node: Elem): AlmValidation[Option[FiniteDuration]] =
+    if (node.text.trim.isEmpty)
+      None.success[BadDataProblem]
+    else
+      durationFromXmlNode(node) fold (_.failure, Some(_).success)
+      
   def uuidFromXmlNode(node: Elem): AlmValidation[JUUID] =
     notEmptyOrWhitespace(node.text) flatMap (ne => parseUuidAlm(ne)) bimap (f => f.withIdentifier(node.label), s => s)
 

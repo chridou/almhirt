@@ -53,6 +53,8 @@ trait AlmValidationOps0 extends Ops[String] {
     parseDecimalAlm(self)
   def toDateTimeAlm(): AlmValidation[DateTime] =
     parseDateTimeAlm(self)
+  def toDurationAlm(): AlmValidation[scala.concurrent.duration.FiniteDuration] =
+    parseDurationAlm(self)
   def toUuidAlm(): AlmValidation[UUID] =
     parseUuidAlm(self)
   def toUriAlm(): AlmValidation[java.net.URI] =

@@ -92,6 +92,17 @@ trait AlmValidationParseFunctions {
       case err: Exception => BadDataProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
 
+  def parseDurationAlm(toParse: String): AlmValidation[scala.concurrent.duration.FiniteDuration] =
+    try {
+      val dur = scala.concurrent.duration.Duration(toParse)
+      if (dur.isFinite)
+        scala.concurrent.duration.Duration.fromNanos(dur.toNanos).success
+      else
+        BadDataProblem("Not a valid finite duration: %s".format(toParse)).failure
+    } catch {
+      case err: Exception => BadDataProblem("Not a valid DateTime: %s".format(toParse)).failure
+    }
+
   def parseUuidAlm(toParse: String): AlmValidation[UUID] =
     try {
       UUID.fromString(toParse).success
@@ -147,15 +158,12 @@ trait AlmValidationParseFunctions {
   def tryParseBooleanAlm(toParse: String): AlmValidation[Option[Boolean]] =
     emptyStringIsNone(toParse, x => parseBooleanAlm(x))
 
-
   def emptyOrWhitespaceIsNone(toTest: String): Option[String] =
     if (toTest.trim.isEmpty)
       None
     else
       Some(toTest)
 
-
- 
   private def emptyStringIsNone[T](str: String, f: String => AlmValidation[T]) =
     if (str.trim.isEmpty)
       None.success

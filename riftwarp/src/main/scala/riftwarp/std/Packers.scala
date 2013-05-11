@@ -2,6 +2,7 @@ package riftwarp.std
 
 import java.net.URI
 import java.util.{ UUID => JUUID }
+import scala.concurrent.duration._
 import org.joda.time.DateTime
 import scalaz.syntax.validation._
 import almhirt.common.AlmValidation
@@ -196,6 +197,22 @@ object DateTimeWarpUnpacker extends RegisterableWarpUnpacker[DateTime] {
     what match {
     case WarpDateTime(v) => v.success
     case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a DateTime""").failure
+  }
+}
+
+object DurationWarpPacker extends WarpPacker[FiniteDuration] with SimpleWarpPacker[FiniteDuration] with RegisterableWarpPacker {
+  override val warpDescriptor = WarpDescriptor("DateTime")
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[FiniteDuration]) :: Nil
+  override def pack(what: FiniteDuration)(implicit packers: WarpPackers): AlmValidation[WarpDuration] = WarpDuration(what).success
+}
+
+object DurationWarpUnpacker extends RegisterableWarpUnpacker[FiniteDuration] {
+  override val warpDescriptor = WarpDescriptor("FiniteDuration")
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[FiniteDuration]) :: Nil
+  override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[FiniteDuration] = 
+    what match {
+    case WarpDuration(v) => v.success
+    case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a FiniteDuration""").failure
   }
 }
 

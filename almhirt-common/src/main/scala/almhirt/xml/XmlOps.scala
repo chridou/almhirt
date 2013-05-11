@@ -15,6 +15,7 @@
 package almhirt.xml
 
 import java.util.{UUID => JUUID}
+import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.xml.{Node, NodeSeq, Elem}
 import scalaz.Validation
@@ -64,6 +65,10 @@ trait XmlOps0 extends Ops[Elem]{
     funs.dateTimeFromXmlNode(self)
   def extractOptionalDateTime(): AlmValidation[Option[DateTime]] = 
     funs.optionalDateTimeFromXmlNode(self)
+  def extractDuration(): AlmValidation[FiniteDuration] = 
+    funs.durationFromXmlNode(self)
+  def extractOptionalDuration(): AlmValidation[Option[FiniteDuration]] = 
+    funs.optionalDurationFromXmlNode(self)
   def extractUuid(): AlmValidation[JUUID] = 
     funs.uuidFromXmlNode(self)
   def extractOptionalUuid(): AlmValidation[Option[JUUID]] = 

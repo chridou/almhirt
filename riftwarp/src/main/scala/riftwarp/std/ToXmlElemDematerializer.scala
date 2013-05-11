@@ -28,6 +28,7 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
       case WarpUuid(value) => <value type="Uuid">{ value.toString }</value>
       case WarpUri(value) => <value type="Uri">{ value.toString }</value>
       case WarpDateTime(value) => <value type="DateTime">{ value.toString() }</value>
+      case WarpDuration(value) => <value type="Duration">{ value.toString() }</value>
     }
 
   protected override def getObjectRepr(warpObject: WarpObject): XmlElem = {
