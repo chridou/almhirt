@@ -10,7 +10,7 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
 
   val channel = "xml"
   val dimension = classOf[XmlElem].getName()
-  
+
   protected def valueReprToDim(repr: XmlElem): XmlElem =
     repr
 
@@ -40,13 +40,16 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   }
 
   protected override def foldReprs(elems: Traversable[ValueRepr]): XmlElem =
-    foldParts(elems.toList)
+    createCollectionInnerXml("collection", elems.toList, NodeSeq.Empty)
 
   protected override def foldTupleReprs(tuple: (ValueRepr, ValueRepr)): XmlElem =
-    foldParts(tuple._1 :: tuple._2 :: Nil)
+    <tuple2><a>{ tuple._1 }</a><b>{ tuple._2 }</b></tuple2>
+
+  protected override def foldAssocRepr(assoc: Traversable[(ValueRepr, ValueRepr)]): XmlElem =
+    createCollectionInnerXml("assoc", assoc.toList.map(x => foldTupleReprs(x)), NodeSeq.Empty)
 
   protected override def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): XmlElem =
-    foldParts(tree.rootLabel :: foldParts(tree.subForest.map(foldTreeRepr).toList) :: Nil)
+    <tree>{ foldTree(tree) }</tree>
 
   protected override def foldByteArrayRepr(bytes: IndexedSeq[Byte]): XmlElem =
     <bytes type="Bytes">{ bytes.mkString(",") }</bytes>
@@ -63,15 +66,19 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
     }
 
   @tailrec
-  private def createInnerXml(rest: List[XmlElem], acc: NodeSeq): XmlElem =
+  private def createCollectionInnerXml(name: String, rest: List[XmlElem], acc: NodeSeq): XmlElem =
     rest match {
-      case Nil => <collection>{ acc }</collection>
-      case h :: t => createInnerXml(t, acc ++ h)
+      case Nil => XmlElem(null, name, Null, TopScope, true, acc: _*)
+      case h :: t => createCollectionInnerXml(name, t, acc ++ h)
     }
 
-  private def foldParts(items: List[XmlElem]): XmlElem = createInnerXml(items, NodeSeq.Empty)
-
-  private def foldTree(tree: scalaz.Tree[XmlElem]): XmlElem =
-    foldParts(tree.rootLabel :: foldParts(tree.subForest.map(foldTree).toList) :: Nil)
-
+  private def foldTree(tree: scalaz.Tree[XmlElem]): XmlElem = {
+    val items = tree.subForest.map(foldTree).toList
+    if (items.isEmpty)
+      XmlElem(null, "leaf", Null, TopScope, true, tree.rootLabel)
+    else {
+      val elems = createCollectionInnerXml("subforest", tree.subForest.map(foldTree).toList, NodeSeq.Empty)
+      XmlElem(null, "node", Null, TopScope, true, (<label>{tree.rootLabel}</label> :: elems :: Nil): _*)
+    }
+  }
 }

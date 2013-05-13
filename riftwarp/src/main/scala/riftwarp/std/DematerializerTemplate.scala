@@ -17,7 +17,7 @@ trait DematerializerTemplate[T] extends Dematerializer[T] {
       case WarpCollection(items) =>
         foldReprs(items.map(transform))
       case WarpAssociativeCollection(items) =>
-        foldReprs(items.map(item => foldTupleReprs((transform(item._1), transform(item._2)))))
+        foldAssocRepr(items.map(item => (transform(item._1), transform(item._2))))
       case WarpTree(tree) =>
         foldTreeRepr(tree.map(transform))
       case WarpBytes(bytes) =>
@@ -33,6 +33,7 @@ trait DematerializerTemplate[T] extends Dematerializer[T] {
   protected def getPrimitiveRepr(prim: WarpPrimitive): ValueRepr
   protected def getObjectRepr(warpObject: WarpObject): ValueRepr
   protected def foldReprs(elems: Traversable[ValueRepr]): ValueRepr
+  protected def foldAssocRepr(assoc: Traversable[(ValueRepr, ValueRepr)]): ValueRepr
   protected def foldTupleReprs(tuple: (ValueRepr, ValueRepr)): ValueRepr
   protected def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): ValueRepr
   protected def foldByteArrayRepr(bytes: IndexedSeq[Byte]): ValueRepr

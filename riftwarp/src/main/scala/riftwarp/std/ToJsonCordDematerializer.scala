@@ -58,6 +58,9 @@ object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.
   protected override def foldTupleReprs(tuple: (ValueRepr, ValueRepr)): Cord =
     foldParts(tuple._1 :: tuple._2 :: Nil)
 
+  protected override def foldAssocRepr(assoc: Traversable[(ValueRepr, ValueRepr)]): Cord =
+    foldParts(assoc.toList.map(x => foldTupleReprs(x)))
+    
   protected override def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): Cord =
     foldParts(tree.rootLabel :: foldParts(tree.subForest.map(foldTreeRepr).toList) :: Nil)
 

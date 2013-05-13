@@ -2,6 +2,7 @@ package riftwarp.std
 import scala.xml.{ Elem => XmlElem }
 import scalaz._
 import scalaz.Scalaz._
+import scalaz.Tree._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.xml.all._
@@ -18,6 +19,8 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
       case "value" => extractPrimitiveFromElem(what)
       case "bytes" => extractBytes(what)
       case "collection" => extractCollection(what)
+      case "assoc" => extractAssoc(what)
+      case "tree" => extractTree(what)
       case "Base64" => extractCollection(what)
       case _ => extractObject(what)
     }
@@ -32,9 +35,39 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
         }).toAgg).toVector.sequence
     } yield WarpObject(td, elems.map(x => WarpElement(x._1, x._2)))
 
+  private def extractTuple2(from: XmlElem): AlmValidation[(WarpPackage, WarpPackage)] =
+    for {
+      elemA <- from \! "a"
+      elemB <- from \! "b"
+      va <- elemA.firstChildNode
+      vb <- elemB.firstChildNode
+      a <- extract(va)
+      b <- extract(vb)
+    } yield (a, b)
+
   private def extractCollection(what: XmlElem): AlmValidation[WarpCollection] =
     what.elems.map(elem => extract(elem).toAgg).toVector.sequence.map(WarpCollection(_))
 
+  private def extractAssoc(what: XmlElem): AlmValidation[WarpAssociativeCollection] =
+    what.elems.map(elem => extractTuple2(elem).toAgg).toVector.sequence.map(WarpAssociativeCollection(_))
+
+  private def extractTree(what: XmlElem): AlmValidation[WarpTree] =
+    what.firstChildNode.flatMap(node => extractTreeNodes(node).map(WarpTree(_)))
+
+  private def extractTreeNodes(from: XmlElem): AlmValidation[Tree[WarpPackage]] = 
+    from.label match {
+      case "leaf" => from.firstChildNode.flatMap(x => extract(x).map(Tree(_)))
+      case "node" => 
+        for {
+          labelElem <- from \! ("label")
+          vLabel <- labelElem.firstChildNode
+          subforestElem <- from \! ("subforest")
+          label <- extract(vLabel)
+          subforest <- subforestElem.elems.map(x => extractTreeNodes(x).toAgg).toList.sequence
+        } yield label.node(subforest: _*)
+      case x => ParsingProblem(s"$x is not a label for a tree node item").failure
+    }
+    
   private def extractBytes(what: XmlElem): AlmValidation[WarpBytes] =
     what.text.split(",").map(_.toByteAlm.toAgg).toVector.sequence.map(x => WarpBytes(x.toArray))
 
