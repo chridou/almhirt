@@ -10,8 +10,8 @@ trait HttpRequestExtractor[TFrom] {
 trait HttpRequestExtractorTemplate[TFrom] extends HttpRequestExtractor[TFrom] {
   def getRawContentType(from: TFrom): AlmValidation[String]
   def getAcceptsContent(from: TFrom): AlmValidation[List[(HttpContentType, Option[Double])]]
-  def getBinaryContent(from: TFrom): AlmValidation[BinaryPayload]
-  def getTextContent(from: TFrom): AlmValidation[TextPayload]
+  def getBinaryContent(from: TFrom): AlmValidation[BinaryBody]
+  def getTextContent(from: TFrom): AlmValidation[TextBody]
 
   override def extractRequest(from: TFrom)(implicit channelExtractor: ChannelExtractor, classifiesChannels: ClassifiesChannels): AlmValidation[HttpRequest] =
     for {

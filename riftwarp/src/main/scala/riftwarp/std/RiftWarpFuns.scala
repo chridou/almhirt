@@ -33,8 +33,8 @@ trait RiftWarpFuns {
         case None => HttpContentType(s"${packer.warpDescriptor.identifier}+$channel", Map.empty).success
       }
       payload <- dimensionClassifier match {
-        case BinaryChannel => dematerialized.castTo[Array[Byte]].map(BinaryPayload(_))
-        case TextChannel => dematerialized.castTo[String].map(TextPayload(_))
+        case BinaryChannel => dematerialized.castTo[Array[Byte]].map(BinaryBody(_))
+        case TextChannel => dematerialized.castTo[String].map(TextBody(_))
       }
     } yield HttpContent(contentType, payload)
 

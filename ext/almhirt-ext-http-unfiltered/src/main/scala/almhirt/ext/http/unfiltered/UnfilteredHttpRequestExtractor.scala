@@ -15,10 +15,10 @@ trait UnfilteredHttpRequestExtractor extends almhirt.http.HttpRequestExtractorTe
   override def getAcceptsContent(from: HttpRequest[Any]): AlmValidation[List[(almhirt.http.HttpContentType, Option[Double])]] =
     Nil.success
 
-  override def getBinaryContent(from: HttpRequest[Any]): AlmValidation[almhirt.http.BinaryPayload] =
-    inTryCatch { almhirt.http.BinaryPayload(Body.bytes(from)) }
+  override def getBinaryContent(from: HttpRequest[Any]): AlmValidation[almhirt.http.BinaryBody] =
+    inTryCatch { almhirt.http.BinaryBody(Body.bytes(from)) }
 
-  override def getTextContent(from: HttpRequest[Any]): AlmValidation[almhirt.http.TextPayload] =
-    inTryCatch { almhirt.http.TextPayload(new String(Body.bytes(from), "UTF-8")) }
+  override def getTextContent(from: HttpRequest[Any]): AlmValidation[almhirt.http.TextBody] =
+    inTryCatch { almhirt.http.TextBody(new String(Body.bytes(from), "UTF-8")) }
 
 }
