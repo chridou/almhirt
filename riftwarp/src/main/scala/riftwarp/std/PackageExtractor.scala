@@ -308,6 +308,17 @@ trait WarpObjectLookUp {
           case WarpTree(tree) =>
             val x = tree.map(item => unpack(item, None, None).toAgg).sequence
             x
+          case WarpTuple2(a, b) =>
+            for {
+              va <- unpack(a, None, None)
+              vb <- unpack(b, None, None)
+            } yield(va, vb)
+          case WarpTuple3(a, b, c) =>
+            for {
+              va <- unpack(a, None, None)
+              vb <- unpack(b, None, None)
+              vc <- unpack(c, None, None)
+            } yield(va, vb, vc)
         }
     }
   }

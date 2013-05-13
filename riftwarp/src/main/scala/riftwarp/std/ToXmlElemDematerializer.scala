@@ -16,19 +16,19 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
 
   protected override final def getPrimitiveRepr(prim: WarpPrimitive): XmlElem =
     prim match {
-      case WarpBoolean(value) => <value type="Boolean">{ value.toString }</value>
-      case WarpString(value) => <value type="String">{ value }</value>
-      case WarpByte(value) => <value type="Byte">{ value.toString }</value>
-      case WarpInt(value) => <value type="Int">{ value.toString }</value>
-      case WarpLong(value) => <value type="Long">{ value.toString }</value>
-      case WarpBigInt(value) => <value type="BigInt">{ value.toString }</value>
-      case WarpFloat(value) => <value type="Float">{ value.toString }</value>
-      case WarpDouble(value) => <value type="Double">{ value.toString }</value>
-      case WarpBigDecimal(value) => <value type="BigDecimal">{ value.toString }</value>
-      case WarpUuid(value) => <value type="Uuid">{ value.toString }</value>
-      case WarpUri(value) => <value type="Uri">{ value.toString }</value>
-      case WarpDateTime(value) => <value type="DateTime">{ value.toString() }</value>
-      case WarpDuration(value) => <value type="Duration">{ value.toString() }</value>
+      case WarpBoolean(value) => <Value type="Boolean">{ value.toString }</Value>
+      case WarpString(value) => <Value type="String">{ value }</Value>
+      case WarpByte(value) => <Value type="Byte">{ value.toString }</Value>
+      case WarpInt(value) => <Value type="Int">{ value.toString }</Value>
+      case WarpLong(value) => <Value type="Long">{ value.toString }</Value>
+      case WarpBigInt(value) => <Value type="BigInt">{ value.toString }</Value>
+      case WarpFloat(value) => <Value type="Float">{ value.toString }</Value>
+      case WarpDouble(value) => <Value type="Double">{ value.toString }</Value>
+      case WarpBigDecimal(value) => <Value type="BigDecimal">{ value.toString }</Value>
+      case WarpUuid(value) => <Value type="Uuid">{ value.toString }</Value>
+      case WarpUri(value) => <Value type="Uri">{ value.toString }</Value>
+      case WarpDateTime(value) => <Value type="DateTime">{ value.toString() }</Value>
+      case WarpDuration(value) => <Value type="Duration">{ value.toString() }</Value>
     }
 
   protected override def getObjectRepr(warpObject: WarpObject): XmlElem = {
@@ -40,23 +40,26 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   }
 
   protected override def foldReprs(elems: Traversable[ValueRepr]): XmlElem =
-    createCollectionInnerXml("collection", elems.toList, NodeSeq.Empty)
+    createCollectionInnerXml("Collection", elems.toList, NodeSeq.Empty)
 
-  protected override def foldTupleReprs(tuple: (ValueRepr, ValueRepr)): XmlElem =
-    <tuple2><a>{ tuple._1 }</a><b>{ tuple._2 }</b></tuple2>
+  protected override def foldTuple2Reprs(tuple: (ValueRepr, ValueRepr)): XmlElem =
+    <Tuple2><a>{ tuple._1 }</a><b>{ tuple._2 }</b></Tuple2>
 
+  protected override def foldTuple3Reprs(tuple: (ValueRepr, ValueRepr, ValueRepr)): XmlElem =
+    <Tuple3><a>{ tuple._1 }</a><b>{ tuple._2 }</b><c>{ tuple._3 }</c></Tuple3>
+    
   protected override def foldAssocRepr(assoc: Traversable[(ValueRepr, ValueRepr)]): XmlElem =
-    createCollectionInnerXml("assoc", assoc.toList.map(x => foldTupleReprs(x)), NodeSeq.Empty)
+    createCollectionInnerXml("Assoc", assoc.toList.map(x => foldTuple2Reprs(x)), NodeSeq.Empty)
 
   protected override def foldTreeRepr(tree: scalaz.Tree[ValueRepr]): XmlElem =
-    <tree>{ foldTree(tree) }</tree>
+    <Tree>{ foldTree(tree) }</Tree>
 
   protected override def foldByteArrayRepr(bytes: IndexedSeq[Byte]): XmlElem =
-    <bytes type="Bytes">{ bytes.mkString(",") }</bytes>
+    <Bytes type="Bytes">{ bytes.mkString(",") }</Bytes>
 
   protected override def foldBlobRepr(bytes: IndexedSeq[Byte]): XmlElem = {
     val base64 = org.apache.commons.codec.binary.Base64.encodeBase64String(bytes.toArray)
-    <base64 type="Base64">{ scala.xml.PCData(base64) }</base64>
+    <Base64 type="Base64">{ scala.xml.PCData(base64) }</Base64>
   }
 
   private def createElemRepr(elem: WarpElement): XmlElem =

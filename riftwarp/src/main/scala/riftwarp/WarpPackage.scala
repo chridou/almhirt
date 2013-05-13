@@ -45,6 +45,8 @@ final case class WarpObject(warpDescriptor: Option[WarpDescriptor], elements: Ve
 final case class WarpCollection(items: Vector[WarpPackage]) extends WarpPackage
 final case class WarpAssociativeCollection(items: Vector[(WarpPackage, WarpPackage)]) extends WarpPackage
 final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
+final case class WarpTuple2(a: WarpPackage, b:WarpPackage) extends WarpPackage
+final case class WarpTuple3(a: WarpPackage, b:WarpPackage, c: WarpPackage) extends WarpPackage
 
 sealed trait BinaryWarpPackage extends WarpPackage { def bytes: IndexedSeq[Byte] }
 final case class WarpBytes(override val bytes: IndexedSeq[Byte]) extends BinaryWarpPackage

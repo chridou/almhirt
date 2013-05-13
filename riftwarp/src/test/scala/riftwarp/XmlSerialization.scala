@@ -21,65 +21,65 @@ class XmlSerialization extends FunSuite with MustMatchers {
   
   test("A WarpString must dematerialize to the corresponding XML String") {
     val res = WarpString("hallo").dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="String">hallo</value>""")
+    res must equal("""<Value type="String">hallo</Value>""")
   }
 
   test("A WarpBoolean must dematerialize to the corresponding XML Boolean") {
     val res = WarpBoolean(true).dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="Boolean">true</value>""")
+    res must equal("""<Value type="Boolean">true</Value>""")
   }
 
   test("A WarpByte must dematerialize to the corresponding XML Number") {
     val res = WarpByte(127.toByte).dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="Byte">127</value>""")
+    res must equal("""<Value type="Byte">127</Value>""")
   }
 
   test("A WarpInt must dematerialize to the corresponding XML Number") {
     val res = WarpInt(12800000).dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="Int">12800000</value>""")
+    res must equal("""<Value type="Int">12800000</Value>""")
   }
 
   test("A WarpLong must dematerialize to the corresponding XML Number") {
     val res = WarpLong(128000000000L).dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="Long">128000000000</value>""")
+    res must equal("""<Value type="Long">128000000000</Value>""")
   }
 
   test("A WarpBigInt must dematerialize to the corresponding XML String") {
     val res = WarpBigInt("1234567898765432123456789").dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="BigInt">1234567898765432123456789</value>""")
+    res must equal("""<Value type="BigInt">1234567898765432123456789</Value>""")
   }
 
   test("A WarpFloat must dematerialize to the corresponding XML Number") {
     val res = WarpFloat(123.456.toFloat).dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="Float">123.456</value>""")
+    res must equal("""<Value type="Float">123.456</Value>""")
   }
 
   test("A WarpDouble must dematerialize to the corresponding XML Number") {
     val res = WarpDouble(123.456).dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="Double">123.456</value>""")
+    res must equal("""<Value type="Double">123.456</Value>""")
   }
 
   test("A WarpBigDecimal must dematerialize to the corresponding XML String") {
     val res = WarpBigDecimal("1233847837483.45623891237198732987").dematerialize[String @@ WarpTags.Xml]
-    res must equal("""<value type="BigDecimal">1233847837483.45623891237198732987</value>""")
+    res must equal("""<Value type="BigDecimal">1233847837483.45623891237198732987</Value>""")
   }
 
   test("A WarpUuid must dematerialize to the corresponding XML String") {
     val uuid = JUUID.randomUUID()
     val res = WarpUuid(uuid).dematerialize[String @@ WarpTags.Xml]
-    res must equal(s"""<value type="Uuid">${uuid.toString()}</value>""")
+    res must equal(s"""<Value type="Uuid">${uuid.toString()}</Value>""")
   }
 
   test("A WarpUri must dematerialize to the corresponding XML String") {
     val uri = new java.net.URI("http://www.almhirt.org")
     val res = WarpUri(uri).dematerialize[String @@ WarpTags.Xml]
-    res must equal(s"""<value type="Uri">${uri.toString()}</value>""")
+    res must equal(s"""<Value type="Uri">${uri.toString()}</Value>""")
   }
 
   test("A WarpDateTime must dematerialize to the corresponding XML String") {
     val dateTime = DateTime.now()
     val res = WarpDateTime(dateTime).dematerialize[String @@ WarpTags.Xml]
-    res must equal(s"""<value type="DateTime">${dateTime.toString()}</value>""")
+    res must equal(s"""<Value type="DateTime">${dateTime.toString()}</Value>""")
   }
 
   
@@ -140,7 +140,7 @@ class XmlSerialization extends FunSuite with MustMatchers {
   test("RiftWarpFuns must dematerialize a DateTime") {
     val dt = DateTime.now
     val resV = prepareFlatDeparture[DateTime, String @@ WarpTags.Xml](dt)
-    resV.forceResult._1 must equal(s"""<value type="DateTime">${dt.toString()}</value>""")
+    resV.forceResult._1 must equal(s"""<Value type="DateTime">${dt.toString()}</Value>""")
   }
   
   test("RiftWarpFuns must dematerialize the PrimitiveTypes without a failure") {
@@ -177,20 +177,20 @@ class XmlSerialization extends FunSuite with MustMatchers {
     val riftwarp = RiftWarp(packers, unpackers)
     val uuid = JUUID.randomUUID()
     val dematV = riftwarp.departureTyped[String]("xml", uuid)
-    dematV.forceResult must equal((s"""<value type="Uuid">${uuid.toString()}</value>""", WarpDescriptor("UUID")))
+    dematV.forceResult must equal((s"""<Value type="Uuid">${uuid.toString()}</Value>""", WarpDescriptor("UUID")))
   }
 
   test("SerializerOnStrings must serialize a UUID") {
     val serializer = new WarpSerializerToString[JUUID](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val uuid = JUUID.randomUUID()
     val resV = serializer.serialize(uuid)
-    resV.forceResult must equal((s"""<value type="Uuid">${uuid.toString()}</value>""", Some(WarpDescriptor("UUID").toParsableString())))
+    resV.forceResult must equal((s"""<Value type="Uuid">${uuid.toString()}</Value>""", Some(WarpDescriptor("UUID").toParsableString())))
   }
 
   test("SerializerOnStrings must serialize a Boolean") {
     val serializer = new WarpSerializerToString[Boolean](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val resV = serializer.serialize(true)
-    resV.forceResult must equal((s"""<value type="Boolean">true</value>""", Some(WarpDescriptor("Boolean").toParsableString())))
+    resV.forceResult must equal((s"""<Value type="Boolean">true</Value>""", Some(WarpDescriptor("Boolean").toParsableString())))
   }
 
   test("SerializerOnStrings[String] must serialize and deserialze a String") {

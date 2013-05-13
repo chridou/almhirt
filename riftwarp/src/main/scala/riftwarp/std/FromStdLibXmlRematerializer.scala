@@ -16,11 +16,13 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
 
   private def extract(what: XmlElem): AlmValidation[WarpPackage] =
     what.label match {
-      case "value" => extractPrimitiveFromElem(what)
-      case "bytes" => extractBytes(what)
-      case "collection" => extractCollection(what)
-      case "assoc" => extractAssoc(what)
-      case "tree" => extractTree(what)
+      case "Value" => extractPrimitiveFromElem(what)
+      case "Bytes" => extractBytes(what)
+      case "Collection" => extractCollection(what)
+      case "Assoc" => extractAssoc(what)
+      case "Tree" => extractTree(what)
+      case "Tuple2" => extractTree(what)
+      case "Tuple3" => extractTree(what)
       case "Base64" => extractCollection(what)
       case _ => extractObject(what)
     }
@@ -45,6 +47,19 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
       b <- extract(vb)
     } yield (a, b)
 
+  private def extractTuple3(from: XmlElem): AlmValidation[(WarpPackage, WarpPackage, WarpPackage)] =
+    for {
+      elemA <- from \! "a"
+      elemB <- from \! "b"
+      elemC <- from \! "c"
+      va <- elemA.firstChildNode
+      vb <- elemB.firstChildNode
+      vc <- elemC.firstChildNode
+      a <- extract(va)
+      b <- extract(vb)
+      c <- extract(vc)
+    } yield (a, b, c)
+    
   private def extractCollection(what: XmlElem): AlmValidation[WarpCollection] =
     what.elems.map(elem => extract(elem).toAgg).toVector.sequence.map(WarpCollection(_))
 
