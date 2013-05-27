@@ -132,7 +132,6 @@ class JsonSerialization extends FunSuite with MustMatchers {
     val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Json]
     val rematerializedV = dematerialized.rematerialize
     val resultV = rematerializedV.forceResult.unpack[TestObjectA]
-    println(resultV)
     resultV.forceResult must equal(TestObjectA.pete)
   }
   
