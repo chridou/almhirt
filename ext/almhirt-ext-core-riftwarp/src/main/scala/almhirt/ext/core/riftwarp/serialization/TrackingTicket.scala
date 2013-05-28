@@ -54,11 +54,8 @@ object UuidTrackingTicketWarpUnpacker extends RegisterableWarpUnpacker[UuidTrack
   }
 }
 
-object TrackingTicketWarpUnpacker extends RegisterableWarpUnpacker[TrackingTicket] with DivertingWarpUnpacker[TrackingTicket] {
+object TrackingTicketWarpUnpacker extends RegisterableWarpUnpacker[TrackingTicket] with DivertingWarpUnpacker[TrackingTicket] with DivertingWarpUnpackerWithAutoRegistration[TrackingTicket]{
   val warpDescriptor = WarpDescriptor(classOf[TrackingTicket])
   val alternativeWarpDescriptors = Nil
-  val divert =
-    Map(
-      StringTrackingTicketWarpUnpacker.warpDescriptor -> StringTrackingTicketWarpUnpacker,
-      UuidTrackingTicketWarpUnpacker.warpDescriptor -> UuidTrackingTicketWarpUnpacker).lift
+  def unpackers = StringTrackingTicketWarpUnpacker :: UuidTrackingTicketWarpUnpacker :: Nil
 }

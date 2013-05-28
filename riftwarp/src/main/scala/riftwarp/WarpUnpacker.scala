@@ -12,6 +12,7 @@ trait WarpUnpacker[+T] {
 trait RegisterableWarpUnpacker[+T] extends WarpUnpacker[T] {
   def warpDescriptor: WarpDescriptor
   def alternativeWarpDescriptors: List[WarpDescriptor]
+  def allDescriptors: List[WarpDescriptor] = warpDescriptor :: alternativeWarpDescriptors
 }
 
 trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] =>
@@ -24,6 +25,16 @@ trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] =>
           fail => KeyNotFoundProblem(s"Could not find a Unpacker for ${wd.toString}").failure,
           unpacker => unpacker.unpack(from))
       case None =>
-        UnspecifiedProblem(s""""${from.toString()} has no Warpdescriptor nor can one be derived!""").failure
+        UnspecifiedProblem(s""""${from.toString()} has no Warpdescriptor nor one can be derived!""").failure
     }
 }
+
+trait DivertingWarpUnpackerWithAutoRegistration[+T] { self: DivertingWarpUnpacker[T] =>
+  def unpackers: List[RegisterableWarpUnpacker[T]]
+  
+  override val divert = {
+    val items = unpackers.map(up => up.allDescriptors.map(desc => (desc, up))).flatten
+    items.toMap.lift
+  }
+}
+
