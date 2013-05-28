@@ -23,7 +23,7 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
       case "Tree" => extractTree(what)
       case "Tuple2" => extractTree(what)
       case "Tuple3" => extractTree(what)
-      case "Base64" => extractCollection(what)
+      case "Base64" => extractBase64(what)
       case _ => extractObject(what)
     }
 
@@ -86,6 +86,11 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
   private def extractBytes(what: XmlElem): AlmValidation[WarpBytes] =
     what.text.split(",").map(_.toByteAlm.toAgg).toVector.sequence.map(x => WarpBytes(x.toArray))
 
+  private def extractBase64(what: XmlElem): AlmValidation[WarpBlob] = {
+    val str = what.text
+    ParseFuns.parseBase64Alm(str).map(x => WarpBlob(x.toVector))
+  }
+    
   def unescapeString(str: String): String = {
     //scala.xml.Utility.unescape(str, new StringBuilder).result
     str

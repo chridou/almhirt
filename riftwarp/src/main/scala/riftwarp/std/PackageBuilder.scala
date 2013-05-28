@@ -175,11 +175,8 @@ trait PackageBuilderFuns {
   def Bytes(label: String, bytes: IndexedSeq[Byte]): AlmValidation[WarpElement] = BytesOpt(label, Some(bytes))
   def BytesOpt(label: String, bytes: Option[IndexedSeq[Byte]]): AlmValidation[WarpElement] = WarpElement(label, bytes.map(WarpBytes(_))).success
 
-  def Base64(label: String, bytes: IndexedSeq[Byte]): AlmValidation[WarpElement] = Base64Opt(label, Some(bytes))
-  def Base64Opt(label: String, bytes: Option[IndexedSeq[Byte]]): AlmValidation[WarpElement] = WarpElement(label, bytes.map(WarpBytes(_))).success
-
   def Blob(label: String, bytes: IndexedSeq[Byte]): AlmValidation[WarpElement] = BlobOpt(label, Some(bytes))
-  def BlobOpt(label: String, bytes: Option[IndexedSeq[Byte]]): AlmValidation[WarpElement] = WarpElement(label, bytes.map(WarpBytes(_))).success
+  def BlobOpt(label: String, bytes: Option[IndexedSeq[Byte]]): AlmValidation[WarpElement] = WarpElement(label, bytes.map(WarpBlob(_))).success
 }
 
 trait PackageBuilderOps {

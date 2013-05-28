@@ -19,6 +19,8 @@ class JsonSerialization extends FunSuite with MustMatchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
   
+  val blobPackage = (WarpDescriptor("a") ~> Blob("theBlob", Vector(1,2,3,4,5,6,7,8,9,0).map(_.toByte))).forceResult
+  
   test("A WarpString must dematerialize to the corresponding JSON String") {
     val res = WarpString("hallo").dematerialize[String @@ WarpTags.Json]
     res must equal(""""hallo"""")
@@ -82,7 +84,14 @@ class JsonSerialization extends FunSuite with MustMatchers {
     res must equal(s""""${dateTime.toString()}"""")
   }
 
-  
+  test("A WarpBlob must dematerialize to the corresponding JSON String") {
+    val blob = Vector(1,2,3,4,5,6,7,8,9,0).map(_.toByte)
+    val expected = org.apache.commons.codec.binary.Base64.encodeBase64String(blob.toArray)
+    val res = WarpBlob(blob).dematerialize[String @@ WarpTags.Json]
+    res must equal("""{"warpdesc":"Base64Blob","data":"AQIDBAUGBwgJAA=="}""")
+  }
+
+ 
   test("A WarpObject dematerialized must rematerialize to a WarpObject") {
     val obj = WarpObject(None, Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None) ))
     val dematerialized = obj.dematerialize[String @@ WarpTags.Json]
@@ -90,6 +99,12 @@ class JsonSerialization extends FunSuite with MustMatchers {
     rematerialized must equal(obj)
   }
 
+  test("The WarpObject with a blob must dematerialize and rematerialize to an equal instance") {
+    val dematerialized = blobPackage.dematerialize[String @@ WarpTags.Json]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(blobPackage)
+  }
+  
   test("WarpObject(PrimitiveTypes) dematerialized must rematerialize to an equal instance") {
     val obj = TestObjectA.pete.primitiveTypes.packFlat.forceResult
     val dematerialized = obj.dematerialize[String @@ WarpTags.Json]

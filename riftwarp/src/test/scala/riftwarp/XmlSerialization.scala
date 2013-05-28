@@ -18,6 +18,8 @@ import riftwarp.util.Serializers
 class XmlSerialization extends FunSuite with MustMatchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
+
+  val blobPackage = (WarpDescriptor("a") ~> Blob("theBlob", Vector(1,2,3,4,5,6,7,8,9,0).map(_.toByte))).forceResult
   
   test("A WarpString must dematerialize to the corresponding XML String") {
     val res = WarpString("hallo").dematerialize[String @@ WarpTags.Xml]
@@ -106,11 +108,17 @@ class XmlSerialization extends FunSuite with MustMatchers {
     result must equal(TestObjectA.pete.primitiveListMAs)
   }
 
+  test("The WarpObject with a blob must dematerialize and rematerialize to an equal instance") {
+    val dematerialized = blobPackage.dematerialize[String @@ WarpTags.Xml]
+    println(dematerialized)
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(blobPackage)
+  }
+    
   test("WarpObject(PrimitiveMaps) dematerialized must rematerialize to an equal instance") {
     val objV = TestObjectA.pete.primitiveMaps.packFlat
     val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Xml]
     val rematerializedV = dematerialized.rematerialize
-    println(rematerializedV)
     val resultV = rematerializedV.forceResult.unpackFlat[PrimitiveMaps]
     resultV.forceResult must equal(TestObjectA.pete.primitiveMaps)
   }
