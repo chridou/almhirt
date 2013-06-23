@@ -3,17 +3,14 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.1.2"
+  val buildVersion      = "0.2.0"
   val buildScalaVersion = "2.10.1"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
 	organization := buildOrganization,
     version      := buildVersion,
     scalaVersion := buildScalaVersion,
-    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),	
-	publishTo := Some(Resolver.url("LocalRepo", url("http://10.20.0.85:8081/artifactory/libs-local"))(Resolver.ivyStylePatterns)),
-	publishMavenStyle := false,
-    credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"))
+    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"))
 }
 
 object Resolvers {
@@ -32,7 +29,7 @@ object Dependencies {
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0" % "compile"
 	
-	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % "2.1.0"
+	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % "2.1.4"
 
 	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.0"
 
@@ -200,12 +197,12 @@ object AlmHirtBuild extends Build
 	with DocItBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreExtRiftwarp, slickExtensions, app, docit, riftwarp, almhirtExtHttpUnfiltered, riftwarpAutomatic, almhirtExtCoreUnfiltered)
+	                        base = file(".")) aggregate(common)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
-  lazy val core = coreProject(	name = "almhirt-core",
+/*  lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile")
 
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
@@ -234,5 +231,5 @@ object AlmHirtBuild extends Build
 	                       				baseFile = file("./ext/almhirt-ext-core-unfiltered")) dependsOn(core, almhirtExtHttpUnfiltered)
 
  val app = appProject(	name = "almhirt-app",
-	                       	baseFile = file("almhirt-app")) dependsOn(core)										
+	                       	baseFile = file("almhirt-app")) dependsOn(core) */										
 }

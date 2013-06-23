@@ -56,25 +56,3 @@ trait Problem {
   override def toString() = baseInfo.result
 }
 
-object Problem {
-  implicit class ProblemOps[T <: Problem](prob: T) {
-    def withIdentifier(ident: String): T = almhirt.problem.funs.withIdentifier(prob, ident)
-
-    def markLogged(): T = prob.withArg("isLogged", true).asInstanceOf[T]
-    def isLogged(): Boolean = prob.args.contains("isLogged") && prob.args("isLogged") == true
-
-    def setTag(tag: String): T = prob.withArg("tag", tag).asInstanceOf[T]
-    def isTagged(): Boolean = prob.args.contains("tag") && prob.args("tag").isInstanceOf[String]
-    def tryGetTag(): Option[String] = if (isTagged) Some(prob.args("tag").asInstanceOf[String]) else None
-  }
-}
-
-object IsSystemProblem {
-  def unapply[T <: Problem](prob: T): Option[T] =
-    if(prob.isSystemProblem) Some(prob) else None
-}
-
-object IsApplicationProblem {
-  def unapply[T <: Problem](prob: T): Option[T] =
-    if(!prob.isSystemProblem) Some(prob) else None
-}

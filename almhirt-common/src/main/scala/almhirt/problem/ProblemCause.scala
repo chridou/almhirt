@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.common
+package almhirt.problem
 
 import scala.language.implicitConversions
 

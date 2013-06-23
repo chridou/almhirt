@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.common
+package almhirt.problem
 
 /* Severity of a problem. 
  * 
@@ -47,7 +47,7 @@ final case object NoProblem extends Severity {
 }
 
 object Severity {
-  def fromString(str: String): AlmValidation[Severity] =
+  def fromString(str: String): almhirt.common.AlmValidation[Severity] =
     str.toLowerCase() match {
       case "noproblem" => scalaz.Success(NoProblem)
       case "minor" => scalaz.Success(Minor)

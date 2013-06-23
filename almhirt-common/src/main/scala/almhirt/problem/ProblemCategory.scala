@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.common
+package almhirt.problem
 
 sealed trait ProblemCategory{
   def and(other: ProblemCategory): ProblemCategory = 
@@ -27,7 +27,7 @@ case object SystemProblem extends ProblemCategory
 case object ApplicationProblem extends ProblemCategory
 
 object ProblemCategory {
-  def fromString(str: String): AlmValidation[ProblemCategory] =
+  def fromString(str: String): almhirt.common.AlmValidation[ProblemCategory] =
     str.toLowerCase() match {
       case "systemproblem" => scalaz.Success(SystemProblem)
       case "applicationproblem" => scalaz.Success(ApplicationProblem)
