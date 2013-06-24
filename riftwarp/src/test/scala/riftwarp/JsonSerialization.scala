@@ -207,7 +207,6 @@ class JsonSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings[String] must serialize and deserialze a String") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[String](RiftWarp(packers, unpackers)).serializingToChannel("json")
     val resV = serializer.serialize("hallo")
     val dematV = serializer.deserialize("json")(resV.forceResult._1)
@@ -215,7 +214,6 @@ class JsonSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings[Any] must serialize and deserialze a String") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("json")
     val resV = serializer.serialize("hallo")
     val dematV = serializer.deserialize("json")(resV.forceResult._1)
@@ -223,7 +221,6 @@ class JsonSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings[Any] must serialize and deserialze a Double") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("json")
     val resV = serializer.serialize(1.234)
     val dematV = serializer.deserialize("json")(resV.forceResult._1)
@@ -231,7 +228,6 @@ class JsonSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings[Any] must serialize and deserialze the PrimitiveListMAs") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("json")
     val resV = serializer.serialize(TestObjectA.pete.primitiveListMAs)
     val dematV = serializer.deserialize("json")(resV.forceResult._1)

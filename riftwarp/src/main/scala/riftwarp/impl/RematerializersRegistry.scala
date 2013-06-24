@@ -15,7 +15,7 @@ class RematerializersRegistry extends Rematerializers {
     
   override def get(dimension: String, channel: String): AlmValidation[(Any, Map[String, Any]) => AlmValidation[WarpPackage]] =
     rematerializers.get((channel, dimension)) match {
-      case null => KeyNotFoundProblem(s"""No Rematerialzer found  found for channel "$channel" and dimension "$dimension"""").failure
+      case null => NoSuchElementProblem(s"""No Rematerialzer found  found for channel "$channel" and dimension "$dimension"""").failure
       case x => x.success
     }
 

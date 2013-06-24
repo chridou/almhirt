@@ -4,7 +4,7 @@ import org.scalatest._
 import org.scalatest.matchers.MustMatchers
 import java.util.{ UUID => JUUID }
 import org.joda.time.DateTime
-import scalaz._, Scalaz._
+import scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._
@@ -14,13 +14,14 @@ import riftwarp.std.default._
 import SerializationDefaults._
 import riftwarp.util.WarpSerializerToString
 import riftwarp.util.Serializers
+import almhirt.problem._
 
 class XmlSerialization extends FunSuite with MustMatchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
 
-  val blobPackage = (WarpDescriptor("a") ~> Blob("theBlob", Vector(1,2,3,4,5,6,7,8,9,0).map(_.toByte))).forceResult
-  
+  val blobPackage = (WarpDescriptor("a") ~> Blob("theBlob", Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 0).map(_.toByte))).forceResult
+
   test("A WarpString must dematerialize to the corresponding XML String") {
     val res = WarpString("hallo").dematerialize[String @@ WarpTags.Xml]
     res must equal("""<Value type="String">hallo</Value>""")
@@ -84,9 +85,8 @@ class XmlSerialization extends FunSuite with MustMatchers {
     res must equal(s"""<Value type="DateTime">${dateTime.toString()}</Value>""")
   }
 
-  
   test("A WarpObject dematerialized must rematerialize to a WarpObject") {
-    val obj = WarpObject(None, Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None) ))
+    val obj = WarpObject(None, Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))
     val dematerialized = obj.dematerialize[String @@ WarpTags.Xml]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(obj)
@@ -100,7 +100,7 @@ class XmlSerialization extends FunSuite with MustMatchers {
     result must equal(TestObjectA.pete.primitiveTypes)
   }
 
-    test("WarpObject(PrimitiveListMAs) dematerialized must rematerialize to an equal instance") {
+  test("WarpObject(PrimitiveListMAs) dematerialized must rematerialize to an equal instance") {
     val objV = TestObjectA.pete.primitiveListMAs.pack
     val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Xml]
     val rematerialized = dematerialized.rematerialize.forceResult
@@ -114,7 +114,7 @@ class XmlSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(blobPackage)
   }
-    
+
   test("WarpObject(PrimitiveMaps) dematerialized must rematerialize to an equal instance") {
     val objV = TestObjectA.pete.primitiveMaps.packFlat
     val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Xml]
@@ -122,8 +122,8 @@ class XmlSerialization extends FunSuite with MustMatchers {
     val resultV = rematerializedV.forceResult.unpackFlat[PrimitiveMaps]
     resultV.forceResult must equal(TestObjectA.pete.primitiveMaps)
   }
-
-    test("WarpObject(TestObjectA) must be dematrielized succesfully") {
+  
+  test("WarpObject(TestObjectA) must be dematerialized succesfully") {
     val objV = TestObjectA.pete.pack
     val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Xml]
   }
@@ -135,7 +135,7 @@ class XmlSerialization extends FunSuite with MustMatchers {
     val resultV = rematerializedV.forceResult.unpack[TestObjectA]
     resultV.isSuccess must be(true)
   }
-    
+
   ignore("WarpObject(TestObjectA) dematerialized must rematerialize to an equal instance") {
     val objV = TestObjectA.pete.pack
     val dematerialized = objV.forceResult.dematerialize[String @@ WarpTags.Xml]
@@ -144,18 +144,19 @@ class XmlSerialization extends FunSuite with MustMatchers {
     println(resultV)
     resultV.forceResult must equal(TestObjectA.pete)
   }
-  
+
   test("RiftWarpFuns must dematerialize a DateTime") {
     val dt = DateTime.now
     val resV = prepareFlatDeparture[DateTime, String @@ WarpTags.Xml](dt)
     resV.forceResult._1 must equal(s"""<Value type="DateTime">${dt.toString()}</Value>""")
   }
-  
+
   test("RiftWarpFuns must dematerialize the PrimitiveTypes without a failure") {
     val resV = prepareFlatDeparture[PrimitiveTypes, String @@ WarpTags.Xml](TestObjectA.pete.primitiveTypes)
     resV.isSuccess must be(true)
   }
 
+ 
   test("RiftWarpFuns must dematerialize the PrimitiveTypes and rematerialize them") {
     val dematV = prepareFlatDeparture[PrimitiveTypes, String @@ WarpTags.Xml](TestObjectA.pete.primitiveTypes)
     val resV = handleArrival[String @@ WarpTags.Xml, PrimitiveTypes](dematV.forceResult._1)
@@ -173,7 +174,7 @@ class XmlSerialization extends FunSuite with MustMatchers {
     val dematV = riftwarp.departureTyped[String]("xml", TestObjectA.pete)
     dematV.isSuccess must be(true)
   }
-  
+
   test("RiftWarp must dematerialize the PrimitiveTypes and rematerialize them") {
     val riftwarp = RiftWarp(packers, unpackers)
     val dematV = riftwarp.departureTyped[String]("xml", TestObjectA.pete.primitiveTypes)
@@ -202,7 +203,6 @@ class XmlSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings[String] must serialize and deserialze a String") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[String](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val resV = serializer.serialize("hallo")
     val dematV = serializer.deserialize("xml")(resV.forceResult._1)
@@ -210,7 +210,6 @@ class XmlSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings[Any] must serialize and deserialze a String") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val resV = serializer.serialize("hallo")
     val dematV = serializer.deserialize("xml")(resV.forceResult._1)
@@ -218,15 +217,21 @@ class XmlSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings[Any] must serialize and deserialze a Double") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val resV = serializer.serialize(1.234)
     val dematV = serializer.deserialize("xml")(resV.forceResult._1)
     dematV.forceResult must equal(1.234)
   }
 
+  test("SerializerOnStrings[Any] must serialize and deserialze a SingleProblem") {
+    val prob = UnspecifiedProblem("Error", cause = Some(MultipleProblems(Vector(NoSuchElementProblem("Huhu!")))))
+    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("xml")
+    val resV = serializer.serialize(prob)
+    val demat = serializer.deserialize("xml")(resV.forceResult._1)
+    demat must equal(Success(prob))
+  }
+  
   test("SerializerOnStrings[Any] must serialize and deserialze the PrimitiveListMAs") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val resV = serializer.serialize(TestObjectA.pete.primitiveListMAs)
     val dematV = serializer.deserialize("xml")(resV.forceResult._1)
@@ -234,11 +239,10 @@ class XmlSerialization extends FunSuite with MustMatchers {
   }
 
   ignore("SerializerOnStrings[Any] must serialize and deserialze the pete") {
-    implicit val execContext = HasExecutionContext.single
     val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("xml")
     val resV = serializer.serialize(TestObjectA.pete)
     val dematV = serializer.deserialize("xml")(resV.forceResult._1)
     dematV.forceResult must equal(TestObjectA.pete)
   }
-  
+
 }

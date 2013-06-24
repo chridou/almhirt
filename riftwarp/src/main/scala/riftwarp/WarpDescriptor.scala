@@ -61,9 +61,9 @@ object WarpDescriptor {
         WarpDescriptor(name, None).success
       case Array(name, version) =>
         val v = version.drop(1)
-        parseIntAlm(v).withIdentifierOnFailure("version").map(v => WarpDescriptor(name, Some(v)))
+        parseIntAlm(v).leftMap(_.withLabel("version")).map(v => WarpDescriptor(name, Some(v)))
       case _ =>
-        ParsingProblem("Not a valid WarpDescriptor format. The provided delimeter for name and version was '%s'".format(versionDelim)).withInput(toParse).failure
+        ParsingProblem(s"""Not a valid WarpDescriptor format. The provided delimeter for name and version was "$versionDelim"""", Some(toParse)).failure
     }
   }
   

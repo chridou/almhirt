@@ -55,23 +55,27 @@ object WarpUnpackers {
     unpackers.addTyped(DateTimeWarpUnpacker)
     unpackers.addTyped(ByteArrayWarpUnpacker)
     unpackers.addTyped(Base64BlobWarpUnpacker)
- 
+
     unpackers.addTyped(HasAThrowableDescribedUnpacker)
     unpackers.addTyped(CauseIsThrowableUnpacker)
     unpackers.addTyped(CauseIsProblemUnpacker)
     unpackers.addTyped(ProblemCauseUnpacker)
 
     unpackers.addTyped(WarpDescriptorUnpacker)
-    
-    serialization.common.Problems.registerAllCommonProblems(WarpPackers.NoWarpPackers, unpackers)
-    
+
+    unpackers.addTyped(SingleProblemPackaging)
+    unpackers.addTyped(AggregateProblemPackaging)
+    unpackers.addTyped(ProblemPackaging)
+
+    serialization.common.ProblemTypes.registerUnpackers(unpackers)
+
     unpackers
   }
-  
+
   def empty: WarpUnpackers = new WarpUnpackerRegistry()
-  
+
   val NoWarpUnpackers = new WarpUnpackers {
-    override def get(descriptor: WarpDescriptor) = UnspecifiedSystemProblem("NoWarpUnpackers has no unpackers").failure
+    override def get(descriptor: WarpDescriptor) = NoSuchElementProblem("NoWarpUnpackers has no unpackers").failure
     override def add(unpacker: RegisterableWarpUnpacker[Any]) {}
     override def addTyped[T](unpacker: RegisterableWarpUnpacker[T]) {}
   }
