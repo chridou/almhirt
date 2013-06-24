@@ -149,19 +149,6 @@ trait AlmhirtExtHttpUnfilteredBuild {
   )
 }
 
-trait DocItBuild {
-  import Dependencies._
-  import Resolvers._
-  def docitProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += scalatest
-  )
-}
-
 trait ExtCoreUnfilteredBuild {
   import Dependencies._
   import Resolvers._
@@ -193,11 +180,10 @@ object AlmHirtBuild extends Build
 	with RiftWarpAutomaticBuild 
 	with AlmhirtExtHttpUnfilteredBuild 
 	with ExtCoreUnfilteredBuild 
-	with AppBuild
-	with DocItBuild {
+	with AppBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common)
+	                        base = file(".")) aggregate(common, riftwarp)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -212,10 +198,10 @@ object AlmHirtBuild extends Build
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/almhirt-ext-core-slick")) dependsOn(core, riftwarp % "test->test", coreExtRiftwarp % "test->test")
 
-
+*/
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
-
+/*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
 
