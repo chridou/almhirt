@@ -1,5 +1,7 @@
 package almhirt.problem
 
+import scala.language.implicitConversions
+
 sealed trait Problem {
   def message: String
   def problemType: ProblemType
@@ -11,8 +13,9 @@ sealed trait SingleProblem extends Problem {
 
   protected def baseInfo(): StringBuilder = {
     val builder = new StringBuilder()
-    builder.append("%s\n".format(this.getClass.getName))
+    builder.append("SingleProblem\n")
     builder.append("%s\n".format(message))
+    builder.append("%s\n".format(problemType))
     builder.append("Arguments: %s\n".format(args))
     cause match {
       case None =>
@@ -36,8 +39,9 @@ sealed trait AggregateProblem extends Problem {
   def problems: Seq[Problem]
   protected def baseInfo(): StringBuilder = {
     val builder = new StringBuilder()
-    builder.append("%s\n".format(this.getClass.getName))
+    builder.append("AggregateProblem\n")
     builder.append("%s\n".format(message))
+    builder.append("%s\n".format(problemType))
     builder.append("Arguments: %s\n".format(args))
     builder
   }
@@ -64,8 +68,8 @@ object Problem {
   implicit class ProblemOps(self: Problem) {
     def withArg(name: String, value: Any): Problem =
       self match {
-        case sp: SingleProblem => sp.withArg(name, value)
-        case ap: AggregateProblem => ap.withArg(name, value)
+        case sp: SingleProblem => SingleProblem.withArg(sp, name, value)
+        case ap: AggregateProblem => AggregateProblem.withArg(ap, name, value)
       }
 
     def withLabel(label: String): Problem = self.withArg("label", label)
@@ -91,11 +95,17 @@ object SingleProblem {
     cause: Option[ProblemCause]) extends SingleProblem {
   }
 
+    def causedBy(prob: SingleProblem, aCause: ProblemCause): SingleProblem = prob.asInstanceOf[SingleProblemImpl].copy(cause = Some(aCause))
+    def withMessage(prob: SingleProblem, msg: String): SingleProblem = prob.asInstanceOf[SingleProblemImpl].copy(message = msg)
+    def withArg(prob: SingleProblem, name: String, value: Any): SingleProblem = prob.asInstanceOf[SingleProblemImpl].copy(args = prob.args + (name -> value))
+  
+  
+  implicit def MsgType2SingleProblem(what: (String, ProblemType)): SingleProblem = SingleProblem(what._1, what._2)
+  
   implicit class SingleProblemOps(self: SingleProblem) {
-    def causedBy(aCause: ProblemCause): SingleProblem = self.asInstanceOf[SingleProblemImpl].copy(cause = Some(aCause))
-    def causes(what: SingleProblem): SingleProblem = what.asInstanceOf[SingleProblemImpl].copy(cause = Some(self))
-    def withMessage(msg: String): SingleProblem = self.asInstanceOf[SingleProblemImpl].copy(message = msg)
-    def withArg(name: String, value: Any): SingleProblem = self.asInstanceOf[SingleProblemImpl].copy(args = self.args + (name -> value))
+    def causedBy(aCause: ProblemCause): SingleProblem = SingleProblem.causedBy(self, aCause)
+    def withMessage(msg: String): SingleProblem = SingleProblem.withMessage(self, msg)
+    def withArg(name: String, value: Any): SingleProblem = SingleProblem.withArg(self, name: String, value: Any)
   }
 }
 
@@ -115,9 +125,12 @@ object AggregateProblem {
     override val message = "One or more problems occured"
   }
 
+    def withArg(prob: AggregateProblem, name: String, value: Any): AggregateProblem = prob.asInstanceOf[AggregateProblemImpl].copy(args = prob.args + (name -> value))
+    def add(prob: AggregateProblem, problem: Problem): AggregateProblem = prob.asInstanceOf[AggregateProblemImpl].copy(problems = prob.problems :+ problem)
+  
   implicit class AggregateProblemOps(self: AggregateProblem) {
-    def withArg(name: String, value: Any): AggregateProblem = self.asInstanceOf[AggregateProblemImpl].copy(args = self.args + (name -> value))
-    def add(problem: Problem): AggregateProblem = self.asInstanceOf[AggregateProblemImpl].copy(problems = self.problems :+ problem)
+    def withArg(name: String, value: Any): AggregateProblem = AggregateProblem.withArg(self, name: String, value: Any)
+    def add(problem: Problem): AggregateProblem = AggregateProblem.add(self, problem: Problem)
   }
 
 }

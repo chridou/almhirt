@@ -1,6 +1,8 @@
 package almhirt.problem
 
 object problemtypes {
+  case object UnknownProblem extends ProblemType
+  
   case object UnspecifiedProblem extends ProblemType {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
       SingleProblem(msg, UnspecifiedProblem, args, cause)
