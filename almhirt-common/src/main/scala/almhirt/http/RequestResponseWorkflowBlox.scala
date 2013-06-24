@@ -1,6 +1,7 @@
 package almhirt.http
 
 import almhirt.common._
+import scala.concurrent.ExecutionContext
 
 object RequestResponseWorkflowBlox {
   import HttpBuildingBlox._
@@ -21,7 +22,7 @@ object RequestResponseWorkflowBlox {
               HttpResponse(successCode, succ)))
 
 
-  def toResponseF[TFrom, T, U](f: T => AlmFuture[U], successCode: HttpStatusCode)(implicit context: HttpRequestExtractor[TFrom], instances: HttpInstances, unmarshaller: HttpUnmarshaller[T], marshaller: HttpMarshaller[U], problemConsumer: Consumer[Problem], hec: HasExecutionContext): TFrom => AlmFuture[HttpResponse] =
+  def toResponseF[TFrom, T, U](f: T => AlmFuture[U], successCode: HttpStatusCode)(implicit context: HttpRequestExtractor[TFrom], instances: HttpInstances, unmarshaller: HttpUnmarshaller[T], marshaller: HttpMarshaller[U], problemConsumer: Consumer[Problem], executionContext: ExecutionContext): TFrom => AlmFuture[HttpResponse] =
     (source: TFrom) => {
       val reqAndReplyChannelF = AlmFuture {
         extractRequest(source).flatMap(req =>

@@ -17,11 +17,11 @@ object HttpContentType {
           (x.split('=') match {
             case Array(a) => (a, a).success
             case Array(a, b) => (a, b).success
-            case x => ParsingProblem("Contains an invalid key value pair!").withInput(str).failure
+            case x => ParsingProblem("Contains an invalid key value pair!", Some(str)).failure
           }).toAgg).toVector.sequence.map(options =>
           HttpContentType(primary, options.toMap))
       case x =>
-        ParsingProblem("Not a valid content type!").withInput(str).failure
+        ParsingProblem("Not a valid content type!", Some(str)).failure
     }
 }
 

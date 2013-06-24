@@ -53,7 +53,7 @@ object Severity {
       case "minor" => scalaz.Success(Minor)
       case "major" => scalaz.Success(Major)
       case "critical" => scalaz.Success(Critical)
-      case x => scalaz.Failure(BadDataProblem("'%s' is not a severity".format(x)))
+      case x => scalaz.Failure(problemtypes.ParsingProblem(""""$str" is not a severity"""))
     }
 }
 

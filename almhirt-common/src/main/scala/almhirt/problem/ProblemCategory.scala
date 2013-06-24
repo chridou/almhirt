@@ -31,6 +31,6 @@ object ProblemCategory {
     str.toLowerCase() match {
       case "systemproblem" => scalaz.Success(SystemProblem)
       case "applicationproblem" => scalaz.Success(ApplicationProblem)
-      case x => scalaz.Failure(BadDataProblem("'%s' is not a problem category".format(x)))
+      case x => scalaz.Failure(problemtypes.ParsingProblem(s""""$str" is not a problem category"""))
     }
 }

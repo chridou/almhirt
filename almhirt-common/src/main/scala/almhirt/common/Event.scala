@@ -26,9 +26,3 @@ trait Event {
   def header: EventHeader
 }
 
-final case class ProblemEvent(header: EventHeader, problem: Problem) extends Event
-
-object ProblemEvent {
-  def apply(problem: Problem, sender: Option[String])(implicit ccuad: CanCreateUuidsAndDateTimes): ProblemEvent =
-    ProblemEvent(EventHeader(ccuad.getUuid, ccuad.getDateTime, sender), problem)
-}

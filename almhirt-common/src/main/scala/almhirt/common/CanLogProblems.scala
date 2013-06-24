@@ -18,63 +18,53 @@ import scala.language.implicitConversions
 import almhirt.syntax.problem._
 
 trait CanLogProblems {
-  protected def writeProblemToLog(prob: Problem, minSeverity: Severity): Unit
-
-  def logProblem[T <: Problem](prob: T, minSeverity: Severity = Minor): T =
-    if (!prob.isLogged) {
-      writeProblemToLog(prob, minSeverity)
-      prob.markLogged
-    } else {
-      prob
-    }
+  def logProblemAsDebug(prob: Problem)
+  def logProblemAsInfo(prob: Problem)
+  def logProblemAsWarning(prob: Problem)
+  def logProblemAsError(prob: Problem)
 
   implicit def problem2ProblemLoggerW(prob: Problem) = new ProblemLoggerW(prob)
   /** Implicits to be used on a problem */
-  final class ProblemLoggerW[T <: Problem](prob: T) {
-    /**
-     * Log a [[almhirt.validation.Problem]] based on its [[almhirt.validation.Severity]]
-     *
-     * @param minSeverity The minimum [[almhirt.validation.Severity]] the [[almhirt.validation.Problem]] must have to be logged
-     */
-    def log(minSeverity: Severity): T = logProblem(prob, minSeverity)
-
+  final class ProblemLoggerW(prob: Problem) {
     /** Log a [[almhirt.validation.Problem]] */
-    def log(): T = logProblem(prob, NoProblem)
-
+    def logAsDebug(){ logProblemAsDebug(prob) }
+    def logAsInfo(){ logProblemAsInfo(prob) }
+    def logAsWarning(){ logProblemAsWarning(prob) }
+    def logAsError(){ logProblemAsError(prob) }
   }
 
-  /** Implicits to be used on a [[almhirt.validation.AlmValidation]] */
-  implicit def almValidation2AlmValidationLoggingW[T](validation: AlmValidation[T]) = new AlmValidationLoggingW[T](validation)
-  final class AlmValidationLoggingW[T](validation: AlmValidation[T]) {
-    /**
-     * Log a [[almhirt.validation.Problem]] based on its [[almhirt.validation.Severity]] in case of a Failure
-     *
-     * @param minSeverity The minimum [[almhirt.validation.Severity]] the [[almhirt.validation.Problem]] contained in a Failure must have to be logged
-     */
-    def logFailure(minSeverity: Severity): AlmValidation[T] =
-      validation fold (prob => { scalaz.Failure(logProblem(prob, minSeverity)) }, _ => validation)
-    /** Log a [[almhirt.validation.Problem]] contained in a Failure */
-    def logFailure(): AlmValidation[T] = logFailure(NoProblem)
-  }
+//  /** Implicits to be used on a [[almhirt.validation.AlmValidation]] */
+//  implicit def almValidation2AlmValidationLoggingW[T](validation: AlmValidation[T]) = new AlmValidationLoggingW[T](validation)
+//  final class AlmValidationLoggingW[T](validation: AlmValidation[T]) {
+//    /**
+//     * Log a [[almhirt.validation.Problem]] based on its [[almhirt.validation.Severity]] in case of a Failure
+//     *
+//     * @param minSeverity The minimum [[almhirt.validation.Severity]] the [[almhirt.validation.Problem]] contained in a Failure must have to be logged
+//     */
+//    def logFailure(minSeverity: Severity): AlmValidation[T] =
+//      validation fold (prob => { scalaz.Failure(logProblem(prob, minSeverity)) }, _ => validation)
+//    /** Log a [[almhirt.validation.Problem]] contained in a Failure */
+//    def logFailure(): AlmValidation[T] = logFailure(NoProblem)
+//  }
   
-  implicit def almFuture2AlmValidationLoggingW[T](future: AlmFuture[T]): AlmFutureLoggingW[T]  = new AlmFutureLoggingW[T](future)
-  /** Implicits to be used on a [[almhirt.concurrent.AlmFuture]] */
-  final class AlmFutureLoggingW[T](future: AlmFuture[T]) {
-    /** Log a [[almhirt.validation.Problem]] based on its [[almhirt.validation.Severity]] in case of a future Failure
-     * 
-     * @param minSeverity The minimum [[almhirt.validation.Severity]] the [[almhirt.validation.Problem]] contained in a Failure must have to be logged
-     */
-    def logFailure(minSeverity: Severity)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = {
-       future.withFailure(logProblem(_, minSeverity))
-    }
-    /** Log a [[almhirt.validation.Problem]] contained in case of a Failure */
-    def logFailure()(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = logFailure(NoProblem)
-  }
+//  implicit def almFuture2AlmValidationLoggingW[T](future: AlmFuture[T]): AlmFutureLoggingW[T]  = new AlmFutureLoggingW[T](future)
+//  /** Implicits to be used on a [[almhirt.concurrent.AlmFuture]] */
+//  final class AlmFutureLoggingW[T](future: AlmFuture[T]) {
+//    /** Log a [[almhirt.validation.Problem]] based on its [[almhirt.validation.Severity]] in case of a future Failure
+//     * 
+//     * @param minSeverity The minimum [[almhirt.validation.Severity]] the [[almhirt.validation.Problem]] contained in a Failure must have to be logged
+//     */
+//    def logFailure(minSeverity: Severity)(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = {
+//       future.withFailure(logProblem(_, minSeverity))
+//    }
+//    /** Log a [[almhirt.validation.Problem]] contained in case of a Failure */
+//    def logFailure()(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = logFailure(NoProblem)
+//  }
   
 }
-
-trait LogsProblemsTagged extends CanLogProblems {
-  def logTag: String
-  override def logProblem[T <: Problem](prob: T, minSeverity: Severity): T =
-    super.logProblem(prob.setTag(logTag), minSeverity)
-}
+//
+//trait LogsProblemsTagged extends CanLogProblems {
+//  def logTag: String
+//  override def logProblem[T <: Problem](prob: T, minSeverity: Severity): T =
+//    super.logProblem(prob.setTag(logTag), minSeverity)
+//}

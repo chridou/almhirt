@@ -14,8 +14,6 @@
 */
 package almhirt.problem
 
-import almhirt.common.NoProblem
-import almhirt.common.Severity
 import scalaz.Monoid
 
 trait SeverityInstances {

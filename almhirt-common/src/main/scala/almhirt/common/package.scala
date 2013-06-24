@@ -16,21 +16,26 @@ package almhirt
 
 import language.implicitConversions
 
-import scalaz.Validation
+import scalaz.syntax.validation
 import scala.concurrent.ExecutionContext
 import almhirt.problem._
 
 /** Classes and traits needed at other places*/
 package object common {
+
   /** A registration using a UUID as a token */
   type RegistrationUUID = Registration[java.util.UUID]
 
-  type AlmValidation[+α] = Validation[Problem, α]
-  type AlmValidationAP[+α] = Validation[AggregateProblem, α]
+  type AlmValidation[+α] = scalaz.Validation[almhirt.problem.Problem, α]
+  type AlmValidationAP[+α] = scalaz.Validation[almhirt.problem.AggregateProblem, α]
+
+  type Problem = almhirt.problem.Problem
+  type SingleProblem = almhirt.problem.SingleProblem
+  type AggregateProblem = almhirt.problem.AggregateProblem
 
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T] { def equal(p1: T, p2: T): Boolean = p1 == p2 }
 
-  def launderException(exn: Exception): Problem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
+  def launderException(exn: Exception): SingleProblem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
   def handleThrowable(throwable: Throwable): Problem =
     throwable match {
       case exn: Exception => launderException(exn)
@@ -39,4 +44,37 @@ package object common {
   implicit object DateTimeOrdering extends Ordering[org.joda.time.DateTime] {
     def compare(a: org.joda.time.DateTime, b: org.joda.time.DateTime) = a.compareTo(b)
   }
+  
+  val UnspecifiedProblem = almhirt.problem.problemtypes.UnspecifiedProblem
+  val MultipleProblems = almhirt.problem.problemtypes.MultipleProblems
+  val ExceptionCaughtProblem = almhirt.problem.problemtypes.ExceptionCaughtProblem
+  val RegistrationProblem = almhirt.problem.problemtypes.RegistrationProblem
+  val ServiceNotFoundProblem = almhirt.problem.problemtypes.ServiceNotFoundProblem
+  val NoConnectionProblem = almhirt.problem.problemtypes.NoConnectionProblem
+  val OperationTimedOutProblem = almhirt.problem.problemtypes.OperationTimedOutProblem
+  val OperationAbortedProblem = almhirt.problem.problemtypes.OperationAbortedProblem
+  val IllegalOperationProblem = almhirt.problem.problemtypes.IllegalOperationProblem
+  val OperationNotSupportedProblem = almhirt.problem.problemtypes.OperationNotSupportedProblem
+  val ArgumentProblem = almhirt.problem.problemtypes.ArgumentProblem
+  val EmptyCollectionProblem = almhirt.problem.problemtypes.EmptyCollectionProblem
+  val MandatoryDataProblem = almhirt.problem.problemtypes.MandatoryDataProblem
+  val InvalidCastProblem = almhirt.problem.problemtypes.InvalidCastProblem
+  val PersistenceProblem = almhirt.problem.problemtypes.PersistenceProblem
+  val MappingProblem = almhirt.problem.problemtypes.MappingProblem
+  val SerializationProblem = almhirt.problem.problemtypes.SerializationProblem
+  val StartupProblem = almhirt.problem.problemtypes.StartupProblem
+  val IndexOutOfBoundsProblem = almhirt.problem.problemtypes.IndexOutOfBoundsProblem
+  val NotFoundProblem = almhirt.problem.problemtypes.NotFoundProblem
+  val ConstraintViolatedProblem = almhirt.problem.problemtypes.ConstraintViolatedProblem
+  val ParsingProblem = almhirt.problem.problemtypes.ParsingProblem
+  val BadDataProblem = almhirt.problem.problemtypes.BadDataProblem
+  val CollisionProblem = almhirt.problem.problemtypes.CollisionProblem
+  val NotAuthorizedProblem = almhirt.problem.problemtypes.NotAuthorizedProblem
+  val NotAuthenticatedProblem = almhirt.problem.problemtypes.NotAuthenticatedProblem
+  val AlreadyExistsProblem = almhirt.problem.problemtypes.AlreadyExistsProblem
+  val OperationCancelledProblem = almhirt.problem.problemtypes.OperationCancelledProblem
+  val BusinessRuleViolatedProblem = almhirt.problem.problemtypes.BusinessRuleViolatedProblem
+  val LocaleNotSupportedProblem  = almhirt.problem.problemtypes.LocaleNotSupportedProblem
+  val NoSuchElementProblem = almhirt.problem.problemtypes.NoSuchElementProblem
+  
 }
