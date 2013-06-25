@@ -17,7 +17,6 @@ package almhirt.almakka
 import scala.concurrent.ExecutionContext
 import akka.event._
 import almhirt.common._
-import almhirt.core._
 import almhirt.almvalidation.kit._
 import almhirt.common.AlmFuture
 
