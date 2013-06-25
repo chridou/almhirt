@@ -39,7 +39,7 @@ object Dependencies {
 
 	
     lazy val scalatest = "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"	
-	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % "2.1.0" % "test"
+	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % "2.1.4" % "test"
 
 }
 
