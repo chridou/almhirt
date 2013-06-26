@@ -1,0 +1,5 @@
+package almhirt.core
+
+import almhirt.common.CanCreateUuidsAndDateTimes
+
+trait Almhirt extends CanCreateUuidsAndDateTimes

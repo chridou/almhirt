@@ -14,7 +14,10 @@
 */
 package almhirt.common
 
-/** A Resource that has to be closed. Usually a resource which is used for a few operations*/
-trait Closeable {
- def close()
+import java.util.UUID
+
+/** An object that when disposed cancels the assigned registration */
+trait Subscription {
+  def cancel: Unit
 }
+

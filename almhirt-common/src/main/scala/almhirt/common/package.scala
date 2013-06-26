@@ -22,10 +22,6 @@ import almhirt.problem._
 
 /** Classes and traits needed at other places*/
 package object common {
-
-  /** A registration using a UUID as a token */
-  type RegistrationUUID = Registration[java.util.UUID]
-
   type AlmValidation[+α] = scalaz.Validation[almhirt.problem.Problem, α]
   type AlmValidationAP[+α] = scalaz.Validation[almhirt.problem.AggregateProblem, α]
 
