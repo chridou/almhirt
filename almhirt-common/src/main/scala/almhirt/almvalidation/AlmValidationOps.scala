@@ -121,6 +121,14 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   def forceProblem(): P =
     self fold (prob => prob, v => throw new ProblemForcedFromValidationException())
 
+  /**
+   *  Escalate a problem.
+   *  Call if you need a result and you don't no how to recover from a failure.
+   *  A failure will throw an "EscalatedProblemException" exception.
+   */
+  def resultOrEscalate(): T =
+    self fold (prob => throw new EscalatedProblemException(prob), v => v)
+
   def toProblemOption(): Option[Problem] =
     self fold (prob => Some(prob), _ => None)
 }
@@ -163,8 +171,8 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
   def invert(): scalaz.Validation[T, Problem] =
     self fold (fail => fail.success, succ => succ.failure)
 
-//  def withArgOnFailure(key: String, value: Any): AlmValidation[T] = self.bimap(p => p.withArg(key, value), g => g)
-//  def withIdentifierOnFailure(ident: String): AlmValidation[T] = self.bimap(p => almhirt.problem.funs.withIdentifier(p, ident), g => g)
+  //  def withArgOnFailure(key: String, value: Any): AlmValidation[T] = self.bimap(p => p.withArg(key, value), g => g)
+  //  def withIdentifierOnFailure(ident: String): AlmValidation[T] = self.bimap(p => almhirt.problem.funs.withIdentifier(p, ident), g => g)
 }
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
