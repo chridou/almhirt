@@ -38,7 +38,7 @@ object Dependencies {
     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.11" % "compile"
 
 	
-    lazy val scalatest = "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"	
+    lazy val scalatest = "org.scalatest" % "scalatest_2.10" % "2.0.M5b" % "test"	
 	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % "2.1.4" % "test"
 
 }
