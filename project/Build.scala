@@ -4,7 +4,7 @@ import Keys._
 object BuildSettings {
   val buildOrganization = "org.almhirt"
   val buildVersion      = "0.3.0"
-  val buildScalaVersion = "2.10.1"
+  val buildScalaVersion = "2.10.2"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
 	organization := buildOrganization,
@@ -23,7 +23,7 @@ object Resolvers {
 }
 
 object Dependencies {
-	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % "2.10.0"
+	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % "2.10.2"
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
