@@ -10,7 +10,7 @@ import almhirt.almvalidation.kit._
 import almhirt.messaging.Classifier
 
 class ActorSystemEventStreamMessageBusSpecs extends TestKit(ActorSystem("ActorSystemEventStreamMessageBusSpecs")) with FunSpec with ShouldMatchers{
-  implicit val defaultDuration = FiniteDuration(5, "s")
+  implicit val defaultDuration = FiniteDuration(1, "s")
   
   class A()
   class B() extends A
