@@ -17,7 +17,7 @@ object problemtypes {
 
   case object ExceptionCaughtProblem extends ProblemType {
     def apply(exn: Throwable): SingleProblem =
-      SingleProblem(s"""An exception has been caught: "{$exn.getMessage}"""", ExceptionCaughtProblem, Map.empty, cause = Some(exn))
+      SingleProblem(s"""An exception has been caught: "{$exn.getMessage()}"""", ExceptionCaughtProblem, Map.empty, cause = Some(exn))
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ExceptionCaughtProblem)
   }
 
