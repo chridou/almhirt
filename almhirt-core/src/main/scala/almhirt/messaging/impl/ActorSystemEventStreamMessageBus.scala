@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 
 object ActorSystemEventStreamMessageBus {
   def apply(system: ActorSystem): AlmFuture[(MessageBus, CloseHandle)] = {
-    implicit val executionContext = system.dispatcher
+    implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
     val spawnTimeout = FiniteDuration(1, "s")
     val akkaEventStream = system.eventStream
     val supervisor = system.actorOf(Props[SupervisorActor], "MessageBusSupervisor")
