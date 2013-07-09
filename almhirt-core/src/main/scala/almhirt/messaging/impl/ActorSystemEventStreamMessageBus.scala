@@ -178,8 +178,6 @@ object ActorSystemEventStreamMessageBus {
           }
         }
       }
-      def map[U <: AnyRef](f: T => U): MessageStream[U] =
-        ???
     }
   }
 }
