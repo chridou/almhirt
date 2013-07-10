@@ -5,8 +5,10 @@ import akka.actor._
 object AggregateRootCell {
   final case class UpdateAggregateRoot(ar: IsAggregateRoot, events: Iterable[DomainEvent])
   case object GetAggregateRoot
+  case object CheckAggregateRootAge
+  
   final case class RequestedAggregateRoot(ar: IsAggregateRoot)
-  case class CheckAggregateRootAge(maxAge: org.joda.time.Duration, againstTime: org.joda.time.DateTime)
+  case object UpdateFailed
 }
 
 trait AggregateRootCell { self: Actor =>
