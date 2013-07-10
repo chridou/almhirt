@@ -4,6 +4,9 @@ import scala.concurrent.ExecutionContext
 import almhirt.messaging.MessageBus
 import com.typesafe.config.Config
 
+trait HasActorSystem {
+  def actorSystem: akka.actor.ActorSystem
+}
 trait HasMessageBus {
   def messageBus: MessageBus
 }
@@ -18,6 +21,10 @@ trait HasDomainEventStream {
 
 trait HasCommandStream {
   def commandStream : CommandStream
+}
+
+trait HasFuturesExecutor {
+  def futuresExecutor : ExecutionContext
 }
 
 /**
@@ -39,6 +46,6 @@ trait HasConfig {
 }
 
 trait HasLoggingAdapter {
-  def loggingAdapter: akka.event.LoggingAdapter
+  def log: akka.event.LoggingAdapter
 }
 

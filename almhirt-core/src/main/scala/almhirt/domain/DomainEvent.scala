@@ -21,7 +21,16 @@ import almhirt.common._
 import almhirt.core._
 
 /** These events can create or mutate an aggregate root in the dimension of time */
-trait DomainEvent extends Event { def header: DomainEventHeader }
+trait DomainEvent extends Event {
+  override def header: DomainEventHeader
+  override def changeMetaData(newMetaData: Map[String, String]): DomainEvent
+}
+
+trait DomainEventTemplate extends DomainEvent {
+  protected def changeHeader(newHeader: EventHeader): DomainEvent
+  override final def changeMetaData(newMetaData: Map[String, String]): DomainEvent =
+    changeHeader(this.header.changeMetaData(newMetaData))
+}
 
 object DomainEvent {
   implicit class DomainEventOps(event: DomainEvent) {
@@ -40,19 +49,19 @@ final case class DomainEventHeader(
   aggRef: AggregateRootRef,
   /** The events timestamp of creation */
   timestamp: DateTime,
-  sender: Option[String]) extends EventHeader
+  metaData: Map[String, String]) extends EventHeader {
+  def changeMetaData(newMetaData: Map[String, String]): DomainEventHeader = this.copy(metaData = newMetaData)
+}
 
 object DomainEventHeader {
   def apply(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
-    apply(ccuad.getUuid, aggRef, ccuad.getDateTime, None)
-  def apply(aggRef: AggregateRootRef, sender: String)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
-    apply(ccuad.getUuid, aggRef, ccuad.getDateTime, Some(sender))
-  def apply(aggRef: AggregateRootRef, sender: Option[String])(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
-    apply(ccuad.getUuid, aggRef, ccuad.getDateTime, sender)
+    apply(ccuad.getUuid, aggRef, ccuad.getDateTime, Map.empty)
+  def apply(aggRef: AggregateRootRef, metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(ccuad.getUuid, aggRef, ccuad.getDateTime, metaData)
   def apply(arId: java.util.UUID, version: Long)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
-    apply(ccuad.getUuid, AggregateRootRef(arId, version), ccuad.getDateTime, None)
+    apply(ccuad.getUuid, AggregateRootRef(arId, version), ccuad.getDateTime, Map.empty)
   def apply(id: java.util.UUID, aggRef: AggregateRootRef, timestamp: DateTime): DomainEventHeader =
-    apply(id, aggRef, timestamp, None)
+    apply(id, aggRef, timestamp, Map.empty)
 
   implicit def aggregateRootRef2DomainEventHeader(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
     apply(aggRef)

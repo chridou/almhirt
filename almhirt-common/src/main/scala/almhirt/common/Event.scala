@@ -8,21 +8,29 @@ trait EventHeader {
   def id: java.util.UUID
   /** The events timestamp of creation */
   def timestamp: DateTime
-  /**
-   * 
-   */
-  def sender: Option[String]
+  def metaData: Map[String, String]
+  def changeMetaData(newMetaData: Map[String, String]): EventHeader
 }
 
-final case class BasicEventHeader(id: java.util.UUID, timestamp: DateTime, sender: Option[String]) extends EventHeader
-
 object EventHeader {
-  def apply(anId: java.util.UUID, aTimestamp: DateTime, sender: Option[String]): EventHeader = BasicEventHeader(anId, aTimestamp, sender)
-  def apply(anId: java.util.UUID, aTimestamp: DateTime): EventHeader = BasicEventHeader(anId, aTimestamp, None)
-  def apply(anId: java.util.UUID, aTimestamp: DateTime, sender: String): EventHeader = BasicEventHeader(anId, aTimestamp, Some(sender))
+  def apply(anId: java.util.UUID, aTimestamp: DateTime, metaData: Map[String, String]): EventHeader = BasicEventHeader(anId, aTimestamp, metaData)
+  def apply(anId: java.util.UUID, aTimestamp: DateTime): EventHeader = BasicEventHeader(anId, aTimestamp, Map.empty)
+  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getDateTime, Map.empty)
+  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getDateTime, metaData)
+  private case class BasicEventHeader(id: java.util.UUID, timestamp: DateTime, metaData: Map[String, String]) extends EventHeader {
+    override def changeMetaData(newMetaData: Map[String, String]): EventHeader =
+      this.copy(metaData = newMetaData)
+  }
 }
 
 trait Event {
   def header: EventHeader
+  def changeMetaData(newMetaData: Map[String, String]): Event
+}
+
+trait EventTemplate extends Event {
+  protected def changeHeader(newHeader: EventHeader): Event
+  override final def changeMetaData(newMetaData: Map[String, String]): Event =
+    changeHeader(this.header.changeMetaData(newMetaData))
 }
 
