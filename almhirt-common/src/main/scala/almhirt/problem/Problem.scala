@@ -73,6 +73,10 @@ object Problem {
       }
 
     def withLabel(label: String): Problem = self.withArg("label", label)
+    
+    def escalate(): Nothing = {
+      throw new almhirt.common.EscalatedProblemException(self)
+    }
   }
 }
 

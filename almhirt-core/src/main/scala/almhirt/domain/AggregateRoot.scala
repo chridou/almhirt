@@ -41,11 +41,12 @@ trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extend
   def ref: AggregateRootRef
   def id: UUID = ref.id
   def version = ref.version
+
+  def applyEvents: Iterable[Event] => DomainValidation[AR]
 }
 
 trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends AggregateRoot[AR, Event] {
-  /** Applies the event by calling the default handler after validating the event. */
-  def applyEvent = { event: Event => applyValidated(event, handlers) }
+  override final def applyEvent = { event: Event => applyValidated(event, handlers) }
 
   /**
    * A [[scala.PartialFunction]] that takes an event and returns a modified AR according to the event.

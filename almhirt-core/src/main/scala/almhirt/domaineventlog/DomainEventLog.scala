@@ -19,7 +19,7 @@ object DomainEventLog {
     isLast: Boolean,
     events: Iterable[DomainEvent]) extends FetchedDomainEventsPart
 
-  final case class DomainEventsFailure(
+  final case class DomainEventsChunkFailure(
     /**
      * Starts with Zero
      */
@@ -38,7 +38,7 @@ object DomainEventLog {
   final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long)
   final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long)
   
-  final case class CommittedDomainEvents(commited: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)])
+  final case class CommittedDomainEvents(committed: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)])
 }
 
 trait DomainEventLog { self: Actor =>
