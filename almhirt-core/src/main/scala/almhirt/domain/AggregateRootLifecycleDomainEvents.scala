@@ -15,4 +15,7 @@
 package almhirt.domain
 
 /** Marks an event that creates a new aggregate root */
-trait CreatingNewAggregateRootEvent
+trait CreatesNewAggregateRootEvent
+
+/** Marks an event that deletes an aggregate root */
+trait DeletesAggregateRootEvent

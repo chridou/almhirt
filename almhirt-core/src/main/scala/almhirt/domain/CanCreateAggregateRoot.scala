@@ -15,6 +15,7 @@
 package almhirt.domain
 
 import java.util.UUID
+import scala.annotation.tailrec
 import scalaz._, Scalaz._
 import almhirt.core._
 import almhirt.common._
@@ -33,18 +34,27 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
 
   /** Creates a new aggregate root and applies all the events to it */
   def rebuildFromHistory(history: Iterable[Event]): DomainValidation[AR] = {
-    def buildEventSourced(ar: DomainValidation[AR], events: Iterable[Event]): DomainValidation[AR] = {
-      if (events.isEmpty || ar.isFailure)
-        ar
+    @tailrec
+    def buildEventSourced(ar: AR, events: Iterable[Event]): DomainValidation[AR] = {
+      if (events.isEmpty)
+        ar.success
       else {
-        val next = ar.flatMap(succ => succ.applyEvent(events.head))
-        buildEventSourced(next, events.tail)
+        val nextEvent = events.head
+        if(!(nextEvent.isInstanceOf[DeletesAggregateRootEvent]))
+        ar.applyEvent(nextEvent) match {
+          case scalaz.Success(newState) =>
+            buildEventSourced(newState, events.tail)
+          case scalaz.Failure(prob) =>
+            prob.failure
+        }
+        else
+          AggregateRootDeletedProblem(nextEvent.header.aggRef.id).failure
       }
     }
     if (history.isEmpty)
       EmptyCollectionProblem("At least one event is required to rebuild from history").failure
     else
-      applyEvent(history.head) flatMap (freshAR => buildEventSourced(freshAR.success, history.drop(1)))
+      applyEvent(history.head) flatMap (freshAR => buildEventSourced(freshAR, history.drop(1)))
   }
 
   /** Creates an UpdateRecorder from the creating event */
