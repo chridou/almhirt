@@ -51,6 +51,7 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
           AggregateRootDeletedProblem(nextEvent.header.aggRef.id).failure
       }
     }
+    
     if (history.isEmpty)
       EmptyCollectionProblem("At least one event is required to rebuild from history").failure
     else
