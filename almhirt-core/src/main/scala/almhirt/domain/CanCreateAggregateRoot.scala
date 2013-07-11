@@ -40,13 +40,13 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
         ar.success
       else {
         val nextEvent = events.head
-        if(!(nextEvent.isInstanceOf[DeletesAggregateRootEvent]))
-        ar.applyEvent(nextEvent) match {
-          case scalaz.Success(newState) =>
-            buildEventSourced(newState, events.tail)
-          case scalaz.Failure(prob) =>
-            prob.failure
-        }
+        if (!(nextEvent.isInstanceOf[DeletesAggregateRootEvent]))
+          ar.applyEvent(nextEvent) match {
+            case scalaz.Success(newState) =>
+              buildEventSourced(newState, events.tail)
+            case scalaz.Failure(prob) =>
+              prob.failure
+          }
         else
           AggregateRootDeletedProblem(nextEvent.header.aggRef.id).failure
       }
