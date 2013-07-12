@@ -26,12 +26,12 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
   import AggregateRootCell._
   import scalaz.syntax.validation._
   import almhirt.almvalidation.kit._
- 
+
   protected sealed trait UpdateTask
   protected final case class NextUpdateTask(nextUpdateState: AR, nextUpdateEvents: IndexedSeq[Event], requestedNextUpdate: ActorRef, rest: Vector[(ActorRef, UpdateAggregateRoot)]) extends UpdateTask
   protected case object NoUpdateTasks extends UpdateTask
 
-  def getNextUpdateTask(currentState: Option[AR], requestedUpdates: Vector[( ActorRef, UpdateAggregateRoot)]): UpdateTask =
+  def getNextUpdateTask(currentState: Option[AR], requestedUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): UpdateTask =
     if (requestedUpdates.isEmpty)
       NoUpdateTasks
     else {
@@ -63,27 +63,33 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
         Some(arAndEvents._1, arAndEvents._2, requestsUpdate))
   }
 
-  def validateAggregateRootsAgainstEvents(currentState: Option[AR], newAr: AR, uncommittedEvents: IndexedSeq[Event]): AlmValidation[(AR, IndexedSeq[Event])] = {
-    //    if (uncommittedEvents.isEmpty)
-    //      EmptyCollectionProblem("no events to append").failure
-    //      
-    //    
-    //    else if (uncommittedEvents.head.aggVersion != ar.version)
-    //      UnspecifiedProblem("The first event's version must be equal to the next required event version: %d != %d".format(uncommittedEvents.head.aggVersion, ar.version)).failure
-    //    else if (uncommittedEvents.last.aggVersion + 1L != ar.version)
-    //      UnspecifiedProblem("The last event's version must be one less that the aggregate root's version: %d + 1 != %d".format(uncommittedEvents.last.aggVersion, ar.version)).failure
-    //    else {
-    //      uncommittedEvents match {
-    //        case Vector(x) =>
-    //          (ar, uncommittedEvents).success
-    //        case xs =>
-    //          if (uncommittedEvents.sliding(2).forall(elems => elems.tail.head.aggVersion - elems.head.aggVersion == 1))
-    //            (ar, uncommittedEvents).success
-    //          else
-    //            UnspecifiedProblem("The events do not have a consecutive version difference of 1.").failure
-    //      }
-    //    }
-    ???
-  }
+  def validateAggregateRootsAgainstEvents(currentState: Option[AR], newState: AR, uncommittedEvents: IndexedSeq[Event]): AlmValidation[(AR, IndexedSeq[Event])] =
+    if (uncommittedEvents.isEmpty)
+      EmptyCollectionProblem(s"""No events to append for "${newState.id.toString()}"""").failure
+    else
+      currentState match {
+        case Some(toMutate) =>
+          validateforMutatedAggregateRoot(toMutate, newState, uncommittedEvents)
+        case None =>
+          validateForNewAggregateRoot(newState, uncommittedEvents)
+      }
+
+  private def validateForNewAggregateRoot(newState: AR, uncommittedEvents: IndexedSeq[Event]): AlmValidation[(AR, IndexedSeq[Event])] =
+    if (!uncommittedEvents.head.isInstanceOf[CreatesNewAggregateRootEvent])
+      UnspecifiedProblem(s"""When creating a new aggregate root("${newState.id.toString()}") the first event must inherit CreatesNewAggregateRootEvent.""").failure
+    else if (newState.version != uncommittedEvents.length)
+      UnspecifiedProblem(s"""When creating a new aggregate root("${newState.id.toString()}") the number of events(${uncommittedEvents.length.toString()}) must equal the new aggregate roots version(${newState.version.toString()}).""").failure
+    else
+      (newState, uncommittedEvents).success
+
+  private def validateforMutatedAggregateRoot(currentState: AR, newState: AR, uncommittedEvents: IndexedSeq[Event]): AlmValidation[(AR, IndexedSeq[Event])] =
+    if (newState.id != currentState.id)
+      UnspecifiedProblem(s"""When mutating an aggregate root("${newState.id.toString()}") it must have the same id as the current state("${currentState.id.toString()}).""").failure
+    else if (uncommittedEvents.exists(_.isInstanceOf[CreatesNewAggregateRootEvent]))
+      UnspecifiedProblem(s"""When mutating an aggregate root("${newState.id.toString()}") no event may inherit CreatesNewAggregateRootEvent.""").failure
+    else if (newState.version != currentState.version + uncommittedEvents.length)
+      UnspecifiedProblem(s"""When creating an aggregate root("${newState.id.toString()}") new version(${newState.version.toString()}) must equal the current aggregate roots version(${currentState.version.toString()}) plus the number of events(${uncommittedEvents.length}) which is ${(currentState.version + uncommittedEvents.length).toString}.""").failure
+    else
+      (newState, uncommittedEvents).success
 
 }
