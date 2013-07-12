@@ -12,7 +12,7 @@ object AggregateRootCell {
   final case class AggregateRootUpdated(newState: IsAggregateRoot)
   final case class AggregateRootPartiallyUpdated(newState: IsAggregateRoot, uncommittedEvents: Iterable[DomainEvent], problem: Problem)
   final case class UpdateAggregateRootFailed(problem: almhirt.common.Problem)
-  final case class UpdateCancelled(newState: IsAggregateRoot, problem: almhirt.common.Problem)
+  final case class UpdateCancelled(lastKnownState: Option[IsAggregateRoot], problem: almhirt.common.Problem)
 }
 
 trait AggregateRootCell { self: Actor =>
@@ -26,7 +26,7 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
   import AggregateRootCell._
   import scalaz.syntax.validation._
   import almhirt.almvalidation.kit._
-
+ 
   protected sealed trait UpdateTask
   protected final case class NextUpdateTask(nextUpdateState: AR, nextUpdateEvents: IndexedSeq[Event], requestedNextUpdate: ActorRef, rest: Vector[(ActorRef, UpdateAggregateRoot)]) extends UpdateTask
   protected case object NoUpdateTasks extends UpdateTask

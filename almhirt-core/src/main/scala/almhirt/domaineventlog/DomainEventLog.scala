@@ -37,8 +37,31 @@ object DomainEventLog {
   final case class GetDomainEventsUntil(aggId: JUUID, untilVersion: Long)
   final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long)
   final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long)
+
+  final case class CommittedDomainEvents(committed: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)]) {
+
+  }
+
+  object NothingCommitted {
+    def unapply(what: CommittedDomainEvents): Boolean =
+      what.committed.isEmpty && what.uncommitted.isEmpty
+  }
   
-  final case class CommittedDomainEvents(committed: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)])
+  object AllDomainEventsSuccessfullyCommitted {
+    def unapply(what: CommittedDomainEvents): Option[Iterable[DomainEvent]] =
+      if (!what.committed.isEmpty && what.uncommitted.isEmpty) Some(what.committed) else None
+  }
+
+  object DomainEventsPartiallyCommitted {
+    def unapply(what: CommittedDomainEvents): Option[(Iterable[DomainEvent], Problem, Iterable[DomainEvent])] =
+      if (!what.committed.isEmpty && !what.uncommitted.isEmpty) Some((what.committed, what.uncommitted.get._2,  what.uncommitted.get._1)) else None
+  }
+
+  object CommitDomainEventsFailed {
+    def unapply(what: CommittedDomainEvents): Option[(Problem, Iterable[DomainEvent])] =
+      if (what.committed.isEmpty && what.uncommitted.isDefined) Some((what.uncommitted.get._2,  what.uncommitted.get._1)) else None
+  }
+  
 }
 
 trait DomainEventLog { self: Actor =>
