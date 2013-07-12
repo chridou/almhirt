@@ -26,9 +26,9 @@ trait DomainEvent extends Event {
   override def changeMetaData(newMetaData: Map[String, String]): DomainEvent
 }
 
-trait DomainEventTemplate extends DomainEvent {
-  protected def changeHeader(newHeader: EventHeader): DomainEvent
-  override final def changeMetaData(newMetaData: Map[String, String]): DomainEvent =
+trait DomainEventTemplate[T <: DomainEvent] extends { self: DomainEvent =>
+  protected def changeHeader(newHeader: DomainEventHeader): T
+  override final def changeMetaData(newMetaData: Map[String, String]): T =
     changeHeader(this.header.changeMetaData(newMetaData))
 }
 
@@ -60,12 +60,17 @@ object DomainEventHeader {
     apply(ccuad.getUuid, aggRef, ccuad.getDateTime, metaData)
   def apply(arId: java.util.UUID, version: Long)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
     apply(ccuad.getUuid, AggregateRootRef(arId, version), ccuad.getDateTime, Map.empty)
+  def apply(arId: java.util.UUID)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(ccuad.getUuid, AggregateRootRef(arId, 0L), ccuad.getDateTime, Map.empty)
   def apply(id: java.util.UUID, aggRef: AggregateRootRef, timestamp: DateTime): DomainEventHeader =
     apply(id, aggRef, timestamp, Map.empty)
 
   implicit def aggregateRootRef2DomainEventHeader(aggRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
     apply(aggRef)
 
+  implicit def uuid2DomainEventHeader(arId: java.util.UUID)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(arId)
+    
   implicit class DomainEventHeaderOps(header: DomainEventHeader) {
     def aggRef: AggregateRootRef = header.aggRef
     def aggId: UUID = header.aggRef.id
