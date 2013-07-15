@@ -10,15 +10,19 @@ case class TestArCreated(header: DomainEventHeader, newA: String) extends TestAr
   def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
 }
 
-case class AChanged(header: DomainEventHeader, newA: String) extends TestArEvent with CreatesNewAggregateRootEvent with DomainEventTemplate[AChanged] {
+case class AChanged(header: DomainEventHeader, newA: String) extends TestArEvent with DomainEventTemplate[AChanged] {
   def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
 }
 
-case class BChanged(header: DomainEventHeader, newB: Option[String]) extends TestArEvent with CreatesNewAggregateRootEvent with DomainEventTemplate[BChanged] {
+case class BChanged(header: DomainEventHeader, newB: Option[String]) extends TestArEvent with DomainEventTemplate[BChanged] {
   def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
 }
 
 case class TestArDeleted(header: DomainEventHeader) extends TestArEvent with CreatesNewAggregateRootEvent with DomainEventTemplate[TestArDeleted] {
+  def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
+}
+
+case class UnhandableTestArEvent(header: DomainEventHeader) extends TestArEvent with DomainEventTemplate[UnhandableTestArEvent] {
   def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
 }
 
@@ -52,7 +56,7 @@ case class TestAr(ref: AggregateRootRef, theA: String, theB: Option[String], isD
 object TestAr extends CanCreateAggragateRoot[TestAr, TestArEvent] {
   protected override def creationHandler: PartialFunction[TestArEvent, TestAr] = {
     case TestArCreated(header, newA) =>
-      TestAr(header.aggRef, newA, None, false)
+      TestAr(header.aggRef.inc, newA, None, false)
   }
 }
 

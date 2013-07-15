@@ -27,7 +27,7 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
     try {
       creationHandler(event).success
     } catch {
-      case err: MatchError => throw new UnhandledDomainEventException(event.header.id, event)
+      case err: MatchError => throw new UnhandledDomainEventException(event.header.id, event, s"""Could not create aggregate root with id "${event.header.id.toString()}" from domain event of type "${event.getClass().getName()}".""")
       case err: Exception => throw err
     }
 
