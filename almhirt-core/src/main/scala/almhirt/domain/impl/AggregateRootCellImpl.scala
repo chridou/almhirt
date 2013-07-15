@@ -8,19 +8,22 @@ import almhirt.core.Almhirt
 import almhirt.domain.AggregateRootCell
 import almhirt.domain._
 import almhirt.domain.DomainEvent
+import almhirt.messaging.MessagePublisher
+import almhirt.common.CanCreateUuidsAndDateTimes
 
-trait SimpleAggregateRootCell extends AggregateRootCell with AggregateRootCellWithEventValidation { self: Actor =>
+trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWithEventValidation { self: Actor =>
   import AggregateRootCell._
   import almhirt.domaineventlog.DomainEventLog._
 
   type Event <: DomainEvent
   type AR <: AggregateRoot[AR, Event]
 
+  protected def publisher: MessagePublisher
+
   def managedAggregateRooId: JUUID
   def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
-  def maxAge: org.joda.time.Duration
 
-  protected def theAlmhirt: Almhirt
+  implicit val theAlmhirt: Almhirt
   protected def domainEventLog: ActorRef
 
   protected def waitingState(ar: AR, activeSince: DateTime): Receive = {
@@ -59,7 +62,8 @@ trait SimpleAggregateRootCell extends AggregateRootCell with AggregateRootCellWi
             case NoUpdateTasks =>
               context.become(waitingState(potentialNextState, theAlmhirt.getDateTime))
           }
-        case AllDomainEventsSuccessfullyCommitted(_) =>
+        case AllDomainEventsSuccessfullyCommitted(committedEvents) =>
+          committedEvents.foreach(publisher.publish(_))
           requestedUpdate ! AggregateRootUpdated(potentialNextState)
           getNextUpdateTask(Some(potentialNextState), pendingUpdates) match {
             case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
@@ -81,6 +85,7 @@ trait SimpleAggregateRootCell extends AggregateRootCell with AggregateRootCellWi
               throw new PotentiallyInvalidStatePersistedException(managedAggregateRooId, problem)
             },
             lastRecoverableState => {
+              committedEvents.foreach(publisher.publish(_))
               requestedUpdate ! AggregateRootPartiallyUpdated(lastRecoverableState, uncommittedEvents, problem)
               pendingUpdates.foreach(x => x._1 ! UpdateCancelled(Some(lastRecoverableState), problem))
               problem.escalate

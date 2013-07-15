@@ -4,6 +4,7 @@ import java.util.{ UUID => JUUID }
 import almhirt.common._
 import almhirt.domain.DomainEvent
 import akka.actor.Actor
+import almhirt.domain.AggregateRoot
 
 object DomainEventLog {
   sealed trait FetchedDomainEventsPart {
@@ -38,9 +39,7 @@ object DomainEventLog {
   final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long)
   final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long)
 
-  final case class CommittedDomainEvents(committed: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)]) {
-
-  }
+  final case class CommittedDomainEvents(committed: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)])
 
   object NothingCommitted {
     def unapply(what: CommittedDomainEvents): Boolean =
