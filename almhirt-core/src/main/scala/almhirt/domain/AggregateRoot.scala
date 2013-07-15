@@ -23,6 +23,7 @@ import almhirt.syntax.almvalidation._
 trait IsAggregateRoot {
   def id: UUID
   def version: Long
+  def isDeleted: Boolean
 }
 
 /**
@@ -34,7 +35,7 @@ trait IsAggregateRoot {
 trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] with IsAggregateRoot {
   /**
    * The combination of id and version that uniquely identifies an aggregate root in space and time.
-   * 
+   *
    * The version which is increased by one with each event generated via mutation starts with 1L on creation.
    * A creating event must target version 0L which means that the aggregate root doesn't yet exist.
    */
@@ -65,7 +66,10 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
   protected def applyValidated(event: Event, handler: PartialFunction[Event, AR]): DomainValidation[AR] = {
     validateEvent(event) flatMap (validated =>
       try {
-        handler(validated).success
+        if (!isDeleted)
+          handler(validated).success
+        else
+          AggregateRootDeletedProblem(this.id).failure
       } catch {
         case err: MatchError => throw new UnhandledDomainEventException(this.id, event)
         case err: Exception => throw err
@@ -87,8 +91,8 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
     else
       event.success
   }
-  
-  protected def updateRef(newRef: AggregateRootRef):AR 
+
+  protected def updateRef(newRef: AggregateRootRef): AR
   def set[T](lens: Lens[AR, T], newVal: T): AR =
     lens.set(updateRef(ref.inc), newVal)
 
@@ -103,8 +107,6 @@ trait AddsUpdateToAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainE
    * @param event The event to apply the standard handler to
    */
   protected def update(event: Event): UpdateRecorder[AR, Event] = update(event, handlers)
-  
-  
-  
+
 }
 
