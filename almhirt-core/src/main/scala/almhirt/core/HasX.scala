@@ -11,16 +11,16 @@ trait HasMessageBus {
   def messageBus: MessageBus
 }
 
-trait HasEventStream {
-  def eventStream : EventStream
+trait HasEventChannel {
+  def eventChannel : EventChannel
 }
 
-trait HasDomainEventStream {
-  def domainEventStream : DomainEventStream
+trait HasDomainEventChannel {
+  def domainEventChannel : DomainEventChannel
 }
 
-trait HasCommandStream {
-  def commandStream : CommandStream
+trait HasCommandChannel {
+  def commandChannel : CommandChannel
 }
 
 trait HasFuturesExecutor {

@@ -29,14 +29,14 @@ object ActorSystemEventStreamMessageBus {
 
         def publishMessage(message: Message) { akkaEventStream.publish(message) }
 
-        def channel[T <: AnyRef](implicit tag: ClassTag[T]): AlmFuture[MessageStream[T]] =
+        def channel[T <: AnyRef](implicit tag: ClassTag[T]): AlmFuture[MessageChannel[T]] =
           (supervisor ? supervisorMessages.CreateActorStreamActor)(spawnTimeout).successfulAlmFuture[ActorRef].flatMap { streamActor =>
             (dispatcherActor ? messageDispatcherMessages.Subscribe(streamActor, Classifier.forClass(tag.runtimeClass)))(spawnTimeout).successfulAlmFuture[Subscription].map { subscription =>
               streamActor ! streamActorMessages.TakeSubscription(subscription)
               createMessageStream[T](streamActor, spawnTimeout)
             }
           }
-        def channel[T <: AnyRef](classifier: Classifier[T])(implicit tag: ClassTag[T]): AlmFuture[MessageStream[T]] = {
+        def channel[T <: AnyRef](classifier: Classifier[T])(implicit tag: ClassTag[T]): AlmFuture[MessageChannel[T]] = {
           val preClassifier = Classifier.forClass(tag.runtimeClass)
           val composedClassifier =
             new Classifier[AnyRef] {
@@ -155,18 +155,18 @@ object ActorSystemEventStreamMessageBus {
     override def receive: Receive = unsubscribed
   }
 
-  private def createMessageStream[T <: AnyRef](streamActor: ActorRef, spawnTimeout: FiniteDuration)(implicit executionContext: ExecutionContext): MessageStream[T] = {
+  private def createMessageStream[T <: AnyRef](streamActor: ActorRef, spawnTimeout: FiniteDuration)(implicit executionContext: ExecutionContext): MessageChannel[T] = {
     import streamActorMessages._
-    new MessageStream[T] {
+    new MessageChannel[T] {
       def subscribe(subscriber: ActorRef): AlmFuture[Subscription] =
         (streamActor ? Subscribe(subscriber, AlwaysTrueClassifier))(spawnTimeout).successfulAlmFuture[Subscription]
       def subscribe(subscriber: ActorRef, classifier: Classifier[T]): AlmFuture[Subscription] =
         (streamActor ? Subscribe(subscriber, classifier))(spawnTimeout).successfulAlmFuture[Subscription]
-      def channel[U <: T](implicit tag: ClassTag[U]): AlmFuture[MessageStream[U]] =
+      def channel[U <: T](implicit tag: ClassTag[U]): AlmFuture[MessageChannel[U]] =
         (streamActor ? streamActorMessages.CreateChannel(Classifier.forClass(tag.runtimeClass)))(spawnTimeout).successfulAlmFuture[ActorRef].map { childStreamActor =>
           createMessageStream[U](childStreamActor, spawnTimeout)
         }
-      def channel[U <: T](classifier: Classifier[U])(implicit tag: ClassTag[U]): AlmFuture[MessageStream[U]] = {
+      def channel[U <: T](classifier: Classifier[U])(implicit tag: ClassTag[U]): AlmFuture[MessageChannel[U]] = {
         val preClassifier = Classifier.forClass(tag.runtimeClass)
         val composedClassifier =
           new Classifier[T] {

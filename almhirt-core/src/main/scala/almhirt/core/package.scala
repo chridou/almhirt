@@ -2,11 +2,11 @@ package almhirt
 
 import almhirt.common.Event
 import almhirt.common.Command
-import almhirt.messaging.MessageStream
+import almhirt.messaging.MessageChannel
 import almhirt.domain.DomainEvent
 
 package object core {
-  type EventStream = MessageStream[Event]
-  type DomainEventStream = MessageStream[DomainEvent]
-  type CommandStream = MessageStream[Command]
+  type EventChannel = MessageChannel[Event]
+  type DomainEventChannel = MessageChannel[DomainEvent]
+  type CommandChannel = MessageChannel[Command]
 }

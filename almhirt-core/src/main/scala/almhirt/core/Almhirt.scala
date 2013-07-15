@@ -9,9 +9,9 @@ import almhirt.domain.DomainEvent
 trait Almhirt
   extends HasActorSystem
   with HasMessageBus
-  with HasCommandStream
-  with HasEventStream
-  with HasDomainEventStream
+  with HasCommandChannel
+  with HasEventChannel
+  with HasDomainEventChannel
   with CanCreateUuidsAndDateTimes
   with HasDurations
   with HasConfig
@@ -31,17 +31,17 @@ object Almhirt {
     implicit val ccuad = CanCreateUuidsAndDateTimes()
     for {
       theMessageBus <- MessageBus(system)
-      theEventStream <- theMessageBus._1.channel[Event]
-      theDomainEventStream <- theMessageBus._1.channel[DomainEvent]
-      theCommandStream <- theMessageBus._1.channel[Command]
+      theEventChannel <- theMessageBus._1.channel[Event]
+      theDomainEventChannel <- theMessageBus._1.channel[DomainEvent]
+      theCommandChannel <- theMessageBus._1.channel[Command]
     } yield {
       val closeHandle = new CloseHandle { def close { theMessageBus._2.close } }
       val theAlmhirt = new Almhirt {
         val actorSystem = system
         val messageBus = theMessageBus._1
-        val commandStream = theCommandStream
-        val eventStream = theEventStream
-        val domainEventStream = theDomainEventStream
+        val commandChannel = theCommandChannel
+        val eventChannel = theEventChannel
+        val domainEventChannel = theDomainEventChannel
         val durations = theDurations
         val config = ConfigFactory.load()
         val futuresExecutor = system.dispatchers.defaultGlobalDispatcher
