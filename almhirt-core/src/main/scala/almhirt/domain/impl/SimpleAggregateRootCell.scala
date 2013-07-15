@@ -31,7 +31,7 @@ trait SimpleAggregateRootCell extends AggregateRootCell with AggregateRootCellWi
         case (nextState, events, waitsForUpdateResponse) =>
           context.become(updatingState(Some(ar), waitsForUpdateResponse, nextState, Vector.empty))
       }
-    case CheckAggregateRootAge =>
+    case CheckCachedAggregateRootAge(maxAge) =>
       if (activeSince.plus(maxAge).compareTo(theAlmhirt.getDateTime) < 0)
         context.become(passiveState())
   }
@@ -95,7 +95,7 @@ trait SimpleAggregateRootCell extends AggregateRootCell with AggregateRootCellWi
               context.become(waitingState(potentialNextState, theAlmhirt.getDateTime))
           }
       }
-    case CheckAggregateRootAge =>
+    case CheckCachedAggregateRootAge =>
       ()
   }
 
@@ -135,7 +135,7 @@ trait SimpleAggregateRootCell extends AggregateRootCell with AggregateRootCellWi
       pendingGets.foreach(_ ! DomainMessages.AggregateRootFetchError(problem))
       pendingUpdates.foreach(_._1 ! DomainMessages.AggregateRootFetchError(problem))
       problem.escalate
-    case CheckAggregateRootAge =>
+    case CheckCachedAggregateRootAge =>
       ()
   }
 
@@ -145,7 +145,7 @@ trait SimpleAggregateRootCell extends AggregateRootCell with AggregateRootCellWi
       context.become(fetchArState(Vector(sender), Vector.empty))
     case uar: UpdateAggregateRoot =>
       context.become(fetchArState(Vector.empty, Vector((sender, uar))))
-    case CheckAggregateRootAge =>
+    case CheckCachedAggregateRootAge =>
       ()
   }
 
