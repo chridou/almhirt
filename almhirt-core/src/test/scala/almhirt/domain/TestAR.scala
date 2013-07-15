@@ -25,7 +25,7 @@ case class TestArDeleted(header: DomainEventHeader) extends TestArEvent with Cre
 case class TestAr(ref: AggregateRootRef, theA: String, theB: Option[String], isDeleted: Boolean)
   extends AggregateRoot[TestAr, TestArEvent]
   with AggregateRootWithHandlers[TestAr, TestArEvent]
-  with AddsUpdatingToAggregateRoot[TestAr, TestArEvent] {
+  with AggregateRootMutationHelpers[TestAr, TestArEvent] {
 
   protected override def handlers = {
     case AChanged(_, newA) => set((ar: TestAr, v: String) => ar.copy(theA = v), newA)

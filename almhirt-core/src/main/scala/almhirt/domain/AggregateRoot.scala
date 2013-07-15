@@ -162,7 +162,7 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
 
 }
 
-trait AddsUpdatingToAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] { self: AggregateRoot[AR, Event] with AggregateRootWithHandlers[AR, Event] =>
+trait AggregateRootMutationHelpers[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] { self: AggregateRoot[AR, Event] with AggregateRootWithHandlers[AR, Event] =>
 
   protected def updateRef(newRef: AggregateRootRef): AR
 
