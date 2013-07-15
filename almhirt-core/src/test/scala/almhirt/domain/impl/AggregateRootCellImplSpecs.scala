@@ -26,7 +26,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellI
     val cell = this.system.actorOf(Props(new AggregateRootCellImpl with Actor {
       type Event = TestArEvent
       type AR = TestAr
-      val publisher = theAlmhirt.messageBus
+      def publisher = theAlmhirt.messageBus
       val managedAggregateRooId = arId
       def rebuildAggregateRoot(events: Iterable[TestArEvent]) = TestAr.rebuildFromHistory(events)
       val theAlmhirt = AggregateRootCellImplSpecs.this.theAlmhirt
