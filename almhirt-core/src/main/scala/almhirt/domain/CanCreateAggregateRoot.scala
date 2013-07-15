@@ -23,17 +23,19 @@ import almhirt.common._
 /** Functionality to create a new aggregate root */
 trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {
   /** Applies the event and returns a new aggregate root from the event or a failure */
-  def applyEvent = { event: Event =>
+  override final def applyEvent(event: Event) =
     try {
       creationHandler(event).success
     } catch {
       case err: MatchError => throw new UnhandledDomainEventException(event.header.id, event)
       case err: Exception => throw err
     }
-  }
 
+  override final def applyEvents(events: Iterable[Event]): DomainValidation[AR] = 
+    rebuildFromHistory(events)
+  
   /** Creates a new aggregate root and applies all the events to it */
-  def rebuildFromHistory(history: Iterable[Event]): DomainValidation[AR] = {
+  final def rebuildFromHistory(history: Iterable[Event]): DomainValidation[AR] = {
     @tailrec
     def buildEventSourced(ar: AR, events: Iterable[Event]): DomainValidation[AR] = {
       if (events.isEmpty)
@@ -59,7 +61,7 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
   }
 
   /** Creates an UpdateRecorder from the creating event */
-  def create(event: Event): UpdateRecorder[AR, Event] =
+  final def create(event: Event): UpdateRecorder[AR, Event] =
     applyEvent(event) fold (UpdateRecorder.reject(_), UpdateRecorder.accept(event, _))
 
   /** The event passed to this handler must create a new aggregate root */

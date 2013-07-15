@@ -21,5 +21,6 @@ package almhirt.domain
  */
 trait CanHandleDomainEvent[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] {
   /** A function that applies a single [[almhirt.domain.DomainEvent]] and returns the effect */
-  def applyEvent: Event => DomainValidation[AR]
+  def applyEvent(event: Event): DomainValidation[AR]
+  def applyEvents(events: Iterable[Event]): DomainValidation[AR]
 }
