@@ -7,13 +7,13 @@ object TestConfigs {
      val str = 
 """
     akka {
-      loglevel = "DEBUG"
+      #loglevel = "DEBUG"
       actor {
     	debug {
     	  # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill et.c.)
-          receive = on
-          autoreceive = on
-          lifecycle = on
+          #receive = on
+          #autoreceive = on
+          #lifecycle = on
         }
       }
     }
