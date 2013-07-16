@@ -11,7 +11,7 @@ import almhirt.domain.DomainEvent
 import almhirt.messaging.MessagePublisher
 import almhirt.common.CanCreateUuidsAndDateTimes
 
-trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWithEventValidation { self: Actor =>
+trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWithEventValidation { actor: Actor =>
   import AggregateRootCell._
   import almhirt.domaineventlog.DomainEventLog._
 
@@ -26,7 +26,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
   implicit val theAlmhirt: Almhirt
   protected def domainEventLog: ActorRef
 
-  protected def waitingState(ar: AR, activeSince: DateTime): Receive = {
+  protected def waitingWithArState(ar: AR, activeSince: DateTime): Receive = {
     case GetAggregateRoot =>
       sender ! RequestedAggregateRoot(ar)
     case UpdateAggregateRoot(targetState, events) =>
@@ -38,10 +38,23 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       cc match {
         case ClearCachedOlderThan(maxAge) =>
           if (activeSince.plus(maxAge).compareTo(theAlmhirt.getDateTime) < 0)
-            context.become(passiveState())
+            context.become(uninitializedState())
         case ClearCached =>
-            context.become(passiveState())
+          context.become(uninitializedState())
       }
+  }
+  
+  protected def doesNotExistState() : Receive = {
+    case GetAggregateRoot =>
+      sender ! DomainMessages.AggregateRootNotFound(managedAggregateRooId)
+    case UpdateAggregateRoot(targetState, events) =>
+      tryGetPotentialUpdate(None, targetState.asInstanceOf[AR], events.map(_.asInstanceOf[Event]), sender).foreach {
+        case (nextState, events, waitsForUpdateResponse) =>
+          context.become(updatingState(None, waitsForUpdateResponse, nextState, Vector.empty))
+      }
+    case _: CachedAggregateRootControl =>
+      ()
+    
   }
 
   protected def updatingState(
@@ -62,20 +75,20 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
           requestedUpdate ! AggregateRootUpdated(potentialNextState)
           getNextUpdateTask(Some(potentialNextState), pendingUpdates) match {
             case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
-              domainEventLog ! LogDomainEvents(nextUpdateEvents)
+              domainEventLog ! CommitDomainEvents(nextUpdateEvents)
               context.become(updatingState(Some(potentialNextState), requestedNextUpdate, nextUpdateState, rest))
             case NoUpdateTasks =>
-              context.become(waitingState(potentialNextState, theAlmhirt.getDateTime))
+              context.become(waitingWithArState(potentialNextState, theAlmhirt.getDateTime))
           }
         case AllDomainEventsSuccessfullyCommitted(committedEvents) =>
           committedEvents.foreach(publisher.publish(_))
           requestedUpdate ! AggregateRootUpdated(potentialNextState)
           getNextUpdateTask(Some(potentialNextState), pendingUpdates) match {
             case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
-              domainEventLog ! LogDomainEvents(nextUpdateEvents)
+              domainEventLog ! CommitDomainEvents(nextUpdateEvents)
               context.become(updatingState(Some(potentialNextState), requestedNextUpdate, nextUpdateState, rest))
             case NoUpdateTasks =>
-              context.become(waitingState(potentialNextState, theAlmhirt.getDateTime))
+              context.become(waitingWithArState(potentialNextState, theAlmhirt.getDateTime))
           }
         case DomainEventsPartiallyCommitted(committedEvents, problem, uncommittedEvents) =>
           val lastRecoverableStateV =
@@ -93,17 +106,11 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
               committedEvents.foreach(publisher.publish(_))
               requestedUpdate ! AggregateRootPartiallyUpdated(lastRecoverableState, uncommittedEvents, problem)
               pendingUpdates.foreach(x => x._1 ! UpdateCancelled(Some(lastRecoverableState), problem))
-              problem.escalate
+              throw new CommitDomainEventsFailed(managedAggregateRooId, sender.path.toString(),  Some(problem))
             })
         case CommitDomainEventsFailed(problem, _) =>
           requestedUpdate ! UpdateAggregateRootFailed(problem)
-          getNextUpdateTask(Some(potentialNextState), pendingUpdates) match {
-            case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
-              domainEventLog ! LogDomainEvents(nextUpdateEvents)
-              context.become(updatingState(Some(potentialNextState), requestedNextUpdate, nextUpdateState, rest))
-            case NoUpdateTasks =>
-              context.become(waitingState(potentialNextState, theAlmhirt.getDateTime))
-          }
+          throw new CommitDomainEventsFailed(managedAggregateRooId, sender.path.toString(),  Some(problem))
       }
     case _: CachedAggregateRootControl =>
       ()
@@ -119,10 +126,10 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
         pendingGets.foreach(_ ! DomainMessages.AggregateRootNotFound(managedAggregateRooId))
         getNextUpdateTask(None, pendingUpdates) match {
           case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
-            domainEventLog ! LogDomainEvents(nextUpdateEvents)
+            domainEventLog ! CommitDomainEvents(nextUpdateEvents)
             context.become(updatingState(None, requestedNextUpdate, nextUpdateState, rest))
           case NoUpdateTasks =>
-            throw new NewAggregateRootWasRequiredException(managedAggregateRooId)
+            context.become(doesNotExistState())
         }
       } else
         rebuildAggregateRoot(events.map(_.asInstanceOf[Event])).fold(
@@ -135,23 +142,23 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
             pendingGets.foreach(_ ! RequestedAggregateRoot(ar))
             getNextUpdateTask(Some(ar), pendingUpdates) match {
               case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
-                domainEventLog ! LogDomainEvents(nextUpdateEvents)
+                domainEventLog ! CommitDomainEvents(nextUpdateEvents)
                 context.become(updatingState(Some(ar), requestedNextUpdate, nextUpdateState, rest))
               case NoUpdateTasks =>
-                context.become(waitingState(ar, theAlmhirt.getDateTime))
+                context.become(waitingWithArState(ar, theAlmhirt.getDateTime))
             }
           })
     case DomainEventsChunkFailure(_, problem) =>
       pendingGets.foreach(_ ! DomainMessages.AggregateRootFetchError(problem))
       pendingUpdates.foreach(_._1 ! DomainMessages.AggregateRootFetchError(problem))
-      problem.escalate
+      throw new FetchDomainEventsFailed(managedAggregateRooId, sender.path.toString(), Some(problem))
     case _: CachedAggregateRootControl =>
       ()
   }
 
-  protected def passiveState(): Receive = {
+  protected def uninitializedState(): Receive = {
     case GetAggregateRoot =>
-      domainEventLog ! GetDomainEvents(managedAggregateRooId)
+      domainEventLog ! GetAllDomainEventsFor(managedAggregateRooId)
       context.become(fetchArState(Vector(sender), Vector.empty))
     case uar: UpdateAggregateRoot =>
       context.become(fetchArState(Vector.empty, Vector((sender, uar))))
@@ -159,7 +166,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       ()
   }
 
-  protected def receiveAggregateRootCellMsg = passiveState()
+  protected def receiveAggregateRootCellMsg = uninitializedState()
 }
   
   

@@ -29,10 +29,10 @@ object DomainEventLog {
     override def isLast = true
   }
 
-  final case class LogDomainEvents(events: IndexedSeq[DomainEvent])
+  final case class CommitDomainEvents(events: IndexedSeq[DomainEvent])
   case object GetAllDomainEvents
   final case class GetDomainEvent(eventId: JUUID)
-  final case class GetDomainEvents(aggId: JUUID)
+  final case class GetAllDomainEventsFor(aggId: JUUID)
   final case class GetDomainEventsFrom(aggId: JUUID, fromVersion: Long)
   final case class GetDomainEventsTo(aggId: JUUID, toVersion: Long)
   final case class GetDomainEventsUntil(aggId: JUUID, untilVersion: Long)

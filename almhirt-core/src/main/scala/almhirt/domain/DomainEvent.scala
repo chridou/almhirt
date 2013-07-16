@@ -70,6 +70,9 @@ object DomainEventHeader {
 
   implicit def uuid2DomainEventHeader(arId: java.util.UUID)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
     apply(arId)
+
+  implicit def uuidAndLong2DomainEventHeader(arId: java.util.UUID, version: Long)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainEventHeader =
+    apply(arId, version)
     
   implicit class DomainEventHeaderOps(header: DomainEventHeader) {
     def aggRef: AggregateRootRef = header.aggRef

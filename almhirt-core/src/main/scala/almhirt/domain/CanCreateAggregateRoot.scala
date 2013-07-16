@@ -66,4 +66,5 @@ trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEven
 
   /** The event passed to this handler must create a new aggregate root */
   protected def creationHandler: PartialFunction[Event, AR]
+  
 }

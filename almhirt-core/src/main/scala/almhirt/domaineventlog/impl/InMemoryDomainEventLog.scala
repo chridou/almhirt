@@ -4,20 +4,20 @@ import akka.actor._
 import almhirt.domain.DomainEvent
 import almhirt.domaineventlog.DomainEventLog
 
-trait InMemoryDomainEventLog extends DomainEventLog { self: Actor =>
+trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor =>
   import DomainEventLog._
 
   private var domainEventLog = Vector.empty[DomainEvent]
 
   final protected def receiveDomainEventLogMsg: Receive = {
-    case LogDomainEvents(events) =>
+    case CommitDomainEvents(events) =>
       domainEventLog = domainEventLog ++ events
       sender ! CommittedDomainEvents(events, None)
     case GetAllDomainEvents =>
       sender ! DomainEventsChunk(0, true, domainEventLog)
     case GetDomainEvent(eventId) =>
       sender ! DomainEventsChunk(0, true, domainEventLog.filter(_.id == eventId))
-    case GetDomainEvents(aggId) =>
+    case GetAllDomainEventsFor(aggId) =>
       sender ! DomainEventsChunk(0, true, domainEventLog.filter(_.aggId == aggId))
     case GetDomainEventsFrom(aggId, fromVersion) =>
       sender ! DomainEventsChunk(0, true, domainEventLog.filter(event => event.aggId == aggId && event.aggVersion >= fromVersion))

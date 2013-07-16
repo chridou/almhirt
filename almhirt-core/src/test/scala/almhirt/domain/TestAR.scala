@@ -58,6 +58,10 @@ object TestAr extends CanCreateAggragateRoot[TestAr, TestArEvent] {
     case TestArCreated(header, newA) =>
       TestAr(header.aggRef.inc, newA, None, false)
   }
+
+  def fromScratch(id: java.util.UUID, a : String)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestAr, TestArEvent] =
+    create(TestArCreated(DomainEventHeader(id, 0L), a))
+  
 }
 
 object TestArLenses {
