@@ -20,7 +20,6 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
 
   protected def publisher: MessagePublisher
 
-  def managedAggregateRooId: JUUID
   def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
 
   implicit val theAlmhirt: Almhirt
@@ -43,8 +42,8 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
           context.become(uninitializedState())
       }
   }
-  
-  protected def doesNotExistState() : Receive = {
+
+  protected def doesNotExistState(): Receive = {
     case GetAggregateRoot =>
       sender ! DomainMessages.AggregateRootNotFound(managedAggregateRooId)
     case UpdateAggregateRoot(targetState, events) =>
@@ -54,14 +53,14 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       }
     case _: CachedAggregateRootControl =>
       ()
-    
+
   }
 
   protected def updatingState(
     currentState: Option[AR],
     requestedUpdate: ActorRef,
     potentialNextState: AR,
-    pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
+    pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = akka.event.LoggingReceive{
     case GetAggregateRoot =>
       currentState match {
         case Some(ar) => sender ! RequestedAggregateRoot(ar)
@@ -106,17 +105,17 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
               committedEvents.foreach(publisher.publish(_))
               requestedUpdate ! AggregateRootPartiallyUpdated(lastRecoverableState, uncommittedEvents, problem)
               pendingUpdates.foreach(x => x._1 ! UpdateCancelled(Some(lastRecoverableState), problem))
-              throw new CommitDomainEventsFailed(managedAggregateRooId, sender.path.toString(),  Some(problem))
+              throw new CommitDomainEventsFailed(managedAggregateRooId, sender.path.toString(), Some(problem))
             })
         case CommitDomainEventsFailed(problem, _) =>
           requestedUpdate ! UpdateAggregateRootFailed(problem)
-          throw new CommitDomainEventsFailed(managedAggregateRooId, sender.path.toString(),  Some(problem))
+          throw new CommitDomainEventsFailed(managedAggregateRooId, sender.path.toString(), Some(problem))
       }
     case _: CachedAggregateRootControl =>
       ()
   }
 
-  protected def fetchArState(pendingGets: Vector[(ActorRef)], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
+  protected def fetchArState(pendingGets: Vector[(ActorRef)], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = akka.event.LoggingReceive{
     case GetAggregateRoot =>
       context.become(fetchArState(pendingGets :+ sender, pendingUpdates))
     case upd: UpdateAggregateRoot =>
@@ -139,13 +138,18 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
             throw new CouldNotRebuildAggregateRootException(managedAggregateRooId, fail)
           },
           ar => {
-            pendingGets.foreach(_ ! RequestedAggregateRoot(ar))
-            getNextUpdateTask(Some(ar), pendingUpdates) match {
-              case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
-                domainEventLog ! CommitDomainEvents(nextUpdateEvents)
-                context.become(updatingState(Some(ar), requestedNextUpdate, nextUpdateState, rest))
-              case NoUpdateTasks =>
-                context.become(waitingWithArState(ar, theAlmhirt.getDateTime))
+            if (!ar.isDeleted) {
+              pendingGets.foreach(_ ! RequestedAggregateRoot(ar))
+              getNextUpdateTask(Some(ar), pendingUpdates) match {
+                case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
+                  domainEventLog ! CommitDomainEvents(nextUpdateEvents)
+                  context.become(updatingState(Some(ar), requestedNextUpdate, nextUpdateState, rest))
+                case NoUpdateTasks =>
+                  context.become(waitingWithArState(ar, theAlmhirt.getDateTime))
+              }
+            } else {
+              pendingGets.foreach(_ ! DomainMessages.AggregateRootWasDeleted(managedAggregateRooId))
+              pendingUpdates.foreach(_._1 ! DomainMessages.AggregateRootWasDeleted(managedAggregateRooId))
             }
           })
     case DomainEventsChunkFailure(_, problem) =>
@@ -156,11 +160,12 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       ()
   }
 
-  protected def uninitializedState(): Receive = {
+  protected def uninitializedState(): Receive = akka.event.LoggingReceive{
     case GetAggregateRoot =>
       domainEventLog ! GetAllDomainEventsFor(managedAggregateRooId)
       context.become(fetchArState(Vector(sender), Vector.empty))
     case uar: UpdateAggregateRoot =>
+      domainEventLog ! GetAllDomainEventsFor(managedAggregateRooId)
       context.become(fetchArState(Vector.empty, Vector((sender, uar))))
     case _: CachedAggregateRootControl =>
       ()
