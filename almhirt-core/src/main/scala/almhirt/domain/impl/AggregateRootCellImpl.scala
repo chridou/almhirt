@@ -26,7 +26,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
   implicit val theAlmhirt: Almhirt
   protected def domainEventLog: ActorRef
 
-  protected def waitingWithArState(ar: AR, activeSince: DateTime): Receive = {
+  private def waitingWithArState(ar: AR, activeSince: DateTime): Receive = {
     case GetManagedAggregateRoot =>
       sender ! RequestedAggregateRoot(ar)
     case UpdateAggregateRoot(targetState, events) =>
@@ -36,15 +36,15 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       }
     case cc: CachedAggregateRootControl =>
       cc match {
-        case ClearCachedOlderThan(maxAge) =>
-          if (activeSince.plus(maxAge).compareTo(theAlmhirt.getDateTime) < 0)
+        case ClearCachedOlderThan(ttl) =>
+          if (activeSince.plus(ttl).compareTo(theAlmhirt.getDateTime) < 0)
             context.become(uninitializedState())
         case ClearCached =>
           context.become(uninitializedState())
       }
   }
 
-  protected def doesNotExistState(): Receive = {
+  private def doesNotExistState(): Receive = {
     case GetManagedAggregateRoot =>
       sender ! DomainMessages.AggregateRootNotFound(managedAggregateRooId)
     case UpdateAggregateRoot(targetState, events) =>
@@ -57,7 +57,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
 
   }
 
-  protected def updatingState(
+  private def updatingState(
     currentState: Option[AR],
     requestedUpdate: ActorRef,
     potentialNextState: AR,
@@ -116,7 +116,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       ()
   }
 
-  protected def fetchArState(pendingGets: Vector[(ActorRef)], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
+  private def fetchArState(pendingGets: Vector[(ActorRef)], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
     case GetManagedAggregateRoot =>
       context.become(fetchArState(pendingGets :+ sender, pendingUpdates))
     case upd: UpdateAggregateRoot =>
@@ -154,14 +154,14 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
             }
           })
     case DomainEventsChunkFailure(_, problem) =>
-      pendingGets.foreach(_ ! AggregateRootFetchFailed(problem))
-      pendingUpdates.foreach(_._1 ! AggregateRootFetchFailed(problem))
+      pendingGets.foreach(_ ! AggregateRootFetchFailed(managedAggregateRooId, problem))
+      pendingUpdates.foreach(_._1 ! AggregateRootFetchFailed(managedAggregateRooId, problem))
       throw new FetchDomainEventsFailed(managedAggregateRooId, sender.path.toString(), Some(problem))
     case _: CachedAggregateRootControl =>
       ()
   }
 
-  protected def uninitializedState(): Receive = {
+  private def uninitializedState(): Receive = {
     case GetManagedAggregateRoot =>
       domainEventLog ! GetAllDomainEventsFor(managedAggregateRooId)
       context.become(fetchArState(Vector(sender), Vector.empty))

@@ -10,7 +10,7 @@ object AggregateRootCell {
   case object GetManagedAggregateRoot extends AggregateRootCellMessage
 
   sealed trait CachedAggregateRootControl extends AggregateRootCellMessage
-  final case class ClearCachedOlderThan(maxAge: org.joda.time.Duration) extends CachedAggregateRootControl
+  final case class ClearCachedOlderThan(ttl: org.joda.time.Duration) extends CachedAggregateRootControl
   case object ClearCached extends CachedAggregateRootControl
 
   final case class AggregateRootWasDeleted(arId: java.util.UUID) extends AggregateRootCellMessage
@@ -44,7 +44,7 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
     else {
       val ((requestsUpdate, update), tail) = (requestedUpdates.head, requestedUpdates.tail)
       val potentialUpdateV = inTryCatch {
-        tryGetPotentialUpdate(currentState, update.ar.asInstanceOf[AR], update.events.map(_.asInstanceOf[Event]), requestsUpdate)
+        tryGetPotentialUpdate(currentState, update.newState.asInstanceOf[AR], update.eventsToNewState.map(_.asInstanceOf[Event]), requestsUpdate)
       }
       potentialUpdateV.fold(
         fail => {
