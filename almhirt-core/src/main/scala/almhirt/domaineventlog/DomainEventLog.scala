@@ -63,6 +63,6 @@ object DomainEventLog {
   
 }
 
-trait DomainEventLog { self: Actor =>
+trait DomainEventLog { actor: Actor =>
   protected def receiveDomainEventLogMsg: Receive
 }
