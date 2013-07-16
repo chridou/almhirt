@@ -6,7 +6,10 @@ import almhirt.common._
 object AggregateRootCell {
   final case class UpdateAggregateRoot(ar: IsAggregateRoot, events: IndexedSeq[DomainEvent])
   case object GetAggregateRoot
-  final case class CheckCachedAggregateRootAge(maxAge: org.joda.time.Duration)
+  
+  sealed trait CachedAggregateRootControl
+  final case class ClearCachedOlderThan(maxAge: org.joda.time.Duration) extends CachedAggregateRootControl
+  case object ClearCached extends CachedAggregateRootControl
 
   final case class RequestedAggregateRoot(ar: IsAggregateRoot)
   final case class AggregateRootUpdated(newState: IsAggregateRoot)

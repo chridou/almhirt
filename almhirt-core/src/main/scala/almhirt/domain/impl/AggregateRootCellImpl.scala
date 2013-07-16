@@ -34,9 +34,14 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
         case (nextState, events, waitsForUpdateResponse) =>
           context.become(updatingState(Some(ar), waitsForUpdateResponse, nextState, Vector.empty))
       }
-    case CheckCachedAggregateRootAge(maxAge) =>
-      if (activeSince.plus(maxAge).compareTo(theAlmhirt.getDateTime) < 0)
-        context.become(passiveState())
+    case cc: CachedAggregateRootControl =>
+      cc match {
+        case ClearCachedOlderThan(maxAge) =>
+          if (activeSince.plus(maxAge).compareTo(theAlmhirt.getDateTime) < 0)
+            context.become(passiveState())
+        case ClearCached =>
+            context.become(passiveState())
+      }
   }
 
   protected def updatingState(
@@ -100,7 +105,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
               context.become(waitingState(potentialNextState, theAlmhirt.getDateTime))
           }
       }
-    case CheckCachedAggregateRootAge =>
+    case _: CachedAggregateRootControl =>
       ()
   }
 
@@ -140,7 +145,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       pendingGets.foreach(_ ! DomainMessages.AggregateRootFetchError(problem))
       pendingUpdates.foreach(_._1 ! DomainMessages.AggregateRootFetchError(problem))
       problem.escalate
-    case CheckCachedAggregateRootAge =>
+    case _: CachedAggregateRootControl =>
       ()
   }
 
@@ -150,7 +155,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       context.become(fetchArState(Vector(sender), Vector.empty))
     case uar: UpdateAggregateRoot =>
       context.become(fetchArState(Vector.empty, Vector((sender, uar))))
-    case CheckCachedAggregateRootAge =>
+    case _: CachedAggregateRootControl =>
       ()
   }
 
