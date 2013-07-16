@@ -69,7 +69,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
     it("should answer with a AggregateRootNotFound when the aggregate root does not exist") {
       inCellWithEventLog {
         case (cell, eventlog) =>
-          val resF = (cell ? GetAggregateRoot)(defaultTimeout).mapTo[DomainMessage]
+          val resF = (cell ? GetManagedAggregateRoot)(defaultTimeout).mapTo[DomainMessage]
           val res = Await.result(resF, defaultTimeout)
           res should equal(AggregateRootNotFound(arId))
       }
@@ -84,7 +84,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
       inCellWithEventLog {
         case (cell, eventlog) =>
           Await.result((eventlog ? DomainEventLog.CommitDomainEvents(events))(defaultTimeout), defaultTimeout)
-          val resF = (cell ? GetAggregateRoot)(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val resF = (cell ? GetManagedAggregateRoot)(defaultTimeout)
           val res = Await.result(resF, defaultTimeout)
           res should equal(RequestedAggregateRoot(ar))
       }
@@ -100,7 +100,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
       inCellWithEventLog {
         case (cell, eventlog) =>
           Await.result((eventlog ? DomainEventLog.CommitDomainEvents(events))(defaultTimeout), defaultTimeout)
-          val resF = (cell ? GetAggregateRoot)(defaultTimeout).mapTo[DomainMessage]
+          val resF = (cell ? GetManagedAggregateRoot)(defaultTimeout)
           val res = Await.result(resF, defaultTimeout)
           res should equal(AggregateRootWasDeleted(arId))
       }
@@ -114,7 +114,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
         } yield state2).result.forceResult
       inCellWithEventLog {
         case (cell, eventlog) =>
-          val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultTimeout)
           Await.result(updF, defaultTimeout) should equal(AggregateRootUpdated(ar))
       }
     }
@@ -134,9 +134,9 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
       inCellWithEventLog {
         case (cell, eventlog) =>
           Await.result((eventlog ? DomainEventLog.CommitDomainEvents(events.take(2)))(defaultTimeout), defaultTimeout)
-          val updF = (cell ? UpdateAggregateRoot(ar, Vector(events.last)))(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val updF = (cell ? UpdateAggregateRoot(ar, Vector(events.last)))(defaultTimeout)
           Await.result(updF, defaultTimeout)
-          val resF = (cell ? GetAggregateRoot)(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val resF = (cell ? GetManagedAggregateRoot)(defaultTimeout)
           val res = Await.result(resF, defaultTimeout)
           res should equal(RequestedAggregateRoot(ar))
       }
@@ -155,16 +155,16 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
 
       inCellWithEventLog {
         case (cell, eventlog) =>
-          val upd1F = (cell ? UpdateAggregateRoot(initialAr, initialEvents))(defaultTimeout).mapTo[AggregateRootCellMessage]
-          val upd2F = (cell ? UpdateAggregateRoot(resultAr, resultEvents))(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val upd1F = (cell ? UpdateAggregateRoot(initialAr, initialEvents))(defaultTimeout)
+          val upd2F = (cell ? UpdateAggregateRoot(resultAr, resultEvents))(defaultTimeout)
           Await.result(upd2F, defaultTimeout)
-          val resF = (cell ? GetAggregateRoot)(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val resF = (cell ? GetManagedAggregateRoot)(defaultTimeout)
           val res = Await.result(resF, defaultTimeout)
           res should equal(RequestedAggregateRoot(resultAr))
       }
     }
 
-    it("should fail on updating a non existing aggregate root with a UpdateAggregateRootFailed") {
+    it("should fail on updating a non existing aggregate root with a AggregateRootUpdateFailed") {
       val (ar, events) =
         (for {
           state1 <- TestAr.fromScratch(arId, "a")
@@ -172,12 +172,12 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
         } yield state2).result.forceResult
       inCellWithEventLog {
         case (cell, eventlog) =>
-          val updF = (cell ? UpdateAggregateRoot(ar, Vector(events.last)))(defaultTimeout).mapTo[AggregateRootCellMessage]
-          Await.result(updF, defaultTimeout).isInstanceOf[UpdateAggregateRootFailed] should be(true)
+          val updF = (cell ? UpdateAggregateRoot(ar, Vector(events.last)))(defaultTimeout)
+          Await.result(updF, defaultTimeout).isInstanceOf[AggregateRootUpdateFailed] should be(true)
       }
     }
 
-    it("should fail on creating an aggregate root a second time with an UpdateAggregateRootFailed") {
+    it("should fail on creating an aggregate root a second time with an AggregateRootUpdateFailed") {
       val (ar, events) =
         (for {
           state1 <- TestAr.fromScratch(arId, "a")
@@ -185,14 +185,14 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
         } yield state2).result.forceResult
       inCellWithEventLog {
         case (cell, eventlog) =>
-          (cell ? UpdateAggregateRoot(ar, events))(defaultTimeout).mapTo[AggregateRootCellMessage]
-          val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultTimeout).mapTo[AggregateRootCellMessage]
+          (cell ? UpdateAggregateRoot(ar, events))(defaultTimeout)
+          val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultTimeout)
           val res = Await.result(updF, defaultTimeout)
-          res.isInstanceOf[UpdateAggregateRootFailed] should be(true)
+          res.isInstanceOf[AggregateRootUpdateFailed] should be(true)
       }
     }
 
-    it("should fail on trying to create an aggragate root that has an id other than the cells managedId") {
+    it("should fail on trying to create an aggragate root that has an id other than the cells managedId with an AggregateRootUpdateFailed") {
       val (ar, events) =
         (for {
           state1 <- TestAr.fromScratch(theAlmhirt.getUuid, "a")
@@ -200,13 +200,13 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
         } yield state2).result.forceResult
       inCellWithEventLog {
         case (cell, eventlog) =>
-          val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultTimeout)
           val res = Await.result(updF, defaultTimeout)
-          res.isInstanceOf[UpdateAggregateRootFailed] should be(true)
+          res.isInstanceOf[AggregateRootUpdateFailed] should be(true)
       }
     }
 
-    it("should fail on trying to create an aggragate root that has an event with a differrent aggregate root id than the cells managedId") {
+    it("should fail on trying to create an aggragate root that has an event with a differrent aggregate root id than the cells managedId with an AggregateRootUpdateFailed") {
       val (ar, events) =
         (for {
           state1 <- TestAr.fromScratch(arId, "a")
@@ -218,13 +218,13 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
           val lastEvent = events.last.asInstanceOf[BChanged]
           val lastEventHeader = lastEvent.header
           val newWrongLastEvent = BChanged(DomainEventHeader(AggregateRootRef(theAlmhirt.getUuid, lastEventHeader.aggRef.version)), lastEvent.newB)
-          val updF = (cell ? UpdateAggregateRoot(ar, eventsInit :+ newWrongLastEvent))(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val updF = (cell ? UpdateAggregateRoot(ar, eventsInit :+ newWrongLastEvent))(defaultTimeout)
           val res = Await.result(updF, defaultTimeout)
-          res.isInstanceOf[UpdateAggregateRootFailed] should be(true)
+          res.isInstanceOf[AggregateRootUpdateFailed] should be(true)
       }
     }
 
-    it("should fail on trying to create an aggragate root where the first events version is not 0L") {
+    it("should fail on trying to create an aggragate root where the first events version is not 0L iwth an AggregateRootUpdateFailed") {
       val (ar, events) = TestAr.fromScratch(arId, "a").result.forceResult
       inCellWithEventLog {
         case (cell, eventlog) =>
@@ -232,13 +232,13 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
           val lastEvent = events.last.asInstanceOf[TestArCreated]
           val lastEventHeader = lastEvent.header
           val newWrongLastEvent = TestArCreated(DomainEventHeader(AggregateRootRef(arId, 1L)), lastEvent.newA)
-          val updF = (cell ? UpdateAggregateRoot(ar, eventsInit :+ newWrongLastEvent))(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val updF = (cell ? UpdateAggregateRoot(ar, eventsInit :+ newWrongLastEvent))(defaultTimeout)
           val res = Await.result(updF, defaultTimeout)
-          res.isInstanceOf[UpdateAggregateRootFailed] should be(true)
+          res.isInstanceOf[AggregateRootUpdateFailed] should be(true)
       }
     }
 
-    it("should fail on trying to create an aggragate root from events where at least one has an invalid version") {
+    it("should fail on trying to create an aggragate root from events where at least one has an invalid version iwth an AggregateRootUpdateFailed") {
       val (ar, events) =
         (for {
           state1 <- TestAr.fromScratch(arId, "a")
@@ -250,9 +250,9 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
           val lastEvent = events.last.asInstanceOf[BChanged]
           val lastEventHeader = lastEvent.header
           val newWrongLastEvent = BChanged(DomainEventHeader(lastEventHeader.aggRef.inc), lastEvent.newB)
-          val updF = (cell ? UpdateAggregateRoot(ar, eventsInit :+ newWrongLastEvent))(defaultTimeout).mapTo[AggregateRootCellMessage]
+          val updF = (cell ? UpdateAggregateRoot(ar, eventsInit :+ newWrongLastEvent))(defaultTimeout)
           val res = Await.result(updF, defaultTimeout)
-          res.isInstanceOf[UpdateAggregateRootFailed] should be(true)
+          res.isInstanceOf[AggregateRootUpdateFailed] should be(true)
       }
     }
     

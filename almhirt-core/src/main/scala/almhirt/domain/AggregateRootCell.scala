@@ -7,17 +7,15 @@ import almhirt.common._
 object AggregateRootCell {
   sealed trait AggregateRootCellMessage
 
-  final case class UpdateAggregateRoot(ar: IsAggregateRoot, events: IndexedSeq[DomainEvent]) extends AggregateRootCellMessage
-  case object GetAggregateRoot extends AggregateRootCellMessage
+  case object GetManagedAggregateRoot extends AggregateRootCellMessage
 
   sealed trait CachedAggregateRootControl extends AggregateRootCellMessage
   final case class ClearCachedOlderThan(maxAge: org.joda.time.Duration) extends CachedAggregateRootControl
   case object ClearCached extends CachedAggregateRootControl
 
-  final case class RequestedAggregateRoot(ar: IsAggregateRoot) extends AggregateRootCellMessage
-  final case class AggregateRootUpdated(newState: IsAggregateRoot) extends AggregateRootCellMessage
+  final case class AggregateRootWasDeleted(arId: java.util.UUID) extends AggregateRootCellMessage
+
   final case class AggregateRootPartiallyUpdated(newState: IsAggregateRoot, uncommittedEvents: Iterable[DomainEvent], problem: Problem) extends AggregateRootCellMessage
-  final case class UpdateAggregateRootFailed(problem: almhirt.common.Problem) extends AggregateRootCellMessage
   final case class UpdateCancelled(lastKnownState: Option[IsAggregateRoot], problem: almhirt.common.Problem) extends AggregateRootCellMessage
 }
 
@@ -29,9 +27,10 @@ trait AggregateRootCell { self: Actor =>
 }
 
 trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
-  import AggregateRootCell._
   import scalaz.syntax.validation._
   import almhirt.almvalidation.kit._
+  import AggregateRootCell._
+  import DomainMessages._
 
   def managedAggregateRooId: JUUID
 
@@ -49,7 +48,7 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
       }
       potentialUpdateV.fold(
         fail => {
-          requestsUpdate ! UpdateAggregateRootFailed(fail)
+          requestsUpdate ! AggregateRootUpdateFailed(fail)
           getNextUpdateTask(currentState, tail)
         },
         potentialUpdate =>
@@ -64,7 +63,7 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
   def tryGetPotentialUpdate(currentState: Option[AR], newState: AR, events: IndexedSeq[Event], requestsUpdate: ActorRef): Option[(AR, IndexedSeq[Event], ActorRef)] = {
     validateAggregateRootsAgainstEvents(currentState, newState, events).fold(
       fail => {
-        requestsUpdate ! UpdateAggregateRootFailed(fail)
+        requestsUpdate ! AggregateRootUpdateFailed(fail)
         None
       },
       arAndEvents =>
