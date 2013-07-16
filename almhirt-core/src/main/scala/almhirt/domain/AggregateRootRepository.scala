@@ -26,7 +26,7 @@ trait AggregateRootRepositoryWithLookupTemplate extends AggregateRootRepository 
   import DomainMessages._
   import AggregateRootCell._
 
-  type ActorCellCache
+  type AggregateRootCellCache
 
   implicit def arTag: ClassTag[AR]
   implicit def eventTag: ClassTag[Event]
@@ -38,13 +38,13 @@ trait AggregateRootRepositoryWithLookupTemplate extends AggregateRootRepository 
   protected def cacheAskMaxDuration: scala.concurrent.duration.FiniteDuration
 
   protected def createCell(aggregateRootId: JUUID): ActorRef
-  protected def initialCellLookup: ActorCellCache
+  protected def initialCellLookup: AggregateRootCellCache
 
-  protected def getCell(aggregateRootId: JUUID, from: ActorCellCache): AlmFuture[Option[ActorRef]]
-  protected def addCell(aggregateRootId: JUUID, cell: ActorRef, to: ActorCellCache)
-  protected def removeCell(aggregateRootId: JUUID, from: ActorCellCache)
+  protected def getCell(aggregateRootId: JUUID, from: AggregateRootCellCache): AlmFuture[Option[ActorRef]]
+  protected def addCell(aggregateRootId: JUUID, cell: ActorRef, to: AggregateRootCellCache)
+  protected def removeCell(aggregateRootId: JUUID, from: AggregateRootCellCache)
 
-  protected def currentState(cellCache: ActorCellCache): Receive = {
+  protected def currentState(cellCache: AggregateRootCellCache): Receive = {
     case GetAggregateRoot(arId) =>
       handleGet(arId, sender, cellCache)
     case UpdateAggregateRoot(newState, eventsToNewState) =>
@@ -53,7 +53,7 @@ trait AggregateRootRepositoryWithLookupTemplate extends AggregateRootRepository 
 
   protected override def receiveRepositoryMsg(): Receive = currentState(initialCellLookup)
 
-  private def handleGet(arId: JUUID, sender: ActorRef, cellCache: ActorCellCache) {
+  private def handleGet(arId: JUUID, sender: ActorRef, cellCache: AggregateRootCellCache) {
     getCell(arId, cellCache).onComplete(
       fail => {
         sender ! AggregateRootFetchFailed(arId, fail)
@@ -68,7 +68,7 @@ trait AggregateRootRepositoryWithLookupTemplate extends AggregateRootRepository 
       })
   }
 
-  private def handleUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], sender: ActorRef, cellCache: ActorCellCache) {
+  private def handleUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], sender: ActorRef, cellCache: AggregateRootCellCache) {
     if (!newState.castTo[AR].isSuccess)
       sender ! IncompatibleAggregateRoot(newState, arTag.runtimeClass.getName())
     else if (!eventsToNewState.forall(_.castTo[Event].isSuccess))
@@ -88,7 +88,7 @@ trait AggregateRootRepositoryWithLookupTemplate extends AggregateRootRepository 
         })
   }
 
-  private def askCellForAr(arId: JUUID, cell: ActorRef, sender: ActorRef, cellCache: ActorCellCache) {
+  private def askCellForAr(arId: JUUID, cell: ActorRef, sender: ActorRef, cellCache: AggregateRootCellCache) {
     (cell ? GetManagedAggregateRoot)(cellAskMaxDuration).successfulAlmFuture[Any].onComplete(
       fail =>
         sender ! AggregateRootFetchFailed(arId, fail),
@@ -111,7 +111,7 @@ trait AggregateRootRepositoryWithLookupTemplate extends AggregateRootRepository 
       })
   }
 
-  private def askCellForUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], cell: ActorRef, sender: ActorRef, cellCache: ActorCellCache) {
+  private def askCellForUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], cell: ActorRef, sender: ActorRef, cellCache: AggregateRootCellCache) {
     (cell ? UpdateAggregateRoot(newState, eventsToNewState))(cellAskMaxDuration).successfulAlmFuture[Any].onComplete(
       fail =>
         sender ! AggregateRootUpdateFailed(fail),
