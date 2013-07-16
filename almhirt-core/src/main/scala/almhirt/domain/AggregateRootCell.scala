@@ -19,7 +19,7 @@ object AggregateRootCell {
   final case class UpdateCancelled(lastKnownState: Option[IsAggregateRoot], problem: almhirt.common.Problem) extends AggregateRootCellMessage
 }
 
-trait AggregateRootCell { self: Actor =>
+trait AggregateRootCell { actor: Actor =>
   type Event <: DomainEvent
   type AR <: AggregateRoot[AR, Event]
 

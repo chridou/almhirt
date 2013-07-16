@@ -61,7 +61,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
     currentState: Option[AR],
     requestedUpdate: ActorRef,
     potentialNextState: AR,
-    pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = akka.event.LoggingReceive{
+    pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
     case GetManagedAggregateRoot =>
       currentState match {
         case Some(ar) => sender ! RequestedAggregateRoot(ar)
@@ -116,7 +116,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       ()
   }
 
-  protected def fetchArState(pendingGets: Vector[(ActorRef)], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = akka.event.LoggingReceive{
+  protected def fetchArState(pendingGets: Vector[(ActorRef)], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
     case GetManagedAggregateRoot =>
       context.become(fetchArState(pendingGets :+ sender, pendingUpdates))
     case upd: UpdateAggregateRoot =>
@@ -161,7 +161,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
       ()
   }
 
-  protected def uninitializedState(): Receive = akka.event.LoggingReceive{
+  protected def uninitializedState(): Receive = {
     case GetManagedAggregateRoot =>
       domainEventLog ! GetAllDomainEventsFor(managedAggregateRooId)
       context.become(fetchArState(Vector(sender), Vector.empty))
