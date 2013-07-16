@@ -101,13 +101,13 @@ trait AggregateRootRepositoryWithLookupTemplate extends AggregateRootRepository 
             })
         case m: AggregateRootNotFound =>
           sender ! m
-          removeFromCacheAndKill(arId, cell, cellCache)
+          removeCell(arId, cellCache)
         case m: AggregateRootFetchFailed =>
           sender ! m
-          removeFromCacheAndKill(arId, cell, cellCache)
+          removeCell(arId, cellCache)
         case AggregateRootWasDeleted(arId) =>
           sender ! AggregateRootNotFound(arId)
-          removeFromCacheAndKill(arId, cell, cellCache)
+          removeCell(arId, cellCache)
       })
   }
 
@@ -120,24 +120,20 @@ trait AggregateRootRepositoryWithLookupTemplate extends AggregateRootRepository 
           sender ! m
         case AggregateRootNotFound(arId) =>
           sender ! AggregateRootUpdateFailed(AggregateRootNotFoundProblem(arId))
-          removeFromCacheAndKill(arId, cell, cellCache)
+          removeCell(arId, cellCache)
         case AggregateRootFetchFailed(arId, problem) =>
           sender ! AggregateRootUpdateFailed(problem)
-          removeFromCacheAndKill(arId, cell, cellCache)
+          removeCell(arId, cellCache)
         case AggregateRootWasDeleted(arId) =>
           sender ! AggregateRootUpdateFailed(AggregateRootNotFoundProblem(arId))
-          removeFromCacheAndKill(arId, cell, cellCache)
+          removeCell(arId, cellCache)
         case AggregateRootPartiallyUpdated(lastKnownState, uncommitted, problem) =>
           sender ! AggregateRootUpdateFailed(problem)
-          removeFromCacheAndKill(lastKnownState.id, cell, cellCache)
+          removeCell(lastKnownState.id, cellCache)
         case m: AggregateRootUpdateFailed =>
           sender ! m
       })
   }
 
-  private def removeFromCacheAndKill(arId: JUUID, cell: ActorRef, cellCache: ActorCellCache) {
-    cell ! PoisonPill
-    removeCell(arId, cellCache)
-  }
 }
 
