@@ -26,6 +26,8 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
   implicit val theAlmhirt: Almhirt
   protected def domainEventLog: ActorRef
 
+  protected def onDoesNotExist()
+  
   private def waitingWithArState(ar: AR, activeSince: DateTime): Receive = {
     case GetManagedAggregateRoot =>
       sender ! RequestedAggregateRoot(ar)
@@ -129,6 +131,7 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
             domainEventLog ! CommitDomainEvents(nextUpdateEvents)
             context.become(updatingState(None, requestedNextUpdate, nextUpdateState, rest))
           case NoUpdateTasks =>
+            onDoesNotExist()
             context.become(doesNotExistState())
         }
       } else
@@ -151,6 +154,8 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
             } else {
               pendingGets.foreach(_ ! AggregateRootWasDeleted(managedAggregateRooId))
               pendingUpdates.foreach(_._1 ! AggregateRootWasDeleted(managedAggregateRooId))
+              onDoesNotExist()
+              context.become(doesNotExistState())
             }
           })
     case DomainEventsChunkFailure(_, problem) =>

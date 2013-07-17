@@ -25,7 +25,7 @@ trait Almhirt
 }
 
 object Almhirt {
-  def apply(system: ActorSystem): AlmFuture[(Almhirt, CloseHandle)] = {
+  def notFromConfig(system: ActorSystem): AlmFuture[(Almhirt, CloseHandle)] = {
     implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
     val theDurations = Durations()
     implicit val ccuad = CanCreateUuidsAndDateTimes()

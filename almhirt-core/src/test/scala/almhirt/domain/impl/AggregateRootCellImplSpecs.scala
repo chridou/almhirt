@@ -21,7 +21,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
   import DomainMessages._
   import almhirt.domaineventlog._
 
-  val almhirtAndHandle = Almhirt(this.system).awaitResult(FiniteDuration(5, "s")).forceResult
+  val almhirtAndHandle = Almhirt.notFromConfig(this.system).awaitResult(FiniteDuration(5, "s")).forceResult
 
   implicit val theAlmhirt = almhirtAndHandle._1
   implicit val defaultTimeout = theAlmhirt.durations.shortDuration
@@ -35,6 +35,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
     val cell = this.system.actorOf(Props(new AggregateRootCellImpl with Actor {
       type Event = TestArEvent
       type AR = TestAr
+      def onDoesNotExist() = ()
       def publisher = theAlmhirt.messageBus
       val managedAggregateRooId = arId
       def rebuildAggregateRoot(events: Iterable[TestArEvent]) = TestAr.rebuildFromHistory(events)
