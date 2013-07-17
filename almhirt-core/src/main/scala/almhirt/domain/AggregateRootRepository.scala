@@ -125,7 +125,7 @@ trait AggregateRootRepositoryWithCellSourceActor extends AggregateRootRepository
   protected def cacheAskMaxDuration: scala.concurrent.duration.FiniteDuration
 
   override final protected def getCell(aggregateRootId: JUUID, from: ArCellCache): AlmFuture[GetResult] =
-    (from ? GetCell(aggregateRootId, arTag.runtimeClass))(cacheAskMaxDuration).successfulAlmFuture[AggregateRootCellCacheResult].map { _.cellHandle }
+    (from ? GetCell(aggregateRootId, arTag.runtimeClass))(cacheAskMaxDuration).successfulAlmFuture[AggregateRootCellSourceResult].map { _.cellHandle }
 
   override final protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => T): T =
     result.onceWithCell(f)

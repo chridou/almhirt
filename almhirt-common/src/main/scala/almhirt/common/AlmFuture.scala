@@ -101,7 +101,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
   def isCompleted = underlying.isCompleted
 
-  def awaitResult(implicit atMost: Duration): AlmValidation[R] =
+  def awaitResult(atMost: Duration): AlmValidation[R] =
     try {
       Await.result(underlying, atMost)
     } catch {

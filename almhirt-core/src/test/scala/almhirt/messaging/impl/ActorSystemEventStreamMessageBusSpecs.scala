@@ -22,14 +22,14 @@ class ActorSystemEventStreamMessageBusSpecs extends TestKit(ActorSystem("ActorSy
 
   val classifyD = Classifier.payloadPredicate[D](x => !x.content.isEmpty)
 
-  val (messagebus, _) = ActorSystemEventStreamMessageBus(this.system).awaitResult.forceResult
-  val channelA = messagebus.channel[A].awaitResult.forceResult
-  val channelAB = channelA.channel[B].awaitResult.forceResult
-  val channelC = messagebus.channel[C].awaitResult.forceResult
-  val channelAC = channelA.channel[C].awaitResult.forceResult
-  val channelAD = channelA.channel[D].awaitResult.forceResult
-  val channelDPred = messagebus.channel[D](classifyD).awaitResult.forceResult
-  val channelADPred = channelA.channel[D](classifyD).awaitResult.forceResult
+  val (messagebus, _) = ActorSystemEventStreamMessageBus(this.system).awaitResult(maxMsgDuration).forceResult
+  val channelA = messagebus.channel[A].awaitResult(maxMsgDuration).forceResult
+  val channelAB = channelA.channel[B].awaitResult(maxMsgDuration).forceResult
+  val channelC = messagebus.channel[C].awaitResult(maxMsgDuration).forceResult
+  val channelAC = channelA.channel[C].awaitResult(maxMsgDuration).forceResult
+  val channelAD = channelA.channel[D].awaitResult(maxMsgDuration).forceResult
+  val channelDPred = messagebus.channel[D](classifyD).awaitResult(maxMsgDuration).forceResult
+  val channelADPred = channelA.channel[D](classifyD).awaitResult(maxMsgDuration).forceResult
 
   describe("""An ActorSystemEventStreamMessageBus with a subscription on AnyRef""") {
     it("""should publish to a subscriber""") {
@@ -48,7 +48,7 @@ class ActorSystemEventStreamMessageBusSpecs extends TestKit(ActorSystem("ActorSy
       val subscriptionF = messagebus.subscribe(probe.ref, Classifier.forClass(classOf[AnyRef]))
       messagebus.publishMessage(msg)
       probe.expectMsg(maxMsgDuration, msg)
-      subscriptionF.awaitResult.forceResult.cancel
+      subscriptionF.awaitResult(maxMsgDuration).forceResult.cancel
       messagebus.publishMessage(msg)
       probe.expectNoMsg(maxMsgDuration)
     }

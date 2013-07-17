@@ -32,7 +32,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
 
   def createCellAndEventLog(nameSuffix: String): (ActorRef, ActorRef, () => Unit) = {
     val eventLog = this.system.actorOf(Props(new InMemoryDomainEventLog with Actor { override def receive: Actor.Receive = receiveDomainEventLogMsg }), "EventLog_" + nameSuffix)
-    val cell = this.system.actorOf(Props(new AggregateRootCellImpl with Actor {
+    val cell = this.system.actorOf(Props(new AggregateRootCellImpl with Actor with ActorLogging {
       type Event = TestArEvent
       type AR = TestAr
       def onDoesNotExist() = ()

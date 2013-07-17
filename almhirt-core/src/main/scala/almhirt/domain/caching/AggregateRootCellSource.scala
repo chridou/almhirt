@@ -9,7 +9,7 @@ object AggregateRootCellSource {
   sealed trait AggregateRootCellCacheMessage
   final case class GetCell(arId: JUUID, arType: Class[_]) extends AggregateRootCellCacheMessage
 
-  final case class AggregateRootCellCacheResult(arId: JUUID, cellHandle: CellHandle) extends AggregateRootCellCacheMessage
+  final case class AggregateRootCellSourceResult(arId: JUUID, cellHandle: CellHandle) extends AggregateRootCellCacheMessage
 
   final case class DoesNotExistNotification(arId: JUUID)   
  

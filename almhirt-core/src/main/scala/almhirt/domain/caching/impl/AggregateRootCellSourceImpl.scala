@@ -4,7 +4,7 @@ import java.util.{ UUID => JUUID }
 import akka.actor._
 import almhirt.domain.caching._
 
-trait AggregateRootCellSourceImpl extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor =>
+trait AggregateRootCellSourceImpl extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor with ActorLogging =>
   import AggregateRootCellSource._
 
   private var currentHandleId = 0L
@@ -12,24 +12,28 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
   private def nextChacheState(currentState: CacheState): Receive = {
     case GetCell(arId, arType) =>
       val (handle, nextState) = bookCellFor(arId, arType, currentState)
-      sender ! AggregateRootCellCacheResult(arId, handle)
+      sender ! AggregateRootCellSourceResult(arId, handle)
       context.become(nextChacheState(cleanUp(nextState)))
     case Unbook(handleId) =>
       val nextState = currentState.unbook(handleId)
       context.become(nextChacheState(cleanUp(nextState)))
     case DoesNotExistNotification(arId) =>
+      log.debug(s"""Cell for aggregate root "${arId.toString()}" reported that the aggregate root does not exist.""")
       val nextState = currentState.markForRemoval(arId)
       context.become(nextChacheState(cleanUp(nextState)))
     case Remove(arId) =>
+      log.debug(s"""Cell for aggregate root "${arId.toString()}" was marked for removal.""")
       val nextState = currentState.markForRemoval(arId)
       context.become(nextChacheState(cleanUp(nextState)))
   }
 
-  override def receiveAggregateRootCellSourceMessage: Receive
+  override def receiveAggregateRootCellSourceMessage: Receive = nextChacheState(CacheState.empty)
 
   private def cleanUp(currentState: CacheState): CacheState = {
     val (removed, nextState) = currentState.removeCandidatesForRemoval
     removed.foreach(cell => this.context.stop(cell))
+    if (!removed.isEmpty)
+      log.debug(s"""Removed ${removed.size} cells.""")
     nextState
   }
 
@@ -40,10 +44,11 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
     currentState.cellByArId.contains(arId)
 
   private def bookCellFor(arId: JUUID, arType: Class[_], currentState: CacheState): (CellHandle, CacheState) =
-    if (cellForArExists(arId, currentState))
+    if (cellForArExists(arId, currentState)) {
       bookExistingCell(arId, currentState)
-    else
+    } else {
       bookNewCell(arId, arType, currentState)
+    }
 
   private def bookExistingCell(arId: JUUID, currentState: CacheState): (CellHandle, CacheState) = {
     val theCell = currentState.getCell(arId)
@@ -52,6 +57,7 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
       val cell = theCell
       def release() = self ! Unbook(currentHandleId)
     }
+    log.debug(s"""Booked exiting cell for aggregate root "${arId.toString()}". The handle id is $currentHandleId.""")
     (handle, currentState.book(arId, currentHandleId))
   }
 
@@ -63,6 +69,7 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
       val cell = newCell
       def release() = self ! Unbook(currentHandleId)
     }
+    log.debug(s"""Booked new cell for aggregate root "${arId.toString()}". The handle id is $currentHandleId.""")
     (handle, currentState.book(arId, currentHandleId))
   }
 
@@ -123,6 +130,9 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
       val newCellsByArId = cellByArId.filterKeys(cellId => !cellIdsToRemove.contains(cellId))
       (cellsToRemove, this.copy(cellByArId = newCellsByArId))
     }
+  }
 
+  private object CacheState {
+    def empty: CacheState = CacheState(Map.empty, Map.empty, Map.empty, Set.empty)
   }
 }

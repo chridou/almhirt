@@ -6,7 +6,7 @@ import almhirt.almvalidation.kit._
 
 trait TestAr2Event extends DomainEvent
 
-case class TestAr2Created(header: DomainEventHeader, newA: String) extends TestAr2Event with CreatesNewAggregateRootEvent with DomainEventTemplate[TestAr2Created] {
+case class TestAr2Created(header: DomainEventHeader) extends TestAr2Event with CreatesNewAggregateRootEvent with DomainEventTemplate[TestAr2Created] {
   def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
 }
 
@@ -46,12 +46,12 @@ case class TestAr2(ref: AggregateRootRef, theC: Option[Int], isDeleted: Boolean)
 
 object TestAr2 extends CanCreateAggragateRoot[TestAr2, TestAr2Event] {
   protected override def creationHandler: PartialFunction[TestAr2Event, TestAr2] = {
-    case TestAr2Created(header, newA) =>
+    case TestAr2Created(header) =>
       TestAr2(header.aggRef.inc, None, false)
   }
 
-  def fromScratch(id: java.util.UUID, a : String)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestAr2, TestAr2Event] =
-    create(TestAr2Created(DomainEventHeader(id, 0L), a))
+  def fromScratch(id: java.util.UUID)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestAr2, TestAr2Event] =
+    create(TestAr2Created(DomainEventHeader(id, 0L)))
   
 }
 
