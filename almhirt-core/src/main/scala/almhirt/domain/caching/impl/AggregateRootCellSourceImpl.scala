@@ -15,6 +15,7 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
       sender ! AggregateRootCellSourceResult(arId, handle)
       context.become(nextChacheState(cleanUp(nextState)))
     case Unbook(handleId) =>
+      log.debug(s"""Handle with id "$handleId" was unbooked.""")
       val nextState = currentState.unbook(handleId)
       context.become(nextChacheState(cleanUp(nextState)))
     case DoesNotExistNotification(arId) =>
