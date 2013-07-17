@@ -43,7 +43,7 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
 
   protected def getCell(aggregateRootId: JUUID, from: ArCellCache): AlmFuture[GetResult]
 
-  protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => T): T
+  protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => AlmFuture[T]): AlmFuture[T]
 
   protected def currentState(cellCache: ArCellCache): Receive = {
     case GetAggregateRoot(arId) =>
@@ -75,8 +75,8 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
         getResult => onceWithGetResult(getResult, cell => askCellForUpdate(newState, eventsToNewState, cell, sender, cellCache)))
   }
 
-  private def askCellForAr(arId: JUUID, cell: ActorRef, sender: ActorRef, cellCache: ArCellCache) {
-    (cell ? GetManagedAggregateRoot)(cellAskMaxDuration).successfulAlmFuture[Any].onComplete(
+  private def askCellForAr(arId: JUUID, cell: ActorRef, sender: ActorRef, cellCache: ArCellCache) = {
+    (cell ? GetManagedAggregateRoot)(cellAskMaxDuration).successfulAlmFuture[Any].fold(
       fail =>
         sender ! AggregateRootFetchFailed(arId, fail),
       {
@@ -95,8 +95,8 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
       })
   }
 
-  private def askCellForUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], cell: ActorRef, sender: ActorRef, cellCache: ArCellCache) {
-    (cell ? UpdateAggregateRoot(newState, eventsToNewState))(cellAskMaxDuration).successfulAlmFuture[Any].onComplete(
+  private def askCellForUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], cell: ActorRef, sender: ActorRef, cellCache: ArCellCache) = {
+    (cell ? UpdateAggregateRoot(newState, eventsToNewState))(cellAskMaxDuration).successfulAlmFuture[Any].fold(
       fail =>
         sender ! AggregateRootUpdateFailed(fail),
       {
@@ -127,8 +127,7 @@ trait AggregateRootRepositoryWithCellSourceActor extends AggregateRootRepository
   override final protected def getCell(aggregateRootId: JUUID, from: ArCellCache): AlmFuture[GetResult] =
     (from ? GetCell(aggregateRootId, arTag.runtimeClass))(cacheAskMaxDuration).successfulAlmFuture[AggregateRootCellSourceResult].map { _.cellHandle }
 
-  override final protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => T): T =
+  override final protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => AlmFuture[T]): AlmFuture[T] =
     result.onceWithCell(f)
-
 }
 

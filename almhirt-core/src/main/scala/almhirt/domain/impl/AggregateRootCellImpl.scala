@@ -11,7 +11,7 @@ import almhirt.domain.DomainEvent
 import almhirt.messaging.MessagePublisher
 import almhirt.common.CanCreateUuidsAndDateTimes
 
-trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWithEventValidation { actor: Actor with ActorLogging =>
+trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCellWithEventValidation { actor: Actor with ActorLogging =>
   import AggregateRootCell._
   import DomainMessages._
   import almhirt.domaineventlog.DomainEventLog._
@@ -195,11 +195,13 @@ trait AggregateRootCellImpl extends AggregateRootCell with AggregateRootCellWith
   }
 
   private def logDebugMessage(currentState: String, msg: String) {
-    log.debug(s"""Cell for "${managedAggregateRooId.toString} on state "$currentState": $msg""")
+    log.debug(s"""Cell for "${managedAggregateRooId}" on state "$currentState": $msg""")
 
   }
 
   protected def receiveAggregateRootCellMsg = uninitializedState()
 }
+
+abstract class
   
   

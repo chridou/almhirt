@@ -15,7 +15,7 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
       sender ! AggregateRootCellSourceResult(arId, handle)
       context.become(nextChacheState(cleanUp(nextState)))
     case Unbook(handleId) =>
-      log.debug(s"""Handle with id "$handleId" was unbooked.""")
+      log.debug(s"""Handle with id "$handleId" has been unbooked.""")
       val nextState = currentState.unbook(handleId)
       context.become(nextChacheState(cleanUp(nextState)))
     case DoesNotExistNotification(arId) =>
@@ -58,7 +58,7 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
       val cell = theCell
       def release() = self ! Unbook(currentHandleId)
     }
-    log.debug(s"""Booked exiting cell for aggregate root "${arId.toString()}". The handle id is $currentHandleId.""")
+    log.debug(s"""Booked existing cell(${theCell.path}) for aggregate root "${arId}". The handle id is $currentHandleId.""")
     (handle, currentState.book(arId, currentHandleId))
   }
 
@@ -70,7 +70,7 @@ trait AggregateRootCellSourceImpl extends AggregateRootCellSource with Supervisi
       val cell = newCell
       def release() = self ! Unbook(currentHandleId)
     }
-    log.debug(s"""Booked new cell for aggregate root "${arId.toString()}". The handle id is $currentHandleId.""")
+    log.debug(s"""Booked new cell(${newCell.path}) for aggregate root "${arId}". The handle id is $currentHandleId.""")
     (handle, currentState.book(arId, currentHandleId))
   }
 

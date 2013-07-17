@@ -4,6 +4,7 @@ import scala.language.existentials
 import java.util.{ UUID => JUUID }
 import akka.actor._
 import almhirt.common._
+import scala.concurrent.ExecutionContext
 
 object AggregateRootCellSource {
   sealed trait AggregateRootCellCacheMessage
@@ -16,7 +17,7 @@ object AggregateRootCellSource {
   trait CellHandle {
     def cell: ActorRef
     def release()
-    def onceWithCell[T](f: ActorRef => T) = {
+    def onceWithCellSync[T](f: ActorRef => T) = {
       try {
         val result = f(cell)
         release()
@@ -27,7 +28,12 @@ object AggregateRootCellSource {
           throw exn
       }
     }
+    def onceWithCell[T](f: ActorRef => AlmFuture[T])(implicit execContext: ExecutionContext): AlmFuture[T] = {
+      import almhirt.almfuture.all._
+      f(cell) andThen (_ => release())
+    }
   }
+  
 }
 
 trait AggregateRootCellSource { actor: Actor =>
