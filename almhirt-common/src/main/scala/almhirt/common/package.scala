@@ -40,7 +40,14 @@ package object common {
   implicit object DateTimeOrdering extends Ordering[org.joda.time.DateTime] {
     def compare(a: org.joda.time.DateTime, b: org.joda.time.DateTime) = a.compareTo(b)
   }
-  
+
+  object Severity {
+    val Critical = almhirt.problem.Critical
+    val Major = almhirt.problem.Major
+    val Minor = almhirt.problem.Minor
+    val NoProblem = almhirt.problem.NoProblem
+  }
+
   val UnspecifiedProblem = almhirt.problem.problemtypes.UnspecifiedProblem
   val MultipleProblems = almhirt.problem.problemtypes.MultipleProblems
   val ExceptionCaughtProblem = almhirt.problem.problemtypes.ExceptionCaughtProblem
@@ -70,7 +77,7 @@ package object common {
   val AlreadyExistsProblem = almhirt.problem.problemtypes.AlreadyExistsProblem
   val OperationCancelledProblem = almhirt.problem.problemtypes.OperationCancelledProblem
   val BusinessRuleViolatedProblem = almhirt.problem.problemtypes.BusinessRuleViolatedProblem
-  val LocaleNotSupportedProblem  = almhirt.problem.problemtypes.LocaleNotSupportedProblem
+  val LocaleNotSupportedProblem = almhirt.problem.problemtypes.LocaleNotSupportedProblem
   val NoSuchElementProblem = almhirt.problem.problemtypes.NoSuchElementProblem
-  
+
 }
