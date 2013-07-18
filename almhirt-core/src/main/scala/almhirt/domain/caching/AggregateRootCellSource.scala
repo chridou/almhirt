@@ -11,9 +11,11 @@ object AggregateRootCellSource {
   final case class GetCell(arId: JUUID, arType: Class[_]) extends AggregateRootCellCacheMessage
 
   final case class AggregateRootCellSourceResult(arId: JUUID, cellHandle: CellHandle) extends AggregateRootCellCacheMessage
+  final case class DoesNotExistNotification(arId: JUUID) extends AggregateRootCellCacheMessage   
 
-  final case class DoesNotExistNotification(arId: JUUID)   
- 
+  final object GetCacheStats extends AggregateRootCellCacheMessage
+  final case class CacheStats(cachedCells: Int) extends AggregateRootCellCacheMessage
+  
   trait CellHandle {
     def cell: ActorRef
     def release()
@@ -33,7 +35,6 @@ object AggregateRootCellSource {
       f(cell) andThen (_ => release())
     }
   }
-  
 }
 
 trait AggregateRootCellSource { actor: Actor =>

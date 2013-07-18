@@ -19,14 +19,15 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   type Event <: DomainEvent
   type AR <: AggregateRoot[AR, Event]
 
-  protected def publisher: MessagePublisher
-
+  implicit val myAlmhirt: Almhirt
+ 
   def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
-
-  implicit val theAlmhirt: Almhirt
+ 
   protected def domainEventLog: ActorRef
 
-  protected def onDoesNotExist()
+  protected def onDoesNotExist: () => Unit
+  
+  private def publisher: MessagePublisher = myAlmhirt.messageBus
 
   private def waitingWithArState(ar: AR, activeSince: DateTime): Receive = {
     case GetManagedAggregateRoot =>
@@ -40,7 +41,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     case cc: CachedAggregateRootControl =>
       cc match {
         case ClearCachedOlderThan(ttl) =>
-          if (activeSince.plus(ttl).compareTo(theAlmhirt.getDateTime) < 0) {
+          if (activeSince.plus(ttl).compareTo(myAlmhirt.getDateTime) < 0) {
             logDebugMessage("waitingWithArState", """Transition to "uninitializedState" by "ClearCachedOlderThan"""")
             context.become(uninitializedState())
           }
@@ -88,7 +89,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
               context.become(updatingState(Some(potentialNextState), requestedNextUpdate, nextUpdateState, rest))
             case NoUpdateTasks =>
               logDebugMessage("updatingState", """Transition to "waitingWithArState" by "NothingCommitted"""")
-              context.become(waitingWithArState(potentialNextState, theAlmhirt.getDateTime))
+              context.become(waitingWithArState(potentialNextState, myAlmhirt.getDateTime))
           }
         case AllDomainEventsSuccessfullyCommitted(committedEvents) =>
           committedEvents.foreach(publisher.publish(_))
@@ -100,7 +101,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
               context.become(updatingState(Some(potentialNextState), requestedNextUpdate, nextUpdateState, rest))
             case NoUpdateTasks =>
               logDebugMessage("updatingState", """Transition to "waitingWithArState" by "AllDomainEventsSuccessfullyCommitted"""")
-              context.become(waitingWithArState(potentialNextState, theAlmhirt.getDateTime))
+              context.become(waitingWithArState(potentialNextState, myAlmhirt.getDateTime))
           }
         case DomainEventsPartiallyCommitted(committedEvents, problem, uncommittedEvents) =>
           val lastRecoverableStateV =
@@ -163,7 +164,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
                   context.become(updatingState(Some(ar), requestedNextUpdate, nextUpdateState, rest))
                 case NoUpdateTasks =>
                   logDebugMessage("fetchArState", """Transition to "waitingWithArState" by "DomainEventsChunk"""")
-                  context.become(waitingWithArState(ar, theAlmhirt.getDateTime))
+                  context.become(waitingWithArState(ar, myAlmhirt.getDateTime))
               }
             } else {
               pendingGets.foreach(_ ! AggregateRootWasDeleted(managedAggregateRooId))
@@ -202,6 +203,31 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   protected def receiveAggregateRootCellMsg = uninitializedState()
 }
 
-abstract class
+class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
+  aggregateRooId: JUUID,  
+  aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+  theDomainEventLog: ActorRef,
+  notifyOnDoesNotExist: () => Unit)(implicit theAlmhirt: Almhirt) extends AggregateRootCellTemplate with Actor with ActorLogging {
+  
+  type AR = TAR
+  type Event = TEvent
+  
+  override def preStart() {
+    super.preStart()
+    log.debug(s"""Aggregate root cell for managed aggregate root id "$managedAggregateRooId" is about to start.""")
+  }
+  
+  val managedAggregateRooId = aggregateRooId
+  
+  override val myAlmhirt: Almhirt = theAlmhirt
+ 
+  def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR] = aggregateRootFactory(events)
+ 
+  protected def domainEventLog: ActorRef = theDomainEventLog
+
+  protected def onDoesNotExist() = notifyOnDoesNotExist
+  
+  override def receive: Receive = receiveAggregateRootCellMsg
+}
   
   

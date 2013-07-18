@@ -32,17 +32,8 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
 
   def createCellAndEventLog(nameSuffix: String): (ActorRef, ActorRef, () => Unit) = {
     val eventLog = this.system.actorOf(Props(new InMemoryDomainEventLog with Actor { override def receive: Actor.Receive = receiveDomainEventLogMsg }), "EventLog_" + nameSuffix)
-    val cell = this.system.actorOf(Props(new AggregateRootCellImpl with Actor with ActorLogging {
-      type Event = TestArEvent
-      type AR = TestAr
-      def onDoesNotExist() = ()
-      def publisher = theAlmhirt.messageBus
-      val managedAggregateRooId = arId
-      def rebuildAggregateRoot(events: Iterable[TestArEvent]) = TestAr.rebuildFromHistory(events)
-      val theAlmhirt = AggregateRootCellImplSpecs.this.theAlmhirt
-      val domainEventLog = eventLog
-      override def receive: Actor.Receive = receiveAggregateRootCellMsg
-    }), "ArCell_" + nameSuffix)
+    val cell = this.system.actorOf(Props(new AggregateRootCellImpl[TestAr, TestArEvent](
+      arId, TestAr.rebuildFromHistory, eventLog, () => ())), "ArCell_" + nameSuffix)
     (cell, eventLog, () => { cell ! PoisonPill; eventLog ! PoisonPill })
   }
 
@@ -256,7 +247,7 @@ class AggregateRootCellImplSpecs extends TestKit(ActorSystem("AggregateRootCellS
           res.isInstanceOf[AggregateRootUpdateFailed] should be(true)
       }
     }
-    
+
     ignore("CHECK ALL CONDITIONS FOR MUTATING!") {
 
     }

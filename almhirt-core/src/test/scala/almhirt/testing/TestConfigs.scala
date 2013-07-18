@@ -8,6 +8,7 @@ object TestConfigs {
 """
     akka {
       loglevel = "DEBUG"
+      log-dead-letters-during-shutdown = on
       actor {
     	debug {
     	  # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill et.c.)
