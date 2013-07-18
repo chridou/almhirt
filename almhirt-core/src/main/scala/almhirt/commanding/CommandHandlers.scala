@@ -22,10 +22,10 @@ trait DomainCommandHandler extends CommandHandler {
   type TCom <: DomainCommand
 }
 
-trait CreatingDomainCommandHandler { self: DomainCommandHandler =>
+trait CreatingDomainCommandHandler extends DomainCommandHandler {
   def execute(command: TCom, theAlmhirt: Almhirt): AlmFuture[UpdateRecorder[AR, Event]]
 }
 
-trait MutatingDomainCommandHandler { self: DomainCommandHandler =>
+trait MutatingDomainCommandHandler extends DomainCommandHandler {
   def execute(currentState: AR, command: TCom, theAlmhirt: Almhirt): AlmFuture[UpdateRecorder[AR, Event]]
 }
