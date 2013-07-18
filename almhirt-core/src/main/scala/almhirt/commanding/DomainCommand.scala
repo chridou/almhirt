@@ -24,6 +24,8 @@ object DomainCommandHeader {
 trait DomainCommand extends Command { 
   override def header: DomainCommandHeader
   def creates: Boolean = header.aggRef.version == 0L
+  def targettedVersion: Long = header.aggRef.version
+  def targettedAggregateRoot: java.util.UUID = header.aggRef.id
 }
 
 trait DomainCommandTemplate extends DomainCommand {

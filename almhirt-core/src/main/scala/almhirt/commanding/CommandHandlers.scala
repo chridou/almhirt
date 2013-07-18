@@ -13,19 +13,29 @@ trait CommandHandler {
 
 trait GenericCommandHandler extends CommandHandler {
   type TCom <: Command
-  def execute(command: TCom, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt): AlmFuture[Unit]
+  final def apply(command: Command, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt): AlmFuture[String] =
+    execute(command.asInstanceOf[TCom], repositories, theAlmhirt)
+
+  def execute(command: TCom, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt): AlmFuture[String]
 }
 
 trait DomainCommandHandler extends CommandHandler {
   type Event <: DomainEvent
   type AR <: AggregateRoot[AR, Event]
   type TCom <: DomainCommand
+  def typeOfAr: Class[AR]
 }
 
 trait CreatingDomainCommandHandler extends DomainCommandHandler {
-  def execute(command: TCom, theAlmhirt: Almhirt): AlmFuture[UpdateRecorder[AR, Event]]
+  final def apply(command: DomainCommand, theAlmhirt: Almhirt): AlmFuture[(AR, IndexedSeq[Event])] =
+    execute(command.asInstanceOf[TCom], theAlmhirt)
+
+  def execute(command: TCom, theAlmhirt: Almhirt): AlmFuture[(AR, IndexedSeq[Event])]
 }
 
 trait MutatingDomainCommandHandler extends DomainCommandHandler {
-  def execute(currentState: AR, command: TCom, theAlmhirt: Almhirt): AlmFuture[UpdateRecorder[AR, Event]]
+  final def apply(currentState: IsAggregateRoot, command: DomainCommand, theAlmhirt: Almhirt): AlmFuture[(AR, IndexedSeq[Event])] =
+    execute(currentState.asInstanceOf[AR], command.asInstanceOf[TCom], theAlmhirt)
+
+  def execute(currentState: AR, TCom: Command, theAlmhirt: Almhirt): AlmFuture[(AR, IndexedSeq[Event])]
 }

@@ -28,9 +28,9 @@ trait Event {
   def changeMetaData(newMetaData: Map[String, String]): Event
 }
 
-trait EventTemplate extends Event {
-  protected def changeHeader(newHeader: EventHeader): Event
-  override final def changeMetaData(newMetaData: Map[String, String]): Event =
+trait EventTemplate[T <: Event] { self: Event =>
+  protected def changeHeader(newHeader: EventHeader): T
+  override final def changeMetaData(newMetaData: Map[String, String]): T =
     changeHeader(this.header.changeMetaData(newMetaData))
 }
 

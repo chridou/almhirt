@@ -21,6 +21,9 @@ import almhirt.core._
 import almhirt.common._
 import almhirt.syntax.almvalidation._
 
+/**
+ * This is more a marker...
+ */
 trait IsAggregateRoot {
   def id: UUID
   def version: Long
