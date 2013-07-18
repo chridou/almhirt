@@ -1,5 +1,6 @@
 package almhirt.commanding
 
+import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
@@ -86,9 +87,24 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   }
 
   def evaluateRepoGetResponse(response: DomainMessage, againstCommand: DomainCommand): AlmValidation[IsAggregateRoot] =
-    ???
+    response match {
+      case RequestedAggregateRoot(ar) => ar.success
+      case AggregateRootNotFound(arId) => ???
+      case AggregateRootFetchFailed(arId, problem) => ???
+      case IncompatibleAggregateRoot(ar, expected) => ???
+      case IncompatibleDomainEvent(expected) => ???
+      case x => ???
+    }
 
   def evaluateRepoUpdateResponse(response: DomainMessage): AlmValidation[IsAggregateRoot] =
-    ???
+    response match {
+      case AggregateRootUpdated(ar) => ar.success
+      case AggregateRootUpdateFailed(problem) => ???
+      case AggregateRootNotFound(arId) => ???
+      case AggregateRootFetchFailed(arId, problem) => ???
+      case IncompatibleAggregateRoot(ar, expected) => ???
+      case IncompatibleDomainEvent(expected) => ???
+      case x => ???
+    }
 
 }
