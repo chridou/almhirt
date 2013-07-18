@@ -8,5 +8,9 @@ trait CommandHandlerRegistry {
   def addCreatingDomainCommandHandler[TCommand <: DomainCommand](command: TCommand, handler: CreatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand])
   def addMutatingDomainCommandHandler[TCommand <: DomainCommand](command: TCommand, handler: MutatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand])
 
-  def getCommandHandler(commandType: Class[_]): AlmValidation[CommandHandler]
+  def get(commandType: Class[_]): AlmValidation[CommandHandler]
+}
+
+object CommandHandlerRegistry {
+  def apply(): CommandHandlerRegistry = new impl.CommandHandlerRegistryImpl()
 }
