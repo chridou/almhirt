@@ -13,12 +13,21 @@ object AggregateRootCellSource {
   final case class AggregateRootCellSourceResult(arId: JUUID, cellHandle: CellHandle) extends AggregateRootCellCacheMessage
   final case class DoesNotExistNotification(arId: JUUID) extends AggregateRootCellCacheMessage   
 
-  final object GetCacheStats extends AggregateRootCellCacheMessage
-  final case class CacheStats(cachedCells: Int) extends AggregateRootCellCacheMessage
+  final object GetStats extends AggregateRootCellCacheMessage
+  final case class AggregateRootCellSourceStats(
+      cachedCells: Int, 
+      numberOfBookedCells: Int,
+      numberOfBookings: Int) extends AggregateRootCellCacheMessage
   
   trait CellHandle {
     def cell: ActorRef
     def release()
+    /**
+     * Execute the function f with the contained cell and the release the cell. 
+     * DO NOT RETURN A FUTURE! THE CELL MIGHT BE RELEASED BEFORE THE FUTURES CONTENT GETS EXECUTED!
+     * 
+     * A Loan-Pattern
+     */
     def onceWithCellSync[T](f: ActorRef => T) = {
       try {
         val result = f(cell)
@@ -30,6 +39,12 @@ object AggregateRootCellSource {
           throw exn
       }
     }
+    
+    /**
+     * Execute the function f which returns a future and release the cell when the returned future has been executed. 
+     * 
+     * A Loan-Pattern
+     */
     def onceWithCell[T](f: ActorRef => AlmFuture[T])(implicit execContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.almfuture.all._
       f(cell) andThen (_ => release())

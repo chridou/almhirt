@@ -15,19 +15,19 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
       sender ! AggregateRootCellSourceResult(arId, handle)
       context.become(nextChacheState(cleanUp(nextState)))
     case Unbook(handleId) =>
-      log.debug(s"""Handle with id "$handleId" has been unbooked.""")
       val nextState = currentState.unbook(handleId)
       context.become(nextChacheState(cleanUp(nextState)))
     case DoesNotExistNotification(arId) =>
-      log.debug(s"""Cell for aggregate root "${arId.toString()}" reported that the aggregate root does not exist.""")
       val nextState = currentState.markForRemoval(arId)
       context.become(nextChacheState(cleanUp(nextState)))
     case Remove(arId) =>
-      log.debug(s"""Cell for aggregate root "${arId.toString()}" was marked for removal.""")
       val nextState = currentState.markForRemoval(arId)
       context.become(nextChacheState(cleanUp(nextState)))
-    case GetCacheStats =>
-      sender ! CacheStats(currentState.cellByArId.size)
+    case GetStats =>
+      sender ! AggregateRootCellSourceStats(
+        currentState.cellByArId.size,
+        currentState.handleIdsByArId.size,
+        currentState.arIdByHandleId.size)
   }
 
   override def receiveAggregateRootCellSourceMessage: Receive = nextChacheState(CacheState.empty)
@@ -35,8 +35,6 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
   private def cleanUp(currentState: CacheState): CacheState = {
     val (removed, nextState) = currentState.removeCandidatesForRemoval
     removed.foreach(cell => this.context.stop(cell))
-    if (!removed.isEmpty)
-      log.debug(s"""Removed ${removed.size} cells.""")
     nextState
   }
 
@@ -56,24 +54,24 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
   private def bookExistingCell(arId: JUUID, currentState: CacheState): (CellHandle, CacheState) = {
     val theCell = currentState.getCell(arId)
     currentHandleId = currentHandleId + 1L
+    val pinnedHandleId = currentHandleId
     val handle = new CellHandle {
       val cell = theCell
-      def release() = self ! Unbook(currentHandleId)
+      def release() = self ! Unbook(pinnedHandleId)
     }
-    log.debug(s"""Booked existing cell(${theCell.path}) for aggregate root "${arId}". The handle id is $currentHandleId.""")
-    (handle, currentState.book(arId, currentHandleId))
+    (handle, currentState.book(arId, pinnedHandleId))
   }
 
   private def bookNewCell(arId: JUUID, arType: Class[_], currentState: CacheState): (CellHandle, CacheState) = {
     val newCell = createCell(arId, arType)
     val stateWithNewCell = currentState.addCell(arId, newCell)
     currentHandleId = currentHandleId + 1L
+    val pinnedHandleId = currentHandleId
     val handle = new CellHandle {
       val cell = newCell
-      def release() = self ! Unbook(currentHandleId)
+      def release() = self ! Unbook(pinnedHandleId)
     }
-    val newState = currentState.book(arId, currentHandleId).addCell(arId, newCell)
-    log.debug(s"""Booked new cell(${newCell.path}) for aggregate root "${arId}". The handle id is $currentHandleId. The number of cells is ${newState.cellByArId.size}.""")
+    val newState = currentState.book(arId, pinnedHandleId).addCell(arId, newCell)
     (handle, newState)
   }
 
@@ -119,20 +117,20 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
     def markForRemoval(arId: JUUID): CacheState =
       copy(markedForRemoval = this.markedForRemoval + arId)
 
-    def unbookedCellIds = handleIdsByArId.keySet
+    def bookedCellIds = handleIdsByArId.keySet
 
     def getCandidatesForRemoval: Set[JUUID] =
       if (markedForRemoval.isEmpty)
         Set.empty
       else {
-        markedForRemoval diff unbookedCellIds
+        markedForRemoval diff bookedCellIds
       }
 
     def removeCandidatesForRemoval(): (Iterable[ActorRef], CacheState) = {
       val cellIdsToRemove = getCandidatesForRemoval
       val cellsToRemove = cellIdsToRemove.map(cellByArId)
       val newCellsByArId = cellByArId.filterKeys(cellId => !cellIdsToRemove.contains(cellId))
-      (cellsToRemove, this.copy(cellByArId = newCellsByArId))
+      (cellsToRemove, this.copy(cellByArId = newCellsByArId, markedForRemoval = Set.empty))
     }
   }
 
