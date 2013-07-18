@@ -221,16 +221,16 @@ class AggregateRootCellSourceSpecs extends TestKit(ActorSystem("AggregateRootCel
       }
     }
 
-    ignore("should should remove all cells that report that they do not exist(which they do when queried)") {
+    it("should should remove all cells that report that they do not exist(which they do when queried)") {
       withTestRig { (source, eventLog) =>
-        val queriesF = for(x <- 1 to 50 ) yield {
+        val queriesF = for(x <- 1 to 100 ) yield {
           (source ? GetCell(theAlmhirt.getUuid, classOf[AnotherTestAr]))(defaultWaitDuration).mapTo[AggregateRootCellSourceResult].flatMap(x => x.cellHandle.onceWithCell { cell =>
               (cell ? GetManagedAggregateRoot)(defaultWaitDuration).successfulAlmFuture[Any]}.underlying)
         }
-        val resF = 
-          Future.sequence(queriesF).flatMap(_ => (source ? GetStats)(defaultWaitDuration)).successfulAlmFuture[AggregateRootCellSourceStats]
-        val res = resF.awaitResult(defaultWaitDuration).forceResult
-        res should equal (AggregateRootCellSourceStats(0,0,0))
+        Future.sequence(queriesF).successfulAlmFuture[AggregateRootCellSourceStats].awaitResult(defaultWaitDuration)
+        Thread.sleep(100)
+        val stats = (source ? GetStats)(defaultWaitDuration).successfulAlmFuture[AggregateRootCellSourceStats].awaitResult(defaultWaitDuration).forceResult
+        stats should equal (AggregateRootCellSourceStats(0,0,0))
       }
     }
   }
