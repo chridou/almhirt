@@ -6,7 +6,7 @@ import almhirt.domain.AggregateRootRef
 
 trait DomainCommandHeader extends CommandHeader {
   def aggRef: AggregateRootRef
-  override def changeMetaData(newMetaData: Map[String, String]): DomainCommandHeader
+  override def changeMetadata(newMetadata: Map[String, String]): DomainCommandHeader
 }
 
 object DomainCommandHeader {
@@ -15,21 +15,16 @@ object DomainCommandHeader {
   def apply(anAggregateRoorRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRoorRef, ccuad.getDateTime, Map.empty)
   def apply(anAggregateRoorRef: AggregateRootRef, metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRoorRef, ccuad.getDateTime, metaData)
 
-  private case class BasicDomainCommandHeader(id: java.util.UUID, aggRef: AggregateRootRef, timestamp: DateTime, metaData: Map[String, String]) extends DomainCommandHeader {
-    override def changeMetaData(newMetaData: Map[String, String]): DomainCommandHeader =
-      this.copy(metaData = newMetaData)
+  private case class BasicDomainCommandHeader(id: java.util.UUID, aggRef: AggregateRootRef, timestamp: DateTime, metadata: Map[String, String]) extends DomainCommandHeader {
+    override def changeMetadata(newMetadata: Map[String, String]): BasicDomainCommandHeader =
+      this.copy(metadata = newMetadata)
   }
 }
 
 trait DomainCommand extends Command { 
   override def header: DomainCommandHeader
+  override def changeMetadata(newMetadata: Map[String, String]): DomainCommand
   def creates: Boolean = header.aggRef.version == 0L
   def targettedVersion: Long = header.aggRef.version
   def targettedAggregateRoot: java.util.UUID = header.aggRef.id
-}
-
-trait DomainCommandTemplate extends DomainCommand {
-  protected def changeHeader(newHeader: DomainCommandHeader): DomainCommand
-  override final def changeMetaData(newMetaData: Map[String, String]): DomainCommand =
-    changeHeader(this.header.changeMetaData(newMetaData))
 }
