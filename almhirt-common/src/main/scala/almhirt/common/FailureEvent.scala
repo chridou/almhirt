@@ -12,11 +12,17 @@ trait FailureEvent extends Event with EventTemplate[FailureEvent]{
 }
 
 object FailureEvent {
-  def apply(context: String, severity: almhirt.problem.Severity, problem: Problem)(implicit ccuad: CanCreateUuidsAndDateTimes): FailureEvent =
-    ???
-  def apply(context: String, severity: almhirt.problem.Severity, exn: Throwable)(implicit ccuad: CanCreateUuidsAndDateTimes): FailureEvent =
-    ???
+  def apply(context: String, problem: Problem, severity: almhirt.problem.Severity)(implicit ccuad: CanCreateUuidsAndDateTimes): FailureEvent =
+    ProblemOccurred(EventHeader(), context, problem, severity)
+
+  def apply(context: String, exn: Throwable, severity: almhirt.problem.Severity)(implicit ccuad: CanCreateUuidsAndDateTimes): FailureEvent =
+    ExceptionOccurred(EventHeader(), context, exn.getClass().getName, exn.getMessage, Some(exn.getStackTraceString), severity)
 }
 
-final case class ProblemOccurred(context: String, severity: almhirt.problem.Severity, problem: Problem) extends FailureEvent with EventTemplate[FailureEvent]
-final case class ExceptionOccurred(context: String, severity: almhirt.problem.Severity, exnType: String, exnMessage: String, exnStackTrace: Option[String]) extends FailureEvent with EventTemplate[FailureEvent]
+final case class ProblemOccurred(header: EventHeader, context: String, problem: Problem, severity: almhirt.problem.Severity) extends FailureEvent with EventTemplate[FailureEvent]{
+   override protected def changeHeader(newHeader: EventHeader) = copy(header = newHeader)
+}
+
+final case class ExceptionOccurred(header: EventHeader, context: String, exnType: String, exnMessage: String, exnStackTrace: Option[String], severity: almhirt.problem.Severity) extends FailureEvent with EventTemplate[FailureEvent]{
+   override protected def changeHeader(newHeader: EventHeader) = copy(header = newHeader)
+}
