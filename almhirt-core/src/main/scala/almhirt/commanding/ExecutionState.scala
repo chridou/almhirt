@@ -8,7 +8,7 @@ sealed trait ExecutionState {
 }
 
 final case class ExecutionStarted(trackId: String, metaData: Map[String, String]) extends ExecutionState
-object ExecutionStartet {
+object ExecutionStarted {
   def apply(trackId: String)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionStarted =
     ExecutionStarted(trackId, Map("timestamp" -> ccuad.getDateTime.toString()))
 }

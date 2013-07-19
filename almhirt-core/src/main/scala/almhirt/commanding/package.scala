@@ -7,6 +7,7 @@ package object commanding {
     def track(trackId: String): T = self.addMetadata("track-id", trackId)
     def track(implicit ccud: CanCreateUuid): T = track(ccud.getUuid.toString().filterNot(_ == '-'))
     def canBeTracked: Boolean = self.metadata.contains("track-id")
-    def trackingId: Option[String] = self.metadata.get("track-id")
+    def tryGetTrackingId: Option[String] = self.metadata.get("track-id")
+    def trackingId: String = self.metadata("track-id")
   }
 }

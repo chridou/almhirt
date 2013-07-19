@@ -41,7 +41,7 @@ object Command {
       self.changeMetadata(self.header.metadata + keyAndValue).asInstanceOf[T]
     def addGrouping(commandGrouping: CommandGrouping): T = commandGrouping.addToCommand(self)
     def getGrouping(commandGrouping: CommandGrouping): AlmValidation[CommandGrouping] = CommandGrouping.fromMap(self.metadata.lift)
-    def isPartOfAGroup(commandGrouping: CommandGrouping): Boolean = self.metadata.contains("group-label")
+    def isPartOfAGroup: Boolean = self.metadata.contains("group-label")
   }
 }
 
