@@ -21,7 +21,7 @@ object DomainCommandHeader {
   }
 }
 
-trait DomainCommand extends Command { 
+trait DomainCommand extends Command {
   override def header: DomainCommandHeader
   override def changeMetadata(newMetadata: Map[String, String]): DomainCommand
   def creates: Boolean = header.aggRef.version == 0L
@@ -30,15 +30,14 @@ trait DomainCommand extends Command {
 }
 
 object DomainCommand {
-  implicit class DomainCommandOps[T <: DomainCommand](self: T){
+  implicit class DomainCommandOps[T <: DomainCommand](self: T) {
     def isValidNonFirstGroupElement: AlmValidation[Boolean] =
-      self.getGrouping.map{ grp => grp.index > 1 && self.targettedVersion == -1L }
+      self.getGrouping.map { grp => grp.index > 1 && self.targettedVersion == -1L }
     def isNonFirstGroupElement: Boolean =
       isValidNonFirstGroupElement.fold(fail => false, succ => succ)
     def isValidFirstGroupElement: AlmValidation[Boolean] =
-      self.getGrouping.map{ grp => grp.index == 1 && (if(self.creates) self.targettedVersion == 0L else self.targettedVersion > 0L) }
+      self.getGrouping.map { grp => grp.index == 1 && (if (self.creates) self.targettedVersion == 0L else self.targettedVersion > 0L) }
     def isFirstGroupElement: Boolean =
       isValidFirstGroupElement.fold(fail => false, succ => succ)
-    
   }
 }
