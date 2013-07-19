@@ -31,6 +31,7 @@ trait Command {
   def header: CommandHeader
   def changeMetadata(newMetadata: Map[String, String]): Command
   def metadata = header.metadata
+  def id: java.util.UUID = header.id
 }
 
 object Command {

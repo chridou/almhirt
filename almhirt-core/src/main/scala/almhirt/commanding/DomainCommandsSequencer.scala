@@ -1,10 +1,10 @@
 package almhirt.commanding
 
-import java.util.{ UUID => JUUID }
 import org.joda.time.DateTime
 import akka.actor._
 import almhirt.common._
 import almhirt.commanding._
+import almhirt.domain.AggregateRootRef
 
 object DomainCommandsSequencer {
   sealed trait DomainCommandsSequencerMessage
@@ -20,7 +20,7 @@ trait DomainCommandsSequencer { actor: Actor with ActorLogging =>
 trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: Actor with ActorLogging =>
   import DomainCommandsSequencer._
 
-  private case class SequenceEntry(groupLabel: String, arId: JUUID, sequenceSize: Option[Int], collectedCommands: Map[Int, DomainCommand], age: DateTime, responsible: ActorRef)
+  private case class SequenceEntry(groupLabel: String, aggRef: AggregateRootRef, sequenceSize: Option[Int], collectedCommands: Map[Int, DomainCommand], age: DateTime, responsible: ActorRef)
 
   def transitionToNextState(currentState: Map[String, SequenceEntry]): Receive = {
     case SequenceDomainCommand(command) =>

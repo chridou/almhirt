@@ -29,15 +29,3 @@ trait DomainCommand extends Command {
   def targettedAggregateRoot: java.util.UUID = header.aggRef.id
 }
 
-object DomainCommand {
-  implicit class DomainCommandOps[T <: DomainCommand](self: T) {
-    def isValidNonFirstGroupElement: AlmValidation[Boolean] =
-      self.getGrouping.map { grp => grp.index > 1 && self.targettedVersion == -1L }
-    def isNonFirstGroupElement: Boolean =
-      isValidNonFirstGroupElement.fold(fail => false, succ => succ)
-    def isValidFirstGroupElement: AlmValidation[Boolean] =
-      self.getGrouping.map { grp => grp.index == 1 && (if (self.creates) self.targettedVersion == 0L else self.targettedVersion > 0L) }
-    def isFirstGroupElement: Boolean =
-      isValidFirstGroupElement.fold(fail => false, succ => succ)
-  }
-}

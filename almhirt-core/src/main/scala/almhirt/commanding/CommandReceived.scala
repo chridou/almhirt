@@ -17,6 +17,11 @@ final case class CommandReceived(val header: EventHeader, val command: Command) 
   override def changeMetadata(newMetaData: Map[String, String]): CommandReceived = copy(header = this.header.changeMetadata(newMetaData))
 }
 
+object CommandReceived {
+  def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceived =
+    CommandReceived(EventHeader(), command)
+}
+
 final case class CommandReceivedAsHeader(val header: EventHeader, val commandHeader: CommandHeader, commandType: String) extends CommandReceivedEvent {
   override def changeMetadata(newMetaData: Map[String, String]): CommandReceivedAsHeader = copy(header = this.header.changeMetadata(newMetaData))
 }
