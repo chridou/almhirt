@@ -7,23 +7,23 @@ import almhirt.almvalidation.kit._
 trait TestArEvent extends DomainEvent
 
 case class TestArCreated(header: DomainEventHeader, newA: String) extends TestArEvent with CreatesNewAggregateRootEvent {
-   override def changeMetadata(newMetaData: Map[String, String]): TestArCreated = copy(header = this.header.changeMetadata(newMetaData))
+  override def changeMetadata(newMetaData: Map[String, String]): TestArCreated = copy(header = this.header.changeMetadata(newMetaData))
 }
 
 case class AChanged(header: DomainEventHeader, newA: String) extends TestArEvent {
-   override def changeMetadata(newMetaData: Map[String, String]): AChanged = copy(header = this.header.changeMetadata(newMetaData))
+  override def changeMetadata(newMetaData: Map[String, String]): AChanged = copy(header = this.header.changeMetadata(newMetaData))
 }
 
 case class BChanged(header: DomainEventHeader, newB: Option[String]) extends TestArEvent {
-   override def changeMetadata(newMetaData: Map[String, String]): BChanged = copy(header = this.header.changeMetadata(newMetaData))
+  override def changeMetadata(newMetaData: Map[String, String]): BChanged = copy(header = this.header.changeMetadata(newMetaData))
 }
 
 case class TestArDeleted(header: DomainEventHeader) extends TestArEvent with CreatesNewAggregateRootEvent {
-   override def changeMetadata(newMetaData: Map[String, String]): TestArDeleted = copy(header = this.header.changeMetadata(newMetaData))
+  override def changeMetadata(newMetaData: Map[String, String]): TestArDeleted = copy(header = this.header.changeMetadata(newMetaData))
 }
 
 case class UnhandableTestArEvent(header: DomainEventHeader) extends TestArEvent {
-   override def changeMetadata(newMetaData: Map[String, String]): UnhandableTestArEvent = copy(header = this.header.changeMetadata(newMetaData))
+  override def changeMetadata(newMetaData: Map[String, String]): UnhandableTestArEvent = copy(header = this.header.changeMetadata(newMetaData))
 }
 
 case class TestAr(ref: AggregateRootRef, theA: String, theB: Option[String], isDeleted: Boolean)
@@ -59,9 +59,9 @@ object TestAr extends CanCreateAggragateRoot[TestAr, TestArEvent] {
       TestAr(header.aggRef.inc, newA, None, false)
   }
 
-  def fromScratch(id: java.util.UUID, a : String)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestAr, TestArEvent] =
+  def fromScratch(id: java.util.UUID, a: String)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestAr, TestArEvent] =
     create(TestArCreated(DomainEventHeader(id, 0L), a))
-  
+
 }
 
 object TestArLenses {
