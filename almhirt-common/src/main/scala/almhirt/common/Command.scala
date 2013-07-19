@@ -40,14 +40,15 @@ object Command {
     def addMetadata(keyAndValue: (String, String)): T =
       self.changeMetadata(self.header.metadata + keyAndValue).asInstanceOf[T]
     def addGrouping(commandGrouping: CommandGrouping): T = commandGrouping.addToCommand(self)
-    def getGrouping(commandGrouping: CommandGrouping): AlmValidation[CommandGrouping] = CommandGrouping.fromMap(self.metadata.lift)
+    def getGrouping: AlmValidation[CommandGrouping] = CommandGrouping.fromMap(self.metadata.lift)
     def isPartOfAGroup: Boolean = self.metadata.contains("group-label")
+    def tryGetGroupLabel: Option[String] = self.metadata.get("group-label")
   }
 }
 
-final case class CommandGrouping(groupId: String, index: Int, isLast: Boolean) {
+final case class CommandGrouping(groupLabel: String, index: Int, isLast: Boolean) {
   def addToCommand[T <: Command](cmd: T): T = {
-    val metadata = Map("group-label" -> groupId, "group-id" -> index.toString, "group-is-last" -> isLast.toString)
+    val metadata = Map("group-label" -> groupLabel, "group-id" -> index.toString, "group-is-last" -> isLast.toString)
     cmd.mergeMetadata(metadata)
   }
 }
