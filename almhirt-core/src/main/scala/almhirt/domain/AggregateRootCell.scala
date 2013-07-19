@@ -35,7 +35,7 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
   def managedAggregateRooId: JUUID
 
   protected sealed trait UpdateTask
-  protected final case class NextUpdateTask(nextUpdateState: AR, nextUpdateEvents: IndexedSeq[Event], requestedNextUpdate: ActorRef, rest: Vector[(ActorRef, UpdateAggregateRoot)]) extends UpdateTask
+  protected case class NextUpdateTask(nextUpdateState: AR, nextUpdateEvents: IndexedSeq[Event], requestedNextUpdate: ActorRef, rest: Vector[(ActorRef, UpdateAggregateRoot)]) extends UpdateTask
   protected case object NoUpdateTasks extends UpdateTask
 
   def getNextUpdateTask(currentState: Option[AR], requestedUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): UpdateTask =
