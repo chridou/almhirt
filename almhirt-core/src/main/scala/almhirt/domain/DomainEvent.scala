@@ -23,13 +23,7 @@ import almhirt.core._
 /** These events can create or mutate an aggregate root in the dimension of time */
 trait DomainEvent extends Event {
   override def header: DomainEventHeader
-  override def changeMetaData(newMetaData: Map[String, String]): DomainEvent
-}
-
-trait DomainEventTemplate[T <: DomainEvent] extends { self: DomainEvent =>
-  protected def changeHeader(newHeader: DomainEventHeader): T
-  override final def changeMetaData(newMetaData: Map[String, String]): T =
-    changeHeader(this.header.changeMetaData(newMetaData))
+  override def changeMetadata(newMetaData: Map[String, String]): DomainEvent
 }
 
 object DomainEvent {
@@ -49,8 +43,8 @@ final case class DomainEventHeader(
   aggRef: AggregateRootRef,
   /** The events timestamp of creation */
   timestamp: DateTime,
-  metaData: Map[String, String]) extends EventHeader {
-  def changeMetaData(newMetaData: Map[String, String]): DomainEventHeader = this.copy(metaData = newMetaData)
+  metadata: Map[String, String]) extends EventHeader {
+  def changeMetadata(newMetadata: Map[String, String]): DomainEventHeader = this.copy(metadata = newMetadata)
 }
 
 object DomainEventHeader {

@@ -6,20 +6,20 @@ import almhirt.almvalidation.kit._
 
 trait AnotherTestArEvent extends DomainEvent
 
-case class AnotherTestArCreated(header: DomainEventHeader) extends AnotherTestArEvent with CreatesNewAggregateRootEvent with DomainEventTemplate[AnotherTestArCreated] {
-  def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
+case class AnotherTestArCreated(header: DomainEventHeader) extends AnotherTestArEvent with CreatesNewAggregateRootEvent {
+  override def changeMetadata(newMetaData: Map[String, String]): AnotherTestArCreated = copy(header = this.header.changeMetadata(newMetaData))
 }
 
-case class CChanged(header: DomainEventHeader, newC: Option[Int]) extends AnotherTestArEvent with DomainEventTemplate[CChanged] {
-  def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
+case class CChanged(header: DomainEventHeader, newC: Option[Int]) extends AnotherTestArEvent {
+  override def changeMetadata(newMetaData: Map[String, String]): CChanged = copy(header = this.header.changeMetadata(newMetaData))
 }
 
-case class AnotherTestArDeleted(header: DomainEventHeader) extends AnotherTestArEvent with CreatesNewAggregateRootEvent with DomainEventTemplate[AnotherTestArDeleted] {
-  def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
+case class AnotherTestArDeleted(header: DomainEventHeader) extends AnotherTestArEvent with CreatesNewAggregateRootEvent {
+  override def changeMetadata(newMetaData: Map[String, String]): AnotherTestArDeleted = copy(header = this.header.changeMetadata(newMetaData))
 }
 
-case class UnhandableAnotherTestArEvent(header: DomainEventHeader) extends AnotherTestArEvent with DomainEventTemplate[UnhandableAnotherTestArEvent] {
-  def changeHeader(newHeader: DomainEventHeader) = this.copy(header = newHeader)
+case class UnhandableAnotherTestArEvent(header: DomainEventHeader) extends AnotherTestArEvent {
+  override def changeMetadata(newMetaData: Map[String, String]): UnhandableAnotherTestArEvent = copy(header = this.header.changeMetadata(newMetaData))
 }
 
 case class AnotherTestAr(ref: AggregateRootRef, theC: Option[Int], isDeleted: Boolean)
