@@ -183,17 +183,17 @@ object AlmHirtBuild extends Build
 	with AppBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, riftwarp)
+	                        base = file(".")) aggregate(common, core, riftwarp, coreExtRiftwarp)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile")
-/*
+
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
 	                       		baseFile = file("./ext/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
-								
+/*								
 
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/almhirt-ext-core-slick")) dependsOn(core, riftwarp % "test->test", coreExtRiftwarp % "test->test")

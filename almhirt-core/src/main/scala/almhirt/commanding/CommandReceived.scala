@@ -2,6 +2,10 @@ package almhirt.commanding
 
 import almhirt.common._
 
+/**
+ * Anyone who gets his hands on a command may tell this with this Event.
+ * Additional information contained in the meta data is always welcome
+ */
 trait CommandReceivedEvent extends Event {
   override def changeMetadata(newMetadata: Map[String, String]): CommandReceivedEvent
 }

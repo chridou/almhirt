@@ -62,10 +62,17 @@ object WarpUnpackers {
     unpackers.addTyped(ProblemCauseUnpacker)
 
     unpackers.addTyped(WarpDescriptorUnpacker)
+    
+    unpackers.addTyped(MessageHeaderWarpPackaging)
+    unpackers.addTyped(MessageWarpPackaging)
 
     unpackers.addTyped(SingleProblemPackaging)
     unpackers.addTyped(AggregateProblemPackaging)
     unpackers.addTyped(ProblemPackaging)
+
+    unpackers.addTyped(ProblemOccurredWarpPackaging)
+    unpackers.addTyped(ExceptionOccurredWarpPackaging)
+    unpackers.addTyped(FailureEventWarpPackaging)
 
     serialization.common.ProblemTypes.registerUnpackers(unpackers)
 

@@ -81,11 +81,18 @@ object WarpPackers {
     packers.addTyped(ProblemCausePacker)
 
     packers.addTyped(WarpDescriptorPacker)
+    
+    packers.addTyped(MessageHeaderWarpPackaging)
+    packers.addTyped(MessageWarpPackaging)
 
     packers.addTyped(SingleProblemPackaging)
     packers.addTyped(AggregateProblemPackaging)
     packers.addTyped(ProblemPackaging)
 
+    packers.addTyped(ProblemOccurredWarpPackaging)
+    packers.addTyped(ExceptionOccurredWarpPackaging)
+    packers.addTyped(FailureEventWarpPackaging)
+    
     packers.addPredicated(x => x.isInstanceOf[SingleProblem], SingleProblemPackaging)
     packers.addPredicated(x => x.isInstanceOf[AggregateProblem], AggregateProblemPackaging)
     

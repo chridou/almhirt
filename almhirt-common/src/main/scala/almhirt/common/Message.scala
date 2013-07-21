@@ -3,7 +3,7 @@ package almhirt.common
 import java.util.{UUID => JUUID}
 import org.joda.time.DateTime
 
-case class MessageHeader(id: JUUID, timestamp: DateTime, metaData: Map[String, String])
+case class MessageHeader(id: JUUID, timestamp: DateTime, metadata: Map[String, String])
 
 object MessageHeader {
   def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): MessageHeader =
