@@ -3,6 +3,7 @@ package almhirt.domain
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.commanding._
 
 trait TestArEvent extends DomainEvent
 
@@ -66,4 +67,50 @@ object TestAr extends CanCreateAggragateRoot[TestAr, TestArEvent] {
 
 object TestArLenses {
   val theBL: TestAr @> Option[String] = Lens.lensu((a, b) => a.copy(theB = b), _.theB)
+}
+
+object TestArCommanding {
+  trait TestArCommand extends DomainCommand
+
+  final case class CreateTestAr(header: DomainCommandHeader, newA: String) extends TestArCommand {
+    override def changeMetadata(newMetadata: Map[String, String]): CreateTestAr = copy(header = this.header.changeMetadata(newMetadata))
+  }
+
+  final case class ChangeA(header: DomainCommandHeader, newA: String) extends TestArCommand {
+    override def changeMetadata(newMetadata: Map[String, String]): ChangeA = copy(header = this.header.changeMetadata(newMetadata))
+  }
+
+  final case class ChangeB(header: DomainCommandHeader, newB: Option[String]) extends TestArCommand {
+    override def changeMetadata(newMetadata: Map[String, String]): ChangeB = copy(header = this.header.changeMetadata(newMetadata))
+  }
+
+  final case class DeleteTestAr(header: DomainCommandHeader) extends TestArCommand {
+    override def changeMetadata(newMetadata: Map[String, String]): DeleteTestAr = copy(header = this.header.changeMetadata(newMetadata))
+  }
+
+  object Handlers {
+    import almhirt.core.Almhirt
+    import scala.concurrent.ExecutionContext
+    def addCommands(registry: CommandHandlerRegistry)(implicit theAlmhirt: Almhirt): CommandHandlerRegistry = {
+      val executionContext = theAlmhirt.futuresExecutor
+      val createTestArAdder =
+        CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[CreateTestAr, TestArEvent, TestAr](
+          command => TestAr.fromScratch(command.header.id, command.newA).result,
+          executionContext)
+      val changeAAdder =
+        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[ChangeA, TestArEvent, TestAr](
+          (ar, command) => ar.changeA(command.newA).result,
+          executionContext)
+      val changeBAdder =
+        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[ChangeB, TestArEvent, TestAr](
+          (ar, command) => ar.changeB(command.newB).result,
+          executionContext)
+      val deleteTestArAdder =
+        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[DeleteTestAr, TestArEvent, TestAr](
+          (ar, command) => ar.delete.result,
+          executionContext)
+
+      registry nextAdder createTestArAdder nextAdder changeAAdder nextAdder changeBAdder nextAdder deleteTestArAdder
+    }
+  }
 }
