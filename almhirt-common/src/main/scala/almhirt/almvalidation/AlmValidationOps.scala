@@ -53,7 +53,7 @@ trait AlmValidationOps0 extends Ops[String] {
     parseDecimalAlm(self)
   def toDateTimeAlm(): AlmValidation[DateTime] =
     parseDateTimeAlm(self)
-  def toDateLocalTimeAlm(): AlmValidation[LocalDateTime] =
+  def toLocalDateTimeAlm(): AlmValidation[LocalDateTime] =
     parseLocalDateTimeAlm(self)
   def toDurationAlm(): AlmValidation[scala.concurrent.duration.FiniteDuration] =
     parseDurationAlm(self)

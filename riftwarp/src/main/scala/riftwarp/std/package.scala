@@ -44,6 +44,8 @@ package object std {
   implicit val WarpPrimitiveUriUnpacker = UriWarpUnpacker
   implicit val WarpPrimitiveDateTimePacker = DateTimeWarpPacker
   implicit val WarpPrimitiveDateTimeUnpacker = DateTimeWarpUnpacker
+  implicit val WarpPrimitiveLocalDateTimePacker = DateTimeWarpPacker
+  implicit val WarpPrimitiveLocalDateTimeUnpacker = DateTimeWarpUnpacker
   implicit val WarpPrimitiveDurationPacker = DurationWarpPacker
   implicit val WarpPrimitiveDurationUnpacker = DurationWarpUnpacker
   implicit val WarpByteArrayPacker = ByteArrayWarpPacker
@@ -61,6 +63,7 @@ package object std {
   implicit object WarpPrimitiveToUuidConverterConverterInst extends WarpPrimitiveToUuidConverter
   implicit object WarpPrimitiveToUriConverterInst extends WarpPrimitiveToUriConverter
   implicit object WarpPrimitiveToDateTimeConverterInst extends WarpPrimitiveToDateTimeConverter
+  implicit object WarpPrimitiveToLocalDateTimeConverterInst extends WarpPrimitiveToLocalDateTimeConverter
   implicit object WarpPrimitiveToDurationConverterInst extends WarpPrimitiveToDurationConverter
 
   implicit class RematerializeFromOps[From](self: From) {

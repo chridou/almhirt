@@ -18,7 +18,7 @@ import java.util.{ UUID => JUUID }
 import scala.concurrent.duration._
 import scalaz._, Scalaz._
 import scalaz.std._
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.problem.inst._
@@ -147,6 +147,15 @@ trait XmlFunctions {
     else
       dateTimeFromXmlNode(node) fold (_.failure, Some(_).success)
 
+  def localDateTimeFromXmlNode(node: Elem): AlmValidation[LocalDateTime] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseLocalDateTimeAlm(ne)) bimap (f => f.withLabel(node.label), s => s)
+
+  def optionalLocalDateTimeFromXmlNode(node: Elem): AlmValidation[Option[LocalDateTime]] =
+    if (node.text.trim.isEmpty)
+      None.success
+    else
+      localDateTimeFromXmlNode(node) fold (_.failure, Some(_).success)
+      
   def durationFromXmlNode(node: Elem): AlmValidation[FiniteDuration] =
     notEmptyOrWhitespace(node.text) flatMap (ne => parseDurationAlm(ne)) bimap (f => f.withLabel(node.label), s => s)
 

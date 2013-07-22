@@ -22,7 +22,7 @@ import scalaz.Validation
 import scalaz.syntax.Ops
 import almhirt.common._
 import almhirt.almvalidation._
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 
 trait XmlOps0 extends Ops[Elem]{
   def extractString(): AlmValidation[String] =
@@ -63,6 +63,8 @@ trait XmlOps0 extends Ops[Elem]{
     funs.optionalDecimalFromXmlNode(self)
   def extractDateTime(): AlmValidation[DateTime] = 
     funs.dateTimeFromXmlNode(self)
+  def extractLocalDateTime(): AlmValidation[LocalDateTime] = 
+    funs.localDateTimeFromXmlNode(self)
   def extractOptionalDateTime(): AlmValidation[Option[DateTime]] = 
     funs.optionalDateTimeFromXmlNode(self)
   def extractDuration(): AlmValidation[FiniteDuration] = 
