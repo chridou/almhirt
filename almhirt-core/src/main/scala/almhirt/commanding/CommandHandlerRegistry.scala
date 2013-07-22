@@ -13,13 +13,13 @@ object CommandHandlerRegistry {
   def apply(): CommandHandlerRegistry = new impl.CommandHandlerRegistryImpl()
 
   implicit class CommandHandlerRegistryOps(self: CommandHandlerRegistry) {
-    def addGenericCommandHandler[TCommand <: Command](command: TCommand, handler: GenericCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
+    def addGenericCommandHandler[TCommand <: Command](handler: GenericCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
       self.register(tag.runtimeClass, handler)
 
-    def addCreatingDomainCommandHandler[TCommand <: DomainCommand](command: TCommand, handler: CreatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
+    def addCreatingDomainCommandHandler[TCommand <: DomainCommand](handler: CreatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
       self.register(tag.runtimeClass, handler)
 
-    def addMutatingDomainCommandHandler[TCommand <: DomainCommand](command: TCommand, handler: MutatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
+    def addMutatingDomainCommandHandler[TCommand <: DomainCommand](handler: MutatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
       self.register(tag.runtimeClass, handler)
 
     def getDomainCommandHandler(command: DomainCommand): AlmValidation[DomainCommandHandler] =
@@ -50,5 +50,9 @@ object CommandHandlerRegistry {
       }else {
         UnspecifiedProblem(s""""${command.getClass.getName()}" is a creating command.""").failure
       }
+    
+    def nextAdder(theAdder: CommandHandlerRegistry => CommandHandlerRegistry): CommandHandlerRegistry =
+      theAdder(self)
   }
+  
 }
