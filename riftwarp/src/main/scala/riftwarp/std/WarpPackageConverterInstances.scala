@@ -184,7 +184,7 @@ trait WarpPrimitiveToLocalDateTimeConverter extends WarpPrimitiveConverter[org.j
       case WarpLocalDateTime(value) => value.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a LocalDateTime""").failure
     }
-  override def convertBack(what: org.joda.time.DateTime) = WarpDateTime(what)
+  override def convertBack(what: org.joda.time.LocalDateTime) = WarpLocalDateTime(what)
 }
 
 trait WarpPrimitiveToDurationConverter extends WarpPrimitiveConverter[FiniteDuration] {

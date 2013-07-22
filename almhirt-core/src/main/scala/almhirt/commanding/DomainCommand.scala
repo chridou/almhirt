@@ -1,6 +1,6 @@
 package almhirt.commanding
 
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
 import almhirt.common._
 import almhirt.domain.AggregateRootRef
 
@@ -10,12 +10,12 @@ trait DomainCommandHeader extends CommandHeader {
 }
 
 object DomainCommandHeader {
-  def apply(anId: java.util.UUID, anAggregateRoorRef: AggregateRootRef, aTimestamp: DateTime, metaData: Map[String, String]): DomainCommandHeader = BasicDomainCommandHeader(anId, anAggregateRoorRef, aTimestamp, metaData)
-  def apply(anId: java.util.UUID, anAggregateRoorRef: AggregateRootRef, aTimestamp: DateTime): CommandHeader = DomainCommandHeader(anId, anAggregateRoorRef, aTimestamp, Map.empty)
-  def apply(anAggregateRoorRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRoorRef, ccuad.getDateTime, Map.empty)
-  def apply(anAggregateRoorRef: AggregateRootRef, metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRoorRef, ccuad.getDateTime, metaData)
+  def apply(anId: java.util.UUID, anAggregateRoorRef: AggregateRootRef, aTimestamp: LocalDateTime, metaData: Map[String, String]): DomainCommandHeader = BasicDomainCommandHeader(anId, anAggregateRoorRef, aTimestamp, metaData)
+  def apply(anId: java.util.UUID, anAggregateRoorRef: AggregateRootRef, aTimestamp: LocalDateTime): CommandHeader = DomainCommandHeader(anId, anAggregateRoorRef, aTimestamp, Map.empty)
+  def apply(anAggregateRoorRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRoorRef, ccuad.getUtcTimestamp, Map.empty)
+  def apply(anAggregateRoorRef: AggregateRootRef, metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRoorRef, ccuad.getUtcTimestamp, metaData)
 
-  private case class BasicDomainCommandHeader(id: java.util.UUID, aggRef: AggregateRootRef, timestamp: DateTime, metadata: Map[String, String]) extends DomainCommandHeader {
+  private case class BasicDomainCommandHeader(id: java.util.UUID, aggRef: AggregateRootRef, timestamp: LocalDateTime, metadata: Map[String, String]) extends DomainCommandHeader {
     override def changeMetadata(newMetadata: Map[String, String]): BasicDomainCommandHeader =
       this.copy(metadata = newMetadata)
   }

@@ -1,6 +1,6 @@
 package almhirt.ext.core.riftwarp.serialization
 
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -21,7 +21,7 @@ object ExecutionStartedWarpPackaging extends WarpPacker[ExecutionStarted] with R
     withFastLookUp(from) { lookup =>
       for {
         trackId <- lookup.getAs[String]("trackId")
-        timestamp <- lookup.getAs[DateTime]("timestamp")
+        timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
       } yield ExecutionStarted(trackId, timestamp, metadata)
     }
@@ -40,7 +40,7 @@ object ExecutionInProcessWarpPackaging extends WarpPacker[ExecutionInProcess] wi
     withFastLookUp(from) { lookup =>
       for {
         trackId <- lookup.getAs[String]("trackId")
-        timestamp <- lookup.getAs[DateTime]("timestamp")
+        timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
       } yield ExecutionInProcess(trackId, timestamp, metadata)
     }
@@ -61,7 +61,7 @@ object ExecutionSuccessfulWarpPackaging extends WarpPacker[ExecutionSuccessful] 
       for {
         trackId <- lookup.getAs[String]("trackId")
         message <- lookup.getAs[String]("message")
-        timestamp <- lookup.getAs[DateTime]("timestamp")
+        timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
       } yield ExecutionSuccessful(trackId, message, timestamp, metadata)
     }
@@ -82,7 +82,7 @@ object ExecutionFailedWarpPackaging extends WarpPacker[ExecutionFailed] with Reg
       for {
         trackId <- lookup.getAs[String]("trackId")
         problem <- lookup.getTyped[Problem]("problem")
-        timestamp <- lookup.getAs[DateTime]("timestamp")
+        timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
       } yield ExecutionFailed(trackId, problem, timestamp, metadata)
     }

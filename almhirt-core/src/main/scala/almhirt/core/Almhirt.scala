@@ -53,6 +53,7 @@ object Almhirt {
         val domainEventConsumer = new DomainEventConsumer { def consume(domainEvent: DomainEvent) { messageBus.publish(domainEvent) } }
         def getUuid = ccuad.getUuid
         def getDateTime = ccuad.getDateTime
+        def getUtcTimestamp = ccuad.getUtcTimestamp
       }
       (theAlmhirt, closeHandle)
     }

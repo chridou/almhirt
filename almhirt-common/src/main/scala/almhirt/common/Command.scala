@@ -1,13 +1,13 @@
 package almhirt.common
 
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
 import almhirt.common._
 
 trait CommandHeader {
   /** The events unique identifier */
   def id: java.util.UUID
   /** The events timestamp of creation */
-  def timestamp: DateTime
+  def timestamp: LocalDateTime
   /**
    *
    */
@@ -17,11 +17,11 @@ trait CommandHeader {
 }
 
 object CommandHeader {
-  def apply(anId: java.util.UUID, aTimestamp: DateTime, metaData: Map[String, String]): CommandHeader = BasicCommandHeader(anId, aTimestamp, metaData)
-  def apply(anId: java.util.UUID, aTimestamp: DateTime): CommandHeader = BasicCommandHeader(anId, aTimestamp, Map.empty)
-  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = BasicCommandHeader(ccuad.getUuid, ccuad.getDateTime, Map.empty)
-  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = BasicCommandHeader(ccuad.getUuid, ccuad.getDateTime, metaData)
-  private case class BasicCommandHeader(id: java.util.UUID, timestamp: DateTime, metadata: Map[String, String]) extends CommandHeader {
+  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime, metaData: Map[String, String]): CommandHeader = BasicCommandHeader(anId, aTimestamp, metaData)
+  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime): CommandHeader = BasicCommandHeader(anId, aTimestamp, Map.empty)
+  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = BasicCommandHeader(ccuad.getUuid, ccuad.getUtcTimestamp, Map.empty)
+  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = BasicCommandHeader(ccuad.getUuid, ccuad.getUtcTimestamp, metaData)
+  private case class BasicCommandHeader(id: java.util.UUID, timestamp: LocalDateTime, metadata: Map[String, String]) extends CommandHeader {
     override def changeMetadata(newMetadata: Map[String, String]): BasicCommandHeader =
       this.copy(metadata = newMetadata)
   }

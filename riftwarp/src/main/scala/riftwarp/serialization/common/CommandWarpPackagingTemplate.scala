@@ -1,7 +1,7 @@
 package riftwarp.serialization.common
 
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -24,7 +24,7 @@ object CommandHeaderWarpPackaging extends WarpPacker[CommandHeader] with Registe
     withFastLookUp(from) { lookup =>
       for {
         id <- lookup.getAs[JUUID]("id")
-        timestamp <- lookup.getAs[DateTime]("timestamp")
+        timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
       } yield CommandHeader(id, timestamp, metadata)
     }

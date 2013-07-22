@@ -110,7 +110,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
 
   def executeMutatingDomainCommand(cmd: DomainCommand, handler: MutatingDomainCommandHandler, repository: ActorRef) {
     (for {
-      repoGetResp <- (repository ? GetAggregateRoot(cmd.targettedAggregateRoot))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
+      repoGetResp <- (repository ? GetAggregateRoot(cmd.targettedAggregateRootId))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
       currentState <- AlmFuture.promise(evaluateRepoGetResponse(repoGetResp, cmd))
       _ <- AlmFuture.promise {
         if (cmd.targettedVersion != currentState.version)
@@ -151,7 +151,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
               hdl(headCommand)
           case hdl: MutatingDomainCommandHandler =>
             for {
-              repoGetResp <- (repository ? GetAggregateRoot(headCommand.targettedAggregateRoot))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
+              repoGetResp <- (repository ? GetAggregateRoot(headCommand.targettedAggregateRootId))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
               fetchedState <- AlmFuture.promise { evaluateRepoGetResponse(repoGetResp, headCommand) }
               _ <- AlmFuture.promise {
                 if (headCommand.targettedVersion != fetchedState.version)

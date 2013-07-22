@@ -44,8 +44,8 @@ package object std {
   implicit val WarpPrimitiveUriUnpacker = UriWarpUnpacker
   implicit val WarpPrimitiveDateTimePacker = DateTimeWarpPacker
   implicit val WarpPrimitiveDateTimeUnpacker = DateTimeWarpUnpacker
-  implicit val WarpPrimitiveLocalDateTimePacker = DateTimeWarpPacker
-  implicit val WarpPrimitiveLocalDateTimeUnpacker = DateTimeWarpUnpacker
+  implicit val WarpPrimitiveLocalDateTimePacker = LocalDateTimeWarpPacker
+  implicit val WarpPrimitiveLocalDateTimeUnpacker = LocalDateTimeWarpUnpacker
   implicit val WarpPrimitiveDurationPacker = DurationWarpPacker
   implicit val WarpPrimitiveDurationUnpacker = DurationWarpUnpacker
   implicit val WarpByteArrayPacker = ByteArrayWarpPacker

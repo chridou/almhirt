@@ -1,23 +1,23 @@
 package almhirt.common
 
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
 import almhirt.common._
 
 trait EventHeader {
   /** The events unique identifier */
   def id: java.util.UUID
   /** The events timestamp of creation */
-  def timestamp: DateTime
+  def timestamp: LocalDateTime
   def metadata: Map[String, String]
   def changeMetadata(newMetaData: Map[String, String]): EventHeader
 }
 
 object EventHeader {
-  def apply(anId: java.util.UUID, aTimestamp: DateTime, metaData: Map[String, String]): EventHeader = BasicEventHeader(anId, aTimestamp, metaData)
-  def apply(anId: java.util.UUID, aTimestamp: DateTime): EventHeader = BasicEventHeader(anId, aTimestamp, Map.empty)
-  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getDateTime, Map.empty)
-  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getDateTime, metaData)
-  private case class BasicEventHeader(id: java.util.UUID, timestamp: DateTime, metadata: Map[String, String]) extends EventHeader {
+  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime, metaData: Map[String, String]): EventHeader = BasicEventHeader(anId, aTimestamp, metaData)
+  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime): EventHeader = BasicEventHeader(anId, aTimestamp, Map.empty)
+  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getUtcTimestamp, Map.empty)
+  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getUtcTimestamp, metaData)
+  private case class BasicEventHeader(id: java.util.UUID, timestamp: LocalDateTime, metadata: Map[String, String]) extends EventHeader {
     override def changeMetadata(newMetadata: Map[String, String]): EventHeader =
       this.copy(metadata = newMetadata)
   }
