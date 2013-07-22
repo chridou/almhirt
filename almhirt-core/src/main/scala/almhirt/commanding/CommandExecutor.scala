@@ -58,7 +58,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       handler => {
         if (cmd.canBeTracked)
           theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionInProcess(cmd.trackingId)))
-        handler.asInstanceOf[GenericCommandHandler](cmd, repositories).onComplete(
+        handler.asInstanceOf[GenericCommandHandler](cmd).onComplete(
           fail => handleFailure(cmd, fail),
           succMsg => {
             theAlmhirt.messageBus.publish(CommandExecuted(cmd.id))
