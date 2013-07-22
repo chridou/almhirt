@@ -88,6 +88,12 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   def executeCreatingDomainCommand(cmd: DomainCommand, handler: CreatingDomainCommandHandler, repository: ActorRef) {
     (for {
       res <- handler(cmd)
+      _ <- AlmFuture.promise {
+        if (cmd.targettedVersion != 0L)
+          CollisionProblem("A command to create a new aggregate root must have a version of 0!").failure
+        else
+          ().success
+      }
       repoRes <- (repository ? UpdateAggregateRoot(res._1, res._2))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
       updatedAr <- AlmFuture.promise(evaluateRepoUpdateResponse(repoRes))
     } yield updatedAr).onComplete(
@@ -106,6 +112,12 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     (for {
       repoGetResp <- (repository ? GetAggregateRoot(cmd.targettedAggregateRoot))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
       currentState <- AlmFuture.promise(evaluateRepoGetResponse(repoGetResp, cmd))
+      _ <- AlmFuture.promise {
+        if (cmd.targettedVersion != currentState.version)
+          CollisionProblem(s"""A command to mutate an aggregate root must target its version(${currentState.version}). The command targets version ${cmd.targettedVersion}.""").failure
+        else
+          ().success
+      }
       res <- handler(currentState, cmd)
       repoRes <- (repository ? UpdateAggregateRoot(res._1, res._2))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
       updatedAr <- AlmFuture.promise(evaluateRepoUpdateResponse(repoRes))
@@ -133,11 +145,20 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
         trackingId.foreach(trId => theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionInProcess(trId))))
         initialHandler match {
           case hdl: CreatingDomainCommandHandler =>
-            hdl(headCommand)
+            if (headCommand.targettedVersion != 0L)
+              AlmFuture.promise(CollisionProblem("A command to create a new aggregate root must have a version of 0!").failure)
+            else
+              hdl(headCommand)
           case hdl: MutatingDomainCommandHandler =>
             for {
               repoGetResp <- (repository ? GetAggregateRoot(headCommand.targettedAggregateRoot))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
-              fetchedState <- AlmFuture { evaluateRepoGetResponse(repoGetResp, headCommand) }
+              fetchedState <- AlmFuture.promise { evaluateRepoGetResponse(repoGetResp, headCommand) }
+              _ <- AlmFuture.promise {
+                if (headCommand.targettedVersion != fetchedState.version)
+                  CollisionProblem(s"""A command to mutate an aggregate root must target its version(${fetchedState.version}). The command targets version ${headCommand.targettedVersion}.""").failure
+                else
+                  ().success
+              }
               res <- hdl(fetchedState, headCommand)
             } yield res
         }
