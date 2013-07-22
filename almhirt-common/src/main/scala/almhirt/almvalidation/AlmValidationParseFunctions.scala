@@ -17,7 +17,7 @@ package almhirt.almvalidation
 import java.util.UUID
 import scalaz.syntax.validation._
 import scalaz.std._
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import almhirt.common._
 
 /**
@@ -92,6 +92,13 @@ trait AlmValidationParseFunctions {
       case err: Exception => ParsingProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
 
+  def parseLocalDateTimeAlm(toParse: String): AlmValidation[LocalDateTime] =
+    try {
+      new LocalDateTime(toParse).success
+    } catch {
+      case err: Exception => ParsingProblem("Not a valid DateTime: %s".format(toParse)).failure
+    }
+    
   def parseDurationAlm(toParse: String): AlmValidation[scala.concurrent.duration.FiniteDuration] =
     try {
       val dur = scala.concurrent.duration.Duration(toParse)

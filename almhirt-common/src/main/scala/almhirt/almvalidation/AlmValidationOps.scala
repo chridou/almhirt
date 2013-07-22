@@ -21,7 +21,7 @@ import java.util.UUID
 import scalaz.{ Validation, NonEmptyList }
 import scalaz.syntax.Ops
 import scalaz.syntax.validation._
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import almhirt.common._
 
 /**
@@ -53,6 +53,8 @@ trait AlmValidationOps0 extends Ops[String] {
     parseDecimalAlm(self)
   def toDateTimeAlm(): AlmValidation[DateTime] =
     parseDateTimeAlm(self)
+  def toDateLocalTimeAlm(): AlmValidation[LocalDateTime] =
+    parseLocalDateTimeAlm(self)
   def toDurationAlm(): AlmValidation[scala.concurrent.duration.FiniteDuration] =
     parseDurationAlm(self)
   def toUuidAlm(): AlmValidation[UUID] =
