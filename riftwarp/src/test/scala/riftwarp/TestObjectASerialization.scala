@@ -1,7 +1,7 @@
 package riftwarp
 
 import java.util.UUID
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -61,6 +61,7 @@ object PrimitiveTypesPacker extends WarpPacker[PrimitiveTypes] with Registerable
       P("double", what.double) ~>
       P("bigDec", what.bigDec) ~>
       P("dateTime", what.dateTime) ~>
+      P("localDateTime", what.localDateTime) ~>
       P("uuid", what.uuid)
 }
 
@@ -80,8 +81,9 @@ object PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
         double <- lookup.getAs[Double]("double")
         bigDec <- lookup.getAs[BigDecimal]("bigDec")
         dateTime <- lookup.getAs[DateTime]("dateTime")
+        localDateTime <- lookup.getAs[LocalDateTime]("localDateTime")
         uuid <- lookup.getAs[UUID]("uuid")
-      } yield PrimitiveTypes(str, bool, byte, int, long, bigInt, float, double, bigDec, dateTime, uuid)
+      } yield PrimitiveTypes(str, bool, byte, int, long, bigInt, float, double, bigDec, dateTime, localDateTime, uuid)
     }
 }
 

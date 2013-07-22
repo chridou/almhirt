@@ -5,7 +5,7 @@ import almhirt.almvalidation.kit._
 import scalaz._, Scalaz._
 import almhirt.common.AlmValidation
 import java.util.UUID
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 
 case class UnknownObject(what: Any)
 
@@ -20,6 +20,7 @@ case class PrimitiveTypes(
   double: Double,
   bigDec: BigDecimal,
   dateTime: DateTime,
+  localDateTime: LocalDateTime,
   uuid: UUID)
 
 case class PrimitiveListMAs(
@@ -82,6 +83,7 @@ object TestObjectA {
         double = 1.3672322350005D,
         bigDec = BigDecimal("23761247614876823746.23846749182408184098140981094809184834082307582375243658732465897259724"),
         dateTime = new DateTime(),
+        localDateTime = new LocalDateTime(),
         uuid = UUID.randomUUID()),
       primitiveListMAs = PrimitiveListMAs(
         listString = List("alpha", "beta", "gamma", "delta"),
