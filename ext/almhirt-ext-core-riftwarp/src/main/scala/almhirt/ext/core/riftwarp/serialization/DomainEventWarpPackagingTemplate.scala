@@ -1,7 +1,7 @@
 package almhirt.ext.core.riftwarp.serialization
 
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -28,7 +28,7 @@ object DomainEventHeaderWarpPackaging extends WarpPacker[DomainEventHeader] with
         id <- lookup.getAs[JUUID]("id")
         aggId <- lookup.getAs[JUUID]("aggId")
         aggVersion <- lookup.getAs[Long]("aggVersion")
-        timestamp <- lookup.getAs[DateTime]("timestamp")
+        timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
       } yield DomainEventHeader(id, AggregateRootRef(aggId, aggVersion), timestamp, metadata)
     }

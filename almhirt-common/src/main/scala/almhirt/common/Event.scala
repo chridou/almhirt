@@ -27,6 +27,7 @@ trait Event {
   def header: EventHeader
   def metadata: Map[String, String] = header.metadata
   def changeMetadata(newMetaData: Map[String, String]): Event
+  def eventId = header.id
 }
 
 object Event {

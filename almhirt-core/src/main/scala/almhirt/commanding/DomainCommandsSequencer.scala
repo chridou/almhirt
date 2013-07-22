@@ -28,11 +28,11 @@ trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: A
         if (command.targettedAggregateRootRef != aggRef)
           CollisionProblem(s"""All commands in the sequence "${this.groupLabel}" must target the same aggregate root "${aggRef.id}" with the same version("${aggRef.version}"). The command to be added targets aggregate root "${command.targettedAggregateRootId}" with version ${command.targettedVersion}.""").failure
         else if (collectedCommands.contains(grp.index))
-          CollisionProblem(s"""There is already a command with index ${grp.index} in the sequence "${this.groupLabel}". The command with id "${command.id}" of type "${command.getClass().getName()}" cannot be added to the sequence.""").failure
+          CollisionProblem(s"""There is already a command with index ${grp.index} in the sequence "${this.groupLabel}". The command with id "${command.commandId}" of type "${command.getClass().getName()}" cannot be added to the sequence.""").failure
         else if (grp.isLast && expectedSequenceSize.isEmpty)
           SequenceEntry(this.groupLabel, this.aggRef, Some(grp.index), this.collectedCommands + (grp.index -> command), this.birthDate, this.responsible).success
         else if (grp.isLast && expectedSequenceSize.isDefined)
-          UnspecifiedProblem(s"""The size of the sequence "${this.groupLabel}" was already determined. Since the current command with id "${command.id}" of type "${command.getClass().getName()}" is marked as the last in the sequence, did you set "isLast" on more than one command?""").failure
+          UnspecifiedProblem(s"""The size of the sequence "${this.groupLabel}" was already determined. Since the current command with id "${command.commandId}" of type "${command.getClass().getName()}" is marked as the last in the sequence, did you set "isLast" on more than one command?""").failure
         else //(!grp.isLast))
           SequenceEntry(this.groupLabel, this.aggRef, this.expectedSequenceSize, this.collectedCommands + (grp.index -> command), this.birthDate, this.responsible).success
       }
@@ -58,6 +58,8 @@ trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: A
 
   implicit def theAlmhirt: Almhirt
 
+  override def receiveDomainCommandsSequencerMessage = transitionToNextState(Map.empty)
+  
   def transitionToNextState(currentState: Map[String, SequenceEntry]): Receive = {
     case SequenceDomainCommand(command) =>
       val updatedSequences = processIncomingCommand(command, sender, currentState)
@@ -98,7 +100,7 @@ trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: A
               newEntry => currentState + (groupLabel -> newEntry))
         }
       case None =>
-        log.warning(s"""Command "${command.getClass().getName()}" with id "${command.id}" of type "${command.getClass().getName()}" targetting aggregate root "${command.targettedAggregateRootId}" with version "${command.targettedVersion}" is not a member of a group""")
+        log.warning(s"""Command "${command.getClass().getName()}" with id "${command.commandId}" of type "${command.getClass().getName()}" targetting aggregate root "${command.targettedAggregateRootId}" with version "${command.targettedVersion}" is not a member of a group""")
         currentState
     }
 

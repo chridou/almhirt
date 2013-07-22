@@ -93,9 +93,10 @@ object TestArCommanding {
     import scala.concurrent.ExecutionContext
     def addCommands(registry: CommandHandlerRegistry)(implicit theAlmhirt: Almhirt): CommandHandlerRegistry = {
       val executionContext = theAlmhirt.futuresExecutor
+      
       val createTestArAdder =
         CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[CreateTestAr, TestArEvent, TestAr](
-          command => TestAr.fromScratch(command.header.id, command.newA).result,
+          command => TestAr.fromScratch(command.targettedAggregateRootId, command.newA).result,
           executionContext)
       val changeAAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[ChangeA, TestArEvent, TestAr](

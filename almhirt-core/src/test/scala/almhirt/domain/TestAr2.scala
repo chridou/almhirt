@@ -87,7 +87,7 @@ object AnotherTestArCommanding {
       val executionContext = theAlmhirt.futuresExecutor
       val createAdder =
         CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[CreateAnotherTestAr, AnotherTestArEvent, AnotherTestAr](
-          command => AnotherTestAr.fromScratch(command.header.id).result,
+          command => AnotherTestAr.fromScratch(command.targettedAggregateRootId).result,
           executionContext)
       val setCAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[SetC, AnotherTestArEvent, AnotherTestAr](

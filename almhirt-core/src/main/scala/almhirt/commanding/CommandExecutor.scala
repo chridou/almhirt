@@ -22,12 +22,15 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   def repositories: AggregateRootRepositoryRegistry
   def domainCommandsSequencer: ActorRef
 
+  def messagePublisher: almhirt.messaging.MessagePublisher
+  
   implicit val executionContext = theAlmhirt.futuresExecutor
   val futuresMaxDuration = theAlmhirt.durations.longDuration
 
   override def receiveCommandExecutorMessage: Receive = {
     case cmd: Command =>
-      theAlmhirt.messageBus.publish(CommandReceived(cmd))
+      log.debug(s"""Received command with id "${cmd.commandId}" of type "${cmd.getClass().getName()}"""")
+      messagePublisher.publish(CommandReceived(cmd))
       initiateExecution(cmd)
     case DomainCommandsSequencer.DomainCommandsSequenceCreated(domainCommandSequence) =>
       executeDomainCommandSequence(domainCommandSequence)
@@ -42,12 +45,12 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
           domainCommandsSequencer ! DomainCommandsSequencer.SequenceDomainCommand(cmd)
         else {
           if (cmd.canBeTracked)
-            theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionStarted(cmd.trackingId)))
+            messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(cmd.trackingId)))
           executeDomainCommand(cmd)
         }
       case cmd: Command =>
         if (cmd.canBeTracked)
-          theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionStarted(cmd.trackingId)))
+          messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(cmd.trackingId)))
         executeGenericCommand(cmd)
     }
   }
@@ -57,12 +60,12 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       fail => handleFailure(cmd, fail),
       handler => {
         if (cmd.canBeTracked)
-          theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionInProcess(cmd.trackingId)))
+          messagePublisher.publish(ExecutionStateChanged(ExecutionInProcess(cmd.trackingId)))
         handler.asInstanceOf[GenericCommandHandler](cmd).onComplete(
           fail => handleFailure(cmd, fail),
           succMsg => {
-            theAlmhirt.messageBus.publish(CommandExecuted(cmd.id))
-            if (cmd.canBeTracked) theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionSuccessful(cmd.trackingId, succMsg)))
+            messagePublisher.publish(CommandExecuted(cmd.commandId))
+            if (cmd.canBeTracked) messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(cmd.trackingId, succMsg)))
           })
       })
   }
@@ -99,9 +102,9 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     } yield updatedAr).onComplete(
       fail => handleFailure(cmd, fail),
       ar => {
-        theAlmhirt.messageBus.publish(CommandExecuted(cmd.id))
+        messagePublisher.publish(CommandExecuted(cmd.commandId))
         if (cmd.canBeTracked)
-          theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionSuccessful(
+          messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             cmd.trackingId,
             s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully created with version "${ar.version}"""",
             Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString))))
@@ -124,9 +127,9 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     } yield updatedAr).onComplete(
       fail => handleFailure(cmd, fail),
       ar => {
-        theAlmhirt.messageBus.publish(CommandExecuted(cmd.id))
+        messagePublisher.publish(CommandExecuted(cmd.commandId))
         if (cmd.canBeTracked)
-          theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionSuccessful(
+          messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             cmd.trackingId,
             s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully mutated ending with version "${ar.version}"""",
             Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString))))
@@ -137,12 +140,12 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   private def executeDomainCommandSequence(domainCommandSequence: Iterable[DomainCommand]) {
     val headCommand = domainCommandSequence.head
     val trackingId = headCommand.tryGetTrackingId
-    trackingId.foreach(trId => theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionStarted(trId))))
+    trackingId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(trId))))
     (for {
       initialHandler <- AlmFuture.promise(handlers.getDomainCommandHandler(headCommand))
       repository <- AlmFuture.promise(repositories.get(initialHandler.typeOfAr))
       initialState <- {
-        trackingId.foreach(trId => theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionInProcess(trId))))
+        trackingId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionInProcess(trId))))
         initialHandler match {
           case hdl: CreatingDomainCommandHandler =>
             if (headCommand.targettedVersion != 0L)
@@ -163,15 +166,15 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
             } yield res
         }
       } andThen (
-        fail => theAlmhirt.messageBus.publish(CommandNotExecuted(headCommand.id, fail)),
-        succ => theAlmhirt.messageBus.publish(CommandExecuted(headCommand.id)))
+        fail => messagePublisher.publish(CommandNotExecuted(headCommand.commandId, fail)),
+        succ => messagePublisher.publish(CommandExecuted(headCommand.commandId)))
       finalState <- appendMutatingCommandSequence(domainCommandSequence.tail, initialState._1, initialState._2)
       updateRes <- (repository ? UpdateAggregateRoot(finalState._1, finalState._2))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
       updatedAr <- AlmFuture { evaluateRepoUpdateResponse(updateRes) }
     } yield updatedAr).onComplete(
       fail => handleFailure(trackingId, fail),
       ar => trackingId.foreach(trId =>
-        theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionSuccessful(
+        messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
           trId,
           s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully mutated(and maybe created) ending with version "${ar.version} from ${domainCommandSequence.size} commands."""",
           Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString))))))
@@ -182,8 +185,8 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       for {
         handler <- AlmFuture.promise { handlers.getMutatingDomainCommandHandler(command) }
         handlerRes <- handler(previousState._1, command) andThen (
-          fail => theAlmhirt.messageBus.publish(CommandNotExecuted(command.id, fail)),
-          succ => theAlmhirt.messageBus.publish(CommandExecuted(command.id)))
+          fail => messagePublisher.publish(CommandNotExecuted(command.commandId, fail)),
+          succ => messagePublisher.publish(CommandExecuted(command.commandId)))
       } yield (handlerRes._1, previousState._2 ++ handlerRes._2)
     }
     commands.foldLeft(AlmFuture.successful((currentState, previousEvents)))((acc, cur) => acc.flatMap(previousState =>
@@ -193,30 +196,30 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   def evaluateRepoGetResponse(response: DomainMessage, againstCommand: DomainCommand): AlmValidation[IsAggregateRoot] =
     response match {
       case RequestedAggregateRoot(ar) => ar.success
-      case AggregateRootNotFound(arId) => ???
+      case AggregateRootNotFound(arId) => almhirt.domain.AggregateRootNotFoundProblem(arId).failure
       case AggregateRootFetchFailed(arId, problem) => ???
-      case IncompatibleAggregateRoot(ar, expected) => ???
-      case IncompatibleDomainEvent(expected) => ???
-      case x => ???
+      case IncompatibleAggregateRoot(ar, expected) => UnspecifiedProblem(s"""Wrong type of aggregate root(${ar.getClass().getName()}) queried. I exepected a "$expected". This is an internal problem.""").failure
+      case IncompatibleDomainEvent(expected) => UnspecifiedProblem(s"""Wrong type of domain event. I exepected a "$expected". This is an internal problem.""").failure
+      case x => throw new Exception(s"""Invalid message received: "${x.getClass().getName()}"""")
     }
 
   def evaluateRepoUpdateResponse(response: DomainMessage): AlmValidation[IsAggregateRoot] =
     response match {
       case AggregateRootUpdated(ar) => ar.success
-      case AggregateRootUpdateFailed(problem) => ???
-      case AggregateRootNotFound(arId) => ???
-      case AggregateRootFetchFailed(arId, problem) => ???
-      case IncompatibleAggregateRoot(ar, expected) => ???
-      case IncompatibleDomainEvent(expected) => ???
-      case x => ???
+      case AggregateRootUpdateFailed(problem) => problem.failure
+      case AggregateRootNotFound(arId) => almhirt.domain.AggregateRootNotFoundProblem(arId).failure
+      case AggregateRootFetchFailed(arId, problem) => problem.failure
+      case IncompatibleAggregateRoot(ar, expected) =>  UnspecifiedProblem(s"""Wrong type of aggregate root(${ar.getClass().getName()}). I exepected a "$expected". This is an internal problem.""").failure
+      case IncompatibleDomainEvent(expected) => UnspecifiedProblem(s"""Wrong type of domain event. I exepected a "$expected". This is an internal problem.""").failure
+      case x => throw new Exception(s"""Invalid message received: "${x.getClass().getName()}"""")
     }
 
   private def handleFailure(trackingId: Option[String], problem: Problem) {
-    trackingId.foreach(id => theAlmhirt.messageBus.publish(ExecutionStateChanged(ExecutionFailed(id, problem))))
+    trackingId.foreach(id => messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(id, problem))))
   }
 
   private def handleFailure(cmd: Command, problem: Problem) {
-    theAlmhirt.messageBus.publish(CommandNotExecuted(cmd.header.id, problem))
+    messagePublisher.publish(CommandNotExecuted(cmd.header.id, problem))
     handleFailure(cmd.tryGetTrackingId, problem)
   }
 

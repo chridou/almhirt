@@ -26,7 +26,12 @@ object MessagePublisher {
       MessagePublisher.publish(self, payload, metaData)
     }
   }
-  
+
+  import akka.actor._
+  def sendToActor(actor: ActorRef): MessagePublisher =
+    new MessagePublisher {
+      def publishMessage(message: Message) { actor ! message }
+    }
 }
 
 trait MessageBus extends MessagePublisher {
@@ -39,5 +44,5 @@ trait MessageBus extends MessagePublisher {
 object MessageBus {
   def apply(system: ActorSystem): AlmFuture[(MessageBus, CloseHandle)] =
     impl.ActorSystemEventStreamMessageBus(system)
-  
+
 }

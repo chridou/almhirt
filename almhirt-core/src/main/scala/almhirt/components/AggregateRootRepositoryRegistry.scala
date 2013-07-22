@@ -12,7 +12,7 @@ trait AggregateRootRepositoryRegistry {
 
 object AggregateRootRepositoryRegistry {
   def apply(): AggregateRootRepositoryRegistry =
-    new impl.AggregateRootRepositoryImpl()
+    new impl.AggregateRootRepositoryRegistryImpl()
 
   def apply(repos: Map[Class[_ <: AggregateRoot[_, _]], ActorRef]): AggregateRootRepositoryRegistry = {
     val newReg = AggregateRootRepositoryRegistry()

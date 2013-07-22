@@ -6,7 +6,7 @@ import almhirt.common._
 import almhirt.domain.AggregateRoot
 import almhirt.components.AggregateRootRepositoryRegistry
 
-class AggregateRootRepositoryImpl extends AggregateRootRepositoryRegistry {
+class AggregateRootRepositoryRegistryImpl extends AggregateRootRepositoryRegistry {
   private val repositories = new java.util.concurrent.ConcurrentHashMap[Class[_ <: AggregateRoot[_, _]], ActorRef](128)
 
   final override def register(arType: Class[_ <: AggregateRoot[_, _]], repository: ActorRef) {
