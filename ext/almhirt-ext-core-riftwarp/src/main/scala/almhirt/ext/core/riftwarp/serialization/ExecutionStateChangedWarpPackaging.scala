@@ -10,7 +10,7 @@ import riftwarp.std.kit._
 import riftwarp.std.WarpObjectLookUp
 import riftwarp.serialization.common.EventWarpPackagingTemplate
 
-object ExecutionStateChangedWarpPackaging extends EventWarpPackagingTemplate[ExecutionStateChanged] {
+object ExecutionStateChangedWarpPackaging extends EventWarpPackagingTemplate[ExecutionStateChanged] with RegisterableWarpPacker {
   val warpDescriptor = WarpDescriptor("ExecutionStateChanged")
   val alternativeWarpDescriptors = WarpDescriptor(classOf[ExecutionStateChanged]) :: Nil
 
