@@ -2,7 +2,7 @@ package riftwarp.serialization.common
 
 
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
 import scalaz._
 import scalaz.Scalaz._
 import almhirt.common._
@@ -24,7 +24,7 @@ object MessageHeaderWarpPackaging extends WarpPacker[MessageHeader] with Registe
     withFastLookUp(from) { lookup =>
       for {
         a <- lookup.getAs[JUUID]("id")
-        b <- lookup.getAs[DateTime]("timestamp")
+        b <- lookup.getAs[LocalDateTime]("timestamp")
         c <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
       } yield MessageHeader(a, b, c)
     }

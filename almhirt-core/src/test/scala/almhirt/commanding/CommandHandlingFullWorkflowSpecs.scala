@@ -126,16 +126,47 @@ class CommandHandlingFullWorkflowSpecs extends TestKit(ActorSystem("CommandHandl
         (executor, eventLog, probe) =>
           val theFirstCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
           executor ! theFirstCommand
-//          probe.fishForMessage(defaultWaitDuration, "I'm fishing for the first CommandExecuted") {
-//            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theFirstCommand.commandId
-//            case x => false
-//          }
+          probe.fishForMessage(defaultWaitDuration, "I'm fishing for the first CommandExecuted") {
+            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theFirstCommand.commandId
+            case x => false
+          }
           val theSecondCommand = TestArCommanding.ChangeB(DomainCommandHeader(theFirstCommand.targettedAggregateRootRef.inc), Some("B"))
           executor ! theSecondCommand
           probe.fishForMessage(defaultWaitDuration, "I'm fishing for the second CommandExecuted") {
             case Message(_, CommandExecuted(_, cmdId)) => cmdId == theSecondCommand.commandId
-            case x => println(x);false
+            case x => false
           }
+      }
+    }
+    it("should signal a CommandNotExecuted when mutating a non existing aggregate root") {
+      withTestRig {
+        (executor, eventLog, probe) =>
+          val theCommand = TestArCommanding.ChangeB(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), Some("B"))
+          executor ! theCommand
+          probe.fishForMessage(defaultWaitDuration, "I'm fishing for CommandNotExecuted") {
+            case Message(_, CommandNotExecuted(_, cmdId, problem)) => cmdId == theCommand.commandId
+            case x => false
+          }
+      }
+    }
+    it("should execute a command sequence and emit CommandExecuted for each command") {
+      withTestRig {
+        (executor, eventLog, probe) =>
+          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+          val theCommands =
+            List[TestArCommand](
+              TestArCommanding.CreateTestAr(DomainCommandHeader(aggRef), "a"),
+              TestArCommanding.ChangeB(DomainCommandHeader(aggRef), Some("B")),
+              TestArCommanding.ChangeA(DomainCommandHeader(aggRef), "s"))
+          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)   
+          groupedCommands.foreach(executor ! _)
+          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 20) {
+            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId.toString())
+            case Message(_, m :CommandNotExecuted) => Some(m.reason.toString())
+            case Message(_, m :CommandReceived) => None
+          }
+          
+          res.flatten should equal(theCommands.map(_.commandId))
       }
     }
 

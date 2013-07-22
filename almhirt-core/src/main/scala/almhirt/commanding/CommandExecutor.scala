@@ -32,7 +32,8 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       log.debug(s"""Received command with id "${cmd.commandId}" of type "${cmd.getClass().getName()}"""")
       messagePublisher.publish(CommandReceived(cmd))
       initiateExecution(cmd)
-    case DomainCommandsSequencer.DomainCommandsSequenceCreated(domainCommandSequence) =>
+    case DomainCommandsSequencer.DomainCommandsSequenceCreated(groupLabel, domainCommandSequence) =>
+      log.debug(s"""Received command sequence "$groupLabel"(${domainCommandSequence.size}).""")
       executeDomainCommandSequence(domainCommandSequence)
     case DomainCommandsSequencer.DomainCommandsSequenceNotCreated(grouplabel: String, problem: Problem) =>
       ()

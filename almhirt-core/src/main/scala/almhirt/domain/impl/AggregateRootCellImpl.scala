@@ -20,13 +20,13 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   type AR <: AggregateRoot[AR, Event]
 
   implicit val myAlmhirt: Almhirt
- 
+
   def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
- 
+
   protected def domainEventLog: ActorRef
 
   protected def onDoesNotExist: () => Unit
-  
+
   private def publisher: MessagePublisher = myAlmhirt.messageBus
 
   private def waitingWithArState(ar: AR, activeSince: DateTime): Receive = {
@@ -35,6 +35,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     case UpdateAggregateRoot(targetState, events) =>
       tryGetPotentialUpdate(Some(ar), targetState.asInstanceOf[AR], events.map(_.asInstanceOf[Event]), sender).foreach {
         case (nextState, events, waitsForUpdateResponse) =>
+          domainEventLog ! CommitDomainEvents(events)
           logDebugMessage("waitingWithArState", """Transition to "updatingState" by "UpdateAggregateRoot"""")
           context.become(updatingState(Some(ar), waitsForUpdateResponse, nextState, Vector.empty))
       }
@@ -57,6 +58,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     case UpdateAggregateRoot(targetState, events) =>
       tryGetPotentialUpdate(None, targetState.asInstanceOf[AR], events.map(_.asInstanceOf[Event]), sender).foreach {
         case (nextState, events, waitsForUpdateResponse) =>
+          domainEventLog ! CommitDomainEvents(events)
           logDebugMessage("doesNotExistState", """Transition to "updatingState" by "UpdateAggregateRoot"""")
           context.become(updatingState(None, waitsForUpdateResponse, nextState, Vector.empty))
       }
@@ -204,29 +206,29 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 }
 
 class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-  aggregateRooId: JUUID,  
+  aggregateRooId: JUUID,
   aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
   theDomainEventLog: ActorRef,
   notifyOnDoesNotExist: () => Unit)(implicit theAlmhirt: Almhirt) extends AggregateRootCellTemplate with Actor with ActorLogging {
-  
+
   type AR = TAR
   type Event = TEvent
-  
+
   override def preStart() {
     super.preStart()
     log.debug(s"""Aggregate root cell for managed aggregate root id "$managedAggregateRooId" is about to start.""")
   }
-  
+
   val managedAggregateRooId = aggregateRooId
-  
+
   override val myAlmhirt: Almhirt = theAlmhirt
- 
+
   def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR] = aggregateRootFactory(events)
- 
+
   protected def domainEventLog: ActorRef = theDomainEventLog
 
   protected def onDoesNotExist() = notifyOnDoesNotExist
-  
+
   override def receive: Receive = receiveAggregateRootCellMsg
 }
   

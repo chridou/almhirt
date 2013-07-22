@@ -69,8 +69,9 @@ object TestArLenses {
   val theBL: TestAr @> Option[String] = Lens.lensu((a, b) => a.copy(theB = b), _.theB)
 }
 
+
+trait TestArCommand extends DomainCommand
 object TestArCommanding {
-  trait TestArCommand extends DomainCommand
 
   final case class CreateTestAr(header: DomainCommandHeader, newA: String) extends TestArCommand {
     override def changeMetadata(newMetadata: Map[String, String]): CreateTestAr = copy(header = this.header.changeMetadata(newMetadata))

@@ -11,7 +11,7 @@ import almhirt.domain.AggregateRootRef
 object DomainCommandsSequencer {
   sealed trait DomainCommandsSequencerMessage
   final case class SequenceDomainCommand(command: DomainCommand) extends DomainCommandsSequencerMessage
-  final case class DomainCommandsSequenceCreated(sequence: Iterable[DomainCommand]) extends DomainCommandsSequencerMessage
+  final case class DomainCommandsSequenceCreated(groupLabel: String, sequence: Iterable[DomainCommand]) extends DomainCommandsSequencerMessage
   final case class DomainCommandsSequenceNotCreated(groupLabel: String, problem: Problem) extends DomainCommandsSequencerMessage
 }
 
@@ -58,8 +58,8 @@ trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: A
 
   implicit def theAlmhirt: Almhirt
 
-  override def receiveDomainCommandsSequencerMessage = transitionToNextState(Map.empty)
-  
+  def receiveDomainCommandsSequencerMessage = transitionToNextState(Map.empty)
+
   def transitionToNextState(currentState: Map[String, SequenceEntry]): Receive = {
     case SequenceDomainCommand(command) =>
       val updatedSequences = processIncomingCommand(command, sender, currentState)
@@ -73,7 +73,7 @@ trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: A
       if (entry.isComplete) {
         entry.getOnlyValid.fold(
           fail => entry.responsible ! DomainCommandsSequenceNotCreated(label, fail),
-          succ => succ.responsible ! DomainCommandsSequenceCreated(succ.commandSequence))
+          succ => succ.responsible ! DomainCommandsSequenceCreated(label, succ.commandSequence))
         acc - label
       } else {
         acc
@@ -83,6 +83,7 @@ trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: A
   private def processIncomingCommand(command: DomainCommand, responsible: ActorRef, currentState: Map[String, SequenceEntry]): Map[String, SequenceEntry] =
     command.tryGetGroupLabel match {
       case Some(groupLabel) =>
+        log.debug(s"""Sequence command "${command.commandId}" for "$groupLabel".""")
         currentState.get(groupLabel) match {
           case Some(entry) =>
             addToEntry(command, entry).fold(

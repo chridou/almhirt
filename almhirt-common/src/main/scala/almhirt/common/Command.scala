@@ -44,6 +44,11 @@ object Command {
     def getGrouping: AlmValidation[CommandGrouping] = CommandGrouping.fromMap(self.metadata.lift)
     def isPartOfAGroup: Boolean = self.metadata.contains("group-label")
     def tryGetGroupLabel: Option[String] = self.metadata.get("group-label")
+    def track(trackId: String): T = self.addMetadata("track-id", trackId)
+    def track(implicit ccud: CanCreateUuid): T = track(ccud.getUuid.toString().filterNot(_ == '-'))
+    def canBeTracked: Boolean = self.metadata.contains("track-id")
+    def tryGetTrackingId: Option[String] = self.metadata.get("track-id")
+    def trackingId: String = self.metadata("track-id")
   }
 }
 
