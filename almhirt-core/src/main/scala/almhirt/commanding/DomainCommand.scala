@@ -25,7 +25,8 @@ trait DomainCommand extends Command {
   override def header: DomainCommandHeader
   override def changeMetadata(newMetadata: Map[String, String]): DomainCommand
   def creates: Boolean = header.aggRef.version == 0L
+  def targettedAggregateRootRef: AggregateRootRef = header.aggRef
   def targettedVersion: Long = header.aggRef.version
-  def targettedAggregateRoot: java.util.UUID = header.aggRef.id
+  def targettedAggregateRootId: java.util.UUID = header.aggRef.id
 }
 
