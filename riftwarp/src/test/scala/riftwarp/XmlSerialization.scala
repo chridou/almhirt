@@ -3,7 +3,7 @@ package riftwarp
 import org.scalatest._
 import org.scalatest.matchers.MustMatchers
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -83,6 +83,12 @@ class XmlSerialization extends FunSuite with MustMatchers {
     val dateTime = DateTime.now()
     val res = WarpDateTime(dateTime).dematerialize[String @@ WarpTags.Xml]
     res must equal(s"""<Value type="DateTime">${dateTime.toString()}</Value>""")
+  }
+
+    test("A WarpLocalDateTime must dematerialize to the corresponding XML String") {
+    val dateTime = LocalDateTime.now()
+    val res = WarpLocalDateTime(dateTime).dematerialize[String @@ WarpTags.Xml]
+    res must equal(s"""<Value type="LocalDateTime">${dateTime.toString()}</Value>""")
   }
 
   test("A WarpObject dematerialized must rematerialize to a WarpObject") {

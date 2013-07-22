@@ -3,7 +3,7 @@ package riftwarp
 import org.scalatest._
 import org.scalatest.matchers.MustMatchers
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -84,6 +84,12 @@ class JsonSerialization extends FunSuite with MustMatchers {
     res must equal(s""""${dateTime.toString()}"""")
   }
 
+  test("A WarpLocalDateTime must dematerialize to the corresponding JSON String") {
+    val dateTime = LocalDateTime.now()
+    val res = WarpLocalDateTime(dateTime).dematerialize[String @@ WarpTags.Json]
+    res must equal(s""""${dateTime.toString()}"""")
+  }
+  
   test("A WarpBlob must dematerialize to the corresponding JSON String") {
     val blob = Vector(1,2,3,4,5,6,7,8,9,0).map(_.toByte)
     val expected = org.apache.commons.codec.binary.Base64.encodeBase64String(blob.toArray)
