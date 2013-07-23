@@ -22,12 +22,14 @@ object DomainCommandHeader {
   }
 }
 
+
 trait DomainCommand extends Command {
   override def header: DomainCommandHeader
   override def changeMetadata(newMetadata: Map[String, String]): DomainCommand
-  def creates: Boolean = header.aggRef.version == 0L
+  def creates: Boolean = this.isInstanceOf[CreatingDomainCommand]
   def targettedAggregateRootRef: AggregateRootRef = header.aggRef
   def targettedVersion: Long = header.aggRef.version
   def targettedAggregateRootId: java.util.UUID = header.aggRef.id
 }
 
+trait CreatingDomainCommand { self: DomainCommand => }

@@ -57,7 +57,7 @@ object GenericCommandHandler {
 }
 
 object CreatingDomainCommandHandler {
-  def fromSyncFun[TCommand <: DomainCommand, TEvent <: DomainEvent, TAR <: AggregateRoot[TAR, TEvent]](syncExecute: TCommand => AlmValidation[(TAR, IndexedSeq[TEvent])], executionContext: ExecutionContext)(implicit tag: ClassTag[TAR]): CreatingDomainCommandHandler { type TCom = TCommand; type Event = TEvent; type AR = TAR } =
+  def fromSyncFun[TCommand <: DomainCommand with CreatingDomainCommand, TEvent <: DomainEvent, TAR <: AggregateRoot[TAR, TEvent]](syncExecute: TCommand => AlmValidation[(TAR, IndexedSeq[TEvent])], executionContext: ExecutionContext)(implicit tag: ClassTag[TAR]): CreatingDomainCommandHandler { type TCom = TCommand; type Event = TEvent; type AR = TAR } =
     new CreatingDomainCommandHandler {
       type TCom = TCommand
       type Event = TEvent
@@ -66,7 +66,7 @@ object CreatingDomainCommandHandler {
       override def execute(command: TCom) = AlmFuture { syncExecute(command) }(executionContext)
     }
 
-  def createRegistryAdderFromSyncFun[TCommand <: DomainCommand, TEvent <: DomainEvent, TAR <: AggregateRoot[TAR, TEvent]](syncExecute: TCommand => AlmValidation[(TAR, IndexedSeq[TEvent])], executionContext: ExecutionContext)(implicit tagAr: ClassTag[TAR], tagC: ClassTag[TCommand]): CommandHandlerRegistry => CommandHandlerRegistry =
+  def createRegistryAdderFromSyncFun[TCommand <: DomainCommand with CreatingDomainCommand, TEvent <: DomainEvent, TAR <: AggregateRoot[TAR, TEvent]](syncExecute: TCommand => AlmValidation[(TAR, IndexedSeq[TEvent])], executionContext: ExecutionContext)(implicit tagAr: ClassTag[TAR], tagC: ClassTag[TCommand]): CommandHandlerRegistry => CommandHandlerRegistry =
     (registry: CommandHandlerRegistry) => {
       registry.addCreatingDomainCommandHandler[TCommand](fromSyncFun(syncExecute, executionContext))
       registry

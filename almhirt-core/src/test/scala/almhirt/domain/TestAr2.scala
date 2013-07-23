@@ -64,7 +64,7 @@ object AnotherTestArCommanding {
 
   trait AnotherTestArCommand extends DomainCommand
 
-  final case class CreateAnotherTestAr(header: DomainCommandHeader, newA: String) extends AnotherTestArCommand {
+  final case class CreateAnotherTestAr(header: DomainCommandHeader, newA: String) extends AnotherTestArCommand with CreatingDomainCommand {
     override def changeMetadata(newMetadata: Map[String, String]): CreateAnotherTestAr = copy(header = this.header.changeMetadata(newMetadata))
   }
 

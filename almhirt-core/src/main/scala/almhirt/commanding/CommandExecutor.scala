@@ -23,7 +23,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   def domainCommandsSequencer: ActorRef
 
   def messagePublisher: almhirt.messaging.MessagePublisher
-  
+
   implicit val executionContext = theAlmhirt.futuresExecutor
   val futuresMaxDuration = theAlmhirt.durations.longDuration
 
@@ -190,8 +190,11 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
           succ => messagePublisher.publish(CommandExecuted(command.commandId)))
       } yield (handlerRes._1, previousState._2 ++ handlerRes._2)
     }
-    commands.foldLeft(AlmFuture.successful((currentState, previousEvents)))((acc, cur) => acc.flatMap(previousState =>
-      appendCommandResult(previousState, cur)))
+    commands.foldLeft(AlmFuture.successful((currentState, previousEvents))) { (acc, cur) =>
+      acc.flatMap { previousState =>
+        appendCommandResult(previousState, cur)
+      }
+    }
   }
 
   def evaluateRepoGetResponse(response: DomainMessage, againstCommand: DomainCommand): AlmValidation[IsAggregateRoot] =
@@ -210,7 +213,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       case AggregateRootUpdateFailed(problem) => problem.failure
       case AggregateRootNotFound(arId) => almhirt.domain.AggregateRootNotFoundProblem(arId).failure
       case AggregateRootFetchFailed(arId, problem) => problem.failure
-      case IncompatibleAggregateRoot(ar, expected) =>  UnspecifiedProblem(s"""Wrong type of aggregate root(${ar.getClass().getName()}). I exepected a "$expected". This is an internal problem.""").failure
+      case IncompatibleAggregateRoot(ar, expected) => UnspecifiedProblem(s"""Wrong type of aggregate root(${ar.getClass().getName()}). I exepected a "$expected". This is an internal problem.""").failure
       case IncompatibleDomainEvent(expected) => UnspecifiedProblem(s"""Wrong type of domain event. I exepected a "$expected". This is an internal problem.""").failure
       case x => throw new Exception(s"""Invalid message received: "${x.getClass().getName()}"""")
     }

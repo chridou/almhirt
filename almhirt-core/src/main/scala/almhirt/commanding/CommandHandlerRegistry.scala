@@ -16,7 +16,7 @@ object CommandHandlerRegistry {
     def addGenericCommandHandler[TCommand <: Command](handler: GenericCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
       self.register(tag.runtimeClass, handler)
 
-    def addCreatingDomainCommandHandler[TCommand <: DomainCommand](handler: CreatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
+    def addCreatingDomainCommandHandler[TCommand <: DomainCommand with CreatingDomainCommand](handler: CreatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =
       self.register(tag.runtimeClass, handler)
 
     def addMutatingDomainCommandHandler[TCommand <: DomainCommand](handler: MutatingDomainCommandHandler { type TCom = TCommand })(implicit tag: ClassTag[TCommand]) =

@@ -73,7 +73,7 @@ object TestArLenses {
 trait TestArCommand extends DomainCommand
 object TestArCommanding {
 
-  final case class CreateTestAr(header: DomainCommandHeader, newA: String) extends TestArCommand {
+  final case class CreateTestAr(header: DomainCommandHeader, newA: String) extends TestArCommand with CreatingDomainCommand {
     override def changeMetadata(newMetadata: Map[String, String]): CreateTestAr = copy(header = this.header.changeMetadata(newMetadata))
   }
 
