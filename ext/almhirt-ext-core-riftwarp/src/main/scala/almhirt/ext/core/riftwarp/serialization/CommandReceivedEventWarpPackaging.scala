@@ -40,7 +40,7 @@ object CommandReceivedAsHeaderWarpPackaging extends EventWarpPackagingTemplate[C
     } yield CommandReceivedAsHeader(header, commandHeader, commandType)
 }
 
-object CommandReceivedEventWarpPackaging extends WarpPacker[CommandReceivedEvent] with RegisterableWarpPacker with RegisterableWarpUnpacker[CommandReceived]  with DivertingWarpUnpacker[CommandReceivedEvent] with DivertingWarpUnpackerWithAutoRegistration[CommandReceivedEvent]{
+object CommandReceivedEventWarpPackaging extends WarpPacker[CommandReceivedEvent] with RegisterableWarpPacker with RegisterableWarpUnpacker[CommandReceivedEvent]  with DivertingWarpUnpacker[CommandReceivedEvent] with DivertingWarpUnpackerWithAutoRegistration[CommandReceivedEvent]{
   val warpDescriptor = WarpDescriptor("CommandReceivedEvent")
   val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandReceivedEvent]) :: Nil
   override def pack(what: CommandReceivedEvent)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =

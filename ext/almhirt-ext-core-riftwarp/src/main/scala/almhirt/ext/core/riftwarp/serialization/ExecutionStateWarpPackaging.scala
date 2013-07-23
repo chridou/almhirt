@@ -100,7 +100,7 @@ object ExecutionFinishedStateWarpPackaging extends WarpPacker[ExecutionFinishedS
   def unpackers = ExecutionSuccessfulWarpPackaging :: ExecutionFailedWarpPackaging :: Nil
 }
 
-object ExecutionStateWarpPackaging extends WarpPacker[ExecutionState] with RegisterableWarpPacker with RegisterableWarpUnpacker[ExecutionFinishedState]  with DivertingWarpUnpacker[ExecutionState] with DivertingWarpUnpackerWithAutoRegistration[ExecutionState]{
+object ExecutionStateWarpPackaging extends WarpPacker[ExecutionState] with RegisterableWarpPacker with RegisterableWarpUnpacker[ExecutionState]  with DivertingWarpUnpacker[ExecutionState] with DivertingWarpUnpackerWithAutoRegistration[ExecutionState]{
   val warpDescriptor = WarpDescriptor("ExecutionState")
   val alternativeWarpDescriptors = WarpDescriptor(classOf[ExecutionState]) :: Nil
   override def pack(what: ExecutionState)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
