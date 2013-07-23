@@ -76,6 +76,8 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       fail => handleFailure(cmd, fail),
       {
         case (handler, repo) =>
+          if (cmd.canBeTracked)
+            messagePublisher.publish(ExecutionStateChanged(ExecutionInProcess(cmd.trackingId)))
           handler match {
             case hdl: CreatingDomainCommandHandler => executeCreatingDomainCommand(cmd, hdl, repo)
             case hdl: MutatingDomainCommandHandler => executeMutatingDomainCommand(cmd, hdl, repo)

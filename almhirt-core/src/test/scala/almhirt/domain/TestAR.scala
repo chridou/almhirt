@@ -89,6 +89,10 @@ object TestArCommanding {
     override def changeMetadata(newMetadata: Map[String, String]): DeleteTestAr = copy(header = this.header.changeMetadata(newMetadata))
   }
 
+  final case class UnregisteredTestArCommand(header: DomainCommandHeader) extends TestArCommand {
+    override def changeMetadata(newMetadata: Map[String, String]): UnregisteredTestArCommand = copy(header = this.header.changeMetadata(newMetadata))
+  }
+  
   object Handlers {
     import almhirt.core.Almhirt
     import scala.concurrent.ExecutionContext

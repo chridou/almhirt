@@ -14,7 +14,7 @@ object TestConfigs {
     	  # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill et.c.)
           #autoreceive = on
           #receive = on
-          #lifecycle = on
+          lifecycle = on
         }
       }
     }

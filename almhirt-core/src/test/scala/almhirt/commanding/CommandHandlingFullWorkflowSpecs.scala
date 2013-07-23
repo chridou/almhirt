@@ -93,125 +93,207 @@ class CommandHandlingFullWorkflowSpecs extends TestKit(ActorSystem("CommandHandl
   }
 
   describe("CommandExecutor") {
-    //    it("should be creatable") {
-    //      withTestRig {
-    //        (executor, eventLog, probe) =>
-    //          true should be(true)
-    //      }
-    //    }
-    //    it("should receive a CreateTestAr and acknowledge it with a CommandReceived") {
-    //      withTestRig {
-    //        (executor, eventLog, probe) =>
-    //          val theCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
-    //          executor ! theCommand
-    //          val res = probe.fishForMessage(defaultWaitDuration, "I'm fishing for CommandReceived") {
-    //            case Message(_, CommandReceived(_, cmd)) => cmd == theCommand
-    //            case x => false
-    //          }
-    //      }
-    //    }
-    //    it("should receive a CreateTestAr and acknowledge execution with a CommandExecuted") {
-    //      withTestRig {
-    //        (executor, eventLog, probe) =>
-    //          val theCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
-    //          executor ! theCommand
-    //          val res = probe.fishForMessage(defaultWaitDuration, "I'm fishing for CommandExecuted") {
-    //            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theCommand.commandId
-    //            case x => false
-    //          }
-    //      }
-    //    }
-    //    it("should receive a CreateTestAr and then modify the ar and acknowledge both with a CommandExecuted") {
-    //      withTestRig {
-    //        (executor, eventLog, probe) =>
-    //          val theFirstCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
-    //          executor ! theFirstCommand
-    //          probe.fishForMessage(defaultWaitDuration, "I'm fishing for the first CommandExecuted") {
-    //            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theFirstCommand.commandId
-    //            case x => false
-    //          }
-    //          val theSecondCommand = TestArCommanding.ChangeB(DomainCommandHeader(theFirstCommand.targettedAggregateRootRef.inc), Some("B"))
-    //          executor ! theSecondCommand
-    //          probe.fishForMessage(defaultWaitDuration, "I'm fishing for the second CommandExecuted") {
-    //            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theSecondCommand.commandId
-    //            case x => false
-    //          }
-    //      }
-    //    }
-    //    it("should signal a CommandNotExecuted when mutating a non existing aggregate root") {
-    //      withTestRig {
-    //        (executor, eventLog, probe) =>
-    //          val theCommand = TestArCommanding.ChangeB(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), Some("B"))
-    //          executor ! theCommand
-    //          probe.fishForMessage(defaultWaitDuration, "I'm fishing for CommandNotExecuted") {
-    //            case Message(_, CommandNotExecuted(_, cmdId, problem)) => cmdId == theCommand.commandId
-    //            case x => false
-    //          }
-    //      }
-    //    }
-    //
-    //    it("should emit CommandReceived for each for each command in a sequence") {
-    //      withTestRig {
-    //        (executor, eventLog, probe) =>
-    //          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
-    //          val theCommands =
-    //            List[TestArCommand](
-    //              TestArCommanding.CreateTestAr(DomainCommandHeader(aggRef), "a"),
-    //              TestArCommanding.ChangeB(DomainCommandHeader(aggRef), Some("B")),
-    //              TestArCommanding.ChangeA(DomainCommandHeader(aggRef), "s"))
-    //          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)   
-    //          groupedCommands.foreach(executor ! _)
-    //          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 20) {
-    //            case Message(_, m :CommandExecuted) => None
-    //            case Message(_, m :CommandNotExecuted) => None
-    //            case Message(_, m :CommandReceived) => Some(m.command.commandId)
-    //          }
-    //          
-    //          res.flatten should equal(theCommands.map(_.commandId))
-    //      }
-    //    }
-
-    it("should execute a command sequence and emit CommandExecuted for each command") {
+//    it("should be creatable") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          true should be(true)
+//      }
+//    }
+//    it("should receive a CreateTestAr and acknowledge it with a CommandReceived") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val theCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
+//          executor ! theCommand
+//          val res = probe.fishForMessage(defaultWaitDuration, "I'm fishing for CommandReceived") {
+//            case Message(_, CommandReceived(_, cmd)) => cmd == theCommand
+//            case x => false
+//          }
+//      }
+//    }
+//    it("should receive a CreateTestAr and acknowledge execution with a CommandExecuted") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val theCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
+//          executor ! theCommand
+//          val res = probe.fishForMessage(defaultWaitDuration, "I'm fishing for CommandExecuted") {
+//            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theCommand.commandId
+//            case x => false
+//          }
+//      }
+//    }
+//    it("should receive a CreateTestAr and then modify the ar and acknowledge both with a CommandExecuted") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val theFirstCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
+//          executor ! theFirstCommand
+//          probe.fishForMessage(defaultWaitDuration, "I'm fishing for the first CommandExecuted") {
+//            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theFirstCommand.commandId
+//            case x => false
+//          }
+//          val theSecondCommand = TestArCommanding.ChangeB(DomainCommandHeader(theFirstCommand.targettedAggregateRootRef.inc), Some("B"))
+//          executor ! theSecondCommand
+//          probe.fishForMessage(defaultWaitDuration, "I'm fishing for the second CommandExecuted") {
+//            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theSecondCommand.commandId
+//            case x => false
+//          }
+//      }
+//    }
+//    it("should signal a CommandNotExecuted when mutating a non existing aggregate root") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val theCommand = TestArCommanding.ChangeB(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), Some("B"))
+//          executor ! theCommand
+//          probe.fishForMessage(defaultWaitDuration, "I'm fishing for CommandNotExecuted") {
+//            case Message(_, CommandNotExecuted(_, cmdId, problem)) => cmdId == theCommand.commandId
+//            case x => false
+//          }
+//      }
+//    }
+//
+//    it("should emit CommandReceived for each for each command in a sequence") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+//          val theCommands =
+//            List[TestArCommand](
+//              TestArCommanding.CreateTestAr(DomainCommandHeader(aggRef), "a"),
+//              TestArCommanding.ChangeB(DomainCommandHeader(aggRef), Some("B")),
+//              TestArCommanding.ChangeA(DomainCommandHeader(aggRef), "s"))
+//          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
+//          groupedCommands.foreach(executor ! _)
+//          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 20) {
+//            case Message(_, m: CommandExecuted) => None
+//            case Message(_, m: CommandNotExecuted) => None
+//            case Message(_, m: CommandReceived) => Some(m.command.commandId)
+//          }
+//
+//          res.flatten should equal(theCommands.map(_.commandId))
+//      }
+//    }
+//
+//    it("should execute a command sequence and emit CommandExecuted for each command") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+//          val theCommands =
+//            List[TestArCommand](
+//              TestArCommanding.CreateTestAr(DomainCommandHeader(aggRef), "a"),
+//              TestArCommanding.ChangeB(DomainCommandHeader(aggRef), Some("B")),
+//              TestArCommanding.ChangeA(DomainCommandHeader(aggRef), "s"))
+//          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
+//          groupedCommands.foreach(executor ! _)
+//          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 6) {
+//            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId)
+//            case Message(_, m: CommandNotExecuted) => None
+//            case Message(_, m: CommandReceived) => None
+//          }
+//
+//          res.flatten should equal(theCommands.map(_.commandId))
+//      }
+//    }
+//
+//    it("should execute a command sequence and emit CommandExecuted for each command in the sequence in the sequence index order even though the commands are submitted in reversed order") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+//          val theCommands =
+//            List[TestArCommand](
+//              TestArCommanding.CreateTestAr(DomainCommandHeader(aggRef), "a"),
+//              TestArCommanding.ChangeB(DomainCommandHeader(aggRef), Some("B")),
+//              TestArCommanding.ChangeA(DomainCommandHeader(aggRef), "s"))
+//          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands).reverse
+//          groupedCommands.foreach(executor ! _)
+//          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 6) {
+//            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId)
+//            case Message(_, m: CommandNotExecuted) => None
+//            case Message(_, m: CommandReceived) => None
+//          }
+//
+//          res.flatten should equal(theCommands.map(_.commandId))
+//      }
+//    }
+//    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionSuccessful(3) when tracking is enabled on a creating command") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val trackId = "track me"
+//          val theCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a").track(trackId)
+//          executor ! theCommand
+//          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 9) {
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess))if (m.trackId == trackId) => Some(2)
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(3)
+//            case Message(_, m: CommandExecuted) => None
+//            case Message(_, m: CommandReceived) => None
+//          }.flatten
+//          res should equal(1 :: 2 :: 3 :: Nil)
+//      }
+//    }
+//    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionSuccessful(3) when tracking is enabled on a mutating command") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          import almhirt.domaineventlog.DomainEventLog._
+//          val (initialState, initialEvents) = TestAr.fromScratch(theAlmhirt.getUuid, "a").result.forceResult
+//          Await.result((eventLog ? CommitDomainEvents(initialEvents))(defaultWaitDuration), defaultWaitDuration)
+//          val trackId = "track me"
+//          val theCommand = TestArCommanding.ChangeA(DomainCommandHeader(initialState.ref), "b").track(trackId)
+//          executor ! theCommand
+//          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 9) {
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess))if (m.trackId == trackId) => Some(2)
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(3)
+//            case Message(_, m: CommandExecuted) => None
+//            case Message(_, m: CommandReceived) => None
+//          }.flatten
+//          res should equal(1 :: 2 :: 3 :: Nil)
+//      }
+//    }
+    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionFailed(3) when tracking is enabled but the creating command is invalid") {
       withTestRig {
         (executor, eventLog, probe) =>
-          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
-          val theCommands =
-            List[TestArCommand](
-              TestArCommanding.CreateTestAr(DomainCommandHeader(aggRef), "a"),
-              TestArCommanding.ChangeB(DomainCommandHeader(aggRef), Some("B")),
-              TestArCommanding.ChangeA(DomainCommandHeader(aggRef), "s"))
-          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
-          groupedCommands.foreach(executor ! _)
-          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 6) {
-            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId.toString())
-            case Message(_, m: CommandNotExecuted) => None
+          val trackId = "track me"
+          val theCommand = TestArCommanding.CreateTestAr(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid, 10L)), "a").track(trackId)
+          executor ! theCommand
+          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 9) {
+            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess))if (m.trackId == trackId) => Some(2)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
+            case Message(_, m: CommandExecuted) => None
             case Message(_, m: CommandReceived) => None
-          }
-
-          res.flatten should equal(theCommands.map(_.commandId))
+          }.flatten
+          res should equal(1 :: 2 :: 3 :: Nil)
       }
     }
-
-    it("should execute a command sequence and emit CommandExecuted for each command in the sequence in the sequence index order even though the commands are submitted in reversed order") {
-      withTestRig {
-        (executor, eventLog, probe) =>
-          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
-          val theCommands =
-            List[TestArCommand](
-              TestArCommanding.CreateTestAr(DomainCommandHeader(aggRef), "a"),
-              TestArCommanding.ChangeB(DomainCommandHeader(aggRef), Some("B")),
-              TestArCommanding.ChangeA(DomainCommandHeader(aggRef), "s"))
-          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands).reverse
-          groupedCommands.foreach(executor ! _)
-          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 6) {
-            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId.toString())
-            case Message(_, m: CommandNotExecuted) => None
-            case Message(_, m: CommandReceived) => None
-          }
-
-          res.flatten should equal(theCommands.map(_.commandId))
-      }
-    }
+//    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionFailed(3) when tracking is enabled but the mutating command is invalid") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val trackId = "track me"
+//          val theCommand = TestArCommanding.ChangeA(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a").track(trackId)
+//          executor ! theCommand
+//          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 9) {
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess))if (m.trackId == trackId) => Some(2)
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
+//            case Message(_, m: CommandExecuted) => None
+//            case Message(_, m: CommandReceived) => None
+//          }.flatten
+//          res should equal(1 :: 2 :: 3 :: Nil)
+//      }
+//    }
+//    it("should emit ExecutionStarted(1) ->  ExecutionFailed(3) when tracking is enabled but the command is unregistered") {
+//      withTestRig {
+//        (executor, eventLog, probe) =>
+//          val trackId = "track me"
+//          val theCommand = TestArCommanding.UnregisteredTestArCommand(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid))).track(trackId)
+//          executor ! theCommand
+//          val res = probe.receiveWhile(defaultWaitDuration, defaultWaitDuration, 9) {
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+//            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
+//            case Message(_, m: CommandExecuted) => None
+//            case Message(_, m: CommandReceived) => None
+//          }.flatten
+//          res should equal(1 :: 3 :: Nil)
+//      }
+//    }
 
   }
 }
