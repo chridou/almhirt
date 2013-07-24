@@ -96,7 +96,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       res <- handler(cmd)
       _ <- AlmFuture.promise {
         if (cmd.targettedVersion != 0L)
-          CollisionProblem("A command to create a new aggregate root must have a version of 0!").failure
+          CollisionProblem(s"""A command to create a new aggregate root must have a version of 0! The current command of type "${cmd.getClass().getName()}" has a version of ${cmd.targettedVersion}.""").failure
         else
           ().success
       }
@@ -221,7 +221,9 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     }
 
   private def handleFailure(trackingId: Option[String], problem: Problem) {
-    trackingId.foreach(id => messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(id, problem))))
+    trackingId.foreach { id =>
+      messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(id, problem)))
+    }
   }
 
   private def handleFailure(cmd: Command, problem: Problem) {
