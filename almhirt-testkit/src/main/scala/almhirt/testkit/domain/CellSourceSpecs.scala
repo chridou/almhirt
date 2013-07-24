@@ -12,20 +12,20 @@ import scala.concurrent._
 import almhirt.almvalidation.kit._
 import almhirt.core.HasAlmhirt
 
-abstract class CellSourceSpecs(theActorSystem: ActorSystem) extends AlmhirtTestKit(theActorSystem: ActorSystem) with HasAlmhirt with FunSpec with ShouldMatchers { self: CreatesEventLog =>
+abstract class CellSourceSpecs(theActorSystem: ActorSystem) extends AlmhirtTestKit(theActorSystem) with HasAlmhirt with FunSpec with ShouldMatchers { self: CreatesEventLog =>
   import almhirt.domain.DomainMessages._
   import almhirt.domain.AggregateRootCell._
   import almhirt.domaineventlog.DomainEventLog._
   
   lazy val managedAggregateRootId = theAlmhirt.getUuid
   
-  def createCellForAR1(testId: Int, eventLog: ActorRef): ActorRef
+  def createCellForAR1(testId: Int, managedAggregateRootId: java.util.UUID, eventLog: ActorRef): ActorRef
 
   // cell, eventlog
   def useCellWithEventLog[T](f: (ActorRef, ActorRef) => T): T = {
     val testId = nextTestId
     val eventlog = this.createEventLog(testId)
-    val cell = createCellForAR1(testId, eventlog)
+    val cell = createCellForAR1(testId, managedAggregateRootId, eventlog)
     val close = () => { system.stop(cell); system.stop(eventlog) }
     try {
       val res = f(cell, eventlog)
@@ -42,7 +42,7 @@ abstract class CellSourceSpecs(theActorSystem: ActorSystem) extends AlmhirtTestK
   def useCellWithSpy[T](f: (ActorRef, TestProbe) => T): T = {
     val testId = nextTestId
     val eventlog = TestProbe()
-    val cell = createCellForAR1(testId, eventlog.ref)
+    val cell = createCellForAR1(testId, managedAggregateRootId, eventlog.ref)
     val close = () => { system.stop(cell); system.stop(eventlog.ref) }
     try {
       val res = f(cell, eventlog)
