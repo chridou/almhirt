@@ -42,17 +42,21 @@ object CommandHandlerRegistry {
 
     def getMutatingDomainCommandHandler(command: DomainCommand): AlmValidation[MutatingDomainCommandHandler] =
       if (!command.creates) {
-      self.get(command.getClass).flatMap(commandHandler =>
-        if (commandHandler.isInstanceOf[MutatingDomainCommandHandler])
-          commandHandler.asInstanceOf[MutatingDomainCommandHandler].success
-        else
-          UnspecifiedProblem(s""""${command.getClass.getName()}" is not bound to a mutating domain command handler.""").failure)
-      }else {
+        self.get(command.getClass).flatMap(commandHandler =>
+          if (commandHandler.isInstanceOf[MutatingDomainCommandHandler])
+            commandHandler.asInstanceOf[MutatingDomainCommandHandler].success
+          else
+            UnspecifiedProblem(s""""${command.getClass.getName()}" is not bound to a mutating domain command handler.""").failure)
+      } else {
         UnspecifiedProblem(s""""${command.getClass.getName()}" is a creating command.""").failure
       }
-    
+
     def nextAdder(theAdder: CommandHandlerRegistry => CommandHandlerRegistry): CommandHandlerRegistry =
       theAdder(self)
+
+    def registerWithAdders(theAdders: Iterable[CommandHandlerRegistry => CommandHandlerRegistry]): CommandHandlerRegistry =
+      theAdders.foldLeft(self) { (acc, cur) => acc nextAdder cur }
+
   }
-  
+
 }

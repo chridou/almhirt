@@ -91,3 +91,27 @@ object MutatingDomainCommandHandler {
     }
 
 }
+
+object CommandRegistryAddersBuilder {
+  def apply[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](f: AddContext[TAR, TEvent] => AddContext[TAR, TEvent])(implicit tagAr: ClassTag[TAR], executionContext: ExecutionContext): Iterable[CommandHandlerRegistry => CommandHandlerRegistry] = {
+    val addContext = new AddContext[TAR, TEvent] {
+      private var collected =  Vector.empty[CommandHandlerRegistry => CommandHandlerRegistry]
+      def addCreatingFromSync[TCommand <: DomainCommand with CreatingDomainCommand](syncExecute: TCommand => AlmValidation[(TAR, IndexedSeq[TEvent])])(implicit tagC: ClassTag[TCommand]): this.type = {
+        collected = collected :+ CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[TCommand, TEvent, TAR](syncExecute, executionContext)
+        this
+      }
+      def addMutatingFromSync[TCommand <: DomainCommand](syncExecute: (TAR, TCommand) => AlmValidation[(TAR, IndexedSeq[TEvent])])(implicit tagC: ClassTag[TCommand]): this.type = {
+        collected = collected :+ MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[TCommand, TEvent, TAR](syncExecute, executionContext)
+        this
+      }
+      def result = collected
+    }
+    f(addContext).result
+  }
+
+  trait AddContext[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent] {
+    def addCreatingFromSync[TCommand <: DomainCommand with CreatingDomainCommand](syncExecute: TCommand => AlmValidation[(TAR, IndexedSeq[TEvent])])(implicit tagC: ClassTag[TCommand]): this.type
+    def addMutatingFromSync[TCommand <: DomainCommand](syncExecute: (TAR, TCommand) => AlmValidation[(TAR, IndexedSeq[TEvent])])(implicit tagC: ClassTag[TCommand]): this.type
+    def result: Iterable[CommandHandlerRegistry => CommandHandlerRegistry]
+  }
+}
