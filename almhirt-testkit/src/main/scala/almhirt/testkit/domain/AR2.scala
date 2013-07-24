@@ -61,19 +61,19 @@ object AR2 extends CanCreateAggragateRoot[AR2, AR2Event] {
     def addCommands(registry: CommandHandlerRegistry)(implicit theAlmhirt: Almhirt): CommandHandlerRegistry = {
       val executionContext = theAlmhirt.futuresExecutor
       val createAdder =
-        CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[CreateAnotherTestAr, AR2Event, AR2](
+        CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR2ComCreateAR2, AR2Event, AR2](
           command => AR2.fromScratch(command.targettedAggregateRootId).result,
           executionContext)
       val setCAdder =
-        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[SetC, AR2Event, AR2](
+        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR2ComSetC, AR2Event, AR2](
           (ar, command) => ar.setC(command.newC).result,
           executionContext)
       val unssetCAdder =
-        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[UnsetC, AR2Event, AR2](
+        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR2ComUnsetC, AR2Event, AR2](
           (ar, command) => ar.unsetC.result,
           executionContext)
       val deleteAdder =
-        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[DeleteAnotherTestAr, AR2Event, AR2](
+        MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR2ComDeleteAR2, AR2Event, AR2](
           (ar, command) => ar.delete.result,
           executionContext)
 
@@ -88,20 +88,20 @@ object AR2Lenses {
 
 trait AR2Command extends DomainCommand
 
-final case class CreateAnotherTestAr(header: DomainCommandHeader, newA: String) extends AR2Command with CreatingDomainCommand {
-  override def changeMetadata(newMetadata: Map[String, String]): CreateAnotherTestAr = copy(header = this.header.changeMetadata(newMetadata))
+final case class AR2ComCreateAR2(header: DomainCommandHeader, newA: String) extends AR2Command with CreatingDomainCommand {
+  override def changeMetadata(newMetadata: Map[String, String]): AR2ComCreateAR2 = copy(header = this.header.changeMetadata(newMetadata))
 }
 
-final case class SetC(header: DomainCommandHeader, newC: Int) extends AR2Command {
-  override def changeMetadata(newMetadata: Map[String, String]): SetC = copy(header = this.header.changeMetadata(newMetadata))
+final case class AR2ComSetC(header: DomainCommandHeader, newC: Int) extends AR2Command {
+  override def changeMetadata(newMetadata: Map[String, String]): AR2ComSetC = copy(header = this.header.changeMetadata(newMetadata))
 }
 
-final case class UnsetC(header: DomainCommandHeader) extends AR2Command {
-  override def changeMetadata(newMetadata: Map[String, String]): UnsetC = copy(header = this.header.changeMetadata(newMetadata))
+final case class AR2ComUnsetC(header: DomainCommandHeader) extends AR2Command {
+  override def changeMetadata(newMetadata: Map[String, String]): AR2ComUnsetC = copy(header = this.header.changeMetadata(newMetadata))
 }
 
-final case class DeleteAnotherTestAr(header: DomainCommandHeader) extends AR2Command {
-  override def changeMetadata(newMetadata: Map[String, String]): DeleteAnotherTestAr = copy(header = this.header.changeMetadata(newMetadata))
+final case class AR2ComDeleteAR2(header: DomainCommandHeader) extends AR2Command {
+  override def changeMetadata(newMetadata: Map[String, String]): AR2ComDeleteAR2 = copy(header = this.header.changeMetadata(newMetadata))
 }
 
 
