@@ -3,9 +3,12 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.3"
+  val buildVersion      = "0.5.4"
   val buildScalaVersion = "2.10.2"
 
+  val akkaVersion = "2.2.0"
+  val scalatestVersion = "2.0.M5b"
+  
   val buildSettings = Defaults.defaultSettings ++ Seq (
 	organization := buildOrganization,
     version      := buildVersion,
@@ -29,17 +32,17 @@ object Dependencies {
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0" % "compile"
 	
-	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % "2.2.0"
+	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion
 
-	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.0"
+	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.1"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.11" % "compile"
 
 	
-    lazy val scalatest = "org.scalatest" % "scalatest_2.10" % "2.0.M5b" % "test"	
-	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % "2.2.0" % "test"
+    lazy val scalatest = "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"	
+	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "test"
 
 }
 
@@ -74,6 +77,22 @@ trait CoreBuild {
   )
 }
 
+trait TestKitBuild {
+  import Dependencies._
+  import Resolvers._
+  def testKitProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += logback,
+	  libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "test",
+	  libraryDependencies += "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"
+  )
+}
 trait CoreExtRiftwarpBuild {
   import Dependencies._
   import Resolvers._
@@ -174,6 +193,7 @@ trait AppBuild {
 object AlmHirtBuild extends Build 
 	with CommonBuild 
 	with CoreBuild 
+	with TestKitBuild 
 	with CoreExtRiftwarpBuild 
 	with CoreExtSlickBuild 
 	with RiftWarpBuild 
@@ -183,22 +203,25 @@ object AlmHirtBuild extends Build
 	with AppBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, riftwarp, coreExtRiftwarp)
+	                        base = file(".")) aggregate(common, core, riftwarp, coreExtRiftwarp, slickExtensions)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile")
+								
+  lazy val testKit = testKitProject(	name = "almhirt-testkit",
+	                       		baseFile = file("almhirt-testkit")) dependsOn(common, core)
 
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
 	                       		baseFile = file("./ext/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
-/*								
+								
 
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/almhirt-ext-core-slick")) dependsOn(core, riftwarp % "test->test", coreExtRiftwarp % "test->test")
 
-*/
+
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
 /*
