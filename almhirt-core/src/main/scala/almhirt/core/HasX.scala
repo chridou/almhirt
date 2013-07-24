@@ -7,6 +7,11 @@ import com.typesafe.config.Config
 trait HasActorSystem {
   def actorSystem: akka.actor.ActorSystem
 }
+
+trait HasAlmhirt {
+  implicit def theAlmhirt: Almhirt
+}
+
 trait HasMessageBus {
   def messageBus: MessageBus
 }

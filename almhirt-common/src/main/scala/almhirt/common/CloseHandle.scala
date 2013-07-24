@@ -1,5 +1,6 @@
 package almhirt.common
 
-trait CloseHandle {
+trait CloseHandle{
+  final def apply() { close() }
   def close()
 }

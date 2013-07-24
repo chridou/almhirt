@@ -1,4 +1,4 @@
-package almhirt.testkit.domain
+package almhirt.testkit
 
 import scalaz._, Scalaz._
 import almhirt.common._

@@ -77,6 +77,22 @@ trait CoreBuild {
   )
 }
 
+trait CoreTestingBuild {
+  import Dependencies._
+  import Resolvers._
+  def coreTestingProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += logback,
+	  libraryDependencies += akka_testkit,
+	  libraryDependencies += scalatest
+  )
+}
 trait TestKitBuild {
   import Dependencies._
   import Resolvers._
@@ -89,8 +105,8 @@ trait TestKitBuild {
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
-	  libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "test",
-	  libraryDependencies += "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"
+	  libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "compile",
+	  libraryDependencies += "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "compile"
   )
 }
 trait CoreExtRiftwarpBuild {
@@ -193,6 +209,7 @@ trait AppBuild {
 object AlmHirtBuild extends Build 
 	with CommonBuild 
 	with CoreBuild 
+	with CoreTestingBuild 
 	with TestKitBuild 
 	with CoreExtRiftwarpBuild 
 	with CoreExtSlickBuild 
@@ -203,16 +220,19 @@ object AlmHirtBuild extends Build
 	with AppBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, riftwarp, coreExtRiftwarp, slickExtensions)
+	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, coreExtRiftwarp, slickExtensions)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile")
+
+  lazy val coreTesting = coreTestingProject(	name = "almhirt-testing-core",
+	                       		baseFile = file("./test/almhirt-testing-core")) dependsOn(core, testKit)
 								
   lazy val testKit = testKitProject(	name = "almhirt-testkit",
-	                       		baseFile = file("almhirt-testkit")) dependsOn(common, core)
+	                       		baseFile = file("almhirt-testkit")) dependsOn(core % "compile -> compile")
 
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
 	                       		baseFile = file("./ext/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)

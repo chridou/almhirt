@@ -1,10 +1,14 @@
-package almhirt.testkit.domain
+package almhirt.testkit
 
-import scalaz._, Scalaz._
+import scalaz._
+import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain._
 import almhirt.commanding._
+import almhirt.commanding.CommandHandlerRegistry.CommandHandlerRegistryOps
+import almhirt.core.Almhirt
+import almhirt.domain.DomainEventHeader.aggregateRootRef2DomainEventHeader
 
 trait AR2Event extends DomainEvent
 
