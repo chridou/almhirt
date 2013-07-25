@@ -59,7 +59,7 @@ object AR2 extends CanCreateAggragateRoot[AR2, AR2Event] {
   def fromScratch(id: java.util.UUID)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[AR2, AR2Event] =
     create(AR2Created(DomainEventHeader(id, 0L)))
 
-  object Handlers {
+  object Commanding {
     import almhirt.core.Almhirt
     import scala.concurrent.ExecutionContext
     def addCommands(registry: CommandHandlerRegistry)(implicit theAlmhirt: Almhirt): CommandHandlerRegistry = {
