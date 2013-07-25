@@ -34,3 +34,4 @@ class BinaryDomainEventLogDataAccess(override val eventlogtablename: String, ove
     inTryCatch { getDb() withSession { implicit session: Session => ddl.drop } }.leftMap(prob =>
       PersistenceProblem(s"Could not drop schema for BinaryDomainEventLog: ${prob.message}", cause = Some(prob)))
 }
+

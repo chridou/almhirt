@@ -66,7 +66,6 @@ object DomainEventLog {
     def unapply(what: CommittedDomainEvents): Option[(Problem, Seq[DomainEvent])] =
       if (what.committed.isEmpty && what.uncommitted.isDefined) Some((what.uncommitted.get._2,  what.uncommitted.get._1)) else None
   }
-  
 }
 
 trait DomainEventLog { actor: Actor =>
