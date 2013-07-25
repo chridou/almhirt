@@ -16,7 +16,7 @@ trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor =>
     case GetAllDomainEvents =>
       sender ! DomainEventsChunk(0, true, domainEventLog)
     case GetDomainEvent(eventId) =>
-      sender ! DomainEventsChunk(0, true, domainEventLog.filter(_.id == eventId))
+      sender ! QueriedDomainEvent(eventId, domainEventLog.find(_.id == eventId))
     case GetAllDomainEventsFor(aggId) =>
       sender ! DomainEventsChunk(0, true, domainEventLog.filter(_.aggId == aggId))
     case GetDomainEventsFrom(aggId, fromVersion) =>

@@ -107,6 +107,10 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     } catch {
       case exn: Exception => launderException(exn).failure
     }
+  def awaitResultOrEscalate(atMost: Duration): R = {
+    import almhirt.syntax.almvalidation._
+    awaitResult(atMost).resultOrEscalate
+  }
 }
 
 object AlmFuture {

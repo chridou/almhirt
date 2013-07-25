@@ -7,7 +7,8 @@ import akka.actor.Actor
 import almhirt.domain.AggregateRoot
 
 object DomainEventLog {
-  sealed trait FetchedDomainEventsPart {
+  trait DomainEventLogMessage
+  sealed trait FetchedDomainEventsPart extends DomainEventLogMessage {
     def index: Int
     def isLast: Boolean
   }
@@ -29,17 +30,22 @@ object DomainEventLog {
     override def isLast = true
   }
 
-  final case class CommitDomainEvents(events: IndexedSeq[DomainEvent])
-  case object GetAllDomainEvents
-  final case class GetDomainEvent(eventId: JUUID)
-  final case class GetAllDomainEventsFor(aggId: JUUID)
-  final case class GetDomainEventsFrom(aggId: JUUID, fromVersion: Long)
-  final case class GetDomainEventsTo(aggId: JUUID, toVersion: Long)
-  final case class GetDomainEventsUntil(aggId: JUUID, untilVersion: Long)
-  final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long)
-  final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long)
+  
+  final case class CommitDomainEvents(events: IndexedSeq[DomainEvent]) extends DomainEventLogMessage
+  case object GetAllDomainEvents extends DomainEventLogMessage
+  final case class GetDomainEvent(eventId: JUUID) extends DomainEventLogMessage
+  final case class GetAllDomainEventsFor(aggId: JUUID) extends DomainEventLogMessage
+  final case class GetDomainEventsFrom(aggId: JUUID, fromVersion: Long) extends DomainEventLogMessage
+  final case class GetDomainEventsTo(aggId: JUUID, toVersion: Long) extends DomainEventLogMessage
+  final case class GetDomainEventsUntil(aggId: JUUID, untilVersion: Long) extends DomainEventLogMessage
+  final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long) extends DomainEventLogMessage
+  final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long) extends DomainEventLogMessage
 
-  final case class CommittedDomainEvents(committed: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)])
+  final case class CommittedDomainEvents(committed: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)]) extends DomainEventLogMessage
+
+  sealed trait SingleDomainEventQueryResult extends DomainEventLogMessage
+  final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent])  extends SingleDomainEventQueryResult
+  final case class DomainEventQueryFailed(problem: Problem)  extends SingleDomainEventQueryResult
 
   object NothingCommitted {
     def unapply(what: CommittedDomainEvents): Boolean =
