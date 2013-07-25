@@ -19,7 +19,7 @@ object DomainEventLog {
      */
     index: Int,
     isLast: Boolean,
-    events: Iterable[DomainEvent]) extends FetchedDomainEventsPart
+    events: Seq[DomainEvent]) extends FetchedDomainEventsPart
 
   final case class DomainEventsChunkFailure(
     /**
@@ -31,7 +31,7 @@ object DomainEventLog {
   }
 
   
-  final case class CommitDomainEvents(events: IndexedSeq[DomainEvent]) extends DomainEventLogMessage
+  final case class CommitDomainEvents(events: Seq[DomainEvent]) extends DomainEventLogMessage
   case object GetAllDomainEvents extends DomainEventLogMessage
   final case class GetDomainEvent(eventId: JUUID) extends DomainEventLogMessage
   final case class GetAllDomainEventsFor(aggId: JUUID) extends DomainEventLogMessage
@@ -41,11 +41,11 @@ object DomainEventLog {
   final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long) extends DomainEventLogMessage
   final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long) extends DomainEventLogMessage
 
-  final case class CommittedDomainEvents(committed: Iterable[DomainEvent], uncommitted: Option[(Iterable[DomainEvent], Problem)]) extends DomainEventLogMessage
+  final case class CommittedDomainEvents(committed: Seq[DomainEvent], uncommitted: Option[(Seq[DomainEvent], Problem)]) extends DomainEventLogMessage
 
   sealed trait SingleDomainEventQueryResult extends DomainEventLogMessage
   final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent])  extends SingleDomainEventQueryResult
-  final case class DomainEventQueryFailed(problem: Problem)  extends SingleDomainEventQueryResult
+  final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem)  extends SingleDomainEventQueryResult
 
   object NothingCommitted {
     def unapply(what: CommittedDomainEvents): Boolean =
@@ -53,17 +53,17 @@ object DomainEventLog {
   }
   
   object AllDomainEventsSuccessfullyCommitted {
-    def unapply(what: CommittedDomainEvents): Option[Iterable[DomainEvent]] =
+    def unapply(what: CommittedDomainEvents): Option[Seq[DomainEvent]] =
       if (!what.committed.isEmpty && what.uncommitted.isEmpty) Some(what.committed) else None
   }
 
   object DomainEventsPartiallyCommitted {
-    def unapply(what: CommittedDomainEvents): Option[(Iterable[DomainEvent], Problem, Iterable[DomainEvent])] =
+    def unapply(what: CommittedDomainEvents): Option[(Seq[DomainEvent], Problem, Seq[DomainEvent])] =
       if (!what.committed.isEmpty && !what.uncommitted.isEmpty) Some((what.committed, what.uncommitted.get._2,  what.uncommitted.get._1)) else None
   }
 
   object CommitDomainEventsFailed {
-    def unapply(what: CommittedDomainEvents): Option[(Problem, Iterable[DomainEvent])] =
+    def unapply(what: CommittedDomainEvents): Option[(Problem, Seq[DomainEvent])] =
       if (what.committed.isEmpty && what.uncommitted.isDefined) Some((what.uncommitted.get._2,  what.uncommitted.get._1)) else None
   }
   

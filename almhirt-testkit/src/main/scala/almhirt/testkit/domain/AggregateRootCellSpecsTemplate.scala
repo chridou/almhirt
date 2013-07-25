@@ -28,9 +28,9 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
   // cell, eventlog
   def useCellWithEventLog[T](f: (ActorRef, ActorRef) => T): T = {
     val testId = nextTestId
-    val eventlog = this.createEventLog(testId)
+    val (eventlog, eventLogCleanUp) = createEventLog(testId)
     val cell = createCellForAR1(testId, managedAggregateRootId, eventlog)
-    val close = () => { system.stop(cell); system.stop(eventlog) }
+    val close = () => { system.stop(cell); system.stop(eventlog); eventLogCleanUp() }
     try {
       val res = f(cell, eventlog)
       close()

@@ -43,11 +43,11 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
 
   def useExecutorWithEventLog[T](f: (ActorRef, ActorRef, TestProbe) => T): T = {
     val testId = nextTestId
-    val eventlog = createEventLog(testId)
+    val (eventlog, eventLogCleanUp) = createEventLog(testId)
     val cellSource = createCellSource(testId, eventlog)
     val (repoRegistry, closeRepos) = createRepositoryRegistry(testId, cellSource)
     val (executor, publishToProbeprobe) = createCommandExecutor(testId, repoRegistry)
-    val close = () => { system.stop(executor); closeRepos(); system.stop(cellSource); system.stop(eventlog); system.stop(publishToProbeprobe.ref) }
+    val close = () => { system.stop(executor); closeRepos(); system.stop(cellSource); system.stop(eventlog); system.stop(publishToProbeprobe.ref); eventLogCleanUp() }
     try {
       val res = f(executor, eventlog, publishToProbeprobe)
       close()

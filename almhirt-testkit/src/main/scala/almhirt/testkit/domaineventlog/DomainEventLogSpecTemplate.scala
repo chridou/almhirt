@@ -22,14 +22,16 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
 
   def useEventLog[T](f: ActorRef => T): T = {
     val testId = nextTestId
-    val eventlog = createEventLog(testId)
+    val (eventlog, eventLogCleanUp) = createEventLog(testId)
     try {
       val res = f(eventlog)
       system.stop(eventlog)
+      eventLogCleanUp()
       res
     } catch {
       case exn: Exception =>
         system.stop(eventlog)
+        eventLogCleanUp()
         throw exn
     }
   }
@@ -112,7 +114,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
           DomainEventsChunk(0, true, events3)))
       }
     }
-    
+
     it("""should accept a "CommitDomainEvents" with many events for one aggregate root which when queried for are returned in the order they were committed""") {
       useEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
@@ -161,7 +163,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFrom(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, Iterable(events.last)))
+        res should equal(DomainEventsChunk(0, true, Seq(events.last)))
       }
     }
 
@@ -174,7 +176,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFrom(arId, events.last.aggVersion + 1L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, Iterable.empty))
+        res should equal(DomainEventsChunk(0, true, Seq.empty))
       }
     }
 
@@ -240,7 +242,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsUntil(arId, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, Iterable.empty))
+        res should equal(DomainEventsChunk(0, true, Seq.empty))
       }
     }
 
@@ -257,7 +259,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(0L)
       }
     }
-    
+
     it("""should when queried with "GetDomainEventsUntil(x = maxVersion)" return all events except the last""") {
       useEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
@@ -268,7 +270,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             res <- (eventlog ? GetDomainEventsUntil(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
         res should equal(DomainEventsChunk(0, true, events.init))
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion-1)
+        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion - 1)
       }
     }
 
@@ -339,7 +341,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(10L)
       }
     }
-    
+
     it("""should when queried with "GetDomainEventsFromTo(0L,  x > maxVersion)" return all events""") {
       useEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
@@ -347,7 +349,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, events.last.aggVersion+1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
+            res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
         res should equal(DomainEventsChunk(0, true, events))
       }
@@ -408,7 +410,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         res should equal(DomainEventsChunk(0, true, IndexedSeq.empty))
       }
     }
-    
+
     // ---
     it("""should when queried with "GetDomainEventsFromUntil(0L, 0L)" return no event""") {
       useEventLog { eventlog =>
@@ -434,7 +436,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
           } yield res).awaitResultOrEscalate(defaultDuration)
         res should equal(DomainEventsChunk(0, true, events.init))
         res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(0L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion-1L)
+        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion - 1L)
       }
     }
 
@@ -452,7 +454,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(9L)
       }
     }
-    
+
     it("""should when queried with "GetDomainEventsFromUntil(0L,  x > maxVersion)" return all events""") {
       useEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
@@ -460,7 +462,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, events.last.aggVersion+1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
+            res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
         res should equal(DomainEventsChunk(0, true, events))
       }
@@ -477,7 +479,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
           } yield res).awaitResultOrEscalate(defaultDuration)
         res should equal(DomainEventsChunk(0, true, events.drop(10).init))
         res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion-1L)
+        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion - 1L)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(x < maxVersion,  y < maxVersion)" return all events from including x to the one excluding y""") {
@@ -503,7 +505,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, Iterable.empty))
+        res should equal(DomainEventsChunk(0, true, Seq.empty))
       }
     }
 
@@ -532,7 +534,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         res should equal(QueriedDomainEvent(events(10).id, Some(events(10))))
       }
     }
-    
+
     it("""should when queried with "GetDomainEvent(nonexisting id)" reply with QueriedDomainEvent(None)""") {
       useEventLog { eventlog =>
         val arId = theAlmhirt.getUuid

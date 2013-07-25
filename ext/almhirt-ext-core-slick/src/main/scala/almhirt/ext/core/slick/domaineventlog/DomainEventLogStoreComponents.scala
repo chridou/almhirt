@@ -1,4 +1,4 @@
-package almhirt.ext.core.slick.eventlogs
+package almhirt.ext.core.slick.domaineventlog
 
 import java.util.{ UUID => JUUID }
 import org.joda.time.DateTime
@@ -12,15 +12,17 @@ trait DomainEventLogStoreComponent[T <: DomainEventLogRow] {
   def insertEventRow(eventLogRow: T): AlmValidation[T]
   def insertManyEventRows(eventLogRows: Seq[T]): AlmValidation[Unit]
   def getEventRowById(id: JUUID): AlmValidation[T]
-  def getAllEventRows: AlmValidation[Iterable[T]]
-  def getAllEventRowsFor(aggId: JUUID): AlmValidation[Iterable[T]]
-  def getAllEventRowsForFrom(aggId: JUUID, fromVersion: Long): AlmValidation[Iterable[T]]
-  def getAllEventRowsForTo(aggId: JUUID, toVersion: Long): AlmValidation[Iterable[T]]
-  def getAllEventRowsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmValidation[Iterable[T]]
+  def getAllEventRows: AlmValidation[Seq[T]]
+  def getAllEventRowsFor(aggId: JUUID): AlmValidation[Seq[T]]
+  def getAllEventRowsForFrom(aggId: JUUID, fromVersion: Long): AlmValidation[Seq[T]]
+  def getAllEventRowsForTo(aggId: JUUID, toVersion: Long): AlmValidation[Seq[T]]
+  def getAllEventRowsForUntil(aggId: JUUID, untilVersion: Long): AlmValidation[Seq[T]]
+  def getAllEventRowsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmValidation[Seq[T]]
+  def getAllEventRowsForFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long): AlmValidation[Seq[T]]
   def countEventRows: AlmValidation[Int]
 }
 
-trait TextDomainEventLogStoreComponent extends SlickTypeMappers with DomainEventLogStoreComponent[TextDomainEventLogRow] { this: Profile =>
+trait TextDomainEventLogStoreComponent extends DomainEventLogStoreComponent[TextDomainEventLogRow] { this: Profile =>
   import profile.simple._
 
   val eventlogtablename: String
@@ -29,12 +31,10 @@ trait TextDomainEventLogStoreComponent extends SlickTypeMappers with DomainEvent
     def id = column[JUUID]("ID")
     def aggId = column[JUUID]("AGG_ID", O.NotNull)
     def aggVersion = column[Long]("AGG_VERSION", O.NotNull)
-    def timestamp = column[DateTime]("TIMESTAMP", O.NotNull)
-    def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
     def payload = column[String]("PAYLOAD", O.NotNull)
 
-    def * = id ~ aggId ~ aggVersion ~ timestamp ~ eventtype ~ channel ~ payload <> (TextDomainEventLogRow, TextDomainEventLogRow.unapply _)
+    def * = id ~ aggId ~ aggVersion ~ channel ~ payload <> (TextDomainEventLogRow, TextDomainEventLogRow.unapply _)
 
     def aggIdIdx = index(s"idx_${eventlogtablename}_agg_id", aggId)
     def aggIdVersionIdx = index(s"idx_${eventlogtablename}_agg_id_version", (aggId, aggVersion))
@@ -86,15 +86,21 @@ trait TextDomainEventLogStoreComponent extends SlickTypeMappers with DomainEvent
   override def getAllEventRowsForTo(aggId: JUUID, toVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
     inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion <= toVersion).list } }
 
+  override def getAllEventRowsForUntil(aggId: JUUID, untilVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion < untilVersion).list } }
+  
   override def getAllEventRowsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
     inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list } }
 
+  override def getAllEventRowsForFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion >= fromVersion && x.aggVersion < untilVersion).list } }
+  
   override def countEventRows: AlmValidation[Int] =
     inTryCatchM { getDb() withSession { implicit session: Session => (for { row <- TextDomainEventLogRows } yield row.length).first } }("Could not determine count for TextDomainEventLogRows")
 
 }
 
-trait BinaryDomainEventLogStoreComponent extends SlickTypeMappers with DomainEventLogStoreComponent[BinaryDomainEventLogRow] { this: Profile =>
+trait BinaryDomainEventLogStoreComponent extends DomainEventLogStoreComponent[BinaryDomainEventLogRow] { this: Profile =>
   import profile.simple._
 
   val eventlogtablename: String
@@ -103,12 +109,10 @@ trait BinaryDomainEventLogStoreComponent extends SlickTypeMappers with DomainEve
     def id = column[JUUID]("ID")
     def aggId = column[JUUID]("AGG_ID", O.NotNull)
     def aggVersion = column[Long]("AGG_VERSION", O.NotNull)
-    def timestamp = column[DateTime]("TIMESTAMP", O.NotNull)
-    def eventtype = column[String]("EVENTTYPE", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
     def payload = column[Array[Byte]]("PAYLOAD", O.NotNull)
 
-    def * = id ~ aggId ~ aggVersion ~ timestamp ~ eventtype ~ channel ~ payload <> (BinaryDomainEventLogRow, BinaryDomainEventLogRow.unapply _)
+    def * = id ~ aggId ~ aggVersion ~ channel ~ payload <> (BinaryDomainEventLogRow, BinaryDomainEventLogRow.unapply _)
 
     def aggIdIdx = index("idx_agg_id", aggId)
     def aggIdVersionIdx = index("idx_agg_id_version", (aggId, aggVersion))
@@ -156,9 +160,15 @@ trait BinaryDomainEventLogStoreComponent extends SlickTypeMappers with DomainEve
   override def getAllEventRowsForTo(aggId: JUUID, toVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
     inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion <= toVersion).list } }
 
+  override def getAllEventRowsForUntil(aggId: JUUID, untilVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion < untilVersion).list } }
+  
   override def getAllEventRowsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
     inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list } }
 
+  override def getAllEventRowsForFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
+    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion >= fromVersion && x.aggVersion < untilVersion).list } }
+  
   override def countEventRows: AlmValidation[Int] =
     inTryCatchM { getDb() withSession { implicit session: Session => (for { row <- BinaryDomainEventLogRows } yield row.length).first } }("Could not determine count for TextDomainEventLogRows")
 
