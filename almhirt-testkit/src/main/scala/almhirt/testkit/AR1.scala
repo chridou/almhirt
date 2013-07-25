@@ -20,7 +20,7 @@ case class AR1BChanged(header: DomainEventHeader, newB: Option[String]) extends 
   override def changeMetadata(newMetaData: Map[String, String]): AR1BChanged = copy(header = this.header.changeMetadata(newMetaData))
 }
 
-case class AR1Deleted(header: DomainEventHeader) extends AR1Event with CreatesNewAggregateRootEvent {
+case class AR1Deleted(header: DomainEventHeader) extends AR1Event {
   override def changeMetadata(newMetaData: Map[String, String]): AR1Deleted = copy(header = this.header.changeMetadata(newMetaData))
 }
 
@@ -88,6 +88,169 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
           executionContext)
 
       registry nextAdder createTestArAdder nextAdder changeAAdder nextAdder changeBAdder nextAdder deleteTestArAdder
+    }
+  }
+
+  object Serialization {
+    import riftwarp._
+    import riftwarp.std.kit._
+    import riftwarp.std.WarpObjectLookUp
+    import almhirt.ext.core.riftwarp.serialization._
+
+    implicit object AR1WarpPackaging extends WarpPacker[AR1] with RegisterableWarpPacker with RegisterableWarpUnpacker[AR1] {
+      val warpDescriptor = WarpDescriptor("AR1")
+      val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1]) :: Nil
+
+      override def pack(what: AR1)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        this.warpDescriptor ~>
+          With("ref", what.ref, AggregateRootRefWarpPackaging) ~>
+          P("theA", what.theA) ~>
+          POpt("theB", what.theB) ~>
+          P("isDeleted", what.isDeleted)
+
+      override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[AR1] =
+        withFastLookUp(from) { lu =>
+          for {
+            ref <- lu.getWith("ref", AggregateRootRefWarpPackaging)
+            theA <- lu.getAs[String]("theA")
+            theB <- lu.tryGetAs[String]("theB")
+            isDeleted <- lu.getAs[Boolean]("isDeleted")
+          } yield AR1(
+            ref,
+            theA,
+            theB,
+            isDeleted)
+        }
+    }
+
+    implicit object AR1CreatedWarpPackaging extends DomainEventWarpPackagingTemplate[AR1Created] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1Created].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1Created]) :: Nil
+      override def addEventParams(what: AR1Created, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into ~>
+          P("newA", what.newA)
+
+      override def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1Created] =
+        for {
+          newA <- from.getAs[String]("newA")
+        } yield AR1Created(header, newA)
+    }
+
+    implicit object AR1AChangedWarpPackaging extends DomainEventWarpPackagingTemplate[AR1AChanged] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1AChanged].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1AChanged]) :: Nil
+      override def addEventParams(what: AR1AChanged, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into ~>
+          P("newA", what.newA)
+
+      override def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1AChanged] =
+        for {
+          newA <- from.getAs[String]("newA")
+        } yield AR1AChanged(header, newA)
+    }
+
+    implicit object AR1BChangedWarpPackaging extends DomainEventWarpPackagingTemplate[AR1BChanged] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1BChanged].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1BChanged]) :: Nil
+      override def addEventParams(what: AR1BChanged, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into ~>
+          POpt("newB", what.newB)
+
+      override def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1BChanged] =
+        for {
+          newB <- from.tryGetAs[String]("newB")
+        } yield AR1BChanged(header, newB)
+    }
+
+    implicit object AR1DeletedWarpPackaging extends DomainEventWarpPackagingTemplate[AR1Deleted] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1Deleted].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1Deleted]) :: Nil
+      override def addEventParams(what: AR1Deleted, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into.success
+
+      override def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1Deleted] =
+        AR1Deleted(header).success
+    }
+
+    implicit object AR1UnhandableEventWarpPackaging extends DomainEventWarpPackagingTemplate[AR1UnhandableEvent] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1UnhandableEvent].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1UnhandableEvent]) :: Nil
+      override def addEventParams(what: AR1UnhandableEvent, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into.success
+
+      override def extractEventParams(from: WarpObjectLookUp, header: DomainEventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1UnhandableEvent] =
+        AR1UnhandableEvent(header).success
+    }
+
+    implicit object AR1ComCreateAR1WarpPackaging extends DomainCommandWarpPackagingTemplate[AR1ComCreateAR1] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1ComCreateAR1].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1ComCreateAR1]) :: Nil
+      override def addCommandParams(what: AR1ComCreateAR1, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into ~>
+          P("newA", what.newA)
+
+      override def extractCommandParams(from: WarpObjectLookUp, header: DomainCommandHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1ComCreateAR1] =
+        for {
+          newA <- from.getAs[String]("newA")
+        } yield AR1ComCreateAR1(header, newA)
+    }
+
+    implicit object AR1ComChangeAWarpPackaging extends DomainCommandWarpPackagingTemplate[AR1ComChangeA] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1ComChangeA].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1ComChangeA]) :: Nil
+      override def addCommandParams(what: AR1ComChangeA, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into ~>
+          P("newA", what.newA)
+
+      override def extractCommandParams(from: WarpObjectLookUp, header: DomainCommandHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1ComChangeA] =
+        for {
+          newA <- from.getAs[String]("newA")
+        } yield AR1ComChangeA(header, newA)
+    }
+
+    implicit object AR1ComChangeBWarpPackaging extends DomainCommandWarpPackagingTemplate[AR1ComChangeB] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1ComChangeB].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1ComChangeB]) :: Nil
+      override def addCommandParams(what: AR1ComChangeB, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into ~>
+          POpt("newB", what.newB)
+
+      override def extractCommandParams(from: WarpObjectLookUp, header: DomainCommandHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1ComChangeB] =
+        for {
+          newB <- from.tryGetAs[String]("newB")
+        } yield AR1ComChangeB(header, newB)
+    }
+
+    implicit object AR1ComDeleteAR1WarpPackaging extends DomainCommandWarpPackagingTemplate[AR1ComDeleteAR1] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1ComDeleteAR1].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1ComDeleteAR1]) :: Nil
+      override def addCommandParams(what: AR1ComDeleteAR1, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into.success
+
+      override def extractCommandParams(from: WarpObjectLookUp, header: DomainCommandHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1ComDeleteAR1] =
+        AR1ComDeleteAR1(header).success
+    }
+
+    implicit object AR1ComUnregisteredCommandWarpPackaging extends DomainCommandWarpPackagingTemplate[AR1ComUnregisteredCommand] with RegisterableWarpPacker {
+      override val warpDescriptor = WarpDescriptor(classOf[AR1ComUnregisteredCommand].getSimpleName())
+      override val alternativeWarpDescriptors = WarpDescriptor(classOf[AR1ComUnregisteredCommand]) :: Nil
+      override def addCommandParams(what: AR1ComUnregisteredCommand, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+        into.success
+
+      override def extractCommandParams(from: WarpObjectLookUp, header: DomainCommandHeader)(implicit unpackers: WarpUnpackers): AlmValidation[AR1ComUnregisteredCommand] =
+        AR1ComUnregisteredCommand(header).success
+    }
+
+    implicit class AR1SerAddToRiftWarp(self: RiftWarp) {
+      def addAr1Serializers: RiftWarp = {
+        List(AR1WarpPackaging,
+          AR1CreatedWarpPackaging, AR1AChangedWarpPackaging, AR1BChangedWarpPackaging, AR1DeletedWarpPackaging, AR1UnhandableEventWarpPackaging,
+          AR1ComCreateAR1WarpPackaging, AR1ComChangeAWarpPackaging, AR1ComChangeBWarpPackaging, AR1ComDeleteAR1WarpPackaging, AR1ComUnregisteredCommandWarpPackaging).foreach { packaging =>
+            self.packers.add(packaging)
+            self.unpackers.add(packaging)
+          }
+        self
+      }
     }
   }
 }
