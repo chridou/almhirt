@@ -5,9 +5,7 @@ import akka.testkit.TestKit
 import akka.actor.ActorSystem
 import akka.testkit.TestDuration
 
-abstract class AlmhirtTestKit(theActorSystem: ActorSystem) extends TestKit(theActorSystem) with HasAlmhirt {
-   private val currentTestId = new java.util.concurrent.atomic.AtomicInteger(1)
-   def nextTestId = currentTestId.getAndIncrement()
+abstract class AlmhirtTestKit(theActorSystem: ActorSystem) extends TestKit(theActorSystem) with CreatesUniqueTestIds with HasAlmhirt {
    
-   def defaultDuration: scala.concurrent.duration.FiniteDuration
+   def defaultDuration: scala.concurrent.duration.FiniteDuration = theAlmhirt.durations.shortDuration
 }

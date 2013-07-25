@@ -8,8 +8,8 @@ trait CreatesEventLog {
   def createEventLog(specId: Int): ActorRef
 }
 
-trait CreatesInMemoryEventLog extends CreatesEventLog {self: HasAlmhirt =>
+trait CreatesInMemoryEventLog extends CreatesEventLog {self: akka.testkit.TestKit =>
   def createEventLog(specId: Int): ActorRef =
-    theAlmhirt.actorSystem.actorOf(Props(new InMemoryDomainEventLog with Actor { override def receive: Actor.Receive = receiveDomainEventLogMsg }), "EventLog_" + specId.toString)
+    system.actorOf(Props(new InMemoryDomainEventLog with Actor { override def receive: Actor.Receive = receiveDomainEventLogMsg }), "EventLog_" + specId.toString)
 }
 

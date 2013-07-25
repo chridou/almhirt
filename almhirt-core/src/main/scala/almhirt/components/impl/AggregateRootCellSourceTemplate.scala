@@ -1,8 +1,8 @@
-package almhirt.domain.caching.impl
+package almhirt.components.impl
 
 import java.util.{ UUID => JUUID }
 import akka.actor._
-import almhirt.domain.caching._
+import almhirt.components._
 
 trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor with ActorLogging =>
   import AggregateRootCellSource._

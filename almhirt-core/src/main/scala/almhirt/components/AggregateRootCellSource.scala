@@ -1,14 +1,16 @@
-package almhirt.domain.caching
+package almhirt.components
 
 import scala.language.existentials
 import java.util.{ UUID => JUUID }
 import akka.actor._
 import almhirt.common._
 import scala.concurrent.ExecutionContext
+import java.util.{UUID => JUUID}
+import almhirt.domain.AggregateRoot
 
 object AggregateRootCellSource {
   sealed trait AggregateRootCellCacheMessage
-  final case class GetCell(arId: JUUID, arType: Class[_]) extends AggregateRootCellCacheMessage
+  final case class GetCell(arId: JUUID, arType: Class[_ <: AggregateRoot[_,_]]) extends AggregateRootCellCacheMessage
 
   final case class AggregateRootCellSourceResult(arId: JUUID, cellHandle: CellHandle) extends AggregateRootCellCacheMessage
   final case class DoesNotExistNotification(arId: JUUID) extends AggregateRootCellCacheMessage   
@@ -25,6 +27,8 @@ object AggregateRootCellSource {
     /**
      * Execute the function f with the contained cell and the release the cell. 
      * DO NOT RETURN A FUTURE! THE CELL MIGHT BE RELEASED BEFORE THE FUTURES CONTENT GETS EXECUTED!
+     * 
+     * If you want to go async, which should be the preferred way, use "onceWithCell"(the one with the same name like this one except without the "Sync")
      * 
      * A Loan-Pattern
      */

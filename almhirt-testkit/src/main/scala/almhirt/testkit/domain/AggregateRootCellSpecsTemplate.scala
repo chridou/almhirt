@@ -12,13 +12,17 @@ import scala.concurrent._
 import almhirt.almvalidation.kit._
 import almhirt.core.HasAlmhirt
 
-abstract class CellSourceSpecs(theActorSystem: ActorSystem) extends AlmhirtTestKit(theActorSystem) with HasAlmhirt with FunSpec with ShouldMatchers { self: CreatesEventLog =>
+abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
+  extends AlmhirtTestKit(theActorSystem)
+  with HasAlmhirt
+  with FunSpec
+  with ShouldMatchers { self: CreatesEventLog =>
   import almhirt.domain.DomainMessages._
   import almhirt.domain.AggregateRootCell._
   import almhirt.domaineventlog.DomainEventLog._
-  
+
   lazy val managedAggregateRootId = theAlmhirt.getUuid
-  
+
   def createCellForAR1(testId: Int, managedAggregateRootId: java.util.UUID, eventLog: ActorRef): ActorRef
 
   // cell, eventlog

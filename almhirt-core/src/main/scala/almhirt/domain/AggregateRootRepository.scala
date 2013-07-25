@@ -117,7 +117,7 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
 }
 
 trait AggregateRootRepositoryWithCellSourceActor extends AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepositoryTemplate =>
-  import caching.AggregateRootCellSource._
+  import almhirt.components.AggregateRootCellSource._
 
   type ArCellCache = ActorRef
   type GetResult = CellHandle
@@ -125,7 +125,7 @@ trait AggregateRootRepositoryWithCellSourceActor extends AggregateRootRepository
   protected def cacheAskMaxDuration: scala.concurrent.duration.FiniteDuration
 
   override final protected def getCell(aggregateRootId: JUUID, from: ArCellCache): AlmFuture[GetResult] =
-    (from ? GetCell(aggregateRootId, arTag.runtimeClass))(cacheAskMaxDuration).successfulAlmFuture[AggregateRootCellSourceResult].map { _.cellHandle }
+    (from ? GetCell(aggregateRootId, arTag.runtimeClass.asInstanceOf[Class[AggregateRoot[_,_]]]))(cacheAskMaxDuration).successfulAlmFuture[AggregateRootCellSourceResult].map { _.cellHandle }
 
   override final protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => AlmFuture[T]): AlmFuture[T] =
     result.onceWithCell(f)

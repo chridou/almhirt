@@ -1,7 +1,8 @@
-package almhirt.domain.caching.impl
+package almhirt.components.impl
 
 import java.util.{ UUID => JUUID }
 import akka.actor._
+import java.util.{UUID => JUUID}
 
 class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID, () => Unit) => Props])
   extends AggregateRootCellSourceTemplate with Actor with ActorLogging {
