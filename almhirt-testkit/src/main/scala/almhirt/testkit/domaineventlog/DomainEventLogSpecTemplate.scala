@@ -217,7 +217,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should when queried with "GetDomainEventsTo(0 < x < maxVersion)" return all events up to version x""") {
+    it("""should when queried with "GetDomainEventsTo(0 < x < maxVersion)" return all events up to including version x""") {
       useEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
