@@ -232,7 +232,7 @@ object AlmHirtBuild extends Build
 	                       		baseFile = file("./test/almhirt-testing-core")) dependsOn(core, testKit)
 								
   lazy val testKit = testKitProject(	name = "almhirt-testkit",
-	                       		baseFile = file("almhirt-testkit")) dependsOn(core % "compile -> compile")
+	                       		baseFile = file("almhirt-testkit")) dependsOn(core % "compile -> compile", riftwarp % "compile -> compile", coreExtRiftwarp % "compile -> compile")
 
   lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
 	                       		baseFile = file("./ext/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
