@@ -8,6 +8,24 @@ import almhirt.domain.AggregateRoot
 
 object DomainEventLog {
   trait DomainEventLogMessage
+
+  
+  final case class CommitDomainEvents(events: Seq[DomainEvent]) extends DomainEventLogMessage
+  case object GetAllDomainEvents extends DomainEventLogMessage
+  final case class GetDomainEvent(eventId: JUUID) extends DomainEventLogMessage
+  final case class GetAllDomainEventsFor(aggId: JUUID) extends DomainEventLogMessage
+  final case class GetDomainEventsFrom(aggId: JUUID, fromVersion: Long) extends DomainEventLogMessage
+  final case class GetDomainEventsTo(aggId: JUUID, toVersion: Long) extends DomainEventLogMessage
+  final case class GetDomainEventsUntil(aggId: JUUID, untilVersion: Long) extends DomainEventLogMessage
+  final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long) extends DomainEventLogMessage
+  final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long) extends DomainEventLogMessage
+
+  final case class CommittedDomainEvents(committed: Seq[DomainEvent], uncommitted: Option[(Seq[DomainEvent], Problem)]) extends DomainEventLogMessage
+
+  sealed trait SingleDomainEventQueryResult extends DomainEventLogMessage
+  final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent])  extends SingleDomainEventQueryResult
+  final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem)  extends SingleDomainEventQueryResult
+
   sealed trait FetchedDomainEventsPart extends DomainEventLogMessage {
     def index: Int
     def isLast: Boolean
@@ -29,24 +47,7 @@ object DomainEventLog {
     problem: Problem) extends FetchedDomainEventsPart {
     override def isLast = true
   }
-
   
-  final case class CommitDomainEvents(events: Seq[DomainEvent]) extends DomainEventLogMessage
-  case object GetAllDomainEvents extends DomainEventLogMessage
-  final case class GetDomainEvent(eventId: JUUID) extends DomainEventLogMessage
-  final case class GetAllDomainEventsFor(aggId: JUUID) extends DomainEventLogMessage
-  final case class GetDomainEventsFrom(aggId: JUUID, fromVersion: Long) extends DomainEventLogMessage
-  final case class GetDomainEventsTo(aggId: JUUID, toVersion: Long) extends DomainEventLogMessage
-  final case class GetDomainEventsUntil(aggId: JUUID, untilVersion: Long) extends DomainEventLogMessage
-  final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long) extends DomainEventLogMessage
-  final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long) extends DomainEventLogMessage
-
-  final case class CommittedDomainEvents(committed: Seq[DomainEvent], uncommitted: Option[(Seq[DomainEvent], Problem)]) extends DomainEventLogMessage
-
-  sealed trait SingleDomainEventQueryResult extends DomainEventLogMessage
-  final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent])  extends SingleDomainEventQueryResult
-  final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem)  extends SingleDomainEventQueryResult
-
   object NothingCommitted {
     def unapply(what: CommittedDomainEvents): Boolean =
       what.committed.isEmpty && what.uncommitted.isEmpty

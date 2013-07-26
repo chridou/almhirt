@@ -241,16 +241,14 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
         AR1ComUnregisteredCommand(header).success
     }
 
-    implicit class AR1SerAddToRiftWarp(self: RiftWarp) {
-      def addAr1Serializers: RiftWarp = {
-        List(AR1WarpPackaging,
-          AR1CreatedWarpPackaging, AR1AChangedWarpPackaging, AR1BChangedWarpPackaging, AR1DeletedWarpPackaging, AR1UnhandableEventWarpPackaging,
-          AR1ComCreateAR1WarpPackaging, AR1ComChangeAWarpPackaging, AR1ComChangeBWarpPackaging, AR1ComDeleteAR1WarpPackaging, AR1ComUnregisteredCommandWarpPackaging).foreach { packaging =>
-            self.packers.add(packaging)
-            self.unpackers.add(packaging)
-          }
-        self
-      }
+    def addAr1Serializers(to: RiftWarp): RiftWarp = {
+      List(AR1WarpPackaging,
+        AR1CreatedWarpPackaging, AR1AChangedWarpPackaging, AR1BChangedWarpPackaging, AR1DeletedWarpPackaging, AR1UnhandableEventWarpPackaging,
+        AR1ComCreateAR1WarpPackaging, AR1ComChangeAWarpPackaging, AR1ComChangeBWarpPackaging, AR1ComDeleteAR1WarpPackaging, AR1ComUnregisteredCommandWarpPackaging).foreach { packaging =>
+          to.packers.add(packaging)
+          to.unpackers.add(packaging)
+        }
+      to
     }
   }
 }

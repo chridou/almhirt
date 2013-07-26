@@ -16,7 +16,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
   with FunSpec
-  with ShouldMatchers { self: CreatesEventLog =>
+  with ShouldMatchers { self: CreatesDomainEventLog =>
   import almhirt.domain.DomainMessages._
   import almhirt.domain.AggregateRootCell._
   import almhirt.domaineventlog.DomainEventLog._
@@ -26,9 +26,9 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
   def createCellForAR1(testId: Int, managedAggregateRootId: java.util.UUID, eventLog: ActorRef): ActorRef
 
   // cell, eventlog
-  def useCellWithEventLog[T](f: (ActorRef, ActorRef) => T): T = {
+  def useCellWithDomainEventLog[T](f: (ActorRef, ActorRef) => T): T = {
     val testId = nextTestId
-    val (eventlog, eventLogCleanUp) = createEventLog(testId)
+    val (eventlog, eventLogCleanUp) = createDomainEventLog(testId)
     val cell = createCellForAR1(testId, managedAggregateRootId, eventlog)
     val close = () => { system.stop(cell); system.stop(eventlog); eventLogCleanUp() }
     try {
@@ -42,7 +42,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
     }
   }
 
-  // cell, a spy on the eventlog
+  // cell, a spy on the domaineventlog
   def useCellWithSpy[T](f: (ActorRef, TestProbe) => T): T = {
     val testId = nextTestId
     val eventlog = TestProbe()
@@ -61,14 +61,14 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
 
   describe("An AggregateRootCell interacting with an eventlog") {
     it("should be creatable") {
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           true should be(true)
       }
     }
 
     it("should answer with a AggregateRootNotFound when the aggregate root does not exist") {
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           val resF = (cell ? GetManagedAggregateRoot)(defaultDuration).mapTo[DomainMessage]
           val res = Await.result(resF, defaultDuration)
@@ -82,7 +82,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           state1 <- AR1.fromScratch(managedAggregateRootId, "a")
           state2 <- state1.changeB(Some("b"))
         } yield state2).result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           Await.result((eventlog ? CommitDomainEvents(events))(defaultDuration), defaultDuration)
           val resF = (cell ? GetManagedAggregateRoot)(defaultDuration)
@@ -98,7 +98,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           state2 <- state1.changeB(Some("b"))
           state3 <- state2.delete
         } yield state3).result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           Await.result((eventlog ? CommitDomainEvents(events))(defaultDuration), defaultDuration)
           val resF = (cell ? GetManagedAggregateRoot)(defaultDuration)
@@ -113,7 +113,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           state1 <- AR1.fromScratch(managedAggregateRootId, "a")
           state2 <- state1.changeB(Some("b"))
         } yield state2).result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultDuration)
           Await.result(updF, defaultDuration) should equal(AggregateRootUpdated(ar))
@@ -132,7 +132,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           endState <- initialState.changeA("aaa")
         } yield endState).result.forceResult
 
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           Await.result((eventlog ? CommitDomainEvents(events.take(2)))(defaultDuration), defaultDuration)
           val updF = (cell ? UpdateAggregateRoot(ar, Vector(events.last)))(defaultDuration)
@@ -154,7 +154,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           endState <- initialAr.changeA("aaa")
         } yield endState).result.forceResult
 
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           val upd1F = (cell ? UpdateAggregateRoot(initialAr, initialEvents))(defaultDuration)
           val upd2F = (cell ? UpdateAggregateRoot(resultAr, resultEvents))(defaultDuration)
@@ -171,7 +171,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           state1 <- AR1.fromScratch(managedAggregateRootId, "a")
           state2 <- state1.changeB(Some("b"))
         } yield state2).result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           val updF = (cell ? UpdateAggregateRoot(ar, Vector(events.last)))(defaultDuration)
           Await.result(updF, defaultDuration).isInstanceOf[AggregateRootUpdateFailed] should be(true)
@@ -184,7 +184,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           state1 <- AR1.fromScratch(managedAggregateRootId, "a")
           state2 <- state1.changeB(Some("b"))
         } yield state2).result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           (cell ? UpdateAggregateRoot(ar, events))(defaultDuration)
           val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultDuration)
@@ -199,7 +199,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           state1 <- AR1.fromScratch(theAlmhirt.getUuid, "a")
           state2 <- state1.changeB(Some("b"))
         } yield state2).result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultDuration)
           val res = Await.result(updF, defaultDuration)
@@ -213,7 +213,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           state1 <- AR1.fromScratch(managedAggregateRootId, "a")
           state2 <- state1.changeB(Some("b"))
         } yield state2).result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           val eventsInit = events.init
           val lastEvent = events.last.asInstanceOf[AR1BChanged]
@@ -227,7 +227,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
 
     it("should fail on trying to create an aggragate root where the first events version is not 0L iwth an AggregateRootUpdateFailed") {
       val (ar, events) = AR1.fromScratch(managedAggregateRootId, "a").result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           val eventsInit = events.init
           val lastEvent = events.last.asInstanceOf[AR1Created]
@@ -245,7 +245,7 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
           state1 <- AR1.fromScratch(managedAggregateRootId, "a")
           state2 <- state1.changeB(Some("b"))
         } yield state2).result.forceResult
-      useCellWithEventLog {
+      useCellWithDomainEventLog {
         case (cell, eventlog) =>
           val eventsInit = events.init
           val lastEvent = events.last.asInstanceOf[AR1BChanged]

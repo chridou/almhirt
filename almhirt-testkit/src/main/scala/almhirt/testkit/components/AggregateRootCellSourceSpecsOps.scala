@@ -22,10 +22,10 @@ trait AggregateRootCesllSourceSpecsOps { self: AlmhirtTestKit with CreatesCellSo
   }
 }
 
-trait AggregateRootCellSourceSpecsOpsWithEventLog { self: AlmhirtTestKit with CreatesCellSource with CreatesEventLog =>
+trait AggregateRootCellSourceSpecsOpsWithEventLog { self: AlmhirtTestKit with CreatesCellSource with CreatesDomainEventLog =>
   def useCellSourceWithEventLog[T](f: (ActorRef, ActorRef) => T): T = {
     val testId = nextTestId
-    val (eventlog, eventLogCleanUp) = createEventLog(testId)
+    val (eventlog, eventLogCleanUp) = createDomainEventLog(testId)
     val cellSource = createCellSource(testId, eventlog)
     val close = () => { this.system.stop(cellSource); this.system.stop(eventlog); eventLogCleanUp()}
     try {

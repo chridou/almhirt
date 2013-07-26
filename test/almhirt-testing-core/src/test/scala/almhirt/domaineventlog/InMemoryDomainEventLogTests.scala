@@ -7,4 +7,4 @@ import almhirt.testkit.domaineventlog.DomainEventLogSpecTemplate
 class InMemoryDomainEventLogTests
   extends DomainEventLogSpecTemplate(ActorSystem("InMemoryDomainEventLogTests", TestConfigs.default))
   with AlmhirtFromAkkaTestKitWithoutConfiguration
-  with CreatesInMemoryEventLog
+  with CreatesInMemoryDomainEventLog

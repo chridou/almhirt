@@ -23,7 +23,7 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
   with HasAlmhirt
   with CreatesCellSourceForTestAggregateRoots
   with FunSpec
-  with ShouldMatchers { self: CreatesEventLog =>
+  with ShouldMatchers { self: CreatesDomainEventLog =>
 
   def createRepositoryRegistry(testId: Int, cellSource: ActorRef): (AggregateRootRepositoryRegistry, () => Unit) = {
     val repo1 = this.system.actorOf(Props(new AggregateRootRepositoryImpl[AR1, AR1Event](theAlmhirt, cellSource, defaultDuration, defaultDuration)), "AR1Repo_" + testId.toString)
@@ -43,7 +43,7 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
 
   def useExecutorWithEventLog[T](f: (ActorRef, ActorRef, TestProbe) => T): T = {
     val testId = nextTestId
-    val (eventlog, eventLogCleanUp) = createEventLog(testId)
+    val (eventlog, eventLogCleanUp) = createDomainEventLog(testId)
     val cellSource = createCellSource(testId, eventlog)
     val (repoRegistry, closeRepos) = createRepositoryRegistry(testId, cellSource)
     val (executor, publishToProbeprobe) = createCommandExecutor(testId, repoRegistry)

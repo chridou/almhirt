@@ -73,6 +73,16 @@ object SlickTextDomainEventLog {
       res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, serializer, channel)
     } yield res
 
+  def props(
+    theAlmhirt: Almhirt,
+    configSection: Config,
+    storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
+    serializer: DomainEventStringSerializer): AlmValidation[Props] =
+    for {
+      channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
+      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, serializer, channel)
+    } yield res
+    
   def create(theAlmhirt: Almhirt, configPath: String, serializer: DomainEventStringSerializer): AlmValidation[SlickCreationParams] =
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
@@ -85,5 +95,27 @@ object SlickTextDomainEventLog {
       val initAction = () => if (createSchema) storeComponent.create else ().success
       val closeAction = () => if (dropSchema) storeComponent.drop else ().success
     }
+    
+  def create(theAlmhirt: Almhirt, configPath: String, serializer: DomainEventStringSerializer, createAndDrop: Boolean): AlmValidation[SlickCreationParams] =
+    for {
+      configSection <- theAlmhirt.config.v[Config](configPath)
+      storeComponent <- TextDomainEventLogDataAccess(configSection)
+      theProps <- props(theAlmhirt, configPath, storeComponent, serializer)
+    } yield new SlickCreationParams {
+      val props = theProps
+      val initAction = () => if (createAndDrop) storeComponent.create else ().success
+      val closeAction = () => if (createAndDrop) storeComponent.drop else ().success
+    }
+
+  def create(theAlmhirt: Almhirt, configSection: Config, serializer: DomainEventStringSerializer, createAndDrop: Boolean): AlmValidation[SlickCreationParams] =
+    for {
+      storeComponent <- TextDomainEventLogDataAccess(configSection)
+      theProps <- props(theAlmhirt, configSection, storeComponent, serializer)
+    } yield new SlickCreationParams {
+      val props = theProps
+      val initAction = () => if (createAndDrop) storeComponent.create else ().success
+      val closeAction = () => if (createAndDrop) storeComponent.drop else ().success
+    }
+    
 }
 

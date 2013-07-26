@@ -7,7 +7,7 @@ import almhirt.testkit.domain.AggregateRootCellSpecsTemplate
 
 class AggregateRootCellSpecs extends AggregateRootCellSpecsTemplate(ActorSystem("CellSourceImplSpecs", TestConfigs.default))
   with AlmhirtFromAkkaTestKitWithoutConfiguration
-  with CreatesInMemoryEventLog {
+  with CreatesInMemoryDomainEventLog {
   override val defaultDuration = scala.concurrent.duration.FiniteDuration(1, "s")
   override def createCellForAR1(testId: Int, managedAggregateRootId: java.util.UUID, eventLog: ActorRef): ActorRef = 
   	this.system.actorOf(Props(new AggregateRootCellImpl[AR1, AR1Event](

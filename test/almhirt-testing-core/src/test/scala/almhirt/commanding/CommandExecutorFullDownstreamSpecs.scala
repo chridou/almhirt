@@ -7,6 +7,6 @@ import almhirt.testkit.commanding.CommandExecutorFullDownstreamSpecsTemplate
 class CommandExecutorFullDownstreamSpecs extends CommandExecutorFullDownstreamSpecsTemplate(ActorSystem("CommandExecutorFullDownstreamSpecs", TestConfigs.default))
   with AlmhirtFromAkkaTestKitWithoutConfiguration
   with CreatesCellSourceForTestAggregateRoots
-  with CreatesInMemoryEventLog {
+  with CreatesInMemoryDomainEventLog {
 
 }

@@ -8,6 +8,6 @@ class AggregateRootCellSourceSpecs
   extends AggregateRootCellSourceSpecsTemplate(ActorSystem("AggregateRootCellSourceSpecs", TestConfigs.default))
   with AlmhirtFromAkkaTestKitWithoutConfiguration
   with CreatesCellSourceForTestAggregateRoots
-  with CreatesInMemoryEventLog {
+  with CreatesInMemoryDomainEventLog {
 
 }

@@ -16,21 +16,21 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
   with FunSpec
-  with ShouldMatchers { self: CreatesEventLog =>
+  with ShouldMatchers { self: CreatesDomainEventLog =>
 
   implicit def execContext = theAlmhirt.futuresExecutor
 
   def useEventLog[T](f: ActorRef => T): T = {
     val testId = nextTestId
-    val (eventlog, eventLogCleanUp) = createEventLog(testId)
+    val (domaineventlog, eventLogCleanUp) = createDomainEventLog(testId)
     try {
-      val res = f(eventlog)
-      system.stop(eventlog)
+      val res = f(domaineventlog)
+      system.stop(domaineventlog)
       eventLogCleanUp()
       res
     } catch {
       case exn: Exception =>
-        system.stop(eventlog)
+        system.stop(domaineventlog)
         eventLogCleanUp()
         throw exn
     }

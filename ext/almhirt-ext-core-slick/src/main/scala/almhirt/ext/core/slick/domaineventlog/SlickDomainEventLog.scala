@@ -8,6 +8,7 @@ import almhirt.domain._
 import almhirt.domaineventlog.DomainEventLog
 import almhirt.messaging.MessagePublisher
 import scala.concurrent.ExecutionContext
+import almhirt.problem.Problem
 
 trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLogging =>
   import DomainEventLog._
@@ -78,7 +79,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
       }.onComplete(
         problem => {
           problem match {
-            case p @ NotFoundProblem => pinnedSender ! QueriedDomainEvent(eventId, None)
+            case Problem(_, NotFoundProblem,_) => pinnedSender ! QueriedDomainEvent(eventId, None)
             case p => pinnedSender ! DomainEventQueryFailed(eventId, p)
           }
         },
