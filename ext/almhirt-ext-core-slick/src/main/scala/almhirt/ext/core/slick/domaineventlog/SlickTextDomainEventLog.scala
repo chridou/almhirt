@@ -11,17 +11,20 @@ class SlickTextDomainEventLog(
   override val messagePublisher: MessagePublisher,
   override val storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
   override val syncIoExecutionContext: ExecutionContext,
-  serializer: DomainEventStringSerializer)
+  serializer: DomainEventStringSerializer,
+  serializationChannel: String)
   extends SlickDomainEventLog with Actor with ActorLogging {
   type TRow = TextDomainEventLogRow
 
-  def domainEventToRow(domainEvent: DomainEvent): AlmValidation[TextDomainEventLogRow] = {
+  def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[TextDomainEventLogRow] = {
     for {
-      serialized <- serializer.serialize(domainEvent, Map.empty)
-    } yield TextDomainEventLogRow(domainEvent.id, domainEvent.aggId, domainEvent.aggVersion, serializer.channel, serialized._1)
+      serialized <- serializer.serialize(channel)(domainEvent, Map.empty)
+    } yield TextDomainEventLogRow(domainEvent.id, domainEvent.aggId, domainEvent.aggVersion, channel, serialized._1)
   }
 
   def rowToDomainEvent(row: TextDomainEventLogRow): AlmValidation[DomainEvent] =
     serializer.deserialize(row.channel)(row.payload, Map.empty)
+    
+  def receive: Receive = receiveDomainEventLogMsg(serializationChannel)
 }
 

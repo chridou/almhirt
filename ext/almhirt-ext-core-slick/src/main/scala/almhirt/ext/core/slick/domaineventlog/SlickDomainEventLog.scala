@@ -20,14 +20,14 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
   implicit def syncIoExecutionContext: ExecutionContext
 
-  def domainEventToRow(domainEvent: DomainEvent): AlmValidation[TRow]
+  def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[TRow]
   def rowToDomainEvent(row: TRow): AlmValidation[DomainEvent]
 
-  private def domainEventsToRows(domainEvents: Seq[DomainEvent]): AlmValidation[Seq[TRow]] =
+  private def domainEventsToRows(domainEvents: Seq[DomainEvent], channel: String): AlmValidation[Seq[TRow]] =
     domainEvents.foldLeft(Seq.empty[TRow].successAlm) { (accV, cur) =>
       accV match {
         case scalaz.Success(acc) =>
-          domainEventToRow(cur).map(acc :+ _)
+          domainEventToRow(cur, channel).map(acc :+ _)
         case scalaz.Failure(problem) =>
           problem.failure
       }
@@ -43,19 +43,21 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
       }
     }
 
-  final protected def receiveDomainEventLogMsg: Receive = {
+  final protected def receiveDomainEventLogMsg(serializationChannel: String): Receive = {
     case CommitDomainEvents(events) =>
+      val pinnedSender = sender
       AlmFuture {
         for {
-          rows <- domainEventsToRows(events)
+          rows <- domainEventsToRows(events, serializationChannel)
           storeResult <- storeComponent.insertManyEventRows(rows)
         } yield storeResult
       }.onComplete(
         problem => {
-          sender ! CommittedDomainEvents(Seq.empty, Some((events, problem)))
+          pinnedSender ! CommittedDomainEvents(Seq.empty, Some((events, problem)))
         },
-        succ => sender ! CommittedDomainEvents(events, None))
+        succ => pinnedSender ! CommittedDomainEvents(events, None))
     case GetAllDomainEvents =>
+      val pinnedSender = sender
       AlmFuture {
         for {
           rows <- storeComponent.getAllEventRows
@@ -63,10 +65,11 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         } yield domainEvents
       }.onComplete(
         problem => {
-          sender ! DomainEventsChunkFailure(0, problem)
+          pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
     case GetDomainEvent(eventId) =>
+      val pinnedSender = sender
       AlmFuture {
         for {
           row <- storeComponent.getEventRowById(eventId)
@@ -75,12 +78,13 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
       }.onComplete(
         problem => {
           problem match {
-            case p @ NotFoundProblem => sender ! QueriedDomainEvent(eventId, None)
-            case p => sender ! DomainEventQueryFailed(eventId, p)
+            case p @ NotFoundProblem => pinnedSender ! QueriedDomainEvent(eventId, None)
+            case p => pinnedSender ! DomainEventQueryFailed(eventId, p)
           }
         },
-        event => sender ! QueriedDomainEvent(eventId, Some(event)))
+        event => pinnedSender ! QueriedDomainEvent(eventId, Some(event)))
     case GetAllDomainEventsFor(aggId) =>
+      val pinnedSender = sender
       AlmFuture {
         for {
           rows <- storeComponent.getAllEventRowsFor(aggId)
@@ -88,10 +92,11 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         } yield domainEvents
       }.onComplete(
         problem => {
-          sender ! DomainEventsChunkFailure(0, problem)
+          pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
     case GetDomainEventsFrom(aggId, fromVersion) =>
+      val pinnedSender = sender
       AlmFuture {
         for {
           rows <- storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
@@ -99,10 +104,11 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         } yield domainEvents
       }.onComplete(
         problem => {
-          sender ! DomainEventsChunkFailure(0, problem)
+          pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
     case GetDomainEventsTo(aggId, toVersion) =>
+      val pinnedSender = sender
       AlmFuture {
         for {
           rows <- storeComponent.getAllEventRowsForTo(aggId, toVersion)
@@ -110,10 +116,11 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         } yield domainEvents
       }.onComplete(
         problem => {
-          sender ! DomainEventsChunkFailure(0, problem)
+          pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
     case GetDomainEventsUntil(aggId, untilVersion) =>
+      val pinnedSender = sender
       AlmFuture {
         for {
           rows <- storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
@@ -121,10 +128,11 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         } yield domainEvents
       }.onComplete(
         problem => {
-          sender ! DomainEventsChunkFailure(0, problem)
+          pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
+      val pinnedSender = sender
       AlmFuture {
         for {
           rows <- storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
@@ -132,10 +140,11 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         } yield domainEvents
       }.onComplete(
         problem => {
-          sender ! DomainEventsChunkFailure(0, problem)
+          pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
+      val pinnedSender = sender
       AlmFuture {
         for {
           rows <- storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
@@ -143,8 +152,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         } yield domainEvents
       }.onComplete(
         problem => {
-          sender ! DomainEventsChunkFailure(0, problem)
+          pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+    case almhirt.serialization.UseSerializationChannel(newChannel) =>
+      context.become(receiveDomainEventLogMsg(newChannel))
   }
 }
