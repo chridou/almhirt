@@ -39,6 +39,7 @@ object Dependencies {
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.11" % "compile"
+	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.2"
 
 	
     lazy val scalatest = "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"	
@@ -55,6 +56,7 @@ trait CommonBuild {
   	  resolvers += sonatypeReleases,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
+	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest
   )

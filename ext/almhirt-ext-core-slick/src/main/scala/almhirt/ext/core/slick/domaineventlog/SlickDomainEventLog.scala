@@ -43,7 +43,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
       }
     }
 
-  final protected def receiveDomainEventLogMsg(serializationChannel: String): Receive = {
+  final protected def currentState(serializationChannel: String): Receive = {
     case CommitDomainEvents(events) =>
       val pinnedSender = sender
       AlmFuture {
@@ -156,6 +156,6 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
     case almhirt.serialization.UseSerializationChannel(newChannel) =>
-      context.become(receiveDomainEventLogMsg(newChannel))
+      context.become(currentState(newChannel))
   }
 }

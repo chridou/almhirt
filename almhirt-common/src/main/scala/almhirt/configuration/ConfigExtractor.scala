@@ -39,6 +39,13 @@ trait ConfigStringExtractor extends ConfigExtractor[String] {
     ConfigHelper.tryGetFromConfigSafely(path, config.getString)
 }
 
+trait ConfigBooleanExtractor extends ConfigExtractor[Boolean] {
+  def getValue(config: Config, path: String): AlmValidation[Boolean] =
+    ConfigHelper.getFromConfigSafely(path, config.getBoolean)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[Boolean]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getBoolean)
+}
+
 trait ConfigIntExtractor extends ConfigExtractor[Int] {
   def getValue(config: Config, path: String): AlmValidation[Int] =
     ConfigHelper.getFromConfigSafely(path, config.getInt)

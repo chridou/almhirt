@@ -16,7 +16,7 @@ class SlickBinaryDomainEventLog(
   serializer: DomainEventBinarySerializer,
   serializationChannel: String)
   extends SlickDomainEventLog with Actor with ActorLogging {
-  type TRow = TextDomainEventLogRow
+  type TRow = BinaryDomainEventLogRow
 
   def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[BinaryDomainEventLogRow] = {
     for {
@@ -27,6 +27,8 @@ class SlickBinaryDomainEventLog(
   def rowToDomainEvent(row: BinaryDomainEventLogRow): AlmValidation[DomainEvent] =
     serializer.deserialize(row.channel)(row.payload, Map.empty)
     
-  def receive: Receive = receiveDomainEventLogMsg(serializationChannel)
+  protected override def receiveDomainEventLogMsg: Receive = currentState(serializationChannel) 
+    
+  def receive: Receive = receiveDomainEventLogMsg
     
 }

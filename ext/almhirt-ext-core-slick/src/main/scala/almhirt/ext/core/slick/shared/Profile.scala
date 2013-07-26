@@ -4,20 +4,19 @@ import scala.slick.driver.ExtendedProfile
 import scala.slick.driver.H2Driver
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.almvalidation.constraints._
+import almhirt.configuration._
 import scala.slick.session.Database
-import almhirt.ext.core.slick.eventlogs._
-import almhirt.ext.core.slick.snapshots.TextSnapshotsDataAccess
 import scala.slick.driver._
+import com.typesafe.config.Config
 
 trait Profile {
   val profile: ExtendedProfile
-  def getDb: Unit => Database
+  def db: Database
 }
 
 final case class ProfileSettings(driver: String, slickDriver: ExtendedProfile)
 
-object Profiles {
+object ProfileSettings {
   val profiles: Map[String, ProfileSettings] =
     Map(
       "h2" -> ProfileSettings("org.h2.Driver", H2Driver),
@@ -29,25 +28,11 @@ object Profiles {
       "mysql" -> ProfileSettings("com.mysql.jdbc.Driver", MySQLDriver),
       "sqlite" -> ProfileSettings("org.sqlite.JDBC", SQLiteDriver))
 
-  def createTextEventLogAccess(aProfile: String, anEventlogtablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextEventLogDataAccess] =
+  def fromConfig(config: Config): AlmValidation[ProfileSettings] =
     for {
-      profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
-      eventlogtablename <- anEventlogtablename.notEmptyOrWhitespace
+      profileName <- config.value[String]("profile").flatMap(_.notEmptyOrWhitespace)
       profile <- (profiles.lift >! profileName)
-    } yield new TextEventLogDataAccess(eventlogtablename, Unit => createDataBase(profile.driver), profile.slickDriver)
+    } yield profile
 
-  def createTextDomainEventLogAccess(aProfile: String, anEventlogtablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextDomainEventLogDataAccess] =
-    for {
-      profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
-      eventlogtablename <- anEventlogtablename.notEmptyOrWhitespace
-      profile <- (profiles.lift >! profileName)
-    } yield new TextDomainEventLogDataAccess(eventlogtablename, Unit => createDataBase(profile.driver), profile.slickDriver)
-
-  def createTextSnapshotsAccess(aProfile: String, aSnapshotsTablename: String, createDataBase: String => Database)(implicit hasExecutionContext: HasExecutionContext): AlmValidation[TextSnapshotsDataAccess] =
-    for {
-      profileName <- aProfile.toLowerCase().notEmptyOrWhitespace
-      snapshotstablename <- aSnapshotsTablename.notEmptyOrWhitespace
-      profile <- (profiles.lift >! profileName)
-    } yield new TextSnapshotsDataAccess(snapshotstablename, Unit => createDataBase(profile.driver), profile.slickDriver)
     
 }

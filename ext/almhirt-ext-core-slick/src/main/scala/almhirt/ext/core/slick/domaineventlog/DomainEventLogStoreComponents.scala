@@ -52,21 +52,21 @@ trait TextDomainEventLogStoreComponent extends DomainEventLogStoreComponent[Text
 
   override def insertEventRow(eventLogRow: TextDomainEventLogRow): AlmValidation[TextDomainEventLogRow] =
     computeSafely {
-      getDb() withSession { implicit session: Session =>
+      db withSession { implicit session: Session =>
         TextDomainEventLogRows.insertSafe(eventLogRow)
       }
     }
 
   override def insertManyEventRows(eventLogRows: Seq[TextDomainEventLogRow]): AlmValidation[Unit] =
     inTryCatch {
-      getDb() withSession { implicit session: Session =>
+      db withSession { implicit session: Session =>
         TextDomainEventLogRows.insertAll(eventLogRows: _*)
       }
     }
 
   override def getEventRowById(id: JUUID): AlmValidation[TextDomainEventLogRow] =
     computeSafely {
-      getDb() withSession { implicit session: Session =>
+      db withSession { implicit session: Session =>
         Query(TextDomainEventLogRows).filter(_.id === id.bind).list.headOption match {
           case Some(row) => row.success
           case None => NotFoundProblem(s"""No domain event with id "${id.toString}" found.""").failure
@@ -74,29 +74,29 @@ trait TextDomainEventLogStoreComponent extends DomainEventLogStoreComponent[Text
       }
     }
 
-  override def getAllEventRows: AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).list } }
+  override def getAllEventRows: AlmValidation[Seq[TextDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(TextDomainEventLogRows).list } }
 
-  override def getAllEventRowsFor(aggId: JUUID): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind).list } }
+  override def getAllEventRowsFor(aggId: JUUID): AlmValidation[Seq[TextDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind).list } }
 
-  override def getAllEventRowsForFrom(aggId: JUUID, fromVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion >= fromVersion).list } }
+  override def getAllEventRowsForFrom(aggId: JUUID, fromVersion: Long): AlmValidation[Seq[TextDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion >= fromVersion).list } }
 
-  override def getAllEventRowsForTo(aggId: JUUID, toVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion <= toVersion).list } }
+  override def getAllEventRowsForTo(aggId: JUUID, toVersion: Long): AlmValidation[Seq[TextDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion <= toVersion).list } }
 
-  override def getAllEventRowsForUntil(aggId: JUUID, untilVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion < untilVersion).list } }
+  override def getAllEventRowsForUntil(aggId: JUUID, untilVersion: Long): AlmValidation[Seq[TextDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion < untilVersion).list } }
   
-  override def getAllEventRowsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list } }
+  override def getAllEventRowsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmValidation[Seq[TextDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list } }
 
-  override def getAllEventRowsForFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long): AlmValidation[Iterable[TextDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion >= fromVersion && x.aggVersion < untilVersion).list } }
+  override def getAllEventRowsForFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long): AlmValidation[Seq[TextDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(TextDomainEventLogRows).filter(x => x.aggId === aggId.bind && x.aggVersion >= fromVersion && x.aggVersion < untilVersion).list } }
   
   override def countEventRows: AlmValidation[Int] =
-    inTryCatchM { getDb() withSession { implicit session: Session => (for { row <- TextDomainEventLogRows } yield row.length).first } }("Could not determine count for TextDomainEventLogRows")
+    inTryCatchM { db withSession { implicit session: Session => (for { row <- TextDomainEventLogRows } yield row.length).first } }("Could not determine count for TextDomainEventLogRows")
 
 }
 
@@ -129,18 +129,18 @@ trait BinaryDomainEventLogStoreComponent extends DomainEventLogStoreComponent[Bi
   }
 
   override def insertEventRow(eventLogRow: BinaryDomainEventLogRow): AlmValidation[BinaryDomainEventLogRow] =
-    computeSafely { getDb() withSession { implicit session: Session => BinaryDomainEventLogRows.insertSafe(eventLogRow) } }
+    computeSafely { db withSession { implicit session: Session => BinaryDomainEventLogRows.insertSafe(eventLogRow) } }
 
   override def insertManyEventRows(eventLogRows: Seq[BinaryDomainEventLogRow]): AlmValidation[Unit] =
     inTryCatch {
-      getDb() withSession { implicit session: Session =>
+      db withSession { implicit session: Session =>
         BinaryDomainEventLogRows.insertAll(eventLogRows: _*)
       }
     }
 
   override def getEventRowById(id: JUUID): AlmValidation[BinaryDomainEventLogRow] =
     computeSafely {
-      getDb() withSession { implicit session: Session =>
+      db withSession { implicit session: Session =>
         Query(BinaryDomainEventLogRows).filter(_.id === id.bind).list.headOption match {
           case Some(row) => row.success
           case None => NotFoundProblem(s"""No domain event with id "${id.toString}" found.""").failure
@@ -148,28 +148,28 @@ trait BinaryDomainEventLogStoreComponent extends DomainEventLogStoreComponent[Bi
       }
     }
 
-  override def getAllEventRows: AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).list } }
+  override def getAllEventRows: AlmValidation[Seq[BinaryDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(BinaryDomainEventLogRows).list } }
 
-  override def getAllEventRowsFor(aggId: JUUID): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind).list } }
+  override def getAllEventRowsFor(aggId: JUUID): AlmValidation[Seq[BinaryDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind).list } }
 
-  override def getAllEventRowsForFrom(aggId: JUUID, fromVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion >= fromVersion).list } }
+  override def getAllEventRowsForFrom(aggId: JUUID, fromVersion: Long): AlmValidation[Seq[BinaryDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion >= fromVersion).list } }
 
-  override def getAllEventRowsForTo(aggId: JUUID, toVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion <= toVersion).list } }
+  override def getAllEventRowsForTo(aggId: JUUID, toVersion: Long): AlmValidation[Seq[BinaryDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion <= toVersion).list } }
 
-  override def getAllEventRowsForUntil(aggId: JUUID, untilVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion < untilVersion).list } }
+  override def getAllEventRowsForUntil(aggId: JUUID, untilVersion: Long): AlmValidation[Seq[BinaryDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion < untilVersion).list } }
   
-  override def getAllEventRowsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list } }
+  override def getAllEventRowsForFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long): AlmValidation[Seq[BinaryDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion >= fromVersion && x.aggVersion <= toVersion).list } }
 
-  override def getAllEventRowsForFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long): AlmValidation[Iterable[BinaryDomainEventLogRow]] =
-    inTryCatch { getDb() withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion >= fromVersion && x.aggVersion < untilVersion).list } }
+  override def getAllEventRowsForFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long): AlmValidation[Seq[BinaryDomainEventLogRow]] =
+    inTryCatch { db withSession { implicit session: Session => Query(BinaryDomainEventLogRows).filter(x => x.aggId === aggId.bind &&  x.aggVersion >= fromVersion && x.aggVersion < untilVersion).list } }
   
   override def countEventRows: AlmValidation[Int] =
-    inTryCatchM { getDb() withSession { implicit session: Session => (for { row <- BinaryDomainEventLogRows } yield row.length).first } }("Could not determine count for TextDomainEventLogRows")
+    inTryCatchM { db withSession { implicit session: Session => (for { row <- BinaryDomainEventLogRows } yield row.length).first } }("Could not determine count for TextDomainEventLogRows")
 
 }
