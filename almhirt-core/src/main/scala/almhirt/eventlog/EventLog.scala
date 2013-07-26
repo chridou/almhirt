@@ -2,6 +2,7 @@ package almhirt.eventlog
 
 import java.util.{ UUID => JUUID }
 import org.joda.time.LocalDateTime
+import akka.actor._
 import almhirt.common._
 
 object EventLog {
@@ -44,5 +45,8 @@ object EventLog {
     problem: Problem) extends FetchedEventsPart {
     override def isLast = true
   }
+}
 
+trait EventLog { actor: Actor =>
+  protected def receiveEventLogMsg: Receive
 }
