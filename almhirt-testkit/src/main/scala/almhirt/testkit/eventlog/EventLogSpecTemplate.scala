@@ -56,6 +56,8 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
     def nextEvent(n: Int) = createFuncs(n%3)(n)
     (for(x <- 1 to n) yield nextEvent(x)).toVector
   }
+  
+  lazy val defaultEvents12 = createEvents(100, refTimestamp, 12)
 
   protected def waitSomeTime() {
     sleepMillisAfterWrite.foreach(t => Thread.sleep(t))
@@ -94,7 +96,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventsChunk].awaitResultOrEscalate(defaultDuration)
-        res.events should have size(events.size)
+        res.events.size should equal(events.size)
       }
     }
     it("""should accept many events and return the same timestamps as the logged events when queried with GetAllEvents""") {
@@ -147,19 +149,29 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
     
     // GetEventsFrom
 
+    it("""should return the correct number of events when queried with GetEventsFrom(x < minTimestamp)""") {
+      useEventLog { eventlog =>
+      	val events = defaultEvents12
+        events foreach(eventlog ! LogEvent(_))
+        waitSomeTime()
+        val res = (eventlog ? GetEventsFrom(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventsChunk].awaitResultOrEscalate(defaultDuration)
+        res.events.size should equal(events.size)
+      }
+    }
+
     it("""should return the all events when queried with GetEventsFrom(x < minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
         res should equal(EventsChunk(0, true, events))
       }
     }
-
+    
     it("""should return the correct events when queried with GetEventsFrom(x == minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(refTimestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -169,7 +181,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
     
     it("""should return the correct events when queried with GetEventsFrom(x > minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(refTimestamp.plusHours(24)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -179,7 +191,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
  
     it("""should return the last event when queried with GetEventsFrom(x == maxTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(events.last.timestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -189,7 +201,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should return no event when queried with GetEventsFrom(x > maxTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(events.last.timestamp.plusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -201,7 +213,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should return the all events when queried with GetEventsAfter(x < minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -211,7 +223,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should return the all events except the first when queried with GetEventsAfter(x == minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(refTimestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -221,7 +233,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
     
     it("""should return the correct events when queried with GetEventsAfter(x > minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(refTimestamp.plusHours(24)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -231,7 +243,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
  
     it("""should return no event when queried with GetEventsAfter(x == maxTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(events.last.timestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -241,7 +253,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should return no event when queried with GetEventsAfter(x > maxTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(events.last.timestamp.plusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -253,7 +265,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should no event when queried with GetEventsTo(x < minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -263,7 +275,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should return the first event when queried with GetEventsTo(x == minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(refTimestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -273,7 +285,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
     
     it("""should return the correct events when queried with GetEventsTo(x > minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(refTimestamp.plusHours(24)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -283,7 +295,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
  
     it("""should return all events when queried with GetEventsTo(x == maxTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(events.last.timestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -293,7 +305,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should return all events when queried with GetEventsTo(x > maxTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(events.last.timestamp.plusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -305,7 +317,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should no event when queried with GetEventsUntil(x < minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -315,7 +327,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should return no event when queried with GetEventsUntil(x == minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(refTimestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -325,7 +337,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
     
     it("""should return the correct events when queried with GetEventsUntil(x > minTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(refTimestamp.plusHours(24)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -335,7 +347,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
  
     it("""should return all events except the last when queried with GetEventsUntil(x == maxTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(events.last.timestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
@@ -345,7 +357,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     it("""should return all events when queried with GetEventsUntil(x > maxTimestamp)""") {
       useEventLog { eventlog =>
-      	val events = createEvents(100, refTimestamp, 12)
+      	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(events.last.timestamp.plusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
