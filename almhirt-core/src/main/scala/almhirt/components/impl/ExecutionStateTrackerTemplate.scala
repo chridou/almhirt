@@ -26,7 +26,7 @@ object ExecutionTrackerTemplate {
   }
 
   trait PersistentStoreWrapper {
-    def store(entries: Seq[TrackingEntry])(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit]
+    def store(entry: TrackingEntry)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit]
     def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[TrackingEntry]]
     def getAllYoungerThan(age: org.joda.time.Duration)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Seq[TrackingEntry]]
     def removeAllOlderThan(age: org.joda.time.Duration)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit]
@@ -34,9 +34,9 @@ object ExecutionTrackerTemplate {
 
   object PersistentStoreWrapper {
     sealed trait PersistentStoreWrapperMessage
-    sealed trait StoreEntriesResponse
-    final case class StoreEntries(entries: Seq[TrackingEntry]) extends PersistentStoreWrapperMessage
-    final case class StoreEntriesState(problem: Option[Problem]) extends StoreEntriesResponse
+    sealed trait StoreEntryResponse
+    final case class StoreEntry(entry: TrackingEntry) extends PersistentStoreWrapperMessage
+    final case class StoreEntryState(problem: Option[Problem]) extends StoreEntryResponse
     sealed trait GetEntryResponse extends PersistentStoreWrapperMessage
     final case class GetEntry(trackId: String) extends PersistentStoreWrapperMessage
     final case class GetEntryResult(entry: Option[TrackingEntry]) extends GetEntryResponse
@@ -56,11 +56,11 @@ object ExecutionTrackerTemplate {
 
     def apply(actor: ActorRef)(implicit executionContext: ExecutionContext): PersistentStoreWrapper = {
       new PersistentStoreWrapper {
-        def store(entries: Seq[TrackingEntry])(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit] =
-          (actor ? StoreEntries(entries))(atMost).successfulAlmFuture[StoreEntriesResponse].mapV(res =>
+        def store(entry: TrackingEntry)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit] =
+          (actor ? StoreEntry(entry))(atMost).successfulAlmFuture[StoreEntryResponse].mapV(res =>
             res match {
-              case StoreEntriesState(None) => ().success
-              case StoreEntriesState(Some(problem)) => problem.failure
+              case StoreEntryState(None) => ().success
+              case StoreEntryState(Some(problem)) => problem.failure
             })
 
         def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[TrackingEntry]] =
@@ -100,44 +100,46 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   def maxAgeInPersistenStore: Option[org.joda.time.Duration]
   def maxStartupAge: Option[org.joda.time.Duration]
 
-  protected case class FirstLevelState(tracked: Map[String, TrackingEntry], subscriptionsForFinished: Map[String, Map[ActorRef, LocalDateTime]]) {
-    def addSubscriber(trackId: String, maxWaitTime: FiniteDuration, subscriber: ActorRef): FirstLevelState = {
-      val subscription = (subscriber, canCreateUuidsAndDateTimes.getUtcTimestamp.plusMillis(maxWaitTime.toMillis.toInt))
-      subscriptionsForFinished.get(trackId) match {
-        case None =>
-          FirstLevelState(this.tracked, this.subscriptionsForFinished + (trackId -> Map(subscription)))
-        case Some(subscriptionForTrackId) =>
-          FirstLevelState(this.tracked, this.subscriptionsForFinished + (trackId -> (subscriptionForTrackId + (subscription))))
-      }
-    }
-
-    def getSubscriptions(trackId: String): Iterable[ActorRef] =
-      subscriptionsForFinished.get(trackId).map(_.keys).getOrElse(Iterable.empty)
-
-    def removeAllFor(trackId: String): FirstLevelState =
-      FirstLevelState(this.tracked - trackId, this.subscriptionsForFinished - trackId)
-
-    def removeSubscribersFor(trackId: String): FirstLevelState =
-      FirstLevelState(this.tracked, this.subscriptionsForFinished - trackId)
-
-    def potentiallyChangeState(executionState: ExecutionState): FirstLevelState =
-      tracked.get(executionState.trackId) match {
-        case None =>
-          FirstLevelState(this.tracked + (executionState.trackId -> TrackingEntry(canCreateUuidsAndDateTimes.getUtcTimestamp, executionState)), this.subscriptionsForFinished)
-        case Some(entry) =>
-          if (ExecutionState.compareExecutionState(executionState, entry.currentState) > 0) {
-            val newEntry = TrackingEntry(canCreateUuidsAndDateTimes.getUtcTimestamp, executionState)
-            FirstLevelState(this.tracked + (executionState.trackId -> newEntry), this.subscriptionsForFinished)
-          } else
-            this
-      }
-
-    def getAllFinishedStatesWithSubscribers: Iterable[(ExecutionFinishedState, Iterable[ActorRef])] = {
-      val finishedStates = tracked.map(_._2).map(_.tryGetFinished).flatten
-      finishedStates.map(fState =>
-        (fState, subscriptionsForFinished.get(fState.trackId).map(_.keys).getOrElse(Vector.empty)))
-    }
-  }
+  protected case class SubscriptionEntry(subscriber: ActorRef, expires: LocalDateTime)
+  
+//  protected case class FirstLevelState(tracked: Map[String, TrackingEntry], subscriptionsForFinished: Map[String, Map[ActorRef, LocalDateTime]]) {
+//    def addSubscriber(trackId: String, maxWaitTime: FiniteDuration, subscriber: ActorRef): FirstLevelState = {
+//      val subscription = (subscriber, canCreateUuidsAndDateTimes.getUtcTimestamp.plusMillis(maxWaitTime.toMillis.toInt))
+//      subscriptionsForFinished.get(trackId) match {
+//        case None =>
+//          FirstLevelState(this.tracked, this.subscriptionsForFinished + (trackId -> Map(subscription)))
+//        case Some(subscriptionForTrackId) =>
+//          FirstLevelState(this.tracked, this.subscriptionsForFinished + (trackId -> (subscriptionForTrackId + (subscription))))
+//      }
+//    }
+//
+//    def getSubscriptions(trackId: String): Iterable[ActorRef] =
+//      subscriptionsForFinished.get(trackId).map(_.keys).getOrElse(Iterable.empty)
+//
+//    def removeAllFor(trackId: String): FirstLevelState =
+//      FirstLevelState(this.tracked - trackId, this.subscriptionsForFinished - trackId)
+//
+//    def removeSubscribersFor(trackId: String): FirstLevelState =
+//      FirstLevelState(this.tracked, this.subscriptionsForFinished - trackId)
+//
+//    def potentiallyChangeState(executionState: ExecutionState): FirstLevelState =
+//      tracked.get(executionState.trackId) match {
+//        case None =>
+//          FirstLevelState(this.tracked + (executionState.trackId -> TrackingEntry(canCreateUuidsAndDateTimes.getUtcTimestamp, executionState)), this.subscriptionsForFinished)
+//        case Some(entry) =>
+//          if (ExecutionState.compareExecutionState(executionState, entry.currentState) > 0) {
+//            val newEntry = TrackingEntry(canCreateUuidsAndDateTimes.getUtcTimestamp, executionState)
+//            FirstLevelState(this.tracked + (executionState.trackId -> newEntry), this.subscriptionsForFinished)
+//          } else
+//            this
+//      }
+//
+//    def getAllFinishedStatesWithSubscribers: Iterable[(ExecutionFinishedState, Iterable[ActorRef])] = {
+//      val finishedStates = tracked.map(_._2).map(_.tryGetFinished).flatten
+//      finishedStates.map(fState =>
+//        (fState, subscriptionsForFinished.get(fState.trackId).map(_.keys).getOrElse(Vector.empty)))
+//    }
+//  }
 
   private def postProcess(currentState: FirstLevelState) {
     val finishedWithSubscribers = currentState.getAllFinishedStatesWithSubscribers
@@ -150,29 +152,41 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     context.become(transitionToNextState(nextState))
   }
 
-  protected def getExecutionState(trackId: String, fromState: FirstLevelState): AlmFuture[Option[ExecutionState]] =
-    fromState.tracked.get(trackId) match {
-      case Some(entry) => AlmFuture.successful(Some(entry.currentState))
-      case None => persistentStore.get(trackId)(persistentStoreMaxDuration).map(_.map(_.currentState))
-    }
+  private def getExecutionState(trackId: String, fromState: FirstLevelState): AlmFuture[Option[TrackingEntry]] =
+    (fromState.tracked.get(trackId) match {
+      case Some(entry) => AlmFuture.successful(Some(entry))
+      case None => persistentStore.get(trackId)(persistentStoreMaxDuration)
+    })
 
-  protected def transitionToNextState(currentState: FirstLevelState): Receive = {
-    case st: ExecutionState =>
-      val nextState = currentState.potentiallyChangeState(st)
-      postProcess(nextState)
-    case GetExecutionStateFor(trackId) =>
-      val pinnedSender = sender
-      getExecutionState(trackId, currentState).onComplete(
-        fail => {
-          pinnedSender ! CurrentExecutionState(trackId, None)
-          publishTo.publish(FailureEvent(s"""Could not get the execution state for tracking id "$trackId".""", fail, Major))
-        },
-        succ => sender ! CurrentExecutionState(trackId, succ))
-      postProcess(currentState)
-    case RegisterForFinishedState(trackId, toRegister, maxWaitTime) =>
-      val nextState = currentState.addSubscriber(trackId, maxWaitTime, toRegister)
-      postProcess(nextState)
-
+  private def reportExecutionState(trackId: String, fromState: FirstLevelState, respondTo: ActorRef): Unit = {
+    val pinnedSender = respondTo
+    getExecutionState(trackId, fromState).onComplete(
+      fail => {
+        pinnedSender ! CurrentExecutionState(trackId, None)
+        publishTo.publish(FailureEvent(s"""Could not get the execution state for tracking id "$trackId".""", fail, Major))
+      },
+      succ => sender ! CurrentExecutionState(trackId, succ.map(_.currentState)))
   }
+
+  
+//  protected def 
+  
+  
+  protected def idleState(tracked: Map[String, TrackingEntry]): Receive = {
+    case GetExecutionStateFor(trackId) =>
+      reportExecutionState(trackId, currentState, sender)
+  }
+
+  //  protected def transitionToNextState(currentState: FirstLevelState): Receive = {
+  //    case st: ExecutionState =>
+  //      val nextState = currentState.potentiallyChangeState(st)
+  //      postProcess(nextState)
+  //    case GetExecutionStateFor(trackId) =>
+  //      postProcess(currentState)
+  //    case RegisterForFinishedState(trackId, toRegister, maxWaitTime) =>
+  //      val nextState = currentState.addSubscriber(trackId, maxWaitTime, toRegister)
+  //      postProcess(nextState)
+  //
+  //  }
 
 }
