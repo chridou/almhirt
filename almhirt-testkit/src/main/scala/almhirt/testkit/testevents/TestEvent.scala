@@ -10,7 +10,7 @@ final case class TestEvent1(header: EventHeader) extends TestEvent {
   override def changeMetadata(newMetaData: Map[String, String]): TestEvent1 = copy(header = this.header.changeMetadata(newMetaData))
 }
 
-final case class TestEvent2(header: EventHeader, aValue: Option[Int]) extends TestEvent {
+final case class TestEvent2(header: EventHeader, aValue: Int) extends TestEvent {
   override def changeMetadata(newMetaData: Map[String, String]): TestEvent2 = copy(header = this.header.changeMetadata(newMetaData))
 }
 
@@ -40,11 +40,11 @@ object Serialization {
     override val alternativeWarpDescriptors = WarpDescriptor(classOf[TestEvent2]) :: Nil
     override def addEventParams(what: TestEvent2, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
       into ~>
-        POpt("aValue", what.aValue)
+        P("aValue", what.aValue)
 
     override def extractEventParams(from: WarpObjectLookUp, header: EventHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TestEvent2] =
       for {
-        aValue <- from.tryGetAs[Int]("aValue")
+        aValue <- from.getAs[Int]("aValue")
       } yield TestEvent2(header, aValue)
   }
 

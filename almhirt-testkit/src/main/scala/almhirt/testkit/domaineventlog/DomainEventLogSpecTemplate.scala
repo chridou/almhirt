@@ -20,7 +20,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
 
   implicit def execContext = theAlmhirt.futuresExecutor
 
-  def useEventLog[T](f: ActorRef => T): T = {
+  def useDomainEventLog[T](f: ActorRef => T): T = {
     val testId = nextTestId
     val (domaineventlog, eventLogCleanUp) = createDomainEventLog(testId)
     try {
@@ -40,14 +40,14 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
 
   describe("A domain event log") {
     it("""should accept a "CommitDomainEvents" with 0 events and answer with a "CommittedDomainEvents" containing no committed events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val res = (eventlog ? CommitDomainEvents(Vector.empty))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
         res should equal(CommittedDomainEvents(IndexedSeq.empty, None))
       }
     }
 
     it("""should accept a "CommitDomainEvents" with 1 event and answer with a "CommittedDomainEvents" containing the committed event""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val event = AR1Created(DomainEventHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
         val res = (eventlog ? CommitDomainEvents(Vector(event)))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
         res should equal(CommittedDomainEvents(IndexedSeq(event), None))
@@ -55,7 +55,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should accept a "CommitDomainEvents" with many events for one aggregate root and answer with a "CommittedDomainEvents" containing the committed events in the original order""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val events = createEvents(theAlmhirt.getUuid, 100)
         val res = (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
         res should equal(CommittedDomainEvents(events, None))
@@ -63,7 +63,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should accept 3x "CommitDomainEvents" for 3 ARs with many events one aggregate root each and answer with a "CommittedDomainEvents" containing the committed events in the original order""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val events1 = createEvents(theAlmhirt.getUuid, 100)
         val events2 = createEvents(theAlmhirt.getUuid, 100)
         val events3 = createEvents(theAlmhirt.getUuid, 100)
@@ -82,7 +82,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should accept 3x "CommitDomainEvents" for 3 ARs with many events for one aggregate root each and when queried for each aggregate root the events should be returned in the original order""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val events1 = createEvents(theAlmhirt.getUuid, 100)
         val events2 = createEvents(theAlmhirt.getUuid, 100)
         val events3 = createEvents(theAlmhirt.getUuid, 100)
@@ -116,7 +116,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should accept a "CommitDomainEvents" with many events for one aggregate root which when queried for are returned in the order they were committed""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -129,7 +129,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFrom(0L)" return all events in the correct order""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -142,7 +142,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFrom(0L < x < maxVersion)" return all events starting from x to the end in the correct order""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -155,7 +155,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFrom(x = maxVersion)" return the last event""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -168,7 +168,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFrom(x > maxVersion)" return no events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -181,7 +181,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsTo(0L)" return the first event""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -194,7 +194,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsTo(x = maxVersion)" return all events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -207,7 +207,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsTo(x > maxVersion)" return all events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -220,7 +220,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsTo(0 < x < maxVersion)" return all events up to including version x""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -234,7 +234,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(0L)" return no events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -247,7 +247,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(1L)" return the first event (version 0)""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -261,7 +261,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(x = maxVersion)" return all events except the last""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -275,7 +275,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(x > maxVersion)" return all events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -288,7 +288,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(0 < x < maxVersion)" return all events up to version x excluding the one with version x""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -302,7 +302,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L, 0L)" return the first event""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -315,7 +315,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L, maxVersion)" return all events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -328,7 +328,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L, x < maxVersion)" return all events up to the one including with version = x""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -343,7 +343,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L,  x > maxVersion)" return all events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -356,7 +356,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(x < maxVersion,  maxVersion)" return all events from including x to the end""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -370,7 +370,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should when queried with "GetDomainEventsFromTo(x < maxVersion,  y < maxVersion)" return all events from including x to the one including y""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -384,7 +384,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should when queried with "GetDomainEventsFromTo(0L x < maxVersion,  y = x)" return the event with version x""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -399,7 +399,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L x < maxVersion,  y < x)" return no events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -413,7 +413,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
 
     // ---
     it("""should when queried with "GetDomainEventsFromUntil(0L, 0L)" return no event""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -426,7 +426,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(0L, maxVersion)" return all events except the last""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -441,7 +441,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(0L, x < maxVersion)" return all events up to the one excluding version = x""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -456,7 +456,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(0L,  x > maxVersion)" return all events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -469,7 +469,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(x < maxVersion,  maxVersion)" return all events from including x to the end except the last one with maxVersion""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -483,7 +483,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(x < maxVersion,  y < maxVersion)" return all events from including x to the one excluding y""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -497,7 +497,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(0L x < maxVersion,  y = x)" return no event""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -510,7 +510,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(0L x < maxVersion,  y < x)" return no events""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -523,7 +523,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEvent(existing id)" reply with QueriedDomainEvent(Some(theEvent))""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -536,7 +536,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEvent(nonexisting id)" reply with QueriedDomainEvent(None)""") {
-      useEventLog { eventlog =>
+      useDomainEventLog { eventlog =>
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val nonexistingid = theAlmhirt.getUuid

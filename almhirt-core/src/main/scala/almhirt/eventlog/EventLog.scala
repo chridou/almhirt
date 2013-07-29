@@ -11,7 +11,7 @@ object EventLog {
   final case class LogEvent(event: Event) extends EventLogMessage
 
   final case class GetEvent(eventId: JUUID) extends EventLogMessage
-  final case class GetAllEvents(eventId: JUUID) extends EventLogMessage
+  case object GetAllEvents extends EventLogMessage
   final case class GetEventsFrom(from: LocalDateTime) extends EventLogMessage
   final case class GetEventsAfter(after: LocalDateTime) extends EventLogMessage
   final case class GetEventsTo(to: LocalDateTime) extends EventLogMessage
