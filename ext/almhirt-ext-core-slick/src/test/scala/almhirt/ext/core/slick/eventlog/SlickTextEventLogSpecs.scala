@@ -51,5 +51,5 @@ class SlickTextEventLogSpecs
   extends EventLogSpecTemplate(ActorSystem("SlickTextEventLogSpecs", TestConfigs.default))
   with AlmhirtFromAkkaTestKitWithoutConfiguration
   with CreatesSlickTextEventLog{
-  override val sleepMillisAfterWrite = None
+  override val sleepMillisAfterWrite = Some(100)
 }
