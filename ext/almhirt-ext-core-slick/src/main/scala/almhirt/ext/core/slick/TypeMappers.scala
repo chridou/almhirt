@@ -1,5 +1,6 @@
 package almhirt.ext.core.slick
 
+import language.implicitConversions
 import scalaz.syntax.validation._
 import org.joda.time.{LocalDateTime}
 import almhirt.common._
@@ -16,7 +17,7 @@ trait SlickTypeMappers { this: Profile =>
       timestamp => new LocalDateTime(timestamp.getTime))
 }
 
-//object TypeConversion {
-//  def dateTimeToTimeStamp(dateTime: LocalDateTime): Timestamp = new Timestamp(dateTime.toDateTime().getMillis())
-//  def timestampToUtcDateTime(timestamp: Timestamp): LocalDateTime = new LocalDateTime(timestamp.getTime)
-//}
+object TypeConversion {
+  implicit def dateTime2Timestamp(dateTime: LocalDateTime): Timestamp = new Timestamp(dateTime.toDateTime().getMillis())
+  implicit def timestamp2UtcDateTime(timestamp: Timestamp): LocalDateTime = new LocalDateTime(timestamp.getTime)
+}

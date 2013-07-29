@@ -87,9 +87,30 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         res should equal(EventsChunk(0, true, Vector(event)))
       }
     }
+    it("""should accept many events and return the same number of events logged when queired with GetAllEvents""") {
+      useEventLog { eventlog =>
+        val baseTime = LocalDateTime.now()
+      	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(theAlmhirt.getUuid, baseTime.plusMillis(n-1)), n)
+        events foreach(eventlog ! LogEvent(_))
+        waitSomeTime()
+        val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventsChunk].awaitResultOrEscalate(defaultDuration)
+        res.events should have size(events.size)
+      }
+    }
+    it("""should accept many events and return the same timestamps as the logged events when queried with GetAllEvents""") {
+      useEventLog { eventlog =>
+        val baseTime = LocalDateTime.now()
+      	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(theAlmhirt.getUuid, baseTime.plusMillis(n-1)), n)
+        events foreach(eventlog ! LogEvent(_))
+        waitSomeTime()
+        val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventsChunk].awaitResultOrEscalate(defaultDuration)
+        res.events.map(_.timestamp).toSet should equal(events.map(_.timestamp).toSet)
+      }
+    }
     it("""should accept many events and return all events in the correct order when queried with GetAllEvents""") {
       useEventLog { eventlog =>
-      	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(), n)
+        val baseTime = LocalDateTime.now()
+      	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(theAlmhirt.getUuid, baseTime.plusMillis(n-1)), n)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)

@@ -1,7 +1,6 @@
 package almhirt.ext.core.slick.domaineventlog
 
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -28,7 +27,7 @@ trait TextDomainEventLogStoreComponent extends DomainEventLogStoreComponent[Text
   val eventlogtablename: String
 
   object TextDomainEventLogRows extends Table[TextDomainEventLogRow](eventlogtablename) {
-    def id = column[JUUID]("ID")
+    def id = column[JUUID]("ID", O.PrimaryKey)
     def aggId = column[JUUID]("AGG_ID", O.NotNull)
     def aggVersion = column[Long]("AGG_VERSION", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)
@@ -106,7 +105,7 @@ trait BinaryDomainEventLogStoreComponent extends DomainEventLogStoreComponent[Bi
   val eventlogtablename: String
 
   object BinaryDomainEventLogRows extends Table[BinaryDomainEventLogRow](eventlogtablename) {
-    def id = column[JUUID]("ID")
+    def id = column[JUUID]("ID", O.PrimaryKey)
     def aggId = column[JUUID]("AGG_ID", O.NotNull)
     def aggVersion = column[Long]("AGG_VERSION", O.NotNull)
     def channel = column[String]("CHANNEL", O.NotNull)

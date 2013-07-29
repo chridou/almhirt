@@ -8,6 +8,7 @@ sealed trait DomainEventLogRow {
   def aggId: JUUID
   def aggVersion: Long
   def channel: String
+  def payload: Repr
 }
 final case class TextDomainEventLogRow(id: JUUID, aggId: JUUID, aggVersion: Long, channel: String, payload: String) extends DomainEventLogRow {
   type Repr = String

@@ -38,7 +38,7 @@ object EventLog {
     isLast: Boolean,
     events: Seq[Event]) extends FetchedEventsPart
 
-  final case class DomainEventsChunkFailure(
+  final case class EventsChunkFailure(
     /**
      * Starts with Zero
      */
