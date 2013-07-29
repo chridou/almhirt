@@ -10,7 +10,7 @@ trait CreatesDomainEventLog {
 
 trait CreatesInMemoryDomainEventLog extends CreatesDomainEventLog { self: akka.testkit.TestKit =>
   def createDomainEventLog(testId: Int): (ActorRef, () => Unit) =
-    (system.actorOf(Props(new InMemoryDomainEventLog with Actor { override def receive: Actor.Receive = receiveDomainEventLogMsg }), "EventLog_" + testId.toString),
+    (system.actorOf(Props(new InMemoryDomainEventLog with Actor { override def receive: Actor.Receive = receiveDomainEventLogMsg }), "domaineventlog_" + testId.toString),
       () => ())
 }
 
