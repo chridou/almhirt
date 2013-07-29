@@ -8,7 +8,6 @@ import almhirt.domain.AggregateRoot
 
 object DomainEventLog {
   trait DomainEventLogMessage
-
   
   final case class CommitDomainEvents(events: Seq[DomainEvent]) extends DomainEventLogMessage
   case object GetAllDomainEvents extends DomainEventLogMessage
