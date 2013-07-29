@@ -41,6 +41,10 @@ package object common {
     def compare(a: org.joda.time.DateTime, b: org.joda.time.DateTime) = a.compareTo(b)
   }
 
+  implicit object LocalDateTimeOrdering extends Ordering[org.joda.time.LocalDateTime] {
+    def compare(a: org.joda.time.LocalDateTime, b: org.joda.time.LocalDateTime) = a.compareTo(b)
+  }
+  
   object Severity {
     val Critical = almhirt.problem.Critical
     val Major = almhirt.problem.Major
