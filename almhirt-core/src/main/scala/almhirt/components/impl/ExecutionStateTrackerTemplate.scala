@@ -33,8 +33,6 @@ object ExecutionTrackerTemplate {
   trait SecondLevelStoreWrapper {
     def store(entry: TrackingEntry)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit]
     def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[TrackingEntry]]
-    def getAllYoungerThan(age: org.joda.time.Duration)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Seq[TrackingEntry]]
-    def removeAllOlderThan(age: org.joda.time.Duration)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit]
   }
 
   object SecondLevelStoreWrapper {
@@ -46,13 +44,6 @@ object ExecutionTrackerTemplate {
     final case class GetEntry(trackId: String) extends SecondLevelStoreWrapperMessage
     final case class GetEntryResult(entry: Option[TrackingEntry]) extends GetEntryResponse
     final case class GetEntryFailure(problem: Problem) extends GetEntryResponse
-    sealed trait GetAllYoungerThanResponse extends SecondLevelStoreWrapperMessage
-    final case class GetAllYoungerThan(age: org.joda.time.Duration) extends SecondLevelStoreWrapperMessage
-    final case class GetAllYoungerThanResult(entries: Seq[TrackingEntry]) extends GetAllYoungerThanResponse
-    final case class GetAllYoungerThanFailure(problem: Problem) extends GetAllYoungerThanResponse
-    sealed trait RemoveAllOlderThanResponse extends SecondLevelStoreWrapperMessage
-    final case class RemoveAllOlderThan(age: org.joda.time.Duration) extends SecondLevelStoreWrapperMessage
-    final case class RemoveAllOlderThanState(problem: Option[Problem]) extends RemoveAllOlderThanResponse
 
     import scalaz.syntax.validation._
     import akka.pattern.ask
@@ -73,20 +64,6 @@ object ExecutionTrackerTemplate {
             res match {
               case GetEntryResult(entry) => entry.success
               case GetEntryFailure(problem) => problem.failure
-            })
-
-        def getAllYoungerThan(age: org.joda.time.Duration)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Seq[TrackingEntry]] =
-          (actor ? GetAllYoungerThan(age))(atMost).successfulAlmFuture[GetAllYoungerThanResponse].mapV(res =>
-            res match {
-              case GetAllYoungerThanResult(entries) => entries.success
-              case GetAllYoungerThanFailure(problem) => problem.failure
-            })
-
-        def removeAllOlderThan(age: org.joda.time.Duration)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit] =
-          (actor ? RemoveAllOlderThan(age))(atMost).successfulAlmFuture[RemoveAllOlderThanResponse].mapV(res =>
-            res match {
-              case RemoveAllOlderThanState(None) => ().success
-              case RemoveAllOlderThanState(Some(problem)) => problem.failure
             })
       }
     }
@@ -255,4 +232,16 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     }
     (tracked -- expiredTrackIds, subscriptions -- expiredTrackIds)
   }
+}
+
+trait TrackerWithDevNullSecondLevelStore { self: ExecutionTrackerTemplate =>
+  import ExecutionTrackerTemplate._
+  override val secondLevelStore = new SecondLevelStoreWrapper {
+    def store(entry: TrackingEntry)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit] =
+      AlmFuture.successful(())
+
+    def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[TrackingEntry]] =
+      AlmFuture.successful(None)
+  }
+
 }
