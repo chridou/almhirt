@@ -237,5 +237,72 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     
+    it("""should notify a subscriber for an already stored ExecutionSuccessful"""") {
+      useExecutionTracker { tracker =>
+      	val state = ExecutionSuccessful("a", "ahh!")
+        tracker ! ExecutionStateChanged(state)
+        waitSomeTime()
+        val probe = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        probe.expectMsg(defaultDuration, FinishedExecutionStateResult(state))
+      }
+    }
+
+    it("""should notify a subscriber for an already stored ExecutionFailed"""") {
+      useExecutionTracker { tracker =>
+      	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
+        tracker ! ExecutionStateChanged(state)
+        waitSomeTime()
+        val probe = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        probe.expectMsg(defaultDuration, FinishedExecutionStateResult(state))
+      }
+    }
+
+    it("""should notify a subscriber as soon as an ExecutionSuccessful is recognized"""") {
+      useExecutionTracker { tracker =>
+      	val state = ExecutionSuccessful("a", "ahh!")
+        val probe = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        tracker ! ExecutionStateChanged(state)
+        probe.expectMsg(defaultDuration, FinishedExecutionStateResult(state))
+      }
+    }
+
+    it("""should notify a subscriber as soon as an ExecutionFailed is recognized"""") {
+      useExecutionTracker { tracker =>
+      	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
+        val probe = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        tracker ! ExecutionStateChanged(state)
+        probe.expectMsg(defaultDuration, FinishedExecutionStateResult(state))
+      }
+    }
+ 
+    it("""should notify a subscriber only once"""") {
+      useExecutionTracker { tracker =>
+      	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
+        val probe = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        tracker ! ExecutionStateChanged(state)
+        probe.expectMsg(defaultDuration, FinishedExecutionStateResult(state))
+        tracker ! ExecutionStateChanged(state)
+        probe.expectNoMsg
+      }
+    }
+
+    it("""should be idempotent on subscriptions for the same tracking ticket"""") {
+      useExecutionTracker { tracker =>
+      	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
+        val probe = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        tracker ! ExecutionStateChanged(state)
+        probe.expectMsg(defaultDuration, FinishedExecutionStateResult(state))
+        probe.expectNoMsg
+      }
+    }
+    
   }
 }
