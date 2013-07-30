@@ -237,7 +237,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     
-    it("""should notify a subscriber for an already stored ExecutionSuccessful"""") {
+    it("""should notify a subscriber for an already stored ExecutionSuccessful""") {
       useExecutionTracker { tracker =>
       	val state = ExecutionSuccessful("a", "ahh!")
         tracker ! ExecutionStateChanged(state)
@@ -248,7 +248,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should notify a subscriber for an already stored ExecutionFailed"""") {
+    it("""should notify a subscriber for an already stored ExecutionFailed""") {
       useExecutionTracker { tracker =>
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         tracker ! ExecutionStateChanged(state)
@@ -259,7 +259,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should notify a subscriber as soon as an ExecutionSuccessful is recognized"""") {
+    it("""should notify a subscriber as soon as an ExecutionSuccessful is recognized""") {
       useExecutionTracker { tracker =>
       	val state = ExecutionSuccessful("a", "ahh!")
         val probe = TestProbe()
@@ -269,7 +269,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should notify a subscriber as soon as an ExecutionFailed is recognized"""") {
+    it("""should notify a subscriber as soon as an ExecutionFailed is recognized""") {
       useExecutionTracker { tracker =>
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe = TestProbe()
@@ -279,7 +279,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
  
-    it("""should notify a subscriber only once"""") {
+    it("""should notify a subscriber only once""") {
       useExecutionTracker { tracker =>
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe = TestProbe()
@@ -291,7 +291,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should be idempotent on subscriptions for the same tracking ticket"""") {
+    it("""should be idempotent on subscriptions for the same tracking ticket""") {
       useExecutionTracker { tracker =>
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe = TestProbe()
