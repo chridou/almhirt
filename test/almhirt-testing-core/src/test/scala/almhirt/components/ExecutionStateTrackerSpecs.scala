@@ -9,7 +9,7 @@ class ExecutionStateTrackerSpec
   with AlmhirtFromAkkaTestKitWithoutConfiguration
   with CreatesCreatesInMemoryExecutionTracker {
   
-  override val defaultDuration = scala.concurrent.duration.FiniteDuration(120, "s")
+  //override val defaultDuration = scala.concurrent.duration.FiniteDuration(120, "s")
   override val sleepMillisAfterFireAndForget = Some(20)
 
 }

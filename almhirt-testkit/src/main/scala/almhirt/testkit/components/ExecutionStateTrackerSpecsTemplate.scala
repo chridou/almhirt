@@ -96,7 +96,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
     it("""should return the correct states when there are many""") {
       useExecutionTracker { tracker =>
-      	val states = for(n <- 1 to 20) yield ExecutionInProcess(n.toString)
+      	val states = for(n <- 1 to 10) yield ExecutionInProcess(n.toString)
         states foreach(tracker ! ExecutionStateChanged(_))
         waitSomeTime()
         val futures = states map(state => (tracker ? GetExecutionStateFor(state.trackId))(defaultDuration).mapTo[QueriedExecutionState])
@@ -303,6 +303,94 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
         probe.expectNoMsg
       }
     }
+
+    it("""should notify on a transition to ExecutionSuccessful""") {
+      useExecutionTracker { tracker =>
+      	val state1 = ExecutionStarted("a")
+      	val state2 = ExecutionSuccessful("a", "ahh!")
+        val probe = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        tracker ! ExecutionStateChanged(state1)
+        probe.expectNoMsg
+        tracker ! ExecutionStateChanged(state2)
+        probe.expectMsg(defaultDuration, FinishedExecutionStateResult(state2))
+      }
+    }
+
+    it("""should notify on a transition to ExecutionFailed""") {
+      useExecutionTracker { tracker =>
+      	val state1 = ExecutionStarted("a")
+      	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
+        val probe = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe.ref)
+        tracker ! ExecutionStateChanged(state1)
+        probe.expectNoMsg
+        tracker ! ExecutionStateChanged(state2)
+        probe.expectMsg(defaultDuration, FinishedExecutionStateResult(state2))
+      }
+    }
+
+    it("""should notify more than one subscriber subscribed to the same tracking id on a transition to an ExecutionFinishedState""") {
+      useExecutionTracker { tracker =>
+      	val state1 = ExecutionStarted("a")
+      	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
+        val probe1 = TestProbe()
+        val probe2 = TestProbe()
+        tracker ! ExecutionStateChanged(state1)
+        tracker ! SubscribeForFinishedState("a", probe1.ref)
+        tracker ! SubscribeForFinishedState("a", probe2.ref)
+        tracker ! ExecutionStateChanged(state2)
+        probe1.expectMsg(defaultDuration, FinishedExecutionStateResult(state2))
+        probe2.expectMsg(defaultDuration, FinishedExecutionStateResult(state2))
+      }
+    }
     
+    it("""should notify more than one subscriber subscribed to different tracking ids on a transition to an ExecutionFinishedState""") {
+      useExecutionTracker { tracker =>
+      	val state1a = ExecutionStarted("a")
+      	val state2a = ExecutionFailed("a", UnspecifiedProblem("huh"))
+      	val state1b = ExecutionStarted("b")
+      	val state2b = ExecutionFailed("b", UnspecifiedProblem("huh"))
+        val probe1 = TestProbe()
+        val probe2 = TestProbe()
+        tracker ! ExecutionStateChanged(state1a)
+        tracker ! ExecutionStateChanged(state1b)
+        tracker ! SubscribeForFinishedState("a", probe1.ref)
+        tracker ! SubscribeForFinishedState("b", probe2.ref)
+        tracker ! ExecutionStateChanged(state2a)
+        tracker ! ExecutionStateChanged(state2b)
+        probe1.expectMsg(defaultDuration, FinishedExecutionStateResult(state2a))
+        probe2.expectMsg(defaultDuration, FinishedExecutionStateResult(state2b))
+      }
+    }
+
+    it("""should not notify a subscriber that was unsubscribed""") {
+      useExecutionTracker { tracker =>
+      	val state1 = ExecutionStarted("a")
+      	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
+        val probe1 = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe1.ref)
+        tracker ! ExecutionStateChanged(state1)
+        tracker ! UnsubscribeForFinishedState("a", probe1.ref)
+        tracker ! ExecutionStateChanged(state2)
+        probe1.expectNoMsg
+      }
+    }
+
+    it("""should notify one of 2 subscribers subscribed to the same tracking id on a transition to an ExecutionFinishedState when one unsubscribed prior to the transition""") {
+      useExecutionTracker { tracker =>
+      	val state1 = ExecutionStarted("a")
+      	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
+        val probe1 = TestProbe()
+        val probe2 = TestProbe()
+        tracker ! SubscribeForFinishedState("a", probe2.ref)
+        tracker ! ExecutionStateChanged(state1)
+        tracker ! UnsubscribeForFinishedState("a", probe2.ref)
+        tracker ! SubscribeForFinishedState("a", probe1.ref)
+        tracker ! ExecutionStateChanged(state2)
+        probe1.expectMsg(defaultDuration, FinishedExecutionStateResult(state2))
+        probe2.expectNoMsg
+      }
+    }
   }
 }
