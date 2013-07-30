@@ -11,9 +11,11 @@ object ExecutionStateTracker {
 
   final case class GetExecutionStateFor(trackId: String) extends ExecutionStateTrackerMessage
   final case class CurrentExecutionState(trackId: String, executionState: Option[ExecutionState]) extends ExecutionStateTrackerMessage
-  final case class RegisterForFinishedState(trackId: String, registerMe: ActorRef, maxWaitTime: FiniteDuration) extends ExecutionStateTrackerMessage
-  final case class FinishedExecutionStateResult(trackId: String, result: ExecutionFinishedState) extends ExecutionStateTrackerMessage
-  final case class ExecutionDidNotFinishWithinTime(trackId: String, result: ExecutionFinishedState) extends ExecutionStateTrackerMessage
+  final case class SubscribeForFinishedState(trackId: String, subscribeMe: ActorRef) extends ExecutionStateTrackerMessage
+  final case class UnsubscribeForFinishedState(trackId: String, unsubscribeMe: ActorRef) extends ExecutionStateTrackerMessage
+  final case class FinishedExecutionStateResult(result: ExecutionFinishedState) extends ExecutionStateTrackerMessage
+  final case class ExecutionTrackingExpired(trackId: String) extends ExecutionStateTrackerMessage
+  final case class RemoveOldExecutionStates(maxAge: org.joda.time.Duration) extends ExecutionStateTrackerMessage
 }
 
 trait ExecutionStateTracker { actor: Actor with ActorLogging =>
