@@ -6,73 +6,19 @@ import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
 import almhirt.core._
-import almhirt.components.ExecutionStateTracker
+import almhirt.components.{ExecutionStateTracker, ExecutionStateStore}
 import almhirt.commanding._
 import almhirt.messaging.MessagePublisher
 import almhirt.problem.{ Major, Minor }
 
 object ExecutionTrackerTemplate {
-  final case class TrackingEntry(currentState: ExecutionState, lastModified: LocalDateTime) {
-    def isFinished: Boolean = currentState match {
-      case _: ExecutionFinishedState => true
-      case _ => false
-    }
 
-    def tryGetFinished: Option[ExecutionFinishedState] =
-      currentState match {
-        case f: ExecutionFinishedState => Some(f)
-        case _ => None
-      }
-  }
-
-  object TrackingEntry {
-    def apply(currentState: ExecutionState)(implicit ccuad: CanCreateDateTime): TrackingEntry =
-      TrackingEntry(currentState, ccuad.getUtcTimestamp)
-  }
-
-  trait SecondLevelStoreWrapper {
-    def store(entry: TrackingEntry)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit]
-    def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[TrackingEntry]]
-  }
-
-  object SecondLevelStoreWrapper {
-    sealed trait SecondLevelStoreWrapperMessage
-    sealed trait StoreEntryResponse
-    final case class StoreEntry(entry: TrackingEntry) extends SecondLevelStoreWrapperMessage
-    final case class StoreEntryState(problem: Option[Problem]) extends StoreEntryResponse
-    sealed trait GetEntryResponse extends SecondLevelStoreWrapperMessage
-    final case class GetEntry(trackId: String) extends SecondLevelStoreWrapperMessage
-    final case class GetEntryResult(entry: Option[TrackingEntry]) extends GetEntryResponse
-    final case class GetEntryFailure(problem: Problem) extends GetEntryResponse
-
-    import scalaz.syntax.validation._
-    import akka.pattern.ask
-    import akka.util.Timeout
-    import almhirt.almfuture.all._
-
-    def apply(actor: ActorRef)(implicit executionContext: ExecutionContext): SecondLevelStoreWrapper = {
-      new SecondLevelStoreWrapper {
-        def store(entry: TrackingEntry)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit] =
-          (actor ? StoreEntry(entry))(atMost).successfulAlmFuture[StoreEntryResponse].mapV(res =>
-            res match {
-              case StoreEntryState(None) => ().success
-              case StoreEntryState(Some(problem)) => problem.failure
-            })
-
-        def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[TrackingEntry]] =
-          (actor ? GetEntry(trackId))(atMost).successfulAlmFuture[GetEntryResponse].mapV(res =>
-            res match {
-              case GetEntryResult(entry) => entry.success
-              case GetEntryFailure(problem) => problem.failure
-            })
-      }
-    }
-  }
 }
 
 trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with ActorLogging =>
   import ExecutionStateTracker._
   import ExecutionTrackerTemplate._
+  import ExecutionStateStore._
 
   implicit def publishTo: MessagePublisher
   implicit def canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes
@@ -124,8 +70,10 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       val (newTracked, newSubscriptions) = cleanUp(maxAge, tracked, subscriptions)
       context.become(idleState(newTracked, newSubscriptions))
   }
+  
+  override def handleTrackingMessage = idleState(Map.empty, Map.empty)
 
-  def handleIncomingExecutionState(incomingState: ExecutionState, tracked: Map[String, TrackingEntry]) {
+  private def handleIncomingExecutionState(incomingState: ExecutionState, tracked: Map[String, TrackingEntry]) {
     getUpdatedState(incomingState, tracked).fold(
       fail => publishTo.publish(FailureEvent(s"""Could not determine the state to update for tracking id "${incomingState.trackId}"""", fail, Minor)),
       potUpdatedState => {
@@ -235,7 +183,9 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 }
 
 trait TrackerWithDevNullSecondLevelStore { self: ExecutionTrackerTemplate =>
-  import ExecutionTrackerTemplate._
+  import ExecutionStateTracker._
+  import ExecutionStateStore._
+  
   override val secondLevelStore = new SecondLevelStoreWrapper {
     def store(entry: TrackingEntry)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit] =
       AlmFuture.successful(())
