@@ -30,14 +30,14 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   protected def waitingForTrackedStateUpdate(tracked: Map[String, TrackingEntry], subscriptions: Map[String, List[ActorRef]], updateRequests: Vector[ExecutionState]): Receive = {
     case StateUpdate(newState) =>
-      val newSubscriptions = notifyFinishedStateSubscribers(tracked, subscriptions)
+      val newSubscriptions = notifyFinishedStateSubscribers(newState, subscriptions)
       if (updateRequests.isEmpty)
-        context.become(idleState(tracked, newSubscriptions))
+        context.become(idleState(newState, newSubscriptions))
       else {
-        handleIncomingExecutionState(updateRequests.head, tracked)
-        context.become(waitingForTrackedStateUpdate(tracked, subscriptions, updateRequests.tail))
+        handleIncomingExecutionState(updateRequests.head, newState)
+        context.become(waitingForTrackedStateUpdate(newState, subscriptions, updateRequests.tail))
       }
-    case st: ExecutionState =>
+    case ExecutionStateChanged(_, st) =>
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, updateRequests :+ st))
     case GetExecutionStateFor(trackId) =>
       reportExecutionState(trackId, tracked, sender)
@@ -54,7 +54,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   }
 
   protected def idleState(tracked: Map[String, TrackingEntry], subscriptions: Map[String, List[ActorRef]]): Receive = {
-    case st: ExecutionState =>
+    case ExecutionStateChanged(_, st) =>
       handleIncomingExecutionState(st, tracked)
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, Vector.empty))
     case GetExecutionStateFor(trackId) =>
@@ -75,7 +75,8 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   private def handleIncomingExecutionState(incomingState: ExecutionState, tracked: Map[String, TrackingEntry]) {
     getUpdatedState(incomingState, tracked).fold(
-      fail => publishTo.publish(FailureEvent(s"""Could not determine the state to update for tracking id "${incomingState.trackId}"""", fail, Minor)),
+      fail => 
+        publishTo.publish(FailureEvent(s"""Could not determine the state to update for tracking id "${incomingState.trackId}"""", fail, Minor)),
       potUpdatedState => {
         potUpdatedState match {
           case Some(updatedState) =>
@@ -92,7 +93,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       case None =>
         Some(TrackingEntry(incomingState))
       case Some(oldState) =>
-        if (ExecutionState.compareExecutionState(oldState.currentState, incomingState) > 0)
+        if (ExecutionState.compareExecutionState(incomingState, oldState.currentState) > 0)
           Some(TrackingEntry(incomingState))
         else
           None
@@ -116,10 +117,10 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     val pinnedSender = respondTo
     getExecutionState(trackId, tracked).onComplete(
       fail => {
-        pinnedSender ! CurrentExecutionState(trackId, None)
+        pinnedSender ! QueriedExecutionState(trackId, None)
         publishTo.publish(FailureEvent(s"""Could not get the execution state for tracking id "$trackId".""", fail, Major))
       },
-      succ => sender ! CurrentExecutionState(trackId, succ.map(_.currentState)))
+      succ => pinnedSender ! QueriedExecutionState(trackId, succ.map(_.currentState)))
   }
 
   private def preSubscribe(trackId: String, subscriber: ActorRef, tracked: Map[String, TrackingEntry]): Option[ActorRef] = {

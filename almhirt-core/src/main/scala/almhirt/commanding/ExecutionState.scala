@@ -18,12 +18,6 @@ object ExecutionState {
   }
   
   def compareExecutionState(a: ExecutionState, b: ExecutionState): Int =
-    if(executionStateOrderingTag(a) == executionStateOrderingTag(b))
-      if(a.timestamp.isEqual(b.timestamp))
-        a.trackId compareTo b.trackId
-      else
-        a.timestamp.compareTo(b.timestamp)
-    else
       executionStateOrderingTag(a) compareTo executionStateOrderingTag(b)
 }
 

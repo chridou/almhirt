@@ -19,9 +19,6 @@ trait InMemoryExecutionStateTracker extends ExecutionStateTracker { actor: Execu
     }
   }
   
-  private val secondLeveStoreActor: ActorRef = 
-    context.actorOf(Props[SecondLevelStoreActor], "in_memory_second_level_store")
-  
-  override val secondLevelStore = ExecutionStateStore.secondLevelStoreWrapper(secondLeveStoreActor)
+  override lazy val secondLevelStore = ExecutionStateStore.secondLevelStoreWrapper(context.actorOf(Props(new SecondLevelStoreActor), "in_memory_second_level_store"))
 
 }
