@@ -30,16 +30,16 @@ object Dependencies {
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.0" % "compile"
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "compile"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion
 
-	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.1"
+	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.+"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.11" % "compile"
-	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.2"
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "compile"
+	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+"
 
 	
     lazy val scalatest = "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"	
