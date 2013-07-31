@@ -178,8 +178,9 @@ trait ExtCoreSprayBuild {
   import Resolvers._
   def extCoreSprayProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  resolvers += "spray repo" at "http://repo.spray.io",
-	  libraryDependencies += "io.spray" % "spray-can" % "1.2-M8")
+	  //resolvers += "spray repo" at "http://repo.spray.io",
+	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
+	  libraryDependencies += "io.spray" % "spray-can" % "1.2-20130710")
   
 }
 
