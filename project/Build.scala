@@ -6,7 +6,7 @@ object BuildSettings {
   val buildVersion      = "0.5.4"
   val buildScalaVersion = "2.10.2"
 
-  val akkaVersion = "2.2.0"
+  val akkaVersion = "2.2.+"
   val scalatestVersion = "2.0.M5b"
   
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -172,28 +172,14 @@ trait RiftWarpAutomaticBuild {
   )
 }
 
-trait AlmhirtExtHttpUnfilteredBuild {
-  import Dependencies._
-  import Resolvers._
-  def almhirtExtHttpUnfilteredProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += "net.databinder" %% "unfiltered-netty-server" % "0.6.7",
-	  libraryDependencies += scalatest
-  )
-}
 
-trait ExtCoreUnfilteredBuild {
+trait ExtCoreSprayBuild {
   import Dependencies._
   import Resolvers._
-  def extCoreUnfilteredProject(name: String, baseFile: java.io.File) = 
+  def extCoreSprayProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += "net.databinder" %% "unfiltered-netty-server" % "0.6.7",
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases)
+	  resolvers += "spray repo" at "http://repo.spray.io",
+	  libraryDependencies += "io.spray" % "spray-can" % "1.2-M8")
   
 }
 
@@ -217,12 +203,11 @@ object AlmHirtBuild extends Build
 	with CoreExtSlickBuild 
 	with RiftWarpBuild 
 	with RiftWarpAutomaticBuild 
-	with AlmhirtExtHttpUnfilteredBuild 
-	with ExtCoreUnfilteredBuild 
+	with ExtCoreSprayBuild 
 	with AppBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, coreExtRiftwarp, slickExtensions)
+	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, coreExtRiftwarp, slickExtensions, extCoreSpray)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -243,6 +228,8 @@ object AlmHirtBuild extends Build
   lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
                        			baseFile = file("./ext/almhirt-ext-core-slick")) dependsOn(core, riftwarp % "test->test", coreExtRiftwarp % "test->test", testKit % "test")
 
+ lazy val extCoreSpray = extCoreSprayProject(	name = "almhirt-ext-core-spray",
+	                       				baseFile = file("./ext/almhirt-ext-core-spray")) dependsOn(core)
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
@@ -250,16 +237,12 @@ object AlmHirtBuild extends Build
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
 
-  lazy val almhirtExtHttpUnfiltered = almhirtExtHttpUnfilteredProject(	name = "almhirt-ext-http-unfiltered",
-                       			baseFile = file("./ext/almhirt-ext-http-unfiltered")) dependsOn(common)
-
+ 
 
   lazy val docit = docitProject(	name = "almhirt-docit",
                        			baseFile = file("almhirt-docit")) dependsOn(common)
 
 								
- lazy val almhirtExtCoreUnfiltered = extCoreUnfilteredProject(	name = "almhirt-ext-core-unfiltered",
-	                       				baseFile = file("./ext/almhirt-ext-core-unfiltered")) dependsOn(core, almhirtExtHttpUnfiltered)
 
  val app = appProject(	name = "almhirt-app",
 	                       	baseFile = file("almhirt-app")) dependsOn(core) */										
