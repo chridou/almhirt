@@ -111,10 +111,10 @@ trait TestKitBuild {
 	  libraryDependencies += "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "compile"
   )
 }
-trait CoreExtRiftwarpBuild {
+trait CorexRiftwarpBuild {
   import Dependencies._
   import Resolvers._
-  def coreExtRiftWarpProject(name: String, baseFile: java.io.File) = 
+  def corexRiftWarpProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
@@ -126,10 +126,10 @@ trait CoreExtRiftwarpBuild {
   )
 }
 
-trait CoreExtSlickBuild {
+trait CorexSlickBuild {
   import Dependencies._
   import Resolvers._
-  def slickExtProject(name: String, baseFile: java.io.File) = 
+  def corexSlickProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
@@ -173,10 +173,10 @@ trait RiftWarpAutomaticBuild {
 }
 
 
-trait ExtCoreSprayBuild {
+trait CorexSprayBuild {
   import Dependencies._
   import Resolvers._
-  def extCoreSprayProject(name: String, baseFile: java.io.File) = 
+  def corexSprayProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  //resolvers += "spray repo" at "http://repo.spray.io",
 	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
@@ -201,15 +201,15 @@ object AlmHirtBuild extends Build
 	with CoreBuild 
 	with CoreTestingBuild 
 	with TestKitBuild 
-	with CoreExtRiftwarpBuild 
-	with CoreExtSlickBuild 
+	with CorexRiftwarpBuild 
+	with CorexSlickBuild 
+	with CorexSprayBuild 
 	with RiftWarpBuild 
 	with RiftWarpAutomaticBuild 
-	with ExtCoreSprayBuild 
 	with AppBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, coreExtRiftwarp, slickExtensions, extCoreSpray)
+	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, corexRiftwarp, slickExtensions, corexSpray)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -221,17 +221,17 @@ object AlmHirtBuild extends Build
 	                       		baseFile = file("./test/almhirt-testing-core")) dependsOn(core, testKit)
 								
   lazy val testKit = testKitProject(	name = "almhirt-testkit",
-	                       		baseFile = file("almhirt-testkit")) dependsOn(core % "compile -> compile", riftwarp % "compile -> compile", coreExtRiftwarp % "compile -> compile")
+	                       		baseFile = file("almhirt-testkit")) dependsOn(core % "compile -> compile", riftwarp % "compile -> compile", corexRiftwarp % "compile -> compile")
 
-  lazy val coreExtRiftwarp = coreExtRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
+  lazy val corexRiftwarp = corexRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
 	                       		baseFile = file("./ext/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
 								
 
-  lazy val slickExtensions = slickExtProject(	name = "almhirt-ext-core-slick",
-                       			baseFile = file("./ext/almhirt-ext-core-slick")) dependsOn(core, riftwarp % "test->test", coreExtRiftwarp % "test->test", testKit % "test")
+  lazy val slickExtensions = corexSlickProject(	name = "almhirt-corex-slick",
+                       			baseFile = file("./ext/almhirt-corex-slick")) dependsOn(core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 
- lazy val extCoreSpray = extCoreSprayProject(	name = "almhirt-ext-core-spray",
-	                       				baseFile = file("./ext/almhirt-ext-core-spray")) dependsOn(core)
+ lazy val corexSpray = corexSprayProject(	name = "almhirt-corex-spray",
+	                       				baseFile = file("./ext/almhirt-corex-spray")) dependsOn(core)
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
