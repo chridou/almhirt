@@ -95,7 +95,7 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
     import riftwarp._
     import riftwarp.std.kit._
     import riftwarp.std.WarpObjectLookUp
-    import almhirt.ext.core.riftwarp.serialization._
+    import almhirt.corex.riftwarp.serialization._
 
     implicit object AR1WarpPackaging extends WarpPacker[AR1] with RegisterableWarpPacker with RegisterableWarpUnpacker[AR1] {
       val warpDescriptor = WarpDescriptor("AR1")

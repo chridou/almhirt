@@ -11,7 +11,7 @@
 //import riftwarp.std._
 //import riftwarp.std.kit._
 //import almhirt.core.test._
-//import almhirt.ext.core.riftwarp.serialization._
+//import almhirt.corex.riftwarp.serialization._
 //
 //object TestPersonCreatedPacker extends DomainEventWarpPacker[TestPersonCreated] with RegisterableWarpPacker {
 //  val warpDescriptor = WarpDescriptor(classOf[TestPersonCreated])

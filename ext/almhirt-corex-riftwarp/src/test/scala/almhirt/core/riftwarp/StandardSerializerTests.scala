@@ -7,7 +7,7 @@
 //import almhirt.core._
 //import almhirt.core.test._
 //import almhirt.core.riftwarp.test._
-//import almhirt.ext.core.riftwarp._
+//import almhirt.corex.riftwarp._
 //import almhirt.serializing._
 //import almhirt.serialization._
 //import _root_.riftwarp._

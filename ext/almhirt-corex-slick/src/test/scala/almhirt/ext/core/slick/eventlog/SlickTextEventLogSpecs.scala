@@ -1,4 +1,4 @@
-package almhirt.ext.core.slick.eventlog
+package almhirt.corex.slick.eventlog
 
 import akka.actor._
 import almhirt.almvalidation.kit._

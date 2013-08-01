@@ -7,7 +7,7 @@
 //import almhirt.environment.configuration._
 //import com.typesafe.config.Config
 //import _root_.riftwarp.RiftWarp
-//import almhirt.ext.core.riftwarp.RiftWarpBootstrapper
+//import almhirt.corex.riftwarp.RiftWarpBootstrapper
 //
 //trait WithTestDecomposersAndWarpUnpackersBootstrapper extends CreatesCoreComponentsBootstrapperPhase { self: HasServiceRegistry =>
 //  override def createCoreComponents(theAlmhirt: Almhirt, startUpLogger: LoggingAdapter): BootstrapperPhaseResult =

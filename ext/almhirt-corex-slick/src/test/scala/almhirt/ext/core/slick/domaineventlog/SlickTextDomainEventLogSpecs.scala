@@ -1,4 +1,4 @@
-package almhirt.ext.core.slick.domaineventlog
+package almhirt.corex.slick.domaineventlog
 
 import akka.actor._
 import almhirt.almvalidation.kit._
@@ -6,7 +6,7 @@ import almhirt.testkit._
 import almhirt.testkit.domaineventlog.DomainEventLogSpecTemplate
 import almhirt.core.HasAlmhirt
 import almhirt.domain.DomainEventStringSerializer
-import almhirt.ext.core.riftwarp.serializers.RiftDomainEventStringSerializer
+import almhirt.corex.riftwarp.serializers.RiftDomainEventStringSerializer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 
