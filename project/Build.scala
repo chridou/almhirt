@@ -223,8 +223,8 @@ object AlmHirtBuild extends Build
   lazy val testKit = testKitProject(	name = "almhirt-testkit",
 	                       		baseFile = file("almhirt-testkit")) dependsOn(core % "compile -> compile", riftwarp % "compile -> compile", corexRiftwarp % "compile -> compile")
 
-  lazy val corexRiftwarp = corexRiftWarpProject(	name = "almhirt-ext-core-riftwarp",
-	                       		baseFile = file("./ext/almhirt-ext-core-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
+  lazy val corexRiftwarp = corexRiftWarpProject(	name = "almhirt-corex-riftwarp",
+	                       		baseFile = file("./ext/almhirt-corex-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
 								
 
   lazy val slickExtensions = corexSlickProject(	name = "almhirt-corex-slick",
