@@ -6,7 +6,7 @@ import almhirt.common._
 trait EventHeader {
   /** The events unique identifier */
   def id: java.util.UUID
-  /** The events timestamp of creation */
+  /** The events creation timestamp */
   def timestamp: LocalDateTime
   def metadata: Map[String, String]
   def changeMetadata(newMetaData: Map[String, String]): EventHeader

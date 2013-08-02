@@ -30,7 +30,7 @@ import almhirt.almfuture.all.akkaFutureToAlmhirtFuture
  * Instead a result should always be in a [[almhirt.validation.AlmValidation]] which is in fact a [[scalaz.Validation]]
  * based on [[almhirt.validation.Problem]] as the error type
  *
- * Errors which would end in a Throwable end in a SystemProblem whereas a TimeoutException ends in a TimeoutProblem.
+ * Errors which would end in a Throwable end in a Problem .
  */
 final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   import almhirt.almfuture.all._
