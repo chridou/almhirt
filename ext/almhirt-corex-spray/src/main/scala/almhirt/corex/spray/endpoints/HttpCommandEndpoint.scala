@@ -3,6 +3,7 @@ package almhirt.corex.spray.endpoints
 import scala.language.postfixOps
 import almhirt.common._
 import almhirt.components.CommandEndpointWrapper
+import almhirt.commanding.ExecutionFinishedState
 import spray.routing._
 import spray.http._
 import spray.routing.directives._
@@ -14,7 +15,7 @@ trait HttpCommandEndpoint extends HttpService {
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
 
-  implicit def commandMarshaller: Marshaller[Command]
+  implicit def executionFinishedStateMarshaller: Marshaller[ExecutionFinishedState]
   implicit def commandUnmarshaller: Unmarshaller[Command]
 
   val execute = pathPrefix("execute") & (get & parameters('tracked ?, 'sync ?)) & entity(as[Command])
