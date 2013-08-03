@@ -57,6 +57,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           pinnedSender ! CommittedDomainEvents(Seq.empty, Some((events, problem)))
         },
         succ => pinnedSender ! CommittedDomainEvents(events, None))
+        
     case GetAllDomainEvents =>
       val pinnedSender = sender
       AlmFuture {
@@ -69,6 +70,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        
     case GetDomainEvent(eventId) =>
       val pinnedSender = sender
       AlmFuture {
@@ -84,6 +86,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           }
         },
         event => pinnedSender ! QueriedDomainEvent(eventId, Some(event)))
+        
     case GetAllDomainEventsFor(aggId) =>
       val pinnedSender = sender
       AlmFuture {
@@ -96,6 +99,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        
     case GetDomainEventsFrom(aggId, fromVersion) =>
       val pinnedSender = sender
       AlmFuture {
@@ -108,6 +112,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        
     case GetDomainEventsTo(aggId, toVersion) =>
       val pinnedSender = sender
       AlmFuture {
@@ -120,6 +125,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        
     case GetDomainEventsUntil(aggId, untilVersion) =>
       val pinnedSender = sender
       AlmFuture {
@@ -132,6 +138,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
       val pinnedSender = sender
       AlmFuture {
@@ -144,6 +151,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
       val pinnedSender = sender
       AlmFuture {
