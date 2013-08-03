@@ -15,8 +15,8 @@ trait AlmBooleanConstraints extends Ops[Boolean] {
 }
 
 trait AlmStringConstraints extends Ops[String] {
-  def mustFulfill(pred: String => Boolean, msg: String): AlmValidation[String] =
-    if (pred(self)) self.success else ConstraintViolatedProblem(msg).failure
+  def mustFulfill(pred: String => Boolean, msg: (String) => String): AlmValidation[String] =
+    if (pred(self)) self.success else ConstraintViolatedProblem(msg(self)).failure
 
   def notEmptyOrWhitespace(): AlmValidation[String] =
     funs.notEmptyOrWhitespace(self)
