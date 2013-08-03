@@ -58,6 +58,7 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
       }.onComplete(
         problem => messagePublisher.publish(FailureEvent(s"""Could not store even of type "${event.getClass().getName()}" with event id "${event.eventId.toString()}"""", problem, Major)),
         succ => ())
+        
     case GetEvent(eventId) =>
       val pinnedSender = sender
       AlmFuture {
@@ -73,24 +74,34 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
           }
         },
         event => pinnedSender ! QueriedEvent(eventId, Some(event)))
+        
     case GetAllEvents =>
       fetchEvents(() => storeComponent.getAllEventRows, sender)
+      
     case GetEventsFrom(from) =>
       fetchEvents(() => storeComponent.getAllEventRowsFrom(from), sender)
+      
     case GetEventsAfter(after) =>
       fetchEvents(() => storeComponent.getAllEventRowsAfter(after), sender)
+      
     case GetEventsTo(to) =>
       fetchEvents(() => storeComponent.getAllEventRowsTo(to), sender)
+      
     case GetEventsUntil(until) =>
       fetchEvents(() => storeComponent.getAllEventRowsUntil(until), sender)
+      
     case GetEventsFromTo(from, to) =>
       fetchEvents(() => storeComponent.getAllEventRowsFromTo(from, to), sender)
+      
     case GetEventsFromUntil(from, until) =>
       fetchEvents(() => storeComponent.getAllEventRowsFromUntil(from, until), sender)
+      
     case GetEventsAfterTo(after, to) =>
       fetchEvents(() => storeComponent.getAllEventRowsAfterTo(after, to), sender)
+      
     case GetEventsAfterUntil(after, until) =>
       fetchEvents(() => storeComponent.getAllEventRowsAfterUntil(after, until), sender)
+      
   }
 
 }
