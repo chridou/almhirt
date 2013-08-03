@@ -37,6 +37,14 @@ trait AlmValidationFunctions {
       case exn: Exception => launderException(exn).withMessage(message).failure
     }
   }
+
+  def inTryCatchMM[T](a: => T)(createMessage: Exception => String): AlmValidation[T] = {
+    try {
+      a.success[Problem]
+    } catch {
+      case exn: Exception => launderException(exn).withMessage(createMessage(exn)).failure
+    }
+  }
   
   def computeSafely[T](a: => AlmValidation[T]): AlmValidation[T] = {
     try {
@@ -65,10 +73,10 @@ trait AlmValidationFunctions {
   def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
     if(cond) ().success else problem.failure[Unit]
   
-  def noneIsBadData[T](v: Option[T]): AlmValidation[T] =
+  def noneIsNoSuchElement[T](v: Option[T]): AlmValidation[T] =
     v match {
-      case Some(that) => that.success[BadDataProblem]
-      case None => BadDataProblem("A value was required but None was supplied.").failure[T]
+      case Some(that) => that.success
+      case None => MandatoryDataProblem("A value was required but None was supplied.").failure[T]
     }
   
   def noneIsNotFound[T](v: Option[T]): AlmValidation[T] =
@@ -77,23 +85,23 @@ trait AlmValidationFunctions {
       case None => NotFoundProblem("A value was expected but there was None").failure
     }
 
-  def noneIsNoSuchElement[T](v: Option[T]): AlmValidation[T] =
+  def argumentIsMandatory[T](v: Option[T]): AlmValidation[T] =
     v match {
       case Some(v) => v.success
-      case None => NoSuchElementProblem("A value was expected but there was None").failure
+      case None => MandatoryDataProblem("A value was expected but there was None").failure
     }
   
-  def getFromMap[K,V](key: K, map: Map[K,V], severity: Severity = NoProblem): Validation[KeyNotFoundProblem, V] = {
+  def getFromMap[K,V](key: K, map: Map[K,V]): AlmValidation[V] = {
     map.get(key) match {
       case Some(v) => v.success
-      case None => KeyNotFoundProblem("Could not find a value for key '%s'".format(key)).failure
+      case None => NoSuchElementProblem("Could not find a value for key '%s'".format(key)).failure
     }
   }
   
-  def tryApply[K,V](x: K, f: K => Option[V], severity: Severity = NoProblem): Validation[KeyNotFoundProblem, V] = {
+  def tryApply[K,V](x: K, f: K => Option[V]): AlmValidation[V] = {
     f(x) match {
       case Some(v) => v.success
-      case None => KeyNotFoundProblem("Could not find a value for '%s'".format(x)).failure
+      case None => NoSuchElementProblem("Could not find a value for '%s'".format(x)).failure
     }
   }
 }

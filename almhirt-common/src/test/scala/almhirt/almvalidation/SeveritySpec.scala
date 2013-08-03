@@ -3,6 +3,7 @@ package almhirt.almvalidation
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import almhirt.common._
+import almhirt.problem._
 
 class SeveritySpec extends FlatSpec with ShouldMatchers {
   "A Severity has a zero of 'NoProblem' and" should

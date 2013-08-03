@@ -17,7 +17,7 @@ package almhirt.almvalidation
 import java.util.UUID
 import scalaz.syntax.validation._
 import scalaz.std._
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import almhirt.common._
 
 /**
@@ -33,65 +33,72 @@ trait AlmValidationParseFunctions {
     try {
       toParse.toByte.success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid number(Int):%s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid number(Int):%s".format(toParse)).failure
     }
 
   def parseBooleanAlm(toParse: String): AlmValidation[Boolean] =
     try {
       toParse.toBoolean.success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid Boolean: %s".format(toParse)).failure[Boolean]
+      case err: Exception => ParsingProblem("Not a valid Boolean: %s".format(toParse)).failure[Boolean]
     }
 
   def parseIntAlm(toParse: String): AlmValidation[Int] =
     try {
       toParse.toInt.success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid number(Int):%s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid number(Int):%s".format(toParse)).failure
     }
 
   def parseLongAlm(toParse: String): AlmValidation[Long] =
     try {
       toParse.toLong.success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid number(Long): %s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid number(Long): %s".format(toParse)).failure
     }
 
   def parseBigIntAlm(toParse: String): AlmValidation[BigInt] =
     try {
       BigInt.apply(toParse).success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid number(BigInt): %s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid number(BigInt): %s".format(toParse)).failure
     }
 
   def parseDoubleAlm(toParse: String): AlmValidation[Double] =
     try {
       toParse.toDouble.success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid number(Double): %s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid number(Double): %s".format(toParse)).failure
     }
 
   def parseFloatAlm(toParse: String): AlmValidation[Float] =
     try {
       toParse.toFloat.success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid number(Float): %s".format(toParse)).failure[Float]
+      case err: Exception => ParsingProblem("Not a valid number(Float): %s".format(toParse)).failure[Float]
     }
 
   def parseDecimalAlm(toParse: String): AlmValidation[BigDecimal] =
     try {
       BigDecimal(toParse).success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid number(BigDecimal): %s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid number(BigDecimal): %s".format(toParse)).failure
     }
 
   def parseDateTimeAlm(toParse: String): AlmValidation[DateTime] =
     try {
       new DateTime(toParse).success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid DateTime: %s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
 
+  def parseLocalDateTimeAlm(toParse: String): AlmValidation[LocalDateTime] =
+    try {
+      new LocalDateTime(toParse).success
+    } catch {
+      case err: Exception => ParsingProblem("Not a valid DateTime: %s".format(toParse)).failure
+    }
+    
   def parseDurationAlm(toParse: String): AlmValidation[scala.concurrent.duration.FiniteDuration] =
     try {
       val dur = scala.concurrent.duration.Duration(toParse)
@@ -100,35 +107,35 @@ trait AlmValidationParseFunctions {
       else
         BadDataProblem("Not a valid finite duration: %s".format(toParse)).failure
     } catch {
-      case err: Exception => BadDataProblem("Not a valid DateTime: %s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
 
   def parseUuidAlm(toParse: String): AlmValidation[UUID] =
     try {
       UUID.fromString(toParse).success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid UUID: %s".format(toParse)).failure[UUID]
+      case err: Exception => ParsingProblem("Not a valid UUID: %s".format(toParse)).failure[UUID]
     }
 
   def parseUriAlm(toParse: String): AlmValidation[_root_.java.net.URI] =
     try {
       _root_.java.net.URI.create(toParse).success
     } catch {
-      case err: Exception => BadDataProblem("Not a valid URI: %s".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not a valid URI: %s".format(toParse)).failure
     }
 
   def parseByteArrayAlm(toParse: String, sep: String): AlmValidation[Array[Byte]] =
     try {
       toParse.split(sep).map(_.toByte).success
     } catch {
-      case err: Exception => BadDataProblem("Not all are valid bytes:".format(toParse)).failure
+      case err: Exception => ParsingProblem("Not all are valid bytes:".format(toParse)).failure
     }
 
   def parseXmlAlm(toParse: String): AlmValidation[scala.xml.Elem] =
     try {
       scala.xml.XML.loadString(toParse).success
     } catch {
-      case err: Exception => BadDataProblem("No valid XML: %s".format(toParse)).failure[scala.xml.Elem]
+      case err: Exception => ParsingProblem("No valid XML: %s".format(toParse)).failure[scala.xml.Elem]
     }
 
   def tryParseByteAlm(toParse: String): AlmValidation[Option[Byte]] =

@@ -32,6 +32,7 @@ object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.
       case WarpUuid(value) => Cord(mapStringLike(value.toString))
       case WarpUri(value) => Cord(mapStringLike(launderString(value.toString)))
       case WarpDateTime(value) => Cord(mapStringLike(value.toString))
+      case WarpLocalDateTime(value) => Cord(mapStringLike(value.toString))
       case WarpDuration(value) => Cord(mapStringLike(value.toString))
     }
 

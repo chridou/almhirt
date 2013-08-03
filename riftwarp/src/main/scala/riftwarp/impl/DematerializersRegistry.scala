@@ -14,7 +14,7 @@ class DematerializersRegistry extends Dematerializers {
     
   override def get(dimension: String, channel: String): AlmValidation[Dematerializer[Any]] =
     dematerializers.get((channel, dimension)) match {
-      case null => KeyNotFoundProblem(s"""No Dematerialzer found  found for channel "$channel" and dimension "$dimension"""").failure
+      case null => NoSuchElementProblem(s"""No Dematerialzer found  found for channel "$channel" and dimension "$dimension"""").failure
       case x => x.success
     }
 

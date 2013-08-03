@@ -3,7 +3,7 @@ package riftwarp
 import org.scalatest._
 import org.scalatest.matchers.MustMatchers
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -84,6 +84,12 @@ class JsonSerialization extends FunSuite with MustMatchers {
     res must equal(s""""${dateTime.toString()}"""")
   }
 
+  test("A WarpLocalDateTime must dematerialize to the corresponding JSON String") {
+    val dateTime = LocalDateTime.now()
+    val res = WarpLocalDateTime(dateTime).dematerialize[String @@ WarpTags.Json]
+    res must equal(s""""${dateTime.toString()}"""")
+  }
+  
   test("A WarpBlob must dematerialize to the corresponding JSON String") {
     val blob = Vector(1,2,3,4,5,6,7,8,9,0).map(_.toByte)
     val expected = org.apache.commons.codec.binary.Base64.encodeBase64String(blob.toArray)
@@ -194,46 +200,42 @@ class JsonSerialization extends FunSuite with MustMatchers {
   }
 
   test("SerializerOnStrings must serialize a UUID") {
-    val serializer = new WarpSerializerToString[JUUID](RiftWarp(packers, unpackers)).serializingToChannel("json")
+    val serializer = new WarpSerializerToString[JUUID](RiftWarp(packers, unpackers)).serialize("json")_
     val uuid = JUUID.randomUUID()
-    val resV = serializer.serialize(uuid)
+    val resV = serializer(uuid, Map.empty)
     resV.forceResult must equal(("\""+uuid.toString()+"\"", Some(WarpDescriptor("UUID").toParsableString())))
   }
 
   test("SerializerOnStrings must serialize a Boolean") {
-    val serializer = new WarpSerializerToString[Boolean](RiftWarp(packers, unpackers)).serializingToChannel("json")
-    val resV = serializer.serialize(true)
+    val serializer = new WarpSerializerToString[Boolean](RiftWarp(packers, unpackers)).serialize("json")_
+    val resV = serializer(true, Map.empty)
     resV.forceResult must equal(("true", Some(WarpDescriptor("Boolean").toParsableString())))
   }
 
   test("SerializerOnStrings[String] must serialize and deserialze a String") {
-    implicit val execContext = HasExecutionContext.single
-    val serializer = Serializers.createSpecificForStrings[String](RiftWarp(packers, unpackers)).serializingToChannel("json")
-    val resV = serializer.serialize("hallo")
+    val serializer = Serializers.createSpecificForStrings[String](RiftWarp(packers, unpackers))
+    val resV = serializer.serialize("json")("hallo")
     val dematV = serializer.deserialize("json")(resV.forceResult._1)
     dematV.forceResult must equal("hallo")
   }
 
   test("SerializerOnStrings[Any] must serialize and deserialze a String") {
-    implicit val execContext = HasExecutionContext.single
-    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("json")
-    val resV = serializer.serialize("hallo")
+    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
+    val resV = serializer.serialize("json")("hallo")
     val dematV = serializer.deserialize("json")(resV.forceResult._1)
     dematV.forceResult must equal("hallo")
   }
 
   test("SerializerOnStrings[Any] must serialize and deserialze a Double") {
-    implicit val execContext = HasExecutionContext.single
-    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("json")
-    val resV = serializer.serialize(1.234)
+    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
+    val resV = serializer.serialize("json")(1.234)
     val dematV = serializer.deserialize("json")(resV.forceResult._1)
     dematV.forceResult must equal(1.234)
   }
 
   test("SerializerOnStrings[Any] must serialize and deserialze the PrimitiveListMAs") {
-    implicit val execContext = HasExecutionContext.single
-    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers)).serializingToChannel("json")
-    val resV = serializer.serialize(TestObjectA.pete.primitiveListMAs)
+    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
+    val resV = serializer.serialize("json")(TestObjectA.pete.primitiveListMAs)
     val dematV = serializer.deserialize("json")(resV.forceResult._1)
     dematV.forceResult must equal(TestObjectA.pete.primitiveListMAs)
   }

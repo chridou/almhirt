@@ -4,7 +4,6 @@ import scala.reflect.ClassTag
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.http._
 import riftwarp._
 
 trait RiftWarpFuns {
@@ -21,22 +20,22 @@ trait RiftWarpFuns {
         (dematerializer.dematerialize(pkg, options), packer.warpDescriptor)))
   }
 
-  def prepareHttpDeparture(channel: String, what: Any, overrideDescriptor: Option[WarpDescriptor] = None, backupDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit packers: WarpPackers, dematerializers: Dematerializers, classifies: ClassifiesChannels): AlmValidation[HttpContent] =
-    for {
-      packer <- packers.getFor(what, overrideDescriptor, backupDescriptor)
-      dimensionClassifier <- classifies(channel)
-      dematerializer <- dematerializers.get(dimensionClassifier.transportType.getName(), channel)
-      packed <- packer.packBlind(what)
-      dematerialized <- dematerializer.apply(packed, options).success
-      contentType <- packer.warpDescriptor.version match {
-        case Some(version) => HttpContentType(s"${packer.warpDescriptor.identifier}+$channel", Map("version" -> version.toString)).success
-        case None => HttpContentType(s"${packer.warpDescriptor.identifier}+$channel", Map.empty).success
-      }
-      payload <- dimensionClassifier match {
-        case BinaryChannel => dematerialized.castTo[Array[Byte]].map(BinaryBody(_))
-        case TextChannel => dematerialized.castTo[String].map(TextBody(_))
-      }
-    } yield HttpContent(contentType, payload)
+//  def prepareHttpDeparture(channel: String, what: Any, overrideDescriptor: Option[WarpDescriptor] = None, backupDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit packers: WarpPackers, dematerializers: Dematerializers, classifies: ClassifiesChannels): AlmValidation[HttpContent] =
+//    for {
+//      packer <- packers.getFor(what, overrideDescriptor, backupDescriptor)
+//      dimensionClassifier <- classifies(channel)
+//      dematerializer <- dematerializers.get(dimensionClassifier.transportType.getName(), channel)
+//      packed <- packer.packBlind(what)
+//      dematerialized <- dematerializer.apply(packed, options).success
+//      contentType <- packer.warpDescriptor.version match {
+//        case Some(version) => HttpContentType(s"${packer.warpDescriptor.identifier}+$channel", Map("version" -> version.toString)).success
+//        case None => HttpContentType(s"${packer.warpDescriptor.identifier}+$channel", Map.empty).success
+//      }
+//      payload <- dimensionClassifier match {
+//        case BinaryChannel => dematerialized.castTo[Array[Byte]].map(BinaryBody(_))
+//        case TextChannel => dematerialized.castTo[String].map(TextBody(_))
+//      }
+//    } yield HttpContent(contentType, payload)
 
   def handleArrival[U, T](from: U, options: Map[String, Any] = Map.empty)(implicit rematerializer: Rematerializer[U], unpacker: WarpUnpacker[T], unpackers: WarpUnpackers): AlmValidation[T] =
     rematerializer.rematerialize(from, options).flatMap(pkg => unpacker.unpack(pkg))
@@ -55,18 +54,18 @@ trait RiftWarpFuns {
   def handleFreeArrivalWith(from: Any, rematerialize: (Any, Map[String, Any]) => AlmValidation[WarpPackage], overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit unpackers: WarpUnpackers): AlmValidation[Any] =
     rematerialize(from, options).flatMap(pkg => unpack(pkg, overrideDescriptor, backUpDescriptor))
 
-  def handleHttpArrival[T](from: HttpContent, options: Map[String, Any] = Map.empty)(implicit rematerializers: Rematerializers, unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[T] =
-    for {
-      channelAndDescriptor <- from.contentType.channelAndDescriptor
-      rematerializer <- rematerializers.get(from.payload.data.getClass.getName(), channelAndDescriptor._1)
-      result <- handleFreeArrivalWith(from.payload.data, rematerializer, None, channelAndDescriptor._2, options)
-      typedResult <- result.castTo[T]
-    } yield (typedResult)
+//  def handleHttpArrival[T](from: HttpContent, options: Map[String, Any] = Map.empty)(implicit rematerializers: Rematerializers, unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[T] =
+//    for {
+//      channelAndDescriptor <- from.contentType.channelAndDescriptor
+//      rematerializer <- rematerializers.get(from.payload.data.getClass.getName(), channelAndDescriptor._1)
+//      result <- handleFreeArrivalWith(from.payload.data, rematerializer, None, channelAndDescriptor._2, options)
+//      typedResult <- result.castTo[T]
+//    } yield (typedResult)
 
   def unpack(what: WarpPackage, overrideDescriptor: Option[WarpDescriptor], backUpDescriptor: Option[WarpDescriptor])(implicit unpackers: WarpUnpackers): AlmValidation[Any] = {
     overrideDescriptor match {
       case Some(pd) =>
-        unpackers.get(pd).leftMap(_.mapMessage(old => s"WarpDescriptor has been overriden: $old")).flatMap(_(what))
+        unpackers.get(pd).leftMap(old => NoSuchElementProblem(s"WarpDescriptor has been overriden", cause = Some(old))).flatMap(_(what))
       case None =>
         what match {
           case wp: WarpPrimitive => wp.value.success

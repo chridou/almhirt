@@ -81,16 +81,30 @@ object WarpPackers {
     packers.addTyped(ProblemCausePacker)
 
     packers.addTyped(WarpDescriptorPacker)
+    
+    packers.addTyped(MessageHeaderWarpPackaging)
+    packers.addTyped(MessageWarpPackaging)
 
-    serialization.common.Problems.registerAllCommonProblems(packers, WarpUnpackers.NoWarpUnpackers)
+    packers.addTyped(SingleProblemPackaging)
+    packers.addTyped(AggregateProblemPackaging)
+    packers.addTyped(ProblemPackaging)
+
+    packers.addTyped(ProblemOccurredWarpPackaging)
+    packers.addTyped(ExceptionOccurredWarpPackaging)
+    packers.addTyped(FailureEventWarpPackaging)
+    
+    packers.addPredicated(x => x.isInstanceOf[SingleProblem], SingleProblemPackaging)
+    packers.addPredicated(x => x.isInstanceOf[AggregateProblem], AggregateProblemPackaging)
+    
+    serialization.common.ProblemTypes.registerPackers(packers)
     packers
   }
 
   def empty: WarpPackers = new WarpPackerRegistry()
 
   val NoWarpPackers: WarpPackers = new WarpPackers {
-    override def get(descriptor: WarpDescriptor) = UnspecifiedSystemProblem("NoWarpPackers has no packers").failure
-    override def getByPredicate(what: Any) = UnspecifiedSystemProblem("NoWarpPackers has no packers").failure
+    override def get(descriptor: WarpDescriptor) = NoSuchElementProblem("NoWarpPackers has no packers").failure
+    override def getByPredicate(what: Any) = NoSuchElementProblem("NoWarpPackers has no packers").failure
     override def add(blindPacker: BlindWarpPacker with RegisterableWarpPacker) {}
     override def addTyped[T](packer: WarpPacker[T] with RegisterableWarpPacker) {}
     override def addPredicated(pred: Any => Boolean, packer: BlindWarpPacker) {}

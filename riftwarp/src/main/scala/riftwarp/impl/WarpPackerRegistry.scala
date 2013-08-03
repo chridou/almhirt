@@ -9,13 +9,13 @@ class WarpPackerRegistry extends WarpPackers {
   private val predicatedPackers = new _root_.java.util.concurrent.CopyOnWriteArrayList[(Any => Boolean, BlindWarpPacker)]
   override def get(descriptor: WarpDescriptor): AlmValidation[BlindWarpPacker] =
     packers.get(descriptor) match {
-      case null => KeyNotFoundProblem(s"""No WarpPacker found for "${descriptor.toString}"""").failure
+      case null => NoSuchElementProblem(s"""No WarpPacker found for "${descriptor.toString}"""").failure
       case (x, _) => x.success
     }
 
   override def getTyped[T](descriptor: WarpDescriptor): AlmValidation[WarpPacker[T]] =
     packers.get(descriptor) match {
-      case null => KeyNotFoundProblem(s"""No WarpPacker found for "${descriptor.toString}"""").failure
+      case null => NoSuchElementProblem(s"""No WarpPacker found for "${descriptor.toString}"""").failure
       case (x, true) => x.asInstanceOf[WarpPacker[T]].success
       case (x, false) => blindToTyped[T](x).success
   }

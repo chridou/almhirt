@@ -21,7 +21,7 @@ import java.util.UUID
 import scalaz.{ Validation, NonEmptyList }
 import scalaz.syntax.Ops
 import scalaz.syntax.validation._
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, LocalDateTime}
 import almhirt.common._
 
 /**
@@ -53,6 +53,8 @@ trait AlmValidationOps0 extends Ops[String] {
     parseDecimalAlm(self)
   def toDateTimeAlm(): AlmValidation[DateTime] =
     parseDateTimeAlm(self)
+  def toLocalDateTimeAlm(): AlmValidation[LocalDateTime] =
+    parseLocalDateTimeAlm(self)
   def toDurationAlm(): AlmValidation[scala.concurrent.duration.FiniteDuration] =
     parseDurationAlm(self)
   def toUuidAlm(): AlmValidation[UUID] =
@@ -61,7 +63,6 @@ trait AlmValidationOps0 extends Ops[String] {
     parseUriAlm(self)
   def notEmptyAlm(): AlmValidation[String] =
     notEmpty(self)
-
 
 }
 
@@ -78,7 +79,7 @@ trait AlmValidationOps2[P, V] extends Ops[Option[Validation[P, V]]] {
         validation.fold(f => f.failure[Option[V]], _.success[P].map(Some(_)))
       case None => None.success[P]
     }
-  
+
 }
 
 /** Implicits for a validation that contains an option*/
@@ -108,22 +109,10 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   def withFailEffect(failEffect: P => Unit): Validation[P, T] =
     self fold (p => { failEffect(p); self }, _ => self)
 
-  def noProblem(v: => T): Validation[P, T] =
-    self
-      .fold(
-        prob => if (prob.severity <= NoProblem) v.success[P] else self,
-        _ => self)
-
-  def compensate(v: => T): Validation[P, T] =
-    self
-      .fold(
-        prob => if (prob.severity <= Minor) v.success[P] else self,
-        _ => self)
-
   def recover(v: => T): Validation[P, T] =
     self
       .fold(
-        prob => if (prob.severity <= Major) v.success[P] else self,
+        prob => v.success[P],
         _ => self)
 
   /** Never use in production code! */
@@ -134,26 +123,34 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   def forceProblem(): P =
     self fold (prob => prob, v => throw new ProblemForcedFromValidationException())
 
+  /**
+   *  Escalate a problem.
+   *  Call if you need a result and you don't no how to recover from a failure.
+   *  A failure will throw an "EscalatedProblemException" exception.
+   */
+  def resultOrEscalate(): T =
+    self fold (prob => throw new EscalatedProblemException(prob), v => v)
+
   def toProblemOption(): Option[Problem] =
     self fold (prob => Some(prob), _ => None)
 }
 
 trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
-  def >!(x: T): Validation[KeyNotFoundProblem, U] =
-    self(x).map(_.success).getOrElse(KeyNotFoundProblem(s"Key not found: ${x.toString}".format(x)).failure)
+  def >!(x: T): AlmValidation[U] =
+    self(x).map(_.success).getOrElse(NoSuchElementProblem(s"Key not found: ${x.toString}".format(x)).failure)
 }
 
 trait AlmValidationOps6A[A, B] extends Ops[Map[A, B]] {
-  def >!(key: A): Validation[KeyNotFoundProblem, B] =
-    if(self.contains(key))
+  def >!(key: A): AlmValidation[B] =
+    if (self.contains(key))
       self(key).success
     else
-      KeyNotFoundProblem(s"The map does not contain a value for key ${key.toString}").failure
+      NoSuchElementProblem(s"The map does not contain a value for key ${key.toString}").failure
 }
 
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
-  def noneIsBadData(): AlmValidation[T] =
-    funs.noneIsBadData(self)
+  def mandatory(): AlmValidation[T] =
+    funs.argumentIsMandatory(self)
   def noneIsNotFound(): AlmValidation[T] =
     funs.noneIsNotFound(self)
   def noneIsNoSuchElement(): AlmValidation[T] =
@@ -167,7 +164,7 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
         if (prob.isInstanceOf[AggregateProblem])
           prob.asInstanceOf[AggregateProblem].failure
         else
-          AggregateProblem(msg, severity = prob.severity, category = prob.category, problems = List(prob)).failure,
+          MultipleProblems(List(prob)).failure,
       _.success)
 
   def toAgg(): AlmValidationAP[T] =
@@ -175,19 +172,16 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
 
   def invert(): scalaz.Validation[T, Problem] =
     self fold (fail => fail.success, succ => succ.failure)
-
-  def withArgOnFailure(key: String, value: Any): AlmValidation[T] = self.bimap(p => p.withArg(key, value), g => g)
-  def withIdentifierOnFailure(ident: String): AlmValidation[T] = self.bimap(p => almhirt.problem.funs.withIdentifier(p, ident), g => g)
 }
 
 trait AlmValidationOps10[T] extends Ops[Validation[Throwable, T]] {
   def fromExceptional(): AlmValidation[T] =
-    self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(exn)).failure[T], _.success)
+    self fold (exn => ExceptionCaughtProblem(exn).failure[T], _.success)
 }
 
 trait AlmValidationOps11[T] extends Ops[Either[Throwable, T]] {
   def toAlmValidation(): AlmValidation[T] =
-    self fold (exn => ExceptionCaughtProblem(exn.getMessage, cause = Some(exn)).failure[T], _.success)
+    self fold (exn => ExceptionCaughtProblem(exn).failure[T], _.success)
 }
 
 trait AlmValidationOps12[R] extends Ops[List[AlmValidation[R]]] {
@@ -198,7 +192,7 @@ trait AlmValidationOps12[R] extends Ops[List[AlmValidation[R]]] {
       case (succs, Nil) => succs.flatMap(_.toOption).toList.success
       case (_, probs) =>
         val problems = probs.flatMap(_.toProblemOption)
-        (NonEmptyList(problems.head, problems.tail: _*) aggregate (msg)).failure
+        (NonEmptyList(problems.head, problems.tail: _*).aggregate).failure
     }
   }
 

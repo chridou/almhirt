@@ -1,3 +1,0 @@
-package almhirt.ext.http.unfiltered
-
-object UnfilteredRequestResponse extends UnfilteredHttpRequestExtractor with UnfilteredResponseConsumer

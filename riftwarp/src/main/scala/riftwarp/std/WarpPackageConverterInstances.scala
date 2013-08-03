@@ -177,6 +177,16 @@ trait WarpPrimitiveToDateTimeConverter extends WarpPrimitiveConverter[org.joda.t
   override def convertBack(what: org.joda.time.DateTime) = WarpDateTime(what)
 }
 
+trait WarpPrimitiveToLocalDateTimeConverter extends WarpPrimitiveConverter[org.joda.time.LocalDateTime] {
+  override def convert(what: WarpPackage): AlmValidation[org.joda.time.LocalDateTime] =
+    what match {
+      case WarpString(value) => value.toLocalDateTimeAlm
+      case WarpLocalDateTime(value) => value.success
+      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a LocalDateTime""").failure
+    }
+  override def convertBack(what: org.joda.time.LocalDateTime) = WarpLocalDateTime(what)
+}
+
 trait WarpPrimitiveToDurationConverter extends WarpPrimitiveConverter[FiniteDuration] {
   override def convert(what: WarpPackage): AlmValidation[FiniteDuration] =
     what match {

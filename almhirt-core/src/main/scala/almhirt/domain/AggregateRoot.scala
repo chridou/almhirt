@@ -15,14 +15,19 @@
 package almhirt.domain
 
 import java.util.UUID
+import scala.annotation.tailrec
 import scalaz._, Scalaz._
 import almhirt.core._
 import almhirt.common._
 import almhirt.syntax.almvalidation._
 
+/**
+ * This is more a marker...
+ */
 trait IsAggregateRoot {
   def id: UUID
   def version: Long
+  def isDeleted: Boolean
 }
 
 /**
@@ -34,18 +39,38 @@ trait IsAggregateRoot {
 trait AggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] with IsAggregateRoot {
   /**
    * The combination of id and version that uniquely identifies an aggregate root in space and time.
-   * 
+   *
    * The version which is increased by one with each event generated via mutation starts with 1L on creation.
    * A creating event must target version 0L which means that the aggregate root doesn't yet exist.
    */
   def ref: AggregateRootRef
   def id: UUID = ref.id
   def version = ref.version
+
+  def applyEvents(events: Iterable[Event]): DomainValidation[AR] = {
+    @tailrec
+    def buildEventSourced(ar: AR, events: Iterable[Event]): DomainValidation[AR] = {
+      if (events.isEmpty)
+        ar.success
+      else {
+        val nextEvent = events.head
+        if (!(nextEvent.isInstanceOf[DeletesAggregateRootEvent]))
+          ar.applyEvent(nextEvent) match {
+            case scalaz.Success(newState) =>
+              buildEventSourced(newState, events.tail)
+            case scalaz.Failure(prob) =>
+              prob.failure
+          }
+        else
+          AggregateRootDeletedProblem(nextEvent.header.aggRef.id).failure
+      }
+    }
+    buildEventSourced(this.asInstanceOf[AR], events)
+  }
 }
 
-trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends AggregateRoot[AR, Event] {
-  /** Applies the event by calling the default handler after validating the event. */
-  def applyEvent = { event: Event => applyValidated(event, handlers) }
+trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] { self: AggregateRoot[AR, Event] =>
+  override final def applyEvent(event: Event) = applyValidated(event, handlers)
 
   /**
    * A [[scala.PartialFunction]] that takes an event and returns a modified AR according to the event.
@@ -53,7 +78,55 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
    * The handler must increase the aggregate root's version
    */
   protected def handlers: PartialFunction[Event, AR]
+  
+  /**
+   * Apply the event by calling the given handler which modifies the aggregate root based on the event
+   * This method is usually used to call a specialized handler.
+   *
+   * @param event The event to apply the standard handler to
+   */
+  protected def update(event: Event, handler: Event => AR): UpdateRecorder[AR, Event] = {
+    try {
+      UpdateRecorder.accept(event, handler(event))
+    } catch {
+      case exn: Exception => UpdateRecorder.reject(ExceptionCaughtProblem(exn))
+    }
+  }
 
+  protected def update(event: Event): UpdateRecorder[AR, Event] = {
+    try {
+      update(event, handlers)
+    } catch {
+      case exn: Exception => UpdateRecorder.reject(ExceptionCaughtProblem(exn))
+    }
+  }
+  
+  /**
+   * Abort the update process
+   *
+   * @param prob The reason for rejection as a problem
+   * @return A failed [[almhirt.domain.UpdateRecorder]]
+   */
+  protected def reject(prob: Problem): UpdateRecorder[AR, Event] = UpdateRecorder.reject(prob)
+
+  /**
+   * Abort the update process. Returns the default application problem
+   *
+   * @param msg The reason for rejection as a message
+   * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem]] being the default application problem
+   */
+  protected def reject(msg: String): UpdateRecorder[AR, Event] = reject(UnspecifiedProblem(msg))
+
+  /**
+   * Abort the update process. Returns a  BusinessRuleViolatedProblem
+   *
+   * @param msg The reason for rejection as a message
+   * @param key A key for the operation/property mutation that failed
+   * @param severity The severity of the failure. Default is [[almhirt.validation.NoProblem]]
+   * @return A failed [[almhirt.domain.UpdateRecorder]] with the [[almhirt.validation.Problem.BusinessRuleViolatedProblem]] being the application problem
+   */
+  protected def rejectBusinessRuleViolated(msg: String, key: String): UpdateRecorder[AR, Event] = reject(BusinessRuleViolatedProblem(msg).withLabel(key))
+  
   /**
    * Validates the event and then applies the handler
    *
@@ -64,10 +137,13 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
   protected def applyValidated(event: Event, handler: PartialFunction[Event, AR]): DomainValidation[AR] = {
     validateEvent(event) flatMap (validated =>
       try {
-        handler(validated).success
+        if (!isDeleted)
+          handler(validated).success
+        else
+          AggregateRootDeletedProblem(this.id).failure
       } catch {
-        case err: MatchError => UnhandledDomainEventProblem("Unhandled event: %s".format(event.getClass.getName), event).failure
-        case err: Exception => ExceptionCaughtProblem(err.getMessage()).failure
+        case err: MatchError => throw new UnhandledDomainEventException(this.id, event)
+        case err: Exception => throw err
       })
   }
 
@@ -86,24 +162,33 @@ trait AggregateRootWithHandlers[AR <: AggregateRoot[AR, Event], Event <: DomainE
     else
       event.success
   }
-  
-  protected def updateRef(newRef: AggregateRootRef):AR 
-  def set[T](lens: Lens[AR, T], newVal: T): AR =
-    lens.set(updateRef(ref.inc), newVal)
 
-  def modify[T](lens: Lens[AR, T], modify: T => T): AR =
-    lens.mod(modify, updateRef(ref.inc))
 }
 
-trait AddsUpdateToAggregateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends UpdatesAggregateRoot[AR, Event] { ar: AggregateRootWithHandlers[AR, Event] =>
-  /**
-   * Apply the event by calling the default handler defined by the protected abstract method 'handlers'
-   *
-   * @param event The event to apply the standard handler to
-   */
-  protected def update(event: Event): UpdateRecorder[AR, Event] = update(event, handlers)
+trait AggregateRootMutationHelpers[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] { self: AggregateRoot[AR, Event] with AggregateRootWithHandlers[AR, Event] =>
+
+  protected def updateRef(newRef: AggregateRootRef): AR
+
+  protected def setL[T](lens: Lens[AR, T], newVal: T): AR =
+    lens.set(updateRef(ref.inc), newVal)
+
+  protected def set[T](setter: (AR, T) => AR, newVal: T): AR =
+    setter(updateRef(ref.inc), newVal)
+
+  protected def modifyL[T](lens: Lens[AR, T], modify: T => T): AR =
+    lens.mod(modify, updateRef(ref.inc))
+
+  protected def modify[T](getter: AR => T, setter: (AR, T) => AR, modify: T => T): AR = {
+    val oldField = getter(self.asInstanceOf[AR])
+    val newField = modify(oldField)
+    setter(updateRef(ref.inc), newField)
+  }
   
-  
-  
+  protected def markDeletedL(lens: Lens[AR, Boolean]): AR =
+    setL(lens, true)
+    
+  protected def markDeleted(setter: (AR, Boolean) => AR): AR =
+    set(setter, true)
+
 }
 

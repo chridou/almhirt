@@ -1,34 +1,41 @@
 package almhirt.common
 
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
 import almhirt.common._
 
 trait EventHeader {
   /** The events unique identifier */
   def id: java.util.UUID
-  /** The events timestamp of creation */
-  def timestamp: DateTime
-  /**
-   * 
-   */
-  def sender: Option[String]
+  /** The events creation timestamp */
+  def timestamp: LocalDateTime
+  def metadata: Map[String, String]
+  def changeMetadata(newMetaData: Map[String, String]): EventHeader
 }
 
-final case class BasicEventHeader(id: java.util.UUID, timestamp: DateTime, sender: Option[String]) extends EventHeader
-
 object EventHeader {
-  def apply(anId: java.util.UUID, aTimestamp: DateTime, sender: Option[String]): EventHeader = BasicEventHeader(anId, aTimestamp, sender)
-  def apply(anId: java.util.UUID, aTimestamp: DateTime): EventHeader = BasicEventHeader(anId, aTimestamp, None)
-  def apply(anId: java.util.UUID, aTimestamp: DateTime, sender: String): EventHeader = BasicEventHeader(anId, aTimestamp, Some(sender))
+  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime, metaData: Map[String, String]): EventHeader = BasicEventHeader(anId, aTimestamp, metaData)
+  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime): EventHeader = BasicEventHeader(anId, aTimestamp, Map.empty)
+  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getUtcTimestamp, Map.empty)
+  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getUtcTimestamp, metaData)
+  private case class BasicEventHeader(id: java.util.UUID, timestamp: LocalDateTime, metadata: Map[String, String]) extends EventHeader {
+    override def changeMetadata(newMetadata: Map[String, String]): EventHeader =
+      this.copy(metadata = newMetadata)
+  }
 }
 
 trait Event {
   def header: EventHeader
+  def metadata: Map[String, String] = header.metadata
+  def changeMetadata(newMetaData: Map[String, String]): Event
+  def eventId = header.id
+  def timestamp = header.timestamp
 }
 
-final case class ProblemEvent(header: EventHeader, problem: Problem) extends Event
-
-object ProblemEvent {
-  def apply(problem: Problem, sender: Option[String])(implicit ccuad: CanCreateUuidsAndDateTimes): ProblemEvent =
-    ProblemEvent(EventHeader(ccuad.getUuid, ccuad.getDateTime, sender), problem)
+object Event {
+  implicit class EventOps[T <: Event](self: T) {
+    def mergeMetadata(toMerge: Map[String, String]): T =
+      self.changeMetadata(toMerge.foldLeft(self.metadata)((acc, cur) => acc + cur)).asInstanceOf[T]
+    def addMetadata(newValue: (String, String)): T =
+      self.changeMetadata(self.metadata + newValue).asInstanceOf[T]
+  }
 }

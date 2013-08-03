@@ -1,21 +1,37 @@
-/* Copyright 2012 Christian Douven
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
 package almhirt.commanding
 
-import java.util.UUID
-import almhirt.common.Command
+import java.util.{UUID => JUUID}
+import org.joda.time.LocalDateTime
+import almhirt.common._
 import almhirt.domain.AggregateRootRef
 
-trait DomainCommand extends Command { def id: UUID; def aggRef: Option[AggregateRootRef] }
+trait DomainCommandHeader extends CommandHeader {
+  def aggRef: AggregateRootRef
+  override def changeMetadata(newMetadata: Map[String, String]): DomainCommandHeader
+}
+
+object DomainCommandHeader {
+  def apply(anId: JUUID, anAggregateRootRef: AggregateRootRef, aTimestamp: LocalDateTime, metaData: Map[String, String]): DomainCommandHeader = BasicDomainCommandHeader(anId, anAggregateRootRef, aTimestamp, metaData)
+  def apply(anId: JUUID, anAggregateRootRef: AggregateRootRef, aTimestamp: LocalDateTime): DomainCommandHeader = DomainCommandHeader(anId, anAggregateRootRef, aTimestamp, Map.empty)
+  def apply(anAggregateRootRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRootRef, ccuad.getUtcTimestamp, Map.empty)
+  def apply(aggIdAndVersion: (JUUID, Long))(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = 
+    DomainCommandHeader(AggregateRootRef(aggIdAndVersion._1, aggIdAndVersion._2))
+  def apply(anAggregateRootRef: AggregateRootRef, metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRootRef, ccuad.getUtcTimestamp, metaData)
+
+  private case class BasicDomainCommandHeader(id: JUUID, aggRef: AggregateRootRef, timestamp: LocalDateTime, metadata: Map[String, String]) extends DomainCommandHeader {
+    override def changeMetadata(newMetadata: Map[String, String]): BasicDomainCommandHeader =
+      this.copy(metadata = newMetadata)
+  }
+}
+
+
+trait DomainCommand extends Command {
+  override def header: DomainCommandHeader
+  override def changeMetadata(newMetadata: Map[String, String]): DomainCommand
+  def creates: Boolean = this.isInstanceOf[CreatingDomainCommand]
+  def targettedAggregateRootRef: AggregateRootRef = header.aggRef
+  def targettedVersion: Long = header.aggRef.version
+  def targettedAggregateRootId: java.util.UUID = header.aggRef.id
+}
+
+trait CreatingDomainCommand { self: DomainCommand => }

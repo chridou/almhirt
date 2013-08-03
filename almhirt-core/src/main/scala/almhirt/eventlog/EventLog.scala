@@ -1,15 +1,53 @@
 package almhirt.eventlog
 
 import java.util.{ UUID => JUUID }
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
+import akka.actor._
 import almhirt.common._
 
-trait HasEvents {
-  def getEventById(id: JUUID): AlmFuture[Event]
-  def getAllEvents(): AlmFuture[Iterable[Event]]
-  def getAllEventsFrom(from: DateTime): AlmFuture[Iterable[Event]]
-  def getAllEventsUntil(until: DateTime): AlmFuture[Iterable[Event]]
-  def getAllEventsFromUntil(from: DateTime, until: DateTime): AlmFuture[Iterable[Event]]
+object EventLog {
+  sealed trait EventLogMessage
+
+  final case class LogEvent(event: Event) extends EventLogMessage
+
+  final case class GetEvent(eventId: JUUID) extends EventLogMessage
+  case object GetAllEvents extends EventLogMessage
+  final case class GetEventsFrom(from: LocalDateTime) extends EventLogMessage
+  final case class GetEventsAfter(after: LocalDateTime) extends EventLogMessage
+  final case class GetEventsTo(to: LocalDateTime) extends EventLogMessage
+  final case class GetEventsUntil(until: LocalDateTime) extends EventLogMessage
+  final case class GetEventsFromTo(from: LocalDateTime, to: LocalDateTime) extends EventLogMessage
+  final case class GetEventsFromUntil(from: LocalDateTime, until: LocalDateTime) extends EventLogMessage
+  final case class GetEventsAfterTo(after: LocalDateTime, to: LocalDateTime) extends EventLogMessage
+  final case class GetEventsAfterUntil(after: LocalDateTime, until: LocalDateTime) extends EventLogMessage
+
+  sealed trait SingleEventQueryResult extends EventLogMessage
+  final case class QueriedEvent(eventId: JUUID, event: Option[Event]) extends SingleEventQueryResult
+  final case class EventQueryFailed(eventId: JUUID, problem: Problem) extends SingleEventQueryResult
+
+  sealed trait FetchedEventsPart extends EventLogMessage {
+    def index: Int
+    def isLast: Boolean
+  }
+
+  final case class EventsChunk(
+    /**
+     * Starts with Zero
+     */
+    index: Int,
+    isLast: Boolean,
+    events: Seq[Event]) extends FetchedEventsPart
+
+  final case class EventsChunkFailure(
+    /**
+     * Starts with Zero
+     */
+    index: Int,
+    problem: Problem) extends FetchedEventsPart {
+    override def isLast = true
+  }
 }
 
-trait EventLog extends AsyncEventStorage with almhirt.almakka.ActorBased
+trait EventLog { actor: Actor =>
+  protected def receiveEventLogMsg: Receive
+}

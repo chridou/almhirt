@@ -28,6 +28,7 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
       case WarpUuid(value) => <Value type="Uuid">{ value.toString }</Value>
       case WarpUri(value) => <Value type="Uri">{ value.toString }</Value>
       case WarpDateTime(value) => <Value type="DateTime">{ value.toString() }</Value>
+      case WarpLocalDateTime(value) => <Value type="LocalDateTime">{ value.toString() }</Value>
       case WarpDuration(value) => <Value type="Duration">{ value.toString() }</Value>
     }
 

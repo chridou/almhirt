@@ -30,7 +30,7 @@ object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Js
         case parser.Success(result, _) =>
           FromStdLibJsonRematerializer.rematerialize(WarpTags.JsonStdLib(result))
         case parser.NoSuccess(msg, _) =>
-          ParsingProblem(msg).withInput(what).failure
+          ParsingProblem(msg, Some(what)).failure
       }
     } else if (what.startsWith("\"") && what.endsWith("\"")) {
       WarpString(what.substring(1, what.length() - 1)).success
@@ -41,7 +41,7 @@ object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Js
     } else if (what.toDoubleAlm.isSuccess) {
       WarpDouble(what.toDoubleAlm.forceResult).success
     } else {
-      ParsingProblem("Input is no JSON nor a primitive type").withInput(what).failure
+      ParsingProblem("Input is no JSON nor a primitive type", Some(what)).failure
     }
   }
 }

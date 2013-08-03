@@ -2,7 +2,6 @@ package almhirt.core
 
 import scala.concurrent.duration._
 import com.typesafe.config.Config
-import almhirt.environment.configuration.ConfigHelper
 
 trait HasDurations {
   def durations: Durations
@@ -43,11 +42,12 @@ trait DefaultDurations extends Durations {
 object Durations {
   def apply(): Durations = new DefaultDurations {}
   def apply(config: Config): Durations = {
-    val shortDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.short").getOrElse(Duration(1, "s"))
-    val mediumDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.medium").getOrElse(Duration(3, "s"))
-    val longDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.long").getOrElse(Duration(9, "s"))
-    val extraLongDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.extralong").getOrElse(Duration(22, "s"))
-    apply(shortDuration, mediumDuration, longDuration, extraLongDuration)
+//    val shortDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.short").getOrElse(Duration(1, "s"))
+//    val mediumDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.medium").getOrElse(Duration(3, "s"))
+//    val longDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.long").getOrElse(Duration(9, "s"))
+//    val extraLongDuration = ConfigHelper.getMilliseconds(config)("almhirt.durations.extralong").getOrElse(Duration(22, "s"))
+//    apply(shortDuration, mediumDuration, longDuration, extraLongDuration)
+    ???
   }
 
   def apply(short: FiniteDuration, medium: FiniteDuration, long: FiniteDuration, extraLong: FiniteDuration): Durations =

@@ -17,28 +17,19 @@ package almhirt.almakka
 import scala.concurrent.ExecutionContext
 import akka.event._
 import almhirt.common._
-import almhirt.core._
 import almhirt.almvalidation.kit._
 import almhirt.common.AlmFuture
 
-/** Enables an [[akka.actor.Actor]] to log directly on [[almhirt.validation.Problem]]s 
- * 
+/**
+ * Enables an [[akka.actor.Actor]] to log directly on [[almhirt.validation.Problem]]s
+ *
  * Log by calling the implicit on a [[almhirt.validation.AlmValidation]]
  */
 trait AlmActorLogging extends CanLogProblems { self: akka.actor.Actor =>
   val log = Logging(context.system, this)
-  
-  protected def writeProblemToLog(prob: Problem, minSeverity: Severity) {
-    if(prob.severity >= minSeverity)
-	  prob.severity match {
-	    case NoProblem =>
-	      log.debug(prob.toString)
-	    case Minor =>
-	      log.warning(prob.toString)
-	    case Major =>
-	      log.error(prob.toString)
-	    case Critical =>
-	      log.error(prob.toString)
-	    }
-  }
+
+  override def logProblemAsDebug(prob: Problem) = log.debug(prob.toString)
+  override def logProblemAsInfo(prob: Problem) = log.info(prob.toString)
+  override def logProblemAsWarning(prob: Problem) = log.warning(prob.toString)
+  override def logProblemAsError(prob: Problem) = log.error(prob.toString)
 }

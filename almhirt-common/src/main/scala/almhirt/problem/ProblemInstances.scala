@@ -18,14 +18,14 @@ import scala.language.implicitConversions
 
 import almhirt.common._
 import scalaz.Show
-import scalaz.Semigroup
+import scalaz.Monoid
 
 trait ProblemInstances {
-  implicit def ToAggregateProblemSemiGroup: Semigroup[AggregateProblem] =
-    new Semigroup[AggregateProblem] {
-      def append(a: AggregateProblem, b: => AggregateProblem): AggregateProblem = {
-        val mergedArgs = b.args.foldLeft(a.args) { case (acc, item) => acc + item }
-        AggregateProblem("One or more problems", severity = a.severity and b.severity, category = a.category and b.category, problems = a.problems ++ b.problems, args = mergedArgs)
+  implicit def ToAggregateProblemSemiGroup: Monoid[AggregateProblem] =
+    new Monoid[AggregateProblem] {
+      override val zero = AggregateProblem.empty
+      override def append(a: AggregateProblem, b: => AggregateProblem): AggregateProblem = {
+        AggregateProblem(a.problems ++ b.problems)
       }
     }
 }

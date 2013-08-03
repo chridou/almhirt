@@ -14,10 +14,3 @@ trait CommunicatesTwoWay[-B, +C] {
 }
 
 trait Communicates[-A, -B, +C] extends CommunicatesOneWay[A] with CommunicatesTwoWay[B, C]
-
-//trait DefaultTwoWayCommunicator[-A, +B] extends CommunicatesTwoWay[A, B] {
-//  
-//  override def askForReply(what: A, replyTo: AlmValidation[B] => Unit) {
-//    ask(what).onComplete(replyTo)
-//  }
-//}

@@ -30,6 +30,7 @@ package object almvalidation {
     with AlmValidationFunctions with AlmValidationParseFunctions with AlmValidationCastFunctions
     with AlmValidationInstances
     with almvalidation.ToAlmValidationOps
+    with ToAlmValidationContraintsOps
     
   object constraints extends ToAlmValidationContraintsOps
 }

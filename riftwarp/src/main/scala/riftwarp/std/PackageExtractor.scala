@@ -30,7 +30,7 @@ trait WarpObjectLookUp {
   def tryGetWarpPrimitive(label: String): AlmValidation[Option[WarpPrimitive]] =
     getAndCheck(label) {
       case wp: WarpPrimitive => wp.success
-      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpPrimitive""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpPrimitive""").failure
     }
 
   def getWarpPrimitive(label: String): AlmValidation[WarpPrimitive] =
@@ -39,7 +39,7 @@ trait WarpObjectLookUp {
   def tryGetWarpObject(label: String): AlmValidation[Option[WarpObject]] =
     getAndCheck(label) {
       case wo: WarpObject => wo.success
-      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpObject""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject""").failure
     }
 
   def getWarpObject(label: String): AlmValidation[WarpObject] =
@@ -48,7 +48,7 @@ trait WarpObjectLookUp {
   def tryGetWarpCollection(label: String): AlmValidation[Option[WarpCollection]] =
     getAndCheck(label) {
       case wc: WarpCollection => wc.success
-      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpCollection""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpCollection""").failure
     }
 
   def getWarpCollection(label: String): AlmValidation[WarpCollection] =
@@ -57,7 +57,7 @@ trait WarpObjectLookUp {
   def tryGetWarpAssociativeCollection(label: String): AlmValidation[Option[WarpAssociativeCollection]] =
     getAndCheck(label) {
       case wc: WarpAssociativeCollection => wc.success
-      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpAssociativeCollection""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpAssociativeCollection""").failure
     }
 
   def getWarpAssociativeCollection(label: String): AlmValidation[WarpAssociativeCollection] =
@@ -66,7 +66,7 @@ trait WarpObjectLookUp {
   def tryGetWarpTree(label: String): AlmValidation[Option[WarpTree]] =
     getAndCheck(label) {
       case wt: WarpTree => wt.success
-      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpTree""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpTree""").failure
     }
 
   def getWarpTree(label: String): AlmValidation[WarpTree] =
@@ -77,7 +77,7 @@ trait WarpObjectLookUp {
       case wb: WarpBytes => wb.bytes.success
       case wb: WarpBlob => wb.bytes.success
       case wc: WarpCollection => wc.items.map(WarpPrimitiveToByteConverterInst.convert(_).toAgg).sequence.map(_.toArray)
-      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a byte array representation""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a byte array representation""").failure
     }
 
   def getBytes(label: String): AlmValidation[IndexedSeq[Byte]] =
@@ -86,7 +86,7 @@ trait WarpObjectLookUp {
   def tryGetAs[T: WarpPrimitiveConverter](label: String): AlmValidation[Option[T]] =
     getAndCheck(label) {
       case wp: WarpPrimitive => wp.as[T]
-      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpPrimitive""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpPrimitive""").failure
     }
 
   def getAs[T: WarpPrimitiveConverter](label: String): AlmValidation[T] =
@@ -113,7 +113,7 @@ trait WarpObjectLookUp {
   def tryGetPrimitives[T](label: String)(implicit conv: WarpPrimitiveConverter[T]): AlmValidation[Option[Vector[T]]] =
     getAndCheck(label) {
       case wc: WarpCollection => wc.items.map(item => conv.convert(item).toAgg).sequence
-      case x => UnspecifiedApplicationProblem(s"""[tryGetPrimitives("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetPrimitives("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
     }
 
   def getPrimitives[T: WarpPrimitiveConverter](label: String): AlmValidation[Vector[T]] =
@@ -122,7 +122,7 @@ trait WarpObjectLookUp {
   def tryGetManyWith[T](label: String, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[Option[Vector[T]]] =
     getAndCheck(label) {
       case wc: WarpCollection => wc.items.map(item => unpacker(item).toAgg).sequence
-      case x => UnspecifiedApplicationProblem(s"""[tryGetManyWith("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetManyWith("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
     }
 
   def getManyWith[T](label: String, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[T]] =
@@ -131,7 +131,7 @@ trait WarpObjectLookUp {
   def tryGetMany(label: String, overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers): AlmValidation[Option[Vector[Any]]] =
     getAndCheck(label) {
       case wc: WarpCollection => wc.items.map(item => unpack(item, overrideDescriptor, backUpDescriptor).toAgg).sequence
-      case x => UnspecifiedApplicationProblem(s"""[tryGetMany("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetMany("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
     }
 
   def getMany(label: String, overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers): AlmValidation[Vector[Any]] =
@@ -140,7 +140,7 @@ trait WarpObjectLookUp {
   def tryGetManyTyped[T](label: String, overrideDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[Option[Vector[T]]] =
     getAndCheck(label) {
       case wc: WarpCollection => wc.items.map(item => unpack(item, overrideDescriptor, Some(WarpDescriptor(tag.runtimeClass))).flatMap(_.castTo[T]).toAgg).sequence
-      case x => UnspecifiedApplicationProblem(s"""[tryGetManyTyped("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetManyTyped("$label")]: "${x.getClass().getName()}" is not a WarpCollection""").failure
     }
 
   def getManyTyped[T](label: String, overrideDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[Vector[T]] =
@@ -151,7 +151,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wa: WarpAssociativeCollection => mapThem(wa)
       case wc: WarpCollection => wc.associative.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetPrimitiveAssocs]("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetPrimitiveAssocs]("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
     }
   }
 
@@ -163,7 +163,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wa: WarpAssociativeCollection => mapThem(wa)
       case wc: WarpCollection => wc.associative.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetAssocsEachWith("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetAssocsEachWith("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
     }
   }
 
@@ -175,7 +175,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wa: WarpAssociativeCollection => mapThem(wa)
       case wc: WarpCollection => wc.associative.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetAssocsWith("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetAssocsWith("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
     }
   }
 
@@ -187,7 +187,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wa: WarpAssociativeCollection => mapThem(wa)
       case wc: WarpCollection => wc.associative.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetAssocs("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetAssocs("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
     }
   }
 
@@ -203,7 +203,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wa: WarpAssociativeCollection => mapThem(wa)
       case wc: WarpCollection => wc.associative.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetAssocsTyped("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
+      case x => ArgumentProblem(s"""[tryGetAssocsTyped("$label")]: "${x.getClass().getName()}" is not a WarpAssociativeCollection nor can it be transformed to a WarpAssociativeCollection""").failure
     }
   }
 
@@ -215,7 +215,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wt: WarpTree => mapThem(wt)
       case wc: WarpCollection => wc.warpTree.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetPrimitivesTree("$label")]: "${x.getClass().getName()}" is not a WarpTree nor can it be transformed to a WarpTree""").failure
+      case x => ArgumentProblem(s"""[tryGetPrimitivesTree("$label")]: "${x.getClass().getName()}" is not a WarpTree nor can it be transformed to a WarpTree""").failure
     }
   }
 
@@ -227,7 +227,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wt: WarpTree => mapThem(wt)
       case wc: WarpCollection => wc.warpTree.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetTreeWith("$label")]: "${x.getClass().getName()}" is not a WarpTree nor can it be transformed to a WarpTree""").failure
+      case x => ArgumentProblem(s"""[tryGetTreeWith("$label")]: "${x.getClass().getName()}" is not a WarpTree nor can it be transformed to a WarpTree""").failure
     }
   }
 
@@ -239,7 +239,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wt: WarpTree => mapThem(wt)
       case wc: WarpCollection => wc.warpTree.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetTree("$label")]: "${x.getClass().getName()}" is not a WarpTree nor can it be transformed to a WarpTree""").failure
+      case x => ArgumentProblem(s"""[tryGetTree("$label")]: "${x.getClass().getName()}" is not a WarpTree nor can it be transformed to a WarpTree""").failure
     }
   }
 
@@ -251,7 +251,7 @@ trait WarpObjectLookUp {
     getAndCheck(label) {
       case wt: WarpTree => mapThem(wt)
       case wc: WarpCollection => wc.warpTree.flatMap(mapThem(_))
-      case x => UnspecifiedApplicationProblem(s"""[tryGetTreeTyped("$label")]: "${x.getClass().getName()}" is not a WarpTree nor can it be transformed to a WarpTree""").failure
+      case x => ArgumentProblem(s"""[tryGetTreeTyped("$label")]: "${x.getClass().getName()}" is not a WarpTree nor can it be transformed to a WarpTree""").failure
     }
   }
 
@@ -276,7 +276,7 @@ trait WarpObjectLookUp {
   private def unpack(what: WarpPackage, overrideDescriptor: Option[WarpDescriptor], backUpDescriptor: Option[WarpDescriptor])(implicit unpackers: WarpUnpackers): AlmValidation[Any] = {
     overrideDescriptor match {
       case Some(pd) =>
-        unpackers.get(pd).leftMap(_.mapMessage(old => s"WarpDescriptor has been overriden: $old")).flatMap(_(what))
+        unpackers.get(pd).leftMap(old => NoSuchElementProblem(s"WarpDescriptor has been overriden", cause = Some(old) )).flatMap(_(what))
       case None =>
         what match {
           case wp: WarpPrimitive => wp.value.success
@@ -341,6 +341,6 @@ trait PackageExtractorFuns {
   def withFastLookUp[T](from: WarpPackage)(f: WarpObjectLookUp => AlmValidation[T]): AlmValidation[T] =
     from match {
       case wo: WarpObject => f(fastLookUp(wo))
-      case x => UnspecifiedApplicationProblem(s""""${x.getClass().getName()}" is not a WarpObject so i cannot create a fast lookup""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject so i cannot create a fast lookup""").failure
     }
 }

@@ -39,11 +39,11 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
   def ~>[T](implicit m: ClassTag[T]): AlmFuture[T] = mapToAlmFuture   
   def ↝[T](implicit m: ClassTag[T]): AlmFuture[T] = mapToAlmFuture   
     
-  def mapToSuccessfulAlmFuture[T](implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
-    new AlmFuture[T](self.mapTo[T].map(_.success)(hasExecutionContext.executionContext))
+  def successfulAlmFuture[T](implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
+    new AlmFuture[T](self.mapTo[T].map(_.success)(executionContext))
 
-  def mapToAlmFutureOver[T,U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
-    new AlmFuture[U](self.mapTo[T].map(x => compute(x))(hasExecutionContext.executionContext))
+  def mapToAlmFutureOver[T,U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
+    new AlmFuture[U](self.mapTo[T].map(x => compute(x))(executionContext))
 }
 
 trait AlmFutureOps1[T] extends Ops[Future[AlmValidation[T]]] {
@@ -58,32 +58,32 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
    * @param compute The function to execute async
    * @return The future containing the eventual result
    */
-  def continueAsync[U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[U] =
+  def continueAsync[U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
     self fold(
       prob => new AlmFuture(Future.successful(prob.failure)), 
-      r => new AlmFuture(Future[AlmValidation[U]]{compute(r)}(hasExecutionContext.executionContext)))
+      r => new AlmFuture(Future[AlmValidation[U]]{compute(r)}(executionContext)))
 
   /** In case of success start the given computation otherwise return the Failure 
    * 
    * @param compute The function to execute async
    * @return The future containing the eventual result
    */
-  def |~> [U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[U] =
+  def |~> [U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
     continueAsync[U](compute)
 
   /** In case of success start the given side effect otherwise return the Failure 
    * 
    * @param compute The side effect to execute async
    */
-  def doAsync(failure: Problem => Unit, sideEffect: T => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit =
+  def doAsync(failure: Problem => Unit, sideEffect: T => Unit)(implicit executionContext: ExecutionContext): Unit =
     self fold(
       prob => failure(prob), 
-      r => hasExecutionContext.executionContext.execute(new Runnable{def run() = sideEffect(r)}))
+      r => executionContext.execute(new Runnable{def run() = sideEffect(r)}))
   /** In case of success start the given side effect otherwise return the Failure 
    * 
    * @param compute The side effect to execute async
    */
-  def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit hasExecutionContext: HasExecutionContext): Unit =
+  def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit executionContext: ExecutionContext): Unit =
     doAsync(failure, sideEffect)
 
   /** In case of a success: Execute the computation as an already computed result
@@ -120,14 +120,14 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
 }
 
 trait AlmFutureOps3[T] extends Ops[Future[T]] {
-  def toSuccessfulAlmFuture(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = 
-    new AlmFuture[T](self.map(_.success)(hasExecutionContext.executionContext))
+  def toSuccessfulAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] = 
+    new AlmFuture[T](self.map(_.success)(executionContext))
     
-  def -+>(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = toSuccessfulAlmFuture  
-  def ⇸(implicit hasExecutionContext: HasExecutionContext): AlmFuture[T] = toSuccessfulAlmFuture  
+  def -+>(implicit executionContext: ExecutionContext): AlmFuture[T] = toSuccessfulAlmFuture  
+  def ⇸(implicit executionContext: ExecutionContext): AlmFuture[T] = toSuccessfulAlmFuture  
   
-  def mapOver[U](compute: T => AlmValidation[U])(implicit hasExecutionContext: HasExecutionContext): AlmFuture[U] =
-    new AlmFuture[U](self.map(x => compute(x))(hasExecutionContext.executionContext))
+  def mapOver[U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
+    new AlmFuture[U](self.map(x => compute(x))(executionContext))
 }
 
 

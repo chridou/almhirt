@@ -22,7 +22,7 @@ trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] =>
     std.funs.tryGetWarpDescriptor(from) match {
       case Some(wd) =>
         (divert >! wd).fold(
-          fail => KeyNotFoundProblem(s"Could not find a Unpacker for ${wd.toString}").failure,
+          fail => NoSuchElementProblem(s"Could not find a Unpacker for ${wd.toString}").failure,
           unpacker => unpacker.unpack(from))
       case None =>
         UnspecifiedProblem(s""""${from.toString()} has no Warpdescriptor nor one can be derived!""").failure
@@ -32,7 +32,7 @@ trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] =>
 trait DivertingWarpUnpackerWithAutoRegistration[+T] { self: DivertingWarpUnpacker[T] =>
   def unpackers: List[RegisterableWarpUnpacker[T]]
   
-  override val divert = {
+  override lazy val divert = {
     val items = unpackers.map(up => up.allDescriptors.map(desc => (desc, up))).flatten
     items.toMap.lift
   }

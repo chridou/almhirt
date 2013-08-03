@@ -2,22 +2,22 @@ package almhirt.problem
 
 import almhirt.common._
 
-trait ExceptionToProblem extends PartialFunction[Exception, Problem] {
-  def orElse(that: PartialFunction[Exception, Problem]): ExceptionToProblem = {
-    val fn = ((this: PartialFunction[Exception, Problem]) orElse (that: PartialFunction[Exception, Problem]))
+trait ExceptionToProblem extends PartialFunction[Exception, SingleProblem] {
+  def orElse(that: PartialFunction[Exception, SingleProblem]): ExceptionToProblem = {
+    val fn = ((this: PartialFunction[Exception, SingleProblem]) orElse (that: PartialFunction[Exception, SingleProblem]))
     new ExceptionToProblem {
-      override def apply(exn: Exception): Problem = fn(exn)
+      override def apply(exn: Exception): SingleProblem = fn(exn)
       override def isDefinedAt(exn: Exception) = this.isDefinedAt(exn) || that.isDefinedAt(exn)
     }
   }
 }
 
 object CommonExceptionToProblem extends ExceptionToProblem {
-  private val exnMappers = Map[Class[_ <: Exception], Exception => Problem](
-    (classOf[NoSuchElementException] -> (exn => NoSuchElementProblem(exn.getMessage, cause = Some(exn)))),
-    (classOf[IndexOutOfBoundsException] -> (exn => IndexOutOfBoundsProblem(exn.getMessage, cause = Some(exn)))),
-    (classOf[ClassCastException] -> (exn => InvalidCastProblem(exn.getMessage, cause = Some(exn)))),
-    (classOf[java.util.concurrent.TimeoutException] -> (exn => OperationTimedOutProblem(exn.getMessage, cause = Some(exn)))))
+  private val exnMappers = Map[Class[_ <: Exception], Exception => SingleProblem](
+    (classOf[NoSuchElementException] -> (exn => problemtypes.NoSuchElementProblem(exn.getMessage, cause = Some(exn)))),
+    (classOf[IndexOutOfBoundsException] -> (exn => problemtypes.IndexOutOfBoundsProblem(exn.getMessage, cause = Some(exn)))),
+    (classOf[ClassCastException] -> (exn => problemtypes.InvalidCastProblem(exn.getMessage, cause = Some(exn)))),
+    (classOf[java.util.concurrent.TimeoutException] -> (exn => problemtypes.OperationTimedOutProblem(exn.getMessage, cause = Some(exn)))))
 
   override def apply(exn: Exception) = exnMappers(exn.getClass())(exn)
 
@@ -25,6 +25,6 @@ object CommonExceptionToProblem extends ExceptionToProblem {
 }
 
 object AnyExceptionToCaughtExceptionProblem extends ExceptionToProblem {
-  override def apply(exn: Exception) = ExceptionCaughtProblem(exn.getMessage(), cause = Some(exn))
+  override def apply(exn: Exception) = problemtypes.ExceptionCaughtProblem(exn)
   override def isDefinedAt(exn: Exception) = true
 }
