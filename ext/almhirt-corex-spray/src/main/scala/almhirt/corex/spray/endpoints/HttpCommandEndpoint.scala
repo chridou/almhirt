@@ -26,7 +26,7 @@ trait HttpCommandEndpoint extends HttpService {
       (tracked, sync) match {
         case (None, None) =>
           endpoint.execute(cmd)
-          complete { (StatusCodes.Accepted, "") }
+          complete { (StatusCodes.Accepted, cmd.tryGetTrackingId.getOrElse("")) }
         case (Some(_), _) =>
           val trackId = endpoint.executeTracked(cmd)
           complete { (StatusCodes.Accepted, trackId) }
