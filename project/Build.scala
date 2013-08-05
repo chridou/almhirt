@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.4"
+  val buildVersion      = "0.5.5"
   val buildScalaVersion = "2.10.2"
 
   val akkaVersion = "2.2.+"
@@ -30,16 +30,16 @@ object Dependencies {
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "compile"
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "provided"
 	
-	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion
+	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 
-	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.+"
+	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.+" % "provided"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "compile"
-	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+"
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
+	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+" % "provided"
 
 	
     lazy val scalatest = "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"	
