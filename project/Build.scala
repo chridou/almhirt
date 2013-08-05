@@ -136,9 +136,10 @@ trait CorexSlickBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
 	  libraryDependencies += slick,
+	  libraryDependencies += typesafe_config,
 	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
-	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
 	  libraryDependencies += scalatest
   )
 }
@@ -176,14 +177,18 @@ trait RiftWarpAutomaticBuild {
 trait CorexSprayBuild {
   import Dependencies._
   import Resolvers._
-  def corexSprayProject(name: String, baseFile: java.io.File) = 
+  def corexSprayProject(name: String, baseFile: java.io.File) = {
+    val sprayVersion = "1.2-20130710"
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  //resolvers += "spray repo" at "http://repo.spray.io",
 	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
-	  libraryDependencies += "io.spray" % "spray-routing" % "1.2-20130710"
+	  libraryDependencies += "io.spray" % "spray-routing" % sprayVersion,
+	  libraryDependencies += "io.spray" % "spray-testkit" % sprayVersion % "test",
+	  libraryDependencies += scalatest
 	  )
+	  }
   
 }
 
