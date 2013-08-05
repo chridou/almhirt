@@ -8,6 +8,7 @@ import spray.httpx.unmarshalling.Unmarshaller
 
 object CommandMarshalling {
   import Helper._
+  import spray.util._
 
   def marshaller(
     stringSerializer: almhirt.serialization.CommandStringSerializer,
@@ -30,5 +31,15 @@ object CommandMarshalling {
     stringSerializer: almhirt.serialization.CommandStringSerializer,
     binarySerializer: almhirt.serialization.CommandBinarySerializer,
     contentTypes: ContentType*): AlmValidation[Unmarshaller[Command]] =
-    ???
+    validateMediaTypes(contentTypes.map(_.mediaType)).map { _ =>
+      Unmarshaller(contentTypes: _*) {
+        case HttpBody(contentType, buffer) =>
+          val channel = extractChannel(contentType.mediaType)
+          if (contentType.mediaType.binary) {
+            binarySerializer.deserialize(channel)(buffer, Map.empty).resultOrEscalate
+          } else {
+            stringSerializer.deserialize(channel)(buffer.asString, Map.empty).resultOrEscalate
+          }
+      }
+    }
 }
