@@ -238,7 +238,7 @@ object AlmHirtBuild extends Build
                        			baseFile = file("./ext/almhirt-corex-slick")) dependsOn(core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 
  lazy val corexSpray = corexSprayProject(	name = "almhirt-corex-spray",
-	                       				baseFile = file("./ext/almhirt-corex-spray")) dependsOn(core)
+	                       				baseFile = file("./ext/almhirt-corex-spray")) dependsOn(common, core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)

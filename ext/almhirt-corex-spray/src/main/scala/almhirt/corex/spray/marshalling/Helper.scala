@@ -14,7 +14,7 @@ private[marshalling] object Helper {
       mediaTypes.map(mediaType =>
         mediaType.value.mustFulfill(
           _.split('+').size == 2,
-          x => s"""Not a valid command media type: $x""").toAgg.map(_ => mediaType)).toList
+          x => s"""Not a valid media type: $x""").toAgg.map(_ => mediaType)).toList
     res.sequence[AlmValidationAP, MediaType]
   }
 }

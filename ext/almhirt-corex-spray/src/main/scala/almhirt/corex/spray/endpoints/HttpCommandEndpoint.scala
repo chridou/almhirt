@@ -19,23 +19,25 @@ trait HttpCommandEndpoint extends HttpService {
   implicit def problemMarshaller: Marshaller[Problem]
   implicit def commandUnmarshaller: Unmarshaller[Command]
 
-  val execute = pathPrefix("execute") & (get & parameters('tracked ?, 'sync ?)) & entity(as[Command])
+  val executeCommand = (put & parameters('tracked ?, 'sync ?)) & entity(as[Command])
 
-  val route = execute { (tracked, sync, cmd) =>
-    ctx =>
-      (tracked, sync) match {
-        case (None, None) =>
-          endpoint.execute(cmd)
-          complete { (StatusCodes.Accepted, cmd.tryGetTrackingId.getOrElse("")) }
-        case (Some(_), _) =>
-          val trackId = endpoint.executeTracked(cmd)
-          complete { (StatusCodes.Accepted, trackId) }
-        case (_, Some(_)) =>
-          endpoint.executeSync(cmd, maxSyncDuration).fold(
-            prob =>
-              ctx.complete(StatusCodes.InternalServerError, prob),
-            res =>
-              ctx.complete(StatusCodes.OK, res))
-      }
+  val executeCommandRoutePart = path("execute") {
+    executeCommand { (tracked, sync, cmd) =>
+      ctx =>
+        (tracked, sync) match {
+          case (None, None) =>
+            endpoint.execute(cmd)
+            ctx.complete(StatusCodes.Accepted, cmd.tryGetTrackingId.getOrElse(""))
+          case (Some(_), _) =>
+            val trackId = endpoint.executeTracked(cmd)
+            ctx.complete(StatusCodes.Accepted, trackId)
+          case (_, Some(_)) =>
+            endpoint.executeSync(cmd, maxSyncDuration).fold(
+              prob =>
+                ctx.complete(StatusCodes.InternalServerError, prob),
+              res =>
+                ctx.complete(StatusCodes.OK, res))
+        }
+    }
   }
 }
