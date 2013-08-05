@@ -11,8 +11,8 @@ object CommandMarshalling {
   import spray.util._
 
   def marshaller(
-    stringSerializer: almhirt.serialization.CommandStringSerializer,
-    binarySerializer: almhirt.serialization.CommandBinarySerializer,
+    stringSerializer: almhirt.serialization.StringBasedSerializer[Command, Command],
+    binarySerializer: almhirt.serialization.BinaryBasedSerializer[Command, Command],
     contentTypes: ContentType*): AlmValidation[Marshaller[Command]] =
     validateMediaTypes(contentTypes.map(_.mediaType)).map { _ =>
       Marshaller.of[Command](contentTypes: _*) { (value, contentType, ctx) =>
@@ -28,11 +28,11 @@ object CommandMarshalling {
     }
 
   def unmarshaller(
-    stringSerializer: almhirt.serialization.CommandStringSerializer,
-    binarySerializer: almhirt.serialization.CommandBinarySerializer,
+    stringSerializer: almhirt.serialization.StringBasedSerializer[Command, Command],
+    binarySerializer: almhirt.serialization.BinaryBasedSerializer[Command, Command],
     contentTypes: ContentType*): AlmValidation[Unmarshaller[Command]] =
     validateMediaTypes(contentTypes.map(_.mediaType)).map { _ =>
-      Unmarshaller(contentTypes: _*) {
+      Unmarshaller[Command](contentTypes: _*) {
         case HttpBody(contentType, buffer) =>
           val channel = extractChannel(contentType.mediaType)
           if (contentType.mediaType.binary) {
