@@ -41,13 +41,13 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, updateRequests :+ st))
     case GetExecutionStateFor(trackId) =>
       reportExecutionState(trackId, tracked, sender)
-    case SubscribeForFinishedState(trackId, subscribeMe) =>
-      preSubscribe(trackId, subscribeMe, tracked) match {
+    case SubscribeForFinishedState(trackId) =>
+      preSubscribe(trackId, sender, tracked) match {
         case Some(subscriber) => context.become(waitingForTrackedStateUpdate(tracked, addSubscription(trackId, subscriber, subscriptions), updateRequests))
         case None => ()
       }
-    case UnsubscribeForFinishedState(trackId, unsubscribeMe) =>
-      context.become(waitingForTrackedStateUpdate(tracked, removeSubscription(trackId, unsubscribeMe, subscriptions), updateRequests))
+    case UnsubscribeForFinishedState(trackId) =>
+      context.become(waitingForTrackedStateUpdate(tracked, removeSubscription(trackId, sender, subscriptions), updateRequests))
     case RemoveOldExecutionStates(maxAge) =>
       val (newTracked, newSubscriptions) = cleanUp(maxAge, tracked, subscriptions)
       context.become(waitingForTrackedStateUpdate(newTracked, newSubscriptions, updateRequests))
@@ -59,13 +59,13 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, Vector.empty))
     case GetExecutionStateFor(trackId) =>
       reportExecutionState(trackId, tracked, sender)
-    case SubscribeForFinishedState(trackId, subscribeMe) =>
-      preSubscribe(trackId, subscribeMe, tracked) match {
+    case SubscribeForFinishedState(trackId) =>
+      preSubscribe(trackId, sender, tracked) match {
         case Some(subscriber) => context.become(idleState(tracked, addSubscription(trackId, subscriber, subscriptions)))
         case None => ()
       }
-    case UnsubscribeForFinishedState(trackId, unsubscribeMe) =>
-      context.become(idleState(tracked, removeSubscription(trackId, unsubscribeMe, subscriptions)))
+    case UnsubscribeForFinishedState(trackId) =>
+      context.become(idleState(tracked, removeSubscription(trackId, sender, subscriptions)))
     case RemoveOldExecutionStates(maxAge) =>
       val (newTracked, newSubscriptions) = cleanUp(maxAge, tracked, subscriptions)
       context.become(idleState(newTracked, newSubscriptions))

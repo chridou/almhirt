@@ -2,7 +2,7 @@ package almhirt.corex.spray.endpoints
 
 import scala.language.postfixOps
 import almhirt.common._
-import almhirt.components.CommandEndpointWrapper
+import almhirt.components.CommandEndpoint
 import almhirt.commanding.ExecutionState
 import spray.routing._
 import spray.http._
@@ -11,7 +11,7 @@ import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling.Unmarshaller
 
 trait HttpCommandEndpoint extends HttpService {
-  def endpoint: CommandEndpointWrapper
+  def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
 
