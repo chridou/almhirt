@@ -180,6 +180,8 @@ trait CorexSprayBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  //resolvers += "spray repo" at "http://repo.spray.io",
 	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
+	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
 	  libraryDependencies += "io.spray" % "spray-routing" % "1.2-20130710"
 	  )
   
