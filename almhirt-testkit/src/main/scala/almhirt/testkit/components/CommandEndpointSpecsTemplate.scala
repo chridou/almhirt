@@ -109,7 +109,6 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
         res should equal(execState)
       }
     }
-    
   }
   
 }
