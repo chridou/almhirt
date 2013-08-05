@@ -15,11 +15,15 @@ trait CommandEndpoint {
 }
 
 object CommandEndpoint {
+  def apply(tracker: ActorRef)(implicit theAlmhirt: almhirt.core.Almhirt): CommandEndpoint =
+    new CommandEndpointImpl(theAlmhirt.messageBus, tracker, theAlmhirt.getUniqueString)(theAlmhirt, theAlmhirt.futuresExecutor)
   def apply(publishTo: MessagePublisher, tracker: ActorRef)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext): CommandEndpoint =
-    new CommandEndpointImpl(publishTo, tracker)
+    new CommandEndpointImpl(publishTo, tracker, ccuad.getUniqueString)
+  def apply(publishTo: MessagePublisher, tracker: ActorRef, getTrackingId: () => String)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext): CommandEndpoint =
+    new CommandEndpointImpl(publishTo, tracker, getTrackingId)
 }
 
-class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext) extends CommandEndpoint {
+class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTrackingId: () => String)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext) extends CommandEndpoint {
   override def execute(command: Command) {
     publishTo.publish(command)
   }
@@ -29,7 +33,7 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef)(implic
       if (command.canBeTracked)
         command
       else
-        command.track
+        command.track(getTrackingId())
     publishTo.publish(cmd)
     cmd.trackingId
   }
@@ -42,7 +46,7 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef)(implic
       if (command.canBeTracked)
         command
       else
-        command.track
+        command.track(getTrackingId())
     publishTo.publish(cmd)
     (tracker ? SubscribeForFinishedState(cmd.trackingId))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage].mapV(res =>
       res match {
