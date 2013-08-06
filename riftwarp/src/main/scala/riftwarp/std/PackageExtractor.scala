@@ -286,7 +286,7 @@ trait WarpObjectLookUp {
                 unpackers.get(d).fold(
                   fail => backUpDescriptor match {
                     case Some(bud) => unpackers.get(bud).flatMap(_(what))
-                    case None => SerializationProblem("No Unpacker found for WarpObject. Hint: The WarpObject had a WarpDescriptor but no unpacker was found. There was neither a backup WarpDescriptor nor an override WarpDescriptor.").failure
+                    case None => SerializationProblem(s"""No Unpacker found for WarpObject. Hint: The WarpObject had a ${d.toString} but no unpacker was found. There was neither a backup WarpDescriptor nor an override WarpDescriptor.""").failure
                   },
                   unpacker => unpacker(what))
               case None =>
