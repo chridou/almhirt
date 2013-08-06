@@ -19,7 +19,7 @@ import almhirt.commanding._
 import spray.http._
 import almhirt.domain.AggregateRootRef
 
-class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpCommandEndpoint with ScalatestRouteTest {
+class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpCommandEndpoint with ScalatestRouteTest with HttpService {
   def actorRefFactory = system
 
   lazy val myRiftwarp: RiftWarp = {
@@ -67,13 +67,13 @@ class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpComm
   val commandWithTrackingIdJson = commandStringSerializer.serialize("json")(commandWithoutTrackingId).resultOrEscalate._1
   val commandWithTrackingIdXml = commandStringSerializer.serialize("xml")(commandWithoutTrackingId).resultOrEscalate._1
 
-  override lazy val executionStateMarshaller = ExecutionStateMarshalling.marshaller(execStateStringSerializer, null, `application/vnd.acme.ExecutionState+json`, `application/vnd.acme.ExecutionState+xml`).resultOrEscalate
-  implicit lazy val executionStateUnmarshaller = ExecutionStateMarshalling.unmarshaller(execStateStringSerializer, null, `application/vnd.acme.ExecutionState+json`, `application/vnd.acme.ExecutionState+xml`).resultOrEscalate
-  override lazy val problemMarshaller = ProblemMarshalling.marshaller(problemStringSerializer, null, `application/vnd.acme.Problem+json`, `application/vnd.acme.Problem+xml`).resultOrEscalate
-  override lazy val commandUnmarshaller = CommandMarshalling.unmarshaller(commandStringSerializer, null, `application/vnd.acme.Command+json`, `application/vnd.acme.Command+xml`).resultOrEscalate
-  lazy val commandMarshaller = CommandMarshalling.marshaller(commandStringSerializer, null, `application/vnd.acme.Command+json`, `application/vnd.acme.Command+xml`).resultOrEscalate
+  override lazy val executionStateMarshaller = ExecutionStateMarshalling.marshaller(Some(execStateStringSerializer), None, ContentType(`application/vnd.acme.ExecutionState+json`), `application/vnd.acme.ExecutionState+xml`).resultOrEscalate
+  implicit lazy val executionStateUnmarshaller = ExecutionStateMarshalling.unmarshaller(Some(execStateStringSerializer), None, `application/vnd.acme.ExecutionState+json`, `application/vnd.acme.ExecutionState+xml`).resultOrEscalate
+  override lazy val problemMarshaller = ProblemMarshalling.marshaller(Some(problemStringSerializer), None, `application/vnd.acme.Problem+json`, `application/vnd.acme.Problem+xml`).resultOrEscalate
+  override lazy val commandUnmarshaller = CommandMarshalling.unmarshaller(Some(commandStringSerializer), None, `application/vnd.acme.Command+json`, `application/vnd.acme.Command+xml`).resultOrEscalate
+  lazy val commandMarshaller = CommandMarshalling.marshaller(Some(commandStringSerializer), None, `application/vnd.acme.Command+json`, `application/vnd.acme.Command+xml`).resultOrEscalate
 
-  private val executeCommandRoute = executeCommandRoutePart
+  private val executeCommandRoute = executeCommandTerminator
 
   describe("HttpCommandEndpoint - executeCommand") {
     it("""should return a MethodNotAllowed error for GET requests to the "/execute" path""") {
