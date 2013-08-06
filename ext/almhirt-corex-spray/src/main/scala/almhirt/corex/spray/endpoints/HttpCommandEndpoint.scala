@@ -10,7 +10,7 @@ import spray.routing.directives._
 import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling.Unmarshaller
 
-trait HttpCommandEndpoint extends HttpService {
+trait HttpCommandEndpoint extends Directives {
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
@@ -21,7 +21,7 @@ trait HttpCommandEndpoint extends HttpService {
 
   val executeCommand = (put & parameters('tracked ?, 'sync ?)) & entity(as[Command])
 
-  val executeCommandRoutePart = path("execute") {
+  val executeCommandTerminator = path("execute") {
     executeCommand { (tracked, sync, cmd) =>
       ctx =>
         (tracked, sync) match {
