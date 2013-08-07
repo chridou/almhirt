@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.6"
+  val buildVersion      = "0.5.7"
   val buildScalaVersion = "2.10.2"
 
   val akkaVersion = "2.2.+"
@@ -192,17 +192,6 @@ trait CorexSprayBuild {
   
 }
 
-trait AppBuild {
-  import Dependencies._
-  import Resolvers._
-  def appProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += "org.clapper" %% "argot" % "1.0.0" % "compile",
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases)
-  
-}
-
 object AlmHirtBuild extends Build 
 	with CommonBuild 
 	with CoreBuild 
@@ -212,8 +201,7 @@ object AlmHirtBuild extends Build
 	with CorexSlickBuild 
 	with CorexSprayBuild 
 	with RiftWarpBuild 
-	with RiftWarpAutomaticBuild 
-	with AppBuild {
+	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
 	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, corexRiftwarp, slickExtensions, corexSpray)
@@ -246,13 +234,6 @@ object AlmHirtBuild extends Build
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
 
- 
-
-  lazy val docit = docitProject(	name = "almhirt-docit",
-                       			baseFile = file("almhirt-docit")) dependsOn(common)
-
+*/
 								
-
- val app = appProject(	name = "almhirt-app",
-	                       	baseFile = file("almhirt-app")) dependsOn(core) */										
 }
