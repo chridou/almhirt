@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
 import almhirt.core._
-import almhirt.components.{ExecutionStateTracker, ExecutionStateStore}
+import almhirt.components.{ExecutionStateTracker, ExecutionStateStore, ExecutionStateEntry}
 import almhirt.commanding._
 import almhirt.messaging.MessagePublisher
 import almhirt.problem.{ Major, Minor }
@@ -23,12 +23,12 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   implicit def publishTo: MessagePublisher
   implicit def canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes
   implicit def executionContext: ExecutionContext
-  def secondLevelStore: SecondLevelStoreWrapper
+  def secondLevelStore: SecondLevelStore
   def secondLevelMaxAskDuration: scala.concurrent.duration.FiniteDuration
 
-  private case class StateUpdate(newState: Map[String, TrackingEntry])
+  private case class StateUpdate(newState: Map[String, ExecutionStateEntry])
 
-  protected def waitingForTrackedStateUpdate(tracked: Map[String, TrackingEntry], subscriptions: Map[String, List[ActorRef]], updateRequests: Vector[ExecutionState]): Receive = {
+  protected def waitingForTrackedStateUpdate(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]], updateRequests: Vector[ExecutionState]): Receive = {
     case StateUpdate(newState) =>
       val newSubscriptions = notifyFinishedStateSubscribers(newState, subscriptions)
       if (updateRequests.isEmpty)
@@ -53,7 +53,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       context.become(waitingForTrackedStateUpdate(newTracked, newSubscriptions, updateRequests))
   }
 
-  protected def idleState(tracked: Map[String, TrackingEntry], subscriptions: Map[String, List[ActorRef]]): Receive = {
+  protected def idleState(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): Receive = {
     case ExecutionStateChanged(_, st) =>
       handleIncomingExecutionState(st, tracked)
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, Vector.empty))
@@ -73,14 +73,13 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   
   override def handleTrackingMessage = idleState(Map.empty, Map.empty)
 
-  private def handleIncomingExecutionState(incomingState: ExecutionState, tracked: Map[String, TrackingEntry]) {
+  private def handleIncomingExecutionState(incomingState: ExecutionState, tracked: Map[String, ExecutionStateEntry]) {
     getUpdatedState(incomingState, tracked).fold(
       fail => 
         publishTo.publish(FailureEvent(s"""Could not determine the state to update for tracking id "${incomingState.trackId}"""", fail, Minor)),
       potUpdatedState => {
         potUpdatedState match {
           case Some(updatedState) =>
-            storeEntryToSecondLevelStore(updatedState)
             self ! StateUpdate(tracked + (updatedState.currentState.trackId -> updatedState))
           case None =>
             self ! StateUpdate(tracked)
@@ -88,32 +87,25 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       })
   }
 
-  private def getUpdatedState(incomingState: ExecutionState, tracked: Map[String, TrackingEntry]): AlmFuture[Option[TrackingEntry]] = {
+  private def getUpdatedState(incomingState: ExecutionState, tracked: Map[String, ExecutionStateEntry]): AlmFuture[Option[ExecutionStateEntry]] = {
     getExecutionState(incomingState.trackId, tracked).map {
       case None =>
-        Some(TrackingEntry(incomingState))
+        Some(ExecutionStateEntry(incomingState))
       case Some(oldState) =>
         if (ExecutionState.compareExecutionState(incomingState, oldState.currentState) > 0)
-          Some(TrackingEntry(incomingState))
+          Some(ExecutionStateEntry(incomingState))
         else
           None
     }
   }
 
-  private def storeEntryToSecondLevelStore(entry: TrackingEntry) {
-    secondLevelStore.store(entry)(secondLevelMaxAskDuration).onFailure { prob =>
-      log.error(s"""The second level store did not store the tracking entry with tarck id "${entry.currentState.trackId}". The error message was "${prob.message}""""")
-      publishTo.publish(FailureEvent(s"""The second level store did not store the tracking entry with tarck id "${entry.currentState.trackId}"""", prob, Minor))
-    }
-  }
-
-  private def getExecutionState(trackId: String, tracked: Map[String, TrackingEntry]): AlmFuture[Option[TrackingEntry]] =
+  private def getExecutionState(trackId: String, tracked: Map[String, ExecutionStateEntry]): AlmFuture[Option[ExecutionStateEntry]] =
     (tracked.get(trackId) match {
       case Some(entry) => AlmFuture.successful(Some(entry))
       case None => secondLevelStore.get(trackId)(secondLevelMaxAskDuration)
     })
 
-  private def reportExecutionState(trackId: String, tracked: Map[String, TrackingEntry], respondTo: ActorRef): Unit = {
+  private def reportExecutionState(trackId: String, tracked: Map[String, ExecutionStateEntry], respondTo: ActorRef): Unit = {
     val pinnedSender = respondTo
     getExecutionState(trackId, tracked).onComplete(
       fail => {
@@ -123,7 +115,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       succ => pinnedSender ! QueriedExecutionState(trackId, succ.map(_.currentState)))
   }
 
-  private def preSubscribe(trackId: String, subscriber: ActorRef, tracked: Map[String, TrackingEntry]): Option[ActorRef] = {
+  private def preSubscribe(trackId: String, subscriber: ActorRef, tracked: Map[String, ExecutionStateEntry]): Option[ActorRef] = {
     getFinishedStates(tracked).get(trackId) match {
       case None =>
         Some(subscriber)
@@ -133,7 +125,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     }
   }
 
-  private def notifyFinishedStateSubscribers(tracked: Map[String, TrackingEntry], subscriptions: Map[String, List[ActorRef]]): Map[String, List[ActorRef]] = {
+  private def notifyFinishedStateSubscribers(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): Map[String, List[ActorRef]] = {
     getFinishedStates(tracked).foldLeft(subscriptions) { (acc, cur) =>
       acc.get(cur._1) match {
         case Some(subscribers) =>
@@ -164,13 +156,13 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
         }
     }
 
-  private def getFinishedStates(tracked: Map[String, TrackingEntry]): Map[String, ExecutionFinishedState] =
+  private def getFinishedStates(tracked: Map[String, ExecutionStateEntry]): Map[String, ExecutionFinishedState] =
     tracked.values.map {
-      case TrackingEntry(st: ExecutionFinishedState, _) => Some((st.trackId, st))
+      case ExecutionStateEntry(st: ExecutionFinishedState, _) => Some((st.trackId, st))
       case _ => None
     }.flatten.toMap
 
-  private def cleanUp(maxAge: org.joda.time.Duration, tracked: Map[String, TrackingEntry], subscriptions: Map[String, List[ActorRef]]): (Map[String, TrackingEntry], Map[String, List[ActorRef]]) = {
+  private def cleanUp(maxAge: org.joda.time.Duration, tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): (Map[String, ExecutionStateEntry], Map[String, List[ActorRef]]) = {
     val beforeIsExpired = canCreateUuidsAndDateTimes.getUtcTimestamp.minus(maxAge)
     val expired = tracked.values.filter(_.lastModified.compareTo(beforeIsExpired) < 0)
     val expiredTrackIds = expired.map(_.currentState.trackId).toSet
@@ -183,16 +175,13 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   }
 }
 
-trait TrackerWithDevNullSecondLevelStore { self: ExecutionTrackerTemplate =>
+trait TrackerWithoutSecondLevelStore { self: ExecutionTrackerTemplate =>
   import ExecutionStateTracker._
   import ExecutionStateStore._
   
-  override val secondLevelStore = new SecondLevelStoreWrapper {
-    def store(entry: TrackingEntry)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Unit] =
-      AlmFuture.successful(())
-
-    def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[TrackingEntry]] =
-      AlmFuture.successful(None)
+  override val secondLevelStore = new SecondLevelStore {
+     override def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[ExecutionStateEntry]] =
+       AlmFuture.successful(None)
   }
 
 }
