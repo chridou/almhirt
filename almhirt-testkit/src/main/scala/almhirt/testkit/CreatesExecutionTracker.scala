@@ -21,7 +21,6 @@ trait CreatesCreatesInMemoryExecutionTracker extends CreatesExecutionTracker { s
         val publishTo = messagePublisher
         val canCreateUuidsAndDateTimes = theAlmhirt
         val executionContext = theAlmhirt.futuresExecutor
-        val secondLevelMaxAskDuration = scala.concurrent.duration.FiniteDuration(3, "s")
         def receive: Receive = handleTrackingMessage
       })
     (system.actorOf(props, "execution_state_tracker_" + testId), () => ())

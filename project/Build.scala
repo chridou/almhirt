@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.7"
+  val buildVersion      = "0.5.8"
   val buildScalaVersion = "2.10.2"
 
   val akkaVersion = "2.2.+"
@@ -178,13 +178,13 @@ trait CorexSprayBuild {
   import Dependencies._
   import Resolvers._
   def corexSprayProject(name: String, baseFile: java.io.File) = {
-    val sprayVersion = "1.2-20130710"
+    val sprayVersion = "1.2-20130801"
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  //resolvers += "spray repo" at "http://repo.spray.io",
 	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
-	  libraryDependencies += "io.spray" % "spray-routing" % sprayVersion,
+	  libraryDependencies += "io.spray" % "spray-routing" % sprayVersion % "provided",
 	  libraryDependencies += "io.spray" % "spray-testkit" % sprayVersion % "test",
 	  libraryDependencies += scalatest
 	  )

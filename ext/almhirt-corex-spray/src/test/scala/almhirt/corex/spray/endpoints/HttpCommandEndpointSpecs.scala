@@ -39,7 +39,6 @@ class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpComm
         val publishTo = theAlmhirt.messageBus
         val canCreateUuidsAndDateTimes = theAlmhirt
         val executionContext = theAlmhirt.futuresExecutor
-        val secondLevelMaxAskDuration = scala.concurrent.duration.FiniteDuration(3, "s")
         def receive: Receive = handleTrackingMessage
       })
     system.actorOf(props, "execution_state_tracker")
@@ -127,5 +126,12 @@ class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpComm
         entityAs[ExecutionState] should equal(execState)
       }
     }
+    
+//    it("""should rsssseturn a MethodNotAllowed error for POST requests to the "/execute" path""") {
+//      Put("/execute", "xx")  ~> sealRoute(executeCommandRoute) ~> check {
+//        status should equal(UnsupportedMediaType)
+//      }
+//    }
+    
   }
 }

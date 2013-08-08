@@ -179,6 +179,8 @@ trait TrackerWithoutSecondLevelStore { self: ExecutionTrackerTemplate =>
   import ExecutionStateTracker._
   import ExecutionStateStore._
   
+  override final val secondLevelMaxAskDuration = scala.concurrent.duration.FiniteDuration(10, "ms")
+
   override val secondLevelStore = new SecondLevelStore {
      override def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[ExecutionStateEntry]] =
        AlmFuture.successful(None)
