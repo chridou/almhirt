@@ -22,7 +22,7 @@ class ActorSystemEventStreamMessageBusSpecs extends TestKit(ActorSystem("ActorSy
 
   val classifyD = Classifier.payloadPredicate[D](x => !x.content.isEmpty)
 
-  val (messagebus, _) = ActorSystemEventStreamMessageBus(this.system).awaitResult(maxMsgDuration).forceResult
+  val (messagebus, _) = ActorSystemEventStreamMessageBus(this.system).awaitResult(defaultDuration).forceResult
   val channelA = messagebus.channel[A].awaitResult(maxMsgDuration).forceResult
   val channelAB = channelA.channel[B].awaitResult(maxMsgDuration).forceResult
   val channelC = messagebus.channel[C].awaitResult(maxMsgDuration).forceResult
