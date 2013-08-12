@@ -15,36 +15,15 @@ class MessageOrderSpec extends TestKit(ActorSystem("MessageOrderSpec")) with Fun
   implicit val executionContext = this.system.dispatcher
   val maxMsgDuration = FiniteDuration(100, "ms")
 
-  class A()
-  class B() extends A
-  class C() extends A
-  case class D(content: String = "") extends A
-
-  val classifyD = Classifier.payloadPredicate[D](x => !x.content.isEmpty)
   val classifyStringNotEmpty = Classifier.payloadPredicate[String](x => !x.isEmpty)
+  val classifyStringNotNO = Classifier.payloadPredicate[String](x => !x.equals("NO"))
 
   val (messagebus, _) = ActorSystemEventStreamMessageBus(this.system).awaitResult(defaultDuration).forceResult
-  val channelA = messagebus.channel[A].awaitResult(maxMsgDuration).forceResult
-  val channelAB = channelA.channel[B].awaitResult(maxMsgDuration).forceResult
-  val channelC = messagebus.channel[C].awaitResult(maxMsgDuration).forceResult
-  val channelAC = channelA.channel[C].awaitResult(maxMsgDuration).forceResult
-  val channelAD = channelA.channel[D].awaitResult(maxMsgDuration).forceResult
-  val channelDPred = messagebus.channel[D](classifyD).awaitResult(maxMsgDuration).forceResult
-  val channelADPred = channelA.channel[D](classifyD).awaitResult(maxMsgDuration).forceResult
   
+  val channelUnfiltered = messagebus.channel[String].awaitResult(maxMsgDuration).forceResult
   val channelStringNotEmpty = messagebus.channel[String](classifyStringNotEmpty).awaitResult(maxMsgDuration).forceResult
-  
-  describe("""An ActorSystemEventStreamMessageBus with a subscription on AnyRef""") {
-    it("""should publish to a subscriber""") {
-      val probe = TestProbe()
-      val payload = "testMessage"
-      val msg = Message(payload)
-      val subscriptionF = messagebus.subscribe(probe.ref, Classifier.forClass(classOf[AnyRef]))
-      messagebus.publishMessage(msg)
-      probe.expectMsg(maxMsgDuration, msg)
-      subscriptionF.onSuccess(_.cancel)
-    }
-  }
+  val channelStringNotNO = messagebus.channel[String](classifyStringNotNO).awaitResult(maxMsgDuration).forceResult
+  val channelTwoFilter = channelStringNotEmpty.channel[String](classifyStringNotNO).awaitResult(maxMsgDuration).forceResult
   
   describe("""All messages"""){
     it("""should received in same order as send"""){
@@ -53,7 +32,7 @@ class MessageOrderSpec extends TestKit(ActorSystem("MessageOrderSpec")) with Fun
       val subscriptionF = messagebus.subscribe(probe.ref, Classifier.forClass(classOf[AnyRef]))
       payloads.foreach(e => messagebus.publishMessage(Message(e)))
       val result = probe.receiveWhile(maxMsgDuration, maxMsgDuration, payloads.length){
-        case msg : Message => msg.payload.toString
+        case msg : Message => msg.payload
       }
       result should be(payloads)
       subscriptionF.onSuccess(_.cancel)
@@ -62,13 +41,60 @@ class MessageOrderSpec extends TestKit(ActorSystem("MessageOrderSpec")) with Fun
       val probe = TestProbe()
       val payloads = List("","msg0", "", "msg1", "msg2", "")
       val subscriptionF = channelStringNotEmpty.subscribe(probe.ref)
-      //val subscriptionF = messagebus.subscribe(probe.ref, Classifier.forClass(classOf[AnyRef]))
       payloads.foreach(e => messagebus.publishMessage(Message(e)))
       val result = probe.receiveWhile(maxMsgDuration, maxMsgDuration, payloads.length){
         case payload: String => payload
       }
       result should be(List("msg0", "msg1", "msg2"))
       subscriptionF.onSuccess(_.cancel)
+    }
+    it("""send over unfiltered channel should received in same order as send"""){
+      val probe = TestProbe()
+      val payloads = List("msg0", "msg1", "msg2")
+      val subscriptionF = channelUnfiltered.subscribe(probe.ref)
+      payloads.foreach(e => messagebus.publishMessage(Message(e)))
+      val result = probe.receiveWhile(maxMsgDuration, maxMsgDuration, payloads.length){
+        case payload: String => payload
+      }
+      result should be(payloads)
+      subscriptionF.onSuccess(_.cancel)
+    }
+    it("""should filtered for '' and 'NO' and received in same order as send """){
+      val probe = TestProbe()
+      val payloads = List("","NO","msg0", "","NO", "msg1", "msg2","NO", "")
+      val subscriptionF = channelTwoFilter.subscribe(probe.ref)
+      payloads.foreach(e => messagebus.publishMessage(Message(e)))
+      val result = probe.receiveWhile(maxMsgDuration, maxMsgDuration, payloads.length){
+        case payload: String => payload
+      }
+      result should be(List("msg0", "msg1", "msg2"))
+      subscriptionF.onSuccess(_.cancel)
+    }
+    ignore("""should received only one time, when subscribe to the same channel twice"""){
+      val probe = TestProbe()
+      val payloads = List("msg0", "msg1", "msg2")
+      val subscriptionF = channelUnfiltered.subscribe(probe.ref)
+      val subscriptionG = channelUnfiltered.subscribe(probe.ref)
+      payloads.foreach(e => messagebus.publishMessage(Message(e)))
+      val result = probe.receiveWhile(maxMsgDuration, maxMsgDuration, payloads.length){
+        case payload: String => payload
+      }
+      result should be(List("msg0", "msg1", "msg2"))
+      subscriptionF.onSuccess(_.cancel)
+      subscriptionG.onSuccess(_.cancel)
+    }
+    ignore("""should filtered for '' and 'NO' with two subscriptions and received in same order as send """){
+      val probe = TestProbe()
+      val payloads = List("","NO","msg0", "","NO", "msg1", "msg2","NO", "")
+      val subscriptionF = channelStringNotEmpty.subscribe(probe.ref)
+      val subscriptionG = channelStringNotNO.subscribe(probe.ref)
+      payloads.foreach(e => messagebus.publishMessage(Message(e)))
+      val result = probe.receiveWhile(maxMsgDuration, maxMsgDuration, payloads.length){
+        case payload: String => payload
+      }
+      result should be(List("msg0", "msg1", "msg2"))
+      subscriptionF.onSuccess(_.cancel)
+      subscriptionG.onSuccess(_.cancel)
     }
   }
 
