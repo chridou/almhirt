@@ -65,7 +65,7 @@ class MessageOrderSpec extends TestKit(ActorSystem("MessageOrderSpec")) with Fun
       //val subscriptionF = messagebus.subscribe(probe.ref, Classifier.forClass(classOf[AnyRef]))
       payloads.foreach(e => messagebus.publishMessage(Message(e)))
       val result = probe.receiveWhile(maxMsgDuration, maxMsgDuration, payloads.length){
-        case msg : Message => msg.payload
+        case payload: String => payload
       }
       result should be(List("msg0", "msg1", "msg2"))
       subscriptionF.onSuccess(_.cancel)
