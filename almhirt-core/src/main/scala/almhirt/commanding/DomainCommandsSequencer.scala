@@ -81,39 +81,34 @@ trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: A
     }
 
   private def processIncomingCommand(command: DomainCommand, responsible: ActorRef, currentState: Map[String, SequenceEntry]): Map[String, SequenceEntry] =
-    command.tryGetGroupLabel match {
-      case Some(groupLabel) =>
-        log.debug(s"""Sequence command "${command.commandId}" for "$groupLabel".""")
-        currentState.get(groupLabel) match {
+    command.getGrouping match {
+      case scalaz.Success(grouping) =>
+        log.debug(s"""Sequence command "${command.commandId}" for "${grouping.toString}"""")
+        currentState.get(grouping.groupLabel) match {
           case Some(entry) =>
-            addToEntry(command, entry).fold(
+            addToEntry(grouping, command, entry).fold(
               fail => {
-                entry.responsible ! DomainCommandsSequenceNotCreated(groupLabel, fail)
-                currentState - groupLabel
+                entry.responsible ! DomainCommandsSequenceNotCreated(grouping.groupLabel, fail)
+                currentState - grouping.groupLabel
               },
-              modifiedEntry => currentState + (groupLabel -> modifiedEntry))
+              modifiedEntry => currentState + (grouping.groupLabel -> modifiedEntry))
           case None =>
-            createNewEntry(command, sender).fold(
-              fail => {
-                sender ! DomainCommandsSequenceNotCreated(groupLabel, fail)
-                currentState
-              },
-              newEntry => currentState + (groupLabel -> newEntry))
+            val newEntry = createNewEntry(grouping, command, sender)
+            currentState + (grouping.groupLabel -> newEntry)
         }
-      case None =>
-        log.warning(s"""Command "${command.getClass().getName()}" with id "${command.commandId}" of type "${command.getClass().getName()}" targetting aggregate root "${command.targettedAggregateRootId}" with version "${command.targettedVersion}" is not a member of a group""")
+      case scalaz.Failure(prob) =>
+        log.warning(s"""Command "${command.getClass().getName()}" with id "${command.commandId}" of type "${command.getClass().getName()}" targetting aggregate root "${command.targettedAggregateRootId}" with version "${command.targettedVersion}" is not a member of a group: "${prob.message}"""")
         currentState
     }
 
-  private def createNewEntry(command: DomainCommand, responsible: ActorRef): AlmValidation[SequenceEntry] = {
-    command.getGrouping.map(grp =>
-      if (grp.isLast)
-        SequenceEntry(grp.groupLabel, command.targettedAggregateRootRef, Some(grp.index), Map(grp.index -> command), theAlmhirt.getDateTime, responsible)
-      else
-        SequenceEntry(grp.groupLabel, command.targettedAggregateRootRef, None, Map(grp.index -> command), theAlmhirt.getDateTime, responsible))
+  private def createNewEntry(group: CommandGrouping, command: DomainCommand, responsible: ActorRef): SequenceEntry = {
+    if (group.isLast)
+      SequenceEntry(group.groupLabel, command.targettedAggregateRootRef, Some(group.index), Map(group.index -> command), theAlmhirt.getDateTime, responsible)
+    else
+      SequenceEntry(group.groupLabel, command.targettedAggregateRootRef, None, Map(group.index -> command), theAlmhirt.getDateTime, responsible)
   }
 
-  private def addToEntry(command: DomainCommand, entry: SequenceEntry): AlmValidation[SequenceEntry] =
+  private def addToEntry(group: CommandGrouping, command: DomainCommand, entry: SequenceEntry): AlmValidation[SequenceEntry] =
     entry.addCommand(command)
 
 }
