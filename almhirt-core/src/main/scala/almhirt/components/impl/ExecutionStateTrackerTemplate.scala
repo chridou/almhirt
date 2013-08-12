@@ -38,6 +38,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
         context.become(waitingForTrackedStateUpdate(newState, subscriptions, updateRequests.tail))
       }
     case ExecutionStateChanged(_, st) =>
+      log.debug(s"""Received ExecutionStateChanged: ${st.toString()}""")
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, updateRequests :+ st))
     case GetExecutionStateFor(trackId) =>
       reportExecutionState(trackId, tracked, sender)
@@ -55,6 +56,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   protected def idleState(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): Receive = {
     case ExecutionStateChanged(_, st) =>
+      log.debug(s"""Received ExecutionStateChanged: ${st.toString()}""")
       handleIncomingExecutionState(st, tracked)
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, Vector.empty))
     case GetExecutionStateFor(trackId) =>
