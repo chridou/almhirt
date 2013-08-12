@@ -36,7 +36,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       log.debug(s"""Received command sequence "$groupLabel"(${domainCommandSequence.size}).""")
       executeDomainCommandSequence(domainCommandSequence)
     case DomainCommandsSequencer.DomainCommandsSequenceNotCreated(grouplabel: String, problem: Problem) =>
-      ()
+      throw new Exception(problem.message)
   }
 
   def initiateExecution(cmd: Command) {
