@@ -15,7 +15,7 @@
 package almhirt
 
 import language.implicitConversions
-
+import scala.util.control.NonFatal
 import scalaz.syntax.validation
 import scala.concurrent.ExecutionContext
 import almhirt.problem._
@@ -31,10 +31,10 @@ package object common {
 
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T] { def equal(p1: T, p2: T): Boolean = p1 == p2 }
 
-  def launderException(exn: Exception): SingleProblem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
+  def launderException(exn: Throwable): SingleProblem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
   def handleThrowable(throwable: Throwable): Problem =
     throwable match {
-      case exn: Exception => launderException(exn)
+      case NonFatal(exn) => launderException(exn)
     }
 
   implicit object DateTimeOrdering extends Ordering[org.joda.time.DateTime] {
