@@ -10,14 +10,17 @@ sealed trait ExecutionState {
 }
 
 object ExecutionState {
-  def executionStateOrderingTag(executionState: ExecutionState): Int = 
+  def executionStateOrderingTag(executionState: ExecutionState): Int =
     executionState match {
-    case st: ExecutionStarted => 1
-    case st: ExecutionInProcess => 2
-    case st: ExecutionFinishedState => 3
-  }
-  
+      case st: ExecutionStarted => 1
+      case st: ExecutionInProcess => 2
+      case st: ExecutionFinishedState => 3
+    }
+
   def compareExecutionState(a: ExecutionState, b: ExecutionState): Int =
+    if (a.isInstanceOf[ExecutionInProcess] && b.isInstanceOf[ExecutionInProcess])
+      a.timestamp compareTo b.timestamp
+    else
       executionStateOrderingTag(a) compareTo executionStateOrderingTag(b)
 }
 
@@ -56,7 +59,7 @@ object ExecutionFailed {
 }
 
 final case class ExecutionStateChanged(header: EventHeader, executionState: ExecutionState) extends Event {
-   override def changeMetadata(newMetadata: Map[String, String]): ExecutionStateChanged = copy(header = this.header.changeMetadata(newMetadata))
+  override def changeMetadata(newMetadata: Map[String, String]): ExecutionStateChanged = copy(header = this.header.changeMetadata(newMetadata))
 }
 
 object ExecutionStateChanged {
