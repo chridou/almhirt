@@ -96,8 +96,10 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       case Some(oldState) =>
         if (ExecutionState.compareExecutionState(incomingState, oldState.currentState) > 0)
           Some(ExecutionStateEntry(incomingState))
-        else
+        else {
+          log.warning(s"""The new ExecutionState with tracking-id "${incomingState.trackId}" is not logically greater than the present execution state. Did you use an already used tracking id? Now changes were applied.""")
           None
+        }
     }
   }
 
