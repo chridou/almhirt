@@ -92,7 +92,7 @@ object SingleProblem {
       Some(problem)
     else None
 
-  private case class SingleProblemImpl(
+  case class SingleProblemImpl(
     message: String,
     problemType: ProblemType,
     args: Map[String, Any],
@@ -122,7 +122,7 @@ object AggregateProblem {
   def unapply(problem: AggregateProblem): Option[(String, ProblemType, Map[String, Any], Seq[Problem])] =
     Some(problem.message, problem.problemType, problem.args, problem.problems)
 
-  private case class AggregateProblemImpl(
+  case class AggregateProblemImpl(
     args: Map[String, Any],
     problems: Seq[Problem]) extends AggregateProblem {
     override val problemType = problemtypes.MultipleProblems
