@@ -11,7 +11,7 @@ import riftwarp.std.kit._
 
 object SingleProblemPackaging extends WarpPacker[SingleProblem] with RegisterableWarpPacker with RegisterableWarpUnpacker[SingleProblem] {
   override val warpDescriptor = WarpDescriptor(classOf[SingleProblem].getSimpleName())
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[SingleProblem]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[SingleProblem]) :: WarpDescriptor(classOf[SingleProblem.SingleProblemImpl]) :: Nil
   override def pack(what: SingleProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     this.warpDescriptor ~>
       P("message", what.message) ~>
@@ -35,7 +35,7 @@ object SingleProblemPackaging extends WarpPacker[SingleProblem] with Registerabl
 
 object AggregateProblemPackaging extends WarpPacker[AggregateProblem] with RegisterableWarpPacker with RegisterableWarpUnpacker[AggregateProblem] {
   override val warpDescriptor = WarpDescriptor(classOf[AggregateProblem].getSimpleName())
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[AggregateProblem]) :: Nil
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[AggregateProblem]) :: WarpDescriptor(classOf[AggregateProblem.AggregateProblemImpl]) :: Nil
   override def pack(what: AggregateProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     this.warpDescriptor ~>
       MLookUpForgiving[String, Any]("args", what.args) ~>
