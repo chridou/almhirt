@@ -122,9 +122,12 @@ object AlmFuture {
     in.foldLeft(Future.successful(cbf(in)): Future[Builder[AlmValidation[A], M[AlmValidation[A]]]])((futAcc, futElem) ⇒ for (acc ← futAcc; a ← futElem.asInstanceOf[AlmFuture[A]].underlying) yield (acc += a)).map(_.result)
   }
   
-  def sequence[A, M[_] <: Traversable[_]](in: M[AlmFuture[A]])(implicit cbf: CanBuildFrom[M[AlmFuture[A]], AlmValidation[A], M[AlmValidation[A]]], executionContext: ExecutionContext): AlmFuture[M[AlmValidation[A]]] = {
-    val fut = sequenceAkka(in)
-    new AlmFuture(fut.map(_.success)(executionContext))
+  def sequence[A](in: Seq[AlmFuture[A]])(implicit executionContext: ExecutionContext): AlmFuture[Seq[A]] = {
+    import almhirt.almvalidation.kit._
+    import scalaz._, Scalaz._
+    val underlyings = in.map(x => x.underlying).toVector
+    val fut = Future.sequence(underlyings).map(seq => seq.map(_.toAgg).sequence)
+    new AlmFuture(fut)
   }
 
   def promise[T](what: => AlmValidation[T]) = new AlmFuture[T](Future.successful { what })
