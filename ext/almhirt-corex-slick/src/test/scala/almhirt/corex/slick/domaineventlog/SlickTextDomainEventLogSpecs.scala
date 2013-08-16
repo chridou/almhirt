@@ -20,8 +20,8 @@ almhirt {
 		  	connection = "jdbc:h2:mem:almhirtslicktest;DB_CLOSE_DELAY=-1"
 		  	table-name = ""
 		    serialization-channel = "json"
-		    create-schema = false
-		  	drop-schema = false
+		    create-schema = true
+		  	drop-schema = true
 		  	properties {
 		  		user = "testuser"
 		  		password = "testuser"
@@ -43,7 +43,7 @@ trait CreatesSlickTextDomainEventLog extends CreatesDomainEventLog { self: HasAl
     val theRiftwarp = addAr1Serializers(riftwarp.RiftWarp())
     val serializer = RiftDomainEventStringSerializer(theRiftwarp)
     val configSection = SlickTextDomainEventLogSpecsConfig.config(testId).v[Config]("almhirt.textdomaineventlog").resultOrEscalate
-    val createParams = SlickTextDomainEventLog.create(theAlmhirt, configSection, serializer, true).resultOrEscalate
+    val createParams = SlickTextDomainEventLog.create(theAlmhirt, configSection, serializer).resultOrEscalate
     createParams.initAction().resultOrEscalate
     (theAlmhirt.actorSystem.actorOf(createParams.props, "textdomaineventlog_"+testId), () => createParams.closeAction().resultOrEscalate)
   }
