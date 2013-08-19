@@ -13,8 +13,10 @@ trait CommandReceivedEvent extends Event {
 object CommandReceivedEvent {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedEvent =
     CommandReceived(EventHeader(), command)
-  def apply(header: CommandHeader, commandType: String)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedEvent =
-    CommandReceivedAsHeader(EventHeader(), header, commandType)
+  def apply(commandHeader: CommandHeader, commandType: String)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedEvent =
+    apply(EventHeader(), commandHeader, commandType)
+  def apply(header: EventHeader, commandHeader: CommandHeader, commandType: String)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedEvent =
+    CommandReceivedAsHeader(header, commandHeader, commandType)
 }
 
 final case class CommandReceived(val header: EventHeader, val command: Command) extends CommandReceivedEvent {
@@ -33,4 +35,6 @@ final case class CommandReceivedAsHeader(val header: EventHeader, val commandHea
 object CommandReceivedAsHeader {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedAsHeader =
     CommandReceivedAsHeader(EventHeader(), command.header, command.getClass().getName())
+  def apply(header: EventHeader, command: Command): CommandReceivedAsHeader =
+    CommandReceivedAsHeader(header, command.header, command.getClass().getName())
 }

@@ -56,7 +56,7 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
           storeResult <- storeComponent.insertEventRow(row)
         } yield storeResult
       }.onComplete(
-        problem => messagePublisher.publish(FailureEvent(s"""Could not store even of type "${event.getClass().getName()}" with event id "${event.eventId.toString()}"""", problem, Major)),
+        problem => messagePublisher.publish(FailureEvent(s"""Could not store event of type "${event.getClass().getName()}" with event id "${event.eventId.toString()}"""", problem, Major)),
         succ => ())
         
     case GetEvent(eventId) =>
