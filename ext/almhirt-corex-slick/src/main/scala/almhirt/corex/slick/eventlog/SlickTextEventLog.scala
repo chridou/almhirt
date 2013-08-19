@@ -87,38 +87,38 @@ object SlickTextEventLog {
       res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, theAlmhirt, serializer, channel)
     } yield res
     
-  def create(theAlmhirt: Almhirt, configPath: String, serializer: EventStringSerializer): AlmValidation[SlickCreationParams] =
+  def props(
+    theAlmhirt: Almhirt,
+    storeComponent: EventLogStoreComponent[TextEventLogRow],
+    serializer:EventStringSerializer): AlmValidation[Props] =
     for {
-      configSection <- theAlmhirt.config.v[Config](configPath)
+      configSection <- theAlmhirt.config.v[Config]("almhirt.eventlog") 
+      channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
+      res <- props(theAlmhirt, configSection, storeComponent, serializer)
+    } yield res
+
+  def create(theAlmhirt: Almhirt, configSection: Config, serializer: EventStringSerializer): AlmValidation[SlickCreationParams] =
+    for {
       storeComponent <- TextEventLogDataAccess(configSection)
       createSchema <- configSection.opt[Boolean]("create-schema").map(_.getOrElse(false))
       dropSchema <- configSection.opt[Boolean]("drop-schema").map(_.getOrElse(false))
-      theProps <- props(theAlmhirt, configPath, storeComponent, serializer)
+      theProps <- props(theAlmhirt, configSection, storeComponent, serializer)
     } yield new SlickCreationParams {
       val props = theProps
       val initAction = () => if (createSchema) storeComponent.create else ().success
       val closeAction = () => if (dropSchema) storeComponent.drop else ().success
     }
     
-  def create(theAlmhirt: Almhirt, configPath: String, serializer: EventStringSerializer, createAndDrop: Boolean): AlmValidation[SlickCreationParams] =
+  def create(theAlmhirt: Almhirt, configPath: String, serializer: EventStringSerializer): AlmValidation[SlickCreationParams] =
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
-      storeComponent <- TextEventLogDataAccess(configSection)
-      theProps <- props(theAlmhirt, configPath, storeComponent, serializer)
-    } yield new SlickCreationParams {
-      val props = theProps
-      val initAction = () => if (createAndDrop) storeComponent.create else ().success
-      val closeAction = () => if (createAndDrop) storeComponent.drop else ().success
-    }
+      res <- create(theAlmhirt, configSection, serializer)
+    } yield res
 
-  def create(theAlmhirt: Almhirt, configSection: Config, serializer: EventStringSerializer, createAndDrop: Boolean): AlmValidation[SlickCreationParams] =
+  def create(theAlmhirt: Almhirt, serializer: EventStringSerializer): AlmValidation[SlickCreationParams] =
     for {
-      storeComponent <- TextEventLogDataAccess(configSection)
-      theProps <- props(theAlmhirt, configSection, storeComponent, serializer)
-    } yield new SlickCreationParams {
-      val props = theProps
-      val initAction = () => if (createAndDrop) storeComponent.create else ().success
-      val closeAction = () => if (createAndDrop) storeComponent.drop else ().success
-    }
+      configSection <- theAlmhirt.config.v[Config]("almhirt.eventlog") 
+      res <- create(theAlmhirt, configSection, serializer)
+    } yield res
     
 }
