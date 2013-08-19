@@ -48,7 +48,7 @@ trait TextDomainEventLogStoreComponent extends DomainEventLogStoreComponent[Text
       }
     }
   }
-
+  
   override def insertEventRow(eventLogRow: TextDomainEventLogRow): AlmValidation[TextDomainEventLogRow] =
     computeSafely {
       db withSession { implicit session: Session =>

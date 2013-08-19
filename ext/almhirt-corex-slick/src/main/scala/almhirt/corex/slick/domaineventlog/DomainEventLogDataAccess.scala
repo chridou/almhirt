@@ -30,7 +30,7 @@ object TextDomainEventLogDataAccess {
       connectionString <- configSection.v[String]("connection").flatMap(_.notEmptyOrWhitespace)
       props <- configSection.opt[java.util.Properties]("properties").map(_.getOrElse(new java.util.Properties()))
       tablename <- configSection.v[String]("table-name").flatMap(_.notEmptyOrWhitespace)
-      database <- inTryCatch{ Database.forURL(connectionString, profileSettings.driver) }
+      database <- inTryCatch{ Database.forURL(connectionString, null, null, props, profileSettings.driver) }
     } yield new TextDomainEventLogDataAccess(tablename, database, profileSettings.slickDriver)
 }
 
