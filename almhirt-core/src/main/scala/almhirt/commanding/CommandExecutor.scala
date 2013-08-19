@@ -168,28 +168,31 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
               res <- hdl(fetchedState, headCommand)
             } yield res
         }
-      } andThen (
-        fail => messagePublisher.publish(CommandNotExecuted(headCommand.commandId, fail)),
-        succ => messagePublisher.publish(CommandExecuted(headCommand.commandId)))
+      }
       finalState <- appendMutatingCommandSequence(domainCommandSequence.tail, initialState._1, initialState._2)
       updateRes <- (repository ? UpdateAggregateRoot(finalState._1, finalState._2))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
       updatedAr <- AlmFuture { evaluateRepoUpdateResponse(updateRes) }
     } yield updatedAr).onComplete(
-      fail => handleFailure(trackingId, fail),
-      ar => trackingId.foreach(trId =>
-        messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
-          trId,
-          s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully mutated(and maybe created) ending with version "${ar.version} from ${domainCommandSequence.size} commands."""",
-          Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString))))))
+      fail => {
+        handleFailure(trackingId, fail)
+        domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandNotExecuted(cmd.commandId, fail)))
+      },
+      ar => {
+        domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandExecuted(cmd.commandId)))
+        trackingId.foreach(trId =>
+          messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
+            trId,
+            s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully mutated(and maybe created) ending with version "${ar.version} from ${domainCommandSequence.size} commands."""",
+            Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString)))))
+
+      })
   }
 
   private def appendMutatingCommandSequence(commands: Iterable[DomainCommand], currentState: IsAggregateRoot, previousEvents: IndexedSeq[DomainEvent]): AlmFuture[(IsAggregateRoot, IndexedSeq[DomainEvent])] = {
     def appendCommandResult(previousState: (IsAggregateRoot, IndexedSeq[DomainEvent]), command: DomainCommand): AlmFuture[(IsAggregateRoot, IndexedSeq[DomainEvent])] = {
       for {
         handler <- AlmFuture.promise { handlers.getMutatingDomainCommandHandler(command) }
-        handlerRes <- handler(previousState._1, command) andThen (
-          fail => messagePublisher.publish(CommandNotExecuted(command.commandId, fail)),
-          succ => messagePublisher.publish(CommandExecuted(command.commandId)))
+        handlerRes <- handler(previousState._1, command)
       } yield (handlerRes._1, previousState._2 ++ handlerRes._2)
     }
     commands.foldLeft(AlmFuture.successful((currentState, previousEvents))) { (acc, cur) =>
