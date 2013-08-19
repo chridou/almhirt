@@ -21,7 +21,7 @@ object CommandHeader {
   def apply(anId: java.util.UUID, aTimestamp: LocalDateTime): CommandHeader = BasicCommandHeader(anId, aTimestamp, Map.empty)
   def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = BasicCommandHeader(ccuad.getUuid, ccuad.getUtcTimestamp, Map.empty)
   def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = BasicCommandHeader(ccuad.getUuid, ccuad.getUtcTimestamp, metaData)
-  private case class BasicCommandHeader(id: java.util.UUID, timestamp: LocalDateTime, metadata: Map[String, String]) extends CommandHeader {
+  case class BasicCommandHeader(id: java.util.UUID, timestamp: LocalDateTime, metadata: Map[String, String]) extends CommandHeader {
     override def changeMetadata(newMetadata: Map[String, String]): BasicCommandHeader =
       this.copy(metadata = newMetadata)
   }

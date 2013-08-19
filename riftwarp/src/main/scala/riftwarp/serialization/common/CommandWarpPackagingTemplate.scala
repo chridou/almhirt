@@ -11,8 +11,9 @@ import riftwarp.std.WarpObjectLookUp
 
 
 object CommandHeaderWarpPackaging extends WarpPacker[CommandHeader] with RegisterableWarpPacker with RegisterableWarpUnpacker[CommandHeader] {
+import almhirt.common.CommandHeader.BasicCommandHeader
   val warpDescriptor = WarpDescriptor("CommandHeader")
-  val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandHeader]) :: Nil
+  val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandHeader]) :: WarpDescriptor(classOf[BasicCommandHeader]) :: Nil
   override def pack(what: CommandHeader)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     this.warpDescriptor ~>
       P("id", what.id) ~>

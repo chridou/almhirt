@@ -18,7 +18,7 @@ object DomainCommandHeader {
     DomainCommandHeader(AggregateRootRef(aggIdAndVersion._1, aggIdAndVersion._2))
   def apply(anAggregateRootRef: AggregateRootRef, metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRootRef, ccuad.getUtcTimestamp, metaData)
 
-  private case class BasicDomainCommandHeader(id: JUUID, aggRef: AggregateRootRef, timestamp: LocalDateTime, metadata: Map[String, String]) extends DomainCommandHeader {
+  case class BasicDomainCommandHeader(id: JUUID, aggRef: AggregateRootRef, timestamp: LocalDateTime, metadata: Map[String, String]) extends DomainCommandHeader {
     override def changeMetadata(newMetadata: Map[String, String]): BasicDomainCommandHeader =
       this.copy(metadata = newMetadata)
   }
