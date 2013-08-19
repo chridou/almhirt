@@ -4,7 +4,7 @@ import almhirt.common._
 import almhirt.serialization.EventStringSerializer
 import riftwarp.RiftWarp
 
-class RiftEventStringSerializer {
+object RiftEventStringSerializer {
   def apply(riftWarp: RiftWarp): EventStringSerializer = {
     val innerSerializer = riftwarp.util.Serializers.createSpecificForStrings[Event](riftWarp)
     new EventStringSerializer {
