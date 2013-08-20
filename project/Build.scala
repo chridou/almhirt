@@ -155,6 +155,7 @@ trait RiftWarpBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += "com.chuusai" %% "shapeless" % "1.2.4",
 	  libraryDependencies += scalatest
   )
 }
