@@ -60,6 +60,22 @@ trait ConfigConfigExtractor extends ConfigExtractor[Config] {
     ConfigHelper.tryGetFromConfigSafely(path, config.getConfig)
 }
 
+trait ConfigIntListExtractor extends ConfigExtractor[List[Int]] {
+  import scala.collection.JavaConversions._
+  def getValue(config: Config, path: String): AlmValidation[List[Int]] =
+    ConfigHelper.getFromConfigSafely(path, config.getIntList).map(l => l.map(_.toInt).toList)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Int]]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getIntList).map(lOpt => lOpt.map(l => l.map(_.toInt).toList))
+}
+
+trait ConfigStringListExtractor extends ConfigExtractor[List[String]] {
+  import scala.collection.JavaConversions._
+  def getValue(config: Config, path: String): AlmValidation[List[String]] =
+    ConfigHelper.getFromConfigSafely(path, config.getStringList).map(l => l.toList)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[String]]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).map(lOpt => lOpt.map(l => l.toList))
+}
+
 trait ConfigJavaPropertiesExtractor extends ConfigExtractor[java.util.Properties] {
   import java.util.Properties
   import collection.JavaConversions._

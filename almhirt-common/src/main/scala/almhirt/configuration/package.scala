@@ -21,5 +21,7 @@ package object configuration {
   implicit val ConfigBooleanExtractorInst = new ConfigBooleanExtractor {}
   implicit val ConfigIntExtractorInst = new ConfigIntExtractor {}
   implicit val ConfigConfigExtractorInst = new ConfigConfigExtractor {}
+  implicit val ConfigIntListExtractorInst = new ConfigIntListExtractor {}
+  implicit val ConfigStringListExtractorInst = new ConfigStringListExtractor {}
   implicit val ConfigJavaPropertiesExtractorInst = new ConfigJavaPropertiesExtractor {}
 }
