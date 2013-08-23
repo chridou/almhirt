@@ -53,11 +53,48 @@ trait ConfigIntExtractor extends ConfigExtractor[Int] {
     ConfigHelper.tryGetFromConfigSafely(path, config.getInt)
 }
 
-trait ConfigConfigExtractor extends ConfigExtractor[Config] {
-  def getValue(config: Config, path: String): AlmValidation[Config] =
-    ConfigHelper.getFromConfigSafely(path, config.getConfig)
-  def tryGetValue(config: Config, path: String): AlmValidation[Option[Config]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getConfig)
+trait ConfigLongExtractor extends ConfigExtractor[Long] {
+  def getValue(config: Config, path: String): AlmValidation[Long] =
+    ConfigHelper.getFromConfigSafely(path, config.getLong)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[Long]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getLong)
+}
+
+trait ConfigDoubleExtractor extends ConfigExtractor[Double] {
+  def getValue(config: Config, path: String): AlmValidation[Double] =
+    ConfigHelper.getFromConfigSafely(path, config.getDouble)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[Double]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getDouble)
+}
+
+trait ConfigFiniteDurationMsExtractor extends ConfigExtractor[scala.concurrent.duration.FiniteDuration] {
+  def getValue(config: Config, path: String): AlmValidation[scala.concurrent.duration.FiniteDuration] =
+    ConfigHelper.getFromConfigSafely(path, config.getMilliseconds).map(ms => scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS))
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[scala.concurrent.duration.FiniteDuration]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getMilliseconds).map(msOpt => msOpt.map(scala.concurrent.duration.FiniteDuration.apply(_, scala.concurrent.duration.MILLISECONDS)))
+}
+
+trait ConfigJodaDurationMsExtractor extends ConfigExtractor[org.joda.time.Duration] {
+  def getValue(config: Config, path: String): AlmValidation[org.joda.time.Duration] =
+    ConfigHelper.getFromConfigSafely(path, config.getMilliseconds).map(ms => org.joda.time.Duration.millis(ms))
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[org.joda.time.Duration]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getMilliseconds).map(msOpt => msOpt.map(ms => org.joda.time.Duration.millis(ms)))
+}
+
+trait ConfigStringListExtractor extends ConfigExtractor[List[String]] {
+  import scala.collection.JavaConversions._
+  def getValue(config: Config, path: String): AlmValidation[List[String]] =
+    ConfigHelper.getFromConfigSafely(path, config.getStringList).map(l => l.toList)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[String]]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).map(lOpt => lOpt.map(l => l.toList))
+}
+
+trait ConfigBooleanListExtractor extends ConfigExtractor[List[Boolean]] {
+  import scala.collection.JavaConversions._
+  def getValue(config: Config, path: String): AlmValidation[List[Boolean]] =
+    ConfigHelper.getFromConfigSafely(path, config.getBooleanList).map(l => l.map(_.booleanValue).toList)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Boolean]]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getBooleanList).map(lOpt => lOpt.map(l => l.map(_.booleanValue).toList))
 }
 
 trait ConfigIntListExtractor extends ConfigExtractor[List[Int]] {
@@ -68,12 +105,44 @@ trait ConfigIntListExtractor extends ConfigExtractor[List[Int]] {
     ConfigHelper.tryGetFromConfigSafely(path, config.getIntList).map(lOpt => lOpt.map(l => l.map(_.toInt).toList))
 }
 
-trait ConfigStringListExtractor extends ConfigExtractor[List[String]] {
+trait ConfigLongListExtractor extends ConfigExtractor[List[Long]] {
   import scala.collection.JavaConversions._
-  def getValue(config: Config, path: String): AlmValidation[List[String]] =
-    ConfigHelper.getFromConfigSafely(path, config.getStringList).map(l => l.toList)
-  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[String]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).map(lOpt => lOpt.map(l => l.toList))
+  def getValue(config: Config, path: String): AlmValidation[List[Long]] =
+    ConfigHelper.getFromConfigSafely(path, config.getLongList).map(l => l.map(_.toLong).toList)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Long]]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getLongList).map(lOpt => lOpt.map(l => l.map(_.toLong).toList))
+}
+
+trait ConfigDoubleListExtractor extends ConfigExtractor[List[Double]] {
+  import scala.collection.JavaConversions._
+  def getValue(config: Config, path: String): AlmValidation[List[Double]] =
+    ConfigHelper.getFromConfigSafely(path, config.getDoubleList).map(l => l.map(_.toDouble).toList)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Double]]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getDoubleList).map(lOpt => lOpt.map(l => l.map(_.toDouble).toList))
+}
+
+trait ConfigFiniteDurationListMsExtractor extends ConfigExtractor[List[scala.concurrent.duration.FiniteDuration]] {
+  import scala.collection.JavaConversions._
+  def getValue(config: Config, path: String): AlmValidation[List[scala.concurrent.duration.FiniteDuration]] =
+    ConfigHelper.getFromConfigSafely(path, config.getMillisecondsList).map(l => l.map(ms => scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS)).toList)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[scala.concurrent.duration.FiniteDuration]]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getMillisecondsList).map(lOpt => lOpt.map(l => l.map(ms => scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS)).toList))
+}
+
+trait ConfigJodaDurationListMsExtractor extends ConfigExtractor[List[org.joda.time.Duration]] {
+  import scala.collection.JavaConversions._
+  def getValue(config: Config, path: String): AlmValidation[List[org.joda.time.Duration]] =
+    ConfigHelper.getFromConfigSafely(path, config.getMillisecondsList).map(l => l.map(ms => org.joda.time.Duration.millis(ms)).toList)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[org.joda.time.Duration]]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getMillisecondsList).map(lOpt => lOpt.map(l => l.map(ms => org.joda.time.Duration.millis(ms)).toList))
+}
+
+
+trait ConfigConfigExtractor extends ConfigExtractor[Config] {
+  def getValue(config: Config, path: String): AlmValidation[Config] =
+    ConfigHelper.getFromConfigSafely(path, config.getConfig)
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[Config]] =
+    ConfigHelper.tryGetFromConfigSafely(path, config.getConfig)
 }
 
 trait ConfigJavaPropertiesExtractor extends ConfigExtractor[java.util.Properties] {
