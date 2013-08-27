@@ -38,7 +38,7 @@ object Almhirt {
       theCommandChannel <- theMessageBus._1.channel[Command]
     } yield {
       val theFuturesExecutor = system.dispatchers.defaultGlobalDispatcher
-      val theChannelRegistry = ChannelRegistry(theMessageBus._1, system, theFuturesExecutor)
+      val theChannelRegistry = ChannelRegistry()
       theChannelRegistry.addChannel(theEventChannel)
       theChannelRegistry.addChannel(theDomainEventChannel)
       theChannelRegistry.addChannel(theCommandChannel)
