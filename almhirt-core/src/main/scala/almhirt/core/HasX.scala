@@ -31,7 +31,7 @@ trait HasCommandChannel {
 }
 
 trait HasChannelRegistry {
-  def getChannelRegistry: ChannelRegistry
+  def channelRegistry: ChannelRegistry
 }
 
 trait HasFuturesExecutor {

@@ -38,10 +38,10 @@ object Almhirt {
       theCommandChannel <- theMessageBus._1.channel[Command]
     } yield {
       val theFuturesExecutor = system.dispatchers.defaultGlobalDispatcher
-      val channelRegistry = ChannelRegistry(theMessageBus._1, system, theFuturesExecutor)
-      channelRegistry.addChannel(theEventChannel)
-      channelRegistry.addChannel(theDomainEventChannel)
-      channelRegistry.addChannel(theCommandChannel)
+      val theChannelRegistry = ChannelRegistry(theMessageBus._1, system, theFuturesExecutor)
+      theChannelRegistry.addChannel(theEventChannel)
+      theChannelRegistry.addChannel(theDomainEventChannel)
+      theChannelRegistry.addChannel(theCommandChannel)
       val closeHandle = new CloseHandle { def close { theMessageBus._2.close } }
       val theAlmhirt = new Almhirt {
         val actorSystem = system
@@ -62,7 +62,7 @@ object Almhirt {
         def getUniqueString = ccuad.getUniqueString
         def getDateTime = ccuad.getDateTime
         def getUtcTimestamp = ccuad.getUtcTimestamp
-        def getChannelRegistry = channelRegistry
+        def channelRegistry = theChannelRegistry
       }
       (theAlmhirt, closeHandle)
     }
