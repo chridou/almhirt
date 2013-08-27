@@ -12,5 +12,5 @@ trait ChannelRegistry {
 
 object ChannelRegistry {
   def apply(messageBus: MessageBus, actorFactory: ActorRefFactory, executionContext: ExecutionContext): ChannelRegistry =
-    ???
+    new impl.ChannelRegistryImpl()
 }
