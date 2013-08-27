@@ -1,5 +1,6 @@
 package almhirt.core
 
+import scala.reflect.ClassTag
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import almhirt.common._
@@ -12,6 +13,7 @@ trait Almhirt
   with HasCommandChannel
   with HasEventChannel
   with HasDomainEventChannel
+  with HasChannelRegistry
   with CanCreateUuidsAndDateTimes
   with HasDurations
   with HasConfig
@@ -35,6 +37,11 @@ object Almhirt {
       theDomainEventChannel <- theMessageBus._1.channel[DomainEvent]
       theCommandChannel <- theMessageBus._1.channel[Command]
     } yield {
+      val theFuturesExecutor = system.dispatchers.defaultGlobalDispatcher
+      val channelRegistry = ChannelRegistry(theMessageBus._1, system, theFuturesExecutor)
+      channelRegistry.addChannel(theEventChannel)
+      channelRegistry.addChannel(theDomainEventChannel)
+      channelRegistry.addChannel(theCommandChannel)
       val closeHandle = new CloseHandle { def close { theMessageBus._2.close } }
       val theAlmhirt = new Almhirt {
         val actorSystem = system
@@ -44,7 +51,7 @@ object Almhirt {
         val domainEventChannel = theDomainEventChannel
         val durations = theDurations
         val config = ConfigFactory.load()
-        val futuresExecutor = system.dispatchers.defaultGlobalDispatcher
+        val futuresExecutor = theFuturesExecutor
         val numberCruncher = system.dispatchers.defaultGlobalDispatcher
         val syncIoWorker = system.dispatchers.defaultGlobalDispatcher
         val log = system.log
@@ -55,6 +62,7 @@ object Almhirt {
         def getUniqueString = ccuad.getUniqueString
         def getDateTime = ccuad.getDateTime
         def getUtcTimestamp = ccuad.getUtcTimestamp
+        def getChannelRegistry = channelRegistry
       }
       (theAlmhirt, closeHandle)
     }

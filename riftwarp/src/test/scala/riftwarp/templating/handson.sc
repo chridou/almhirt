@@ -10,24 +10,24 @@ object handson {
                                                   //| t[riftwarp.templating.handson.AA],shapeless.::[riftwarp.templating.IntPart[r
                                                   //| iftwarp.templating.handson.AA],shapeless.::[riftwarp.templating.StringPart[r
                                                   //| iftwarp.templating.handson.AA],shapeless.HNil]]],riftwarp.templating.handson
-                                                  //| .AA] = riftwarp.templating.Template$$anon$1@1b8acf07
+                                                  //| .AA] = riftwarp.templating.Template$$anon$1@5cef8a56
         
         
            
   x()                                             //> res0: shapeless.::[riftwarp.templating.StringPart[riftwarp.templating.handso
                                                   //| n.AA],shapeless.::[riftwarp.templating.IntPart[riftwarp.templating.handson.A
                                                   //| A],shapeless.::[riftwarp.templating.StringPart[riftwarp.templating.handson.A
-                                                  //| A],shapeless.HNil]]] = riftwarp.templating.StringPart@417e9329 :: riftwarp.t
-                                                  //| emplating.IntPart@5cef8a56 :: riftwarp.templating.StringPart@726343c4 :: HNi
-                                                  //| l
+                                                  //| A],shapeless.HNil]]] = riftwarp.templating.StringPart@71811419 :: riftwarp.t
+                                                  //| emplating.IntPart@514eaf86 :: riftwarp.templating.StringPart@4e5b01e :: HNil
+                                                  //| 
   x().tupled                                      //> res1: (riftwarp.templating.StringPart[riftwarp.templating.handson.AA], riftw
                                                   //| arp.templating.IntPart[riftwarp.templating.handson.AA], riftwarp.templating.
                                                   //| StringPart[riftwarp.templating.handson.AA]) = (riftwarp.templating.StringPar
-                                                  //| t@417e9329,riftwarp.templating.IntPart@5cef8a56,riftwarp.templating.StringPa
-                                                  //| rt@726343c4)
+                                                  //| t@71811419,riftwarp.templating.IntPart@514eaf86,riftwarp.templating.StringPa
+                                                  //| rt@4e5b01e)
   val a = AA("a", 1)                              //> a  : riftwarp.templating.handson.AA = AA(a,1)
   x.hlist.head                                    //> res2: riftwarp.templating.StringPart[riftwarp.templating.handson.AA] = riftw
-                                                  //| arp.templating.StringPart@417e9329
+                                                  //| arp.templating.StringPart@71811419
   //x.hlist.tail.head
 
  // val z = x().map(evalPolyF)
@@ -38,13 +38,19 @@ object handson {
                                                   //| (WarpElement(a,Some(WarpString(a))), WarpElement(b,Some(WarpInt(1))), WarpEl
                                                   //| ement(c,Some(WarpString(a)))))
   
-  val r = 1 :: "w" :: HNil                        //> r  : shapeless.::[Int,shapeless.::[String,shapeless.HNil]] = 1 :: w :: HNil
-                                                  //| 
+  val r = 1 :: "w" :: 1L :: HNil                  //> r  : shapeless.::[Int,shapeless.::[String,shapeless.::[Long,shapeless.HNil]]
+                                                  //| ] = 1 :: w :: 1 :: HNil
+  r.head                                          //> res4: Int = 1
+  r.tail.head                                     //> res5: String = w
+  
+                            
 	object eval extends Poly1 {
 	  implicit def caseString = at[String](_.length)
 	  implicit def caseInt = at[Int](_.toString+"!")
+	  implicit def caseLong = at[Long](_ => "Long!")
 	}
 	
-	r.map(eval)                               //> res4: shapeless.::[String,shapeless.::[Int,shapeless.HNil]] = 1! :: 1 :: HNi
-                                                  //| l
+	r.map(eval)                               //> res6: shapeless.::[String,shapeless.::[Int,shapeless.::[String,shapeless.HNi
+                                                  //| l]]] = 1! :: 1 :: Long! :: HNil
+  val y = r.tupled                                //> y  : (Int, String, Long) = (1,w,1)
 }

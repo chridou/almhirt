@@ -13,7 +13,7 @@ class CommandHandlerRegistryImpl extends CommandHandlerRegistry {
     
   final override def get(commandType: Class[_]): AlmValidation[CommandHandler] =
     handlers.get(commandType) match {
-      case null => UnspecifiedProblem(s"""No command handler found for "${commandType.getName()}"""").failure
+      case null => NoSuchElementProblem(s"""No command handler found for "${commandType.getName()}"""").failure
       case handler => handler.success
     }
 }
