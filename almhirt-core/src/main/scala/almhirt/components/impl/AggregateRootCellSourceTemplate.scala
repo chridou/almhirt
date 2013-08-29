@@ -1,14 +1,24 @@
 package almhirt.components.impl
 
 import java.util.{ UUID => JUUID }
+import scala.concurrent.duration.FiniteDuration
 import akka.actor._
+import almhirt.almvalidation.kit._
 import almhirt.components._
+import com.typesafe.config.Config
+import almhirt.core.Almhirt
 
 trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor with ActorLogging =>
   import AggregateRootCellSource._
 
   private var currentHandleId = 0L
 
+  def cacheControlHeartBeatInterval: Option[FiniteDuration]
+
+  def maxCellCacheAge: Option[FiniteDuration]
+
+  def maxDoesNotExistAge: Option[FiniteDuration]
+  
   private def nextChacheState(currentState: CacheState): Receive = {
     case GetCell(arId, arType) =>
       val (handle, nextState) = bookCellFor(arId, arType, currentState)

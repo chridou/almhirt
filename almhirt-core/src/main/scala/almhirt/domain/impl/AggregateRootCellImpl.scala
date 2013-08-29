@@ -214,6 +214,7 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   type AR = TAR
   type Event = TEvent
 
+  
   override def preStart() {
     super.preStart()
     log.debug(s"""Aggregate root cell for managed aggregate root id "$managedAggregateRooId" is about to start.""")

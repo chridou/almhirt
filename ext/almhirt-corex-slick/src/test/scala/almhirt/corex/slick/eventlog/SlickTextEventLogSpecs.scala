@@ -13,7 +13,7 @@ object SlickTextEventLogSpecsConfig {
   def configStr = 
     """
 almhirt {
-		  texteventlog {
+		  text-event-log {
 		  	profile = "h2"
 		  	connection = "jdbc:h2:mem:almhirtslicktest;DB_CLOSE_DELAY=-1"
 		  	table-name = ""
@@ -31,7 +31,7 @@ almhirt {
     val baseConfig = ConfigFactory.parseString(configStr)
     
     def config(testId: Int) =
-      ConfigFactory.parseString(s"""almhirt.texteventlog.table-name = "texteventlog_${testId}"""").withFallback(baseConfig)
+      ConfigFactory.parseString(s"""almhirt.text-event-log.table-name = "texteventlog_${testId}"""").withFallback(baseConfig)
 }
 
 trait CreatesSlickTextEventLog extends CreatesEventLog { self: HasAlmhirt =>
@@ -40,7 +40,7 @@ trait CreatesSlickTextEventLog extends CreatesEventLog { self: HasAlmhirt =>
     import almhirt.configuration._
     val theRiftwarp = almhirt.testkit.testevents.Serialization.addTestEventSerializers(riftwarp.RiftWarp())
     val serializer = riftwarp.util.RiftEventStringSerializer(theRiftwarp)
-    val configSection = SlickTextEventLogSpecsConfig.config(testId).v[Config]("almhirt.texteventlog").resultOrEscalate
+    val configSection = SlickTextEventLogSpecsConfig.config(testId).v[Config]("almhirt.text-event-log").resultOrEscalate
     val createParams = SlickTextEventLog.create(theAlmhirt, configSection, serializer).resultOrEscalate
     createParams.initAction().resultOrEscalate
     (theAlmhirt.actorSystem.actorOf(createParams.props, "texteeventlog_"+testId), () => createParams.closeAction().resultOrEscalate)

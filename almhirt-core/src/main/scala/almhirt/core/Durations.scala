@@ -29,7 +29,7 @@ object Durations {
       shortDur <- config.v[FiniteDuration]("short")
       mediumDur <- config.v[FiniteDuration]("medium")
       longDur <- config.v[FiniteDuration]("long")
-      extraLongDur <- config.v[FiniteDuration]("extralong")
+      extraLongDur <- config.v[FiniteDuration]("extra-long")
     } yield apply(shortDur, mediumDur, longDur, extraLongDur)
   }
 

@@ -18,7 +18,7 @@ trait CreatesCellSourceForTestAggregateRoots extends CreatesCellSource { self: H
       Map(
         (classOf[AR1], (arId: JUUID, notifyDoesNotExist: () => Unit) => Props(new AggregateRootCellImpl[AR1, AR1Event](arId, AR1.rebuildFromHistory, eventlog, notifyDoesNotExist))),
         (classOf[AR2], (arId: JUUID, notifyDoesNotExist: () => Unit) => Props(new AggregateRootCellImpl[AR2, AR2Event](arId, AR2.rebuildFromHistory, eventlog, notifyDoesNotExist))))
-    val props = Props(new AggregateRootCellSourceImpl(propsFactories.lift))
+    val props = Props(new AggregateRootCellSourceImpl(propsFactories.lift, theAlmhirt))
     this.theAlmhirt.actorSystem.actorOf(props, "CellSource_" + testId.toString())
   }  
 }

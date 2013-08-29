@@ -86,6 +86,7 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
   def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit executionContext: ExecutionContext): Unit =
     doAsync(failure, sideEffect)
 
+  
   /** In case of a success: Execute the computation as an already computed result
    * 
    * @param compute The computation
