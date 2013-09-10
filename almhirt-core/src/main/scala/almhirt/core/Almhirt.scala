@@ -44,14 +44,17 @@ object Almhirt {
       configSection <- AlmFuture.promise(theConfig.v[Config]("almhirt"))
       theDurations <- AlmFuture.promise(configSection.v[Durations]("durations"))
       futuresExecutorPath <- AlmFuture.promise(configSection.v[String]("executors.futures"))
-      syncIoExecutorPath <- AlmFuture.promise(configSection.v[String]("executors.sync-io"))
       cruncherExecutorPath <- AlmFuture.promise(configSection.v[String]("executors.number-cruncher"))
+      syncIoExecutorPath <- AlmFuture.promise(configSection.v[String]("executors.sync-io"))
       theMessageBus <- MessageBus(system)
       theEventChannel <- theMessageBus._1.channel[Event]
       theDomainEventChannel <- theMessageBus._1.channel[DomainEvent]
       theCommandChannel <- theMessageBus._1.channel[Command]
     } yield {
-      system.log.info(s"""Durations:(${theDurations.toString})""")
+      system.log.info(s"""Durations: ${theDurations.toString}""")
+      system.log.info(s"""Futures-Executor-Path: $futuresExecutorPath""")
+      system.log.info(s"""Cruncher-Executor-Path: $cruncherExecutorPath""")
+      system.log.info(s"""Sync-IO-Executor-Path: $syncIoExecutorPath""")
       val theChannelRegistry = ChannelRegistry()
       val executorNames = Map((DispatcherNames.`futures` -> futuresExecutorPath), (DispatcherNames.`sync-io` -> syncIoExecutorPath), (DispatcherNames.`number-cruncher` -> cruncherExecutorPath)).lift
       theChannelRegistry.addChannel(theEventChannel)
@@ -67,8 +70,8 @@ object Almhirt {
         val durations = theDurations
         val config = theConfig
         val futuresExecutor = system.dispatchers.lookup(futuresExecutorPath)
-        val numberCruncher = system.dispatchers.lookup(syncIoExecutorPath)
-        val syncIoWorker = system.dispatchers.lookup(cruncherExecutorPath)
+        val numberCruncher = system.dispatchers.lookup(cruncherExecutorPath)
+        val syncIoWorker = system.dispatchers.lookup(syncIoExecutorPath)
         val log = system.log
         val commandConsumer = new CommandConsumer { def consume(command: Command) { messageBus.publish(command) } }
         val eventConsumer = new EventConsumer { def consume(event: Event) { messageBus.publish(event) } }
