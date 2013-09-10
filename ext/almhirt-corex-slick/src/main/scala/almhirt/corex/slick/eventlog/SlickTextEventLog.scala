@@ -39,7 +39,7 @@ object SlickTextEventLog {
   import almhirt.configuration._
   import almhirt.almvalidation.kit._
 
-  def props(
+  def propsRaw(
     messagePublisher: MessagePublisher,
     storeComponent: EventLogStoreComponent[TextEventLogRow],
     canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes,
@@ -62,7 +62,7 @@ object SlickTextEventLog {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
       dispatcher <- configSection.v[String]("sync-io-dispatcher").flatMap(_.notEmptyOrWhitespace)
       numActors <- configSection.v[Int]("number-of-actors")
-      resRaw <- props(messagePublisher, storeComponent, canCreateUuidsAndDateTimes, serializer, channel)
+      resRaw <- propsRaw(messagePublisher, storeComponent, canCreateUuidsAndDateTimes, serializer, channel)
       resDisp <- resRaw.withDispatcher(dispatcher).success
       res <- if(numActors > 1) {
         resDisp.withRouter(RoundRobinRouter(numActors)).success
@@ -78,8 +78,7 @@ object SlickTextEventLog {
     serializer: EventStringSerializer): AlmValidation[Props] =
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
-      channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt, serializer, channel)
+      res <- props(theAlmhirt, configPath, storeComponent, serializer)
     } yield res
 
   def props(
@@ -88,8 +87,7 @@ object SlickTextEventLog {
     storeComponent: EventLogStoreComponent[TextEventLogRow],
     serializer: EventStringSerializer): AlmValidation[Props] =
     for {
-      channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt, serializer, channel)
+      res <- props(configSection, theAlmhirt.messageBus, storeComponent, theAlmhirt, serializer)
     } yield res
     
   def props(
@@ -98,7 +96,6 @@ object SlickTextEventLog {
     serializer:EventStringSerializer): AlmValidation[Props] =
     for {
       configSection <- theAlmhirt.config.v[Config]("almhirt.eventlog") 
-      channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
       res <- props(theAlmhirt, configSection, storeComponent, serializer)
     } yield res
 

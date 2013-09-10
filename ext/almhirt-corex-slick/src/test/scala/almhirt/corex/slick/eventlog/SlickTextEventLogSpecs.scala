@@ -20,7 +20,7 @@ almhirt {
 		    serialization-channel = "json"
 		    create-schema = true
 		  	drop-schema = true
-            sync-io-dispatcher = "x"
+            sync-io-dispatcher = "akka.actor.default-dispatcher"
 		  	number-of-actors = 1
 		  	properties {
 		  		user = "testuser"
