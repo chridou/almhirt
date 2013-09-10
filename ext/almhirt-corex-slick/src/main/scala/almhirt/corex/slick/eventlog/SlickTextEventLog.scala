@@ -3,6 +3,7 @@ package almhirt.corex.slick.eventlog
 import scala.concurrent.ExecutionContext
 import scalaz.syntax.validation._
 import akka.actor._
+import akka.routing.RoundRobinRouter
 import almhirt.messaging.MessagePublisher
 import almhirt.common._
 import almhirt.serialization._
@@ -13,7 +14,6 @@ import almhirt.corex.slick.SlickCreationParams
 class SlickTextEventLog private (
   override val messagePublisher: MessagePublisher,
   override val storeComponent: EventLogStoreComponent[TextEventLogRow],
-  override val syncIoExecutionContext: ExecutionContext,
   override val canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes,
   serializer: EventStringSerializer,
   serializationChannel: String)
@@ -42,14 +42,12 @@ object SlickTextEventLog {
   def props(
     messagePublisher: MessagePublisher,
     storeComponent: EventLogStoreComponent[TextEventLogRow],
-    syncIoExecutionContext: ExecutionContext,
     canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes,
     serializer: EventStringSerializer,
     serializationChannel: String): AlmValidation[Props] =
     Props(new SlickTextEventLog(
       messagePublisher,
       storeComponent,
-      syncIoExecutionContext,
       canCreateUuidsAndDateTimes,
       serializer,
       serializationChannel)).success
@@ -58,13 +56,20 @@ object SlickTextEventLog {
     configSection: Config,
     messagePublisher: MessagePublisher,
     storeComponent: EventLogStoreComponent[TextEventLogRow],
-    syncIoExecutionContext: ExecutionContext,
     canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes,
     serializer: EventStringSerializer): AlmValidation[Props] =
     for {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(messagePublisher, storeComponent, syncIoExecutionContext, canCreateUuidsAndDateTimes, serializer, channel)
-    } yield res
+      dispatcher <- configSection.v[String]("sync-io-dispatcher").flatMap(_.notEmptyOrWhitespace)
+      numActors <- configSection.v[Int]("number-of-actors")
+      resRaw <- props(messagePublisher, storeComponent, canCreateUuidsAndDateTimes, serializer, channel)
+      resDisp <- resRaw.withDispatcher(dispatcher).success
+      res <- if(numActors > 1) {
+        resDisp.withRouter(RoundRobinRouter(numActors)).success
+      } else {
+        resDisp.success
+      }
+    } yield resDisp
 
   def props(
     theAlmhirt: Almhirt,
@@ -74,7 +79,7 @@ object SlickTextEventLog {
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, theAlmhirt, serializer, channel)
+      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt, serializer, channel)
     } yield res
 
   def props(
@@ -84,7 +89,7 @@ object SlickTextEventLog {
     serializer: EventStringSerializer): AlmValidation[Props] =
     for {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, theAlmhirt, serializer, channel)
+      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt, serializer, channel)
     } yield res
     
   def props(

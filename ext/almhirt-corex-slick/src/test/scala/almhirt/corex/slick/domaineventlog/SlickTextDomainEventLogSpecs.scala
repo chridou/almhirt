@@ -9,6 +9,7 @@ import almhirt.domain.DomainEventStringSerializer
 import almhirt.corex.riftwarp.serializers.RiftDomainEventStringSerializer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
+import scala.concurrent.duration.FiniteDuration
 
 
 object SlickTextDomainEventLogSpecsConfig {
@@ -22,6 +23,8 @@ almhirt {
 		    serialization-channel = "json"
 		    create-schema = true
 		  	drop-schema = true
+            sync-io-dispatcher = "x"
+		  	number-of-actors = 1
 		  	properties {
 		  		user = "testuser"
 		  		password = "testuser"
@@ -52,4 +55,6 @@ trait CreatesSlickTextDomainEventLog extends CreatesDomainEventLog { self: HasAl
 class SlickTextDomainEventLogSpecs
   extends DomainEventLogSpecTemplate(ActorSystem("SlickTextDomainEventLogSpecs", TestConfigs.default))
   with AlmhirtFromAkkaTestKitWithoutConfiguration
-  with CreatesSlickTextDomainEventLog
+  with CreatesSlickTextDomainEventLog {
+  override def defaultDuration = FiniteDuration(2, "s")
+}

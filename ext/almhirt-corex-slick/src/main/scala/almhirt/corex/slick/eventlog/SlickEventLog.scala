@@ -17,8 +17,6 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
 
   def storeComponent: EventLogStoreComponent[TRow]
 
-  implicit def syncIoExecutionContext: ExecutionContext
-
   def eventToRow(event: Event, channel: String): AlmValidation[TRow]
   def rowToEvent(row: TRow): AlmValidation[Event]
 
@@ -36,12 +34,10 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
 
   private def fetchEvents(query: () => AlmValidation[Seq[TRow]], sender: ActorRef): Unit = {
     val pinnedSender = sender
-    AlmFuture {
-      for {
-        rows <- query()
-        events <- rowsToEvents(rows)
-      } yield events
-    }.onComplete(
+    (for {
+      rows <- query()
+      events <- rowsToEvents(rows)
+    } yield events).fold(
       problem => pinnedSender ! EventsChunkFailure(0, problem),
       events => pinnedSender ! EventsChunk(0, true, events))
   }
@@ -50,23 +46,19 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
 
   final protected def currentState(serializationChannel: String): Receive = {
     case LogEvent(event) =>
-      AlmFuture {
-        for {
-          row <- eventToRow(event, serializationChannel)
-          storeResult <- storeComponent.insertEventRow(row)
-        } yield storeResult
-      }.onComplete(
+      (for {
+        row <- eventToRow(event, serializationChannel)
+        storeResult <- storeComponent.insertEventRow(row)
+      } yield storeResult).fold(
         problem => messagePublisher.publish(FailureEvent(s"""Could not store event of type "${event.getClass().getName()}" with event id "${event.eventId.toString()}"""", problem, Major)),
         succ => ())
-        
+
     case GetEvent(eventId) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
-          row <- storeComponent.getEventRowById(eventId)
-          event <- rowToEvent(row)
-        } yield event
-      }.onComplete(
+      (for {
+        row <- storeComponent.getEventRowById(eventId)
+        event <- rowToEvent(row)
+      } yield event).fold(
         problem => {
           problem match {
             case Problem(_, NotFoundProblem, _) => pinnedSender ! QueriedEvent(eventId, None)
@@ -74,34 +66,34 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
           }
         },
         event => pinnedSender ! QueriedEvent(eventId, Some(event)))
-        
+
     case GetAllEvents =>
       fetchEvents(() => storeComponent.getAllEventRows, sender)
-      
+
     case GetEventsFrom(from) =>
       fetchEvents(() => storeComponent.getAllEventRowsFrom(from), sender)
-      
+
     case GetEventsAfter(after) =>
       fetchEvents(() => storeComponent.getAllEventRowsAfter(after), sender)
-      
+
     case GetEventsTo(to) =>
       fetchEvents(() => storeComponent.getAllEventRowsTo(to), sender)
-      
+
     case GetEventsUntil(until) =>
       fetchEvents(() => storeComponent.getAllEventRowsUntil(until), sender)
-      
+
     case GetEventsFromTo(from, to) =>
       fetchEvents(() => storeComponent.getAllEventRowsFromTo(from, to), sender)
-      
+
     case GetEventsFromUntil(from, until) =>
       fetchEvents(() => storeComponent.getAllEventRowsFromUntil(from, until), sender)
-      
+
     case GetEventsAfterTo(after, to) =>
       fetchEvents(() => storeComponent.getAllEventRowsAfterTo(after, to), sender)
-      
+
     case GetEventsAfterUntil(after, until) =>
       fetchEvents(() => storeComponent.getAllEventRowsAfterUntil(after, until), sender)
-      
+
   }
 
 }

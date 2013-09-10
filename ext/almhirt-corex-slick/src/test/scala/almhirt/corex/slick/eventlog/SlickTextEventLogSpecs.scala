@@ -20,6 +20,8 @@ almhirt {
 		    serialization-channel = "json"
 		    create-schema = true
 		  	drop-schema = true
+            sync-io-dispatcher = "x"
+		  	number-of-actors = 1
 		  	properties {
 		  		user = "testuser"
 		  		password = "testuser"

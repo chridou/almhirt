@@ -3,6 +3,7 @@ package almhirt.corex.slick.domaineventlog
 import scala.concurrent.ExecutionContext
 import scalaz.syntax.validation._
 import akka.actor._
+import akka.routing.RoundRobinRouter
 import almhirt.messaging.MessagePublisher
 import almhirt.common._
 import almhirt.domain._
@@ -14,7 +15,6 @@ import almhirt.corex.slick.SlickCreationParams
 class SlickTextDomainEventLog private (
   override val messagePublisher: MessagePublisher,
   override val storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
-  override val syncIoExecutionContext: ExecutionContext,
   serializer: DomainEventStringSerializer,
   serializationChannel: String)
   extends SlickDomainEventLog with Actor with ActorLogging {
@@ -41,13 +41,11 @@ object SlickTextDomainEventLog {
   def props(
     messagePublisher: MessagePublisher,
     storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
-    syncIoExecutionContext: ExecutionContext,
     serializer: DomainEventStringSerializer,
     serializationChannel: String): AlmValidation[Props] =
     Props(new SlickTextDomainEventLog(
       messagePublisher,
       storeComponent,
-      syncIoExecutionContext,
       serializer,
       serializationChannel)).success
 
@@ -55,12 +53,19 @@ object SlickTextDomainEventLog {
     configSection: Config,
     messagePublisher: MessagePublisher,
     storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
-    syncIoExecutionContext: ExecutionContext,
     serializer: DomainEventStringSerializer): AlmValidation[Props] =
     for {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(messagePublisher, storeComponent, syncIoExecutionContext, serializer, channel)
-    } yield res
+      dispatcher <- configSection.v[String]("sync-io-dispatcher").flatMap(_.notEmptyOrWhitespace)
+      numActors <- configSection.v[Int]("number-of-actors")
+      resRaw <- props(messagePublisher, storeComponent, serializer, channel)
+      resDisp <- resRaw.withDispatcher(dispatcher).success
+      res <- if(numActors > 1) {
+        resDisp.withRouter(RoundRobinRouter(numActors)).success
+      } else {
+        resDisp.success
+      }
+    } yield resDisp
 
   def props(
     theAlmhirt: Almhirt,
@@ -70,7 +75,7 @@ object SlickTextDomainEventLog {
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, serializer, channel)
+      res <- props(theAlmhirt.messageBus, storeComponent, serializer, channel)
     } yield res
 
   def props(
@@ -80,7 +85,7 @@ object SlickTextDomainEventLog {
     serializer: DomainEventStringSerializer): AlmValidation[Props] =
     for {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, serializer, channel)
+      res <- props(theAlmhirt.messageBus, storeComponent, serializer, channel)
     } yield res
 
   def props(
@@ -90,7 +95,7 @@ object SlickTextDomainEventLog {
     for {
       configSection <- theAlmhirt.config.v[Config]("almhirt.domain-eventlog") 
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, serializer, channel)
+      res <- props(theAlmhirt.messageBus, storeComponent, serializer, channel)
     } yield res
     
   def create(theAlmhirt: Almhirt, configSection: Config, serializer: DomainEventStringSerializer): AlmValidation[SlickCreationParams] =

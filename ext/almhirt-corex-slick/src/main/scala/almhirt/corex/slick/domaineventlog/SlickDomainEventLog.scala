@@ -16,10 +16,8 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
   type TRow <: DomainEventLogRow
 
   def messagePublisher: MessagePublisher
-  
-  def storeComponent: DomainEventLogStoreComponent[TRow]
 
-  implicit def syncIoExecutionContext: ExecutionContext
+  def storeComponent: DomainEventLogStoreComponent[TRow]
 
   def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[TRow]
   def rowToDomainEvent(row: TRow): AlmValidation[DomainEvent]
@@ -47,119 +45,109 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
   final protected def currentState(serializationChannel: String): Receive = {
     case CommitDomainEvents(events) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- domainEventsToRows(events, serializationChannel)
-          storeResult <- storeComponent.insertManyEventRows(rows)
-        } yield storeResult
-      }.onComplete(
+      (for {
+        rows <- domainEventsToRows(events, serializationChannel)
+        storeResult <- storeComponent.insertManyEventRows(rows)
+      } yield storeResult).fold(
         problem => {
           pinnedSender ! CommittedDomainEvents(Seq.empty, Some((events, problem)))
         },
         succ => pinnedSender ! CommittedDomainEvents(events, None))
-        
+
     case GetAllDomainEvents =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
+      (for {
           rows <- storeComponent.getAllEventRows
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
-      }.onComplete(
+      ).fold(
         problem => {
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+
     case GetDomainEvent(eventId) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
+      (for {
           row <- storeComponent.getEventRowById(eventId)
           event <- rowToDomainEvent(row)
         } yield event
-      }.onComplete(
+      ).fold(
         problem => {
           problem match {
-            case Problem(_, NotFoundProblem,_) => pinnedSender ! QueriedDomainEvent(eventId, None)
+            case Problem(_, NotFoundProblem, _) => pinnedSender ! QueriedDomainEvent(eventId, None)
             case p => pinnedSender ! DomainEventQueryFailed(eventId, p)
           }
         },
         event => pinnedSender ! QueriedDomainEvent(eventId, Some(event)))
-        
+
     case GetAllDomainEventsFor(aggId) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
+      (for {
           rows <- storeComponent.getAllEventRowsFor(aggId)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
-      }.onComplete(
+      ).fold(
         problem => {
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+
     case GetDomainEventsFrom(aggId, fromVersion) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
+      (for {
           rows <- storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
-      }.onComplete(
+      ).fold(
         problem => {
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+
     case GetDomainEventsTo(aggId, toVersion) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
+      (for {
           rows <- storeComponent.getAllEventRowsForTo(aggId, toVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
-      }.onComplete(
+      ).fold(
         problem => {
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+
     case GetDomainEventsUntil(aggId, untilVersion) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
+      (for {
           rows <- storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
-      }.onComplete(
+      ).fold(
         problem => {
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
+      (for {
           rows <- storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
-      }.onComplete(
+      ).fold(
         problem => {
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
         domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
       val pinnedSender = sender
-      AlmFuture {
-        for {
+      (for {
           rows <- storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
-      }.onComplete(
+      ).fold(
         problem => {
           pinnedSender ! DomainEventsChunkFailure(0, problem)
         },
