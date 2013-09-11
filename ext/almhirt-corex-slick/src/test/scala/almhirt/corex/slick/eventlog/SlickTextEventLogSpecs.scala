@@ -31,9 +31,11 @@ almhirt {
     """
     
     val baseConfig = ConfigFactory.parseString(configStr)
+
+    val fullConfig = baseConfig.withFallback(ConfigFactory.load())
     
     def config(testId: Int) =
-      ConfigFactory.parseString(s"""almhirt.text-event-log.table-name = "texteventlog_${testId}"""").withFallback(baseConfig)
+      ConfigFactory.parseString(s"""almhirt.text-event-log.table-name = "texteventlog_${testId}"""").withFallback(fullConfig)
 }
 
 trait CreatesSlickTextEventLog extends CreatesEventLog { self: HasAlmhirt =>
@@ -51,7 +53,8 @@ trait CreatesSlickTextEventLog extends CreatesEventLog { self: HasAlmhirt =>
 
 class SlickTextEventLogSpecs
   extends EventLogSpecTemplate(ActorSystem("SlickTextEventLogSpecs", TestConfigs.default))
-  with AlmhirtFromAkkaTestKitWithoutConfiguration
+  with AlmhirtFromAkkaTestKitWithConfiguration
   with CreatesSlickTextEventLog{
+  override def config = SlickTextEventLogSpecsConfig.fullConfig
   override val sleepMillisAfterWrite = Some(100)
 }

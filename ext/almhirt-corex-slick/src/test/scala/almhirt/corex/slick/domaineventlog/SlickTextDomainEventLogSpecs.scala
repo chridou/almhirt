@@ -35,8 +35,10 @@ almhirt {
     
     val baseConfig = ConfigFactory.parseString(configStr)
     
+    val fullConfig = baseConfig.withFallback(ConfigFactory.load())
+    
     def config(testId: Int) =
-      ConfigFactory.parseString(s"""almhirt.text-domain-event-log.table-name = "textdomaineventlog_${testId}"""").withFallback(baseConfig)
+      ConfigFactory.parseString(s"""almhirt.text-domain-event-log.table-name = "textdomaineventlog_${testId}"""").withFallback(fullConfig)
 }
 
 trait CreatesSlickTextDomainEventLog extends CreatesDomainEventLog { self: HasAlmhirt =>
@@ -54,7 +56,8 @@ trait CreatesSlickTextDomainEventLog extends CreatesDomainEventLog { self: HasAl
 
 class SlickTextDomainEventLogSpecs
   extends DomainEventLogSpecTemplate(ActorSystem("SlickTextDomainEventLogSpecs", TestConfigs.default))
-  with AlmhirtFromAkkaTestKitWithoutConfiguration
+  with AlmhirtFromAkkaTestKitWithConfiguration
   with CreatesSlickTextDomainEventLog {
+  override def config = SlickTextDomainEventLogSpecsConfig.fullConfig
   override def defaultDuration = FiniteDuration(2, "s")
 }
