@@ -42,7 +42,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     it("""should accept a "CommitDomainEvents" with 0 events and answer with a "CommittedDomainEvents" containing no committed events""") {
       useDomainEventLog { eventlog =>
         val res = (eventlog ? CommitDomainEvents(Vector.empty))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(CommittedDomainEvents(IndexedSeq.empty, None))
+        res should equal(CommittedDomainEvents(IndexedSeq.empty))
       }
     }
 
@@ -50,7 +50,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       useDomainEventLog { eventlog =>
         val event = AR1Created(DomainEventHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
         val res = (eventlog ? CommitDomainEvents(Vector(event)))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(CommittedDomainEvents(IndexedSeq(event), None))
+        res should equal(CommittedDomainEvents(IndexedSeq(event)))
       }
     }
 
@@ -58,7 +58,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       useDomainEventLog { eventlog =>
         val events = createEvents(theAlmhirt.getUuid, 100)
         val res = (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(CommittedDomainEvents(events, None))
+        res should equal(CommittedDomainEvents(events))
       }
     }
 
@@ -77,7 +77,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             res2 <- res2F
             res3 <- res3F
           } yield (res1, res2, res3)).awaitResultOrEscalate(defaultDuration)
-        res should equal((CommittedDomainEvents(events1, None), CommittedDomainEvents(events2, None), CommittedDomainEvents(events3, None)))
+        res should equal((CommittedDomainEvents(events1), CommittedDomainEvents(events2), CommittedDomainEvents(events3)))
       }
     }
 

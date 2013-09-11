@@ -25,6 +25,10 @@ object CommonExceptionToProblem extends ExceptionToProblem {
 }
 
 object AnyExceptionToCaughtExceptionProblem extends ExceptionToProblem {
-  override def apply(exn: Throwable) = problemtypes.ExceptionCaughtProblem(exn)
+  override def apply(exn: Throwable) =
+    if (exn.getMessage() == "Timed out")
+      problemtypes.OperationTimedOutProblem(exn.getMessage, cause = Some(exn))
+    else
+      problemtypes.ExceptionCaughtProblem(exn)
   override def isDefinedAt(exn: Throwable) = true
 }

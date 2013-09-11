@@ -12,7 +12,7 @@ trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor =>
   final protected def receiveDomainEventLogMsg: Receive = {
     case CommitDomainEvents(events) =>
       domainEventLog = domainEventLog ++ events
-      sender ! CommittedDomainEvents(events, None)
+      sender ! CommittedDomainEvents(events)
     case GetAllDomainEvents =>
       sender ! DomainEventsChunk(0, true, domainEventLog)
     case GetDomainEvent(eventId) =>

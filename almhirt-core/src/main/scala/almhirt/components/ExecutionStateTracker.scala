@@ -40,7 +40,6 @@ object ExecutionStateTracker {
           })
     }
   }
-
 }
 
 trait ExecutionStateTracker { actor: Actor with ActorLogging =>

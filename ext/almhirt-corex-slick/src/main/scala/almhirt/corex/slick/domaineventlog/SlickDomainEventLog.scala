@@ -44,30 +44,27 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
   final protected def currentState(serializationChannel: String): Receive = {
     case CommitDomainEvents(events) =>
-      val pinnedSender = sender
       (for {
         rows <- domainEventsToRows(events, serializationChannel)
         storeResult <- storeComponent.insertManyEventRows(rows)
       } yield storeResult).fold(
         problem => {
-          pinnedSender ! CommittedDomainEvents(Seq.empty, Some((events, problem)))
+          throw new EscalatedProblemException(problem)
         },
-        succ => pinnedSender ! CommittedDomainEvents(events, None))
+        succ => sender ! CommittedDomainEvents(events))
 
     case GetAllDomainEvents =>
-      val pinnedSender = sender
       (for {
           rows <- storeComponent.getAllEventRows
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
       ).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
 
     case GetDomainEvent(eventId) =>
-      val pinnedSender = sender
       (for {
           row <- storeComponent.getEventRowById(eventId)
           event <- rowToDomainEvent(row)
@@ -75,83 +72,78 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
       ).fold(
         problem => {
           problem match {
-            case Problem(_, NotFoundProblem, _) => pinnedSender ! QueriedDomainEvent(eventId, None)
-            case p => pinnedSender ! DomainEventQueryFailed(eventId, p)
+            case Problem(_, NotFoundProblem, _) => sender ! QueriedDomainEvent(eventId, None)
+            case p => 
+              throw new EscalatedProblemException(problem)
           }
         },
-        event => pinnedSender ! QueriedDomainEvent(eventId, Some(event)))
+        event => sender ! QueriedDomainEvent(eventId, Some(event)))
 
     case GetAllDomainEventsFor(aggId) =>
-      val pinnedSender = sender
       (for {
           rows <- storeComponent.getAllEventRowsFor(aggId)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
       ).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
 
     case GetDomainEventsFrom(aggId, fromVersion) =>
-      val pinnedSender = sender
       (for {
           rows <- storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
       ).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
 
     case GetDomainEventsTo(aggId, toVersion) =>
-      val pinnedSender = sender
       (for {
           rows <- storeComponent.getAllEventRowsForTo(aggId, toVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
       ).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
 
     case GetDomainEventsUntil(aggId, untilVersion) =>
-      val pinnedSender = sender
       (for {
           rows <- storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
       ).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
 
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
-      val pinnedSender = sender
       (for {
           rows <- storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
       ).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
 
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
-      val pinnedSender = sender
       (for {
           rows <- storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
           domainEvents <- rowsToDomainEvents(rows)
         } yield domainEvents
       ).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
     case almhirt.serialization.UseSerializationChannel(newChannel) =>
       context.become(currentState(newChannel))
   }

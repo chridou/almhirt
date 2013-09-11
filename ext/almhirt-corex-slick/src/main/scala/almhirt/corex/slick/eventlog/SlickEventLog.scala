@@ -33,13 +33,12 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
   import almhirt.eventlog.EventLog._
 
   private def fetchEvents(query: () => AlmValidation[Seq[TRow]], sender: ActorRef): Unit = {
-    val pinnedSender = sender
     (for {
       rows <- query()
       events <- rowsToEvents(rows)
     } yield events).fold(
-      problem => pinnedSender ! EventsChunkFailure(0, problem),
-      events => pinnedSender ! EventsChunk(0, true, events))
+      problem => throw new EscalatedProblemException(problem),
+      events => sender ! EventsChunk(0, true, events))
   }
 
   import almhirt.corex.slick.TypeConversion._
@@ -50,22 +49,25 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
         row <- eventToRow(event, serializationChannel)
         storeResult <- storeComponent.insertEventRow(row)
       } yield storeResult).fold(
-        problem => messagePublisher.publish(FailureEvent(s"""Could not store event of type "${event.getClass().getName()}" with event id "${event.eventId.toString()}"""", problem, Major)),
+        problem =>
+          {
+            messagePublisher.publish(FailureEvent(s"""Could not store event of type "${event.getClass().getName()}" with event id "${event.eventId.toString()}"""", problem, Major))
+            throw new EscalatedProblemException(problem)
+          },
         succ => ())
 
     case GetEvent(eventId) =>
-      val pinnedSender = sender
       (for {
         row <- storeComponent.getEventRowById(eventId)
         event <- rowToEvent(row)
       } yield event).fold(
         problem => {
           problem match {
-            case Problem(_, NotFoundProblem, _) => pinnedSender ! QueriedEvent(eventId, None)
-            case p => pinnedSender ! EventQueryFailed(eventId, p)
+            case Problem(_, NotFoundProblem, _) => sender ! QueriedEvent(eventId, None)
+            case p => throw new EscalatedProblemException(problem)
           }
         },
-        event => pinnedSender ! QueriedEvent(eventId, Some(event)))
+        event => sender ! QueriedEvent(eventId, Some(event)))
 
     case GetAllEvents =>
       fetchEvents(() => storeComponent.getAllEventRows, sender)

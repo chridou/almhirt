@@ -15,7 +15,6 @@ object AggregateRootCell {
 
   final case class AggregateRootWasDeleted(arId: java.util.UUID) extends AggregateRootCellMessage
 
-  final case class AggregateRootPartiallyUpdated(newState: IsAggregateRoot, uncommittedEvents: Iterable[DomainEvent], problem: Problem) extends AggregateRootCellMessage
   final case class UpdateCancelled(lastKnownState: Option[IsAggregateRoot], problem: almhirt.common.Problem) extends AggregateRootCellMessage
 }
 
