@@ -49,6 +49,9 @@ object ExecutionStateTracker {
       theCeanUpThreshold <- configSection.v[Int]("clean-up-threshold")
       theCleanUpInterval <- configSection.v[FiniteDuration]("clean-up-interval")
     } yield {
+      theAlmhirt.log.info(s"""ExecutionStateTracker: "target-size" is $theTargetSize""")
+      theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-threshold" is $theCeanUpThreshold""")
+      theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-interval" is $theCleanUpInterval""")
       Props(new almhirt.components.impl.ExecutionTrackerTemplate with ExecutionStateTracker with Actor with ActorLogging {
         override val executionContext = theAlmhirt.futuresExecutor
         override val publishTo = theAlmhirt.messageBus
@@ -78,7 +81,14 @@ object ExecutionStateTracker {
           AlmFuture.successful(None)
       }).success
       props <- props(configSection, actualSecondLevelStore, theSndLvlStMaxAskDur, theAlmhirt)
-    } yield props
+    } yield {
+      if(secondLevelStore.isDefined) {
+      theAlmhirt.log.info(s"""ExecutionStateTracker: Using a second level store with a "second-level-store-max-ask-duration" of $theSndLvlStMaxAskDur.""")
+      } else {
+        theAlmhirt.log.info(s"""ExecutionStateTracker: No second level store.""")
+      }
+      props
+    }
 
   def props(configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
     props(configSection, None, theAlmhirt)
