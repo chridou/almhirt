@@ -16,7 +16,7 @@ case class DomainEventLogWriteStatistics(
         Math.min(ms, Long.MaxValue)
       else
         Math.min(ms, minMs)
-    val newMax = Math.min(ms, maxMs)
+    val newMax = Math.max(ms, maxMs)
     DomainEventLogWriteStatistics(newMin, newMax, newAvg, newTotal, newCount)
   }
 }
