@@ -26,6 +26,9 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   protected def domainEventLog: ActorRef
 
   protected def onDoesNotExist: () => Unit
+  
+  protected def getArMsWarnThreshold: Long
+  protected def updateArMsWarnThreshold: Long
 
   private def publisher: MessagePublisher = myAlmhirt.messageBus
 
@@ -52,7 +55,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       }
     case Terminated(deadActor) =>
       if(deadActor == domainEventLog)
-        throw new Exception("My domain eventlog died!")
+        throw new Exception(s"""My domain eventlog died! My managed aggregate root id is $managedAggregateRooId""")
   }
 
   private def doesNotExistState(): Receive = {
@@ -69,7 +72,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       ()
     case Terminated(deadActor) =>
       if(deadActor == domainEventLog)
-        throw new Exception("My domain eventlog died!")
+        throw new Exception(s"""My domain eventlog died! My managed aggregate root id is $managedAggregateRooId""")
 
   }
 
@@ -112,33 +115,11 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
               context.become(waitingWithArState(potentialNextState, myAlmhirt.getDateTime))
           }
       }
-//        case DomainEventsPartiallyCommitted(committedEvents, problem, uncommittedEvents) =>
-//          val lastRecoverableStateV =
-//            currentState match {
-//              case Some(ar) => ar.applyEvents(committedEvents.map(_.asInstanceOf[Event]))
-//              case None => rebuildAggregateRoot(committedEvents.map(_.asInstanceOf[Event]))
-//            }
-//          lastRecoverableStateV.fold(
-//            fail => {
-//              requestedUpdate ! UpdateCancelled(None, problem)
-//              pendingUpdates.foreach(x => x._1 ! UpdateCancelled(None, problem))
-//              throw new PotentiallyInvalidStatePersistedException(managedAggregateRooId, problem)
-//            },
-//            lastRecoverableState => {
-//              committedEvents.foreach(publisher.publish(_))
-//              requestedUpdate ! AggregateRootPartiallyUpdated(lastRecoverableState, uncommittedEvents, problem)
-//              pendingUpdates.foreach(x => x._1 ! UpdateCancelled(Some(lastRecoverableState), problem))
-//              throw new CommitDomainEventsFailed(managedAggregateRooId, sender.path.toString(), Some(problem))
-//            })
-//        case CommitDomainEventsFailed(problem, _) =>
-//          requestedUpdate ! AggregateRootUpdateFailed(problem)
-//          throw new CommitDomainEventsFailed(managedAggregateRooId, sender.path.toString(), Some(problem))
-//      }
     case _: CachedAggregateRootControl =>
       ()
     case Terminated(deadActor) =>
       if(deadActor == domainEventLog)
-        throw new Exception("My domain eventlog died!")
+        throw new Exception(s"""My domain eventlog died! My managed aggregate root id is $managedAggregateRooId""")
       
   }
 
@@ -195,23 +176,23 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       ()
     case Terminated(deadActor) =>
       if(deadActor == domainEventLog)
-        throw new Exception("My domain eventlog died!")
+        throw new Exception(s"""My domain eventlog died! My managed aggregate root id is $managedAggregateRooId""")
   }
 
   private def uninitializedState(): Receive = {
     case GetManagedAggregateRoot =>
       domainEventLog ! GetAllDomainEventsFor(managedAggregateRooId)
       logDebugMessage("uninitializedState", """Transition to "fetchArState" by "GetManagedAggregateRoot"""")
-      context.become(fetchArState(Vector(sender), Vector.empty))
+      context.become(fetchArState(Vector((sender, System.currentTimeMillis())), Vector.empty))
     case uar: UpdateAggregateRoot =>
       domainEventLog ! GetAllDomainEventsFor(managedAggregateRooId)
       logDebugMessage("uninitializedState", """Transition to "fetchArState by "UpdateAggregateRoot"""")
-      context.become(fetchArState(Vector.empty, Vector((sender, uar))))
+      context.become(fetchArState(Vector.empty, Vector((sender, uar, System.currentTimeMillis()))))
     case _: CachedAggregateRootControl =>
       ()
     case Terminated(deadActor) =>
       if(deadActor == domainEventLog)
-        throw new Exception("My domain eventlog died!")
+        throw new Exception(s"""My domain eventlog died! My managed aggregate root id is $managedAggregateRooId""")
   }
 
   private def logDebugMessage(currentState: String, msg: String) {
@@ -230,7 +211,9 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   aggregateRooId: JUUID,
   aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
   theDomainEventLog: ActorRef,
-  notifyOnDoesNotExist: () => Unit)(implicit theAlmhirt: Almhirt) extends AggregateRootCellTemplate with Actor with ActorLogging {
+  notifyOnDoesNotExist: () => Unit,
+  override val getArMsWarnThreshold: Long,
+  override val updateArMsWarnThreshold: Long)(implicit theAlmhirt: Almhirt) extends AggregateRootCellTemplate with Actor with ActorLogging {
 
   type AR = TAR
   type Event = TEvent
