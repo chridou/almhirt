@@ -56,7 +56,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           val time = System.currentTimeMillis()-start
           writeStatistics = writeStatistics.add(time)
           if(time > writeWarnThresholdMs)
-            log.warning(s"""Writing ${events.size} events took longer the $writeWarnThresholdMs[ms].""")
+            log.warning(s"""Writing ${events.size} events took longer than $writeWarnThresholdMs[ms].""")
           res
         }
       } yield storeResult).fold(
