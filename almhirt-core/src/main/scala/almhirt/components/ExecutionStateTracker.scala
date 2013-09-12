@@ -69,7 +69,7 @@ object ExecutionStateTracker {
         }
         
         override def postStop() {
-          log.info(s"""During my lifetime $lifetimeExpiredSubscriptions(${(lifetimeExpiredSubscriptions/lifetimeTotalSubscriptions)*100L}%) subscriptions of $lifetimeTotalSubscriptions expired.""")
+          log.info(s"""During my lifetime $lifetimeExpiredSubscriptions(${(lifetimeExpiredSubscriptions.toDouble/lifetimeTotalSubscriptions.toDouble).toInt*100}%) subscriptions of $lifetimeTotalSubscriptions expired.""")
         }
       })
     }
