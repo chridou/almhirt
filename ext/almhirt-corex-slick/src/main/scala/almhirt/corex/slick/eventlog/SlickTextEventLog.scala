@@ -69,7 +69,7 @@ object SlickTextEventLog {
       } else {
         resDisp.success
       }
-    } yield resDisp
+    } yield res
 
   def props(
     theAlmhirt: Almhirt,
