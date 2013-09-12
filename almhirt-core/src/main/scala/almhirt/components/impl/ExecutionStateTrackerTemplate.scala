@@ -27,6 +27,9 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   private case class StateUpdate(newState: Map[String, ExecutionStateEntry])
   private case object CleanUp
 
+  protected var lifetimeExpiredSubscriptions = 0L
+  protected var lifetimeTotalSubscriptions = 0L
+  
   protected def waitingForTrackedStateUpdate(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]], updateRequests: Vector[ExecutionState]): Receive = {
     case StateUpdate(newState) =>
       val newSubscriptions = notifyFinishedStateSubscribers(newState, subscriptions)
@@ -139,12 +142,16 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   private def addSubscription(trackId: String, subscriber: ActorRef, subscriptions: Map[String, List[ActorRef]]): Map[String, List[ActorRef]] =
     subscriptions.get(trackId) match {
-      case None => subscriptions + (trackId -> (subscriber :: Nil))
+      case None => 
+        lifetimeTotalSubscriptions += 1
+        subscriptions + (trackId -> (subscriber :: Nil))
       case Some(subscribers) =>
         if (subscribers.exists(_ == subscriber))
           subscriptions
-        else
+        else {
+          lifetimeTotalSubscriptions += 1
           subscriptions + (trackId -> (subscriber :: subscribers))
+        }
     }
 
   private def removeSubscription(trackId: String, subscriber: ActorRef, subscriptions: Map[String, List[ActorRef]]): Map[String, List[ActorRef]] =
@@ -180,9 +187,10 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
           case (trackId, subscribers) =>
             subscribers foreach (_ ! ExecutionTrackingExpired(trackId))
         }
+        lifetimeExpiredSubscriptions += expiredSubscriptions.size
         val res = (tracked -- discard, subscriptions -- discard)
         val time = System.currentTimeMillis() - start
-        log.info(s"""Removed ${discard.size} items in $time[ms]. The new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions. ${expiredSubscriptions.size} subscriptions were expired."""")
+        log.info(s"""Removed ${discard.size} items in $time[ms]. The new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions. ${expiredSubscriptions.size} subscriptions were expired.""")
         res
       } else {
         log.info(s"Nothing to clean up. Current state is ${tracked.size} items tracked and ${subscriptions.size} subscriptions.")

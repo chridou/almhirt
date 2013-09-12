@@ -67,6 +67,10 @@ object ExecutionStateTracker {
         override def preStart() {
           this.context.system.scheduler.scheduleOnce(cleanUpInterval)(requestCleanUp())(theAlmhirt.futuresExecutor)
         }
+        
+        override def postStop() {
+          log.info(s"""During my lifetime $lifetimeExpiredSubscriptions(${(lifetimeExpiredSubscriptions/lifetimeTotalSubscriptions)*100L}%) subscriptions of $lifetimeTotalSubscriptions expired.""")
+        }
       })
     }
 
