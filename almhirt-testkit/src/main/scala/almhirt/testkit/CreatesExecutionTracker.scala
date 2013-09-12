@@ -1,9 +1,9 @@
 package almhirt.testkit
 
 import akka.actor._
+import almhirt.almvalidation.kit._
 import almhirt.core.HasAlmhirt
 import almhirt.components.ExecutionStateTracker
-import almhirt.components.impl.{ ExecutionTrackerTemplate, TrackerWithoutSecondLevelStore }
 import almhirt.messaging.MessagePublisher
 
 trait CreatesExecutionTracker {
@@ -16,13 +16,7 @@ trait CreatesCreatesInMemoryExecutionTracker extends CreatesExecutionTracker { s
     createExecutionTracker(testId, theAlmhirt.messageBus)
 
   override def createExecutionTracker(testId: Int, messagePublisher: MessagePublisher): (ActorRef, () => Unit) = {
-    val props = Props(
-      new ExecutionStateTracker with ExecutionTrackerTemplate with TrackerWithoutSecondLevelStore with Actor with ActorLogging {
-        val publishTo = messagePublisher
-        val canCreateUuidsAndDateTimes = theAlmhirt
-        val executionContext = theAlmhirt.futuresExecutor
-        def receive: Receive = handleTrackingMessage
-      })
+    val props = ExecutionStateTracker.props(theAlmhirt).resultOrEscalate
     (system.actorOf(props, "execution_state_tracker_" + testId), () => ())
   }
 }

@@ -34,13 +34,7 @@ class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpComm
   implicit def theAlmhirt = myAlmhirt
 
   val tracker = {
-    val props = Props(
-      new ExecutionStateTracker with ExecutionTrackerTemplate with TrackerWithoutSecondLevelStore with Actor with ActorLogging {
-        val publishTo = theAlmhirt.messageBus
-        val canCreateUuidsAndDateTimes = theAlmhirt
-        val executionContext = theAlmhirt.futuresExecutor
-        def receive: Receive = handleTrackingMessage
-      })
+    val props = ExecutionStateTracker.props(theAlmhirt).resultOrEscalate
     system.actorOf(props, "execution_state_tracker")
   }
 

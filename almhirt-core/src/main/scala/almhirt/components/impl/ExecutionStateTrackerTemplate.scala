@@ -6,18 +6,13 @@ import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
 import almhirt.core._
-import almhirt.components.{ExecutionStateTracker, ExecutionStateStore, ExecutionStateEntry}
+import almhirt.components.{ ExecutionStateTracker, ExecutionStateStore, ExecutionStateEntry }
 import almhirt.commanding._
 import almhirt.messaging.MessagePublisher
 import almhirt.problem.{ Major, Minor }
 
-object ExecutionTrackerTemplate {
-
-}
-
 trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with ActorLogging =>
   import ExecutionStateTracker._
-  import ExecutionTrackerTemplate._
   import ExecutionStateStore._
 
   implicit def publishTo: MessagePublisher
@@ -25,8 +20,12 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   implicit def executionContext: ExecutionContext
   def secondLevelStore: SecondLevelStore
   def secondLevelMaxAskDuration: scala.concurrent.duration.FiniteDuration
+  def targetSize: Int
+  def cleanUpThreshold: Int
+  def cleanUpInterval: FiniteDuration
 
   private case class StateUpdate(newState: Map[String, ExecutionStateEntry])
+  private case object CleanUp
 
   protected def waitingForTrackedStateUpdate(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]], updateRequests: Vector[ExecutionState]): Receive = {
     case StateUpdate(newState) =>
@@ -38,7 +37,6 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
         context.become(waitingForTrackedStateUpdate(newState, subscriptions, updateRequests.tail))
       }
     case ExecutionStateChanged(_, st) =>
-      log.debug(s"""Received ExecutionStateChanged: ${st.toString()}""")
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, updateRequests :+ st))
     case GetExecutionStateFor(trackId) =>
       reportExecutionState(trackId, tracked, sender)
@@ -49,14 +47,13 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       }
     case UnsubscribeForFinishedState(trackId) =>
       context.become(waitingForTrackedStateUpdate(tracked, removeSubscription(trackId, sender, subscriptions), updateRequests))
-    case RemoveOldExecutionStates(maxAge) =>
-      val (newTracked, newSubscriptions) = cleanUp(maxAge, tracked, subscriptions)
+    case CleanUp =>
+      val (newTracked, newSubscriptions) = cleanUp(tracked, subscriptions)
       context.become(waitingForTrackedStateUpdate(newTracked, newSubscriptions, updateRequests))
   }
 
   protected def idleState(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): Receive = {
     case ExecutionStateChanged(_, st) =>
-      log.debug(s"""Received ExecutionStateChanged: ${st.toString()}""")
       handleIncomingExecutionState(st, tracked)
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, Vector.empty))
     case GetExecutionStateFor(trackId) =>
@@ -68,16 +65,16 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       }
     case UnsubscribeForFinishedState(trackId) =>
       context.become(idleState(tracked, removeSubscription(trackId, sender, subscriptions)))
-    case RemoveOldExecutionStates(maxAge) =>
-      val (newTracked, newSubscriptions) = cleanUp(maxAge, tracked, subscriptions)
+    case CleanUp =>
+      val (newTracked, newSubscriptions) = cleanUp(tracked, subscriptions)
       context.become(idleState(newTracked, newSubscriptions))
   }
-  
+
   override def handleTrackingMessage = idleState(Map.empty, Map.empty)
 
   private def handleIncomingExecutionState(incomingState: ExecutionState, tracked: Map[String, ExecutionStateEntry]) {
     getUpdatedState(incomingState, tracked).fold(
-      fail => 
+      fail =>
         publishTo.publish(FailureEvent(s"""Could not determine the state to update for tracking id "${incomingState.trackId}"""", fail, Minor)),
       potUpdatedState => {
         potUpdatedState match {
@@ -166,28 +163,46 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       case _ => None
     }.flatten.toMap
 
-  private def cleanUp(maxAge: org.joda.time.Duration, tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): (Map[String, ExecutionStateEntry], Map[String, List[ActorRef]]) = {
-    val beforeIsExpired = canCreateUuidsAndDateTimes.getUtcTimestamp.minus(maxAge)
-    val expired = tracked.values.filter(_.lastModified.compareTo(beforeIsExpired) < 0)
-    val expiredTrackIds = expired.map(_.currentState.trackId).toSet
-    subscriptions filterKeys (subscriptionTrackId =>
-      expiredTrackIds contains (subscriptionTrackId)) foreach {
-      case (trackId, subscribers) =>
-        subscribers foreach (_ ! ExecutionTrackingExpired(trackId))
-    }
-    (tracked -- expiredTrackIds, subscriptions -- expiredTrackIds)
-  }
-}
-
-trait TrackerWithoutSecondLevelStore { self: ExecutionTrackerTemplate =>
-  import ExecutionStateTracker._
-  import ExecutionStateStore._
-  
-  override final val secondLevelMaxAskDuration = scala.concurrent.duration.FiniteDuration(10, "ms")
-
-  override val secondLevelStore = new SecondLevelStore {
-     override def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[ExecutionStateEntry]] =
-       AlmFuture.successful(None)
+  def requestCleanUp() {
+    self ! CleanUp
   }
 
+  private def cleanUp(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): (Map[String, ExecutionStateEntry], Map[String, List[ActorRef]]) = {
+    val res =
+      if (tracked.size >= cleanUpThreshold) {
+        val start = System.currentTimeMillis()
+        val entriesOrderedByAge = tracked.values.toVector.sortBy(_.lastModified)
+        val keep = entriesOrderedByAge.take(targetSize)
+        val discard = entriesOrderedByAge.drop(targetSize).map(_.currentState.trackId).toSet
+        val expiredSubscriptions = subscriptions filterKeys (subscriptionTrackId =>
+          discard contains (subscriptionTrackId))
+        expiredSubscriptions.foreach {
+          case (trackId, subscribers) =>
+            subscribers foreach (_ ! ExecutionTrackingExpired(trackId))
+        }
+        val res = (tracked -- discard, subscriptions -- discard)
+        val time = System.currentTimeMillis() - start
+        log.info(s"""Removed ${discard.size} items in $time[ms]. The new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions. ${expiredSubscriptions.size} subscriptions are expired."""")
+        res
+      } else {
+        log.info(s"Nothing to clean up. Current state is ${tracked.size} items tracked and ${subscriptions.size} subscriptions.")
+        (tracked, subscriptions)
+      }
+    actor.context.system.scheduler.scheduleOnce(cleanUpInterval)(requestCleanUp())
+    res
+  }
+
 }
+
+//trait TrackerWithoutSecondLevelStore { self: ExecutionTrackerTemplate =>
+//  import ExecutionStateTracker._
+//  import ExecutionStateStore._
+//
+//  override final val secondLevelMaxAskDuration = scala.concurrent.duration.FiniteDuration(10, "ms")
+//
+//  override val secondLevelStore = new SecondLevelStore {
+//    override def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[ExecutionStateEntry]] =
+//      AlmFuture.successful(None)
+//  }
+//
+//}
