@@ -23,8 +23,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
   def rowToDomainEvent(row: TRow): AlmValidation[DomainEvent]
 
   def writeWarnThresholdMs: Long
+  def readWarnThresholdMs: Long
 
   var writeStatistics = DomainEventLogWriteStatistics()
+  var readStatistics = DomainEventLogReadStatistics()
 
   private def domainEventsToRows(domainEvents: Seq[DomainEvent], channel: String): AlmValidation[Seq[TRow]] =
     domainEvents.foldLeft(Seq.empty[TRow].successAlm) { (accV, cur) =>
@@ -94,7 +96,15 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetAllDomainEventsFor(aggId) =>
       (for {
-        rows <- storeComponent.getAllEventRowsFor(aggId)
+        rows <- {
+          val start = System.currentTimeMillis()
+          val res = storeComponent.getAllEventRowsFor(aggId)
+          val time = System.currentTimeMillis() - start
+          readStatistics = readStatistics add time
+          if (time > readWarnThresholdMs)
+            log.warning(s"""Reading events(GetAllDomainEventsFor(aggId=$aggId)) took longer than $readWarnThresholdMs[ms].""")
+          res
+        }
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
@@ -104,7 +114,15 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsFrom(aggId, fromVersion) =>
       (for {
-        rows <- storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
+        rows <- {
+          val start = System.currentTimeMillis()
+          val res = storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
+          val time = System.currentTimeMillis() - start
+          readStatistics = readStatistics add time
+          if (time > readWarnThresholdMs)
+            log.warning(s"""Reading events(GetDomainEventsFrom(aggId=$aggId)) took longer than $readWarnThresholdMs[ms].""")
+          res
+        }
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
@@ -114,7 +132,15 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsTo(aggId, toVersion) =>
       (for {
-        rows <- storeComponent.getAllEventRowsForTo(aggId, toVersion)
+        rows <- {
+          val start = System.currentTimeMillis()
+          val res = storeComponent.getAllEventRowsForTo(aggId, toVersion)
+          val time = System.currentTimeMillis() - start
+          readStatistics = readStatistics add time
+          if (time > readWarnThresholdMs)
+            log.warning(s"""Reading events(GetDomainEventsTo(aggId=$aggId)) took longer than $readWarnThresholdMs[ms].""")
+          res
+        }
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
@@ -124,7 +150,15 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsUntil(aggId, untilVersion) =>
       (for {
-        rows <- storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
+        rows <- {
+          val start = System.currentTimeMillis()
+          val res = storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
+          val time = System.currentTimeMillis() - start
+          readStatistics = readStatistics add time
+          if (time > readWarnThresholdMs)
+            log.warning(s"""Reading events(GetDomainEventsUntil(aggId=$aggId)) took longer than $readWarnThresholdMs[ms].""")
+          res
+        }
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
@@ -134,7 +168,15 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
       (for {
-        rows <- storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
+        rows <- {
+          val start = System.currentTimeMillis()
+          val res = storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
+          val time = System.currentTimeMillis() - start
+          readStatistics = readStatistics add time
+          if (time > readWarnThresholdMs)
+            log.warning(s"""Reading events(GetDomainEventsFromTo(aggId=$aggId)) took longer than $readWarnThresholdMs[ms].""")
+          res
+        }
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
@@ -144,7 +186,15 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
       (for {
-        rows <- storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
+        rows <- {
+          val start = System.currentTimeMillis()
+          val res = storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
+          val time = System.currentTimeMillis() - start
+          readStatistics = readStatistics add time
+          if (time > readWarnThresholdMs)
+            log.warning(s"""Reading events(GetDomainEventsFromUntil(aggId=$aggId)) took longer than $readWarnThresholdMs[ms].""")
+          res
+        }
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {

@@ -17,7 +17,8 @@ class SlickTextDomainEventLog private (
   override val storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
   serializer: DomainEventStringSerializer,
   serializationChannel: String,
-  override val writeWarnThresholdMs: Long)
+  override val writeWarnThresholdMs: Long,
+  override val readWarnThresholdMs: Long)
   extends SlickDomainEventLog with Actor with ActorLogging {
   type TRow = TextDomainEventLogRow
 
@@ -36,6 +37,7 @@ class SlickTextDomainEventLog private (
   
   override def postStop() {
     log.info(writeStatistics.toString)
+    log.info(readStatistics.toString)
   }
 }
 
@@ -48,13 +50,15 @@ object SlickTextDomainEventLog {
     storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
     serializer: DomainEventStringSerializer,
     serializationChannel: String,
-    writeWarnThresholdMs: Long): AlmValidation[Props] =
+    writeWarnThresholdMs: Long,
+    readWarnThresholdMs: Long): AlmValidation[Props] =
     Props(new SlickTextDomainEventLog(
       messagePublisher,
       storeComponent,
       serializer,
       serializationChannel,
-      writeWarnThresholdMs)).success
+      writeWarnThresholdMs,
+      readWarnThresholdMs)).success
 
   def props(
     configSection: Config,
@@ -66,7 +70,8 @@ object SlickTextDomainEventLog {
       dispatcher <- configSection.v[String]("sync-io-dispatcher").flatMap(_.notEmptyOrWhitespace)
       numActors <- configSection.v[Int]("number-of-actors")
       writeWarnThresholdMs <- configSection.v[scala.concurrent.duration.FiniteDuration]("write-warn-threshold-duration").map(_.toMillis)
-      resRaw <- propsRaw(messagePublisher, storeComponent, serializer, channel, writeWarnThresholdMs)
+      readWarnThresholdMs <- configSection.v[scala.concurrent.duration.FiniteDuration]("read-warn-threshold-duration").map(_.toMillis)
+      resRaw <- propsRaw(messagePublisher, storeComponent, serializer, channel, writeWarnThresholdMs, readWarnThresholdMs)
       resDisp <- resRaw.withDispatcher(dispatcher).success
       res <- if(numActors > 1) {
         resDisp.withRouter(RoundRobinRouter(numActors)).success
