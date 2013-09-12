@@ -21,7 +21,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
   def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[TRow]
   def rowToDomainEvent(row: TRow): AlmValidation[DomainEvent]
-  
+
   def writeWarnThresholdMs: Long
 
   var writeStatistics = DomainEventLogWriteStatistics()
@@ -53,9 +53,12 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         storeResult <- {
           val start = System.currentTimeMillis()
           val res = storeComponent.insertManyEventRows(rows)
-          val time = System.currentTimeMillis()-start
-          writeStatistics = writeStatistics add time
-          if(time > writeWarnThresholdMs)
+          val time = System.currentTimeMillis() - start
+          if (!events.isEmpty)
+            writeStatistics = writeStatistics add time
+          else
+            writeStatistics addNoOp ()
+          if (time > writeWarnThresholdMs)
             log.warning(s"""Writing ${events.size} events took longer than $writeWarnThresholdMs[ms].""")
           res
         }

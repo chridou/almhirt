@@ -6,7 +6,8 @@ case class DomainEventLogWriteStatistics(
   avgMs: Long,
   totalMs: Long,
   count: Long,
-  count0Ms: Long) {
+  count0Ms: Long,
+  numNoOp: Long) {
   def add(ms: Long) = {
     val newCount = count + 1L
     val newCount0Ms =
@@ -22,15 +23,17 @@ case class DomainEventLogWriteStatistics(
       else
         Math.min(ms, minMs)
     val newMax = Math.max(ms, maxMs)
-    DomainEventLogWriteStatistics(newMin, newMax, newAvg, newTotal, newCount, newCount0Ms)
+    DomainEventLogWriteStatistics(newMin, newMax, newAvg, newTotal, newCount, newCount0Ms, numNoOp)
   }
+  
+  def addNoOp() = copy(numNoOp = this.numNoOp + 1L)
 
   override def toString() = {
-    s"""DomainEventLogWriteStatistics(minMs=$minMs, maxMs=$maxMs, avgMs=$avgMs, totalMs=$totalMs, count=$count, count0Ms=count0Ms)"""
+    s"""DomainEventLogWriteStatistics(minMs=$minMs, maxMs=$maxMs, avgMs=$avgMs, totalMs=$totalMs, count=$count, count0Ms=$count0Ms, numNoOp=$numNoOp)"""
   }
 }
 
 object DomainEventLogWriteStatistics {
   def apply(): DomainEventLogWriteStatistics =
-    DomainEventLogWriteStatistics(0L, 0L, 0L, 0L, 0L, 0L)
+    DomainEventLogWriteStatistics(0L, 0L, 0L, 0L, 0L, 0L, 0L)
 }
