@@ -16,7 +16,8 @@ class SlickTextDomainEventLog private (
   override val messagePublisher: MessagePublisher,
   override val storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
   serializer: DomainEventStringSerializer,
-  serializationChannel: String)
+  serializationChannel: String,
+  override val writeWarnThresholdMs: Long)
   extends SlickDomainEventLog with Actor with ActorLogging {
   type TRow = TextDomainEventLogRow
 
@@ -32,6 +33,10 @@ class SlickTextDomainEventLog private (
   protected override def receiveDomainEventLogMsg: Receive = currentState(serializationChannel)
 
   def receive: Receive = receiveDomainEventLogMsg
+  
+  override def postStop() {
+    log.info(writeStatistics.toString)
+  }
 }
 
 object SlickTextDomainEventLog {
@@ -42,12 +47,14 @@ object SlickTextDomainEventLog {
     messagePublisher: MessagePublisher,
     storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
     serializer: DomainEventStringSerializer,
-    serializationChannel: String): AlmValidation[Props] =
+    serializationChannel: String,
+    writeWarnThresholdMs: Long): AlmValidation[Props] =
     Props(new SlickTextDomainEventLog(
       messagePublisher,
       storeComponent,
       serializer,
-      serializationChannel)).success
+      serializationChannel,
+      writeWarnThresholdMs)).success
 
   def props(
     configSection: Config,
@@ -58,7 +65,8 @@ object SlickTextDomainEventLog {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
       dispatcher <- configSection.v[String]("sync-io-dispatcher").flatMap(_.notEmptyOrWhitespace)
       numActors <- configSection.v[Int]("number-of-actors")
-      resRaw <- propsRaw(messagePublisher, storeComponent, serializer, channel)
+      writeWarnThresholdMs <- configSection.v[scala.concurrent.duration.FiniteDuration]("write-warn-threshold-duration").map(_.toMillis)
+      resRaw <- propsRaw(messagePublisher, storeComponent, serializer, channel, writeWarnThresholdMs)
       resDisp <- resRaw.withDispatcher(dispatcher).success
       res <- if(numActors > 1) {
         resDisp.withRouter(RoundRobinRouter(numActors)).success

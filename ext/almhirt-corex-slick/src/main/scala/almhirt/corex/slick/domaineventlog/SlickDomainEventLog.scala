@@ -5,7 +5,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain._
-import almhirt.domaineventlog.DomainEventLog
+import almhirt.domaineventlog._
 import almhirt.messaging.MessagePublisher
 import scala.concurrent.ExecutionContext
 import almhirt.problem.Problem
@@ -21,6 +21,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
   def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[TRow]
   def rowToDomainEvent(row: TRow): AlmValidation[DomainEvent]
+  
+  def writeWarnThresholdMs: Long
+
+  var writeStatistics = DomainEventLogWriteStatistics()
 
   private def domainEventsToRows(domainEvents: Seq[DomainEvent], channel: String): AlmValidation[Seq[TRow]] =
     domainEvents.foldLeft(Seq.empty[TRow].successAlm) { (accV, cur) =>
@@ -46,7 +50,15 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
     case CommitDomainEvents(events) =>
       (for {
         rows <- domainEventsToRows(events, serializationChannel)
-        storeResult <- storeComponent.insertManyEventRows(rows)
+        storeResult <- {
+          val start = System.currentTimeMillis()
+          val res = storeComponent.insertManyEventRows(rows)
+          val time = System.currentTimeMillis()-start
+          writeStatistics = writeStatistics.add(time)
+          if(time > writeWarnThresholdMs)
+            log.warning(s"""Writing ${events.size} events took longer the $writeWarnThresholdMs[ms].""")
+          res
+        }
       } yield storeResult).fold(
         problem => {
           throw new EscalatedProblemException(problem)
@@ -55,10 +67,9 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetAllDomainEvents =>
       (for {
-          rows <- storeComponent.getAllEventRows
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      ).fold(
+        rows <- storeComponent.getAllEventRows
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
           throw new EscalatedProblemException(problem)
         },
@@ -66,14 +77,13 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEvent(eventId) =>
       (for {
-          row <- storeComponent.getEventRowById(eventId)
-          event <- rowToDomainEvent(row)
-        } yield event
-      ).fold(
+        row <- storeComponent.getEventRowById(eventId)
+        event <- rowToDomainEvent(row)
+      } yield event).fold(
         problem => {
           problem match {
             case Problem(_, NotFoundProblem, _) => sender ! QueriedDomainEvent(eventId, None)
-            case p => 
+            case p =>
               throw new EscalatedProblemException(problem)
           }
         },
@@ -81,10 +91,9 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetAllDomainEventsFor(aggId) =>
       (for {
-          rows <- storeComponent.getAllEventRowsFor(aggId)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      ).fold(
+        rows <- storeComponent.getAllEventRowsFor(aggId)
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
           throw new EscalatedProblemException(problem)
         },
@@ -92,10 +101,9 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsFrom(aggId, fromVersion) =>
       (for {
-          rows <- storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      ).fold(
+        rows <- storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
           throw new EscalatedProblemException(problem)
         },
@@ -103,10 +111,9 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsTo(aggId, toVersion) =>
       (for {
-          rows <- storeComponent.getAllEventRowsForTo(aggId, toVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      ).fold(
+        rows <- storeComponent.getAllEventRowsForTo(aggId, toVersion)
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
           throw new EscalatedProblemException(problem)
         },
@@ -114,10 +121,9 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsUntil(aggId, untilVersion) =>
       (for {
-          rows <- storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      ).fold(
+        rows <- storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
           throw new EscalatedProblemException(problem)
         },
@@ -125,10 +131,9 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
       (for {
-          rows <- storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      ).fold(
+        rows <- storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
           throw new EscalatedProblemException(problem)
         },
@@ -136,10 +141,9 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
       (for {
-          rows <- storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      ).fold(
+        rows <- storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
           throw new EscalatedProblemException(problem)
         },

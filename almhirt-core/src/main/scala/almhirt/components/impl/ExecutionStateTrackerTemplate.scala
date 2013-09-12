@@ -182,7 +182,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
         }
         val res = (tracked -- discard, subscriptions -- discard)
         val time = System.currentTimeMillis() - start
-        log.info(s"""Removed ${discard.size} items in $time[ms]. The new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions. ${expiredSubscriptions.size} subscriptions are expired."""")
+        log.info(s"""Removed ${discard.size} items in $time[ms]. The new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions. ${expiredSubscriptions.size} subscriptions were expired."""")
         res
       } else {
         log.info(s"Nothing to clean up. Current state is ${tracked.size} items tracked and ${subscriptions.size} subscriptions.")

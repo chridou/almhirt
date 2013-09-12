@@ -25,6 +25,7 @@ almhirt {
 		  	drop-schema = true
             sync-io-dispatcher = "akka.actor.default-dispatcher"
 		  	number-of-actors = 2
+		  	write-warn-threshold-duration = 5 seconds
 		  	properties {
 		  		user = "testuser"
 		  		password = "testuser"
