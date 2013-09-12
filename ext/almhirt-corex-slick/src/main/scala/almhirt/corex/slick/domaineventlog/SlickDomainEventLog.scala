@@ -27,9 +27,12 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
 
   var writeStatistics = DomainEventLogWriteStatistics()
   var readStatistics = DomainEventLogReadStatistics()
+  var serializationStatistics = DomainEventLogSerializationStatistics()
+  var deserializationStatistics = DomainEventLogSerializationStatistics()
 
-  private def domainEventsToRows(domainEvents: Seq[DomainEvent], channel: String): AlmValidation[Seq[TRow]] =
-    domainEvents.foldLeft(Seq.empty[TRow].successAlm) { (accV, cur) =>
+  private def domainEventsToRows(domainEvents: Seq[DomainEvent], channel: String): AlmValidation[Seq[TRow]] = {
+    val start = System.currentTimeMillis()
+    val res = domainEvents.foldLeft(Seq.empty[TRow].successAlm) { (accV, cur) =>
       accV match {
         case scalaz.Success(acc) =>
           domainEventToRow(cur, channel).map(acc :+ _)
@@ -37,9 +40,14 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           problem.failure
       }
     }
+    val time = System.currentTimeMillis() - start
+    serializationStatistics = serializationStatistics add time
+    res
+  }
 
-  private def rowsToDomainEvents(rows: Seq[TRow]): AlmValidation[Seq[DomainEvent]] =
-    rows.foldLeft(Seq.empty[DomainEvent].successAlm) { (accV, cur) =>
+  private def rowsToDomainEvents(rows: Seq[TRow]): AlmValidation[Seq[DomainEvent]] = {
+    val start = System.currentTimeMillis()
+    val res = rows.foldLeft(Seq.empty[DomainEvent].successAlm) { (accV, cur) =>
       accV match {
         case scalaz.Success(acc) =>
           rowToDomainEvent(cur).map(acc :+ _)
@@ -47,6 +55,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           problem.failure
       }
     }
+    val time = System.currentTimeMillis() - start
+    deserializationStatistics = deserializationStatistics add time
+    res
+  }
 
   final protected def currentState(serializationChannel: String): Receive = {
     case CommitDomainEvents(events) =>

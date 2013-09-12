@@ -38,6 +38,8 @@ class SlickTextDomainEventLog private (
   override def postStop() {
     log.info(writeStatistics.toString)
     log.info(readStatistics.toString)
+    log.info(s"""SerializationStatistics${serializationStatistics.tailString()}""")
+    log.info(s"""DeserializationStatistics${deserializationStatistics.tailString()}""")
   }
 }
 
