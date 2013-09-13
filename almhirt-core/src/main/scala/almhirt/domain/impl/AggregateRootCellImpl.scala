@@ -116,11 +116,10 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     case uar: UpdateAggregateRoot =>
       context.become(updateState(arOpt, pendingUpdateRequests :+ (sender, uar)))
     case UpdateAR =>
-      updateAggregateRoot(arOpt, pendingUpdateRequests).onComplete(
-        problem => self ! FailedUpdate(problem),
-        succ => self ! SuccessfulUpdate(succ._1, succ._2))
+      updateAggregateRoot(arOpt, pendingUpdateRequests)
       context.become(updateState(arOpt, Vector.empty))
-    case SuccessfulUpdate(newStateOpt, rest) =>
+    case SuccessfulUpdate(newStateOpt, successToNotify, rest) =>
+      successToNotify.foreach(n => n._1 ! AggregateRootUpdated(n._2))
       val newPendingUpdates = rest ++ pendingUpdateRequests
       if (newStateOpt.isDefined && newStateOpt.get.isDeleted) {
         newPendingUpdates.map(_._1).foreach(_ ! AggregateRootUpdateFailed(
@@ -142,10 +141,9 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
           self ! UpdateAR
         }
       }
-    case FailedUpdate(problem) =>
-      println("---3")
+    case FailedUpdate(problem, rest) =>
       log.error(s"""Could not update aggregate root "$managedAggregateRooId": ${problem.message}""")
-      pendingUpdateRequests.map(_._1).foreach(_ ! DomainMessages.AggregateRootUpdateFailed(managedAggregateRooId, problem))
+      (rest ++ pendingUpdateRequests.map(_._1)).foreach(_ ! DomainMessages.AggregateRootUpdateFailed(managedAggregateRooId, problem))
       context.become(errorState(problem))
     case _: CachedAggregateRootControl =>
       ()
@@ -183,32 +181,50 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   }
 
   def fetchAR(): AlmFuture[Option[AR]] = {
+    val start = System.currentTimeMillis()
     (domainEventLog ? GetAllDomainEventsFor(managedAggregateRooId))(getArTimeout).successfulAlmFuture[FetchedDomainEvents].collectV {
       case FetchedDomainEventsBatch(events) =>
+        val elapsed = System.currentTimeMillis() - start
+        if (elapsed > getArMsWarnThreshold)
+          log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than $getArMsWarnThreshold[ms]($elapsed[ms]).""")
         if (events.isEmpty)
           None.success
         else
           rebuildAr(events).map(Some(_))
-      case FetchedDomainEventsChunks() => UnspecifiedProblem("FetchedDomainEventsChunks not supported").failure
+      case FetchedDomainEventsChunks() =>
+        UnspecifiedProblem("FetchedDomainEventsChunks not supported").failure
     }.mapTimeout(tp => OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within $getArTimeout"""))
   }
 
-  def updateAggregateRoot(arOpt: Option[AR], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): AlmFuture[(Option[AR], Vector[(ActorRef, UpdateAggregateRoot)])] = {
-    AlmFuture { getNextUpdateTask(arOpt, pendingUpdates).success }.collectF {
-      case NoUpdateTasks =>
-        AlmFuture.successful((arOpt, Vector.empty))
-      case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
-        (domainEventLog ? CommitDomainEvents(nextUpdateEvents))(updateArTimeout).successfulAlmFuture[CommittedDomainEvents].mapV {
-          case NothingCommitted() =>
-            requestedNextUpdate ! AggregateRootUpdated(nextUpdateState)
-            log.warning(s"""No events have been committed for $managedAggregateRooId""")
-            (Some(nextUpdateState), rest).success
-          case DomainEventsSuccessfullyCommitted(committedEvents) =>
-            requestedNextUpdate ! AggregateRootUpdated(nextUpdateState)
-            committedEvents.foreach(publisher.publish(_))
-            (Some(nextUpdateState), rest).success
-        }
-    }
+  def updateAggregateRoot(arOpt: Option[AR], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Unit = {
+    AlmFuture { getNextUpdateTask(arOpt, pendingUpdates).success }.onComplete(
+      problem => {
+        self ! FailedUpdate(problem, pendingUpdates.map(_._1))
+      },
+      task =>
+        task match {
+          case NoUpdateTasks =>
+            self ! SuccessfulUpdate(arOpt, None, Vector.empty)
+          case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
+            val start = System.currentTimeMillis()
+            (domainEventLog ? CommitDomainEvents(nextUpdateEvents))(updateArTimeout).successfulAlmFuture[CommittedDomainEvents].onComplete(
+              problem =>
+                self ! FailedUpdate(problem, requestedNextUpdate +: rest.map(_._1)),
+              succ => {
+                val elapsed = System.currentTimeMillis() - start
+                if (elapsed > getArMsWarnThreshold)
+                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than $getArMsWarnThreshold[ms]($elapsed[ms]).""")
+                succ match {
+                  case NothingCommitted() =>
+                    log.warning(s"""No events have been committed for $managedAggregateRooId""")
+                    self ! SuccessfulUpdate(Some(nextUpdateState), None, rest)
+                  case DomainEventsSuccessfullyCommitted(committedEvents) =>
+                    committedEvents.foreach(publisher.publish(_))
+                    self ! SuccessfulUpdate(Some(nextUpdateState), Some((requestedNextUpdate, nextUpdateState)), rest)
+                }
+              })
+
+        })
   }
 
   private def logDebugMessage(currentState: String, msg: String) {
@@ -227,8 +243,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   private case class InitializedWithFailure(problem: Problem)
   private case object UpdateAR
 
-  private case class SuccessfulUpdate(newState: Option[AR], rest: Vector[(ActorRef, UpdateAggregateRoot)])
-  private case class FailedUpdate(problem: Problem)
+  private case class SuccessfulUpdate(newState: Option[AR], successToNotify: Option[(ActorRef, AR)], rest: Vector[(ActorRef, UpdateAggregateRoot)])
+  private case class FailedUpdate(problem: Problem, rest: Vector[ActorRef])
 
 }
 
