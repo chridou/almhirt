@@ -13,9 +13,68 @@ object AggregateRootCell {
   final case class ClearCachedOlderThan(ttl: org.joda.time.Duration) extends CachedAggregateRootControl
   case object ClearCached extends CachedAggregateRootControl
 
-//  final case class AggregateRootWasDeleted(arId: java.util.UUID) extends AggregateRootCellMessage
-//
-//  final case class UpdateCancelled(lastKnownState: Option[IsAggregateRoot], problem: almhirt.common.Problem) extends AggregateRootCellMessage
+  import scala.concurrent.ExecutionContext
+  import scala.concurrent.duration.FiniteDuration
+  import almhirt.core.Almhirt
+  import almhirt.messaging.MessagePublisher
+  def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
+    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    theDomainEventLog: ActorRef,
+    publisher: MessagePublisher,
+    ccuad: CanCreateUuidsAndDateTimes,
+    execContext: ExecutionContext,
+    getArMsWarnThreshold: Long,
+    updateArMsWarnThreshold: Long,
+    getArTimeout: FiniteDuration,
+    updateArTimeout: FiniteDuration): (JUUID, () => Unit) => Props =
+    (arId: JUUID, signalDoesNotExist: () => Unit) =>
+      Props(
+        new impl.AggregateRootCellImpl[TAR, TEvent](
+          arId,
+          aggregateRootFactory,
+          theDomainEventLog,
+          signalDoesNotExist,
+          publisher,
+          ccuad,
+          execContext,
+          getArMsWarnThreshold,
+          updateArMsWarnThreshold,
+          getArTimeout,
+          updateArTimeout))
+
+  def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
+    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    theDomainEventLog: ActorRef,
+    theAlmhirt: Almhirt,
+    getArMsWarnThreshold: Long,
+    updateArMsWarnThreshold: Long,
+    getArTimeout: FiniteDuration,
+    updateArTimeout: FiniteDuration): (JUUID, () => Unit) => Props =
+    propsFactoryRaw(
+      aggregateRootFactory,
+      theDomainEventLog,
+      theAlmhirt.messageBus,
+      theAlmhirt,
+      theAlmhirt.futuresExecutor,
+      getArMsWarnThreshold,
+      updateArMsWarnThreshold,
+      getArTimeout,
+      updateArTimeout)
+      
+  def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
+    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    theDomainEventLog: ActorRef,
+    theAlmhirt: Almhirt): (JUUID, () => Unit) => Props =
+    propsFactoryRaw(
+      aggregateRootFactory,
+      theDomainEventLog,
+      theAlmhirt.messageBus,
+      theAlmhirt,
+      theAlmhirt.futuresExecutor,
+      theAlmhirt.durations.mediumDuration.toMillis,
+      theAlmhirt.durations.mediumDuration.toMillis,
+      theAlmhirt.durations.longDuration,
+      theAlmhirt.durations.longDuration)
 }
 
 trait AggregateRootCell { actor: Actor =>

@@ -15,6 +15,7 @@ import almhirt.domain.DomainEvent
 import almhirt.messaging.MessagePublisher
 import almhirt.common.CanCreateUuidsAndDateTimes
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 
 trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCellWithEventValidation { actor: Actor with ActorLogging =>
   import AggregateRootCell._
@@ -24,21 +25,22 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   type Event <: DomainEvent
   type AR <: AggregateRoot[AR, Event]
 
-  implicit val myAlmhirt: Almhirt
-  implicit lazy val execContext = myAlmhirt.futuresExecutor
-
-  def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
+  implicit def execContext: ExecutionContext
 
   protected def domainEventLog: ActorRef
 
   protected def onDoesNotExist: () => Unit
 
+  protected def publisher: MessagePublisher
+
+  protected implicit def ccuad: CanCreateUuidsAndDateTimes
+
+  def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
+  
   protected def getArMsWarnThreshold: Long
   protected def getArTimeout: FiniteDuration
   protected def updateArMsWarnThreshold: Long
   protected def updateArTimeout: FiniteDuration
-
-  private def publisher: MessagePublisher = myAlmhirt.messageBus
 
   private def uninitializedState(pendingGetRequests: Vector[ActorRef], pendingUpdateRequests: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
     case Initialize =>
@@ -58,7 +60,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
           } else {
             pendingGetRequests.foreach(_ ! DomainMessages.RequestedAggregateRoot(ar))
             if (pendingUpdateRequests.isEmpty) {
-              context.become(idleState(ar, myAlmhirt.getUtcTimestamp))
+              context.become(idleState(ar, ccuad.getUtcTimestamp))
             } else {
               context.become(updateState(Some(ar), pendingUpdateRequests))
               self ! UpdateAR
@@ -96,7 +98,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     case cc: CachedAggregateRootControl =>
       cc match {
         case ClearCachedOlderThan(ttl) =>
-          if (idleSince.plus(ttl).compareTo(myAlmhirt.getUtcTimestamp) < 0) {
+          if (idleSince.plus(ttl).compareTo(ccuad.getUtcTimestamp) < 0) {
             context.become(uninitializedState(Vector.empty, Vector.empty))
           }
         case ClearCached =>
@@ -131,7 +133,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         if (newPendingUpdates.isEmpty) {
           newStateOpt match {
             case Some(newState) =>
-              context.become(idleState(newState, myAlmhirt.getUtcTimestamp))
+              context.become(idleState(newState, ccuad.getUtcTimestamp))
             case None =>
               context.become(doesNotExistState(false))
               onDoesNotExist()
@@ -253,10 +255,13 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
   theDomainEventLog: ActorRef,
   notifyOnDoesNotExist: () => Unit,
+  override val publisher: MessagePublisher,
+  override val ccuad: CanCreateUuidsAndDateTimes,  
+  override val execContext: ExecutionContext,
   override val getArMsWarnThreshold: Long,
   override val updateArMsWarnThreshold: Long,
   override val getArTimeout: FiniteDuration,
-  override val updateArTimeout: FiniteDuration)(implicit theAlmhirt: Almhirt) extends AggregateRootCellTemplate with Actor with ActorLogging {
+  override val updateArTimeout: FiniteDuration) extends AggregateRootCellTemplate with Actor with ActorLogging {
 
   type AR = TAR
   type Event = TEvent
@@ -268,8 +273,6 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   }
 
   val managedAggregateRooId = aggregateRooId
-
-  override val myAlmhirt: Almhirt = theAlmhirt
 
   def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR] = aggregateRootFactory(events)
 
