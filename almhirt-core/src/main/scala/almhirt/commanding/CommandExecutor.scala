@@ -215,7 +215,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   def evaluateRepoUpdateResponse(response: DomainMessage): AlmValidation[IsAggregateRoot] =
     response match {
       case AggregateRootUpdated(ar) => ar.success
-      case AggregateRootUpdateFailed(problem) => problem.failure
+      case AggregateRootUpdateFailed(arid, problem) => problem.failure
       case AggregateRootNotFound(arId) => almhirt.domain.AggregateRootNotFoundProblem(arId).failure
       case AggregateRootFetchFailed(arId, problem) => problem.failure
       case IncompatibleAggregateRoot(ar, expected) => UnspecifiedProblem(s"""Wrong type of aggregate root(${ar.getClass().getName()}). I exepected a "$expected". This is an internal problem.""").failure

@@ -54,9 +54,9 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
               (cell ? UpdateAggregateRoot(ar, events))(defaultDuration).successfulAlmFuture[Any]
             }
           } yield updateRes
-        val res = workflowF.awaitResult(defaultDuration)
+        val res = workflowF.awaitResultOrEscalate(defaultDuration)
 
-        res should equal(scalaz.Success(AggregateRootUpdated(ar)))
+        res should equal(AggregateRootUpdated(ar))
       }
     }
 

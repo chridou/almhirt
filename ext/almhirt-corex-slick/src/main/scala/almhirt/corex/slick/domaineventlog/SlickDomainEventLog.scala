@@ -90,7 +90,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         problem => {
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
 
     case GetDomainEvent(eventId) =>
       (for {
@@ -122,7 +122,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         problem => {
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
 
     case GetDomainEventsFrom(aggId, fromVersion) =>
       (for {
@@ -140,7 +140,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         problem => {
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
 
     case GetDomainEventsTo(aggId, toVersion) =>
       (for {
@@ -158,7 +158,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         problem => {
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
 
     case GetDomainEventsUntil(aggId, untilVersion) =>
       (for {
@@ -176,7 +176,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         problem => {
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
 
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
       (for {
@@ -194,7 +194,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         problem => {
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
 
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
       (for {
@@ -212,7 +212,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         problem => {
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
     case almhirt.serialization.UseSerializationChannel(newChannel) =>
       context.become(currentState(newChannel))
   }

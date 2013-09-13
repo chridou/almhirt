@@ -73,9 +73,9 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
         fail => {
           fail match {
             case OperationTimedOutProblem(p) =>
-              sender ! AggregateRootUpdateFailed(OperationTimedOutProblem(s"""Getting the cell for "${newState.id}" for "update" timed out.""", cause = Some(fail)))
+              sender ! AggregateRootUpdateFailed(newState.id, OperationTimedOutProblem(s"""Getting the cell for "${newState.id}" for "update" timed out.""", cause = Some(fail)))
             case _ =>
-              sender ! AggregateRootUpdateFailed(UnspecifiedProblem(s"""Getting the cell for "${newState.id}" for "update" failed.""", cause = Some(fail)))
+              sender ! AggregateRootUpdateFailed(newState.id, UnspecifiedProblem(s"""Getting the cell for "${newState.id}" for "update" failed.""", cause = Some(fail)))
           }
         },
         getResult => onceWithGetResult(getResult, cell => askCellForUpdate(newState, eventsToNewState, cell, sender)))
@@ -101,8 +101,6 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
           sender ! m
         case m: AggregateRootFetchFailed =>
           sender ! m
-        case AggregateRootWasDeleted(arId) =>
-          sender ! AggregateRootNotFound(arId)
       })
   }
 
@@ -111,19 +109,17 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
       fail =>
         fail match {
           case OperationTimedOutProblem(p) =>
-            sender ! AggregateRootUpdateFailed(OperationTimedOutProblem(s"""Updating the AR in cell for "${newState.id}" timed out.""", cause = Some(fail)))
+            sender ! AggregateRootUpdateFailed(newState.id, OperationTimedOutProblem(s"""Updating the AR in cell for "${newState.id}" timed out.""", cause = Some(fail)))
           case _ =>
-            sender ! AggregateRootUpdateFailed(UnspecifiedProblem(s"""Updating the AR in cell for "${newState.id}" failed.""", cause = Some(fail)))
+            sender ! AggregateRootUpdateFailed(newState.id, UnspecifiedProblem(s"""Updating the AR in cell for "${newState.id}" failed.""", cause = Some(fail)))
         },
       {
         case m: AggregateRootUpdated =>
           sender ! m
         case AggregateRootNotFound(arId) =>
-          sender ! AggregateRootUpdateFailed(AggregateRootNotFoundProblem(arId))
+          sender ! AggregateRootUpdateFailed(newState.id, AggregateRootNotFoundProblem(arId))
         case AggregateRootFetchFailed(arId, problem) =>
-          sender ! AggregateRootUpdateFailed(problem)
-        case AggregateRootWasDeleted(arId) =>
-          sender ! AggregateRootUpdateFailed(AggregateRootNotFoundProblem(arId))
+          sender ! AggregateRootUpdateFailed(newState.id, problem)
         case m: AggregateRootUpdateFailed =>
           sender ! m
       })

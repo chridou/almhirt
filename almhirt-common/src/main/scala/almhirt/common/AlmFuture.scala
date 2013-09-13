@@ -35,49 +35,77 @@ import almhirt.almfuture.all.akkaFutureToAlmhirtFuture
 final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   import almhirt.almfuture.all._
   def map[T](compute: R => T)(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture[T](underlying.map(validation => validation map compute)(executionContext))
+    new AlmFuture[T](underlying.map(validation => validation map compute))
 
   def mapV[T](compute: R => AlmValidation[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture[T](underlying.map { validation => validation flatMap compute }(executionContext))
+    new AlmFuture[T](underlying.map { validation => validation flatMap compute })
+
+  def mapFailure(withFailure: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] =
+    new AlmFuture[R](underlying.map { validation => validation leftMap withFailure }(executionContext))
+
+  def mapTimeout(withTimeout: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] =
+    new AlmFuture[R](underlying.map { validation =>
+      validation leftMap {
+        case OperationTimedOutProblem(p) => withTimeout(p)
+        case p => p
+      }
+    })
 
   def flatMap[T](compute: R => AlmFuture[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.flatMap { validation =>
       validation fold (
         f => Future.successful(f.failure[T]),
         r => compute(r).underlying)
-    }(executionContext))
+    })
 
   def fold[T](failure: Problem => T, success: R => T)(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture(underlying.map { validation => (validation fold (failure, success)).success }(executionContext))
+    new AlmFuture(underlying.map { validation => (validation fold (failure, success)).success })
 
   def foldV[T](failure: Problem => AlmValidation[T], success: R => AlmValidation[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture(underlying.map { validation => (validation fold (failure, success)) }(executionContext))
+    new AlmFuture(underlying.map { validation => (validation fold (failure, success)) })
 
   def foldF[T](failure: Problem => AlmFuture[T], success: R => AlmFuture[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.flatMap { validation =>
       validation fold (
         f => failure(f).underlying,
         r => success(r).underlying)
-    }(executionContext))
-  
+    })
+
+  def collect[T](pf: PartialFunction[R, T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    new AlmFuture(
+      underlying.map(validation =>
+        validation map (v => pf(v))))
+
+  def collectV[T](pf: PartialFunction[R, AlmValidation[T]])(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    new AlmFuture(
+      underlying.map(validation =>
+        validation flatMap (v => pf(v))))
+
+  def collectF[T](pf: PartialFunction[R, AlmFuture[T]])(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    new AlmFuture(
+      underlying.flatMap(validation =>
+        validation fold (
+          fail => Future(fail.failure),
+          succ => pf(succ).underlying)))
+
   def onComplete(handler: AlmValidation[R] => Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => handler(validation)
       case scala.util.Failure(err) => handler(handleThrowable(err).failure)
-    }(executionContext)
+    }
   }
 
   def onComplete(fail: Problem => Unit, succ: R => Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => validation fold (fail, succ)
       case scala.util.Failure(err) => fail(handleThrowable(err))
-    }(executionContext)
+    }
   }
 
   def onSuccess(onRes: R => Unit)(implicit executionContext: ExecutionContext): Unit =
     underlying.onSuccess {
       case x => x fold (_ => (), onRes(_))
-    }(executionContext)
+    }
 
   def onFailure(onProb: Problem => Unit)(implicit executionContext: ExecutionContext): Unit =
     onComplete(_ fold (onProb(_), _ => ()))
@@ -86,18 +114,18 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(underlying.andThen {
       case scala.util.Success(r) => effect(r)
       case scala.util.Failure(err) => effect(handleThrowable(err).failure)
-    }(executionContext))
+    })
   }
 
   def andThen(fail: Problem => Unit, succ: R => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
       case scala.util.Success(r) => r.fold(fail, succ)
       case scala.util.Failure(err) => fail(handleThrowable(err))
-    }(executionContext))
+    })
   }
-  
-  def withFailure(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = 
-    andThen{ _.fold(prob => effect(prob), succ => ()) }
+
+  def withFailure(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
+    andThen { _.fold(prob => effect(prob), succ => ()) }
 
   def isCompleted = underlying.isCompleted
 
@@ -115,13 +143,13 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
 object AlmFuture {
   import scala.language.higherKinds
-  
+
   def apply[T](compute: => AlmValidation[T])(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { compute }(executionContext))
 
   def sequenceAkka[A, M[_] <: Traversable[_]](in: M[AlmFuture[A]])(implicit cbf: CanBuildFrom[M[AlmFuture[A]], AlmValidation[A], M[AlmValidation[A]]], executionContext: ExecutionContext): Future[M[AlmValidation[A]]] = {
     in.foldLeft(Future.successful(cbf(in)): Future[Builder[AlmValidation[A], M[AlmValidation[A]]]])((futAcc, futElem) ⇒ for (acc ← futAcc; a ← futElem.asInstanceOf[AlmFuture[A]].underlying) yield (acc += a)).map(_.result)
   }
-  
+
   def sequence[A](in: Seq[AlmFuture[A]])(implicit executionContext: ExecutionContext): AlmFuture[Seq[A]] = {
     import almhirt.almvalidation.kit._
     import scalaz._, Scalaz._
@@ -133,5 +161,5 @@ object AlmFuture {
   def promise[T](what: => AlmValidation[T]) = new AlmFuture[T](Future.successful { what })
   def successful[T](result: => T) = new AlmFuture[T](Future.successful { result.success })
   def failed[T](prob: Problem) = new AlmFuture[T](Future.successful { prob.failure })
-  
+
 }

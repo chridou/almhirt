@@ -25,27 +25,14 @@ object DomainEventLog {
   final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent])  extends SingleDomainEventQueryResult
   final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem)  extends SingleDomainEventQueryResult
 
-  sealed trait FetchedDomainEventsPart extends DomainEventLogMessage {
-    def index: Int
-    def isLast: Boolean
-  }
+  sealed trait FetchedDomainEvents extends DomainEventLogMessage
 
-  final case class DomainEventsChunk(
-    /**
-     * Starts with Zero
-     */
-    index: Int,
-    isLast: Boolean,
-    events: Seq[DomainEvent]) extends FetchedDomainEventsPart
+  final case class FetchedDomainEventsBatch(
+    events: Seq[DomainEvent]) extends FetchedDomainEvents
+  
+  final case class FetchedDomainEventsChunks() extends FetchedDomainEvents
 
-  final case class DomainEventsChunkFailure(
-    /**
-     * Starts with Zero
-     */
-    index: Int,
-    problem: Problem) extends FetchedDomainEventsPart {
-    override def isLast = true
-  }
+//  final case class FetchedDomainEventsFailure(problem: Problem) extends FetchedDomainEvents
   
   object NothingCommitted {
     def unapply(what: CommittedDomainEvents): Boolean =

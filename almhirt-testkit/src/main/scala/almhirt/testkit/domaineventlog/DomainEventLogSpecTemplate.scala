@@ -109,9 +109,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             res3 <- res3F
           } yield (res1, res2, res3)).awaitResultOrEscalate(defaultDuration)
         res should equal((
-          DomainEventsChunk(0, true, events1),
-          DomainEventsChunk(0, true, events2),
-          DomainEventsChunk(0, true, events3)))
+          FetchedDomainEventsBatch(events1),
+          FetchedDomainEventsBatch(events2),
+          FetchedDomainEventsBatch(events3)))
       }
     }
 
@@ -124,7 +124,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetAllDomainEventsFor(arId))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events))
+        res should equal(FetchedDomainEventsBatch(events))
       }
     }
 
@@ -137,7 +137,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFrom(arId, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events))
+        res should equal(FetchedDomainEventsBatch(events))
       }
     }
 
@@ -150,7 +150,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFrom(arId, 3L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.drop(3)))
+        res should equal(FetchedDomainEventsBatch(events.drop(3)))
       }
     }
 
@@ -163,7 +163,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFrom(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, Seq(events.last)))
+        res should equal(FetchedDomainEventsBatch(Seq(events.last)))
       }
     }
 
@@ -176,7 +176,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFrom(arId, events.last.aggVersion + 1L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, Seq.empty))
+        res should equal(FetchedDomainEventsBatch(Seq.empty))
       }
     }
 
@@ -189,7 +189,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsTo(arId, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.take(1)))
+        res should equal(FetchedDomainEventsBatch(events.take(1)))
       }
     }
 
@@ -202,7 +202,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsTo(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events))
+        res should equal(FetchedDomainEventsBatch(events))
       }
     }
 
@@ -215,7 +215,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsTo(arId, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events))
+        res should equal(FetchedDomainEventsBatch(events))
       }
     }
 
@@ -228,8 +228,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsTo(arId, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.take(11)))
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(10L)
+        res should equal(FetchedDomainEventsBatch(events.take(11)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(10L)
       }
     }
 
@@ -242,7 +242,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsUntil(arId, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, Seq.empty))
+        res should equal(FetchedDomainEventsBatch(Seq.empty))
       }
     }
 
@@ -255,8 +255,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsUntil(arId, 1L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.take(1)))
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(0L)
+        res should equal(FetchedDomainEventsBatch(events.take(1)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(0L)
       }
     }
 
@@ -269,8 +269,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsUntil(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.init))
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion - 1)
+        res should equal(FetchedDomainEventsBatch(events.init))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(events.last.aggVersion - 1)
       }
     }
 
@@ -283,7 +283,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsUntil(arId, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events))
+        res should equal(FetchedDomainEventsBatch(events))
       }
     }
 
@@ -296,8 +296,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsUntil(arId, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.take(10)))
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(9L)
+        res should equal(FetchedDomainEventsBatch(events.take(10)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(9L)
       }
     }
 
@@ -310,7 +310,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.take(1)))
+        res should equal(FetchedDomainEventsBatch(events.take(1)))
       }
     }
 
@@ -323,7 +323,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events))
+        res should equal(FetchedDomainEventsBatch(events))
       }
     }
 
@@ -336,9 +336,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.take(11)))
-        res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(0L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(10L)
+        res should equal(FetchedDomainEventsBatch(events.take(11)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(0L)
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(10L)
       }
     }
 
@@ -351,7 +351,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events))
+        res should equal(FetchedDomainEventsBatch(events))
       }
     }
 
@@ -364,9 +364,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromTo(arId, 10L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.drop(10)))
-        res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion)
+        res should equal(FetchedDomainEventsBatch(events.drop(10)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(events.last.aggVersion)
       }
     }
     it("""should when queried with "GetDomainEventsFromTo(x < maxVersion,  y < maxVersion)" return all events from including x to the one including y""") {
@@ -378,9 +378,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 20L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.drop(10).take(11)))
-        res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(20L)
+        res should equal(FetchedDomainEventsBatch(events.drop(10).take(11)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(20L)
       }
     }
     it("""should when queried with "GetDomainEventsFromTo(0L x < maxVersion,  y = x)" return the event with version x""") {
@@ -392,9 +392,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.drop(10).take(1)))
-        res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(10L)
+        res should equal(FetchedDomainEventsBatch(events.drop(10).take(1)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(10L)
       }
     }
 
@@ -407,7 +407,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 9L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, IndexedSeq.empty))
+        res should equal(FetchedDomainEventsBatch(IndexedSeq.empty))
       }
     }
 
@@ -421,7 +421,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, IndexedSeq.empty))
+        res should equal(FetchedDomainEventsBatch(IndexedSeq.empty))
       }
     }
 
@@ -434,9 +434,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.init))
-        res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(0L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion - 1L)
+        res should equal(FetchedDomainEventsBatch(events.init))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(0L)
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(events.last.aggVersion - 1L)
       }
     }
 
@@ -449,9 +449,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.take(10)))
-        res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(0L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(9L)
+        res should equal(FetchedDomainEventsBatch(events.take(10)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(0L)
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(9L)
       }
     }
 
@@ -464,7 +464,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events))
+        res should equal(FetchedDomainEventsBatch(events))
       }
     }
 
@@ -477,9 +477,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.drop(10).init))
-        res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(events.last.aggVersion - 1L)
+        res should equal(FetchedDomainEventsBatch(events.drop(10).init))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(events.last.aggVersion - 1L)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(x < maxVersion,  y < maxVersion)" return all events from including x to the one excluding y""") {
@@ -491,9 +491,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 20L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, events.drop(10).take(10)))
-        res.asInstanceOf[DomainEventsChunk].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[DomainEventsChunk].events.last.aggVersion should equal(19L)
+        res should equal(FetchedDomainEventsBatch(events.drop(10).take(10)))
+        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
+        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(19L)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(0L x < maxVersion,  y = x)" return no event""") {
@@ -505,7 +505,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, Seq.empty))
+        res should equal(FetchedDomainEventsBatch(Seq.empty))
       }
     }
 
@@ -518,7 +518,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
             res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 9L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
           } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(DomainEventsChunk(0, true, IndexedSeq.empty))
+        res should equal(FetchedDomainEventsBatch(IndexedSeq.empty))
       }
     }
 

@@ -9,5 +9,5 @@ trait SupervisioningActorCellSource { actor: Actor =>
   protected def createProps(aggregateRootId: JUUID, forArType: Class[_], onDoesNotExist: () => Unit): Props
 
   final protected def createCell(aggregateRootId: JUUID, forArType: Class[_]): ActorRef = 
-    context.actorOf(createProps(aggregateRootId, forArType, () => self ! DoesNotExistNotification(aggregateRootId)))
+    context.actorOf(createProps(aggregateRootId, forArType, () => self ! DoesNotExistNotification(aggregateRootId)), aggregateRootId.toString())
 }

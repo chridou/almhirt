@@ -13,9 +13,9 @@ object AggregateRootCell {
   final case class ClearCachedOlderThan(ttl: org.joda.time.Duration) extends CachedAggregateRootControl
   case object ClearCached extends CachedAggregateRootControl
 
-  final case class AggregateRootWasDeleted(arId: java.util.UUID) extends AggregateRootCellMessage
-
-  final case class UpdateCancelled(lastKnownState: Option[IsAggregateRoot], problem: almhirt.common.Problem) extends AggregateRootCellMessage
+//  final case class AggregateRootWasDeleted(arId: java.util.UUID) extends AggregateRootCellMessage
+//
+//  final case class UpdateCancelled(lastKnownState: Option[IsAggregateRoot], problem: almhirt.common.Problem) extends AggregateRootCellMessage
 }
 
 trait AggregateRootCell { actor: Actor =>
@@ -47,7 +47,7 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
       }
       potentialUpdateV.fold(
         fail => {
-          requestsUpdate ! AggregateRootUpdateFailed(fail)
+          requestsUpdate ! AggregateRootUpdateFailed(managedAggregateRooId, fail)
           getNextUpdateTask(currentState, tail)
         },
         potentialUpdate =>
@@ -62,7 +62,7 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
   def tryGetPotentialUpdate(currentState: Option[AR], newState: AR, events: IndexedSeq[Event], requestsUpdate: ActorRef): Option[(AR, IndexedSeq[Event], ActorRef)] = {
     validateAggregateRootsAgainstEvents(currentState, newState, events).fold(
       fail => {
-        requestsUpdate ! AggregateRootUpdateFailed(fail)
+        requestsUpdate ! AggregateRootUpdateFailed(managedAggregateRooId, fail)
         None
       },
       arAndEvents =>
