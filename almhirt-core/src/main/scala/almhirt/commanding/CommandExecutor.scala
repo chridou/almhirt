@@ -230,6 +230,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   }
 
   private def handleFailure(cmd: Command, problem: Problem) {
+    log.error(s"""An error occured executing command of type ${cmd.getClass().getName()} with id ${cmd.commandId}:\n${problem.toString()}""")
     messagePublisher.publish(CommandNotExecuted(cmd.header.id, problem))
     handleFailure(cmd.tryGetTrackingId, problem)
   }
