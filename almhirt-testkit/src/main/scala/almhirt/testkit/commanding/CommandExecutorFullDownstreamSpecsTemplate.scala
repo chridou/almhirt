@@ -60,34 +60,34 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
   }
 
   describe("CommandExecutor") {
-    //    it("should be creatable") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          true should be(true)
-    //      }
-    //    }
-    //    it("should receive a AR1ComCreateAR1 and acknowledge it with a CommandReceived") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val theCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
-    //          executor ! theCommand
-    //          val res = probe.fishForMessage(defaultDuration, "I'm fishing for CommandReceived") {
-    //            case Message(_, CommandReceived(_, cmd)) => cmd == theCommand
-    //            case x => false
-    //          }
-    //      }
-    //    }
-    //    it("should receive a AR1ComCreateAR1 and acknowledge execution with a CommandExecuted") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val theCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
-    //          executor ! theCommand
-    //          val res = probe.fishForMessage(defaultDuration, "I'm fishing for CommandExecuted") {
-    //            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theCommand.commandId
-    //            case x => false
-    //          }
-    //      }
-    //    }
+    it("should be creatable") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          true should be(true)
+      }
+    }
+    it("should receive a AR1ComCreateAR1 and acknowledge it with a CommandReceived") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val theCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
+          executor ! theCommand
+          val res = probe.fishForMessage(defaultDuration, "I'm fishing for CommandReceived") {
+            case Message(_, CommandReceived(_, cmd)) => cmd == theCommand
+            case x => false
+          }
+      }
+    }
+    it("should receive a AR1ComCreateAR1 and acknowledge execution with a CommandExecuted") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val theCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
+          executor ! theCommand
+          val res = probe.fishForMessage(defaultDuration, "I'm fishing for CommandExecuted") {
+            case Message(_, CommandExecuted(_, cmdId)) => cmdId == theCommand.commandId
+            case x => false
+          }
+      }
+    }
     it("should receive a AR1ComCreateAR1 and then modify the ar and acknowledge both with a CommandExecuted") {
       useExecutorWithEventLog {
         (executor, eventLog, probe) =>
@@ -106,215 +106,215 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
           }
       }
     }
-    //    it("should signal a CommandNotExecuted when mutating a non existing aggregate root") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val theCommand = AR1ComChangeB(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), Some("B"))
-    //          executor ! theCommand
-    //          probe.fishForMessage(defaultDuration, "I'm fishing for CommandNotExecuted") {
-    //            case Message(_, CommandNotExecuted(_, cmdId, problem)) => cmdId == theCommand.commandId
-    //            case x => false
-    //          }
-    //      }
-    //    }
-    //
-    //    it("should emit CommandReceived for each for each command in a sequence") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
-    //          val theCommands =
-    //            List[AR1Command](
-    //              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a"),
-    //              AR1ComChangeB(DomainCommandHeader(aggRef), Some("B")),
-    //              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
-    //          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
-    //          groupedCommands.foreach(executor ! _)
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 20) {
-    //            case Message(_, m: CommandExecuted) => None
-    //            case Message(_, m: CommandNotExecuted) => None
-    //            case Message(_, m: CommandReceived) => Some(m.command.commandId)
-    //          }
-    //
-    //          res.flatten should equal(theCommands.map(_.commandId))
-    //      }
-    //    }
-    //
-    //    it("should execute a command sequence and emit CommandExecuted for each command") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
-    //          val theCommands =
-    //            List[AR1Command](
-    //              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a"),
-    //              AR1ComChangeB(DomainCommandHeader(aggRef), Some("B")),
-    //              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
-    //          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
-    //          groupedCommands.foreach(executor ! _)
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 6) {
-    //            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId)
-    //            case Message(_, m: CommandNotExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }
-    //
-    //          res.flatten should equal(theCommands.map(_.commandId))
-    //      }
-    //    }
-    //
-    //    it("should execute a command sequence and emit CommandExecuted for each command in the sequence in the sequence index order even though the commands are submitted in reversed order") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
-    //          val theCommands =
-    //            List[AR1Command](
-    //              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a"),
-    //              AR1ComChangeB(DomainCommandHeader(aggRef), Some("B")),
-    //              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
-    //          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands).reverse
-    //          groupedCommands.foreach(executor ! _)
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 6) {
-    //            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId)
-    //            case Message(_, m: CommandNotExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }
-    //
-    //          res.flatten should equal(theCommands.map(_.commandId))
-    //      }
-    //    }
-    //    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionSuccessful(3) when tracking is enabled on a creating command") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val trackId = "track me"
-    //          val theCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a").track(trackId)
-    //          executor ! theCommand
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(3)
-    //            case Message(_, m: CommandExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }.flatten
-    //          res should equal(1 :: 2 :: 3 :: Nil)
-    //      }
-    //    }
-    //    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionSuccessful(3) when tracking is enabled on a mutating command") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          import almhirt.domaineventlog.DomainEventLog._
-    //          val (initialState, initialEvents) = AR1.fromScratch(theAlmhirt.getUuid, "a").result.forceResult
-    //          Await.result((eventLog ? CommitDomainEvents(initialEvents))(defaultDuration), defaultDuration)
-    //          val trackId = "track me"
-    //          val theCommand = AR1ComChangeA(DomainCommandHeader(initialState.ref), "b").track(trackId)
-    //          executor ! theCommand
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(3)
-    //            case Message(_, m: CommandExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }.flatten
-    //          res should equal(1 :: 2 :: 3 :: Nil)
-    //      }
-    //    }
-    //    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionFailed(3) when tracking is enabled but the creating command is invalid") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val trackId = "track me"
-    //          val theCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid, 10L)), "a").track(trackId)
-    //          executor ! theCommand
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(-1)
-    //            case Message(_, m: CommandExecuted) => None
-    //            case Message(_, m: CommandNotExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }.flatten
-    //          res should equal(1 :: 2 :: 3 :: Nil)
-    //      }
-    //    }
-    //    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionFailed(3) when tracking is enabled but the mutating command is invalid") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val trackId = "track me"
-    //          val theCommand = AR1ComChangeA(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a").track(trackId)
-    //          executor ! theCommand
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(-1)
-    //            case Message(_, m: CommandExecuted) => None
-    //            case Message(_, m: CommandNotExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }.flatten
-    //          res should equal(1 :: 2 :: 3 :: Nil)
-    //      }
-    //    }
-    //    it("should emit ExecutionStarted(1) ->  ExecutionFailed(3) when tracking is enabled but the command is unregistered") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val trackId = "track me"
-    //          val theCommand = AR1ComUnregisteredCommand(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid))).track(trackId)
-    //          executor ! theCommand
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(-1)
-    //            case Message(_, m: CommandExecuted) => None
-    //            case Message(_, m: CommandNotExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }.flatten
-    //          res should equal(1 :: 3 :: Nil)
-    //      }
-    //    }
-    //    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionSuccessful(3) when tracking is enabled on the first command of a sequence") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
-    //          val trackId = "track me"
-    //          val theCommands =
-    //            List[AR1Command](
-    //              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a").track("track me"),
-    //              AR1ComChangeB(DomainCommandHeader(aggRef), Some("B")),
-    //              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
-    //          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
-    //          groupedCommands.foreach(executor ! _)
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(3)
-    //            case Message(_, m: CommandExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }.flatten
-    //          res should equal(1 :: 2 :: 3 :: Nil)
-    //      }
-    //    }
-    //
-    //    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionFailed(3) when tracking is enabled on the first command of a sequence but one command of the sequence sets an invalid value") {
-    //      useExecutorWithEventLog {
-    //        (executor, eventLog, probe) =>
-    //          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
-    //          val trackId = "track me"
-    //          val theCommands =
-    //            List[AR1Command](
-    //              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a").track("track me"),
-    //              AR1ComChangeB(DomainCommandHeader(aggRef), Some("")),
-    //              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
-    //          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
-    //          groupedCommands.foreach(executor ! _)
-    //          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
-    //            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
-    //            case Message(_, m: CommandExecuted) => None
-    //            case Message(_, m: CommandNotExecuted) => None
-    //            case Message(_, m: CommandReceived) => None
-    //          }.flatten
-    //          res should equal(1 :: 2 :: 3 :: Nil)
-    //      }
-    //    }
+    it("should signal a CommandNotExecuted when mutating a non existing aggregate root") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val theCommand = AR1ComChangeB(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), Some("B"))
+          executor ! theCommand
+          probe.fishForMessage(defaultDuration, "I'm fishing for CommandNotExecuted") {
+            case Message(_, CommandNotExecuted(_, cmdId, problem)) => cmdId == theCommand.commandId
+            case x => false
+          }
+      }
+    }
+
+    it("should emit CommandReceived for each for each command in a sequence") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+          val theCommands =
+            List[AR1Command](
+              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a"),
+              AR1ComChangeB(DomainCommandHeader(aggRef), Some("B")),
+              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
+          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
+          groupedCommands.foreach(executor ! _)
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 20) {
+            case Message(_, m: CommandExecuted) => None
+            case Message(_, m: CommandNotExecuted) => None
+            case Message(_, m: CommandReceived) => Some(m.command.commandId)
+          }
+
+          res.flatten should equal(theCommands.map(_.commandId))
+      }
+    }
+
+    it("should execute a command sequence and emit CommandExecuted for each command") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+          val theCommands =
+            List[AR1Command](
+              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a"),
+              AR1ComChangeB(DomainCommandHeader(aggRef), Some("B")),
+              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
+          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
+          groupedCommands.foreach(executor ! _)
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 6) {
+            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId)
+            case Message(_, m: CommandNotExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }
+
+          res.flatten should equal(theCommands.map(_.commandId))
+      }
+    }
+
+    it("should execute a command sequence and emit CommandExecuted for each command in the sequence in the sequence index order even though the commands are submitted in reversed order") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+          val theCommands =
+            List[AR1Command](
+              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a"),
+              AR1ComChangeB(DomainCommandHeader(aggRef), Some("B")),
+              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
+          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands).reverse
+          groupedCommands.foreach(executor ! _)
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 6) {
+            case Message(_, m @ CommandExecuted(_, cmdId)) => Some(cmdId)
+            case Message(_, m: CommandNotExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }
+
+          res.flatten should equal(theCommands.map(_.commandId))
+      }
+    }
+    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionSuccessful(3) when tracking is enabled on a creating command") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val trackId = "track me"
+          val theCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a").track(trackId)
+          executor ! theCommand
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
+            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(3)
+            case Message(_, m: CommandExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }.flatten
+          res should equal(1 :: 2 :: 3 :: Nil)
+      }
+    }
+    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionSuccessful(3) when tracking is enabled on a mutating command") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          import almhirt.domaineventlog.DomainEventLog._
+          val (initialState, initialEvents) = AR1.fromScratch(theAlmhirt.getUuid, "a").result.forceResult
+          Await.result((eventLog ? CommitDomainEvents(initialEvents))(defaultDuration), defaultDuration)
+          val trackId = "track me"
+          val theCommand = AR1ComChangeA(DomainCommandHeader(initialState.ref), "b").track(trackId)
+          executor ! theCommand
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
+            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(3)
+            case Message(_, m: CommandExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }.flatten
+          res should equal(1 :: 2 :: 3 :: Nil)
+      }
+    }
+    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionFailed(3) when tracking is enabled but the creating command is invalid") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val trackId = "track me"
+          val theCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid, 10L)), "a").track(trackId)
+          executor ! theCommand
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
+            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(-1)
+            case Message(_, m: CommandExecuted) => None
+            case Message(_, m: CommandNotExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }.flatten
+          res should equal(1 :: 2 :: 3 :: Nil)
+      }
+    }
+    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionFailed(3) when tracking is enabled but the mutating command is invalid") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val trackId = "track me"
+          val theCommand = AR1ComChangeA(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a").track(trackId)
+          executor ! theCommand
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
+            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(-1)
+            case Message(_, m: CommandExecuted) => None
+            case Message(_, m: CommandNotExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }.flatten
+          res should equal(1 :: 2 :: 3 :: Nil)
+      }
+    }
+    it("should emit ExecutionStarted(1) ->  ExecutionFailed(3) when tracking is enabled but the command is unregistered") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val trackId = "track me"
+          val theCommand = AR1ComUnregisteredCommand(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid))).track(trackId)
+          executor ! theCommand
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
+            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(-1)
+            case Message(_, m: CommandExecuted) => None
+            case Message(_, m: CommandNotExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }.flatten
+          res should equal(1 :: 3 :: Nil)
+      }
+    }
+    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionSuccessful(3) when tracking is enabled on the first command of a sequence") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+          val trackId = "track me"
+          val theCommands =
+            List[AR1Command](
+              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a").track("track me"),
+              AR1ComChangeB(DomainCommandHeader(aggRef), Some("B")),
+              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
+          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
+          groupedCommands.foreach(executor ! _)
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
+            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionSuccessful)) if (m.trackId == trackId) => Some(3)
+            case Message(_, m: CommandExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }.flatten
+          res should equal(1 :: 2 :: 3 :: Nil)
+      }
+    }
+
+    it("should emit ExecutionStarted(1) -> ExecutionInProcess(2) -> ExecutionFailed(3) when tracking is enabled on the first command of a sequence but one command of the sequence sets an invalid value") {
+      useExecutorWithEventLog {
+        (executor, eventLog, probe) =>
+          val aggRef = AggregateRootRef(theAlmhirt.getUuid)
+          val trackId = "track me"
+          val theCommands =
+            List[AR1Command](
+              AR1ComCreateAR1(DomainCommandHeader(aggRef), "a").track("track me"),
+              AR1ComChangeB(DomainCommandHeader(aggRef), Some("")),
+              AR1ComChangeA(DomainCommandHeader(aggRef), "s"))
+          val groupedCommands = CommandGrouping.groupCommands("mygroup", theCommands)
+          groupedCommands.foreach(executor ! _)
+          val res = probe.receiveWhile(defaultDuration, defaultDuration, 9) {
+            case Message(_, ExecutionStateChanged(_, m: ExecutionStarted)) if (m.trackId == trackId) => Some(1)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionInProcess)) if (m.trackId == trackId) => Some(2)
+            case Message(_, ExecutionStateChanged(_, m: ExecutionFailed)) if (m.trackId == trackId) => Some(3)
+            case Message(_, m: CommandExecuted) => None
+            case Message(_, m: CommandNotExecuted) => None
+            case Message(_, m: CommandReceived) => None
+          }.flatten
+          res should equal(1 :: 2 :: 3 :: Nil)
+      }
+    }
 
   }
 }

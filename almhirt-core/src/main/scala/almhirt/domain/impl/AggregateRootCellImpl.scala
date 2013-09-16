@@ -93,7 +93,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     case GetManagedAggregateRoot =>
       sender ! RequestedAggregateRoot(ar)
     case uar: UpdateAggregateRoot =>
-      context.become(updateState(None, Vector((sender, uar))))
+      context.become(updateState(Some(ar), Vector((sender, uar))))
       self ! UpdateAR
     case cc: CachedAggregateRootControl =>
       cc match {
