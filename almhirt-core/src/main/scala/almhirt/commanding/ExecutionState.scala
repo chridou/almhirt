@@ -40,7 +40,7 @@ object ExecutionInProcess {
     ExecutionInProcess(trackId, ccuad.getUtcTimestamp, metadata)
 }
 
-trait ExecutionFinishedState extends ExecutionState
+sealed trait ExecutionFinishedState extends ExecutionState
 
 final case class ExecutionSuccessful(trackId: String, message: String, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionFinishedState
 object ExecutionSuccessful {
