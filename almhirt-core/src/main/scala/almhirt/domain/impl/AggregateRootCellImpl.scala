@@ -36,7 +36,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   protected implicit def ccuad: CanCreateUuidsAndDateTimes
 
   def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
-  
+
   protected def getArMsWarnThreshold: Long
   protected def getArTimeout: FiniteDuration
   protected def updateArMsWarnThreshold: Long
@@ -195,7 +195,10 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
           rebuildAr(events).map(Some(_))
       case FetchedDomainEventsChunks() =>
         UnspecifiedProblem("FetchedDomainEventsChunks not supported").failure
-    }.mapTimeout(tp => OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within $getArTimeout"""))
+    }.mapTimeout(tp => {
+      val elapsed = System.currentTimeMillis() - start
+      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within $getArTimeout[ms]($elapsed[ms])""")
+    })
   }
 
   def updateAggregateRoot(arOpt: Option[AR], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Unit = {
@@ -211,7 +214,14 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
             val start = System.currentTimeMillis()
             (domainEventLog ? CommitDomainEvents(nextUpdateEvents))(updateArTimeout).successfulAlmFuture[CommittedDomainEvents].onComplete(
               problem =>
-                self ! FailedUpdate(problem, requestedNextUpdate +: rest.map(_._1)),
+                problem match {
+                  case OperationTimedOutProblem(p) =>
+                    val elapsed = System.currentTimeMillis() - start
+                    val prob = OperationTimedOutProblem(s"""The domain event log failed to append the events for "$managedAggregateRooId" within $updateArTimeout[ms]($elapsed[ms])""")
+                    self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
+                  case prob =>
+                    self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
+                },
               succ => {
                 val elapsed = System.currentTimeMillis() - start
                 if (elapsed > getArMsWarnThreshold)
@@ -256,7 +266,7 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   theDomainEventLog: ActorRef,
   notifyOnDoesNotExist: () => Unit,
   override val publisher: MessagePublisher,
-  override val ccuad: CanCreateUuidsAndDateTimes,  
+  override val ccuad: CanCreateUuidsAndDateTimes,
   override val execContext: ExecutionContext,
   override val getArMsWarnThreshold: Long,
   override val updateArMsWarnThreshold: Long,
