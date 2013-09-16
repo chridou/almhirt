@@ -13,6 +13,8 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
 
   val configSection = theAlmhirt.config.v[Config]("almhirt.aggregate-root-cell-source").resultOrEscalate
   
+  override implicit val executionContext = theAlmhirt.futuresExecutor
+  
   override val cacheControlHeartBeatInterval =
     if (configSection.v[Boolean]("enable-cache-control").resultOrEscalate) {
       val interval = configSection.v[FiniteDuration]("cache-control-heart-beat-interval").resultOrEscalate
@@ -52,4 +54,8 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
     }
   
   override def receive: Receive = receiveAggregateRootCellSourceMessage
+  
+  override def preStart() {
+      cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
+  }
 }

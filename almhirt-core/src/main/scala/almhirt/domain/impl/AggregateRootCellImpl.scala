@@ -224,8 +224,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
                 },
               succ => {
                 val elapsed = System.currentTimeMillis() - start
-                if (elapsed > getArMsWarnThreshold)
-                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than $getArMsWarnThreshold[ms]($elapsed[ms]).""")
+                if (elapsed > updateArMsWarnThreshold)
+                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than $updateArMsWarnThreshold[ms]($elapsed[ms]).""")
                 succ match {
                   case NothingCommitted() =>
                     log.warning(s"""No events have been committed for $managedAggregateRooId""")

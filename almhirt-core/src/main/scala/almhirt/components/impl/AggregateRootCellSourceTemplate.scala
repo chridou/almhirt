@@ -7,6 +7,7 @@ import almhirt.almvalidation.kit._
 import almhirt.components._
 import com.typesafe.config.Config
 import almhirt.core.Almhirt
+import scala.concurrent.ExecutionContext
 
 trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor with ActorLogging =>
   import AggregateRootCellSource._
@@ -19,25 +20,40 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
 
   def maxDoesNotExistAge: Option[FiniteDuration]
   
+  implicit def executionContext: ExecutionContext
+
   private def nextChacheState(currentState: CacheState): Receive = {
     case GetCell(arId, arType) =>
       val (handle, nextState) = bookCellFor(arId, arType, currentState)
       sender ! AggregateRootCellSourceResult(arId, handle)
-      context.become(nextChacheState(cleanUp(nextState)))
+      context.become(nextChacheState(nextState))
     case Unbook(handleId) =>
       val nextState = currentState.unbook(handleId)
-      context.become(nextChacheState(cleanUp(nextState)))
+      context.become(nextChacheState(nextState))
     case DoesNotExistNotification(arId) =>
       val nextState = currentState.markForRemoval(arId)
-      context.become(nextChacheState(cleanUp(nextState)))
+      context.become(nextChacheState(nextState))
     case Remove(arId) =>
       val nextState = currentState.markForRemoval(arId)
-      context.become(nextChacheState(cleanUp(nextState)))
+      context.become(nextChacheState(nextState))
     case GetStats =>
       sender ! AggregateRootCellSourceStats(
         currentState.cellByArId.size,
         currentState.handleIdsByArId.size,
         currentState.arIdByHandleId.size)
+    case CleanUp =>
+      val newState = cleanUp(currentState)
+      context.become(nextChacheState(newState))
+      cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
+      val oldStateStats = AggregateRootCellSourceStats(
+        currentState.cellByArId.size,
+        currentState.handleIdsByArId.size,
+        currentState.arIdByHandleId.size)
+      val newStateStats = AggregateRootCellSourceStats(
+        newState.cellByArId.size,
+        newState.handleIdsByArId.size,
+        newState.arIdByHandleId.size)
+      log.info(s"""Performed clean up\nOld state: ${oldStateStats.toString()}\nNew state: ${newStateStats.toString()}""")
   }
 
   override def receiveAggregateRootCellSourceMessage: Receive = nextChacheState(CacheState.empty)
@@ -48,14 +64,14 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
     nextState
   }
 
-  private def cellIsBooked(arId: JUUID, currentState: CacheState): Boolean =
+  private def IsCellBooked(arId: JUUID, currentState: CacheState): Boolean =
     currentState.handleIdsByArId.get(arId).map(handleIds => !handleIds.isEmpty).getOrElse(false)
 
-  private def cellForArExists(arId: JUUID, currentState: CacheState): Boolean =
+  private def existsCellForAr(arId: JUUID, currentState: CacheState): Boolean =
     currentState.cellByArId.contains(arId)
 
   private def bookCellFor(arId: JUUID, arType: Class[_], currentState: CacheState): (CellHandle, CacheState) =
-    if (cellForArExists(arId, currentState)) {
+    if (existsCellForAr(arId, currentState)) {
       bookExistingCell(arId, currentState)
     } else {
       bookNewCell(arId, arType, currentState)
@@ -95,15 +111,20 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
     markedForRemoval: Set[JUUID]) {
 
     def unbook(handleId: Long): CacheState = {
-      val arId = arIdByHandleId(handleId)
-      val newHandleIdsByArId = {
-        val newHandlesForArId = handleIdsByArId(arId) - handleId
-        if (newHandlesForArId.isEmpty)
-          handleIdsByArId - arId
-        else
-          handleIdsByArId + (arId -> newHandlesForArId)
+      arIdByHandleId.get(handleId) match {
+        case Some(arId) =>
+          val newHandleIdsByArId = {
+            val newHandlesForArId = handleIdsByArId(arId) - handleId
+            if (newHandlesForArId.isEmpty)
+              handleIdsByArId - arId
+            else
+              handleIdsByArId + (arId -> newHandlesForArId)
+          }
+          CacheState(cellByArId, newHandleIdsByArId, arIdByHandleId - handleId, markedForRemoval)
+        case None =>
+          log.warning(s"""Tried to unbook cell for handle with id $handleId but there was no handle registered with that id. The cell source might have been restarted.""")
+          this
       }
-      CacheState(cellByArId, newHandleIdsByArId, arIdByHandleId - handleId, markedForRemoval)
     }
 
     def book(arId: JUUID, handleId: Long): CacheState = {
@@ -144,6 +165,12 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
     }
   }
 
+  private object CleanUp
+  
+  protected def requestCleanUp() {
+    self ! CleanUp
+  }
+  
   private object CacheState {
     def empty: CacheState = CacheState(Map.empty, Map.empty, Map.empty, Set.empty)
   }
