@@ -30,6 +30,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   protected def domainEventLog: ActorRef
 
   protected def onDoesNotExist: () => Unit
+  protected def doesNotExistDelay: FiniteDuration
 
   protected def publisher: MessagePublisher
 
@@ -55,8 +56,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
             pendingUpdateRequests.map(_._1).foreach(_ ! DomainMessages.AggregateRootUpdateFailed(
               managedAggregateRooId,
               UnspecifiedProblem(s"""Aggregate root "$managedAggregateRooId" has been deleted.""")))
-            context.become(doesNotExistState(true))
-            onDoesNotExist()
+            switchToDoesNotExists(true)
           } else {
             pendingGetRequests.foreach(_ ! DomainMessages.RequestedAggregateRoot(ar))
             if (pendingUpdateRequests.isEmpty) {
@@ -69,8 +69,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         case None =>
           pendingGetRequests.foreach(_ ! DomainMessages.AggregateRootNotFound(managedAggregateRooId))
           if (pendingUpdateRequests.isEmpty) {
-            context.become(doesNotExistState(false))
-            onDoesNotExist()
+            switchToDoesNotExists(false)
           } else {
             context.become(updateState(None, pendingUpdateRequests))
             self ! UpdateAR
@@ -83,9 +82,13 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       context.become(errorState(problem))
     case GetManagedAggregateRoot =>
       context.become(uninitializedState(pendingGetRequests :+ sender, pendingUpdateRequests))
+      self ! Initialize
     case uar: UpdateAggregateRoot =>
       context.become(uninitializedState(pendingGetRequests, pendingUpdateRequests :+ (sender, uar)))
+      self ! Initialize
     case _: CachedAggregateRootControl =>
+      ()
+    case CallDoesNotExistCallBack =>
       ()
   }
 
@@ -104,6 +107,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         case ClearCached =>
           context.become(uninitializedState(Vector.empty, Vector.empty))
       }
+    case CallDoesNotExistCallBack =>
+      ()
   }
 
   def updateState(arOpt: Option[AR], pendingUpdateRequests: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
@@ -127,16 +132,14 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         newPendingUpdates.map(_._1).foreach(_ ! AggregateRootUpdateFailed(
           managedAggregateRooId,
           UnspecifiedProblem(s"""Aggregate root "$managedAggregateRooId" has been deleted.""")))
-        context.become(doesNotExistState(true))
-        onDoesNotExist()
+        switchToDoesNotExists(true)
       } else {
         if (newPendingUpdates.isEmpty) {
           newStateOpt match {
             case Some(newState) =>
               context.become(idleState(newState, ccuad.getUtcTimestamp))
             case None =>
-              context.become(doesNotExistState(false))
-              onDoesNotExist()
+              switchToDoesNotExists(false)
           }
         } else {
           context.become(updateState(newStateOpt, newPendingUpdates))
@@ -148,6 +151,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       (rest ++ pendingUpdateRequests.map(_._1)).foreach(_ ! DomainMessages.AggregateRootUpdateFailed(managedAggregateRooId, problem))
       context.become(errorState(problem))
     case _: CachedAggregateRootControl =>
+      ()
+    case CallDoesNotExistCallBack =>
       ()
   }
 
@@ -163,6 +168,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         context.become(updateState(None, Vector((sender, uar))))
         self ! UpdateAR
       }
+    case CallDoesNotExistCallBack =>
+      onDoesNotExist()
     case _: CachedAggregateRootControl =>
       ()
   }
@@ -175,6 +182,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       context.become(uninitializedState(Vector.empty, Vector((sender, uar))))
       self ! Initialize
     case _: CachedAggregateRootControl =>
+      ()
+    case CallDoesNotExistCallBack =>
       ()
   }
 
@@ -239,6 +248,14 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         })
   }
 
+  def switchToDoesNotExists(isDeleted: Boolean) {
+    context.become(doesNotExistState(false))
+    if(isDeleted || doesNotExistDelay.toMillis == 0L)
+    	onDoesNotExist()
+    else
+      context.system.scheduler.scheduleOnce(doesNotExistDelay)(self ! CallDoesNotExistCallBack)
+  }
+
   private def logDebugMessage(currentState: String, msg: String) {
     log.debug(s"""Cell for "${managedAggregateRooId}" on state "$currentState": $msg""")
 
@@ -258,6 +275,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   private case class SuccessfulUpdate(newState: Option[AR], successToNotify: Option[(ActorRef, AR)], rest: Vector[(ActorRef, UpdateAggregateRoot)])
   private case class FailedUpdate(problem: Problem, rest: Vector[ActorRef])
 
+  private case object CallDoesNotExistCallBack
 }
 
 class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
@@ -265,6 +283,7 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
   theDomainEventLog: ActorRef,
   notifyOnDoesNotExist: () => Unit,
+  override val doesNotExistDelay: FiniteDuration,
   override val publisher: MessagePublisher,
   override val ccuad: CanCreateUuidsAndDateTimes,
   override val execContext: ExecutionContext,

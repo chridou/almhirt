@@ -20,6 +20,7 @@ object AggregateRootCell {
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
+    doesNotExistDelay: FiniteDuration,
     publisher: MessagePublisher,
     ccuad: CanCreateUuidsAndDateTimes,
     execContext: ExecutionContext,
@@ -34,6 +35,7 @@ object AggregateRootCell {
           aggregateRootFactory,
           theDomainEventLog,
           signalDoesNotExist,
+          doesNotExistDelay,
           publisher,
           ccuad,
           execContext,
@@ -45,6 +47,7 @@ object AggregateRootCell {
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
+    doesNotExistDelay: FiniteDuration,
     theAlmhirt: Almhirt,
     getArMsWarnThreshold: Long,
     updateArMsWarnThreshold: Long,
@@ -53,6 +56,7 @@ object AggregateRootCell {
     propsFactoryRaw(
       aggregateRootFactory,
       theDomainEventLog,
+      doesNotExistDelay,
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
@@ -64,10 +68,12 @@ object AggregateRootCell {
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
+    doesNotExistDelay: FiniteDuration,
     theAlmhirt: Almhirt): (JUUID, () => Unit) => Props =
     propsFactoryRaw(
       aggregateRootFactory,
       theDomainEventLog,
+      doesNotExistDelay,
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
@@ -84,6 +90,7 @@ object AggregateRootCell {
     configSection: Config,
     theAlmhirt: Almhirt): AlmValidation[(JUUID, () => Unit) => Props] =
     for {
+      doesNotExistDelay <- configSection.v[FiniteDuration]("does-not-exist-delay")
       getArMsWarnThreshold <- configSection.v[FiniteDuration]("get-ar-warn-duration-threshold").map(_.toMillis)
       updateArMsWarnThreshold <- configSection.v[FiniteDuration]("update-ar-warn-duration-threshold").map(_.toMillis)
       getArTimeout <- configSection.v[FiniteDuration]("get-ar-timeout")
@@ -91,6 +98,7 @@ object AggregateRootCell {
     } yield propsFactoryRaw(
       aggregateRootFactory,
       theDomainEventLog,
+      doesNotExistDelay,
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
