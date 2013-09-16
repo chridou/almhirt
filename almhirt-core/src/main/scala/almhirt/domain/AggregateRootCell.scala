@@ -60,7 +60,7 @@ object AggregateRootCell {
       updateArMsWarnThreshold,
       getArTimeout,
       updateArTimeout)
-      
+
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
@@ -75,6 +75,52 @@ object AggregateRootCell {
       theAlmhirt.durations.mediumDuration.toMillis,
       theAlmhirt.durations.longDuration,
       theAlmhirt.durations.longDuration)
+
+  import almhirt.configuration._
+  import com.typesafe.config.Config
+  def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
+    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    theDomainEventLog: ActorRef,
+    configSection: Config,
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, () => Unit) => Props] =
+    for {
+      getArMsWarnThreshold <- configSection.v[FiniteDuration]("get-ar-warn-duration-threshold").map(_.toMillis)
+      updateArMsWarnThreshold <- configSection.v[FiniteDuration]("update-ar-warn-duration-threshold").map(_.toMillis)
+      getArTimeout <- configSection.v[FiniteDuration]("get-ar-timeout")
+      updateArTimeout <- configSection.v[FiniteDuration]("update-ar-timeout")
+    } yield propsFactoryRaw(
+      aggregateRootFactory,
+      theDomainEventLog,
+      theAlmhirt.messageBus,
+      theAlmhirt,
+      theAlmhirt.futuresExecutor,
+      getArMsWarnThreshold,
+      updateArMsWarnThreshold,
+      getArTimeout,
+      updateArTimeout)
+
+  def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
+    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    theDomainEventLog: ActorRef,
+    configPath: String,
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, () => Unit) => Props] =
+    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
+      propsFactory(
+        aggregateRootFactory,
+        theDomainEventLog,
+        configSection,
+        theAlmhirt))
+
+  def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
+    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    theDomainEventLog: ActorRef,
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, () => Unit) => Props] =
+    propsFactory(
+      aggregateRootFactory,
+      theDomainEventLog,
+      "almhirt.aggregate-root-cell",
+      theAlmhirt)
+
 }
 
 trait AggregateRootCell { actor: Actor =>
