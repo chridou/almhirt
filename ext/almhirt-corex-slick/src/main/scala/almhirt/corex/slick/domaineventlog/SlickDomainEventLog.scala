@@ -80,7 +80,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         problem => {
           throw new EscalatedProblemException(problem)
         },
-        succ => sender ! CommittedDomainEvents(events))
+        succ => {
+          sender ! CommittedDomainEvents(events)
+          events.foreach(publishCommittedEvent)
+        })
 
     case GetAllDomainEvents =>
       (for {

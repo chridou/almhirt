@@ -240,7 +240,6 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
                     log.warning(s"""No events have been committed for $managedAggregateRooId""")
                     self ! SuccessfulUpdate(Some(nextUpdateState), None, rest)
                   case DomainEventsSuccessfullyCommitted(committedEvents) =>
-                    committedEvents.foreach(publisher.publish(_))
                     self ! SuccessfulUpdate(Some(nextUpdateState), Some((requestedNextUpdate, nextUpdateState)), rest)
                 }
               })

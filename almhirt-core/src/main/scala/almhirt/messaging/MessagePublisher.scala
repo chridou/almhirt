@@ -21,6 +21,11 @@ object MessagePublisher {
       def publishMessage(message: Message) { actor ! message }
     }
 
+  val devNull: MessagePublisher =
+    new MessagePublisher {
+      def publishMessage(message: Message) = {}
+    }
+
   implicit class MessagePublisherOps(self: MessagePublisher) {
     def publish(payload: AnyRef)(implicit ccuad: CanCreateUuidsAndDateTimes) {
       MessagePublisher.publish(self, payload)

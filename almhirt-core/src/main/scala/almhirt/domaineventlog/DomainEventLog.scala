@@ -5,6 +5,7 @@ import almhirt.common._
 import almhirt.domain.DomainEvent
 import akka.actor.Actor
 import almhirt.domain.AggregateRoot
+import almhirt.messaging.MessagePublisher
 
 object DomainEventLog {
   trait DomainEventLogMessage
@@ -31,8 +32,6 @@ object DomainEventLog {
     events: Seq[DomainEvent]) extends FetchedDomainEvents
   
   final case class FetchedDomainEventsChunks() extends FetchedDomainEvents
-
-//  final case class FetchedDomainEventsFailure(problem: Problem) extends FetchedDomainEvents
   
   object NothingCommitted {
     def unapply(what: CommittedDomainEvents): Boolean =
@@ -46,5 +45,7 @@ object DomainEventLog {
 }
 
 trait DomainEventLog { actor: Actor =>
+  def publishCommittedEvent(event: DomainEvent)
+  
   protected def receiveDomainEventLogMsg: Receive
 }

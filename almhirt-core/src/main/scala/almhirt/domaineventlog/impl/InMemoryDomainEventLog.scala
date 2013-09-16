@@ -13,6 +13,7 @@ trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor =>
     case CommitDomainEvents(events) =>
       domainEventLog = domainEventLog ++ events
       sender ! CommittedDomainEvents(events)
+      events.foreach(publishCommittedEvent)
     case GetAllDomainEvents =>
       sender ! FetchedDomainEventsBatch(domainEventLog)
     case GetDomainEvent(eventId) =>

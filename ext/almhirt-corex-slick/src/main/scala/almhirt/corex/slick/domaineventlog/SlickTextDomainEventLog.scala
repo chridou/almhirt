@@ -18,10 +18,15 @@ class SlickTextDomainEventLog private (
   serializer: DomainEventStringSerializer,
   serializationChannel: String,
   override val writeWarnThresholdMs: Long,
-  override val readWarnThresholdMs: Long)
+  override val readWarnThresholdMs: Long,
+  implicit val ccuad: CanCreateUuidsAndDateTimes)
   extends SlickDomainEventLog with Actor with ActorLogging {
   type TRow = TextDomainEventLogRow
 
+  override def publishCommittedEvent(event: DomainEvent) {
+    messagePublisher.publish(event)
+  }
+  
   def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[TextDomainEventLogRow] = {
     for {
       serialized <- serializer.serialize(channel)(domainEvent, Map.empty)
@@ -53,27 +58,30 @@ object SlickTextDomainEventLog {
     serializer: DomainEventStringSerializer,
     serializationChannel: String,
     writeWarnThresholdMs: Long,
-    readWarnThresholdMs: Long): AlmValidation[Props] =
+    readWarnThresholdMs: Long,
+    ccuad: CanCreateUuidsAndDateTimes): AlmValidation[Props] =
     Props(new SlickTextDomainEventLog(
       messagePublisher,
       storeComponent,
       serializer,
       serializationChannel,
       writeWarnThresholdMs,
-      readWarnThresholdMs)).success
+      readWarnThresholdMs,
+      ccuad)).success
 
   def props(
     configSection: Config,
     messagePublisher: MessagePublisher,
     storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
-    serializer: DomainEventStringSerializer): AlmValidation[Props] =
+    serializer: DomainEventStringSerializer,
+    ccuad: CanCreateUuidsAndDateTimes): AlmValidation[Props] =
     for {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
       dispatcher <- configSection.v[String]("sync-io-dispatcher").flatMap(_.notEmptyOrWhitespace)
       numActors <- configSection.v[Int]("number-of-actors")
       writeWarnThresholdMs <- configSection.v[scala.concurrent.duration.FiniteDuration]("write-warn-threshold-duration").map(_.toMillis)
       readWarnThresholdMs <- configSection.v[scala.concurrent.duration.FiniteDuration]("read-warn-threshold-duration").map(_.toMillis)
-      resRaw <- propsRaw(messagePublisher, storeComponent, serializer, channel, writeWarnThresholdMs, readWarnThresholdMs)
+      resRaw <- propsRaw(messagePublisher, storeComponent, serializer, channel, writeWarnThresholdMs, readWarnThresholdMs, ccuad)
       resDisp <- resRaw.withDispatcher(dispatcher).success
       res <- if(numActors > 1) {
         resDisp.withRouter(RoundRobinRouter(numActors)).success
@@ -98,7 +106,7 @@ object SlickTextDomainEventLog {
     storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
     serializer: DomainEventStringSerializer): AlmValidation[Props] =
     for {
-      res <- props(configSection, theAlmhirt.messageBus, storeComponent, serializer)
+      res <- props(configSection, theAlmhirt.messageBus, storeComponent, serializer, theAlmhirt)
     } yield res
 
   def props(
