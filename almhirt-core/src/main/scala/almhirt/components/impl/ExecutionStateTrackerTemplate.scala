@@ -195,8 +195,9 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       if (tracked.size >= cleanUpThreshold) {
         val start = System.currentTimeMillis()
         val entriesOrderedByAge = tracked.values.toVector.sortBy(_.lastModified)
-        val keep = entriesOrderedByAge.drop(targetSize)
-        val discard = entriesOrderedByAge.take(targetSize)
+        val numToDrop = tracked.size - targetSize
+        val keep = entriesOrderedByAge.drop(numToDrop)
+        val discard = entriesOrderedByAge.take(numToDrop)
         val discardIds = discard.map(_.currentState.trackId).toSet
         val expiredSubscriptions = subscriptions filterKeys (subscriptionTrackId =>
           discard contains (subscriptionTrackId))
