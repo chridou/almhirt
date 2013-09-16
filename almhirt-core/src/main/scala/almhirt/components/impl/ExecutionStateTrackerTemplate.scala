@@ -30,6 +30,12 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   protected var lifetimeExpiredSubscriptions = 0L
   protected var lifetimeTotalSubscriptions = 0L
   
+  protected var numStartedReceived = 0L
+  protected var numInProcessReceived = 0L
+  protected var numSuccessfulReceived = 0L
+  protected var numFailedReceived = 0L
+  
+  
   protected def waitingForTrackedStateUpdate(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]], updateRequests: Vector[ExecutionState]): Receive = {
     case StateUpdate(newState) =>
       val newSubscriptions = notifyFinishedStateSubscribers(newState, subscriptions)
@@ -76,6 +82,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   override def handleTrackingMessage = idleState(Map.empty, Map.empty)
 
   private def handleIncomingExecutionState(incomingState: ExecutionState, tracked: Map[String, ExecutionStateEntry]) {
+    updateReceivedCounters(incomingState)
     getUpdatedState(incomingState, tracked).fold(
       fail =>
         publishTo.publish(FailureEvent(s"""Could not determine the state to update for tracking id "${incomingState.trackId}"""", fail, Minor)),
@@ -170,6 +177,15 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       case _ => None
     }.flatten.toMap
 
+  private def updateReceivedCounters(state: ExecutionState) {
+     state match {
+       case st: ExecutionStarted => numStartedReceived +=1L
+       case st: ExecutionInProcess => numInProcessReceived +=1L
+       case st: ExecutionFailed => numFailedReceived +=1L
+       case st: ExecutionSuccessful => numSuccessfulReceived +=1L
+     }    
+  }  
+    
   def requestCleanUp() {
     self ! CleanUp
   }
@@ -179,8 +195,9 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       if (tracked.size >= cleanUpThreshold) {
         val start = System.currentTimeMillis()
         val entriesOrderedByAge = tracked.values.toVector.sortBy(_.lastModified)
-        val keep = entriesOrderedByAge.take(targetSize)
-        val discard = entriesOrderedByAge.drop(targetSize).map(_.currentState.trackId).toSet
+        val keep = entriesOrderedByAge.drop(targetSize)
+        val discard = entriesOrderedByAge.take(targetSize)
+        val discardIds = discard.map(_.currentState.trackId).toSet
         val expiredSubscriptions = subscriptions filterKeys (subscriptionTrackId =>
           discard contains (subscriptionTrackId))
         expiredSubscriptions.foreach {
@@ -188,9 +205,10 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
             subscribers foreach (_ ! ExecutionTrackingExpired(trackId))
         }
         lifetimeExpiredSubscriptions += expiredSubscriptions.size
-        val res = (tracked -- discard, subscriptions -- discard)
+        val res = (tracked -- discardIds, subscriptions -- discardIds)
+        
         val time = System.currentTimeMillis() - start
-        log.info(s"""Removed ${discard.size} items in $time[ms]. The new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions. ${expiredSubscriptions.size} subscriptions were expired.""")
+        log.info(s"""Removed ${discard.size} items in $time[ms].\nThe new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions.\n${expiredSubscriptions.size} subscriptions were expired.""")
         res
       } else {
         log.info(s"Nothing to clean up. Current state is ${tracked.size} items tracked and ${subscriptions.size} subscriptions.")
