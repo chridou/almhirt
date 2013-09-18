@@ -46,8 +46,6 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
         None
     }
   
-  
-  
   override protected def createProps(aggregateRootId: JUUID, forArType: Class[_], aggregateRootCellStateSink: AggregateRootCellStateSink): Props =
     cellPropsFactories(forArType) match {
       case Some(factory) => factory(aggregateRootId, aggregateRootCellStateSink)

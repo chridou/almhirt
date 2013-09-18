@@ -51,6 +51,16 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
       }
     })
 
+  def mapTimeoutMessage(newMessage: String => String)(implicit executionContext: ExecutionContext): AlmFuture[R] =
+    new AlmFuture[R](underlying.map { validation =>
+      validation leftMap {
+        case OperationTimedOutProblem(p) => 
+          p.withMessage(newMessage(p.message))
+        case p => 
+          p
+      }
+    })
+    
   def flatMap[T](compute: R => AlmFuture[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.flatMap { validation =>
       validation fold (

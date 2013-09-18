@@ -81,16 +81,16 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
       useCellSourceWithEventLog { (source, eventLog) =>
         val workflowF =
           for {
-            cellResult1 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
+            cellResult1 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult].mapTimeoutMessage(m => s"A: $m")
             _ <- cellResult1.cellHandle.onceWithCell { cell =>
-              (cell ? UpdateAggregateRoot(ar, events))(defaultDuration).successfulAlmFuture[Any]
+              (cell ? UpdateAggregateRoot(ar, events))(defaultDuration).successfulAlmFuture[Any].mapTimeoutMessage(m => s"B: $m")
             }
-            cellResult2 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
+            cellResult2 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult].mapTimeoutMessage(m => s"C: $m")
             getResult <- cellResult2.cellHandle.onceWithCell { cell =>
-              (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
+              (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any].mapTimeoutMessage(m => s"D: $m")
             }
           } yield getResult
-        val res = workflowF.awaitResult(defaultDuration)
+        val res = workflowF.mapTimeoutMessage(m => s"E: $m").awaitResult(defaultDuration)
 
         res should equal(scalaz.Success(RequestedAggregateRoot(ar)))
       }
@@ -182,16 +182,16 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     ignore("should should remove all cells that report that they do not exist(which they do when queried)") {
-      useCellSourceWithEventLog { (source, eventLog) =>
-        val queriesF = for (x <- 1 to 100) yield {
-          (source ? GetCell(theAlmhirt.getUuid, classOf[AR2]))(defaultDuration).mapTo[AggregateRootCellSourceResult].flatMap(x => x.cellHandle.onceWithCell { cell =>
-            (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
-          }.underlying)
-        }
-        Future.sequence(queriesF).successfulAlmFuture[AggregateRootCellSourceStats].awaitResult(defaultDuration)
-        val stats = (source ? GetStats)(defaultDuration).successfulAlmFuture[AggregateRootCellSourceStats].awaitResult(defaultDuration).forceResult
-        stats should equal(AggregateRootCellSourceStats(0, 0, 0))
-      }
+//      useCellSourceWithEventLog { (source, eventLog) =>
+//        val queriesF = for (x <- 1 to 100) yield {
+//          (source ? GetCell(theAlmhirt.getUuid, classOf[AR2]))(defaultDuration).mapTo[AggregateRootCellSourceResult].flatMap(x => x.cellHandle.onceWithCell { cell =>
+//            (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
+//          }.underlying)
+//        }
+//        Future.sequence(queriesF).successfulAlmFuture[AggregateRootCellSourceStats].awaitResult(defaultDuration)
+//        val stats = (source ? GetStats)(defaultDuration).successfulAlmFuture[AggregateRootCellSourceStats].awaitResult(defaultDuration).forceResult
+//        stats should equal(AggregateRootCellSourceStats(0, 0, 0))
+//      }
     }
   }
 }

@@ -8,6 +8,7 @@ import scala.concurrent.ExecutionContext
 import java.util.{UUID => JUUID}
 import almhirt.domain.AggregateRoot
 import almhirt.domain.AggregateRootCell.AggregateRootCellState
+import almhirt.components.impl.AggregateRootCellCacheStats
 
 object AggregateRootCellSource {
   sealed trait AggregateRootCellCacheMessage
@@ -17,10 +18,7 @@ object AggregateRootCellSource {
   final case class CellStateNotification(arId: JUUID, cellState: AggregateRootCellState) extends AggregateRootCellCacheMessage   
 
   final object GetStats extends AggregateRootCellCacheMessage
-  final case class AggregateRootCellSourceStats(
-      cachedCells: Int, 
-      numberOfBookedCells: Int,
-      numberOfBookings: Int) extends AggregateRootCellCacheMessage
+  final case class AggregateRootCellSourceStats(cacheStats: AggregateRootCellCacheStats) extends AggregateRootCellCacheMessage
   
   trait CellHandle {
     def cell: ActorRef
