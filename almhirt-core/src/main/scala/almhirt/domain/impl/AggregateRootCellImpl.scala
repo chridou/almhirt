@@ -100,7 +100,6 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       sender ! RequestedAggregateRoot(ar)
     case uar: UpdateAggregateRoot =>
       moveToUpdateState(Some(ar), Some(ar), Vector((sender, uar)))
-      self ! UpdateAR
     case cc: CachedAggregateRootControl =>
       cc match {
         case ClearCachedOlderThan(ttl) =>
