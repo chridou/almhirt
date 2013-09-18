@@ -27,7 +27,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
   
   override def receiveAggregateRootCellSourceMessage: Receive = {
     case GetCell(arId, arType) =>
-      val (handle, _) = cacheState.bookCell(arId, arType)
+      val (handle, _) = cacheState.bookCell(arId, arType, log.warning)
       sender ! AggregateRootCellSourceResult(arId, handle)
     case Unbook(handleId) =>
       cacheState.unbookCell(handleId, log.warning)

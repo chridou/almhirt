@@ -43,7 +43,7 @@ class MutableAggregateRootCellCache(
   private val errorneousCells = scala.collection.mutable.HashSet.empty[JUUID]
   private var nextHandleId = 1L
 
-  def bookCell(arId: JUUID, arType: Class[_]): (CellHandle, MutableAggregateRootCellCache) = {
+  def bookCell(arId: JUUID, arType: Class[_], onStrangeState: String => Unit): (CellHandle, MutableAggregateRootCellCache) = {
     val bookedCell =
       cellByArId.get(arId) match {
         case Some(cell) =>
@@ -55,18 +55,18 @@ class MutableAggregateRootCellCache(
           newCell
       }
     val handleId = nextHandleId
-    nextHandleId += 1
     bookingsByArId.get(arId) match {
       case Some(bookings) =>
         bookings += handleId
       case None =>
         bookingsByArId += (arId -> scala.collection.mutable.HashSet(handleId))
     }
-    arIdByBookingId += (nextHandleId -> arId)
+    arIdByBookingId += (handleId -> arId)
     val handle = new CellHandle {
       val cell = bookedCell
       def release() = requestUnbook(handleId)
     }
+    nextHandleId += 1
     (handle, this)
   }
 
