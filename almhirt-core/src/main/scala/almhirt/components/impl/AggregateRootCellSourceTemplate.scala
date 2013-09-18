@@ -8,6 +8,7 @@ import almhirt.components._
 import com.typesafe.config.Config
 import almhirt.core.Almhirt
 import scala.concurrent.ExecutionContext
+import almhirt.domain.AggregateRoot
 
 trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor with ActorLogging =>
   import AggregateRootCellSource._
@@ -17,38 +18,82 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
   def maxCellCacheAge: Option[FiniteDuration]
 
   def maxDoesNotExistAge: Option[FiniteDuration]
-  
+
   implicit def executionContext: ExecutionContext
 
   private val cacheState = new MutableAggregateRootCellCache(
-      createCell,
-      this.context.stop,
-      handleId => self ! Unbook(handleId))
-  
+    createCell,
+    cell => {
+      this.context.watch(cell)
+      this.context.stop(cell)
+    },
+    handleId => self ! Unbook(handleId))
+
+  val pendingRequests = scala.collection.mutable.HashMap.empty[JUUID, scala.collection.mutable.Buffer[(Class[_ <: AggregateRoot[_, _]], ActorRef)]]
+
   override def receiveAggregateRootCellSourceMessage: Receive = {
     case GetCell(arId, arType) =>
-      val (handle, _) = cacheState.bookCell(arId, arType, log.warning)
-      sender ! AggregateRootCellSourceResult(arId, handle)
+      val (bookingResult, _) = cacheState.bookCell(arId, arType, log.warning)
+      bookingResult match {
+        case MutableAggregateRootCellCache.CellBooked(handle) =>
+          sender ! AggregateRootCellSourceResult(arId, handle)
+        case MutableAggregateRootCellCache.AwaitingDeathCertificate =>
+          pendingRequests.get(arId) match {
+            case Some(requests) =>
+              requests.append((arType, sender))
+            case None =>
+              pendingRequests.put(arId, scala.collection.mutable.Buffer((arType, sender)))
+          }
+      }
     case Unbook(handleId) =>
       cacheState.unbookCell(handleId, log.warning)
     case CellStateNotification(managedArId, reportedState) =>
       cacheState.updateCellState(managedArId, reportedState)
     case GetStats =>
       sender ! AggregateRootCellSourceStats(cacheState.stats)
+    case Terminated(cell) =>
+      this.context.unwatch(cell)
+      cacheState.arIdForUnconfirmedKill(cell) match {
+        case Some(arId) =>
+          pendingRequests.get(arId) match {
+            case Some(waiting) =>
+              waiting.foreach {
+                case (arType, caller) =>
+                  val (bookingResult, _) = cacheState.bookCell(arId, arType, log.warning)
+                  bookingResult match {
+                    case MutableAggregateRootCellCache.CellBooked(handle) =>
+                      caller ! AggregateRootCellSourceResult(arId, handle)
+                    case MutableAggregateRootCellCache.AwaitingDeathCertificate =>
+                      val msg = s"""Could not aquire a cell handle for confirmed kill of "${cell.path.toString()}" on aggregate root $arId."""
+                      log.error(msg)
+                      throw new Exception(msg)
+                  }
+              }
+              pendingRequests.remove(arId)
+            case None =>
+              ()
+          }
+        case None =>
+          val msg = s"""There was a confirmed kill for "${cell.path.toString()}" but it is not in the list of unconfirmed kills."""
+          log.error(msg)
+          throw new Exception(msg)
+      }
+      cacheState.confirmDeath(cell, log.warning)
     case CleanUp =>
       val oldStats = cacheState.stats
       val (_, time) = cacheState.cleanUp(maxDoesNotExistAge, maxCellCacheAge)
       val newStats = cacheState.stats
+      val numPendingRequest = pendingRequests.map(_._2).flatten.size
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
-      log.info(s"""Performed clean up in $time.\n${newStats.toNiceDiffString(oldStats)}""")
+      log.info(s"""Performed clean up in $time.\n${newStats.toNiceDiffString(oldStats)}\nThere are $numPendingRequest requests on unconfirmed cell kills left.""")
   }
   private case class Unbook(handleId: Long)
 
   private object CleanUp
-  
+
   protected def requestCleanUp() {
     self ! CleanUp
   }
-  
+
   protected def stats = cacheState.stats
 }

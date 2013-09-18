@@ -206,7 +206,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     response match {
       case RequestedAggregateRoot(ar) => ar.success
       case AggregateRootNotFound(arId) => almhirt.domain.AggregateRootNotFoundProblem(arId).failure
-      case AggregateRootFetchFailed(arId, problem) => ???
+      case AggregateRootFetchFailed(arId, problem) => UnspecifiedProblem(s"""Could not fetch aggregate root $arId.""", cause = Some(problem)).failure
       case IncompatibleAggregateRoot(ar, expected) => UnspecifiedProblem(s"""Wrong type of aggregate root(${ar.getClass().getName()}) queried. I exepected a "$expected". This is an internal problem.""").failure
       case IncompatibleDomainEvent(expected) => UnspecifiedProblem(s"""Wrong type of domain event. I exepected a "$expected". This is an internal problem.""").failure
       case x => throw new Exception(s"""Invalid message received: "${x.getClass().getName()}"""")
