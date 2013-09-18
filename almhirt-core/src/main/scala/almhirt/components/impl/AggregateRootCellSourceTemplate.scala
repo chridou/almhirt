@@ -30,9 +30,9 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
     case Unbook(handleId) =>
       val nextState = currentState.unbook(handleId)
       context.become(nextChacheState(nextState))
-    case DoesNotExistNotification(arId) =>
-      val nextState = currentState.markForRemoval(arId)
-      context.become(nextChacheState(nextState))
+//    case DoesNotExistNotification(arId) =>
+//      val nextState = currentState.markForRemoval(arId)
+//      context.become(nextChacheState(nextState))
     case Remove(arId) =>
       val nextState = currentState.markForRemoval(arId)
       context.become(nextChacheState(nextState))

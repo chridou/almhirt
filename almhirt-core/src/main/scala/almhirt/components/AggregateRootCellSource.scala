@@ -7,13 +7,14 @@ import almhirt.common._
 import scala.concurrent.ExecutionContext
 import java.util.{UUID => JUUID}
 import almhirt.domain.AggregateRoot
+import almhirt.domain.AggregateRootCell.AggregateRootCellState
 
 object AggregateRootCellSource {
   sealed trait AggregateRootCellCacheMessage
   final case class GetCell(arId: JUUID, arType: Class[_ <: AggregateRoot[_,_]]) extends AggregateRootCellCacheMessage
 
   final case class AggregateRootCellSourceResult(arId: JUUID, cellHandle: CellHandle) extends AggregateRootCellCacheMessage
-  final case class DoesNotExistNotification(arId: JUUID) extends AggregateRootCellCacheMessage   
+  final case class CellStateNotification(arId: JUUID, cellState: AggregateRootCellState) extends AggregateRootCellCacheMessage   
 
   final object GetStats extends AggregateRootCellCacheMessage
   final case class AggregateRootCellSourceStats(

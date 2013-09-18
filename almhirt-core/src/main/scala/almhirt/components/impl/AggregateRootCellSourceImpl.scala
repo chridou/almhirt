@@ -6,9 +6,10 @@ import akka.actor._
 import almhirt.almvalidation.kit._
 import almhirt.configuration._
 import almhirt.core.Almhirt
+import almhirt.domain.AggregateRootCellStateSink
 import com.typesafe.config.Config
 
-class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID, () => Unit) => Props], theAlmhirt: Almhirt)
+class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID, AggregateRootCellStateSink) => Props], theAlmhirt: Almhirt)
   extends AggregateRootCellSourceTemplate with Actor with ActorLogging {
 
   val configSection = theAlmhirt.config.v[Config]("almhirt.aggregate-root-cell-source").resultOrEscalate
@@ -47,9 +48,9 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
   
   
   
-  override protected def createProps(aggregateRootId: JUUID, forArType: Class[_], notifiyOnDoesNotExist: () => Unit): Props =
+  override protected def createProps(aggregateRootId: JUUID, forArType: Class[_], aggregateRootCellStateSink: AggregateRootCellStateSink): Props =
     cellPropsFactories(forArType) match {
-      case Some(factory) => factory(aggregateRootId, notifiyOnDoesNotExist)
+      case Some(factory) => factory(aggregateRootId, aggregateRootCellStateSink)
       case None => throw new Exception(s"""No factory to create props for aggregate root of type "${forArType.getName()} found."""")
     }
   

@@ -13,6 +13,12 @@ object AggregateRootCell {
   final case class ClearCachedOlderThan(ttl: org.joda.time.Duration) extends CachedAggregateRootControl
   case object ClearCached extends CachedAggregateRootControl
 
+  sealed trait AggregateRootCellState
+  case class CellStateError(problem: Problem) extends AggregateRootCellState 
+  case object CellStateNotFound extends AggregateRootCellState 
+  case object CellStateHasAr extends AggregateRootCellState 
+  
+  
   import scala.concurrent.ExecutionContext
   import scala.concurrent.duration.FiniteDuration
   import almhirt.core.Almhirt
@@ -20,22 +26,22 @@ object AggregateRootCell {
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
-    doesNotExistDelay: FiniteDuration,
+    cellStateReportingDelay: FiniteDuration,
     publisher: MessagePublisher,
     ccuad: CanCreateUuidsAndDateTimes,
     execContext: ExecutionContext,
     getArMsWarnThreshold: Long,
     updateArMsWarnThreshold: Long,
     getArTimeout: FiniteDuration,
-    updateArTimeout: FiniteDuration): (JUUID, () => Unit) => Props =
-    (arId: JUUID, signalDoesNotExist: () => Unit) =>
+    updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) => Props =
+    (arId: JUUID, reportCellStateSink: AggregateRootCellStateSink) =>
       Props(
         new impl.AggregateRootCellImpl[TAR, TEvent](
           arId,
           aggregateRootFactory,
           theDomainEventLog,
-          signalDoesNotExist,
-          doesNotExistDelay,
+          reportCellStateSink,
+          cellStateReportingDelay,
           publisher,
           ccuad,
           execContext,
@@ -47,16 +53,16 @@ object AggregateRootCell {
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
-    doesNotExistDelay: FiniteDuration,
+    cellStateReportingDelay: FiniteDuration,
     theAlmhirt: Almhirt,
     getArMsWarnThreshold: Long,
     updateArMsWarnThreshold: Long,
     getArTimeout: FiniteDuration,
-    updateArTimeout: FiniteDuration): (JUUID, () => Unit) => Props =
+    updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) => Props =
     propsFactoryRaw(
       aggregateRootFactory,
       theDomainEventLog,
-      doesNotExistDelay,
+      cellStateReportingDelay,
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
@@ -68,12 +74,12 @@ object AggregateRootCell {
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
-    doesNotExistDelay: FiniteDuration,
-    theAlmhirt: Almhirt): (JUUID, () => Unit) => Props =
+    cellStateReportingDelay: FiniteDuration,
+    theAlmhirt: Almhirt): (JUUID, AggregateRootCellStateSink) => Props =
     propsFactoryRaw(
       aggregateRootFactory,
       theDomainEventLog,
-      doesNotExistDelay,
+      cellStateReportingDelay,
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
@@ -88,9 +94,9 @@ object AggregateRootCell {
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     configSection: Config,
-    theAlmhirt: Almhirt): AlmValidation[(JUUID, () => Unit) => Props] =
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
     for {
-      doesNotExistDelay <- configSection.v[FiniteDuration]("does-not-exist-delay")
+      cellStateReportingDelay <- configSection.v[FiniteDuration]("cell-state-reporting-delay")
       getArMsWarnThreshold <- configSection.v[FiniteDuration]("get-ar-warn-duration-threshold").map(_.toMillis)
       updateArMsWarnThreshold <- configSection.v[FiniteDuration]("update-ar-warn-duration-threshold").map(_.toMillis)
       getArTimeout <- configSection.v[FiniteDuration]("get-ar-timeout")
@@ -98,7 +104,7 @@ object AggregateRootCell {
     } yield propsFactoryRaw(
       aggregateRootFactory,
       theDomainEventLog,
-      doesNotExistDelay,
+      cellStateReportingDelay,
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
@@ -111,7 +117,7 @@ object AggregateRootCell {
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     configPath: String,
-    theAlmhirt: Almhirt): AlmValidation[(JUUID, () => Unit) => Props] =
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
     theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
       propsFactory(
         aggregateRootFactory,
@@ -122,7 +128,7 @@ object AggregateRootCell {
   def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
     aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
-    theAlmhirt: Almhirt): AlmValidation[(JUUID, () => Unit) => Props] =
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
     propsFactory(
       aggregateRootFactory,
       theDomainEventLog,

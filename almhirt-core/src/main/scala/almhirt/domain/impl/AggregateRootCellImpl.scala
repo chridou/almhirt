@@ -29,8 +29,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 
   protected def domainEventLog: ActorRef
 
-  protected def onDoesNotExist: () => Unit
-  protected def doesNotExistDelay: FiniteDuration
+  protected def reportCellState: AggregateRootCellStateSink
+  protected def cellStateReportingDelay: FiniteDuration
 
   protected def publisher: MessagePublisher
 
@@ -169,7 +169,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         self ! UpdateAR
       }
     case CallDoesNotExistCallBack =>
-      onDoesNotExist()
+      reportCellState(null)
     case _: CachedAggregateRootControl =>
       ()
   }
@@ -249,10 +249,10 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 
   def switchToDoesNotExists(isDeleted: Boolean) {
     context.become(doesNotExistState(false))
-    if(isDeleted || doesNotExistDelay.toMillis == 0L)
-    	onDoesNotExist()
+    if(isDeleted || cellStateReportingDelay.toMillis == 0L)
+    	reportCellState(null)
     else
-      context.system.scheduler.scheduleOnce(doesNotExistDelay)(self ! CallDoesNotExistCallBack)
+      context.system.scheduler.scheduleOnce(cellStateReportingDelay)(self ! CallDoesNotExistCallBack)
   }
 
   private def logDebugMessage(currentState: String, msg: String) {
@@ -281,8 +281,8 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   aggregateRooId: JUUID,
   aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
   theDomainEventLog: ActorRef,
-  notifyOnDoesNotExist: () => Unit,
-  override val doesNotExistDelay: FiniteDuration,
+  reportCellStateSink: AggregateRootCellStateSink,
+  override val cellStateReportingDelay: FiniteDuration,
   override val publisher: MessagePublisher,
   override val ccuad: CanCreateUuidsAndDateTimes,
   override val execContext: ExecutionContext,
@@ -306,7 +306,7 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
 
   protected def domainEventLog: ActorRef = theDomainEventLog
 
-  protected def onDoesNotExist() = notifyOnDoesNotExist
+  protected override val reportCellState = reportCellStateSink
 
   override def receive: Receive = receiveAggregateRootCellMsg
 }
