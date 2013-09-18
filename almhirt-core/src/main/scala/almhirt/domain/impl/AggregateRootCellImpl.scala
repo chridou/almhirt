@@ -133,7 +133,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       if (newStateOpt.isDefined && newStateOpt.get.isDeleted) {
         newPendingUpdates.map(_._1).foreach(_ ! AggregateRootUpdateFailed(
           managedAggregateRooId,
-          UnspecifiedProblem(s"""Aggregate root "$managedAggregateRooId" has been deleted.""")))
+          NotFoundProblem(s"""Aggregate root "$managedAggregateRooId" has been deleted.""")))
         moveToDeleted
       } else {
         if (newPendingUpdates.isEmpty) {
