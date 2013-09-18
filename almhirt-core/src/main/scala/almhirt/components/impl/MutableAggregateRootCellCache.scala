@@ -92,7 +92,7 @@ class MutableAggregateRootCellCache(
   private val uninitializedCells = scala.collection.mutable.HashSet.empty[JUUID]
   private val loadedCells = scala.collection.mutable.HashSet.empty[JUUID]
   private val doesNotExistCells = scala.collection.mutable.HashMap.empty[JUUID, Long]
-  private val errorneousCells = scala.collection.mutable.HashSet.empty[JUUID]
+  private val errorneousCells = scala.collection.mutable.HashMap.empty[JUUID, Long]
   private val deathCertificatesStillDueById = scala.collection.mutable.HashMap.empty[JUUID, ActorRef]
   private val deathCertificatesStillDueByCell = scala.collection.mutable.HashMap.empty[ActorRef, JUUID]
   private var nextHandleId = 1L
@@ -163,25 +163,30 @@ class MutableAggregateRootCellCache(
     errorneousCells -= arId
     newCellState match {
       case CellStateUninitialized => uninitializedCells += arId
-      case CellStateError(_) => errorneousCells += arId
+      case CellStateError(_) => errorneousCells += arId -> System.currentTimeMillis()
       case CellStateDoesNotExist => doesNotExistCells += arId -> System.currentTimeMillis()
       case CellStateLoaded => loadedCells += arId
     }
     this
   }
 
+  private def getCandidatesToRemove(from: scala.collection.mutable.HashMap[JUUID, Long], deadLine: Long) = {
+       from.filterNot {
+        case (id, timestamp) =>
+          bookingsByArId.contains(id) || timestamp < deadLine
+      }.map(_._1)
+    
+  }
+  
   def cleanUp(maxDoesNotExistAge: Option[FiniteDuration], maxInMemoryLifeTime: Option[FiniteDuration]): (MutableAggregateRootCellCache, FiniteDuration) = {
     val start = System.currentTimeMillis()
     maxInMemoryLifeTime.foreach(lt =>
       loadedCells.map(cellByArId.get).flatten.foreach(_ ! ClearCachedOlderThan(new org.joda.time.Duration(lt.toMillis))))
     val effMaxDoesNotExistMillis = maxDoesNotExistAge.map(_.toMillis).getOrElse(0L)
     val maxDoesNotExistDeadLine = System.currentTimeMillis() - effMaxDoesNotExistMillis
-    val candidatesToRemove =
-      doesNotExistCells.filterNot {
-        case (id, timestamp) =>
-          bookingsByArId.contains(id) || timestamp < maxDoesNotExistDeadLine
-      }.map(_._1)
-    candidatesToRemove.foreach { candidateId =>
+    
+    val candidatesToRemove1 = getCandidatesToRemove(doesNotExistCells, maxDoesNotExistDeadLine)
+    candidatesToRemove1.foreach { candidateId =>
       killCell(cellByArId(candidateId))
       val cell = cellByArId(candidateId)
       deathCertificatesStillDueById += candidateId -> cell
@@ -190,6 +195,18 @@ class MutableAggregateRootCellCache(
       doesNotExistCells -= candidateId
       kills += 1L
     }
+      
+    val candidatesToRemove2 = getCandidatesToRemove(errorneousCells, maxDoesNotExistDeadLine)
+    candidatesToRemove2.foreach { candidateId =>
+      killCell(cellByArId(candidateId))
+      val cell = cellByArId(candidateId)
+      deathCertificatesStillDueById += candidateId -> cell
+      deathCertificatesStillDueByCell += cell -> candidateId
+      cellByArId -= candidateId
+      errorneousCells -= candidateId
+      kills += 1L
+    }
+      
     val time = FiniteDuration(start - System.currentTimeMillis(), "ms")
     (this, time)
   }

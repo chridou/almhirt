@@ -21,7 +21,7 @@ object AggregateRootCellSource {
   final case class AggregateRootCellSourceStats(cacheStats: AggregateRootCellCacheStats) extends AggregateRootCellCacheMessage
   
   trait CellHandle {
-    def cell: ActorRef
+    protected def cell: ActorRef
     def release()
     /**
      * Execute the function f with the contained cell and the release the cell. 
