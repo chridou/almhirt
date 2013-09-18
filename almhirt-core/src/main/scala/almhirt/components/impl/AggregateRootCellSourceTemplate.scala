@@ -40,7 +40,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
       val (_, time) = cacheState.cleanUp(maxDoesNotExistAge, maxCellCacheAge)
       val newStats = cacheState.stats
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
-      log.info(s"""Performed clean up in $time.\nOld state: ${oldStats.niceString}\nNew state: ${newStats.niceString}""")
+      log.info(s"""Performed clean up in $time.\n${newStats.toNiceDiffString(oldStats)}""")
   }
   private case class Unbook(handleId: Long)
 
@@ -49,6 +49,8 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
   protected def requestCleanUp() {
     self ! CleanUp
   }
+  
+  protected def stats = cacheState.stats
 }
 
 //trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor with ActorLogging =>

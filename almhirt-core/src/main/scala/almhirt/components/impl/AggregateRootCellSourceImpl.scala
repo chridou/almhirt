@@ -57,4 +57,9 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
   override def preStart() {
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
   }
+  
+  override def postStop() {
+     log.debug(stats.toNiceString)
+  }
+  
 }

@@ -14,8 +14,9 @@ case class AggregateRootCellCacheStats(
   numLoaded: Long,
   numDoesNotExist: Long,
   numErrorneous: Long,
-  numBookingsInLifetime: Long) {
-  def niceString: String = {
+  numBookingsInLifetime: Long,
+  numUnbookingsInLifetime: Long) {
+  def toNiceString: String = {
     s"""|AggregateRootCellCacheStats(
     	|  numCells = $numCells
     	|  numBookings = $numBookings
@@ -25,6 +26,36 @@ case class AggregateRootCellCacheStats(
     	|  numDoesNotExist = $numDoesNotExist
     	|  numErrorneous = $numErrorneous
     	|  numBookingsInLifetime = $numBookingsInLifetime
+    	|  numUnbookingsInLifetime = $numUnbookingsInLifetime
+    	|  bookingDiff = ${numBookingsInLifetime - numUnbookingsInLifetime}
+    	|)""".stripMargin
+  }
+
+  def -(other: AggregateRootCellCacheStats): AggregateRootCellCacheStats =
+    AggregateRootCellCacheStats(
+      numCells - other.numCells,
+      numBookings - other.numBookings,
+      numBookedArs - other.numBookedArs,
+      numUninitialized - other.numUninitialized,
+      numLoaded - other.numLoaded,
+      numDoesNotExist - other.numDoesNotExist,
+      numErrorneous - other.numErrorneous,
+      numBookingsInLifetime - other.numBookingsInLifetime,
+      numUnbookingsInLifetime - other.numUnbookingsInLifetime)
+      
+  def toNiceDiffString(other: AggregateRootCellCacheStats): String = {
+    val diff = this - other
+    s"""|AggregateRootCellCacheStats(
+    	|  numCells = $numCells - ${other.numCells} = ${diff.numCells}
+        |  numBookings = $numBookings - ${other.numBookings} = ${diff.numBookings}
+       	|  numBookedArs = $numBookedArs - ${other.numBookedArs} = ${diff.numBookedArs}
+    	|  numUninitialized = $numUninitialized - ${other.numUninitialized} = ${diff.numUninitialized}
+    	|  numLoaded = $numLoaded - ${other.numLoaded} = ${diff.numLoaded}
+    	|  numDoesNotExist = $numDoesNotExist - ${other.numDoesNotExist} = ${diff.numDoesNotExist}
+    	|  numErrorneous = $numErrorneous - ${other.numErrorneous} = ${diff.numErrorneous}
+    	|  numBookingsInLifetime = $numBookingsInLifetime - ${other.numBookingsInLifetime} = ${diff.numBookingsInLifetime} 
+    	|  numUnbookingsInLifetime = $numUnbookingsInLifetime - ${other.numUnbookingsInLifetime} = ${diff.numUnbookingsInLifetime}
+    	|  bookingDiff = ${numBookingsInLifetime - numUnbookingsInLifetime } - ${other.numBookingsInLifetime - other.numUnbookingsInLifetime } = ${diff.numBookingsInLifetime - diff.numUnbookingsInLifetime }
     	|)""".stripMargin
   }
 }
@@ -42,6 +73,7 @@ class MutableAggregateRootCellCache(
   private val doesNotExistCells = scala.collection.mutable.HashMap.empty[JUUID, Long]
   private val errorneousCells = scala.collection.mutable.HashSet.empty[JUUID]
   private var nextHandleId = 1L
+  private var numUnbookings = 0L
 
   def bookCell(arId: JUUID, arType: Class[_], onStrangeState: String => Unit): (CellHandle, MutableAggregateRootCellCache) = {
     val bookedCell =
@@ -77,6 +109,7 @@ class MutableAggregateRootCellCache(
           case Some(bookings) =>
             if (bookings.contains(handleId)) {
               bookings -= handleId
+              numUnbookings += 1L
             } else {
               onStrangeState(s"""Unbooking of handle id $handleId for AR $arId was requested but the booking was not registered for the AR.""")
             }
@@ -134,5 +167,6 @@ class MutableAggregateRootCellCache(
       loadedCells.size,
       doesNotExistCells.size,
       errorneousCells.size,
-      nextHandleId - 1L)
+      nextHandleId - 1L,
+      numUnbookings)
 }
