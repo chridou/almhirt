@@ -33,6 +33,7 @@ object Dependencies {
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "provided"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
+	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
 
 	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.+" % "provided"
 

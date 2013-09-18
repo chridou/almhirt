@@ -14,9 +14,10 @@ object AggregateRootCell {
   case object ClearCached extends CachedAggregateRootControl
 
   sealed trait AggregateRootCellState
+  case object CellStateUninitialized extends AggregateRootCellState 
   case class CellStateError(problem: Problem) extends AggregateRootCellState 
-  case object CellStateNotFound extends AggregateRootCellState 
-  case object CellStateHasAr extends AggregateRootCellState 
+  case object CellStateDoesNotExist extends AggregateRootCellState 
+  case object CellStateLoaded extends AggregateRootCellState 
   
   
   import scala.concurrent.ExecutionContext
