@@ -5,7 +5,6 @@ import org.joda.time.LocalDateTime
 import scalaz.syntax.validation._
 import akka.actor._
 import akka.pattern._
-import akka.agent._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
