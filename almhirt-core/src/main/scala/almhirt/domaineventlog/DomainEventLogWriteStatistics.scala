@@ -1,39 +1,45 @@
 package almhirt.domaineventlog
 
+import scala.concurrent.duration._
+
 case class DomainEventLogWriteStatistics(
-  minMs: Long,
-  maxMs: Long,
-  avgMs: Long,
-  totalMs: Long,
+  min: FiniteDuration,
+  max: FiniteDuration,
+  avg: FiniteDuration,
+  total: FiniteDuration,
   count: Long,
-  count0Ms: Long,
-  numNoOp: Long) {
-  def add(ms: Long) = {
+  noOps: Long) {
+  def add(duration: FiniteDuration) = {
     val newCount = count + 1L
-    val newCount0Ms =
-      if (ms == 0L)
-        count0Ms + 1L
-      else
-        count0Ms
-    val newTotal = totalMs + ms
+    val newTotal = total + duration
     val newAvg = newTotal / newCount
     val newMin =
       if (newCount == 1L)
-        Math.min(ms, Long.MaxValue)
+        duration
       else
-        Math.min(ms, minMs)
-    val newMax = Math.max(ms, maxMs)
-    DomainEventLogWriteStatistics(newMin, newMax, newAvg, newTotal, newCount, newCount0Ms, numNoOp)
+        duration.min(min)
+    val newMax = duration.max(max)
+    DomainEventLogWriteStatistics(newMin, newMax, newAvg, newTotal, newCount, noOps)
   }
   
-  def addNoOp() = copy(numNoOp = this.numNoOp + 1L)
+  def addNoOp() = copy(noOps = this.noOps + 1L)
 
   override def toString() = {
-    s"""DomainEventLogWriteStatistics(minMs=$minMs, maxMs=$maxMs, avgMs=$avgMs, totalMs=$totalMs, count=$count, count0Ms=$count0Ms, numNoOp=$numNoOp)"""
+    s"""DomainEventLogWriteStatistics(min=$min, max=$max, avg=$avg, total=$total, count=$count, noOps=$noOps)"""
   }
+ 
+  def toNiceString(timeUnit: TimeUnit = MILLISECONDS) =
+    s"""|write statistics
+     	|min   = ${min.toUnit(timeUnit)}
+    	|max   = ${max.toUnit(timeUnit)}
+    	|avg   = ${avg.toUnit(timeUnit)}
+    	|total = ${total.toUnit(timeUnit)}
+        |count = $count
+        |noOps = $noOps""".stripMargin
+  
 }
 
 object DomainEventLogWriteStatistics {
   def apply(): DomainEventLogWriteStatistics =
-    DomainEventLogWriteStatistics(0L, 0L, 0L, 0L, 0L, 0L, 0L)
+    DomainEventLogWriteStatistics(Duration.Zero, Duration.Zero, Duration.Zero, Duration.Zero, 0L, 0L)
 }

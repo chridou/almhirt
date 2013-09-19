@@ -24,6 +24,14 @@ case class DomainEventLogReadStatistics(
   override def toString() = {
     s"""DomainEventLogReadStatistics(min=$min, max=$max, avg=$avg, total=$total, count=$count)"""
   }
+
+  def toNiceString(timeUnit: TimeUnit = MILLISECONDS) =
+    s"""|read statistics
+     	|min   = ${min.toUnit(timeUnit)}
+    	|max   = ${max.toUnit(timeUnit)}
+    	|avg   = ${avg.toUnit(timeUnit)}
+    	|total = ${total.toUnit(timeUnit)}
+        |count = $count""".stripMargin
 }
 
 object DomainEventLogReadStatistics {

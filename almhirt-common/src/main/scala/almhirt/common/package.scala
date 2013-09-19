@@ -44,6 +44,11 @@ package object common {
   implicit object LocalDateTimeOrdering extends Ordering[org.joda.time.LocalDateTime] {
     def compare(a: org.joda.time.LocalDateTime, b: org.joda.time.LocalDateTime) = a.compareTo(b)
   }
+
+  import scala.concurrent.duration._
+  implicit class DeadlineOps(self: Deadline) {
+    def lap: FiniteDuration = Deadline.now - self
+  }
   
   object Severity {
     val Critical = almhirt.problem.Critical

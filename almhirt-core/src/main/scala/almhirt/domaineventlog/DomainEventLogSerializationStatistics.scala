@@ -1,41 +1,46 @@
 package almhirt.domaineventlog
 
+import scala.concurrent.duration._
+
 case class DomainEventLogSerializationStatistics(
-  minMs: Long,
-  maxMs: Long,
-  avgMs: Long,
-  totalMs: Long,
+  min: FiniteDuration,
+  max: FiniteDuration,
+  avg: FiniteDuration,
+  total: FiniteDuration,
   count: Long,
-  count0Ms: Long) {
-  def add(ms: Long) = {
+  serializing: Boolean) {
+  def add(duration: FiniteDuration) = {
     val newCount = count + 1L
-    val newCount0Ms =
-      if (ms == 0L)
-        count0Ms + 1L
-      else
-        count0Ms
-    val newTotal = totalMs + ms
+    val newTotal = total + duration
     val newAvg = newTotal / newCount
     val newMin =
       if (newCount == 1L)
-        Math.min(ms, Long.MaxValue)
+        duration
       else
-        Math.min(ms, minMs)
-    val newMax = Math.max(ms, maxMs)
-    DomainEventLogSerializationStatistics(newMin, newMax, newAvg, newTotal, newCount, newCount0Ms)
-  }
-
-  override def toString() = {
-    val values = tailString()
-    s"""DomainEventLogSerializationStatistics$values"""
+        duration.min(min)
+    val newMax = duration.max(max)
+    DomainEventLogSerializationStatistics(newMin, newMax, newAvg, newTotal, newCount, serializing)
   }
   
-  def tailString() = {
-    s"""(minMs=$minMs, maxMs=$maxMs, avgMs=$avgMs, totalMs=$totalMs, count=$count, count0Ms=$count0Ms)"""
+  override def toString() = {
+    s"""DomainEventLogSerializationStatistics(min=$min, max=$max, avg=$avg, total=$total, count=$count, serializing=$serializing)"""
+  }
+  
+  def toNiceString(timeUnit: TimeUnit = MILLISECONDS) = {
+    val header = if(serializing) "serialization" else "deserialization"
+    s"""|$header statistics
+     	|min   = ${min.toUnit(timeUnit)}
+    	|max   = ${max.toUnit(timeUnit)}
+    	|avg   = ${avg.toUnit(timeUnit)}
+    	|total = ${total.toUnit(timeUnit)}
+        |count = $count""".stripMargin
   }
 }
 
 object DomainEventLogSerializationStatistics {
-  def apply(): DomainEventLogSerializationStatistics =
-    DomainEventLogSerializationStatistics(0L, 0L, 0L, 0L, 0L, 0L)
+  def apply(serializing: Boolean): DomainEventLogSerializationStatistics =
+    DomainEventLogSerializationStatistics(Duration.Zero, Duration.Zero, Duration.Zero, Duration.Zero, 0L, serializing)
+    
+  def forSerializing = DomainEventLogSerializationStatistics(true)  
+  def forDeserializing = DomainEventLogSerializationStatistics(false)  
 }

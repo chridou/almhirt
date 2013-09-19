@@ -1,6 +1,7 @@
 package almhirt.corex.slick.domaineventlog
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
 import akka.actor._
 import akka.routing.RoundRobinRouter
@@ -17,8 +18,8 @@ class SlickTextDomainEventLog private (
   override val storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
   serializer: DomainEventStringSerializer,
   serializationChannel: String,
-  override val writeWarnThresholdMs: Long,
-  override val readWarnThresholdMs: Long,
+  override val writeWarnThreshold: FiniteDuration,
+  override val readWarnThreshold: FiniteDuration,
   implicit val ccuad: CanCreateUuidsAndDateTimes)
   extends SlickDomainEventLog with Actor with ActorLogging {
   type TRow = TextDomainEventLogRow
@@ -41,10 +42,8 @@ class SlickTextDomainEventLog private (
   def receive: Receive = receiveDomainEventLogMsg
   
   override def postStop() {
-    log.info(writeStatistics.toString)
-    log.info(readStatistics.toString)
-    log.info(s"""SerializationStatistics${serializationStatistics.tailString()}""")
-    log.info(s"""DeserializationStatistics${deserializationStatistics.tailString()}""")
+    val str = s"\n${readStatistics.toNiceString()}\n\n${writeStatistics.toNiceString()}\n\n${serializationStatistics.toNiceString()}\n\n${deserializationStatistics.toNiceString()}\n\n"
+    log.info(str)
   }
 }
 
@@ -57,16 +56,16 @@ object SlickTextDomainEventLog {
     storeComponent: DomainEventLogStoreComponent[TextDomainEventLogRow],
     serializer: DomainEventStringSerializer,
     serializationChannel: String,
-    writeWarnThresholdMs: Long,
-    readWarnThresholdMs: Long,
+    writeWarnThreshold: FiniteDuration,
+    readWarnThreshold: FiniteDuration,
     ccuad: CanCreateUuidsAndDateTimes): AlmValidation[Props] =
     Props(new SlickTextDomainEventLog(
       messagePublisher,
       storeComponent,
       serializer,
       serializationChannel,
-      writeWarnThresholdMs,
-      readWarnThresholdMs,
+      writeWarnThreshold,
+      readWarnThreshold,
       ccuad)).success
 
   def props(
@@ -79,9 +78,9 @@ object SlickTextDomainEventLog {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
       dispatcher <- configSection.v[String]("sync-io-dispatcher").flatMap(_.notEmptyOrWhitespace)
       numActors <- configSection.v[Int]("number-of-actors")
-      writeWarnThresholdMs <- configSection.v[scala.concurrent.duration.FiniteDuration]("write-warn-threshold-duration").map(_.toMillis)
-      readWarnThresholdMs <- configSection.v[scala.concurrent.duration.FiniteDuration]("read-warn-threshold-duration").map(_.toMillis)
-      resRaw <- propsRaw(messagePublisher, storeComponent, serializer, channel, writeWarnThresholdMs, readWarnThresholdMs, ccuad)
+      writeWarnThreshold <- configSection.v[scala.concurrent.duration.FiniteDuration]("write-warn-threshold-duration")
+      readWarnThreshold <- configSection.v[scala.concurrent.duration.FiniteDuration]("read-warn-threshold-duration")
+      resRaw <- propsRaw(messagePublisher, storeComponent, serializer, channel, writeWarnThreshold, readWarnThreshold, ccuad)
       resDisp <- resRaw.withDispatcher(dispatcher).success
       res <- if(numActors > 1) {
         resDisp.withRouter(RoundRobinRouter(numActors)).success

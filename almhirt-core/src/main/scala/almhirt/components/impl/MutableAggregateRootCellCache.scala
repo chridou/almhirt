@@ -326,12 +326,12 @@ case class MutableAggregateRootCellCacheCleanUpTimings(
   tError: FiniteDuration,
   nKilledInErrorState: Long,
   tTotal: FiniteDuration) {
-  def toNiceString() =
+  def toNiceString(timeUnit: TimeUnit = MILLISECONDS) =
     s"""|clean up timings
        	|
-    	|tUninitialized = ${tUninitialized.toUnit(MILLISECONDS)}(killed: $nKilledUnitialized)
-    	|tDoesNotExist  = ${tDoesNotExist.toUnit(MILLISECONDS)}(killed: $nKilledDoesNotExist)
-    	|tLoaded        = ${tLoaded.toUnit(MILLISECONDS)}(dump: $nDumpLoaded)
-    	|tError         = ${tError.toUnit(MILLISECONDS)}(killed: $nKilledInErrorState)
-        |tTotal         = ${tTotal.toUnit(MILLISECONDS)}""".stripMargin
+    	|tUninitialized = ${tUninitialized.toUnit(timeUnit)}(killed: $nKilledUnitialized)
+    	|tDoesNotExist  = ${tDoesNotExist.toUnit(timeUnit)}(killed: $nKilledDoesNotExist)
+    	|tLoaded        = ${tLoaded.toUnit(timeUnit)}(dump: $nDumpLoaded)
+    	|tError         = ${tError.toUnit(timeUnit)}(killed: $nKilledInErrorState)
+        |tTotal         = ${tTotal.toUnit(timeUnit)}""".stripMargin
 }
