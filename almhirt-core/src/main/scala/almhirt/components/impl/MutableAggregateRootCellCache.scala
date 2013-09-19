@@ -21,19 +21,23 @@ case class AggregateRootCellCacheStats(
   confirmedKills: Long) {
   def toNiceString: String = {
     s"""|Aggregate root cell cache statistics
-    	|  cells                        = $numCells
-    	|  bookings                     = $numBookings
-    	|  booked cells                 = $numBookedArs
-    	|  uninitialized                = $numUninitialized
-    	|  loaded                       = $numLoaded
-    	|  doesNotExist                 = $numDoesNotExist
-    	|  error state                  = $numErrorneous
-    	|  bookings in lifetime         = $numBookingsInLifetime
-    	|  unbookings in lifetime       = $numUnbookingsInLifetime
-    	|  booking diff                 = ${numBookingsInLifetime - numUnbookingsInLifetime}
-    	|  death certificates still due = $numDeathCertificatesStillDue
-    	|  kills                        = $kills
-    	|  confirmedKills               = $confirmedKills
+    	|
+    	|cells                        = $numCells
+    	|bookings                     = $numBookings
+    	|booked cells                 = $numBookedArs
+    	|
+    	|uninitialized                = $numUninitialized
+    	|loaded                       = $numLoaded
+    	|doesNotExist                 = $numDoesNotExist
+    	|error state                  = $numErrorneous
+    	|
+    	|bookings in lifetime         = $numBookingsInLifetime
+    	|unbookings in lifetime       = $numUnbookingsInLifetime
+    	|booking diff                 = ${numBookingsInLifetime - numUnbookingsInLifetime}
+    	|
+    	|death certificates still due = $numDeathCertificatesStillDue
+    	|kills                        = $kills
+    	|confirmedKills               = $confirmedKills
     	|""".stripMargin
   }
 
@@ -55,19 +59,23 @@ case class AggregateRootCellCacheStats(
   def toNiceDiffString(other: AggregateRootCellCacheStats, msg: String = "difference"): String = {
     val diff = this - other
     s"""|Aggregate root cell cache statistics(difference)
-    	|  cells                        = $numCells - ${other.numCells} = ${diff.numCells}
-        |  bookings                     = $numBookings - ${other.numBookings} = ${diff.numBookings}
-       	|  booked cells                 = $numBookedArs - ${other.numBookedArs} = ${diff.numBookedArs}
-    	|  uninitialized                = $numUninitialized - ${other.numUninitialized} = ${diff.numUninitialized}
-    	|  loaded                       = $numLoaded - ${other.numLoaded} = ${diff.numLoaded}
-    	|  doesNotExist                 = $numDoesNotExist - ${other.numDoesNotExist} = ${diff.numDoesNotExist}
-    	|  error state                  = $numErrorneous - ${other.numErrorneous} = ${diff.numErrorneous}
-    	|  bookings in lifetime         = $numBookingsInLifetime - ${other.numBookingsInLifetime} = ${diff.numBookingsInLifetime} 
-    	|  unbookings in lifetime       = $numUnbookingsInLifetime - ${other.numUnbookingsInLifetime} = ${diff.numUnbookingsInLifetime}
-    	|  booking diff                 = ${numBookingsInLifetime - numUnbookingsInLifetime} - ${other.numBookingsInLifetime - other.numUnbookingsInLifetime} = ${(numBookingsInLifetime - numUnbookingsInLifetime) - (other.numBookingsInLifetime - other.numUnbookingsInLifetime)}
-    	|  death certificates still due = $numDeathCertificatesStillDue - ${other.numDeathCertificatesStillDue} = ${diff.numDeathCertificatesStillDue}
-    	|  kills                        = $kills - ${other.kills} = ${diff.kills}
-    	|  confirmedKills               = $confirmedKills - ${other.confirmedKills} = ${diff.confirmedKills}
+       	|
+    	|cells                        = $numCells - ${other.numCells} = ${diff.numCells}
+        |bookings                     = $numBookings - ${other.numBookings} = ${diff.numBookings}
+       	|booked cells                 = $numBookedArs - ${other.numBookedArs} = ${diff.numBookedArs}
+       	|
+       	|uninitialized                = $numUninitialized - ${other.numUninitialized} = ${diff.numUninitialized}
+    	|loaded                       = $numLoaded - ${other.numLoaded} = ${diff.numLoaded}
+    	|doesNotExist                 = $numDoesNotExist - ${other.numDoesNotExist} = ${diff.numDoesNotExist}
+    	|error state                  = $numErrorneous - ${other.numErrorneous} = ${diff.numErrorneous}
+    	|
+    	|bookings in lifetime         = $numBookingsInLifetime - ${other.numBookingsInLifetime} = ${diff.numBookingsInLifetime} 
+    	|unbookings in lifetime       = $numUnbookingsInLifetime - ${other.numUnbookingsInLifetime} = ${diff.numUnbookingsInLifetime}
+    	|booking diff                 = ${numBookingsInLifetime - numUnbookingsInLifetime} - ${other.numBookingsInLifetime - other.numUnbookingsInLifetime} = ${(numBookingsInLifetime - numUnbookingsInLifetime) - (other.numBookingsInLifetime - other.numUnbookingsInLifetime)}
+    	|
+    	|death certificates still due = $numDeathCertificatesStillDue - ${other.numDeathCertificatesStillDue} = ${diff.numDeathCertificatesStillDue}
+    	|kills                        = $kills - ${other.kills} = ${diff.kills}
+    	|confirmedKills               = $confirmedKills - ${other.confirmedKills} = ${diff.confirmedKills}
     	|""".stripMargin
   }
 }
