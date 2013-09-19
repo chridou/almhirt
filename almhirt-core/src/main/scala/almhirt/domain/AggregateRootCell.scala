@@ -9,9 +9,7 @@ object AggregateRootCell {
 
   case object GetManagedAggregateRoot extends AggregateRootCellMessage
 
-  sealed trait CachedAggregateRootControl extends AggregateRootCellMessage
-  final case class ClearCachedOlderThan(ttl: org.joda.time.Duration) extends CachedAggregateRootControl
-  case object ClearCached extends CachedAggregateRootControl
+  case object DropCachedAggregateRoot extends AggregateRootCellMessage
 
   sealed trait AggregateRootCellState
   case object CellStateUninitialized extends AggregateRootCellState 

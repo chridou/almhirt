@@ -89,7 +89,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       context.become(uninitializedState(alreadyInitializing, pendingGetRequests, pendingUpdateRequests :+ (sender, uar)))
       if (!alreadyInitializing)
         self ! Initialize
-    case _: CachedAggregateRootControl =>
+    case DropCachedAggregateRoot =>
       ()
     case ReportCellState =>
       reportCellState(CellStateUninitialized)
@@ -100,15 +100,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       sender ! RequestedAggregateRoot(ar)
     case uar: UpdateAggregateRoot =>
       moveToUpdateState(Some(ar), Some(ar), Vector((sender, uar)))
-    case cc: CachedAggregateRootControl =>
-      cc match {
-        case ClearCachedOlderThan(ttl) =>
-          if (idleSince.plus(ttl).compareTo(ccuad.getUtcTimestamp) < 0) {
-            moveToUninitialized
-          }
-        case ClearCached =>
+        case DropCachedAggregateRoot =>
           moveToUninitialized
-      }
     case ReportCellState =>
       reportCellState(CellStateLoaded)
   }
@@ -151,7 +144,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       log.error(s"""Could not update aggregate root "$managedAggregateRooId": ${problem.message}""")
       (rest ++ pendingUpdateRequests.map(_._1)).foreach(_ ! DomainMessages.AggregateRootUpdateFailed(managedAggregateRooId, problem))
       moveToErrorState(problem)
-    case _: CachedAggregateRootControl =>
+    case DropCachedAggregateRoot =>
       ()
     case ReportCellState =>
       arOpt match {
@@ -173,7 +166,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       }
     case ReportCellState =>
       reportCellState(CellStateDoesNotExist)
-    case _: CachedAggregateRootControl =>
+    case DropCachedAggregateRoot =>
       ()
   }
 
@@ -184,7 +177,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     case uar: UpdateAggregateRoot =>
       context.become(uninitializedState(false, Vector.empty, Vector((sender, uar))))
       self ! Initialize
-    case _: CachedAggregateRootControl =>
+    case DropCachedAggregateRoot =>
       ()
     case ReportCellState =>
       reportCellState(CellStateError(problem))

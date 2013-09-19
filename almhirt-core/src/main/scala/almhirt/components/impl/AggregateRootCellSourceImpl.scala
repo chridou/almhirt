@@ -45,6 +45,16 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
       } else
         None
     }
+
+  override val maxUninitializedAge =
+    cacheControlHeartBeatInterval.flatMap { _ =>
+      if (configSection.v[Boolean]("remove-uninitialized-cells").resultOrEscalate) {
+        val maxAge = configSection.v[FiniteDuration]("max-uninitialized-age").resultOrEscalate
+        log.info(s"""Max "max-uninitialized-age"-age: ${maxAge.toString()}""")
+        Some(maxAge)
+      } else
+        None
+    }
   
   override protected def createProps(aggregateRootId: JUUID, forArType: Class[_], aggregateRootCellStateSink: AggregateRootCellStateSink): Props =
     cellPropsFactories(forArType) match {
