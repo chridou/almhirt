@@ -20,21 +20,21 @@ case class AggregateRootCellCacheStats(
   kills: Long,
   confirmedKills: Long) {
   def toNiceString: String = {
-    s"""|AggregateRootCellCacheStats(
-    	|  numCells = $numCells
-    	|  numBookings = $numBookings
-    	|  numBookedArs = $numBookedArs
-    	|  numUninitialized = $numUninitialized
-    	|  numLoaded = $numLoaded
-    	|  numDoesNotExist = $numDoesNotExist
-    	|  numErrorneous = $numErrorneous
-    	|  numBookingsInLifetime = $numBookingsInLifetime
-    	|  numUnbookingsInLifetime = $numUnbookingsInLifetime
-    	|  bookingDiff = ${numBookingsInLifetime - numUnbookingsInLifetime}
-    	|  numDeathCertificatesStillDue = $numDeathCertificatesStillDue
-    	|  kills = $kills
-    	|  confirmedKills = $confirmedKills
-    	|)""".stripMargin
+    s"""|Aggregate root cell cache statistics
+    	|  cells                        = $numCells
+    	|  bookings                     = $numBookings
+    	|  booked cells                 = $numBookedArs
+    	|  uninitialized                = $numUninitialized
+    	|  loaded                       = $numLoaded
+    	|  doesNotExist                 = $numDoesNotExist
+    	|  error state                  = $numErrorneous
+    	|  bookings in lifetime         = $numBookingsInLifetime
+    	|  unbookings in lifetime       = $numUnbookingsInLifetime
+    	|  booking diff                 = ${numBookingsInLifetime - numUnbookingsInLifetime}
+    	|  death certificates still due = $numDeathCertificatesStillDue
+    	|  kills                        = $kills
+    	|  confirmedKills               = $confirmedKills
+    	|""".stripMargin
   }
 
   def -(other: AggregateRootCellCacheStats): AggregateRootCellCacheStats =
@@ -52,23 +52,23 @@ case class AggregateRootCellCacheStats(
       kills - other.kills,
       confirmedKills - other.confirmedKills)
 
-  def toNiceDiffString(other: AggregateRootCellCacheStats): String = {
+  def toNiceDiffString(other: AggregateRootCellCacheStats, msg: String = "difference"): String = {
     val diff = this - other
-    s"""|AggregateRootCellCacheStats(
-    	|  numCells = $numCells - ${other.numCells} = ${diff.numCells}
-        |  numBookings = $numBookings - ${other.numBookings} = ${diff.numBookings}
-       	|  numBookedArs = $numBookedArs - ${other.numBookedArs} = ${diff.numBookedArs}
-    	|  numUninitialized = $numUninitialized - ${other.numUninitialized} = ${diff.numUninitialized}
-    	|  numLoaded = $numLoaded - ${other.numLoaded} = ${diff.numLoaded}
-    	|  numDoesNotExist = $numDoesNotExist - ${other.numDoesNotExist} = ${diff.numDoesNotExist}
-    	|  numErrorneous = $numErrorneous - ${other.numErrorneous} = ${diff.numErrorneous}
-    	|  numBookingsInLifetime = $numBookingsInLifetime - ${other.numBookingsInLifetime} = ${diff.numBookingsInLifetime} 
-    	|  numUnbookingsInLifetime = $numUnbookingsInLifetime - ${other.numUnbookingsInLifetime} = ${diff.numUnbookingsInLifetime}
-    	|  bookingDiff = ${numBookingsInLifetime - numUnbookingsInLifetime} - ${other.numBookingsInLifetime - other.numUnbookingsInLifetime} = ${diff.numBookingsInLifetime - diff.numUnbookingsInLifetime}
-    	|  numDeathCertificatesStillDue = $numDeathCertificatesStillDue - ${other.numDeathCertificatesStillDue} = ${diff.numDeathCertificatesStillDue}
-    	|  kills = $kills - ${other.kills} = ${diff.kills}
-    	|  confirmedKills = $confirmedKills - ${other.confirmedKills} = ${diff.confirmedKills}
-    	|)""".stripMargin
+    s"""|Aggregate root cell cache statistics(difference)
+    	|  cells                        = $numCells - ${other.numCells} = ${diff.numCells}
+        |  bookings                     = $numBookings - ${other.numBookings} = ${diff.numBookings}
+       	|  booked cells                 = $numBookedArs - ${other.numBookedArs} = ${diff.numBookedArs}
+    	|  uninitialized                = $numUninitialized - ${other.numUninitialized} = ${diff.numUninitialized}
+    	|  loaded                       = $numLoaded - ${other.numLoaded} = ${diff.numLoaded}
+    	|  doesNotExist                 = $numDoesNotExist - ${other.numDoesNotExist} = ${diff.numDoesNotExist}
+    	|  error state                  = $numErrorneous - ${other.numErrorneous} = ${diff.numErrorneous}
+    	|  bookings in lifetime         = $numBookingsInLifetime - ${other.numBookingsInLifetime} = ${diff.numBookingsInLifetime} 
+    	|  unbookings in lifetime       = $numUnbookingsInLifetime - ${other.numUnbookingsInLifetime} = ${diff.numUnbookingsInLifetime}
+    	|  booking diff                 = ${numBookingsInLifetime - numUnbookingsInLifetime} - ${other.numBookingsInLifetime - other.numUnbookingsInLifetime} = ${(numBookingsInLifetime - numUnbookingsInLifetime) - (other.numBookingsInLifetime - other.numUnbookingsInLifetime)}
+    	|  death certificates still due = $numDeathCertificatesStillDue - ${other.numDeathCertificatesStillDue} = ${diff.numDeathCertificatesStillDue}
+    	|  kills                        = $kills - ${other.kills} = ${diff.kills}
+    	|  confirmedKills               = $confirmedKills - ${other.confirmedKills} = ${diff.confirmedKills}
+    	|""".stripMargin
   }
 }
 
@@ -213,7 +213,7 @@ class MutableAggregateRootCellCache(
       killExpired(uninitializedCells, deadline)
     }
 
-    val time = FiniteDuration(start - System.currentTimeMillis(), "ms")
+    val time = FiniteDuration(System.currentTimeMillis() - start, "ms")
     (this, time)
   }
 
@@ -233,16 +233,16 @@ class MutableAggregateRootCellCache(
 
   def stats: AggregateRootCellCacheStats =
     AggregateRootCellCacheStats(
-      cellByArId.size,
-      bookingsByArId.values.flatten.size,
-      bookingsByArId.size,
-      uninitializedCells.size,
-      loadedCells.size,
-      doesNotExistCells.size,
-      errorneousCells.size,
-      nextHandleId - 1L,
-      numUnbookings,
-      deathCertificatesStillDueByCell.size,
-      kills,
-      confirmedKills)
+      numCells = cellByArId.size,
+      numBookings = bookingsByArId.values.flatten.size,
+      numBookedArs = bookingsByArId.size,
+      numUninitialized = uninitializedCells.size,
+      numLoaded = loadedCells.size,
+      numDoesNotExist = doesNotExistCells.size,
+      numErrorneous = errorneousCells.size,
+      numBookingsInLifetime = nextHandleId - 1L,
+      numUnbookingsInLifetime = numUnbookings,
+      numDeathCertificatesStillDue = deathCertificatesStillDueByCell.size,
+      kills = kills,
+      confirmedKills = confirmedKills)
 }
