@@ -37,8 +37,7 @@ case class AggregateRootCellCacheStats(
     	|
     	|death certificates still due = $numDeathCertificatesStillDue
     	|kills                        = $kills
-    	|confirmedKills               = $confirmedKills
-    	|""".stripMargin
+    	|confirmedKills               = $confirmedKills""".stripMargin
   }
 
   def -(other: AggregateRootCellCacheStats): AggregateRootCellCacheStats =
@@ -56,9 +55,9 @@ case class AggregateRootCellCacheStats(
       kills - other.kills,
       confirmedKills - other.confirmedKills)
 
-  def toNiceDiffStringWith(other: AggregateRootCellCacheStats, msg: String = "difference"): String = {
+  def toNiceDiffStringWith(other: AggregateRootCellCacheStats, titleHint: String = "difference"): String = {
     val diff = this - other
-    s"""|Aggregate root cell cache statistics(difference)
+    s"""|Aggregate root cell cache statistics($titleHint)
        	|
     	|cells                        = $numCells - ${other.numCells} = ${diff.numCells}
         |bookings                     = $numBookings - ${other.numBookings} = ${diff.numBookings}
@@ -75,8 +74,7 @@ case class AggregateRootCellCacheStats(
     	|
     	|death certificates still due = $numDeathCertificatesStillDue - ${other.numDeathCertificatesStillDue} = ${diff.numDeathCertificatesStillDue}
     	|kills                        = $kills - ${other.kills} = ${diff.kills}
-    	|confirmedKills               = $confirmedKills - ${other.confirmedKills} = ${diff.confirmedKills}
-    	|""".stripMargin
+    	|confirmedKills               = $confirmedKills - ${other.confirmedKills} = ${diff.confirmedKills}""".stripMargin
   }
 }
 
@@ -180,7 +178,7 @@ class MutableAggregateRootCellCache(
   private def getCandidatesByDeadline(from: scala.collection.mutable.HashMap[JUUID, Long], deadLine: Long) = {
     from.filterNot {
       case (id, timestamp) =>
-        bookingsByArId.contains(id) || timestamp < deadLine
+        bookingsByArId.contains(id) || timestamp > deadLine
     }.map(_._1)
   }
 
@@ -205,19 +203,19 @@ class MutableAggregateRootCellCache(
     val start = System.currentTimeMillis()
 
     maxInMemoryLifeTime.foreach { lt =>
-      val deadline = System.currentTimeMillis() - lt.toMillis
+      val deadline = start - lt.toMillis
       val candidates = getCandidatesByDeadline(loadedCells, deadline)
       candidates.map(cellByArId.get).flatten.foreach(_ ! DropCachedAggregateRoot)
     }
 
     maxDoesNotExistAge.foreach { lt =>
-      val deadline = System.currentTimeMillis() - lt.toMillis
+      val deadline = start - lt.toMillis
       killExpired(doesNotExistCells, deadline)
       killExpired(errorneousCells, deadline)
     }
 
     maxUninitializedAge.foreach { lt =>
-      val deadline = System.currentTimeMillis() - lt.toMillis
+      val deadline = start - lt.toMillis
       killExpired(uninitializedCells, deadline)
     }
 

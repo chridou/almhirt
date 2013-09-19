@@ -62,7 +62,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
       val newStats = cacheState.stats
       val numPendingRequest = pendingRequests.map(_._2).flatten.size
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
-      log.info(s"""Performed clean up in $time.\n${newStats.toNiceDiffStringWith(oldStats, "new-old")}\nThere are $numPendingRequest request(s) on unconfirmed cell kills left.""")
+      log.info(s"""Performed clean up in $time.\n${newStats.toNiceDiffStringWith(oldStats, "new-old")}\n\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
   }
 
   private def enqueueRequest(arId: JUUID, arType: Class[_ <: AggregateRoot[_, _]], waitingCaller: ActorRef) {
