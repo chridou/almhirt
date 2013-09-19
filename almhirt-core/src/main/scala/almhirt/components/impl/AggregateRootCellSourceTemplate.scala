@@ -18,7 +18,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
   def maxCachedAggregateRootAge: Option[FiniteDuration]
   def maxDoesNotExistAge: Option[FiniteDuration]
   def maxUninitializedAge: Option[FiniteDuration]
-  
+
   implicit def executionContext: ExecutionContext
 
   private val cacheState = new MutableAggregateRootCellCache(
@@ -81,11 +81,17 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
       cacheState.confirmDeath(cell, log.warning)
     case CleanUp =>
       val oldStats = cacheState.stats
-      val (_, time) = cacheState.cleanUp(maxDoesNotExistAge, maxCachedAggregateRootAge, maxUninitializedAge)
+      val (_, time) =
+        try {
+          cacheState.cleanUp(maxDoesNotExistAge, maxCachedAggregateRootAge, maxUninitializedAge)
+        } catch {
+          case scala.util.control.NonFatal(exn) =>
+            throw new Exception(s"The cell cache failed to perform a clean up: ${exn.getMessage()}", exn)
+        }
       val newStats = cacheState.stats
       val numPendingRequest = pendingRequests.map(_._2).flatten.size
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
-      log.info(s"""Performed clean up in $time.\n${newStats.toNiceDiffString(oldStats)}\nThere are $numPendingRequest requests on unconfirmed cell kills left.""")
+      log.info(s"""Performed clean up in $time.\n${oldStats.toNiceDiffString(newStats, "old-new")}\nThere are $numPendingRequest requests on unconfirmed cell kills left.""")
   }
   private case class Unbook(handleId: Long)
 
