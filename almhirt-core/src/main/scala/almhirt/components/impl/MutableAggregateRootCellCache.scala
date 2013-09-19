@@ -1,8 +1,7 @@
 package almhirt.components.impl
 
 import java.util.{ UUID => JUUID }
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration.Deadline
+import scala.concurrent.duration._
 import akka.actor._
 import almhirt.domain.AggregateRootCell._
 import almhirt.components.AggregateRootCellSource.CellHandle
@@ -330,9 +329,9 @@ case class MutableAggregateRootCellCacheCleanUpTimings(
   def toNiceString() =
     s"""|clean up timings
        	|
-    	|tUninitialized = $tUninitialized(killed: $nKilledUnitialized)
-    	|tDoesNotExist  = $tDoesNotExist(killed: $nKilledDoesNotExist)
-    	|tLoaded        = $tLoaded(dump: $nDumpLoaded)
-    	|tError         = $tError(killed: $nKilledInErrorState)
-        |tTotal         = $tTotal""".stripMargin
+    	|tUninitialized = ${tUninitialized.toUnit(MILLISECONDS)}(killed: $nKilledUnitialized)
+    	|tDoesNotExist  = ${tDoesNotExist.toUnit(MILLISECONDS)}(killed: $nKilledDoesNotExist)
+    	|tLoaded        = ${tLoaded.toUnit(MILLISECONDS)}(dump: $nDumpLoaded)
+    	|tError         = ${tError.toUnit(MILLISECONDS)}(killed: $nKilledInErrorState)
+        |tTotal         = ${tTotal.toUnit(MILLISECONDS)}""".stripMargin
 }
