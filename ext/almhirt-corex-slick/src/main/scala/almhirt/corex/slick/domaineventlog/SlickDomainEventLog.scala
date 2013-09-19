@@ -1,6 +1,7 @@
 package almhirt.corex.slick.domaineventlog
 
 import scalaz.syntax.validation._
+import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -22,8 +23,8 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
   def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[TRow]
   def rowToDomainEvent(row: TRow): AlmValidation[DomainEvent]
 
-  def writeWarnThresholdMs: Long
-  def readWarnThresholdMs: Long
+  def writeWarnThreshold: FiniteDuration
+  def readWarnThreshold: FiniteDuration
 
   var writeStatistics = DomainEventLogWriteStatistics()
   var readStatistics = DomainEventLogReadStatistics()
@@ -112,11 +113,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
     case GetAllDomainEventsFor(aggId) =>
       (for {
         rows <- {
-          val start = System.currentTimeMillis()
+          val deadline = readWarnThreshold.fromNow
           val res = storeComponent.getAllEventRowsFor(aggId)
-          val time = System.currentTimeMillis() - start
           readStatistics = readStatistics add time
-          if (time > readWarnThresholdMs)
+          if (deadline.isOverdue)
             log.warning(s"""Reading events(GetAllDomainEventsFor(aggId=$aggId)) took longer than $readWarnThresholdMs[ms]($time[ms]).""")
           res
         }
