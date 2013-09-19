@@ -15,7 +15,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
 
   def cacheControlHeartBeatInterval: Option[FiniteDuration]
 
-  def maxCellCacheAge: Option[FiniteDuration]
+  def maxCachedAggregateRootAge: Option[FiniteDuration]
   def maxDoesNotExistAge: Option[FiniteDuration]
   def maxUninitializedAge: Option[FiniteDuration]
   
@@ -81,7 +81,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
       cacheState.confirmDeath(cell, log.warning)
     case CleanUp =>
       val oldStats = cacheState.stats
-      val (_, time) = cacheState.cleanUp(maxDoesNotExistAge, maxCellCacheAge, maxUninitializedAge)
+      val (_, time) = cacheState.cleanUp(maxDoesNotExistAge, maxCachedAggregateRootAge, maxUninitializedAge)
       val newStats = cacheState.stats
       val numPendingRequest = pendingRequests.map(_._2).flatten.size
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))

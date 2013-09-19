@@ -13,9 +13,9 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
   extends AggregateRootCellSourceTemplate with Actor with ActorLogging {
 
   val configSection = theAlmhirt.config.v[Config]("almhirt.aggregate-root-cell-source").resultOrEscalate
-  
+
   override implicit val executionContext = theAlmhirt.futuresExecutor
-  
+
   override val cacheControlHeartBeatInterval =
     if (configSection.v[Boolean]("enable-cache-control").resultOrEscalate) {
       val interval = configSection.v[FiniteDuration]("cache-control-heart-beat-interval").resultOrEscalate
@@ -23,54 +23,61 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
       Some(interval)
     } else {
       log.info("Cache control disabled")
+      log.info("""enable-cache-control: false""")
       None
     }
 
-  override val maxCellCacheAge =
+  override val maxCachedAggregateRootAge =
     cacheControlHeartBeatInterval.flatMap { _ =>
-      if (configSection.v[Boolean]("remove-old-cells").resultOrEscalate) {
-        val maxAge = configSection.v[FiniteDuration]("max-cell-cache-age").resultOrEscalate
-        log.info(s"Max cell age: ${maxAge.toString}")
+      if (configSection.v[Boolean]("remove-cached-aggregate-roots").resultOrEscalate) {
+        val maxAge = configSection.v[FiniteDuration]("max-cached-aggregate-root-age").resultOrEscalate
+        log.info(s"""max-cached-aggregate-root-age: ${maxAge.toString}""")
         Some(maxAge)
-      } else
+      } else {
+        log.info("""remove-cached-aggregate-roots: false""")
         None
+      }
     }
 
   override val maxDoesNotExistAge =
     cacheControlHeartBeatInterval.flatMap { _ =>
       if (configSection.v[Boolean]("remove-does-not-exist-cells").resultOrEscalate) {
         val maxAge = configSection.v[FiniteDuration]("max-does-not-exist-age").resultOrEscalate
-        log.info(s"""Max "does-not-exist"-age: ${maxAge.toString()}""")
+        log.info(s"""max-does-not-exist-age: ${maxAge.toString()}""")
         Some(maxAge)
-      } else
+      } else {
+        log.info("""remove-does-not-exist-cells: false""")
         None
+      }
     }
 
   override val maxUninitializedAge =
     cacheControlHeartBeatInterval.flatMap { _ =>
       if (configSection.v[Boolean]("remove-uninitialized-cells").resultOrEscalate) {
         val maxAge = configSection.v[FiniteDuration]("max-uninitialized-age").resultOrEscalate
-        log.info(s"""Max "max-uninitialized-age"-age: ${maxAge.toString()}""")
+        log.info(s"""max-uninitialized-age: ${maxAge.toString()}""")
         Some(maxAge)
-      } else
+      } else {
+        log.info("""remove-uninitialized-cells: false""")
         None
+      }
     }
-  
+
   override protected def createProps(aggregateRootId: JUUID, forArType: Class[_], aggregateRootCellStateSink: AggregateRootCellStateSink): Props =
     cellPropsFactories(forArType) match {
       case Some(factory) => factory(aggregateRootId, aggregateRootCellStateSink)
       case None => throw new Exception(s"""No factory to create props for aggregate root of type "${forArType.getName()} found."""")
     }
-  
+
   override def receive: Receive = receiveAggregateRootCellSourceMessage
-  
+
   override def preStart() {
-      cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
+    cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
   }
-  
+
   override def postStop() {
-     val numPendingRequest = pendingRequests.map(_._2).flatten.size
-     log.info(s"""${stats.toNiceString}\nThere are $numPendingRequest requests on unconfirmed cell kills left.""")
+    val numPendingRequest = pendingRequests.map(_._2).flatten.size
+    log.info(s"""${stats.toNiceString}\nThere are $numPendingRequest requests on unconfirmed cell kills left.""")
   }
-  
+
 }

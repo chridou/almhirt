@@ -201,11 +201,12 @@ class MutableAggregateRootCellCache(
       val candidates = getCandidatesByDeadline(loadedCells, deadline)
       candidates.map(cellByArId.get).flatten.foreach(_ ! DropCachedAggregateRoot)
     }
-    val effMaxDoesNotExistMillis = maxDoesNotExistAge.map(_.toMillis).getOrElse(0L)
-    val maxDoesNotExistDeadLine = System.currentTimeMillis() - effMaxDoesNotExistMillis
 
-    killExpired(doesNotExistCells, maxDoesNotExistDeadLine)
-    killExpired(errorneousCells, maxDoesNotExistDeadLine)
+    maxDoesNotExistAge.foreach { lt =>
+      val deadline = System.currentTimeMillis() - lt.toMillis
+      killExpired(doesNotExistCells, deadline)
+      killExpired(errorneousCells, deadline)
+    }
 
     maxUninitializedAge.foreach { lt =>
       val deadline = System.currentTimeMillis() - lt.toMillis
