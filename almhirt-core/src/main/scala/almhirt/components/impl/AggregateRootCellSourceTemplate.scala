@@ -38,12 +38,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
         case MutableAggregateRootCellCache.CellBooked(handle) =>
           sender ! AggregateRootCellSourceResult(arId, handle)
         case MutableAggregateRootCellCache.AwaitingDeathCertificate =>
-          pendingRequests.get(arId) match {
-            case Some(requests) =>
-              requests.append((arType, sender))
-            case None =>
-              pendingRequests.put(arId, scala.collection.mutable.Buffer((arType, sender)))
-          }
+          enqueueRequest(arId, arType, sender)
       }
     case Unbook(handleId) =>
       cacheState.unbookCell(handleId, log.warning)
@@ -53,31 +48,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
       sender ! AggregateRootCellSourceStats(cacheState.stats)
     case Terminated(cell) =>
       this.context.unwatch(cell)
-      cacheState.arIdForUnconfirmedKill(cell) match {
-        case Some(arId) =>
-          pendingRequests.get(arId) match {
-            case Some(waiting) =>
-              waiting.foreach {
-                case (arType, caller) =>
-                  val (bookingResult, _) = cacheState.bookCell(arId, arType, log.warning)
-                  bookingResult match {
-                    case MutableAggregateRootCellCache.CellBooked(handle) =>
-                      caller ! AggregateRootCellSourceResult(arId, handle)
-                    case MutableAggregateRootCellCache.AwaitingDeathCertificate =>
-                      val msg = s"""Could not aquire a cell handle for confirmed kill of "${cell.path.toString()}" on aggregate root $arId."""
-                      log.error(msg)
-                      throw new Exception(msg)
-                  }
-              }
-              pendingRequests.remove(arId)
-            case None =>
-              ()
-          }
-        case None =>
-          val msg = s"""There was a confirmed kill for "${cell.path.toString()}" but it is not in the list of unconfirmed kills."""
-          log.error(msg)
-          throw new Exception(msg)
-      }
+      handleTerminated(cell)
       cacheState.confirmDeath(cell, log.warning)
     case CleanUp =>
       val oldStats = cacheState.stats
@@ -91,8 +62,49 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
       val newStats = cacheState.stats
       val numPendingRequest = pendingRequests.map(_._2).flatten.size
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
-      log.info(s"""Performed clean up in $time.\n${oldStats.toNiceDiffString(newStats, "old-new")}\nThere are $numPendingRequest requests on unconfirmed cell kills left.""")
+      log.info(s"""Performed clean up in $time.\n${newStats.toNiceDiffStringWith(oldStats, "new-old")}\nThere are $numPendingRequest request(s) on unconfirmed cell kills left.""")
   }
+
+  private def enqueueRequest(arId: JUUID, arType: Class[_ <: AggregateRoot[_, _]], waitingCaller: ActorRef) {
+    pendingRequests.get(arId) match {
+      case Some(requests) =>
+        requests.append((arType, sender))
+      case None =>
+        pendingRequests.put(arId, scala.collection.mutable.Buffer((arType, sender)))
+    }
+  }
+
+  private def handleTerminated(cell: ActorRef) {
+    cacheState.arIdForUnconfirmedKill(cell) match {
+      case Some(arId) =>
+        pendingRequests.get(arId) match {
+          case Some(waiting) =>
+            val stillWaiting = scala.collection.mutable.Buffer[(JUUID, Class[_ <: AggregateRoot[_, _]], ActorRef)]()
+            waiting.foreach {
+              case (arType, caller) =>
+                val (bookingResult, _) = cacheState.bookCell(arId, arType, log.warning)
+                bookingResult match {
+                  case MutableAggregateRootCellCache.CellBooked(handle) =>
+                    caller ! AggregateRootCellSourceResult(arId, handle)
+                  case MutableAggregateRootCellCache.AwaitingDeathCertificate =>
+                    stillWaiting.append((arId, arType, caller))
+                }
+            }
+            pendingRequests.remove(arId)
+            stillWaiting.foreach {
+              case (arId, arType, waitingCaller) =>
+                enqueueRequest(arId, arType, waitingCaller)
+            }
+          case None =>
+            ()
+        }
+      case None =>
+        val msg = s"""There was a confirmed kill for "${cell.path.toString()}" but it is not in the list of unconfirmed kills."""
+        log.error(msg)
+        throw new Exception(msg)
+    }
+  }
+
   private case class Unbook(handleId: Long)
 
   private object CleanUp

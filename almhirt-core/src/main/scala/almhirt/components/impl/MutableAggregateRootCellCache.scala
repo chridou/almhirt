@@ -56,7 +56,7 @@ case class AggregateRootCellCacheStats(
       kills - other.kills,
       confirmedKills - other.confirmedKills)
 
-  def toNiceDiffString(other: AggregateRootCellCacheStats, msg: String = "difference"): String = {
+  def toNiceDiffStringWith(other: AggregateRootCellCacheStats, msg: String = "difference"): String = {
     val diff = this - other
     s"""|Aggregate root cell cache statistics(difference)
        	|

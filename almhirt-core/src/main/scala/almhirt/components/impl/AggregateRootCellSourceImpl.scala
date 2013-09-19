@@ -74,6 +74,11 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
   override def preStart() {
     cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
   }
+  
+  override def preRestart(reason: Throwable, message: Option[Any]) {
+    super.preRestart(reason, message)
+    log.info(s"""Aggregate root cell source is about to restart: "${reason.getMessage()}"""")
+  }
 
   override def postStop() {
     val numPendingRequest = pendingRequests.map(_._2).flatten.size
