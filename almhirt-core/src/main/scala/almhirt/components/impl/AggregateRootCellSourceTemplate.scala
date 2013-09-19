@@ -29,6 +29,8 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
     },
     handleId => self ! Unbook(handleId))
 
+  private var lastStatsAfterCleanUp = cacheState.stats
+  
   val pendingRequests = scala.collection.mutable.HashMap.empty[JUUID, scala.collection.mutable.Buffer[(Class[_ <: AggregateRoot[_, _]], ActorRef)]]
 
   override def receiveAggregateRootCellSourceMessage: Receive = {
@@ -58,18 +60,20 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
           throw new Exception(msg)
       }
     case CleanUp =>
-      val oldStats = cacheState.stats
-      val (_, time) =
+      val oldStats = lastStatsAfterCleanUp
+      val statsBeforeCleanUp = cacheState.stats
+      val (_, timings) =
         try {
           cacheState.cleanUp(maxDoesNotExistAge, maxCachedAggregateRootAge, maxUninitializedAge)
         } catch {
           case scala.util.control.NonFatal(exn) =>
             throw new Exception(s"The cell cache failed to perform a clean up: ${exn.getMessage()}", exn)
         }
-      val newStats = cacheState.stats
+      lastStatsAfterCleanUp = cacheState.stats
       val numPendingRequest = pendingRequests.map(_._2).flatten.size
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
-      log.info(s"""Performed clean up in $time.\n${newStats.toNiceDiffStringWith(oldStats, "new-old")}\n\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
+      val comparisonString = AggregateRootCellCacheStats.tripletComparisonString(oldStats, statsBeforeCleanUp, lastStatsAfterCleanUp, "last clean up", "before clean up", "after clean up")
+      log.info(s"""Performed clean up.\n$comparisonString\n${timings.toNiceString()}\n\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
   }
 
   private def enqueueRequest(arId: JUUID, arType: Class[_ <: AggregateRoot[_, _]], waitingCaller: ActorRef) {

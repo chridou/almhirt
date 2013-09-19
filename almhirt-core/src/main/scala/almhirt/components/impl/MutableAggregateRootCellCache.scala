@@ -78,6 +78,28 @@ case class AggregateRootCellCacheStats(
   }
 }
 
+object AggregateRootCellCacheStats {
+	def tripletComparisonString(a: AggregateRootCellCacheStats, b: AggregateRootCellCacheStats, c: AggregateRootCellCacheStats, nameA: String = "A", nameB: String = "B", nameC: String = "C"): String =
+    s"""|Aggregate root cell cache statistics($nameA/$nameB/$nameC)
+    	|
+    	|cells                        = ${a.numCells}/${b.numCells}/${c.numCells}
+    	|bookings                     = ${a.numBookings}/${b.numBookings}/${c.numBookings}
+    	|booked cells                 = ${a.numBookedArs}/${b.numBookedArs}/${c.numBookedArs}
+    	|
+    	|uninitialized                = ${a.numUninitialized}/${b.numUninitialized}/${c.numUninitialized}
+    	|loaded                       = ${a.numLoaded}/${b.numLoaded}/${c.numLoaded}
+    	|doesNotExist                 = ${a.numDoesNotExist}/${b.numDoesNotExist}/${c.numDoesNotExist}
+    	|error state                  = ${a.numErrorneous}/${b.numErrorneous}/${c.numErrorneous}
+    	|
+    	|bookings in lifetime         = ${a.numBookingsInLifetime}/${b.numBookingsInLifetime}/${c.numBookingsInLifetime}
+    	|unbookings in lifetime       = ${a.numUnbookingsInLifetime}/${b.numUnbookingsInLifetime}/${c.numUnbookingsInLifetime}
+    	|booking diff                 = ${a.numBookingsInLifetime - a.numUnbookingsInLifetime}/${b.numBookingsInLifetime - b.numUnbookingsInLifetime}/${c.numBookingsInLifetime - c.numUnbookingsInLifetime}
+    	|
+    	|death certificates still due = ${a.numDeathCertificatesStillDue}/${b.numDeathCertificatesStillDue}/${c.numDeathCertificatesStillDue}
+    	|kills                        = ${a.kills}/${b.kills}/${c.kills}
+    	|confirmedKills               = ${a.confirmedKills}/${b.confirmedKills}/${c.confirmedKills}""".stripMargin
+}
+
 object MutableAggregateRootCellCache {
   sealed trait BookingResult
   final case class CellBooked(handle: CellHandle) extends BookingResult
@@ -112,6 +134,7 @@ class MutableAggregateRootCellCache(
         val bookedCell =
           cellByArId.get(arId) match {
             case Some(cell) =>
+              updateLastAccessTimestamp(arId)
               cell
             case None =>
               val newCell = createCell(arId, arType)
@@ -145,6 +168,7 @@ class MutableAggregateRootCellCache(
         bookingsByArId.get(arId) match {
           case Some(bookings) =>
             if (bookings.contains(handleId)) {
+              updateLastAccessTimestamp(arId)
               bookings -= handleId
               numUnbookings += 1L
             } else {
@@ -159,6 +183,19 @@ class MutableAggregateRootCellCache(
         onStrangeState(s"""Unbooking of handle id $handleId was requested but there is no AR booked""")
     }
     this
+  }
+
+  def updateLastAccessTimestamp(arId: JUUID) {
+    val t = System.currentTimeMillis()
+    if (loadedCells.contains(arId)) {
+      loadedCells.update(arId, t)
+    } else if (uninitializedCells.contains(arId)) {
+      uninitializedCells.update(arId, t)
+    } else if (doesNotExistCells.contains(arId)) {
+      doesNotExistCells.update(arId, t)
+    } else if (errorneousCells.contains(arId)) {
+      errorneousCells.update(arId, t)
+    }
   }
 
   def updateCellState(arId: JUUID, newCellState: AggregateRootCellState): MutableAggregateRootCellCache = {
@@ -176,13 +213,14 @@ class MutableAggregateRootCellCache(
   }
 
   private def getCandidatesByDeadline(from: scala.collection.mutable.HashMap[JUUID, Long], deadLine: Long) = {
-    from.filterNot {
+    from.filter {
       case (id, timestamp) =>
-        bookingsByArId.contains(id) || timestamp > deadLine
+        timestamp > deadLine && !bookingsByArId.contains(id)
     }.map(_._1)
   }
 
-  private def killCandidates(candidates: Iterable[JUUID], from: scala.collection.mutable.HashMap[JUUID, Long]) {
+  private def killCandidates(candidates: Iterable[JUUID], from: scala.collection.mutable.HashMap[JUUID, Long]) = {
+    var myKills = 0L
     candidates.foreach { candidateId =>
       killCell(cellByArId(candidateId))
       val cell = cellByArId(candidateId)
@@ -190,37 +228,62 @@ class MutableAggregateRootCellCache(
       deathCertificatesStillDueByCell += cell -> candidateId
       cellByArId -= candidateId
       from -= candidateId
-      kills += 1L
+      myKills += 1L
     }
+    this.kills += myKills
+    myKills
   }
 
-  private def killExpired(from: scala.collection.mutable.HashMap[JUUID, Long], deadLine: Long) {
+  private def killExpired(from: scala.collection.mutable.HashMap[JUUID, Long], deadLine: Long) = {
     val candidates = getCandidatesByDeadline(from, deadLine)
     killCandidates(candidates, from)
   }
 
-  def cleanUp(maxDoesNotExistAge: Option[FiniteDuration], maxInMemoryLifeTime: Option[FiniteDuration], maxUninitializedAge: Option[FiniteDuration]): (MutableAggregateRootCellCache, FiniteDuration) = {
-    val start = System.currentTimeMillis()
+  def cleanUp(maxDoesNotExistAge: Option[FiniteDuration], maxInMemoryLifeTime: Option[FiniteDuration], maxUninitializedAge: Option[FiniteDuration]): (MutableAggregateRootCellCache, MutableAggregateRootCellCacheCleanUpTimings) = {
+    val t0 = System.currentTimeMillis()
 
+    var dumpLoaded = 0L
     maxInMemoryLifeTime.foreach { lt =>
-      val deadline = start - lt.toMillis
+      val deadline = t0 - lt.toMillis
       val candidates = getCandidatesByDeadline(loadedCells, deadline)
-      candidates.map(cellByArId.get).flatten.foreach(_ ! DropCachedAggregateRoot)
+      candidates.map(cellByArId.get).flatten.foreach { x => x ! DropCachedAggregateRoot; dumpLoaded += 1L }
+      candidates.size
     }
 
-    maxDoesNotExistAge.foreach { lt =>
-      val deadline = start - lt.toMillis
+    val t1 = System.currentTimeMillis()
+
+    val killedDoesNotExist = maxDoesNotExistAge.map { lt =>
+      val deadline = t0 - lt.toMillis
       killExpired(doesNotExistCells, deadline)
+    }.getOrElse(0L)
+
+    val t2 = System.currentTimeMillis()
+
+    val killedInErrorState = maxDoesNotExistAge.map { lt =>
+      val deadline = t0 - lt.toMillis
       killExpired(errorneousCells, deadline)
-    }
+    }.getOrElse(0L)
 
-    maxUninitializedAge.foreach { lt =>
-      val deadline = start - lt.toMillis
+    val t3 = System.currentTimeMillis()
+
+    val killedUninitialized = maxUninitializedAge.map { lt =>
+      val deadline = t0 - lt.toMillis
       killExpired(uninitializedCells, deadline)
-    }
+    }.getOrElse(0L)
 
-    val time = FiniteDuration(System.currentTimeMillis() - start, "ms")
-    (this, time)
+    val t4 = System.currentTimeMillis()
+
+    (this,
+      MutableAggregateRootCellCacheCleanUpTimings(
+        tUninitializedMs = t4 - t3,
+        nKilledUnitialized = killedUninitialized,
+        tDoesNotExistMs = t2 - t1,
+        nKilledDoesNotExist = killedDoesNotExist,
+        tLoadedMs = t1 - t0,
+        nDumpLoaded = dumpLoaded,
+        tErrorMs = t3 - t2,
+        nKilledInErrorState = killedInErrorState,
+        tTotalMs = t4 - t0))
   }
 
   def confirmDeath(cell: ActorRef, onStrangeState: String => Unit) {
@@ -251,4 +314,24 @@ class MutableAggregateRootCellCache(
       numDeathCertificatesStillDue = deathCertificatesStillDueByCell.size,
       kills = kills,
       confirmedKills = confirmedKills)
+}
+
+case class MutableAggregateRootCellCacheCleanUpTimings(
+  tUninitializedMs: Long,
+  nKilledUnitialized: Long,
+  tDoesNotExistMs: Long,
+  nKilledDoesNotExist: Long,
+  tLoadedMs: Long,
+  nDumpLoaded: Long,
+  tErrorMs: Long,
+  nKilledInErrorState: Long,
+  tTotalMs: Long) {
+  def toNiceString() =
+    s"""|clean up timings
+       	|
+    	|tUninitialized = $tUninitializedMs[ms](killed: $nKilledUnitialized)
+    	|tDoesNotExist  = $tDoesNotExistMs[ms](killed: $nKilledDoesNotExist)
+    	|tLoaded        = $tLoadedMs[ms](dump: $nDumpLoaded)
+    	|tError         = $tErrorMs[ms](killed: $nKilledInErrorState)
+        |tTotal         = $tTotalMs[ms]""".stripMargin
 }
