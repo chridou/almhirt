@@ -68,9 +68,9 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
   private def enqueueRequest(arId: JUUID, arType: Class[_ <: AggregateRoot[_, _]], waitingCaller: ActorRef) {
     pendingRequests.get(arId) match {
       case Some(requests) =>
-        requests.append((arType, sender))
+        requests.append((arType, waitingCaller))
       case None =>
-        pendingRequests.put(arId, scala.collection.mutable.Buffer((arType, sender)))
+        pendingRequests.put(arId, scala.collection.mutable.Buffer((arType, waitingCaller)))
     }
   }
 
