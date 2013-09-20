@@ -294,7 +294,6 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
             } else {
               log.info("All subscriptions are ok.")
             }
-
             actor.context.system.scheduler.scheduleOnce(interval)(requestSubscriptionChecking())
           }
         })
