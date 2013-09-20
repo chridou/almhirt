@@ -48,10 +48,25 @@ object ExecutionStateTracker {
       theTargetSize <- configSection.v[Int]("target-size")
       theCeanUpThreshold <- configSection.v[Int]("clean-up-threshold")
       theCleanUpInterval <- configSection.v[FiniteDuration]("clean-up-interval")
+      checkSubscriptions <- configSection.v[Boolean]("check-subscriptions")
+      checkDurations <- if (checkSubscriptions) {
+        configSection.v[FiniteDuration]("check-subscriptions-interval").flatMap(interval =>
+          configSection.v[FiniteDuration]("check-subscriptions-warn-age").map(lifetime => Some((interval, lifetime))))
+      } else {
+        None.success
+      }
     } yield {
       theAlmhirt.log.info(s"""ExecutionStateTracker: "target-size" is $theTargetSize""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-threshold" is $theCeanUpThreshold""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-interval" is ${theCleanUpInterval.defaultUnitString}""")
+      checkDurations match {
+        case Some((interval, lt)) =>
+          theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions" is true""")
+          theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-interval" is ${interval.defaultUnitString}""")
+          theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-warn-age" is ${lt.defaultUnitString}""")
+        case None =>
+          theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions" is false""")
+      }
       Props(new almhirt.components.impl.ExecutionTrackerTemplate with ExecutionStateTracker with Actor with ActorLogging {
         override val executionContext = theAlmhirt.futuresExecutor
         override val publishTo = theAlmhirt.messageBus
@@ -61,6 +76,7 @@ object ExecutionStateTracker {
         override val targetSize = theTargetSize
         override val cleanUpThreshold = theCeanUpThreshold
         override val cleanUpInterval = theCleanUpInterval
+        override val checkSubscriptions = checkDurations
 
         def receive = handleTrackingMessage
 

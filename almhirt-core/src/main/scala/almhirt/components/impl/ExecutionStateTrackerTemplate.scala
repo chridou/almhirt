@@ -27,8 +27,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   private case object CleanUp
   private case object CheckSubscriptions
 
-  val checkSubscriptionsInterval: Option[FiniteDuration] = Some(FiniteDuration(9, "s"))
-  val subscriptionLifetimeWarningThreshold: Option[FiniteDuration] = Some(FiniteDuration(17, "s"))
+  def checkSubscriptions: Option[(FiniteDuration, FiniteDuration)]
 
   protected var lifetimeExpiredSubscriptions = 0L
   protected var lifetimeTotalSubscriptions = 0L
@@ -241,61 +240,64 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   }
 
   private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String]) {
-    subscriptionLifetimeWarningThreshold.foreach { lt =>
-      executionContext.execute(new Runnable {
-        def run() {
-          val start = Deadline.now
-          val deadline = start - lt
-          val criticalSubscriptions = deadlinesBySubscriptions.filter { case (key, value) => value < deadline }
-          if (!criticalSubscriptions.isEmpty) {
-            val nCritical = criticalSubscriptions.size
-            val percentage = (deadlinesBySubscriptions.size.toDouble / nCritical.toDouble) * 100.0
-            val msg1 = s"""There are $nCritical of ${deadlinesBySubscriptions.size}($percentage%) subscriptions older than ${lt.defaultUnitString}."""
-            val criticalTrackingIds = criticalSubscriptions.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
-            val msg2 =
-              if (criticalTrackingIds.isEmpty) {
-                "There are no tracking states associated to the critical subsriptions."
-              } else {
-                var nUntracked = 0
-                var nStarted = 0
-                var nInProcess = 0
-                var nExecuted = 0
-                var nSuccess = 0
-                var nFailed = 0
-                criticalTrackingIds.foreach(trackId =>
-                  tracked get trackId match {
-                    case Some(ExecutionStateEntry(state, _)) =>
-                      state match {
-                        case e: ExecutionStarted =>
-                          nStarted += 1
-                        case e: ExecutionInProcess =>
-                          nInProcess += 1
-                        case e: ExecutionSuccessful =>
-                          nSuccess += 1
-                          nExecuted += 1
-                        case e: ExecutionFailed =>
-                          nFailed += 1
-                          nExecuted += 1
-                      }
-                    case None =>
-                      nUntracked += 1
-                  })
-                s"""	|There are ${criticalTrackingIds.size} tracking states associated to the critical subscriptions. 
+    checkSubscriptions.foreach {
+      case (interval, lifetime) =>
+        executionContext.execute(new Runnable {
+          def run() {
+            val start = Deadline.now
+            val deadline = start - lifetime
+            val criticalSubscriptions = deadlinesBySubscriptions.filter { case (key, value) => value < deadline }
+            if (!criticalSubscriptions.isEmpty) {
+              val nCritical = criticalSubscriptions.size
+              val percentage = (deadlinesBySubscriptions.size.toDouble / nCritical.toDouble) * 100.0
+              val msg1 = s"""There are $nCritical of ${deadlinesBySubscriptions.size}($percentage%) subscriptions older than ${lifetime.defaultUnitString}."""
+              val criticalTrackingIds = criticalSubscriptions.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
+              val msg2 =
+                if (criticalTrackingIds.isEmpty) {
+                  "There are no tracking states associated to the critical subsriptions."
+                } else {
+                  var nUntracked = 0
+                  var nStarted = 0
+                  var nInProcess = 0
+                  var nExecuted = 0
+                  var nSuccess = 0
+                  var nFailed = 0
+                  criticalTrackingIds.foreach(trackId =>
+                    tracked get trackId match {
+                      case Some(ExecutionStateEntry(state, _)) =>
+                        state match {
+                          case e: ExecutionStarted =>
+                            nStarted += 1
+                          case e: ExecutionInProcess =>
+                            nInProcess += 1
+                          case e: ExecutionSuccessful =>
+                            nSuccess += 1
+                            nExecuted += 1
+                          case e: ExecutionFailed =>
+                            nFailed += 1
+                            nExecuted += 1
+                        }
+                      case None =>
+                        nUntracked += 1
+                    })
+                  s"""	|There are ${criticalTrackingIds.size} tracking states associated to the critical subscriptions. 
                 		|nUntracked: $nUntracked
                 		|nStarted: $nStarted
                 		|nInProcess: $nInProcess
                 		|nExecuted: $nExecuted
                 		|nSuccess: $nSuccess
                 		|nFailed: $nFailed""".stripMargin
-              }
-            val msg3 = "Hint: The state may have changed during the calculation of these values."
-            val msg4 = s"""This calculation took ${start.lap.defaultUnitString}."""
-            log.warning(s"\n$msg1\n$msg2\n$msg3\nmsg4")
-          }
+                }
+              val msg3 = "Hint: The state may have changed during the calculation of these values."
+              val msg4 = s"""This calculation took ${start.lap.defaultUnitString}."""
+              log.warning(s"\n$msg1\n$msg2\n$msg3\nmsg4")
+            } else {
+              log.info("All subscriptions are ok.")
+            }
 
-          checkSubscriptionsInterval.foreach(actor.context.system.scheduler.scheduleOnce(_)(requestSubscriptionChecking()))
-        }
-      })
+            actor.context.system.scheduler.scheduleOnce(interval)(requestSubscriptionChecking())
+          }
+        })
     }
   }
 
