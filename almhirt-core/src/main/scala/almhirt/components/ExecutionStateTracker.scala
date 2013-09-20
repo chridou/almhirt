@@ -1,7 +1,7 @@
 package almhirt.components
 
-import org.joda.time.LocalDateTime
 import scala.concurrent.duration._
+import org.joda.time.LocalDateTime
 import akka.actor._
 import almhirt.core.Almhirt
 import almhirt.commanding._
@@ -51,7 +51,7 @@ object ExecutionStateTracker {
     } yield {
       theAlmhirt.log.info(s"""ExecutionStateTracker: "target-size" is $theTargetSize""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-threshold" is $theCeanUpThreshold""")
-      theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-interval" is $theCleanUpInterval""")
+      theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-interval" is ${theCleanUpInterval.defaultUnitString}""")
       Props(new almhirt.components.impl.ExecutionTrackerTemplate with ExecutionStateTracker with Actor with ActorLogging {
         override val executionContext = theAlmhirt.futuresExecutor
         override val publishTo = theAlmhirt.messageBus
@@ -66,10 +66,11 @@ object ExecutionStateTracker {
 
         override def preStart() {
           this.context.system.scheduler.scheduleOnce(cleanUpInterval)(requestCleanUp())(theAlmhirt.futuresExecutor)
+          requestSubscriptionChecking()
         }
-        
+
         override def postStop() {
-          log.info(s"""During my lifetime $lifetimeExpiredSubscriptions(${(lifetimeExpiredSubscriptions.toDouble/lifetimeTotalSubscriptions.toDouble)*100.0}%) subscriptions of $lifetimeTotalSubscriptions expired.""")
+          log.info(s"""During my lifetime $lifetimeExpiredSubscriptions(${(lifetimeExpiredSubscriptions.toDouble / lifetimeTotalSubscriptions.toDouble) * 100.0}%) subscriptions of $lifetimeTotalSubscriptions expired.""")
           log.info(s"""The following number of states were received:\nStarted: $numStartedReceived\nInProcess: $numInProcessReceived\nSuccessful: $numSuccessfulReceived\nFailed: $numFailedReceived""")
         }
       })
@@ -87,8 +88,8 @@ object ExecutionStateTracker {
       }).success
       props <- props(configSection, actualSecondLevelStore, theSndLvlStMaxAskDur, theAlmhirt)
     } yield {
-      if(secondLevelStore.isDefined) {
-      theAlmhirt.log.info(s"""ExecutionStateTracker: Using a second level store with a "second-level-store-max-ask-duration" of $theSndLvlStMaxAskDur.""")
+      if (secondLevelStore.isDefined) {
+        theAlmhirt.log.info(s"""ExecutionStateTracker: Using a second level store with a "second-level-store-max-ask-duration" of $theSndLvlStMaxAskDur.""")
       } else {
         theAlmhirt.log.info(s"""ExecutionStateTracker: No second level store.""")
       }

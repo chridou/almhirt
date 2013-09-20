@@ -25,16 +25,22 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   private case class StateUpdate(newState: Map[String, ExecutionStateEntry])
   private case object CleanUp
+  private case object CheckSubscriptions
+
+  val checkSubscriptionsInterval: Option[FiniteDuration] = Some(FiniteDuration(9, "s"))
+  val subscriptionLifetimeWarningThreshold: Option[FiniteDuration] = Some(FiniteDuration(17, "s"))
 
   protected var lifetimeExpiredSubscriptions = 0L
   protected var lifetimeTotalSubscriptions = 0L
-  
+
   protected var numStartedReceived = 0L
   protected var numInProcessReceived = 0L
   protected var numSuccessfulReceived = 0L
   protected var numFailedReceived = 0L
-  
-  
+
+  private var deadlinesBySubscriptions = Map.empty[ActorRef, Deadline]
+  private var trackingIdsBySubscription = Map.empty[ActorRef, String]
+
   protected def waitingForTrackedStateUpdate(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]], updateRequests: Vector[ExecutionState]): Receive = {
     case StateUpdate(newState) =>
       val newSubscriptions = notifyFinishedStateSubscribers(newState, subscriptions)
@@ -58,6 +64,21 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     case CleanUp =>
       val (newTracked, newSubscriptions) = cleanUp(tracked, subscriptions)
       context.become(waitingForTrackedStateUpdate(newTracked, newSubscriptions, updateRequests))
+    case CheckSubscriptions =>
+      checkSubscriptions(tracked, deadlinesBySubscriptions, trackingIdsBySubscription)
+      context.become(waitingForTrackedStateUpdate(tracked, subscriptions, updateRequests))
+    case Terminated(subscriber) =>
+      val trackId = trackingIdsBySubscription(subscriber)
+      val age = deadlinesBySubscriptions(subscriber).lap
+      val msg1 = s"""The subscription for tracking id "$trackId" "${subscriber.path.toString()}" died."""
+      val msg2 = s"""The subscription died after ${age.defaultUnitString}."""
+      val msg3 = tracked.get(trackId) match {
+        case Some(entry) => s"""The tracked state is ${entry.toString()}"""
+        case None => "The tracking id was not tracked"
+      }
+      log.warning(s"\n$msg1\n$msg2\n$msg3")
+      val newSubscriptions = removeSubscription(trackId, sender, subscriptions)
+      context.become(waitingForTrackedStateUpdate(tracked, newSubscriptions, updateRequests))
   }
 
   protected def idleState(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): Receive = {
@@ -76,6 +97,21 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     case CleanUp =>
       val (newTracked, newSubscriptions) = cleanUp(tracked, subscriptions)
       context.become(idleState(newTracked, newSubscriptions))
+    case CheckSubscriptions =>
+      checkSubscriptions(tracked, deadlinesBySubscriptions, trackingIdsBySubscription)
+      context.become(idleState(tracked, subscriptions))
+    case Terminated(subscriber) =>
+      val trackId = trackingIdsBySubscription(subscriber)
+      val age = deadlinesBySubscriptions(subscriber).lap
+      val msg1 = s"""The subscription for tracking id "$trackId" "${subscriber.path.toString()}" died."""
+      val msg2 = s"""The subscription died after ${age.defaultUnitString}."""
+      val msg3 = tracked.get(trackId) match {
+        case Some(entry) => s"""The tracked state is ${entry.toString()}"""
+        case None => "The tracking id was not tracked"
+      }
+      log.warning(s"\n$msg1\n$msg2\n$msg3")
+      val newSubscriptions = removeSubscription(trackId, sender, subscriptions)
+      context.become(idleState(tracked, newSubscriptions))
   }
 
   override def handleTrackingMessage = idleState(Map.empty, Map.empty)
@@ -139,16 +175,19 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     getFinishedStates(tracked).foldLeft(subscriptions) { (acc, cur) =>
       acc.get(cur._1) match {
         case Some(subscribers) =>
-          subscribers foreach (_ ! FinishedExecutionStateResult(cur._2))
+          subscribers foreach (subscriber => {
+            subscriber ! FinishedExecutionStateResult(cur._2)
+            removeFromSubscriptionsChecking(subscriber)
+          })
           acc - cur._1
         case None => acc
       }
     }
   }
 
-  private def addSubscription(trackId: String, subscriber: ActorRef, subscriptions: Map[String, List[ActorRef]]): Map[String, List[ActorRef]] =
-    subscriptions.get(trackId) match {
-      case None => 
+  private def addSubscription(trackId: String, subscriber: ActorRef, subscriptions: Map[String, List[ActorRef]]): Map[String, List[ActorRef]] = {
+    val res = subscriptions.get(trackId) match {
+      case None =>
         lifetimeTotalSubscriptions += 1
         subscriptions + (trackId -> (subscriber :: Nil))
       case Some(subscribers) =>
@@ -159,16 +198,32 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
           subscriptions + (trackId -> (subscriber :: subscribers))
         }
     }
+    addToSubscriptionsChecking(subscriber, trackId)
+    res
+  }
 
   private def removeSubscription(trackId: String, subscriber: ActorRef, subscriptions: Map[String, List[ActorRef]]): Map[String, List[ActorRef]] =
     subscriptions get (trackId) match {
       case None => subscriptions
       case Some(subscribers) =>
+        removeFromSubscriptionsChecking(subscriber)
         subscribers filterNot (_ == subscriber) match {
           case Nil => subscriptions - trackId
           case ls => subscriptions + (trackId -> ls)
         }
     }
+
+  private def addToSubscriptionsChecking(subscriber: ActorRef, trackId: String) {
+    this.context.watch(subscriber)
+    deadlinesBySubscriptions = deadlinesBySubscriptions + (subscriber -> Deadline.now)
+    trackingIdsBySubscription = trackingIdsBySubscription + (subscriber -> trackId)
+  }
+
+  private def removeFromSubscriptionsChecking(subscriber: ActorRef) {
+    this.context.unwatch(subscriber)
+    deadlinesBySubscriptions = deadlinesBySubscriptions - subscriber
+    trackingIdsBySubscription = trackingIdsBySubscription - subscriber
+  }
 
   private def getFinishedStates(tracked: Map[String, ExecutionStateEntry]): Map[String, ExecutionFinishedState] =
     tracked.values.map {
@@ -177,16 +232,76 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     }.flatten.toMap
 
   private def updateReceivedCounters(state: ExecutionState) {
-     state match {
-       case st: ExecutionStarted => numStartedReceived +=1L
-       case st: ExecutionInProcess => numInProcessReceived +=1L
-       case st: ExecutionFailed => numFailedReceived +=1L
-       case st: ExecutionSuccessful => numSuccessfulReceived +=1L
-     }    
-  }  
-    
+    state match {
+      case st: ExecutionStarted => numStartedReceived += 1L
+      case st: ExecutionInProcess => numInProcessReceived += 1L
+      case st: ExecutionFailed => numFailedReceived += 1L
+      case st: ExecutionSuccessful => numSuccessfulReceived += 1L
+    }
+  }
+
+  private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String]) {
+    executionContext.execute(new Runnable {
+      def run() {
+        subscriptionLifetimeWarningThreshold.foreach { lt =>
+          val deadline = Deadline.now - lt
+          val criticalSubscriptions = deadlinesBySubscriptions.filter { case (key, value) => value >= deadline }
+          if (!criticalSubscriptions.isEmpty) {
+            val nCritical = criticalSubscriptions.size
+            val msg1 = s"""There are $nCritical subscriptions older than ${lt.defaultUnitString}."""
+            val criticalTrackingIds = criticalSubscriptions.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
+            val msg2 =
+              if (criticalTrackingIds.isEmpty) {
+                "There are no tracking states associated to the critical subsriptions."
+              } else {
+                var nUntracked = 0
+                var nStarted = 0
+                var nInProcess = 0
+                var nExecuted = 0
+                var nSuccess = 0
+                var nFailed = 0
+                criticalTrackingIds.foreach(trackId =>
+                  tracked get trackId match {
+                    case Some(ExecutionStateEntry(state, _)) =>
+                      state match {
+                        case e: ExecutionStarted =>
+                          nStarted += 1
+                        case e: ExecutionInProcess =>
+                          nInProcess += 1
+                        case e: ExecutionSuccessful =>
+                          nSuccess += 1
+                          nExecuted += 1
+                        case e: ExecutionFailed =>
+                          nFailed += 1
+                          nExecuted += 1
+                      }
+                    case None =>
+                      nUntracked += 1
+                  })
+                s"""	|There are ${criticalTrackingIds.size} tracking states associated to the critical subsriptions. 
+                		|nUntracked: $nUntracked
+                		|nStarted: $nStarted
+                		|nInProcess: $nInProcess
+                		|nExecuted: $nExecuted
+                		|nSuccess: $nSuccess
+                		|nFailed: $nFailed""".stripMargin
+              }
+            val msg3 = "Hint: The state may have changed during the calculation of these values."
+            log.warning(s"\n$msg1\n$msg2\n$msg3")
+          }
+          
+          checkSubscriptionsInterval.foreach(actor.context.system.scheduler.scheduleOnce(_)(requestSubscriptionChecking()))
+        }
+      }
+    })
+  }
+
   def requestCleanUp() {
     self ! CleanUp
+  }
+
+  def requestSubscriptionChecking() {
+    self ! CheckSubscriptions
   }
 
   private def cleanUp(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): (Map[String, ExecutionStateEntry], Map[String, List[ActorRef]]) = {
@@ -202,11 +317,14 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
           discard contains (subscriptionTrackId))
         expiredSubscriptions.foreach {
           case (trackId, subscribers) =>
-            subscribers foreach (_ ! ExecutionTrackingExpired(trackId))
+            subscribers foreach (subscriber => {
+              subscriber ! ExecutionTrackingExpired(trackId)
+              removeFromSubscriptionsChecking(subscriber)
+            })
         }
         lifetimeExpiredSubscriptions += expiredSubscriptions.size
         val res = (tracked -- discardIds, subscriptions -- discardIds)
-        
+
         val elapsed = start.lap
         log.info(s"""Removed ${discard.size} items in ${elapsed.defaultUnitString}.\nThe new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions.\n${expiredSubscriptions.size} subscriptions were expired.""")
         res
