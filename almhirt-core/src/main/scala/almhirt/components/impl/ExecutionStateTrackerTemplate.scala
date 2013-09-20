@@ -249,7 +249,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
             val criticalSubscriptions = deadlinesBySubscriptions.filter { case (key, value) => value < deadline }
             if (!criticalSubscriptions.isEmpty) {
               val nCritical = criticalSubscriptions.size
-              val percentage = (deadlinesBySubscriptions.size.toDouble / nCritical.toDouble) * 100.0
+              val percentage = (nCritical.toDouble / deadlinesBySubscriptions.size.toDouble) * 100.0
               val msg1 = s"""There are $nCritical of ${deadlinesBySubscriptions.size}($percentage%) subscriptions older than ${lifetime.defaultUnitString}."""
               val criticalTrackingIds = criticalSubscriptions.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
               val msg2 =
@@ -290,7 +290,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
                 }
               val msg3 = "Hint: The state may have changed during the calculation of these values."
               val msg4 = s"""This calculation took ${start.lap.defaultUnitString}."""
-              log.warning(s"\n$msg1\n$msg2\n$msg3\nmsg4")
+              log.warning(s"\n$msg1\n$msg2\n$msg3\n$msg4")
             } else {
               log.info("All subscriptions are ok.")
             }
