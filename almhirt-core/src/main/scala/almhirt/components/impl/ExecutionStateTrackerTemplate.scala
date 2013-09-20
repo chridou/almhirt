@@ -241,14 +241,16 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   }
 
   private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String]) {
-    executionContext.execute(new Runnable {
-      def run() {
-        subscriptionLifetimeWarningThreshold.foreach { lt =>
-          val deadline = Deadline.now - lt
-          val criticalSubscriptions = deadlinesBySubscriptions.filter { case (key, value) => value >= deadline }
+    subscriptionLifetimeWarningThreshold.foreach { lt =>
+      executionContext.execute(new Runnable {
+        def run() {
+          val start = Deadline.now
+          val deadline = start - lt
+          val criticalSubscriptions = deadlinesBySubscriptions.filter { case (key, value) => value < deadline }
           if (!criticalSubscriptions.isEmpty) {
             val nCritical = criticalSubscriptions.size
-            val msg1 = s"""There are $nCritical subscriptions older than ${lt.defaultUnitString}."""
+            val percentage = (deadlinesBySubscriptions.size.toDouble / nCritical.toDouble) * 100.0
+            val msg1 = s"""There are $nCritical of ${deadlinesBySubscriptions.size}($percentage%) subscriptions older than ${lt.defaultUnitString}."""
             val criticalTrackingIds = criticalSubscriptions.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
             val msg2 =
               if (criticalTrackingIds.isEmpty) {
@@ -278,7 +280,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
                     case None =>
                       nUntracked += 1
                   })
-                s"""	|There are ${criticalTrackingIds.size} tracking states associated to the critical subsriptions. 
+                s"""	|There are ${criticalTrackingIds.size} tracking states associated to the critical subscriptions. 
                 		|nUntracked: $nUntracked
                 		|nStarted: $nStarted
                 		|nInProcess: $nInProcess
@@ -287,13 +289,14 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
                 		|nFailed: $nFailed""".stripMargin
               }
             val msg3 = "Hint: The state may have changed during the calculation of these values."
-            log.warning(s"\n$msg1\n$msg2\n$msg3")
+            val msg4 = s"""This calculation took ${start.lap.defaultUnitString}."""
+            log.warning(s"\n$msg1\n$msg2\n$msg3\nmsg4")
           }
-          
+
           checkSubscriptionsInterval.foreach(actor.context.system.scheduler.scheduleOnce(_)(requestSubscriptionChecking()))
         }
-      }
-    })
+      })
+    }
   }
 
   def requestCleanUp() {
