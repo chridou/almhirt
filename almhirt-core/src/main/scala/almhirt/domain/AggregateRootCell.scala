@@ -29,8 +29,8 @@ object AggregateRootCell {
     publisher: MessagePublisher,
     ccuad: CanCreateUuidsAndDateTimes,
     execContext: ExecutionContext,
-    getArMsWarnThreshold: Long,
-    updateArMsWarnThreshold: Long,
+    getArWarnThreshold: FiniteDuration,
+    updateArWarnThreshold: FiniteDuration,
     getArTimeout: FiniteDuration,
     updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) => Props =
     (arId: JUUID, reportCellStateSink: AggregateRootCellStateSink) =>
@@ -44,8 +44,8 @@ object AggregateRootCell {
           publisher,
           ccuad,
           execContext,
-          getArMsWarnThreshold,
-          updateArMsWarnThreshold,
+          getArWarnThreshold,
+          updateArWarnThreshold,
           getArTimeout,
           updateArTimeout))
 
@@ -54,8 +54,8 @@ object AggregateRootCell {
     theDomainEventLog: ActorRef,
     cellStateReportingDelay: FiniteDuration,
     theAlmhirt: Almhirt,
-    getArMsWarnThreshold: Long,
-    updateArMsWarnThreshold: Long,
+    getArWarnThreshold: FiniteDuration,
+    updateArWarnThreshold: FiniteDuration,
     getArTimeout: FiniteDuration,
     updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) => Props =
     propsFactoryRaw(
@@ -65,8 +65,8 @@ object AggregateRootCell {
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
-      getArMsWarnThreshold,
-      updateArMsWarnThreshold,
+      getArWarnThreshold,
+      updateArWarnThreshold,
       getArTimeout,
       updateArTimeout)
 
@@ -82,8 +82,8 @@ object AggregateRootCell {
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
-      theAlmhirt.durations.mediumDuration.toMillis,
-      theAlmhirt.durations.mediumDuration.toMillis,
+      theAlmhirt.durations.mediumDuration,
+      theAlmhirt.durations.mediumDuration,
       theAlmhirt.durations.longDuration,
       theAlmhirt.durations.longDuration)
 
@@ -96,8 +96,8 @@ object AggregateRootCell {
     theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
     for {
       cellStateReportingDelay <- configSection.v[FiniteDuration]("cell-state-reporting-delay")
-      getArMsWarnThreshold <- configSection.v[FiniteDuration]("get-ar-warn-duration-threshold").map(_.toMillis)
-      updateArMsWarnThreshold <- configSection.v[FiniteDuration]("update-ar-warn-duration-threshold").map(_.toMillis)
+      getArWarnThreshold <- configSection.v[FiniteDuration]("get-ar-warn-duration-threshold")
+      updateArWarnThreshold <- configSection.v[FiniteDuration]("update-ar-warn-duration-threshold")
       getArTimeout <- configSection.v[FiniteDuration]("get-ar-timeout")
       updateArTimeout <- configSection.v[FiniteDuration]("update-ar-timeout")
     } yield propsFactoryRaw(
@@ -107,8 +107,8 @@ object AggregateRootCell {
       theAlmhirt.messageBus,
       theAlmhirt,
       theAlmhirt.futuresExecutor,
-      getArMsWarnThreshold,
-      updateArMsWarnThreshold,
+      getArWarnThreshold,
+      updateArWarnThreshold,
       getArTimeout,
       updateArTimeout)
 

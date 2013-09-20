@@ -1,6 +1,8 @@
 package almhirt.domain.impl
 
 import java.util.{ UUID => JUUID }
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import org.joda.time.LocalDateTime
 import scalaz.syntax.validation._
 import akka.actor._
@@ -14,8 +16,6 @@ import almhirt.domain._
 import almhirt.domain.DomainEvent
 import almhirt.messaging.MessagePublisher
 import almhirt.common.CanCreateUuidsAndDateTimes
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext
 
 trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCellWithEventValidation { actor: Actor with ActorLogging =>
   import AggregateRootCell._
@@ -38,9 +38,9 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 
   def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
 
-  protected def getArMsWarnThreshold: Long
+  protected def getArWarnThreshold: FiniteDuration
   protected def getArTimeout: FiniteDuration
-  protected def updateArMsWarnThreshold: Long
+  protected def updateArWarnThreshold: FiniteDuration
   protected def updateArTimeout: FiniteDuration
 
   private var lastReportingJob: Option[Cancellable] = None
@@ -188,12 +188,12 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   }
 
   def fetchAR(): AlmFuture[Option[AR]] = {
-    val start = System.currentTimeMillis()
+    val warnDeadline = Deadline.now
     (domainEventLog ? GetAllDomainEventsFor(managedAggregateRooId))(getArTimeout).successfulAlmFuture[FetchedDomainEvents].collectV {
       case FetchedDomainEventsBatch(events) =>
-        val elapsed = System.currentTimeMillis() - start
-        if (elapsed > getArMsWarnThreshold)
-          log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than $getArMsWarnThreshold[ms]($elapsed[ms]).""")
+        val elapsed = warnDeadline.lap
+        if (elapsed > getArWarnThreshold)
+          log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than $getArWarnThreshold($elapsed).""")
         if (events.isEmpty)
           None.success
         else
@@ -201,8 +201,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       case FetchedDomainEventsChunks() =>
         UnspecifiedProblem("FetchedDomainEventsChunks not supported").failure
     }.mapTimeout(tp => {
-      val elapsed = System.currentTimeMillis() - start
-      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within $getArTimeout[ms]($elapsed[ms])""")
+      val elapsed = warnDeadline.lap
+      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within $getArTimeout($elapsed)""")
     })
   }
 
@@ -216,21 +216,21 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
           case NoUpdateTasks =>
             self ! SuccessfulUpdate(arOpt, None, Vector.empty)
           case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
-            val start = System.currentTimeMillis()
+            val start = Deadline.now
             (domainEventLog ? CommitDomainEvents(nextUpdateEvents))(updateArTimeout).successfulAlmFuture[CommittedDomainEvents].onComplete(
               problem =>
                 problem match {
                   case OperationTimedOutProblem(p) =>
-                    val elapsed = System.currentTimeMillis() - start
-                    val prob = OperationTimedOutProblem(s"""The domain event log failed to append the events for "$managedAggregateRooId" within $updateArTimeout[ms]($elapsed[ms])""")
+                    val elapsed = start.lap
+                    val prob = OperationTimedOutProblem(s"""The domain event log failed to append the events for "$managedAggregateRooId" within $updateArTimeout($elapsed)""")
                     self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
                   case prob =>
                     self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
                 },
               succ => {
-                val elapsed = System.currentTimeMillis() - start
-                if (elapsed > updateArMsWarnThreshold)
-                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than $updateArMsWarnThreshold[ms]($elapsed[ms]).""")
+                val elapsed = start.lap
+                if (elapsed > updateArWarnThreshold)
+                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than $updateArWarnThreshold($elapsed).""")
                 succ match {
                   case NothingCommitted() =>
                     log.warning(s"""No events have been committed for $managedAggregateRooId""")
@@ -324,8 +324,8 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   override val publisher: MessagePublisher,
   override val ccuad: CanCreateUuidsAndDateTimes,
   override val execContext: ExecutionContext,
-  override val getArMsWarnThreshold: Long,
-  override val updateArMsWarnThreshold: Long,
+  override val getArWarnThreshold: FiniteDuration,
+  override val updateArWarnThreshold: FiniteDuration,
   override val getArTimeout: FiniteDuration,
   override val updateArTimeout: FiniteDuration) extends AggregateRootCellTemplate with Actor with ActorLogging {
 
