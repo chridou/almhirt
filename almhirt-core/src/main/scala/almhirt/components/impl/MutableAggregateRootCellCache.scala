@@ -3,6 +3,7 @@ package almhirt.components.impl
 import java.util.{ UUID => JUUID }
 import scala.concurrent.duration._
 import akka.actor._
+import almhirt.common._
 import almhirt.domain.AggregateRootCell._
 import almhirt.components.AggregateRootCellSource.CellHandle
 
@@ -326,12 +327,12 @@ case class MutableAggregateRootCellCacheCleanUpTimings(
   tError: FiniteDuration,
   nKilledInErrorState: Long,
   tTotal: FiniteDuration) {
-  def toNiceString(timeUnit: TimeUnit = MILLISECONDS) =
+  def toNiceString(implicit timeUnitToStringInst: almhirt.converters.FiniteDurationToStringConverter = almhirt.converters.FiniteDurationToStringConverter.default) =
     s"""|clean up timings
        	|
-    	|tUninitialized = ${tUninitialized.toUnit(timeUnit)}(killed: $nKilledUnitialized)
-    	|tDoesNotExist  = ${tDoesNotExist.toUnit(timeUnit)}(killed: $nKilledDoesNotExist)
-    	|tLoaded        = ${tLoaded.toUnit(timeUnit)}(dump: $nDumpLoaded)
-    	|tError         = ${tError.toUnit(timeUnit)}(killed: $nKilledInErrorState)
-        |tTotal         = ${tTotal.toUnit(timeUnit)}""".stripMargin
+    	|tUninitialized = ${tUninitialized.defaultUnitString}(killed: $nKilledUnitialized)
+    	|tDoesNotExist  = ${tDoesNotExist.defaultUnitString}(killed: $nKilledDoesNotExist)
+    	|tLoaded        = ${tLoaded.defaultUnitString}(dump: $nDumpLoaded)
+    	|tError         = ${tError.defaultUnitString}(killed: $nKilledInErrorState)
+        |tTotal         = ${tTotal.defaultUnitString}""".stripMargin
 }

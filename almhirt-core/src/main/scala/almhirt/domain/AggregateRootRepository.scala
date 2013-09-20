@@ -1,7 +1,7 @@
 package almhirt.domain
 
 import java.util.{ UUID => JUUID }
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
@@ -51,7 +51,6 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
   }
 
   protected def handleGet(arId: JUUID, sender: ActorRef) {
-    val start = System.currentTimeMillis()
     getCell(arId).onComplete(
       fail => {
         fail match {
@@ -87,7 +86,7 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
       fail =>
         fail match {
           case OperationTimedOutProblem(p) =>
-            sender ! AggregateRootFetchFailed(arId, OperationTimedOutProblem(s"""Getting the AR from cell for "$arId" timed out(Timeout: $cellAskMaxDuration).""", cause = Some(fail)))
+            sender ! AggregateRootFetchFailed(arId, OperationTimedOutProblem(s"""Getting the AR from cell for "$arId" timed out(Timeout: ${cellAskMaxDuration.defaultUnitString}).""", cause = Some(fail)))
           case _ =>
             sender ! AggregateRootFetchFailed(arId, UnspecifiedProblem(s"""Getting the AR from cell for "$arId" failed.""", cause = Some(fail)))
         },
@@ -110,7 +109,7 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
       fail =>
         fail match {
           case OperationTimedOutProblem(p) =>
-            sender ! AggregateRootUpdateFailed(newState.id, OperationTimedOutProblem(s"""Updating the AR in cell for "${newState.id}" timed out(Timeout: $cellAskMaxDuration).""", cause = Some(fail)))
+            sender ! AggregateRootUpdateFailed(newState.id, OperationTimedOutProblem(s"""Updating the AR in cell for "${newState.id}" timed out(Timeout: ${cellAskMaxDuration.defaultUnitString}).""", cause = Some(fail)))
           case _ =>
             sender ! AggregateRootUpdateFailed(newState.id, UnspecifiedProblem(s"""Updating the AR in cell for "${newState.id}" failed.""", cause = Some(fail)))
         },
@@ -137,7 +136,7 @@ trait AggregateRootRepositoryWithCellSourceActor extends AggregateRootRepository
   override final protected def getCell(aggregateRootId: JUUID): AlmFuture[GetResult] =
     (cellCache ? GetCell(aggregateRootId, arTag.runtimeClass.asInstanceOf[Class[AggregateRoot[_, _]]]))(cacheAskMaxDuration)
     	.successfulAlmFuture[AggregateRootCellSourceResult]
-    	.mapTimeoutMessage(m => s"""$m(Timeout = $cacheAskMaxDuration)""")
+    	.mapTimeoutMessage(m => s"""$m(Timeout = ${cacheAskMaxDuration.defaultUnitString})""")
     	.map { _.cellHandle }
 
   override final protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => AlmFuture[T]): AlmFuture[T] =

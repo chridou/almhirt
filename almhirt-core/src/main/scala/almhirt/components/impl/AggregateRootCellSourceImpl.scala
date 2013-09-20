@@ -3,6 +3,7 @@ package almhirt.components.impl
 import java.util.{ UUID => JUUID }
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
+import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.configuration._
 import almhirt.core.Almhirt
@@ -19,7 +20,7 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
   override val cacheControlHeartBeatInterval =
     if (configSection.v[Boolean]("enable-cache-control").resultOrEscalate) {
       val interval = configSection.v[FiniteDuration]("cache-control-heart-beat-interval").resultOrEscalate
-      log.info(s"Cache control enabled. Heartbeat: ${interval.toString()}")
+      log.info(s"Cache control enabled. Heartbeat: ${interval.defaultUnitString}")
       Some(interval)
     } else {
       log.info("Cache control disabled")
@@ -31,7 +32,7 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
     cacheControlHeartBeatInterval.flatMap { _ =>
       if (configSection.v[Boolean]("remove-cached-aggregate-roots").resultOrEscalate) {
         val maxAge = configSection.v[FiniteDuration]("max-cached-aggregate-root-age").resultOrEscalate
-        log.info(s"""max-cached-aggregate-root-age: ${maxAge.toString}""")
+        log.info(s"""max-cached-aggregate-root-age: ${maxAge.defaultUnitString}""")
         Some(maxAge)
       } else {
         log.info("""remove-cached-aggregate-roots: false""")
@@ -43,7 +44,7 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
     cacheControlHeartBeatInterval.flatMap { _ =>
       if (configSection.v[Boolean]("remove-does-not-exist-cells").resultOrEscalate) {
         val maxAge = configSection.v[FiniteDuration]("max-does-not-exist-age").resultOrEscalate
-        log.info(s"""max-does-not-exist-age: ${maxAge.toString()}""")
+        log.info(s"""max-does-not-exist-age: ${maxAge.defaultUnitString}""")
         Some(maxAge)
       } else {
         log.info("""remove-does-not-exist-cells: false""")
@@ -55,7 +56,7 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
     cacheControlHeartBeatInterval.flatMap { _ =>
       if (configSection.v[Boolean]("remove-uninitialized-cells").resultOrEscalate) {
         val maxAge = configSection.v[FiniteDuration]("max-uninitialized-age").resultOrEscalate
-        log.info(s"""max-uninitialized-age: ${maxAge.toString()}""")
+        log.info(s"""max-uninitialized-age: ${maxAge.defaultUnitString}""")
         Some(maxAge)
       } else {
         log.info("""remove-uninitialized-cells: false""")

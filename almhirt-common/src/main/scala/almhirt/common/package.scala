@@ -21,7 +21,7 @@ import scala.concurrent.ExecutionContext
 import almhirt.problem._
 
 /** Classes and traits needed at other places*/
-package object common {
+package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   type AlmValidation[+α] = scalaz.Validation[almhirt.problem.Problem, α]
   type AlmValidationAP[+α] = scalaz.Validation[almhirt.problem.AggregateProblem, α]
 
@@ -45,11 +45,7 @@ package object common {
     def compare(a: org.joda.time.LocalDateTime, b: org.joda.time.LocalDateTime) = a.compareTo(b)
   }
 
-  import scala.concurrent.duration._
-  implicit class DeadlineOps(self: Deadline) {
-    def lap: FiniteDuration = Deadline.now - self
-  }
-  
+ 
   object Severity {
     val Critical = almhirt.problem.Critical
     val Major = almhirt.problem.Major

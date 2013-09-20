@@ -1,7 +1,6 @@
 package almhirt.components.impl
 
-import org.joda.time.LocalDateTime
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
@@ -193,7 +192,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   private def cleanUp(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, List[ActorRef]]): (Map[String, ExecutionStateEntry], Map[String, List[ActorRef]]) = {
     val res =
       if (tracked.size >= cleanUpThreshold) {
-        val start = System.currentTimeMillis()
+        val start = Deadline.now
         val entriesOrderedByAge = tracked.values.toVector.sortBy(_.lastModified)
         val numToDrop = tracked.size - targetSize
         val keep = entriesOrderedByAge.drop(numToDrop)
@@ -208,8 +207,8 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
         lifetimeExpiredSubscriptions += expiredSubscriptions.size
         val res = (tracked -- discardIds, subscriptions -- discardIds)
         
-        val time = System.currentTimeMillis() - start
-        log.info(s"""Removed ${discard.size} items in $time[ms].\nThe new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions.\n${expiredSubscriptions.size} subscriptions were expired.""")
+        val elapsed = start.lap
+        log.info(s"""Removed ${discard.size} items in ${elapsed.defaultUnitString}.\nThe new state is ${res._1.size}(old: ${tracked.size}) items tracked and ${res._2.size}(old: ${subscriptions.size}) subscriptions.\n${expiredSubscriptions.size} subscriptions were expired.""")
         res
       } else {
         log.info(s"Nothing to clean up. Current state is ${tracked.size} items tracked and ${subscriptions.size} subscriptions.")

@@ -1,6 +1,7 @@
 package almhirt.domaineventlog
 
 import scala.concurrent.duration._
+import almhirt.common._
 
 case class DomainEventLogWriteStatistics(
   min: FiniteDuration,
@@ -28,12 +29,12 @@ case class DomainEventLogWriteStatistics(
     s"""DomainEventLogWriteStatistics(min=$min, max=$max, avg=$avg, total=$total, count=$count, noOps=$noOps)"""
   }
  
-  def toNiceString(timeUnit: TimeUnit = MILLISECONDS) =
+  def toNiceString(implicit timeUnitToStringInst: almhirt.converters.FiniteDurationToStringConverter = almhirt.converters.FiniteDurationToStringConverter.default) =
     s"""|write statistics
-     	|min   = ${min.toUnit(timeUnit)}
-    	|max   = ${max.toUnit(timeUnit)}
-    	|avg   = ${avg.toUnit(timeUnit)}
-    	|total = ${total.toUnit(timeUnit)}
+     	|min   = ${min.defaultUnitString}
+    	|max   = ${max.defaultUnitString}
+    	|avg   = ${avg.defaultUnitString}
+    	|total = ${total.defaultUnitString}
         |count = $count
         |noOps = $noOps""".stripMargin
   

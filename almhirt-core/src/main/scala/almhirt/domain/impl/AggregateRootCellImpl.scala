@@ -193,7 +193,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       case FetchedDomainEventsBatch(events) =>
         val elapsed = warnDeadline.lap
         if (elapsed > getArWarnThreshold)
-          log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than $getArWarnThreshold($elapsed).""")
+          log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than ${getArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString}).""")
         if (events.isEmpty)
           None.success
         else
@@ -202,7 +202,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         UnspecifiedProblem("FetchedDomainEventsChunks not supported").failure
     }.mapTimeout(tp => {
       val elapsed = warnDeadline.lap
-      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within $getArTimeout($elapsed)""")
+      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within ${getArTimeout.defaultUnitString}(${elapsed.defaultUnitString})""")
     })
   }
 
@@ -222,7 +222,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
                 problem match {
                   case OperationTimedOutProblem(p) =>
                     val elapsed = start.lap
-                    val prob = OperationTimedOutProblem(s"""The domain event log failed to append the events for "$managedAggregateRooId" within $updateArTimeout($elapsed)""")
+                    val prob = OperationTimedOutProblem(s"""The domain event log failed to append the events for "$managedAggregateRooId" within ${updateArTimeout.defaultUnitString}(${elapsed.defaultUnitString})""")
                     self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
                   case prob =>
                     self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
@@ -230,7 +230,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
               succ => {
                 val elapsed = start.lap
                 if (elapsed > updateArWarnThreshold)
-                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than $updateArWarnThreshold($elapsed).""")
+                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than ${updateArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString}).""")
                 succ match {
                   case NothingCommitted() =>
                     log.warning(s"""No events have been committed for $managedAggregateRooId""")

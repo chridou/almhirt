@@ -75,7 +75,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           else
             writeStatistics addNoOp ()
           if (time > writeWarnThreshold)
-            log.warning(s"""Writing ${events.size} events took longer than ${writeWarnThreshold.toUnit(MILLISECONDS)}(${time.toUnit(MILLISECONDS)}).""")
+            log.warning(s"""Writing ${events.size} events took longer than ${writeWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
           res
         }
       } yield storeResult).fold(
@@ -119,7 +119,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           val time = start.lap
           readStatistics = readStatistics add time
           if (time > readWarnThreshold)
-            log.warning(s"""Reading events(GetAllDomainEventsFor(aggId=$aggId)) took longer than ${readWarnThreshold.toUnit(MILLISECONDS)}(${time.toUnit(MILLISECONDS)}).""")
+            log.warning(s"""Reading events(GetAllDomainEventsFor(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
           res
         }
         domainEvents <- rowsToDomainEvents(rows)
@@ -137,7 +137,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           val time = start.lap
           readStatistics = readStatistics add time
           if (time > readWarnThreshold)
-            log.warning(s"""Reading events(GetDomainEventsFrom(aggId=$aggId)) took longer than ${readWarnThreshold.toUnit(MILLISECONDS)}(${time.toUnit(MILLISECONDS)}).""")
+            log.warning(s"""Reading events(GetDomainEventsFrom(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
           res
         }
         domainEvents <- rowsToDomainEvents(rows)
@@ -155,7 +155,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           val time = start.lap
           readStatistics = readStatistics add time
           if (time > readWarnThreshold)
-            log.warning(s"""Reading events(GetDomainEventsTo(aggId=$aggId)) took longer than ${readWarnThreshold.toUnit(MILLISECONDS)}(${time.toUnit(MILLISECONDS)}).""")
+            log.warning(s"""Reading events(GetDomainEventsTo(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
           res
         }
         domainEvents <- rowsToDomainEvents(rows)
@@ -173,7 +173,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           val time = start.lap
           readStatistics = readStatistics add time
           if (time > readWarnThreshold)
-            log.warning(s"""Reading events(GetDomainEventsUntil(aggId=$aggId)) took longer than ${readWarnThreshold.toUnit(MILLISECONDS)}(${time.toUnit(MILLISECONDS)}).""")
+            log.warning(s"""Reading events(GetDomainEventsUntil(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
           res
         }
         domainEvents <- rowsToDomainEvents(rows)
@@ -191,7 +191,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           val time = start.lap
           readStatistics = readStatistics add time
           if (time > readWarnThreshold)
-            log.warning(s"""Reading events(GetDomainEventsFromTo(aggId=$aggId)) took longer than ${readWarnThreshold.toUnit(MILLISECONDS)}(${time.toUnit(MILLISECONDS)}).""")
+            log.warning(s"""Reading events(GetDomainEventsFromTo(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
           res
         }
         domainEvents <- rowsToDomainEvents(rows)
@@ -209,7 +209,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           val time = start.lap
           readStatistics = readStatistics add time
           if (time > readWarnThreshold)
-            log.warning(s"""Reading events(GetDomainEventsFromUntil(aggId=$aggId)) took longer than ${readWarnThreshold.toUnit(MILLISECONDS)}(${time.toUnit(MILLISECONDS)}).""")
+            log.warning(s"""Reading events(GetDomainEventsFromUntil(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
           res
         }
         domainEvents <- rowsToDomainEvents(rows)
