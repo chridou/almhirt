@@ -6,7 +6,7 @@ import almhirt.common._
 object FiniteDurationToStringConverter {
   val adjustingConverterInst = new FiniteDurationToStringConverter {
     def convert(dur: FiniteDuration): String = {
-      val nanos = dur.toNanos
+      val nanos = Math.abs(dur.toNanos)
       
       if(nanos < 1000L)
         dur.timeUnitString(NANOSECONDS)
@@ -18,7 +18,7 @@ object FiniteDurationToStringConverter {
         dur.timeUnitString(SECONDS)
        else if(nanos < 60L*60L*1000L*1000L*1000L)
         dur.timeUnitString(MINUTES)
-       else if(nanos < 24L*60L*60L*60L*1000L*1000L*1000L)
+       else if(nanos < 24L*60L*60L*1000L*1000L*1000L)
         dur.timeUnitString(HOURS)
        else
         dur.timeUnitString(DAYS)
