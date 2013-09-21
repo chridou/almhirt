@@ -254,7 +254,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
               val nCritical2 = criticalSubscriptions2.size
               val percentage1 = (nCritical1.toDouble / deadlinesBySubscriptions.size.toDouble) * 100.0
               val percentage2 = (nCritical2.toDouble / deadlinesBySubscriptions.size.toDouble) * 100.0
-              val msg1 = s"""There are $nCritical1 of ${deadlinesBySubscriptions.size}($percentage1%) subscriptions older than ${thresholdLvl1.defaultUnitString} and $nCritical2 of ${deadlinesBySubscriptions.size}($percentage2%) subscriptions older than ${thresholdLvl2.defaultUnitString}"""
+              val msg1 = s"""There are $nCritical1($percentage1%) of ${deadlinesBySubscriptions.size} subscriptions older than ${thresholdLvl1.defaultUnitString} and $nCritical2($percentage2%) older than ${thresholdLvl2.defaultUnitString}"""
               val criticalTrackingIds = criticalSubscriptions1.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
               val msg2 =
                 if (criticalTrackingIds.isEmpty) {
