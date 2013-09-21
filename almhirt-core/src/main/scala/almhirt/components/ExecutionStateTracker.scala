@@ -51,19 +51,26 @@ object ExecutionStateTracker {
       checkSubscriptions <- configSection.v[Boolean]("check-subscriptions")
       checkDurations <- if (checkSubscriptions) {
         configSection.v[FiniteDuration]("check-subscriptions-interval").flatMap(interval =>
-          configSection.v[FiniteDuration]("check-subscriptions-warn-age").map(lifetime => Some((interval, lifetime))))
+          configSection.v[FiniteDuration]("check-subscriptions-warn-age-lvl1").flatMap(warnAge1 =>
+            configSection.v[FiniteDuration]("check-subscriptions-warn-age-lvl2").map(warnAge2 => Some((interval, warnAge1, warnAge2)))))
       } else {
         None.success
+      }
+      _ <- checkDurations match {
+        case Some((_, a, b)) if (a >= b) =>
+          ConstraintViolatedProblem(s""""check-subscriptions-warn-age-lvl1" must be less than "check-subscriptions-warn-age-lvl2"(${a.defaultUnitString} >= {b.defaultUnitString}).""").failure
+        case _ => ().success
       }
     } yield {
       theAlmhirt.log.info(s"""ExecutionStateTracker: "target-size" is $theTargetSize""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-threshold" is $theCeanUpThreshold""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-interval" is ${theCleanUpInterval.defaultUnitString}""")
       checkDurations match {
-        case Some((interval, lt)) =>
+        case Some((interval, t1, t2)) =>
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions" is true""")
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-interval" is ${interval.defaultUnitString}""")
-          theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-warn-age" is ${lt.defaultUnitString}""")
+          theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-warn-age-lvl1" is ${t1.defaultUnitString}""")
+          theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-warn-age-lvl2" is ${t2.defaultUnitString}""")
         case None =>
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions" is false""")
       }

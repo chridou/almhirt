@@ -27,7 +27,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   private case object CleanUp
   private case object CheckSubscriptions
 
-  def checkSubscriptions: Option[(FiniteDuration, FiniteDuration)]
+  def checkSubscriptions: Option[(FiniteDuration, FiniteDuration, FiniteDuration)]
 
   protected var lifetimeExpiredSubscriptions = 0L
   protected var lifetimeTotalSubscriptions = 0L
@@ -241,17 +241,21 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String]) {
     checkSubscriptions.foreach {
-      case (interval, lifetime) =>
+      case (interval, thresholdLvl1, thresholdLvl2) =>
         executionContext.execute(new Runnable {
           def run() {
             val start = Deadline.now
-            val deadline = start - lifetime
-            val criticalSubscriptions = deadlinesBySubscriptions.filter { case (key, value) => value < deadline }
-            if (!criticalSubscriptions.isEmpty) {
-              val nCritical = criticalSubscriptions.size
-              val percentage = (nCritical.toDouble / deadlinesBySubscriptions.size.toDouble) * 100.0
-              val msg1 = s"""There are $nCritical of ${deadlinesBySubscriptions.size}($percentage%) subscriptions older than ${lifetime.defaultUnitString}."""
-              val criticalTrackingIds = criticalSubscriptions.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
+            val deadline1 = start - thresholdLvl1
+            val deadline2 = start - thresholdLvl2
+            val criticalSubscriptions1 = deadlinesBySubscriptions.filter { case (key, value) => value < deadline1 }
+            val criticalSubscriptions2 = criticalSubscriptions1.filter { case (key, value) => value < deadline2 }
+            if (!(criticalSubscriptions1.isEmpty && criticalSubscriptions2.isEmpty)) {
+              val nCritical1 = criticalSubscriptions1.size
+              val nCritical2 = criticalSubscriptions2.size
+              val percentage1 = (nCritical1.toDouble / deadlinesBySubscriptions.size.toDouble) * 100.0
+              val percentage2 = (nCritical2.toDouble / deadlinesBySubscriptions.size.toDouble) * 100.0
+              val msg1 = s"""There are $nCritical1 of ${deadlinesBySubscriptions.size}($percentage1%) subscriptions older than ${thresholdLvl1.defaultUnitString} and $nCritical2 of ${deadlinesBySubscriptions.size}($percentage2%) subscriptions older than ${thresholdLvl2.defaultUnitString}"""
+              val criticalTrackingIds = criticalSubscriptions1.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
               val msg2 =
                 if (criticalTrackingIds.isEmpty) {
                   "There are no tracking states associated to the critical subsriptions."
