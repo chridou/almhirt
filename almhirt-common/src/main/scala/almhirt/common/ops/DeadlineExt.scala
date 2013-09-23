@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 trait DeadlineExt {
   implicit class DeadlineOps(self: Deadline) {
     def lap: FiniteDuration = Deadline.now - self
+    def lapExceeds(dur: FiniteDuration): Boolean = (Deadline.now - self) > dur
   }
 }
 
@@ -35,5 +36,7 @@ trait FiniteDurationExt {
     def millisecondsString(): String = timeUnitString(MILLISECONDS)
     def microsecondsString(): String = timeUnitString(MICROSECONDS)
     def nanosecondsString(): String = timeUnitString(NANOSECONDS)
+
+    def exceeds(dur: FiniteDuration): Boolean = self > dur
   }
 }

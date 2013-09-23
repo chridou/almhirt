@@ -21,7 +21,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   def domainCommandsSequencer: ActorRef
 
   def messagePublisher: almhirt.messaging.MessagePublisher
-  
+
   def maxExecutionTimePerCommandWarnThreshold: FiniteDuration
 
   implicit val executionContext = theAlmhirt.futuresExecutor
@@ -58,6 +58,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   }
 
   def executeGenericCommand(cmd: Command) {
+    val start = Deadline.now
     handlers.get(cmd.getClass()).fold(
       fail => handleFailure(cmd, fail),
       handler => {
@@ -66,8 +67,15 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
         handler.asInstanceOf[GenericCommandHandler](cmd).onComplete(
           fail => handleFailure(cmd, fail),
           succMsg => {
+            val time = start.lap
             messagePublisher.publish(CommandExecuted(cmd.commandId))
             if (cmd.canBeTracked) messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(cmd.trackingId, succMsg)))
+            if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
+              if (cmd.canBeTracked)
+                log.warning(s"""Execution of generic command "${cmd.getClass().getName()}"(id = ${cmd.commandId})(trckId "${cmd.trackingId}") took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+              else
+                log.warning(s"""Execution of generic command "${cmd.getClass().getName()}"(id = ${cmd.commandId}) took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+            }
           })
       })
   }
@@ -93,6 +101,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     } yield (handler, repo)
 
   def executeCreatingDomainCommand(cmd: DomainCommand, handler: CreatingDomainCommandHandler, repository: ActorRef) {
+    val start = Deadline.now
     (for {
       res <- handler(cmd)
       _ <- AlmFuture.promise {
@@ -106,16 +115,24 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     } yield updatedAr).onComplete(
       fail => handleFailure(cmd, fail),
       ar => {
+        val time = start.lap
         messagePublisher.publish(CommandExecuted(cmd.commandId))
         if (cmd.canBeTracked)
           messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             cmd.trackingId,
             s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully created with version "${ar.version}"""",
             Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString))))
+        if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
+          if (cmd.canBeTracked)
+            log.warning(s"""Execution of creating domain command "${cmd.getClass().getName()}"(id = ${cmd.commandId})(trckId "${cmd.trackingId}") on aggregate root id "${ar.id}" took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+          else
+            log.warning(s"""Execution of creating domain command "${cmd.getClass().getName()}"(id = ${cmd.commandId}) on aggregate root id "${ar.id}" took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+        }
       })
   }
 
   def executeMutatingDomainCommand(cmd: DomainCommand, handler: MutatingDomainCommandHandler, repository: ActorRef) {
+    val start = Deadline.now
     (for {
       repoGetResp <- (repository ? GetAggregateRoot(cmd.targettedAggregateRootId))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
       currentState <- AlmFuture.promise(evaluateRepoGetResponse(repoGetResp, cmd))
@@ -131,12 +148,19 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     } yield updatedAr).onComplete(
       fail => handleFailure(cmd, fail),
       ar => {
+        val time = start.lap
         messagePublisher.publish(CommandExecuted(cmd.commandId))
         if (cmd.canBeTracked)
           messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             cmd.trackingId,
             s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully mutated ending with version "${ar.version}"""",
             Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString))))
+        if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
+          if (cmd.canBeTracked)
+            log.warning(s"""Execution of mutating domain command "${cmd.getClass().getName()}"(id = ${cmd.commandId})(trckId "${cmd.trackingId}") on aggregate root id "${ar.id}" took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+          else
+            log.warning(s"""Execution of mutating domain command "${cmd.getClass().getName()}"(id = ${cmd.commandId}) on aggregate root id "${ar.id}" took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+        }
       })
   }
 
@@ -154,8 +178,18 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
           case hdl: CreatingDomainCommandHandler =>
             if (headCommand.targettedVersion != 0L)
               AlmFuture.promise(CollisionProblem("A command to create a new aggregate root must have a version of 0!").failure)
-            else
-              hdl(headCommand)
+            else {
+              val start = Deadline.now
+              val res = hdl(headCommand)
+              val time = start.lap
+              if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
+                if (headCommand.canBeTracked)
+                  log.warning(s"""Execution of creating domain command "${headCommand.getClass().getName()}"(id = ${headCommand.commandId})(trckId "${headCommand.trackingId}") in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+                else
+                  log.warning(s"""Execution of creating domain command "${headCommand.getClass().getName()}"(id = ${headCommand.commandId}) in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+              }
+              res
+            }
           case hdl: MutatingDomainCommandHandler =>
             for {
               repoGetResp <- (repository ? GetAggregateRoot(headCommand.targettedAggregateRootId))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
@@ -166,7 +200,18 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
                 else
                   ().success
               }
-              res <- hdl(fetchedState, headCommand)
+              res <- {
+                val start = Deadline.now
+                val res = hdl(fetchedState, headCommand)
+                val time = start.lap
+                if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
+                  if (headCommand.canBeTracked)
+                    log.warning(s"""Execution of mutating domain command "${headCommand.getClass().getName()}"(id = ${headCommand.commandId})(trckId "${headCommand.trackingId}") in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+                  else
+                    log.warning(s"""Execution of mutating domain command "${headCommand.getClass().getName()}"(id = ${headCommand.commandId}) in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+                }
+                res
+              }
             } yield res
         }
       }
@@ -193,7 +238,18 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     def appendCommandResult(previousState: (IsAggregateRoot, IndexedSeq[DomainEvent]), command: DomainCommand): AlmFuture[(IsAggregateRoot, IndexedSeq[DomainEvent])] = {
       for {
         handler <- AlmFuture.promise { handlers.getMutatingDomainCommandHandler(command) }
-        handlerRes <- handler(previousState._1, command)
+        handlerRes <- {
+          val start = Deadline.now
+          val res = handler(previousState._1, command)
+          val time = start.lap
+          if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
+            if (command.canBeTracked)
+              log.warning(s"""Execution of mutating domain command "${command.getClass().getName()}"(id = ${command.commandId})(trckId "${command.trackingId}") in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+            else
+              log.warning(s"""Execution of mutating domain command "${command.getClass().getName()}"(id = ${command.commandId}) in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
+          }
+          res
+        }
       } yield (handlerRes._1, previousState._2 ++ handlerRes._2)
     }
     commands.foldLeft(AlmFuture.successful((currentState, previousEvents))) { (acc, cur) =>
