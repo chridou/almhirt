@@ -36,6 +36,8 @@ object ExecutionStateTracker {
       theCleanUpInterval <- configSection.v[FiniteDuration]("clean-up-interval")
       checkSubscriptions <- configSection.v[Boolean]("check-subscriptions")
       debugMode <- configSection.v[Boolean]("debug")
+      subscriptionsOkReportingThres <- configSection.v[Int]("subscriptions-ok-reporting-threshold")
+      stateChangedMessageWarningDur <- configSection.v[FiniteDuration]("state-changed-message-warning-age")
       checkDurations <- if (checkSubscriptions) {
         configSection.v[FiniteDuration]("check-subscriptions-interval").flatMap(interval =>
           configSection.v[FiniteDuration]("check-subscriptions-warn-age-lvl1").flatMap(warnAge1 =>
@@ -73,6 +75,8 @@ object ExecutionStateTracker {
         override val cleanUpInterval = theCleanUpInterval
         override val checkSubscriptions = checkDurations
         override val inDebugMode = debugMode
+        override val subscriptionsOkReportingThreshold = subscriptionsOkReportingThres
+        override val stateChangedMessageWarningAge = stateChangedMessageWarningDur
 
         def receive = handleTrackingMessage
 

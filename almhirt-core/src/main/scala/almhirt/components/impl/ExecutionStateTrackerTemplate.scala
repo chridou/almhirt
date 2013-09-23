@@ -23,6 +23,8 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   def cleanUpInterval: FiniteDuration
 
   def inDebugMode: Boolean
+  def subscriptionsOkReportingThreshold: Int
+  def stateChangedMessageWarningAge: FiniteDuration
 
   private case object CleanUp
   private case object CheckSubscriptions
@@ -46,10 +48,10 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       val newSubscriptions = notifyFinishedStateSubscribers(newState, subscriptions)
       context.become(currentStateHandler(newState, newSubscriptions))
       val now = canCreateUuidsAndDateTimes.getUtcTimestamp
-      val deadline = now.minusSeconds(5)
+      val deadline = now.minusMillis(stateChangedMessageWarningAge.toMillis.toInt)
       if (header.timestamp.compareTo(deadline) < 0) {
         val age = new org.joda.time.Period(header.timestamp, now)
-        log.warning(s"""Received an execution state(${incomingExecutionState.getClass().getSimpleName()}(track id = "${incomingExecutionState.trackId}")) older than 5 seconds(${age.toString()}). The timestamp is ${header.timestamp.toString()}.""")
+        log.warning(s"""Received an execution state(${incomingExecutionState.getClass().getSimpleName()}(track id = "${incomingExecutionState.trackId}")) older than ${stateChangedMessageWarningAge.defaultUnitString}(${age.toString()}). The timestamp is ${header.timestamp.toString()}.""")
       }
     case GetExecutionStateFor(trackId) =>
       reportExecutionState(trackId, tracked, sender)
@@ -261,7 +263,8 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
               val msg7 = s"""This calculation took ${start.lap.defaultUnitString}."""
               log.warning(s"\n$msg1\n$msg2\n$msg3\n$msg4\n$msg5\n$msg6\n$msg7")
             } else {
-              log.info(s"All subscriptions($expectedNumberOfSubscriptions) are ok.")
+              if (expectedNumberOfSubscriptions >= subscriptionsOkReportingThreshold)
+                log.info(s"All subscriptions($expectedNumberOfSubscriptions) are ok.")
             }
             actor.context.system.scheduler.scheduleOnce(interval)(requestSubscriptionChecking())
           }
