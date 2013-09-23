@@ -37,8 +37,6 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   protected var numSuccessfulReceived = 0L
   protected var numFailedReceived = 0L
 
-  protected var lastStateUpdateReceivedOn: Option[(Deadline, ExecutionState)] = None
-
   private var deadlinesBySubscriptions = Map.empty[ActorRef, Deadline]
   private var trackingIdsBySubscription = Map.empty[ActorRef, String]
 
@@ -67,7 +65,6 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       context.become(currentStateHandler(newTracked, newSubscriptions))
     case CheckSubscriptions =>
       checkSubscriptions(tracked, deadlinesBySubscriptions, trackingIdsBySubscription, subscriptions)
-      reportLastStateUpdate()
     case Terminated(subscriber) =>
       val trackId = trackingIdsBySubscription(subscriber)
       val age = deadlinesBySubscriptions(subscriber).lap
@@ -85,7 +82,6 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   override def handleTrackingMessage = currentStateHandler(Map.empty, Map.empty)
 
   private def handleIncomingExecutionState(incomingState: ExecutionState, tracked: Map[String, ExecutionStateEntry]): Map[String, ExecutionStateEntry] = {
-    updateLastStateUpdate(incomingState)
     updateReceivedCounters(incomingState)
     getUpdatedState(incomingState, tracked) match {
       case None =>
@@ -270,20 +266,6 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
             actor.context.system.scheduler.scheduleOnce(interval)(requestSubscriptionChecking())
           }
         })
-    }
-  }
-
-  private def updateLastStateUpdate(state: ExecutionState) {
-    val time = Deadline.now
-    lastStateUpdateReceivedOn = Some((time, state))
-  }
-
-  private def reportLastStateUpdate() {
-    lastStateUpdateReceivedOn match {
-      case None => ()
-      case Some((lastUpdate, lastStateReceived)) =>
-        val elapsed = lastUpdate.lap
-        log.info(s"""The last state update was received ${elapsed.defaultUnitString} ago and was a ${lastStateReceived.toString()}.""")
     }
   }
 
