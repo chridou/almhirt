@@ -24,7 +24,6 @@ object ExecutionStateTracker {
   import akka.util.Timeout
   import almhirt.almfuture.all._
 
-
   import scala.concurrent.ExecutionContext
 
   import com.typesafe.config.Config
@@ -104,6 +103,20 @@ object ExecutionStateTracker {
   def props(theAlmhirt: Almhirt): AlmValidation[Props] =
     props("almhirt.execution-state-tracker", theAlmhirt)
 
+  def apply(theAlmhirt: Almhirt, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
+    for {
+      configSection <- theAlmhirt.config.v[Config]("almhirt.execution-state-tracker")
+      numActors <- configSection.v[Int]("number-of-actors")
+      props <- props(theAlmhirt)
+    } yield {
+      if (numActors <= 1) {
+        (actorFactory.actorOf(props, "execution-state-tracker"), CloseHandle.noop)
+      } else {
+        (actorFactory.actorOf(Props(new ExecutionStateTrackerRouter(numActors, props)), "execution-state-tracker"), CloseHandle.noop)
+      }
+    }
+    
+  def apply(theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, theAlmhirt.actorSystem)
 }
 
 trait ExecutionStateTracker { actor: Actor with ActorLogging =>

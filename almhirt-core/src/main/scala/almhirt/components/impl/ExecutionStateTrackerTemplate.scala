@@ -12,7 +12,6 @@ import almhirt.problem.{ Major, Minor }
 
 trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with ActorLogging =>
   import ExecutionStateTracker._
-  import ExecutionStateStore._
 
   implicit def publishTo: MessagePublisher
   implicit def canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes

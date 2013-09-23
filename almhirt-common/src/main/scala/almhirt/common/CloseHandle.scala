@@ -8,3 +8,7 @@ trait CloseHandle extends Function0[Unit] { self =>
       def close() { self.close(); other.close() }
     }
 }
+
+object CloseHandle {
+  val noop = new CloseHandle { def close() {} }
+}
