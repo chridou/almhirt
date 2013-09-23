@@ -239,6 +239,45 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
     }
   }
 
+  private def getStatsMsg(criticalIds: Iterable[String], tracked: Map[String, ExecutionStateEntry]): String = {
+    if (criticalIds.isEmpty) {
+      "There are no critical subsriptions."
+    } else {
+      var nUntracked = 0
+      var nStarted = 0
+      var nInProcess = 0
+      var nExecuted = 0
+      var nSuccess = 0
+      var nFailed = 0
+      criticalIds.foreach(trackId =>
+        tracked get trackId match {
+          case Some(ExecutionStateEntry(state, _)) =>
+            state match {
+              case e: ExecutionStarted =>
+                nStarted += 1
+              case e: ExecutionInProcess =>
+                nInProcess += 1
+              case e: ExecutionSuccessful =>
+                nSuccess += 1
+                nExecuted += 1
+              case e: ExecutionFailed =>
+                nFailed += 1
+                nExecuted += 1
+            }
+          case None =>
+            nUntracked += 1
+        })
+      s"""	|There are ${criticalIds.size} tracking states associated to the critical subscriptions. 
+                		|nUntracked: $nUntracked
+                		|nStarted: $nStarted
+                		|nInProcess: $nInProcess
+                		|nExecuted: $nExecuted
+                		|nSuccess: $nSuccess
+                		|nFailed: $nFailed""".stripMargin
+    }
+
+  }
+
   private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String]) {
     checkSubscriptions.foreach {
       case (interval, thresholdLvl1, thresholdLvl2) =>
@@ -247,55 +286,23 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
             val start = Deadline.now
             val deadline1 = start - thresholdLvl1
             val deadline2 = start - thresholdLvl2
-            val criticalSubscriptions1 = deadlinesBySubscriptions.filter ( _._2 < deadline1 )
-            val criticalSubscriptions2 = criticalSubscriptions1.filter ( _._2 < deadline2 )
+            val criticalSubscriptions1 = deadlinesBySubscriptions.filter(_._2 < deadline1)
+            val criticalSubscriptions2 = criticalSubscriptions1.filter(_._2 < deadline2)
             if (!(criticalSubscriptions1.isEmpty && criticalSubscriptions2.isEmpty)) {
               val nCritical1 = criticalSubscriptions1.size
               val nCritical2 = criticalSubscriptions2.size
               val percentage1 = (nCritical1.toDouble / deadlinesBySubscriptions.size.toDouble) * 100.0
               val percentage2 = (nCritical2.toDouble / deadlinesBySubscriptions.size.toDouble) * 100.0
               val msg1 = s"""There are $nCritical1($percentage1%) of ${deadlinesBySubscriptions.size} subscriptions older than ${thresholdLvl1.defaultUnitString} and $nCritical2($percentage2%) older than ${thresholdLvl2.defaultUnitString}"""
-              val criticalTrackingIds1 = criticalSubscriptions1.map { case (key, _) => trackingIdsBySubscriptions(key) }.toSet
-              val criticalTrackingIds2 = criticalSubscriptions2.map { case (key, _) => criticalTrackingIds1.contains(key) }.toSet
-              val msg2 =
-                if (criticalTrackingIds.isEmpty) {
-                  "There are no tracking states associated to the critical subsriptions."
-                } else {
-                  var nUntracked = 0
-                  var nStarted = 0
-                  var nInProcess = 0
-                  var nExecuted = 0
-                  var nSuccess = 0
-                  var nFailed = 0
-                  criticalTrackingIds.foreach(trackId =>
-                    tracked get trackId match {
-                      case Some(ExecutionStateEntry(state, _)) =>
-                        state match {
-                          case e: ExecutionStarted =>
-                            nStarted += 1
-                          case e: ExecutionInProcess =>
-                            nInProcess += 1
-                          case e: ExecutionSuccessful =>
-                            nSuccess += 1
-                            nExecuted += 1
-                          case e: ExecutionFailed =>
-                            nFailed += 1
-                            nExecuted += 1
-                        }
-                      case None =>
-                        nUntracked += 1
-                    })
-                  s"""	|There are ${criticalTrackingIds.size} tracking states associated to the critical subscriptions. 
-                		|nUntracked: $nUntracked
-                		|nStarted: $nStarted
-                		|nInProcess: $nInProcess
-                		|nExecuted: $nExecuted
-                		|nSuccess: $nSuccess
-                		|nFailed: $nFailed""".stripMargin
-                }
-              val msg3 = "Hint: The state may have changed during the calculation of these values."
-              val msg4 = s"""This calculation took ${start.lap.defaultUnitString}."""
-              log.warning(s"\n$msg1\n$msg2\n$msg3\n$msg4")
+              val criticalTrackingIds1 = criticalSubscriptions1.map(x => trackingIdsBySubscriptions(x._1)).toSet
+              val criticalTrackingIds2 = criticalSubscriptions2.map(x => trackingIdsBySubscriptions(x._1)).toSet
+              val msg2 = s"Older than ${thresholdLvl1.defaultUnitString}:"
+              val msg3 = getStatsMsg(criticalTrackingIds1, tracked)
+              val msg4 = s"Older than ${thresholdLvl2.defaultUnitString}:"
+              val msg5 = getStatsMsg(criticalTrackingIds2, tracked)
+              val msg6 = "Hint: The state may have changed during the calculation of these values."
+              val msg7 = s"""This calculation took ${start.lap.defaultUnitString}."""
+              log.warning(s"\n$msg1\n$msg2\n$msg3\n$msg4\n$msg5\n$msg6\n$msg7")
             } else {
               log.info("All subscriptions are ok.")
             }
