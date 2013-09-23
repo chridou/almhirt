@@ -57,7 +57,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
         case None =>
           val msg = s"""There was a confirmed kill for "${cell.path.toString()}" but it is not in the list of unconfirmed kills."""
           log.error(msg)
-          throw new Exception(msg)
+          throw new CriticalAggregateRootCellSourceException(msg, null)
       }
     case CleanUp =>
       val oldStats = lastStatsAfterCleanUp
@@ -67,7 +67,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
           cacheState.cleanUp(maxDoesNotExistAge, maxCachedAggregateRootAge, maxUninitializedAge)
         } catch {
           case scala.util.control.NonFatal(exn) =>
-            throw new Exception(s"The cell cache failed to perform a clean up: ${exn.getMessage()}", exn)
+            throw new CriticalAggregateRootCellSourceException(s"The cell cache failed to perform a clean up: ${exn.getMessage()}", exn)
         }
       lastStatsAfterCleanUp = cacheState.stats
       val numPendingRequest = pendingRequests.map(_._2).flatten.size
