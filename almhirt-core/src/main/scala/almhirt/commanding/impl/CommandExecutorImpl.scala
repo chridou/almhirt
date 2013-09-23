@@ -10,7 +10,7 @@ class CommandExecutorImpl(
     val handlers: CommandHandlerRegistry,
     val repositories: AggregateRootRepositoryRegistry,
     val messagePublisher: MessagePublisher,
-    val theAlmhirt: Almhirt) extends CommandExecutor with  CommandExecutorTemplate with Actor with ActorLogging {
+    val theAlmhirt: Almhirt) extends CommandExecutor with CommandExecutorTemplate with Actor with ActorLogging {
 
     val domainCommandsSequencer = context.actorOf(Props(new DomainCommandsSequencerImpl(theAlmhirt)), "DomainCommandsSequencer")
     
