@@ -30,6 +30,7 @@ trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor with ActorLog
     val numberOfAggregateRoots = domainEventLog.groupBy(x => x.aggId).size
     
     val msg = s"""I stored $numberOfEvents domainEvents of $numberOfAggregateRoots aggregate roots."""
+    log.info(msg)
   }
   
   final protected def receiveDomainEventLogMsg: Receive = {
