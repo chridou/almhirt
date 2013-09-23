@@ -58,7 +58,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       context.become(currentStateHandler(tracked, removeSubscription(trackId, sender, subscriptions)))
     case CleanUp =>
       val (newTracked, newSubscriptions) = cleanUp(tracked, subscriptions)
-      currentStateHandler(newTracked, newSubscriptions)
+      context.become(currentStateHandler(newTracked, newSubscriptions))
     case CheckSubscriptions =>
       checkSubscriptions(tracked, deadlinesBySubscriptions, trackingIdsBySubscription, subscriptions)
       reportLastStateUpdate()
