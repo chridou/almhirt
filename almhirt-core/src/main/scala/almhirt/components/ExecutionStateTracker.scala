@@ -75,7 +75,8 @@ object ExecutionStateTracker {
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions" is false""")
       }
       Props(new almhirt.components.impl.ExecutionTrackerTemplate with ExecutionStateTracker with Actor with ActorLogging {
-        override val executionContext = theAlmhirt.futuresExecutor
+        override val futuresContext = theAlmhirt.futuresExecutor
+        override val numberCruncher = theAlmhirt.numberCruncher
         override val publishTo = theAlmhirt.messageBus
         override val canCreateUuidsAndDateTimes = theAlmhirt
         override val secondLevelStore = theSecondLevelStore

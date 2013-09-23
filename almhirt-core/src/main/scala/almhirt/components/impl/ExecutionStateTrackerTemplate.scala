@@ -16,7 +16,8 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   implicit def publishTo: MessagePublisher
   implicit def canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes
-  implicit def executionContext: ExecutionContext
+  implicit def futuresContext: ExecutionContext
+  def numberCruncher: ExecutionContext
   def secondLevelStore: SecondLevelStore
   def secondLevelMaxAskDuration: scala.concurrent.duration.FiniteDuration
   def targetSize: Int
@@ -281,7 +282,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String]) {
     checkSubscriptions.foreach {
       case (interval, thresholdLvl1, thresholdLvl2) =>
-        executionContext.execute(new Runnable {
+        numberCruncher.execute(new Runnable {
           def run() {
             val start = Deadline.now
             val deadline1 = start - thresholdLvl1
