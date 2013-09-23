@@ -43,10 +43,16 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   private var trackingIdsBySubscription = Map.empty[ActorRef, String]
 
   protected def currentStateHandler(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, Set[ActorRef]]): Receive = {
-    case ExecutionStateChanged(_, incomingExecutionState) =>
+    case ExecutionStateChanged(header, incomingExecutionState) =>
       val newState = handleIncomingExecutionState(incomingExecutionState, tracked)
       val newSubscriptions = notifyFinishedStateSubscribers(newState, subscriptions)
       context.become(currentStateHandler(newState, newSubscriptions))
+      val now = canCreateUuidsAndDateTimes.getUtcTimestamp
+      val deadline = now.minusSeconds(5)
+      if (header.timestamp.compareTo(deadline) < 0) {
+        val age = new org.joda.time.Period(header.timestamp, now)
+        log.warning(s"""Received an execution state(${incomingExecutionState.getClass().getSimpleName()}(track id = "${incomingExecutionState.trackId}")) older than 5 seconds(${age.toString()}). The timestamp is ${header.timestamp.toString()}.""")
+      }
     case GetExecutionStateFor(trackId) =>
       reportExecutionState(trackId, tracked, sender)
     case SubscribeForFinishedState(trackId) =>
