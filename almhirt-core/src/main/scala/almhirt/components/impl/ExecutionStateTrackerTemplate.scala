@@ -65,7 +65,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       val (newTracked, newSubscriptions) = cleanUp(tracked, subscriptions)
       context.become(waitingForTrackedStateUpdate(newTracked, newSubscriptions, updateRequests))
     case CheckSubscriptions =>
-      checkSubscriptions(tracked, deadlinesBySubscriptions, trackingIdsBySubscription)
+      checkSubscriptions(tracked, deadlinesBySubscriptions, trackingIdsBySubscription, subscriptions)
       context.become(waitingForTrackedStateUpdate(tracked, subscriptions, updateRequests))
     case Terminated(subscriber) =>
       val trackId = trackingIdsBySubscription(subscriber)
@@ -98,7 +98,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       val (newTracked, newSubscriptions) = cleanUp(tracked, subscriptions)
       context.become(idleState(newTracked, newSubscriptions))
     case CheckSubscriptions =>
-      checkSubscriptions(tracked, deadlinesBySubscriptions, trackingIdsBySubscription)
+      checkSubscriptions(tracked, deadlinesBySubscriptions, trackingIdsBySubscription, subscriptions)
       context.become(idleState(tracked, subscriptions))
     case Terminated(subscriber) =>
       val trackId = trackingIdsBySubscription(subscriber)
@@ -279,11 +279,17 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   }
 
-  private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String]) {
+  private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String], subscriptions: Map[String, List[ActorRef]]) {
     checkSubscriptions.foreach {
       case (interval, thresholdLvl1, thresholdLvl2) =>
         numberCruncher.execute(new Runnable {
           def run() {
+            val expectedNumberOfSubscriptions = subscriptions.map(x => x._2.size).sum
+            if (deadlinesBySubscriptions.size != expectedNumberOfSubscriptions)
+              log.warning(s"deadlinesBySubscriptions should be $expectedNumberOfSubscriptions but is ${deadlinesBySubscriptions.size}")
+            if (trackingIdsBySubscriptions.size != expectedNumberOfSubscriptions)
+              log.warning(s"trackingIdsBySubscriptions should be $expectedNumberOfSubscriptions but is ${trackingIdsBySubscriptions.size}")
+
             val start = Deadline.now
             val deadline1 = start - thresholdLvl1
             val deadline2 = start - thresholdLvl2
@@ -305,7 +311,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
               val msg7 = s"""This calculation took ${start.lap.defaultUnitString}."""
               log.warning(s"\n$msg1\n$msg2\n$msg3\n$msg4\n$msg5\n$msg6\n$msg7")
             } else {
-              log.info("All subscriptions are ok.")
+              log.info(s"All subscriptions($expectedNumberOfSubscriptions) are ok.")
             }
             actor.context.system.scheduler.scheduleOnce(interval)(requestSubscriptionChecking())
           }
