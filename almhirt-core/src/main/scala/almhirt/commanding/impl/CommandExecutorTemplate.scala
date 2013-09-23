@@ -1,6 +1,7 @@
 package almhirt.commanding.impl
 
 import scalaz.syntax.validation._
+import scala.concurrent.duration._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
@@ -20,6 +21,8 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   def domainCommandsSequencer: ActorRef
 
   def messagePublisher: almhirt.messaging.MessagePublisher
+  
+  def maxExecutionTimePerCommandWarnThreshold: FiniteDuration
 
   implicit val executionContext = theAlmhirt.futuresExecutor
   val futuresMaxDuration = theAlmhirt.durations.longDuration
