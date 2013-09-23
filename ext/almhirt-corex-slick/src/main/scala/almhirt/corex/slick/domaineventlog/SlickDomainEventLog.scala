@@ -57,7 +57,6 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
       }
     }
     val time = start.lap
-    println(time)
     deserializationStatistics = deserializationStatistics add time
     res
   }
