@@ -24,31 +24,18 @@ object ExecutionStateTracker {
   import akka.util.Timeout
   import almhirt.almfuture.all._
 
-  trait SecondLevelStore {
-    def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[ExecutionStateEntry]]
-  }
 
   import scala.concurrent.ExecutionContext
 
-  def secondLevelStore(actor: ActorRef)(implicit executionContext: ExecutionContext): SecondLevelStore = {
-    new SecondLevelStore {
-      def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[ExecutionStateEntry]] =
-        (actor ? ExecutionStateStore.GetEntry(trackId))(atMost).successfulAlmFuture[ExecutionStateStore.GetEntryResponse].mapV(res =>
-          res match {
-            case ExecutionStateStore.GetEntryResult(entry) => entry.success
-            case ExecutionStateStore.GetEntryFailure(problem) => problem.failure
-          })
-    }
-  }
-
   import com.typesafe.config.Config
   import almhirt.configuration._
-  def props(configSection: Config, theSecondLevelStore: SecondLevelStore, secondLevelStoreMaxAskDur: FiniteDuration, theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
     for {
       theTargetSize <- configSection.v[Int]("target-size")
       theCeanUpThreshold <- configSection.v[Int]("clean-up-threshold")
       theCleanUpInterval <- configSection.v[FiniteDuration]("clean-up-interval")
       checkSubscriptions <- configSection.v[Boolean]("check-subscriptions")
+      debugMode <- configSection.v[Boolean]("debug")
       checkDurations <- if (checkSubscriptions) {
         configSection.v[FiniteDuration]("check-subscriptions-interval").flatMap(interval =>
           configSection.v[FiniteDuration]("check-subscriptions-warn-age-lvl1").flatMap(warnAge1 =>
@@ -62,6 +49,8 @@ object ExecutionStateTracker {
         case _ => ().success
       }
     } yield {
+      if (debugMode)
+        theAlmhirt.log.info("""ExecutionStateTracker: DEBUG-MODE""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "target-size" is $theTargetSize""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-threshold" is $theCeanUpThreshold""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-interval" is ${theCleanUpInterval.defaultUnitString}""")
@@ -79,18 +68,22 @@ object ExecutionStateTracker {
         override val numberCruncher = theAlmhirt.numberCruncher
         override val publishTo = theAlmhirt.messageBus
         override val canCreateUuidsAndDateTimes = theAlmhirt
-        override val secondLevelStore = theSecondLevelStore
-        override val secondLevelMaxAskDuration = secondLevelStoreMaxAskDur
         override val targetSize = theTargetSize
         override val cleanUpThreshold = theCeanUpThreshold
         override val cleanUpInterval = theCleanUpInterval
         override val checkSubscriptions = checkDurations
+        override val inDebugMode = debugMode
 
         def receive = handleTrackingMessage
 
         override def preStart() {
           this.context.system.scheduler.scheduleOnce(cleanUpInterval)(requestCleanUp())(theAlmhirt.futuresExecutor)
           requestSubscriptionChecking()
+        }
+
+        override def preRestart(reason: Throwable, message: Option[Any]) {
+          super.preRestart(reason, message)
+          log.warning(s"Execution state tracker restarting: ${reason.getMessage()}")
         }
 
         override def postStop() {
@@ -100,45 +93,13 @@ object ExecutionStateTracker {
       })
     }
 
-  def props(configSection: Config, secondLevelStore: Option[SecondLevelStore], theAlmhirt: Almhirt): AlmValidation[Props] =
-    for {
-      theSndLvlStMaxAskDur <- if (secondLevelStore.isDefined)
-        configSection.v[FiniteDuration]("second-level-store-max-ask-duration")
-      else
-        theAlmhirt.durations.mediumDuration.success
-      actualSecondLevelStore <- secondLevelStore.getOrElse(new SecondLevelStore {
-        override def get(trackId: String)(atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[Option[ExecutionStateEntry]] =
-          AlmFuture.successful(None)
-      }).success
-      props <- props(configSection, actualSecondLevelStore, theSndLvlStMaxAskDur, theAlmhirt)
-    } yield {
-      if (secondLevelStore.isDefined) {
-        theAlmhirt.log.info(s"""ExecutionStateTracker: Using a second level store with a "second-level-store-max-ask-duration" of $theSndLvlStMaxAskDur.""")
-      } else {
-        theAlmhirt.log.info(s"""ExecutionStateTracker: No second level store.""")
-      }
-      props
-    }
-
-  def props(configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
-    props(configSection, None, theAlmhirt)
-
-  def props(configSection: Config, secondLevelStore: SecondLevelStore, theAlmhirt: Almhirt): AlmValidation[Props] =
-    props(configSection, Some(secondLevelStore), theAlmhirt)
-
   def props(configPath: String, theAlmhirt: Almhirt): AlmValidation[Props] =
     theAlmhirt.config.v[Config](configPath).flatMap(
-      props(_, None, theAlmhirt))
-
-  def props(configPath: String, secondLevelStore: SecondLevelStore, theAlmhirt: Almhirt): AlmValidation[Props] =
-    theAlmhirt.config.v[Config](configPath).flatMap(
-      props(_, Some(secondLevelStore), theAlmhirt))
+      props(_, theAlmhirt))
 
   def props(theAlmhirt: Almhirt): AlmValidation[Props] =
     props("almhirt.execution-state-tracker", theAlmhirt)
 
-  def props(secondLevelStore: SecondLevelStore, theAlmhirt: Almhirt): AlmValidation[Props] =
-    props("almhirt.execution-state-tracker", secondLevelStore, theAlmhirt)
 }
 
 trait ExecutionStateTracker { actor: Actor with ActorLogging =>

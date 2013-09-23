@@ -27,32 +27,45 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   implicit val executionContext = theAlmhirt.futuresExecutor
   val futuresMaxDuration = theAlmhirt.durations.longDuration
 
+  private val reportingDiff = 5000L
+
+  protected var commandsReceived = 0L
+  protected var sequencedCommandsReceived = 0L
+  protected var sequencesReceived = 0L
+
+  private var countersSumOld = 0L
+
   override def receiveCommandExecutorMessage: Receive = {
     case cmd: Command =>
-      log.debug(s"""Received command with id "${cmd.commandId}" of type "${cmd.getClass().getName()}"""")
       messagePublisher.publish(CommandReceived(cmd))
       initiateExecution(cmd)
     case DomainCommandsSequencer.DomainCommandsSequenceCreated(groupLabel, domainCommandSequence) =>
-      log.debug(s"""Received command sequence "$groupLabel"(${domainCommandSequence.size}).""")
+      sequencesReceived += 1
+      reportOnDiff()
       executeDomainCommandSequence(domainCommandSequence)
     case DomainCommandsSequencer.DomainCommandsSequenceNotCreated(grouplabel: String, problem: Problem) =>
-      log.error(s""""$grouplabel":${problem.message}""")
       throw new Exception(problem.message)
   }
 
   def initiateExecution(cmd: Command) {
     cmd match {
       case cmd: DomainCommand =>
-        if (cmd.isPartOfAGroup)
+        if (cmd.isPartOfAGroup) {
           domainCommandsSequencer ! DomainCommandsSequencer.SequenceDomainCommand(cmd)
-        else {
+          sequencedCommandsReceived += 1
+          reportOnDiff()
+        } else {
           if (cmd.canBeTracked)
             messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(cmd.trackingId)))
           executeDomainCommand(cmd)
+          commandsReceived += 1
+          reportOnDiff()
         }
       case cmd: Command =>
         if (cmd.canBeTracked)
           messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(cmd.trackingId)))
+        commandsReceived += 1
+        reportOnDiff()
         executeGenericCommand(cmd)
     }
   }
@@ -290,6 +303,14 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     log.error(s"""An error occured executing command of type ${cmd.getClass().getName()} with id ${cmd.commandId}:\n${problem.toString()}""")
     messagePublisher.publish(CommandNotExecuted(cmd.header.id, problem))
     handleFailure(cmd.tryGetTrackingId, problem)
+  }
+
+  private def reportOnDiff() {
+    val sumNew = commandsReceived + sequencedCommandsReceived
+    if (sumNew - countersSumOld >= reportingDiff) {
+      log.info(s"Commands received: $commandsReceived, sequenced commands received: $sequencedCommandsReceived, command sequences received: $sequencesReceived.")
+      countersSumOld = sumNew
+    }
   }
 
 }

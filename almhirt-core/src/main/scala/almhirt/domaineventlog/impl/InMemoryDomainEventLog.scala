@@ -3,12 +3,35 @@ package almhirt.domaineventlog.impl
 import akka.actor._
 import almhirt.domain.DomainEvent
 import almhirt.domaineventlog.DomainEventLog
+import almhirt.core.Almhirt
 
-trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor =>
+object InMemoryDomainEventLog {
+  def props(theAlmhirt: Almhirt): Props = 
+    Props(new InMemoryDomainEventLog with Actor with ActorLogging {
+      override def receive: Receive = receiveDomainEventLogMsg
+      override def publishCommittedEvent(event: DomainEvent) {
+        theAlmhirt.messageBus.publish(event)(theAlmhirt)
+      }
+      
+      override def postStop() {
+        super.postStop()
+        logStatistics()
+      }
+    })
+}
+
+trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor with ActorLogging =>
   import DomainEventLog._
 
   private var domainEventLog = Vector.empty[DomainEvent]
 
+  protected def logStatistics() {
+    val numberOfEvents = domainEventLog.size
+    val numberOfAggregateRoots = domainEventLog.groupBy(x => x.aggId).size
+    
+    val msg = s"""I stored $numberOfEvents domainEvents of $numberOfAggregateRoots aggregate roots."""
+  }
+  
   final protected def receiveDomainEventLogMsg: Receive = {
     case CommitDomainEvents(events) =>
       domainEventLog = domainEventLog ++ events

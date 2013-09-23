@@ -59,13 +59,13 @@ object ActorSystemEventStreamMessageBus {
     case object CreateActorStreamActor
     case object CloseMessaging
   }
-  private class SupervisorActor extends Actor {
+  private class SupervisorActor() extends Actor {
     import supervisorMessages._
     override def receive: Receive = {
       case CreateActorStreamActor =>
         sender ! context.actorOf(Props(new StreamActor()))
       case CreateMessageDispatcherActor =>
-        sender ! context.actorOf(Props[MessageDispatcherActor])
+        sender ! context.actorOf(Props(new MessageDispatcherActor()))
       case CloseMessaging =>
         context.stop(self)
     }
@@ -78,11 +78,13 @@ object ActorSystemEventStreamMessageBus {
     case class Unsubscribe(subscriber: ActorRef)
   }
 
-  private class MessageDispatcherActor extends Actor {
+  private class MessageDispatcherActor() extends Actor with ActorLogging {
     import messageDispatcherMessages._
 
     var subscribers = Vector.empty[(ActorRef, Classifier[AnyRef])]
 
+    private val ccuad = CanCreateUuidsAndDateTimes()
+    
     private def unsubscribed: Receive = {
       case SubscribeToAkkaStream(stream) =>
         stream.subscribe(self, classOf[Message])
@@ -91,6 +93,12 @@ object ActorSystemEventStreamMessageBus {
 
     private def subscribed(subscribedTo: akka.event.EventStream): Receive = {
       case msg @ Message(header, payload) =>
+        val now = ccuad.getUtcTimestamp
+        val deadline =now.minusSeconds(5)
+        if(header.timestamp.compareTo(deadline) < 0) {
+          val age = new org.joda.time.Period(header.timestamp, now)
+          log.warning(s"""Dispatching a message older than 5 seconds(${age.toString()}). The timestamp is ${header.timestamp.toString()}.""")
+        }
         subscribers.filter(x => x._2.classify(header, payload)).map(_._1).foreach(_ ! msg)
       case UnsubscribeFromAkkaStream =>
         subscribedTo.unsubscribe(self)
@@ -119,8 +127,11 @@ object ActorSystemEventStreamMessageBus {
     def classifyUnsafe(what: Message) = true
   }
 
-  private class StreamActor extends Actor {
+  private class StreamActor extends Actor with ActorLogging {
     import streamActorMessages._
+
+    private val ccuad = CanCreateUuidsAndDateTimes()
+
     var subscribers = Vector.empty[(ActorRef, Classifies)]
     var channels = Vector.empty[(ActorRef, Classifies)]
 
@@ -131,6 +142,12 @@ object ActorSystemEventStreamMessageBus {
 
     private def subscribed(subscription: Subscription): Receive = {
       case msg @ Message(header, payload) =>
+        val now = ccuad.getUtcTimestamp
+        val deadline =now.minusSeconds(5)
+        if(header.timestamp.compareTo(deadline) < 0) {
+          val age = new org.joda.time.Period(header.timestamp, now)
+          log.warning(s"""Dispatching a message older than 5 seconds(${age.toString()}). The timestamp is ${header.timestamp.toString()}.""")
+        }
         subscribers.filter(x => x._2.classifyUnsafe(msg)).map(_._1).foreach(_ ! msg.payload)
         channels.filter(x => x._2.classifyUnsafe(msg)).map(_._1).foreach(_ ! msg)
       case Subscribe(subscriber, classifier) =>
