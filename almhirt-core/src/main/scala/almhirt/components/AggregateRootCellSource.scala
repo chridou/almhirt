@@ -1,14 +1,18 @@
 package almhirt.components
 
 import scala.language.existentials
-import java.util.{ UUID => JUUID }
+import java.util.{UUID => JUUID}
+import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
-import scala.concurrent.ExecutionContext
-import java.util.{UUID => JUUID}
+import almhirt.configuration._
+import almhirt.core.Almhirt
 import almhirt.domain.AggregateRoot
+import almhirt.domain.AggregateRootCellStateSink
 import almhirt.domain.AggregateRootCell.AggregateRootCellState
 import almhirt.components.impl.AggregateRootCellCacheStats
+import com.typesafe.config.Config
+import almhirt.components.impl.AggregateRootCellSourceImpl
 
 object AggregateRootCellSource {
   sealed trait AggregateRootCellCacheMessage
@@ -53,6 +57,23 @@ object AggregateRootCellSource {
       f(cell) andThen (_ => release())
     }
   }
+  
+  def apply(cellPropsFactories: Class[_] => Option[(JUUID, AggregateRootCellStateSink) => Props], theAlmhirt: Almhirt, actorRefFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
+    for {
+      configSection <- theAlmhirt.config.v[Config]("almhirt.aggregate-root-cell-source")
+      numActors <- configSection.v[Int]("number-of-actors")
+    } yield {
+      val theProps = Props(new AggregateRootCellSourceImpl(cellPropsFactories, theAlmhirt))
+      theAlmhirt.log.info(s"""Aggregate root cell source: "number-of-actors" is $numActors""")
+      if (numActors <= 1) {
+        (actorRefFactory.actorOf(theProps, "aggregate-root-cell-source"), CloseHandle.noop)
+      } else {
+        (actorRefFactory.actorOf(Props(new AggregateRootCellSourceRouter(numActors, theProps)), "aggregate-root-cell-source"), CloseHandle.noop)
+      }
+    }
+    
+  def apply(cellPropsFactories: Class[_] => Option[(JUUID, AggregateRootCellStateSink) => Props], theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
+    apply(cellPropsFactories, theAlmhirt, theAlmhirt.actorSystem)
 }
 
 trait AggregateRootCellSource { actor: Actor =>
