@@ -226,7 +226,7 @@ object AlmHirtBuild extends Build
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, corexRiftwarp, corexMongo, slickExtensions, corexSpray)
+	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
