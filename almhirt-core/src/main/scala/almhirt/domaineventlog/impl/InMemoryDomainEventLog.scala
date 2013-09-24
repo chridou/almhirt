@@ -1,9 +1,13 @@
 package almhirt.domaineventlog.impl
 
 import akka.actor._
+import almhirt.common._
+import almhirt.configuration._
 import almhirt.domain.DomainEvent
 import almhirt.domaineventlog.DomainEventLog
 import almhirt.core.Almhirt
+import almhirt.domaineventlog.DomainEventLogRouter
+import com.typesafe.config.Config
 
 object InMemoryDomainEventLog {
   def props(theAlmhirt: Almhirt): Props = 
@@ -18,6 +22,28 @@ object InMemoryDomainEventLog {
         logStatistics()
       }
     })
+  
+  def apply(theAlmhirt: Almhirt, configSection: Config, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
+    for {
+      numActors <- configSection.v[Int]("number-of-actors")
+    } yield {
+      val theProps = props(theAlmhirt)
+      theAlmhirt.log.info(s"""Domain event log: "number-of-actors" is $numActors""")
+      if (numActors <= 1) {
+        (actorFactory.actorOf(theProps, "domain-event-log"), CloseHandle.noop)
+      } else {
+        (actorFactory.actorOf(Props(new DomainEventLogRouter(numActors, theProps)), "domain-event-log"), CloseHandle.noop)
+      }
+    }
+
+  def apply(theAlmhirt: Almhirt, configPath: String, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
+    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
+      apply(theAlmhirt, configSection, actorFactory: ActorRefFactory))
+    
+  def apply(theAlmhirt: Almhirt, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, "execution-state-tracker", actorFactory)
+
+  def apply(theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, "execution-state-tracker", theAlmhirt.actorSystem)
+
 }
 
 trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor with ActorLogging =>
