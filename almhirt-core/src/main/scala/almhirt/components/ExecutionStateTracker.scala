@@ -109,6 +109,7 @@ object ExecutionStateTracker {
       numActors <- configSection.v[Int]("number-of-actors")
       props <- props(theAlmhirt)
     } yield {
+      theAlmhirt.log.info(s"""ExecutionStateTracker: "number-of-actors" is $numActors""")
       if (numActors <= 1) {
         (actorFactory.actorOf(props, "execution-state-tracker"), CloseHandle.noop)
       } else {

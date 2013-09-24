@@ -8,7 +8,7 @@ class ExecutionStateTrackerRouter(numChildren: Int, childProps: Props) extends A
   val children = (for (i <- 0 until (numChildren)) yield context.actorOf(childProps)).toVector
 
   private def dispatch(trackId: String, message: Any) {
-    val target = trackId.hashCode() % numChildren
+    val target = Math.abs(trackId.hashCode()) % numChildren
     children(target) forward message
   }
 
