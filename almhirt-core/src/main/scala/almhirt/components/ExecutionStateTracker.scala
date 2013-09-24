@@ -121,9 +121,9 @@ object ExecutionStateTracker {
     theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
       apply(theAlmhirt, configSection, actorFactory: ActorRefFactory))
     
-  def apply(theAlmhirt: Almhirt, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, "execution-state-tracker", actorFactory)
+  def apply(theAlmhirt: Almhirt, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, "almhirt.execution-state-tracker", actorFactory)
 
-  def apply(theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, "execution-state-tracker", theAlmhirt.actorSystem)
+  def apply(theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, theAlmhirt.actorSystem)
 
 }
 
