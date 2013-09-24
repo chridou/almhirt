@@ -7,6 +7,7 @@ import riftwarp._
 
 object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   type ValueRepr = XmlElem
+  type ObjRepr = XmlElem
 
   val channel = "xml"
   val dimension = classOf[XmlElem].getName()

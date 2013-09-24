@@ -11,6 +11,7 @@ import riftwarp._
 
 object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.Json] {
   type ValueRepr = Cord
+  type ObjRepr = Cord
   
   val channel = "json"
   val dimension = classOf[Cord].getName()
