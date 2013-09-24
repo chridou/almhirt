@@ -79,6 +79,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         }
       } yield storeResult).fold(
         problem => {
+          sender ! CommitDomainEventsFailed(problem)
           throw new EscalatedProblemException(problem)
         },
         succ => {
@@ -92,6 +93,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
+          sender ! FetchedDomainEventsFailure(problem)
           throw new EscalatedProblemException(problem)
         },
         domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
@@ -105,6 +107,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           problem match {
             case Problem(_, NotFoundProblem, _) => sender ! QueriedDomainEvent(eventId, None)
             case p =>
+              sender ! DomainEventQueryFailed(eventId, problem)
               throw new EscalatedProblemException(problem)
           }
         },
@@ -124,6 +127,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
+          sender ! FetchedDomainEventsFailure(problem)
           throw new EscalatedProblemException(problem)
         },
         domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
@@ -142,6 +146,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
+          sender ! FetchedDomainEventsFailure(problem)
           throw new EscalatedProblemException(problem)
         },
         domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
@@ -160,6 +165,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
+          sender ! FetchedDomainEventsFailure(problem)
           throw new EscalatedProblemException(problem)
         },
         domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
@@ -178,6 +184,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
+          sender ! FetchedDomainEventsFailure(problem)
           throw new EscalatedProblemException(problem)
         },
         domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
@@ -196,6 +203,7 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
+          sender ! FetchedDomainEventsFailure(problem)
           throw new EscalatedProblemException(problem)
         },
         domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
@@ -214,9 +222,11 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
+          sender ! FetchedDomainEventsFailure(problem)
           throw new EscalatedProblemException(problem)
         },
         domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+        
     case almhirt.serialization.UseSerializationChannel(newChannel) =>
       context.become(currentState(newChannel))
   }
