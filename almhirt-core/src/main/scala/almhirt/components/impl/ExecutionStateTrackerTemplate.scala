@@ -25,9 +25,6 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   def subscriptionsOkReportingThreshold: Int
   def stateChangedMessageWarningAge: FiniteDuration
 
-  private case object CleanUp
-  private case object CheckSubscriptions
-
   def checkSubscriptions: Option[(FiniteDuration, FiniteDuration, FiniteDuration)]
 
   protected var lifetimeExpiredSubscriptions = 0L
@@ -38,8 +35,14 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   protected var numSuccessfulReceived = 0L
   protected var numFailedReceived = 0L
 
+  protected var numOldMessages = 0L
+  
   private var deadlinesBySubscriptions = Map.empty[ActorRef, Deadline]
   private var trackingIdsBySubscription = Map.empty[ActorRef, String]
+  
+  private case object CleanUp
+  private case object CheckSubscriptions
+
 
   protected def currentStateHandler(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, Set[ActorRef]]): Receive = {
     case ExecutionStateChanged(header, incomingExecutionState) =>
@@ -49,6 +52,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
       val now = canCreateUuidsAndDateTimes.getUtcTimestamp
       val deadline = now.minusMillis(stateChangedMessageWarningAge.toMillis.toInt)
       if (header.timestamp.compareTo(deadline) < 0) {
+        numOldMessages += 1
         val age = new org.joda.time.Period(header.timestamp, now)
         log.warning(s"""Received an execution state(${incomingExecutionState.getClass().getSimpleName()}(track id = "${incomingExecutionState.trackId}")) older than ${stateChangedMessageWarningAge.defaultUnitString}(${age.toString()}). The timestamp is ${header.timestamp.toString()}.""")
       }
