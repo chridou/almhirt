@@ -104,9 +104,8 @@ object ExecutionStateTracker {
   def props(theAlmhirt: Almhirt): AlmValidation[Props] =
     props("almhirt.execution-state-tracker", theAlmhirt)
 
-  def apply(theAlmhirt: Almhirt, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
+  def apply(theAlmhirt: Almhirt, configSection: Config, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
     for {
-      configSection <- theAlmhirt.config.v[Config]("almhirt.execution-state-tracker")
       numActors <- configSection.v[Int]("number-of-actors")
       props <- props(theAlmhirt)
     } yield {
@@ -117,8 +116,15 @@ object ExecutionStateTracker {
         (actorFactory.actorOf(Props(new ExecutionStateTrackerRouter(numActors, props)), "execution-state-tracker"), CloseHandle.noop)
       }
     }
+
+  def apply(theAlmhirt: Almhirt, configPath: String, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
+    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
+      apply(theAlmhirt, configSection, actorFactory: ActorRefFactory))
     
-  def apply(theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, theAlmhirt.actorSystem)
+  def apply(theAlmhirt: Almhirt, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, "execution-state-tracker", actorFactory)
+
+  def apply(theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, "execution-state-tracker", theAlmhirt.actorSystem)
+
 }
 
 trait ExecutionStateTracker { actor: Actor with ActorLogging =>
