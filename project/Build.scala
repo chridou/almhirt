@@ -152,6 +152,7 @@ trait CorexMongoBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
+	  resolvers += "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
