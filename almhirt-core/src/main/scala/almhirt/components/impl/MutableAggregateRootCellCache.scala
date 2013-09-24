@@ -80,7 +80,7 @@ case class AggregateRootCellCacheStats(
 }
 
 object AggregateRootCellCacheStats {
-	def tripletComparisonString(a: AggregateRootCellCacheStats, b: AggregateRootCellCacheStats, c: AggregateRootCellCacheStats, nameA: String = "A", nameB: String = "B", nameC: String = "C"): String =
+  def tripletComparisonString(a: AggregateRootCellCacheStats, b: AggregateRootCellCacheStats, c: AggregateRootCellCacheStats, nameA: String = "A", nameB: String = "B", nameC: String = "C"): String =
     s"""|Aggregate root cell cache statistics($nameA/$nameB/$nameC)
     	|
     	|cells                        = ${a.numCells}/${b.numCells}/${c.numCells}
@@ -187,28 +187,32 @@ class MutableAggregateRootCellCache(
   }
 
   def updateLastAccessTimestamp(arId: JUUID) {
-    val t = Deadline.now
-    if (loadedCells.contains(arId)) {
-      loadedCells.update(arId, t)
-    } else if (uninitializedCells.contains(arId)) {
-      uninitializedCells.update(arId, t)
-    } else if (doesNotExistCells.contains(arId)) {
-      doesNotExistCells.update(arId, t)
-    } else if (errorneousCells.contains(arId)) {
-      errorneousCells.update(arId, t)
+    if (cellByArId.contains(arId)) {
+      val t = Deadline.now
+      if (loadedCells.contains(arId)) {
+        loadedCells.update(arId, t)
+      } else if (uninitializedCells.contains(arId)) {
+        uninitializedCells.update(arId, t)
+      } else if (doesNotExistCells.contains(arId)) {
+        doesNotExistCells.update(arId, t)
+      } else if (errorneousCells.contains(arId)) {
+        errorneousCells.update(arId, t)
+      }
     }
   }
 
   def updateCellState(arId: JUUID, newCellState: AggregateRootCellState): MutableAggregateRootCellCache = {
-    uninitializedCells -= arId
-    loadedCells -= arId
-    doesNotExistCells -= arId
-    errorneousCells -= arId
-    newCellState match {
-      case CellStateUninitialized => uninitializedCells += arId -> Deadline.now
-      case CellStateError(_) => errorneousCells += arId -> Deadline.now
-      case CellStateDoesNotExist => doesNotExistCells += arId -> Deadline.now
-      case CellStateLoaded => loadedCells += arId -> Deadline.now
+    if (cellByArId.contains(arId)) {
+      uninitializedCells -= arId
+      loadedCells -= arId
+      doesNotExistCells -= arId
+      errorneousCells -= arId
+      newCellState match {
+        case CellStateUninitialized => uninitializedCells += arId -> Deadline.now
+        case CellStateError(_) => errorneousCells += arId -> Deadline.now
+        case CellStateDoesNotExist => doesNotExistCells += arId -> Deadline.now
+        case CellStateLoaded => loadedCells += arId -> Deadline.now
+      }
     }
     this
   }
@@ -223,8 +227,8 @@ class MutableAggregateRootCellCache(
   private def killCandidates(candidates: Iterable[JUUID], from: scala.collection.mutable.HashMap[JUUID, Deadline]) = {
     var myKills = 0L
     candidates.foreach { candidateId =>
-      killCell(cellByArId(candidateId))
       val cell = cellByArId(candidateId)
+      killCell(cell)
       deathCertificatesStillDueById += candidateId -> cell
       deathCertificatesStillDueByCell += cell -> candidateId
       cellByArId -= candidateId

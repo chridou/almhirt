@@ -202,7 +202,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         UnspecifiedProblem("FetchedDomainEventsChunks not supported").failure
     }.mapTimeout(tp => {
       val elapsed = warnDeadline.lap
-      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within ${getArTimeout.defaultUnitString}(${elapsed.defaultUnitString})""")
+      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within ${getArTimeout.defaultUnitString}(${elapsed.defaultUnitString})""", cause = Some(tp))
     })
   }
 
@@ -243,7 +243,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
         })
   }
 
-  private def cancelLastReportingJob() {
+  protected def cancelLastReportingJob() {
     lastReportingJob match {
       case Some(job) =>
         job.cancel
@@ -297,10 +297,10 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     context.become(errorState(problem))
   }
 
-  private def logDebugMessage(currentState: String, msg: String) {
-    log.debug(s"""Cell for "${managedAggregateRooId}" on state "$currentState": $msg""")
-
-  }
+//  private def logDebugMessage(currentState: String, msg: String) {
+//    log.debug(s"""Cell for "${managedAggregateRooId}" on state "$currentState": $msg""")
+//
+//  }
 
   protected def receiveAggregateRootCellMsg = uninitializedState(false, Vector.empty, Vector.empty)
 
@@ -336,6 +336,10 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
     super.preStart()
     log.debug(s"""Aggregate root cell for managed aggregate root id "$managedAggregateRooId" is about to start.""")
     reportCellState(AggregateRootCell.CellStateUninitialized)
+  }
+  
+  override def postStop() {
+    cancelLastReportingJob()
   }
 
   val managedAggregateRooId = aggregateRooId
