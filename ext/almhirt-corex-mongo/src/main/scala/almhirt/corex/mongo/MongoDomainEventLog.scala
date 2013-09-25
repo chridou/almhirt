@@ -221,7 +221,7 @@ class MongoDomainEventLog(
       val indexesRes =
         for {
           a <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending), unique = false))
-          b <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Hashed, "version" -> IndexType.Ascending), unique = false))
+          b <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending, "version" -> IndexType.Ascending), unique = false))
         } yield (a, b)
       indexesRes.onComplete {
         case scala.util.Success((a, b)) =>
