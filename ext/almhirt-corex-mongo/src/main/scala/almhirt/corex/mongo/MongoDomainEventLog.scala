@@ -205,13 +205,13 @@ class MongoDomainEventLog(
     } yield domainEvents
   }
 
-  def fetchAndDispatchDomainEvents(query: BSONDocument, sort: BSONDocument) {
+  def fetchAndDispatchDomainEvents(query: BSONDocument, sort: BSONDocument, respondTo: ActorRef) {
     getEvents(query, sort).fold(
       problem => {
         sender ! FetchedDomainEventsFailure(problem)
         log.error(problem.toString())
       },
-      domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+      domainEvents => respondTo ! FetchedDomainEventsBatch(domainEvents))
   }
 
   def uninitialized: Receive = {
@@ -252,9 +252,10 @@ class MongoDomainEventLog(
         })
 
     case GetAllDomainEvents =>
-      fetchAndDispatchDomainEvents(BSONDocument(), noSorting)
+      fetchAndDispatchDomainEvents(BSONDocument(), noSorting, sender)
 
     case GetDomainEvent(eventId) =>
+      val pinnedSender = sender
       val collection = db(collectionName)
       val query = BSONDocument("_id" -> BSONBinary(UuidConverter.uuidToBytes(eventId), Subtype.UuidSubtype))
       val res =
@@ -270,32 +271,32 @@ class MongoDomainEventLog(
         } yield domainEvent
       res.onComplete(
         problem => {
-          sender ! DomainEventQueryFailed(eventId, problem)
+          pinnedSender ! DomainEventQueryFailed(eventId, problem)
           log.error(problem.toString())
         },
-        eventOpt => sender ! QueriedDomainEvent(eventId, eventOpt))
+        eventOpt => pinnedSender ! QueriedDomainEvent(eventId, eventOpt))
 
     case GetAllDomainEventsFor(aggId) =>
       val query = BSONDocument("aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype))
-      fetchAndDispatchDomainEvents(query, sortByVersion)
+      fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsFrom(aggId, fromVersion) =>
       val query = BSONDocument(
         "aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype),
         "version" -> BSONDocument("$gte" -> BSONLong(fromVersion)))
-      fetchAndDispatchDomainEvents(query, sortByVersion)
+      fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsTo(aggId, toVersion) =>
       val query = BSONDocument(
         "aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype),
         "version" -> BSONDocument("$lte" -> BSONLong(toVersion)))
-      fetchAndDispatchDomainEvents(query, sortByVersion)
+      fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsUntil(aggId, untilVersion) =>
       val query = BSONDocument(
         "aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype),
         "version" -> BSONDocument("$lt" -> BSONLong(untilVersion)))
-      fetchAndDispatchDomainEvents(query, sortByVersion)
+      fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
       val query = BSONDocument(
@@ -305,7 +306,7 @@ class MongoDomainEventLog(
             "$gte" -> BSONLong(fromVersion)),
           "version" -> BSONDocument(
             "$lte" -> BSONLong(toVersion))))
-      fetchAndDispatchDomainEvents(query, sortByVersion)
+      fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
       val query = BSONDocument(
@@ -315,7 +316,7 @@ class MongoDomainEventLog(
             "$gte" -> BSONLong(fromVersion)),
           "version" -> BSONDocument(
             "$lt" -> BSONLong(untilVersion))))
-      fetchAndDispatchDomainEvents(query, sortByVersion)
+      fetchAndDispatchDomainEvents(query, sortByVersion, sender)
   }
 
   override def receive = uninitialized
