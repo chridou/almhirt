@@ -8,10 +8,10 @@ import scalaz.Cord._
 import scalaz.std._
 import almhirt.almvalidation.kit._
 import almhirt.common._
+import almhirt.util.UuidConverter
 import reactivemongo.bson._
 import riftwarp._
 import riftwarp.std.DematerializerTemplate
-import almhirt.util.UuidConverter
 
 object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
   type ValueRepr = BSONValue
