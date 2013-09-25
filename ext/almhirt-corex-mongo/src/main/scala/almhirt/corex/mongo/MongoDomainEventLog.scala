@@ -241,14 +241,15 @@ class MongoDomainEventLog(
 
   override def receiveDomainEventLogMsg: Receive = {
     case CommitDomainEvents(events) =>
+      val pinnedSender = sender
       val committedEvents = AlmFuture.sequence(events.map(commitDomainEvent))
       committedEvents.fold(
         problem => {
-          sender ! CommitDomainEventsFailed(problem)
+          pinnedSender ! CommitDomainEventsFailed(problem)
           log.error(problem.toString())
         },
         succ => {
-          sender ! CommittedDomainEvents(events)
+          pinnedSender ! CommittedDomainEvents(events)
         })
 
     case GetAllDomainEvents =>
