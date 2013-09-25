@@ -15,7 +15,8 @@ import almhirt.domain.DomainEvent
 import almhirt.core.Almhirt
 import reactivemongo.bson._
 import reactivemongo.api._
-import almhirt.common.Problem
+import reactivemongo.api.indexes.{ Index => MIndex }
+import reactivemongo.api.indexes.IndexType
 import com.typesafe.config.Config
 
 object MongoDomainEventLog {
@@ -103,6 +104,24 @@ object MongoDomainEventLog {
     inTryCatch { new MongoDriver(theAlmhirt.actorSystem) }.flatMap(driver =>
       props(driver, serializeDomainEvent, deserializeDomainEvent, theAlmhirt))
 
+  def apply(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], configPath: String, theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
+    for {
+      configSection <- theAlmhirt.config.v[Config](configPath)
+      props <- props(driver, serializeDomainEvent, deserializeDomainEvent, configSection, theAlmhirt)
+    } yield {
+      val actor = theAlmhirt.actorSystem.actorOf(props)
+      (actor, CloseHandle.noop)
+    }
+
+  def apply(serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], configPath: String, theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
+    inTryCatch { new MongoDriver(theAlmhirt.actorSystem) }.flatMap(driver =>
+      apply(driver, serializeDomainEvent, deserializeDomainEvent, configPath, theAlmhirt))
+
+  def apply(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
+    apply(driver, serializeDomainEvent, deserializeDomainEvent, "almhirt.domain-event-log", theAlmhirt)
+
+  def apply(serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
+    apply(serializeDomainEvent, deserializeDomainEvent, "almhirt.domain-event-log", theAlmhirt)
 }
 
 class MongoDomainEventLog(
@@ -128,6 +147,9 @@ class MongoDomainEventLog(
 
   val noSorting = BSONDocument()
   val sortByVersion = BSONDocument("version" -> 1)
+
+  private case object Initialize
+  private case object Initialized
 
   def domainEventToDocument(domainEvent: DomainEvent): AlmValidation[BSONDocument] = {
     for {
@@ -190,6 +212,31 @@ class MongoDomainEventLog(
         log.error(problem.toString())
       },
       domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+  }
+
+  def uninitialized: Receive = {
+    case Initialize =>
+      log.info("Initializing")
+      val collection = db(collectionName)
+      val indexesRes =
+        for {
+          a <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending), unique = false))
+          b <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Hashed, "version" -> IndexType.Ascending), unique = false))
+        } yield (a, b)
+      indexesRes.onComplete {
+        case scala.util.Success((a, b)) =>
+          log.info(s"Index on aggid created: $a")
+          log.info(s"Index on (aggid, version) created: $b")
+          self ! Initialized
+        case scala.util.Failure(exn) =>
+          log.error(exn, "Failed to ensure indexes")
+          this.context.stop(self)
+      }
+    case Initialized =>
+      log.info("Initialized")
+      context.become(receiveDomainEventLogMsg)
+    case m: DomainEventLogMessage =>
+      log.warning(s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
 
   override def receiveDomainEventLogMsg: Receive = {
@@ -271,5 +318,10 @@ class MongoDomainEventLog(
       fetchAndDispatchDomainEvents(query, sortByVersion)
   }
 
-  override def receive = receiveDomainEventLogMsg
+  override def receive = uninitialized
+
+  override def preStart() {
+    super.preStart()
+    self ! Initialize
+  }
 }
