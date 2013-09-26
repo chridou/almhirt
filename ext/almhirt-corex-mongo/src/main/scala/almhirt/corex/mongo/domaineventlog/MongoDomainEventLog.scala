@@ -1,4 +1,4 @@
-package almhirt.corex.mongo
+package almhirt.corex.mongo.domaineventlog
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
