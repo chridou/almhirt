@@ -17,8 +17,8 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
   type ValueRepr = BSONValue
   type ObjRepr = BSONDocument
 
-  val channel = "bson"
-  val dimension = classOf[BSONDocument].getName()
+  val channel = "bson-value"
+  val dimension = classOf[BSONValue].getName()
 
   protected def valueReprToDim(repr: BSONValue): BSONValue =
     repr
@@ -34,7 +34,7 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
       case WarpFloat(value) => BSONDouble(value)
       case WarpDouble(value) => BSONDouble(value)
       case WarpBigDecimal(value) => BSONString(value.toString)
-      case WarpUuid(value) => BSONBinary(UuidConverter.uuidToBytes(value), Subtype.UuidSubtype)
+      case WarpUuid(value) => BsonConverter.uuidToBson(value)
       case WarpUri(value) => BSONString(value.toString)
       case WarpDateTime(value) => BSONString(value.toString)
       case WarpLocalDateTime(value) => BSONDateTime(value.toDateTime(DateTimeZone.UTC).getMillis())

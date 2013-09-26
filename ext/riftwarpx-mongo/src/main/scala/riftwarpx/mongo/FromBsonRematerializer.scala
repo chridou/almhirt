@@ -10,7 +10,7 @@ import reactivemongo.bson._
 import riftwarp._
 
 object FromBsonRematerializer extends Rematerializer[BSONValue] {
-  import scala.util.parsing.json._
+  import BsonConverter._
   override def rematerialize(what: BSONValue, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
     extract(what)
 

@@ -149,6 +149,7 @@ class MongoDomainEventLog(
   statisticsCollector: Option[ActorRef])(implicit theAlmhirt: Almhirt) extends Actor with ActorLogging with DomainEventLog {
   import DomainEventLog._
   import almhirt.corex.mongo.LogStatisticsCollector._
+  import almhirt.corex.mongo.BsonConverter._
 
   implicit val defaultExecutor = theAlmhirt.futuresExecutor
 
@@ -172,8 +173,8 @@ class MongoDomainEventLog(
       }
     } yield {
       BSONDocument(
-        ("_id" -> BSONBinary(UuidConverter.uuidToBytes(domainEvent.eventId), Subtype.UuidSubtype)),
-        ("aggid" -> BSONBinary(UuidConverter.uuidToBytes(domainEvent.aggId), Subtype.UuidSubtype)),
+        ("_id" -> uuidToBson(domainEvent.eventId)),
+        ("aggid" -> uuidToBson(domainEvent.aggId)),
         ("version" -> BSONLong(domainEvent.aggVersion)),
         ("domainevent" -> serialized))
     }
@@ -311,30 +312,30 @@ class MongoDomainEventLog(
         eventOpt => pinnedSender ! QueriedDomainEvent(eventId, eventOpt))
 
     case GetAllDomainEventsFor(aggId) =>
-      val query = BSONDocument("aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype))
+      val query = BSONDocument("aggid" -> uuidToBson(aggId))
       fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsFrom(aggId, fromVersion) =>
       val query = BSONDocument(
-        "aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype),
+        "aggid" -> uuidToBson(aggId),
         "version" -> BSONDocument("$gte" -> BSONLong(fromVersion)))
       fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsTo(aggId, toVersion) =>
       val query = BSONDocument(
-        "aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype),
+        "aggid" -> uuidToBson(aggId),
         "version" -> BSONDocument("$lte" -> BSONLong(toVersion)))
       fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsUntil(aggId, untilVersion) =>
       val query = BSONDocument(
-        "aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype),
+        "aggid" -> uuidToBson(aggId),
         "version" -> BSONDocument("$lt" -> BSONLong(untilVersion)))
       fetchAndDispatchDomainEvents(query, sortByVersion, sender)
 
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
       val query = BSONDocument(
-        "aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype),
+        "aggid" -> uuidToBson(aggId),
         "$and" -> BSONDocument(
           "version" -> BSONDocument(
             "$gte" -> BSONLong(fromVersion)),
@@ -344,7 +345,7 @@ class MongoDomainEventLog(
 
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
       val query = BSONDocument(
-        "aggid" -> BSONBinary(UuidConverter.uuidToBytes(aggId), Subtype.UuidSubtype),
+        "aggid" -> uuidToBson(aggId),
         "$and" -> BSONDocument(
           "version" -> BSONDocument(
             "$gte" -> BSONLong(fromVersion)),
