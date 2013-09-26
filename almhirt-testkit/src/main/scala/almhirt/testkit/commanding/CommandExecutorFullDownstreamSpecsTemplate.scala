@@ -39,7 +39,7 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
     val probe = TestProbe()
     val handlers = AR2.Commanding.addCommands(AR1.Commanding.addCommands(CommandHandlerRegistry()))
     val publisher = MessagePublisher.sendToActor(probe.ref)
-    (this.system.actorOf(Props(new CommandExecutorImpl(handlers, repositories, publisher, theAlmhirt, FiniteDuration(5, "s"))), "CommandExecutor_" + testId), probe)
+    (this.system.actorOf(Props(new CommandExecutorImpl(handlers, repositories, publisher, theAlmhirt, FiniteDuration(5, "s"), FiniteDuration(5, "s"), 1000L)), "CommandExecutor_" + testId), probe)
   }
 
   def useExecutorWithEventLog[T](f: (ActorRef, ActorRef, TestProbe) => T): T = {

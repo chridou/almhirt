@@ -13,6 +13,7 @@ class CommandExecutorImpl(
   val messagePublisher: MessagePublisher,
   val theAlmhirt: Almhirt,
   override val maxExecutionTimePerCommandWarnThreshold: FiniteDuration,
+  override val maxExecutionTimePerCommandSequenceWarnThreshold: FiniteDuration,
   override val reportingDiff: Long) extends CommandExecutor with CommandExecutorTemplate with Actor with ActorLogging {
 
   val domainCommandsSequencer = context.actorOf(Props(new DomainCommandsSequencerImpl(theAlmhirt)), "DomainCommandsSequencer")

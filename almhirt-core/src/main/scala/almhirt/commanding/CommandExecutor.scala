@@ -22,27 +22,29 @@ object CommandExecutor {
     messagePublisher: MessagePublisher,
     theAlmhirt: Almhirt,
     maxExecutionTimePerCommandWarnThreshold: FiniteDuration,
+    maxExecutionTimePerCommandSequenceWarnThreshold: FiniteDuration,
     reportingDiff: Long): Props =
-    Props(new CommandExecutorImpl(handlers, repositories, messagePublisher, theAlmhirt, maxExecutionTimePerCommandWarnThreshold, reportingDiff))
-    
-  def propsRaw(handlers: CommandHandlerRegistry, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt, maxExecutionTimePerCommandWarnThreshold: FiniteDuration, reportingDiff: Long): Props =
-    propsRaw(handlers, repositories, theAlmhirt.messageBus, theAlmhirt, maxExecutionTimePerCommandWarnThreshold, reportingDiff)
-    
+    Props(new CommandExecutorImpl(handlers, repositories, messagePublisher, theAlmhirt, maxExecutionTimePerCommandWarnThreshold, maxExecutionTimePerCommandSequenceWarnThreshold, reportingDiff))
+
+  def propsRaw(handlers: CommandHandlerRegistry, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt, maxExecutionTimePerCommandWarnThreshold: FiniteDuration, maxExecutionTimePerCommandSequenceWarnThreshold: FiniteDuration, reportingDiff: Long): Props =
+    propsRaw(handlers, repositories, theAlmhirt.messageBus, theAlmhirt, maxExecutionTimePerCommandWarnThreshold, maxExecutionTimePerCommandSequenceWarnThreshold, reportingDiff)
+
   def props(handlers: CommandHandlerRegistry, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt, configSection: Config): AlmValidation[Props] =
     for {
       maxExecutionTimePerCommandWarnThreshold <- configSection.v[FiniteDuration]("max-execution-time-per-command-warn-threshold")
+      maxExecutionTimePerCommandSquenceWarnThreshold <- configSection.v[FiniteDuration]("max-execution-time-per-command-sequence-warn-threshold")
       reportingDiff <- configSection.v[Long]("stats-reporting-commands-diff")
     } yield {
       theAlmhirt.log.info(s"""CommandExecutor: max-execution-time-per-command-warn-threshold = ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}""")
-      propsRaw(handlers: CommandHandlerRegistry, repositories, theAlmhirt, maxExecutionTimePerCommandWarnThreshold, reportingDiff)
+      propsRaw(handlers: CommandHandlerRegistry, repositories, theAlmhirt, maxExecutionTimePerCommandWarnThreshold, maxExecutionTimePerCommandSquenceWarnThreshold, reportingDiff)
     }
-    
+
   def props(handlers: CommandHandlerRegistry, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt, configPath: String): AlmValidation[Props] =
     theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
       props(handlers, repositories, theAlmhirt, configSection))
 
   def props(handlers: CommandHandlerRegistry, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt): AlmValidation[Props] =
-      props(handlers, repositories, theAlmhirt, "almhirt.command-executor")
-      
+    props(handlers, repositories, theAlmhirt, "almhirt.command-executor")
+
 }
 
