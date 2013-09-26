@@ -23,6 +23,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   def messagePublisher: almhirt.messaging.MessagePublisher
 
   def maxExecutionTimePerCommandWarnThreshold: FiniteDuration
+  def maxExecutionTimePerCommandSequenceWarnThreshold: FiniteDuration
 
   implicit val executionContext = theAlmhirt.futuresExecutor
   val futuresMaxDuration = theAlmhirt.durations.longDuration
@@ -37,7 +38,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   private var countersSumOld = 0L
 
   private case object CommandFailed
-  
+
   override def receiveCommandExecutorMessage: Receive = {
     case cmd: Command =>
       messagePublisher.publish(CommandReceived(cmd))
@@ -48,7 +49,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       executeDomainCommandSequence(domainCommandSequence)
     case DomainCommandsSequencer.DomainCommandsSequenceNotCreated(grouplabel: String, problem: Problem) =>
       throw new Exception(problem.message)
-    case CommandFailed => 
+    case CommandFailed =>
       commandsFailed += 1
   }
 
@@ -184,6 +185,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
 
   // Contract: The sequence must not be empty!
   private def executeDomainCommandSequence(domainCommandSequence: Iterable[DomainCommand]) {
+    val start = Deadline.now
     val headCommand = domainCommandSequence.head
     val trackingId = headCommand.tryGetTrackingId
     trackingId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(trId))))
@@ -222,13 +224,21 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
         domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandNotExecuted(cmd.commandId, fail)))
       },
       ar => {
+        val lap = start.lap
         domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandExecuted(cmd.commandId)))
         trackingId.foreach(trId =>
           messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             trId,
             s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully mutated(and maybe created) ending with version "${ar.version} from ${domainCommandSequence.size} commands."""",
             Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString)))))
-
+        if (lap.exceeds(maxExecutionTimePerCommandSequenceWarnThreshold)) {
+          trackingId match {
+            case Some(trckId) =>
+              log.warning(s"""Execution of domain command sequence (trckId "$trckId") took longer than ${maxExecutionTimePerCommandSequenceWarnThreshold.defaultUnitString}(${lap.defaultUnitString})."""")
+            case None =>
+              log.warning(s"""Execution of domain command sequence took longer than ${maxExecutionTimePerCommandSequenceWarnThreshold.defaultUnitString}(${lap.defaultUnitString})."""")
+          }
+        }
       })
   }
 
@@ -236,18 +246,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     def appendCommandResult(previousState: (IsAggregateRoot, IndexedSeq[DomainEvent]), command: DomainCommand): AlmFuture[(IsAggregateRoot, IndexedSeq[DomainEvent])] = {
       for {
         handler <- AlmFuture.promise { handlers.getMutatingDomainCommandHandler(command) }
-        handlerRes <- {
-          val start = Deadline.now
-          val res = handler(previousState._1, command)
-          val time = start.lap
-          if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
-            if (command.canBeTracked)
-              log.warning(s"""Execution of mutating domain command "${command.getClass().getName()}"(id = ${command.commandId})(trckId "${command.trackingId}") in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
-            else
-              log.warning(s"""Execution of mutating domain command "${command.getClass().getName()}"(id = ${command.commandId}) in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
-          }
-          res
-        }
+        handlerRes <- handler(previousState._1, command)
       } yield (handlerRes._1, previousState._2 ++ handlerRes._2)
     }
     commands.foldLeft(AlmFuture.successful((currentState, previousEvents))) { (acc, cur) =>
