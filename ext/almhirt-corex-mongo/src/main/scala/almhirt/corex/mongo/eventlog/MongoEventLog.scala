@@ -63,7 +63,6 @@ object MongoEventLog {
     for {
       collectionName <- configSection.v[String]("table-name")
       writeWarnThreshold <- configSection.v[FiniteDuration]("write-warn-threshold-duration")
-      readWarnThreshold <- configSection.v[FiniteDuration]("read-warn-threshold-duration")
       useNumberCruncherForSerialization <- configSection.v[Boolean]("use-number-cruncher-for-serialization")
     } yield {
       theAlmhirt.log.info(s"""MongoEventLog: table-name = $collectionName""")
@@ -182,8 +181,9 @@ class MongoEventLog(
     }
   }
 
-  def insertDocument(document: BSONDocument): AlmFuture[Unit] = {
+  def insertDocument(document: BSONDocument): AlmFuture[Deadline] = {
     val collection = db(collectionName)
+    val start = Deadline.now
     for {
       lastError <- collection.insert(document).toSuccessfulAlmFuture
       _ <- if (lastError.ok)
@@ -192,18 +192,24 @@ class MongoEventLog(
         val msg = lastError.errMsg.getOrElse("unknown error")
         AlmFuture.failed(PersistenceProblem(msg))
       }
-    } yield ()
+    } yield start
   }
 
-  def storeEvent(Event: Event): AlmFuture[Event] =
+  def storeEvent(event: Event): AlmFuture[Deadline] =
     for {
-      serialized <- AlmFuture { EventToDocument(Event: Event) }(serializationExecutor)
-      _ <- insertDocument(serialized)
-    } yield Event
+      serialized <- AlmFuture { EventToDocument(event: Event) }(serializationExecutor)
+      start <- insertDocument(serialized)
+    } yield start
 
-  def commitEvent(Event: Event) {
-    storeEvent(Event) onFailure (
-      fail => log.error(fail.toString()))
+  def commitEvent(event: Event) {
+    storeEvent(event) onComplete (
+      fail => log.error(fail.toString()),
+      start => {
+        val lap = start.lap
+        statisticsCollector.foreach(_ ! AddWriteDuration(lap))
+        if (lap > writeWarnThreshold)
+          log.warning(s"""Storing event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+      })
   }
 
   def getEvents(query: BSONDocument, sort: BSONDocument): AlmFuture[Seq[Event]] = {
