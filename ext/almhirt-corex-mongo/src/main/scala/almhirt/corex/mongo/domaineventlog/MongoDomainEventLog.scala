@@ -117,10 +117,10 @@ object MongoDomainEventLog {
         theAlmhirt.log.info(s"""MongoDomainEventLog: collect-statistics = $collectStatistics""")
         val collector =
           if (collectStatistics)
-            Some(theAlmhirt.actorSystem.actorOf(Props[LogStatisticsCollector]), "domain-event-log-statistics-collector")
+            Some(theAlmhirt.actorSystem.actorOf(Props[LogStatisticsCollector], "domain-event-log-statistics-collector"))
           else
             None
-        props(driver, serializeDomainEvent, deserializeDomainEvent, None, configSection, theAlmhirt)
+        props(driver, serializeDomainEvent, deserializeDomainEvent, collector , configSection, theAlmhirt)
       }
     } yield {
       val actor = theAlmhirt.actorSystem.actorOf(props)
