@@ -1,7 +1,7 @@
 package almhirt.components
 
 import almhirt.common._
-import almhirt.commanding.ExecutionFinishedState
+import almhirt.components.ExecutionStateTracker._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext
 trait CommandEndpoint {
   def execute(command: Command): Unit
   def executeTracked(command: Command): String
-  def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedState]
+  def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage]
 }
 
 object CommandEndpoint {
@@ -38,7 +38,7 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
     cmd.trackingId
   }
 
-  override def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedState] = {
+  override def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage] = {
     import scalaz.syntax.validation._
     import almhirt.almfuture.all._
     import almhirt.components.ExecutionStateTracker._
@@ -48,14 +48,7 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
       else
         command.track(getTrackingId())
     publishTo.publish(cmd)
-    (tracker ? SubscribeForFinishedState(cmd.trackingId))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage].mapV(res =>
-      res match {
-        case FinishedExecutionStateResult(res) => res.success
-        case ExecutionTrackingExpired(trackId, Some(msg)) => 
-          OperationTimedOutProblem(s"""Execution state tracking for "$trackId" has expired: $msg""").failure
-        case ExecutionTrackingExpired(trackId, None) => 
-          OperationTimedOutProblem(s"""Execution state tracking for "$trackId" has expired.""").failure
-      })
+    (tracker ? SubscribeForFinishedState(cmd.trackingId))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage]
   }
 
 }

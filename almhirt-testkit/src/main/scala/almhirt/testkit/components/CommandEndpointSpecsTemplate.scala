@@ -11,6 +11,7 @@ import almhirt.commanding._
 import almhirt.domain.AggregateRootRef
 import almhirt.common.Message
 import almhirt.common.CanCreateUuidsAndDateTimes
+import almhirt.components.ExecutionStateTracker._
 
 abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
@@ -94,11 +95,11 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
         val resF = endpoint.executeSync(cmd, defaultDuration)
         tracker ! ExecutionStateChanged(execState)
         val res = resF.awaitResultOrEscalate(defaultDuration)
-        res should equal(execState)
+        res should equal(FinishedExecutionStateResult(execState))
       }
     }
     
-    it("""should wait for a finished command and use a geven tracking id on "executeSync"""") {
+    it("""should wait for a finished command and use a given tracking id on "executeSync"""") {
       useCommandEndpointAndTrackIdGen(fixedStringGen){ (endpoint, spy, tracker) =>
         val trackId = ccuad.getUniqueString
         val cmd = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(ccuad.getUuid)), "a").track(trackId)
@@ -106,7 +107,7 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
         val resF = endpoint.executeSync(cmd, defaultDuration)
         tracker ! ExecutionStateChanged(execState)
         val res = resF.awaitResultOrEscalate(defaultDuration)
-        res should equal(execState)
+        res should equal(FinishedExecutionStateResult(execState))
       }
     }
   }

@@ -3,7 +3,8 @@ package almhirt.corex.spray.endpoints
 import scala.language.postfixOps
 import almhirt.common._
 import almhirt.components.CommandEndpoint
-import almhirt.commanding.ExecutionState
+import almhirt.components.ExecutionStateTracker._
+import almhirt.commanding._
 import spray.routing._
 import spray.http._
 import spray.routing.directives._
@@ -11,6 +12,7 @@ import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling.Unmarshaller
 
 trait HttpCommandEndpoint extends Directives {
+
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
@@ -34,9 +36,17 @@ trait HttpCommandEndpoint extends Directives {
           case (_, Some(_)) =>
             endpoint.executeSync(cmd, maxSyncDuration).fold(
               prob =>
-                ctx.complete(StatusCodes.InternalServerError, prob),
-              res =>
-                ctx.complete(StatusCodes.OK, res))
+                prob match {
+                  case OperationTimedOutProblem(p) => ctx.complete(StatusCodes.InternalServerError, prob)
+                  case p => ctx.complete(StatusCodes.InternalServerError, prob)
+                },
+              res => {
+                res match {
+                  case FinishedExecutionStateResult(s: ExecutionSuccessful) => ctx.complete(StatusCodes.OK, s)
+                  case FinishedExecutionStateResult(s: ExecutionFailed) => ctx.complete(StatusCodes.InternalServerError, s)
+                  case ExecutionStateTrackingFailed(_, prob) => ctx.complete(StatusCodes.InternalServerError, prob)
+                }
+              })
         }
     }
   }

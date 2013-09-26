@@ -297,7 +297,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
         expiredSubscriptions.foreach {
           case (trackId, subscribers) =>
             subscribers foreach (subscriber => {
-              subscriber ! ExecutionTrackingExpired(trackId)
+              subscriber ! ExecutionStateTrackingFailed(trackId, OperationTimedOutProblem("The subscription was cancelled because there were too many other subscriptions."))
               removeFromSubscriptionsChecking(subscriber)
             })
         }
