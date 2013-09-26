@@ -197,16 +197,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
             if (headCommand.targettedVersion != 0L)
               AlmFuture.promise(CollisionProblem("A command to create a new aggregate root must have a version of 0!").failure)
             else {
-              val start = Deadline.now
-              val res = hdl(headCommand)
-              val time = start.lap
-              if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
-                if (headCommand.canBeTracked)
-                  log.warning(s"""Execution of creating domain command "${headCommand.getClass().getName()}"(id = ${headCommand.commandId})(trckId "${headCommand.trackingId}") in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
-                else
-                  log.warning(s"""Execution of creating domain command "${headCommand.getClass().getName()}"(id = ${headCommand.commandId}) in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
-              }
-              res
+              hdl(headCommand)
             }
           case hdl: MutatingDomainCommandHandler =>
             for {
@@ -218,18 +209,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
                 else
                   ().success
               }
-              res <- {
-                val start = Deadline.now
-                val res = hdl(fetchedState, headCommand)
-                val time = start.lap
-                if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
-                  if (headCommand.canBeTracked)
-                    log.warning(s"""Execution of mutating domain command "${headCommand.getClass().getName()}"(id = ${headCommand.commandId})(trckId "${headCommand.trackingId}") in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
-                  else
-                    log.warning(s"""Execution of mutating domain command "${headCommand.getClass().getName()}"(id = ${headCommand.commandId}) in a sequence took longer than ${maxExecutionTimePerCommandWarnThreshold.defaultUnitString}(${time.defaultUnitString})."""")
-                }
-                res
-              }
+              res <- hdl(fetchedState, headCommand)
             } yield res
         }
       }
