@@ -13,6 +13,7 @@ import almhirt.domaineventlog._
 import almhirt.messaging.MessagePublisher
 import almhirt.domain.DomainEvent
 import almhirt.core.Almhirt
+import almhirt.corex.mongo.LogStatisticsCollector
 import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index => MIndex }
@@ -28,6 +29,7 @@ object MongoDomainEventLog {
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
     serializationExecutor: ExecutionContext,
+    statisticsCollector: Option[ActorRef],
     theAlmhirt: Almhirt): Props =
     Props(new MongoDomainEventLog(
       db,
@@ -36,7 +38,8 @@ object MongoDomainEventLog {
       deserializeDomainEvent,
       writeWarnThreshold,
       readWarnThreshold,
-      serializationExecutor)(theAlmhirt))
+      serializationExecutor,
+      statisticsCollector)(theAlmhirt))
 
   def propsRaw(
     db: DB with DBMetaCommands,
@@ -46,6 +49,7 @@ object MongoDomainEventLog {
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
     useNumberCruncherForSerialization: Boolean,
+    statisticsCollector: Option[ActorRef],
     theAlmhirt: Almhirt): Props = {
     val serCtx = if (useNumberCruncherForSerialization) theAlmhirt.numberCruncher else theAlmhirt.futuresExecutor
     propsRaw(
@@ -56,10 +60,11 @@ object MongoDomainEventLog {
       writeWarnThreshold,
       readWarnThreshold,
       serCtx,
+      statisticsCollector,
       theAlmhirt)
   }
 
-  def props(db: DB with DBMetaCommands, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(db: DB with DBMetaCommands, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], statisticsCollector: Option[ActorRef], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
     for {
       collectionName <- configSection.v[String]("table-name")
       writeWarnThreshold <- configSection.v[FiniteDuration]("write-warn-threshold-duration")
@@ -70,10 +75,10 @@ object MongoDomainEventLog {
       theAlmhirt.log.info(s"""MongoDomainEventLog: write-warn-threshold-duration = ${writeWarnThreshold.defaultUnitString}""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: read-warn-threshold-duration = ${readWarnThreshold.defaultUnitString}""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: use-number-cruncher-for-serialization = $useNumberCruncherForSerialization""")
-      propsRaw(db, collectionName, serializeDomainEvent, deserializeDomainEvent, writeWarnThreshold, readWarnThreshold, useNumberCruncherForSerialization, theAlmhirt)
+      propsRaw(db, collectionName, serializeDomainEvent, deserializeDomainEvent, writeWarnThreshold, readWarnThreshold, useNumberCruncherForSerialization, statisticsCollector, theAlmhirt)
     }
 
-  def props(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], statisticsCollector: Option[ActorRef], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
     for {
       connections <- configSection.v[List[String]]("connections")
       dbName <- configSection.v[String]("db-name")
@@ -81,33 +86,42 @@ object MongoDomainEventLog {
         val connection = driver.connection(connections)
         connection(dbName)(theAlmhirt.futuresExecutor)
       }
-      props <- props(db, serializeDomainEvent, deserializeDomainEvent, configSection, theAlmhirt)
+      props <- props(db, serializeDomainEvent, deserializeDomainEvent, statisticsCollector, configSection, theAlmhirt)
     } yield {
       theAlmhirt.log.info(s"""MongoDomainEventLog: connections = ${connections.mkString("[", ",", "]")}""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: db-name = $dbName""")
       props
     }
 
-  def props(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], configPath: String, theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], statisticsCollector: Option[ActorRef], configPath: String, theAlmhirt: Almhirt): AlmValidation[Props] =
     theAlmhirt.config.v[Config](configPath).flatMap { configSection =>
-      props(driver, serializeDomainEvent, deserializeDomainEvent, configSection, theAlmhirt)
+      props(driver, serializeDomainEvent, deserializeDomainEvent, statisticsCollector, configSection, theAlmhirt)
     }
 
-  def props(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], theAlmhirt: Almhirt): AlmValidation[Props] =
-    props(driver, serializeDomainEvent, deserializeDomainEvent, "almhirt.domain-event-log", theAlmhirt)
+  def props(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], statisticsCollector: Option[ActorRef], theAlmhirt: Almhirt): AlmValidation[Props] =
+    props(driver, serializeDomainEvent, deserializeDomainEvent, statisticsCollector, "almhirt.domain-event-log", theAlmhirt)
 
-  def props(serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], configPath: String, theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], configPath: String, statisticsCollector: Option[ActorRef], theAlmhirt: Almhirt): AlmValidation[Props] =
     inTryCatch { new MongoDriver(theAlmhirt.actorSystem) }.flatMap(driver =>
-      props(driver, serializeDomainEvent, deserializeDomainEvent, configPath, theAlmhirt))
+      props(driver, serializeDomainEvent, deserializeDomainEvent, statisticsCollector, configPath, theAlmhirt))
 
-  def props(serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], statisticsCollector: Option[ActorRef], theAlmhirt: Almhirt): AlmValidation[Props] =
     inTryCatch { new MongoDriver(theAlmhirt.actorSystem) }.flatMap(driver =>
-      props(driver, serializeDomainEvent, deserializeDomainEvent, theAlmhirt))
+      props(driver, serializeDomainEvent, deserializeDomainEvent, statisticsCollector, theAlmhirt))
 
   def apply(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], configPath: String, theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
-      props <- props(driver, serializeDomainEvent, deserializeDomainEvent, configSection, theAlmhirt)
+      collectStatistics <- configSection.v[Boolean]("collect-statistics")
+      props <- {
+        theAlmhirt.log.info(s"""MongoDomainEventLog: collect-statistics = $collectStatistics""")
+        val collector =
+          if (collectStatistics)
+            Some(theAlmhirt.actorSystem.actorOf(Props[LogStatisticsCollector]), "domain-event-log-statistics-collector")
+          else
+            None
+        props(driver, serializeDomainEvent, deserializeDomainEvent, None, configSection, theAlmhirt)
+      }
     } yield {
       val actor = theAlmhirt.actorSystem.actorOf(props)
       (actor, CloseHandle.noop)
@@ -131,13 +145,10 @@ class MongoDomainEventLog(
   deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent],
   writeWarnThreshold: FiniteDuration,
   readWarnThreshold: FiniteDuration,
-  serializationExecutor: ExecutionContext)(implicit theAlmhirt: Almhirt) extends Actor with ActorLogging with DomainEventLog {
+  serializationExecutor: ExecutionContext,
+  statisticsCollector: Option[ActorRef])(implicit theAlmhirt: Almhirt) extends Actor with ActorLogging with DomainEventLog {
   import DomainEventLog._
-
-  protected var writeStatistics = DomainEventLogWriteStatistics()
-  protected var readStatistics = DomainEventLogReadStatistics()
-  protected var serializationStatistics = DomainEventLogSerializationStatistics.forSerializing
-  protected var deserializationStatistics = DomainEventLogSerializationStatistics.forDeserializing
+  import almhirt.corex.mongo.LogStatisticsCollector._
 
   implicit val defaultExecutor = theAlmhirt.futuresExecutor
 
@@ -153,7 +164,12 @@ class MongoDomainEventLog(
 
   def domainEventToDocument(domainEvent: DomainEvent): AlmValidation[BSONDocument] = {
     for {
-      serialized <- serializeDomainEvent(domainEvent)
+      serialized <- {
+        val start = Deadline.now
+        val res = serializeDomainEvent(domainEvent)
+        statisticsCollector.foreach(_ ! AddSerializationDuration(start.lap))
+        res
+      }
     } yield {
       BSONDocument(
         ("_id" -> BSONBinary(UuidConverter.uuidToBytes(domainEvent.eventId), Subtype.UuidSubtype)),
@@ -165,7 +181,11 @@ class MongoDomainEventLog(
 
   def documentToDomainEvent(document: BSONDocument): AlmValidation[DomainEvent] = {
     document.get("domainevent") match {
-      case Some(d: BSONDocument) => deserializeDomainEvent(d)
+      case Some(d: BSONDocument) =>
+        val start = Deadline.now
+        val res = deserializeDomainEvent(d)
+        statisticsCollector.foreach(_ ! AddDeserializationDuration(start.lap))
+        res
       case None => NoSuchElementProblem("BSONDocument for payload not found").failure
       case Some(x) => UnspecifiedProblem(s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
     }
@@ -190,10 +210,11 @@ class MongoDomainEventLog(
       _ <- insertDocument(serialized)
     } yield domainEvent
 
-  def commitDomainEvent(domainEvent: DomainEvent): AlmFuture[DomainEvent] =
+  def commitDomainEvent(domainEvent: DomainEvent): AlmFuture[DomainEvent] = {
     storeDomainEvent(domainEvent) andThen (
       fail => log.error(fail.toString()),
       succ => publishCommittedEvent(succ))
+  }
 
   def getEvents(query: BSONDocument, sort: BSONDocument): AlmFuture[Seq[DomainEvent]] = {
     val collection = db(collectionName)
@@ -206,12 +227,19 @@ class MongoDomainEventLog(
   }
 
   def fetchAndDispatchDomainEvents(query: BSONDocument, sort: BSONDocument, respondTo: ActorRef) {
+    val start = Deadline.now
     getEvents(query, sort).fold(
       problem => {
         sender ! FetchedDomainEventsFailure(problem)
         log.error(problem.toString())
       },
-      domainEvents => respondTo ! FetchedDomainEventsBatch(domainEvents))
+      domainEvents => {
+        val lap = start.lap
+        respondTo ! FetchedDomainEventsBatch(domainEvents)
+        if (lap > readWarnThreshold)
+          log.warning(s"""Storing ${domainEvents.size} domain events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+        statisticsCollector.foreach(_ ! AddReadDuration(lap))
+      })
   }
 
   def uninitialized: Receive = {
@@ -242,6 +270,7 @@ class MongoDomainEventLog(
   override def receiveDomainEventLogMsg: Receive = {
     case CommitDomainEvents(events) =>
       val pinnedSender = sender
+      val start = Deadline.now
       val committedEvents = AlmFuture.sequence(events.map(commitDomainEvent))
       committedEvents.fold(
         problem => {
@@ -249,6 +278,10 @@ class MongoDomainEventLog(
           log.error(problem.toString())
         },
         succ => {
+          val lap = start.lap
+          if (lap > writeWarnThreshold)
+            log.warning(s"""Storing ${events.size} domain events took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+          statisticsCollector.foreach(_ ! AddWriteDuration(lap))
           pinnedSender ! CommittedDomainEvents(events)
         })
 
