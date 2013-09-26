@@ -25,27 +25,14 @@ object EventLog {
   final case class QueriedEvent(eventId: JUUID, event: Option[Event]) extends SingleEventQueryResult
   final case class EventQueryFailed(eventId: JUUID, problem: Problem) extends SingleEventQueryResult
 
-  sealed trait FetchedEventsPart extends EventLogMessage {
-    def index: Int
-    def isLast: Boolean
-  }
+  sealed trait FetchedEvents extends EventLogMessage
 
-  final case class EventsChunk(
-    /**
-     * Starts with Zero
-     */
-    index: Int,
-    isLast: Boolean,
-    events: Seq[Event]) extends FetchedEventsPart
+  final case class FetchedEventsBatch(events: Seq[Event]) extends FetchedEvents
 
-  final case class EventsChunkFailure(
-    /**
-     * Starts with Zero
-     */
-    index: Int,
-    problem: Problem) extends FetchedEventsPart {
-    override def isLast = true
-  }
+  final case class FetchedEventsChunks() extends FetchedEvents
+
+  final case class FetchedEventsFailure(problem: Problem) extends FetchedEvents
+
 }
 
 trait EventLog { actor: Actor =>

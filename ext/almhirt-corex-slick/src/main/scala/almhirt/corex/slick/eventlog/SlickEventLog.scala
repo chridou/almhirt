@@ -38,7 +38,7 @@ trait SlickEventLog extends EventLog with Actor with ActorLogging {
       events <- rowsToEvents(rows)
     } yield events).fold(
       problem => throw new EscalatedProblemException(problem),
-      events => sender ! EventsChunk(0, true, events))
+      events => sender ! FetchedEventsBatch(events))
   }
 
   import almhirt.corex.slick.TypeConversion._

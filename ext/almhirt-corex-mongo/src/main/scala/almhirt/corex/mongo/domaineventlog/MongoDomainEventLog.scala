@@ -187,8 +187,8 @@ class MongoDomainEventLog(
         val res = deserializeDomainEvent(d)
         statisticsCollector.foreach(_ ! AddDeserializationDuration(start.lap))
         res
+      case Some(x) => MappingProblem(s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
       case None => NoSuchElementProblem("BSONDocument for payload not found").failure
-      case Some(x) => UnspecifiedProblem(s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
     }
   }
 
@@ -254,11 +254,11 @@ class MongoDomainEventLog(
         } yield (a, b)
       indexesRes.onComplete {
         case scala.util.Success((a, b)) =>
-          log.info(s"Index on aggid created: $a")
-          log.info(s"Index on (aggid, version) created: $b")
+          log.info(s"""Index on "aggid" created: $a""")
+          log.info(s"""Index on "aggid, version" created: $b""")
           self ! Initialized
         case scala.util.Failure(exn) =>
-          log.error(exn, "Failed to ensure indexes")
+          log.error(exn, "Failed to ensure indexes.")
           this.context.stop(self)
       }
     case Initialized =>
