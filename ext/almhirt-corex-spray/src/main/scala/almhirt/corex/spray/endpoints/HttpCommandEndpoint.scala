@@ -34,7 +34,7 @@ trait HttpCommandEndpoint extends Directives {
             val trackId = endpoint.executeTracked(cmd)
             ctx.complete(StatusCodes.Accepted, trackId)
           case (_, Some(_)) =>
-            endpoint.executeSync(cmd, maxSyncDuration).fold(
+            endpoint.executeSync(cmd, maxSyncDuration).onComplete(
               prob =>
                 prob match {
                   case OperationTimedOutProblem(p) => ctx.complete(StatusCodes.InternalServerError, prob)
