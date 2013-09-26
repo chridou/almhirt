@@ -27,14 +27,17 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   implicit val executionContext = theAlmhirt.futuresExecutor
   val futuresMaxDuration = theAlmhirt.durations.longDuration
 
-  private val reportingDiff = 5000L
+  def reportingDiff: Long
 
   protected var commandsReceived = 0L
   protected var sequencedCommandsReceived = 0L
   protected var sequencesReceived = 0L
+  protected var commandsFailed = 0L
 
   private var countersSumOld = 0L
 
+  private case object CommandFailed
+  
   override def receiveCommandExecutorMessage: Receive = {
     case cmd: Command =>
       messagePublisher.publish(CommandReceived(cmd))
@@ -45,6 +48,8 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       executeDomainCommandSequence(domainCommandSequence)
     case DomainCommandsSequencer.DomainCommandsSequenceNotCreated(grouplabel: String, problem: Problem) =>
       throw new Exception(problem.message)
+    case CommandFailed => 
+      commandsFailed += 1
   }
 
   def initiateExecution(cmd: Command) {
@@ -297,6 +302,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     trackingId.foreach { id =>
       messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(id, problem)))
     }
+    self ! CommandFailed
   }
 
   private def handleFailure(cmd: Command, problem: Problem) {

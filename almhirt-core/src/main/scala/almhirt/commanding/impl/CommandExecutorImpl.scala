@@ -12,7 +12,8 @@ class CommandExecutorImpl(
   val repositories: AggregateRootRepositoryRegistry,
   val messagePublisher: MessagePublisher,
   val theAlmhirt: Almhirt,
-  override val maxExecutionTimePerCommandWarnThreshold: FiniteDuration) extends CommandExecutor with CommandExecutorTemplate with Actor with ActorLogging {
+  override val maxExecutionTimePerCommandWarnThreshold: FiniteDuration,
+  override val reportingDiff: Long) extends CommandExecutor with CommandExecutorTemplate with Actor with ActorLogging {
 
   val domainCommandsSequencer = context.actorOf(Props(new DomainCommandsSequencerImpl(theAlmhirt)), "DomainCommandsSequencer")
 
@@ -25,7 +26,6 @@ class CommandExecutorImpl(
 
   override def postStop {
     super.postStop()
-    log.info(s"Commands received: $commandsReceived, sequenced commands received: $sequencedCommandsReceived, command sequences received: $sequencesReceived.")
+    log.info(s"Commands received: $commandsReceived, sequenced commands received: $sequencedCommandsReceived, command sequences received: $sequencesReceived, commandsFailed: $commandsFailed.")
   }
-
 }
