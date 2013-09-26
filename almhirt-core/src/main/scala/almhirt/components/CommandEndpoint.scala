@@ -51,7 +51,10 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
     (tracker ? SubscribeForFinishedState(cmd.trackingId))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage].mapV(res =>
       res match {
         case FinishedExecutionStateResult(res) => res.success
-        case ExecutionTrackingExpired(trackId) => UnspecifiedProblem(s"""Execution state tracking for "$trackId" has expired.""").failure
+        case ExecutionTrackingExpired(trackId, Some(msg)) => 
+          OperationTimedOutProblem(s"""Execution state tracking for "$trackId" has expired: $msg""").failure
+        case ExecutionTrackingExpired(trackId, None) => 
+          OperationTimedOutProblem(s"""Execution state tracking for "$trackId" has expired.""").failure
       })
   }
 

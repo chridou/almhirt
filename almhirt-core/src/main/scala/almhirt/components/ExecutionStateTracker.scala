@@ -17,7 +17,7 @@ object ExecutionStateTracker {
 
   sealed trait ExecutionFinishedResultMessage extends ExecutionStateTrackerMessage
   final case class FinishedExecutionStateResult(result: ExecutionFinishedState) extends ExecutionFinishedResultMessage
-  final case class ExecutionTrackingExpired(trackId: String) extends ExecutionFinishedResultMessage
+  final case class ExecutionTrackingExpired(trackId: String, message: Option[String] = None) extends ExecutionFinishedResultMessage
 
   import scalaz.syntax.validation._
   import akka.pattern.ask
