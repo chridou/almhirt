@@ -40,27 +40,46 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def mapV[T](compute: R => AlmValidation[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](underlying.map { validation => validation flatMap compute })
 
-  def mapFailure(withFailure: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] =
-    new AlmFuture[R](underlying.map { validation => validation leftMap withFailure }(executionContext))
+  def mapFailure(withFailure: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
+    val p = Promise[AlmValidation[R]]
+    underlying.onComplete {
+      case scala.util.Failure(exn) =>
+        p complete (scala.util.Success(withFailure(handleThrowable(exn)).failure))
+      case scala.util.Success(validation) =>
+        p complete (scala.util.Success(validation fold (p => withFailure(p).failure, success => success.success)))
+    }
+    new AlmFuture(p.future)
+  }
 
-  def mapTimeout(withTimeout: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] =
-    new AlmFuture[R](underlying.map { validation =>
-      validation leftMap {
-        case OperationTimedOutProblem(p) => withTimeout(p)
-        case p => p
-      }
-    })
+  def mapTimeout(withTimeout: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
+    val p = Promise[AlmValidation[R]]
+    underlying.onComplete {
+      case scala.util.Failure(exn) =>
+        handleThrowable(exn) match {
+          case OperationTimedOutProblem(prob) => p complete (scala.util.Success(withTimeout(prob).failure))
+          case prob => p failure (exn)
+        }
+      case scala.util.Success(validation) =>
+        validation fold (
+          fail => fail match {
+            case OperationTimedOutProblem(prob) => p complete (scala.util.Success(withTimeout(prob).failure))
+            case prob => p complete scala.util.Success(prob.failure)
+          },
+          succ => p complete scala.util.Success(succ.success))
+    }
+    new AlmFuture(p.future)
+  }
 
   def mapTimeoutMessage(newMessage: String => String)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     new AlmFuture[R](underlying.map { validation =>
       validation leftMap {
-        case OperationTimedOutProblem(p) => 
+        case OperationTimedOutProblem(p) =>
           p.withMessage(newMessage(p.message))
-        case p => 
+        case p =>
           p
       }
     })
-    
+
   def flatMap[T](compute: R => AlmFuture[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture(underlying.flatMap { validation =>
       validation fold (
@@ -68,18 +87,38 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
         r => compute(r).underlying)
     })
 
-  def fold[T](failure: Problem => T, success: R => T)(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture(underlying.map { validation => (validation fold (failure, success)).success })
+  def fold[T](failure: Problem => T, success: R => T)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
+    val p = Promise[AlmValidation[T]]
+    underlying.onComplete {
+      case scala.util.Failure(exn) =>
+        p complete (scala.util.Success(failure(handleThrowable(exn)).success))
+      case scala.util.Success(validation) =>
+        p complete (scala.util.Success((validation fold (failure, success)).success))
+    }
+    new AlmFuture(p.future)
+  }
 
-  def foldV[T](failure: Problem => AlmValidation[T], success: R => AlmValidation[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture(underlying.map { validation => (validation fold (failure, success)) })
+  def foldV[T](failure: Problem => AlmValidation[T], success: R => AlmValidation[T])(implicit executionContext: ExecutionContext): AlmFuture[T] = {
+    val p = Promise[AlmValidation[T]]
+    underlying.onComplete {
+      case scala.util.Failure(exn) =>
+        p complete (scala.util.Success(failure(handleThrowable(exn))))
+      case scala.util.Success(validation) =>
+        p complete (scala.util.Success((validation fold (failure, success))))
+    }
+    new AlmFuture(p.future)
+  }
 
-  def foldF[T](failure: Problem => AlmFuture[T], success: R => AlmFuture[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture(underlying.flatMap { validation =>
-      validation fold (
-        f => failure(f).underlying,
-        r => success(r).underlying)
-    })
+  def foldF[T](failure: Problem => AlmFuture[T], success: R => AlmFuture[T])(implicit executionContext: ExecutionContext): AlmFuture[T] = {
+    val p = Promise[AlmValidation[T]]
+    underlying.onComplete {
+      case scala.util.Failure(exn) =>
+        p completeWith failure(handleThrowable(exn)).underlying
+      case scala.util.Success(validation) =>
+        p completeWith (validation fold (failure, success)).underlying
+    }
+    new AlmFuture(p.future)
+  }
 
   def collect[T](pf: PartialFunction[R, T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture(
@@ -91,12 +130,18 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
       underlying.map(validation =>
         validation flatMap (v => pf(v))))
 
-  def collectF[T](pf: PartialFunction[R, AlmFuture[T]])(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    new AlmFuture(
-      underlying.flatMap(validation =>
+  def collectF[T](pf: PartialFunction[R, AlmFuture[T]])(implicit executionContext: ExecutionContext): AlmFuture[T] = {
+    val p = Promise[AlmValidation[T]]
+    underlying.onComplete {
+      case scala.util.Success(validation) =>
         validation fold (
-          fail => Future(fail.failure),
-          succ => pf(succ).underlying)))
+          fail => p complete (scala.util.Success(fail.failure)),
+          succ => p completeWith (pf(succ).underlying))
+      case scala.util.Failure(exn) =>
+        p failure (exn)
+    }
+    new AlmFuture(p.future)
+  }
 
   def onComplete(handler: AlmValidation[R] => Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
