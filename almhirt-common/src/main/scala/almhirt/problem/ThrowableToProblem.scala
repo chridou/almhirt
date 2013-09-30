@@ -26,7 +26,9 @@ object CommonExceptionToProblem extends ExceptionToProblem {
 
 object AnyExceptionToCaughtExceptionProblem extends ExceptionToProblem {
   override def apply(exn: Throwable) =
-    if (exn.getMessage() == "Timed out")
+    if (exn.getClass.getName() == "akka.pattern.AskTimeoutException")
+      problemtypes.OperationTimedOutProblem(s"""Asking an actor timed out: "${exn.getMessage}"""", cause = Some(exn))
+    else if (exn.isInstanceOf[java.util.concurrent.TimeoutException])
       problemtypes.OperationTimedOutProblem(exn.getMessage, cause = Some(exn))
     else
       problemtypes.ExceptionCaughtProblem(exn)
