@@ -51,6 +51,7 @@ trait WarpPrimitiveToByteConverter extends WarpPrimitiveConverter[Byte] {
       case WarpLong(value) => value.toByte.success
       case WarpFloat(value) => value.toByte.success
       case WarpDouble(value) => value.toByte.success
+      case WarpBigDecimal(value) => value.toByte.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Byte""").failure
     }
   override def convertBack(what: Byte) = WarpByte(what)
@@ -65,6 +66,7 @@ trait WarpPrimitiveToIntConverter extends WarpPrimitiveConverter[Int] {
       case WarpLong(value) => value.toInt.success
       case WarpFloat(value) => value.toInt.success
       case WarpDouble(value) => value.toInt.success
+      case WarpBigDecimal(value) => value.toInt.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be an Int""").failure
     }
   override def convertBack(what: Int) = WarpInt(what)
@@ -79,6 +81,7 @@ trait WarpPrimitiveToLongConverter extends WarpPrimitiveConverter[Long] {
       case WarpLong(value) => value.success
       case WarpFloat(value) => value.toLong.success
       case WarpDouble(value) => value.toLong.success
+      case WarpBigDecimal(value) => value.toLong.success
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Long""").failure
     }
   override def convertBack(what: Long) = WarpLong(what)
