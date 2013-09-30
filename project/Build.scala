@@ -3,12 +3,13 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.87"
+  val buildVersion      = "0.5.88"
   val buildScalaVersion = "2.10.2"
 
   val akkaVersion = "2.2.+"
   val scalatestVersion = "2.0.M5b"
-  
+  val sprayVersion = "1.2-20130822"
+   
   val buildSettings = Defaults.defaultSettings ++ Seq (
 	organization := buildOrganization,
     version      := buildVersion,
@@ -39,6 +40,10 @@ object Dependencies {
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
+	lazy val spray_routing = "io.spray" % "spray-routing" % BuildSettings.sprayVersion % "provided"
+	lazy val spray_json =  "io.spray" %%  "spray-json" % "1.2.5"
+	lazy val spray_testkit =  "io.spray" % "spray-testkit" % BuildSettings.sprayVersion % "test"
+	
     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+" % "provided"
 
@@ -165,6 +170,23 @@ trait CorexMongoBuild {
   )
 }
 
+trait CorexSprayBuild {
+  import Dependencies._
+  import Resolvers._
+  def corexSprayProject(name: String, baseFile: java.io.File) = {
+ 	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  //resolvers += "spray repo" at "http://repo.spray.io",
+	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
+	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += spray_routing,
+	  libraryDependencies += spray_testkit,
+	  libraryDependencies += scalatest
+	  )
+	  }
+  
+}
+
 trait RiftWarpBuild {
   import Dependencies._
   import Resolvers._
@@ -199,6 +221,22 @@ trait RiftWarpMongoExtBuild {
 	  libraryDependencies += scalatest
   )
 }
+
+trait RiftWarpSprayJsonExtBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpSprayJsonExtProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  resolvers += "spray repo" at "http://repo.spray.io",
+	  libraryDependencies += scala_reflect,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += spray_json,
+	  libraryDependencies += scalatest
+  )
+}
 trait RiftWarpAutomaticBuild {
   import Dependencies._
   import Resolvers._
@@ -214,23 +252,6 @@ trait RiftWarpAutomaticBuild {
 }
 
 
-trait CorexSprayBuild {
-  import Dependencies._
-  import Resolvers._
-  def corexSprayProject(name: String, baseFile: java.io.File) = {
-    val sprayVersion = "1.2-20130801"
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  //resolvers += "spray repo" at "http://repo.spray.io",
-	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
-	  libraryDependencies += scalaz,
-	  libraryDependencies += akka_actor,
-	  libraryDependencies += "io.spray" % "spray-routing" % sprayVersion % "provided",
-	  libraryDependencies += "io.spray" % "spray-testkit" % sprayVersion % "test",
-	  libraryDependencies += scalatest
-	  )
-	  }
-  
-}
 
 object AlmHirtBuild extends Build 
 	with CommonBuild 
@@ -243,10 +264,11 @@ object AlmHirtBuild extends Build
 	with CorexSprayBuild 
 	with RiftWarpBuild 
 	with RiftWarpMongoExtBuild 
+	with RiftWarpSprayJsonExtBuild 
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpMongoProject)
+	                        base = file(".")) aggregate(common, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpMongoProject, riftwarpSprayProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -270,7 +292,7 @@ object AlmHirtBuild extends Build
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
                        			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 								
- lazy val corexSpray = corexSprayProject(	name = "almhirt-corex-spray",
+  lazy val corexSpray = corexSprayProject(	name = "almhirt-corex-spray",
 	                       				baseFile = file("./ext/almhirt-corex-spray")) dependsOn(common, core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
@@ -278,6 +300,9 @@ object AlmHirtBuild extends Build
 								
   lazy val riftwarpMongoProject = riftwarpMongoExtProject(	name = "riftwarpx-mongo",
                        			baseFile = file("./ext/riftwarpx-mongo")) dependsOn(common, riftwarp)
+								
+  lazy val riftwarpSprayProject = riftwarpSprayJsonExtProject(	name = "riftwarpx-sprayjson",
+                       			baseFile = file("./ext/riftwarpx-sprayjson")) dependsOn(common, riftwarp)
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
