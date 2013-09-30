@@ -16,7 +16,7 @@ object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Js
         FromSprayJsonRematerializer.rematerialize(jsonAst)
       } catch {
         case scala.util.control.NonFatal(exn) =>
-          ParsingProblem(s"""Could not parse JSON: "${exn.getMessage()}"""").failure
+          ParsingProblem(s"""Could not parse JSON(Spray-JSON): "${exn.getMessage()}"""").failure
       }
     } else if (what.startsWith("\"") && what.endsWith("\"")) {
       WarpString(what.substring(1, what.length() - 1)).success
