@@ -7,7 +7,7 @@ import org.joda.time.LocalDateTime
 
 object BsonConverter {
   def uuidToBson(uuid: JUUID): BSONBinary =
-    BSONBinary(UuidConverter.uuidToBytes(uuid), Subtype.OldUuidSubtype)
+    BSONBinary(UuidConverter.uuidToBytes(uuid), Subtype.UuidSubtype)
 
   def bsonToUuid(bin: BSONBinary) =
     UuidConverter.bytesToUuid(bin.value.readArray(16))
