@@ -100,8 +100,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       sender ! RequestedAggregateRoot(ar)
     case uar: UpdateAggregateRoot =>
       moveToUpdateState(Some(ar), Some(ar), Vector((sender, uar)))
-        case DropCachedAggregateRoot =>
-          moveToUninitialized
+    case DropCachedAggregateRoot =>
+      moveToUninitialized
     case ReportCellState =>
       reportCellState(CellStateLoaded)
   }
@@ -191,9 +191,8 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     val warnDeadline = Deadline.now
     (domainEventLog ? GetAllDomainEventsFor(managedAggregateRooId))(getArTimeout).successfulAlmFuture[FetchedDomainEvents].collectV {
       case FetchedDomainEventsBatch(events) =>
-        val elapsed = warnDeadline.lap
-        if (elapsed > getArWarnThreshold)
-          log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than ${getArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString}).""")
+        warnDeadline.whenTooLate(getArWarnThreshold, elapsed =>
+          log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than ${getArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString})."""))
         if (events.isEmpty)
           None.success
         else
@@ -203,8 +202,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       case FetchedDomainEventsFailure(problem) =>
         problem.failure
     }.mapTimeout(tp => {
-      val elapsed = warnDeadline.lap
-      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within ${getArTimeout.defaultUnitString}(${elapsed.defaultUnitString})""", cause = Some(tp))
+      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within ${getArTimeout.defaultUnitString}.""", cause = Some(tp))
     })
   }
 
@@ -223,19 +221,17 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
               problem =>
                 problem match {
                   case OperationTimedOutProblem(p) =>
-                    val elapsed = start.lap
-                    val prob = OperationTimedOutProblem(s"""The domain event log failed to append the events for "$managedAggregateRooId" within ${updateArTimeout.defaultUnitString}(${elapsed.defaultUnitString})""")
+                    val prob = OperationTimedOutProblem(s"""The domain event log failed to append the events for "$managedAggregateRooId" within ${updateArTimeout.defaultUnitString}.""", cause = Some(p))
                     self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
                   case prob =>
                     self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
                 },
               succ => {
-                val elapsed = start.lap
-                if (elapsed > updateArWarnThreshold)
-                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than ${updateArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString}).""")
+                start.whenTooLate(updateArWarnThreshold, elapsed =>
+                  log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than ${updateArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString})."""))
                 succ match {
                   case CommitFailed(problem) =>
-                    self !FailedUpdate(problem, requestedNextUpdate +: rest.map(_._1))
+                    self ! FailedUpdate(problem, requestedNextUpdate +: rest.map(_._1))
                   case NothingCommitted() =>
                     log.warning(s"""No events have been committed for $managedAggregateRooId""")
                     self ! SuccessfulUpdate(Some(nextUpdateState), None, rest)
@@ -301,10 +297,10 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     context.become(errorState(problem))
   }
 
-//  private def logDebugMessage(currentState: String, msg: String) {
-//    log.debug(s"""Cell for "${managedAggregateRooId}" on state "$currentState": $msg""")
-//
-//  }
+  //  private def logDebugMessage(currentState: String, msg: String) {
+  //    log.debug(s"""Cell for "${managedAggregateRooId}" on state "$currentState": $msg""")
+  //
+  //  }
 
   protected def receiveAggregateRootCellMsg = uninitializedState(false, Vector.empty, Vector.empty)
 
@@ -341,7 +337,7 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
     log.debug(s"""Aggregate root cell for managed aggregate root id "$managedAggregateRooId" is about to start.""")
     reportCellState(AggregateRootCell.CellStateUninitialized)
   }
-  
+
   override def postStop() {
     cancelLastReportingJob()
   }
