@@ -263,7 +263,7 @@ class MongoEventLog(
           case Some(maxSize) => collection.convertToCapped(maxSize, None)
           case None => scala.concurrent.Promise.successful(false).future
         }
-        idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), unique = false))
+        idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
       } yield (capRes, idxRes)).onComplete {
         case scala.util.Success((capRes, idxRes)) =>
           log.info(s"""Index on "timestamp" created: $idxRes""")

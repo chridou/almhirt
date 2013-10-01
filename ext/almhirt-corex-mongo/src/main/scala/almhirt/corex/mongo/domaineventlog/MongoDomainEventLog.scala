@@ -158,7 +158,7 @@ class MongoDomainEventLog(
   val projectionFilter = BSONDocument("domainevent" -> 1)
 
   val noSorting = BSONDocument()
-  val sortByVersion = BSONDocument("version" -> 1)
+  val sortByVersion = BSONDocument("aggid" -> 1, "version" -> 1)
 
   private case object Initialize
   private case object Initialized
@@ -238,7 +238,7 @@ class MongoDomainEventLog(
         val lap = start.lap
         respondTo ! FetchedDomainEventsBatch(domainEvents)
         if (lap > readWarnThreshold)
-          log.warning(s"""Storing ${domainEvents.size} domain events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+          log.warning(s"""Fetching ${domainEvents.size} domain events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
         statisticsCollector.foreach(_ ! AddReadDuration(lap))
       })
   }
@@ -249,13 +249,11 @@ class MongoDomainEventLog(
       val collection = db(collectionName)
       val indexesRes =
         for {
-          a <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending), unique = false))
-          b <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending, "version" -> IndexType.Ascending), unique = false))
-        } yield (a, b)
+          a <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending, "version" -> IndexType.Ascending), name = Some("idx_aggid_version"), unique = false))
+        } yield a
       indexesRes.onComplete {
-        case scala.util.Success((a, b)) =>
-          log.info(s"""Index on "aggid" created: $a""")
-          log.info(s"""Index on "aggid, version" created: $b""")
+        case scala.util.Success(a) =>
+          log.info(s"""Index on "aggid, version" created: $a""")
           self ! Initialized
         case scala.util.Failure(exn) =>
           log.error(exn, "Failed to ensure indexes.")
