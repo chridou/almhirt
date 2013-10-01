@@ -56,8 +56,11 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
       case BSONLong(value) => WarpLong(value).success
       case BSONDouble(value) => WarpDouble(value).success
       case BSONDateTime(value) => WarpLocalDateTime(new LocalDateTime(value, DateTimeZone.UTC)).success
-      case BSONBinary(value, Subtype.UuidSubtype) => WarpUuid(UuidConverter.bytesToUuid(value.readArray(16))).success
-      case x => Failure(UnspecifiedProblem(s"""No primitive rematerialization found for "${what.getClass.getName()}""""))
+      case BSONBinary(value, Subtype.OldUuidSubtype) => WarpUuid(UuidConverter.bytesToUuid(value.readArray(16))).success
+      case BSONBinary(value, st) => 
+        Failure(UnspecifiedProblem(s"""A BSONBinary with subtype ${st.toString()} is not a primitive type."""))
+      case x => 
+        Failure(UnspecifiedProblem(s"""No primitive rematerialization found for "${what.getClass.getName()}""""))
     }
   }
 }
