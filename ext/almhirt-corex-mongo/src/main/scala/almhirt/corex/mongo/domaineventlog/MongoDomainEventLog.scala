@@ -70,11 +70,6 @@ object MongoDomainEventLog {
       writeWarnThreshold <- configSection.v[FiniteDuration]("write-warn-threshold-duration")
       readWarnThreshold <- configSection.v[FiniteDuration]("read-warn-threshold-duration")
       useNumberCruncherForSerialization <- configSection.v[Boolean]("use-number-cruncher-for-serialization")
-      capCollection <- configSection.v[Boolean]("cap-collection")
-      maxCollectionSize <- if (capCollection)
-        configSection.v[Long]("max-collection-size").map(Some(_))
-      else
-        None.success
     } yield {
       theAlmhirt.log.info(s"""MongoDomainEventLog: table-name = $collectionName""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: write-warn-threshold-duration = ${writeWarnThreshold.defaultUnitString}""")
