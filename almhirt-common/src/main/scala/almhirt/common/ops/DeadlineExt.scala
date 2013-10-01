@@ -6,6 +6,10 @@ trait DeadlineExt {
   implicit class DeadlineOps(self: Deadline) {
     def lap: FiniteDuration = Deadline.now - self
     def lapExceeds(dur: FiniteDuration): Boolean = (Deadline.now - self) > dur
+    def whenTooLate(limit: FiniteDuration, f: FiniteDuration => Unit) {
+      val dur = self.lap
+      if (dur > limit) f(dur)
+    }
   }
 }
 
@@ -18,7 +22,6 @@ trait FiniteDurationExt {
       MILLISECONDS -> "ms",
       MICROSECONDS -> "µs",
       NANOSECONDS -> "ns")
-
 
   implicit class FiniteDurationOps(self: FiniteDuration) {
     def defaultUnitString(implicit timeUnitToStringInst: almhirt.converters.FiniteDurationToStringConverter = almhirt.converters.FiniteDurationToStringConverter.default): String = {
