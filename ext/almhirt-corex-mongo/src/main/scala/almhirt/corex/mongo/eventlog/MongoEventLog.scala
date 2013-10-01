@@ -28,6 +28,7 @@ object MongoEventLog {
     writeWarnThreshold: FiniteDuration,
     serializationExecutor: ExecutionContext,
     statisticsCollector: Option[ActorRef],
+    maxCollectionSize: Option[Long],
     theAlmhirt: Almhirt): Props =
     Props(new MongoEventLog(
       db,
@@ -36,7 +37,8 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       serializationExecutor,
-      statisticsCollector)(theAlmhirt))
+      statisticsCollector,
+      maxCollectionSize)(theAlmhirt))
 
   def propsRaw(
     db: DB with DBMetaCommands,
@@ -46,6 +48,7 @@ object MongoEventLog {
     writeWarnThreshold: FiniteDuration,
     useNumberCruncherForSerialization: Boolean,
     statisticsCollector: Option[ActorRef],
+    maxCollectionSize: Option[Long],
     theAlmhirt: Almhirt): Props = {
     val serCtx = if (useNumberCruncherForSerialization) theAlmhirt.numberCruncher else theAlmhirt.futuresExecutor
     propsRaw(
@@ -56,6 +59,7 @@ object MongoEventLog {
       writeWarnThreshold,
       serCtx,
       statisticsCollector,
+      maxCollectionSize,
       theAlmhirt)
   }
 
@@ -64,11 +68,18 @@ object MongoEventLog {
       collectionName <- configSection.v[String]("table-name")
       writeWarnThreshold <- configSection.v[FiniteDuration]("write-warn-threshold-duration")
       useNumberCruncherForSerialization <- configSection.v[Boolean]("use-number-cruncher-for-serialization")
+      capCollection <- configSection.v[Boolean]("cap-collection")
+      maxCollectionSize <- if (capCollection)
+        configSection.v[Long]("max-collection-size").map(Some(_))
+      else
+        None.success
     } yield {
       theAlmhirt.log.info(s"""MongoEventLog: table-name = $collectionName""")
       theAlmhirt.log.info(s"""MongoEventLog: write-warn-threshold-duration = ${writeWarnThreshold.defaultUnitString}""")
       theAlmhirt.log.info(s"""MongoEventLog: use-number-cruncher-for-serialization = $useNumberCruncherForSerialization""")
-      propsRaw(db, collectionName, serializeEvent, deserializeEvent, writeWarnThreshold, useNumberCruncherForSerialization, statisticsCollector, theAlmhirt)
+      val maxSize = maxCollectionSize.map(_.toString).getOrElse("unlimited")
+      theAlmhirt.log.info(s"""MongoEventLog: max-collection-size = $maxSize""")
+      propsRaw(db, collectionName, serializeEvent, deserializeEvent, writeWarnThreshold, useNumberCruncherForSerialization, statisticsCollector, maxCollectionSize, theAlmhirt)
     }
 
   def props(driver: MongoDriver, serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], statisticsCollector: Option[ActorRef], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
@@ -138,7 +149,8 @@ class MongoEventLog(
   deserializeEvent: BSONDocument => AlmValidation[Event],
   writeWarnThreshold: FiniteDuration,
   serializationExecutor: ExecutionContext,
-  statisticsCollector: Option[ActorRef])(implicit theAlmhirt: Almhirt) extends Actor with ActorLogging with EventLog {
+  statisticsCollector: Option[ActorRef],
+  maxCollectionSize: Option[Long])(implicit theAlmhirt: Almhirt) extends Actor with ActorLogging with EventLog {
   import EventLog._
   import almhirt.corex.mongo.LogStatisticsCollector._
   import almhirt.corex.mongo.BsonConverter._
@@ -238,12 +250,19 @@ class MongoEventLog(
     case Initialize =>
       log.info("Initializing")
       val collection = db(collectionName)
-      collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), unique = false)).onComplete {
-        case scala.util.Success(a) =>
-          log.info(s"""Index on "timestamp" created: $a""")
+      (for {
+        capRes <- maxCollectionSize match {
+          case Some(maxSize) => collection.convertToCapped(maxSize, None)
+          case None => scala.concurrent.Promise.successful(false).future
+        }
+        idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), unique = false))
+      } yield (capRes, idxRes)).onComplete {
+        case scala.util.Success((capRes, idxRes)) =>
+          log.info(s"""Index on "timestamp" created: $idxRes""")
+          log.info(s"""Collection capped: $capRes""")
           self ! Initialized
         case scala.util.Failure(exn) =>
-          log.error(exn, "Failed to ensure indexes,")
+          log.error(exn, "Failed to ensure indexes and/or collection capping,")
           this.context.stop(self)
       }
     case Initialized =>
