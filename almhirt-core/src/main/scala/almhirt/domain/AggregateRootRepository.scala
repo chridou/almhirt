@@ -1,11 +1,13 @@
 package almhirt.domain
 
 import java.util.{ UUID => JUUID }
+import scalaz.syntax.validation._
 import scala.concurrent.duration._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.core.Almhirt
 import almhirt.almfuture.all._
 import scala.reflect.ClassTag
@@ -164,8 +166,21 @@ object AggregateRootRepository {
   def apply[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, configSection: Config, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[ActorRef] =
     for {
       theProps <- props[TAR, TEvent](cellCache, configSection, theAlmhirt)
+      useRouting <- configSection.v[Boolean]("use-routing")
+      routingProperties <- if (useRouting) configSection.v[java.util.Properties]("routing-config").map(Some(_)) else None.success
+      numActors <- routingProperties match {
+        case None => 1.success
+        case Some(props) =>
+          if (props.containsKey(tagAr.runtimeClass.getName()))
+            props.getProperty(tagAr.runtimeClass.getName()).toIntAlm
+          else
+            1.success
+      }
     } yield {
-      theAlmhirt.actorSystem.actorOf(theProps, s"aggregate-root-repository-${tagAr.runtimeClass.getSimpleName()}")
+      if (numActors > 1)
+        theAlmhirt.actorSystem.actorOf(Props(new AggregateRootRepositoryRouter(numActors, theProps)), s"aggregate-root-repository-${tagAr.runtimeClass.getSimpleName().toLowerCase()}")
+      else
+        theAlmhirt.actorSystem.actorOf(theProps, s"aggregate-root-repository-${tagAr.runtimeClass.getSimpleName().toLowerCase()}")
     }
 
   def apply[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, configPath: String, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[ActorRef] =

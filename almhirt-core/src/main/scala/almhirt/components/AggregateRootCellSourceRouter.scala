@@ -2,7 +2,6 @@ package almhirt.components
 
 import java.util.{ UUID => JUUID }
 import akka.actor._
-import akka.actor._
 import akka.actor.SupervisorStrategy._
 import almhirt.commanding.ExecutionStateChanged
 
