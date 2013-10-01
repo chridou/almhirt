@@ -18,6 +18,7 @@ import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index => MIndex }
 import reactivemongo.api.indexes.IndexType
 import com.typesafe.config.Config
+import almhirt.eventlog.impl.DevNullEventLog
 
 object MongoEventLog {
   def propsRaw(
@@ -117,6 +118,7 @@ object MongoEventLog {
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
       collectStatistics <- configSection.v[Boolean]("collect-statistics")
+      enabled <- configSection.v[Boolean]("enabled")
       props <- {
         theAlmhirt.log.info(s"""MongoEventLog: collect-statistics = $collectStatistics""")
         val collector =
@@ -127,7 +129,13 @@ object MongoEventLog {
         props(driver, serializeEvent, deserializeEvent, collector, configSection, theAlmhirt)
       }
     } yield {
-      val actor = theAlmhirt.actorSystem.actorOf(props, "event-log")
+      if (!enabled)
+        theAlmhirt.log.info(s"""MongoEventLog: THE EVENT LOG IS DISABLED""")
+      val actor = 
+        if(enabled)
+        	theAlmhirt.actorSystem.actorOf(props, "event-log")
+        else
+           theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "event-log")
       (actor, CloseHandle.noop)
     }
 
