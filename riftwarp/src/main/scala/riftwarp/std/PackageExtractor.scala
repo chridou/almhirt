@@ -331,7 +331,9 @@ private class MapBasedWarpObjectLookUp(override val underlying: WarpObject) exte
   override def tryGetWarpPackage(label: String): AlmValidation[Option[WarpPackage]] =
     theMap.get(label) match {
       case Some(v) => v.success
-      case None => NoSuchElementProblem(s"""The WarpObject does not contain an element with label "$label"""").failure
+      case None => 
+        val wdString = underlying.warpDescriptor.map(_.toString).getOrElse("no WarpDescriptor")
+        NoSuchElementProblem(s"""The WarpObject($wdString) does not contain an element with label "$label"""").failure
     }
 
 }
@@ -341,6 +343,6 @@ trait PackageExtractorFuns {
   def withFastLookUp[T](from: WarpPackage)(f: WarpObjectLookUp => AlmValidation[T]): AlmValidation[T] =
     from match {
       case wo: WarpObject => f(fastLookUp(wo))
-      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject so i cannot create a fast lookup""").failure
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject so I cannot create a fast lookup""").failure
     }
 }
