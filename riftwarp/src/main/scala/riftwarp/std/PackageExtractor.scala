@@ -333,7 +333,8 @@ private class MapBasedWarpObjectLookUp(override val underlying: WarpObject) exte
       case Some(v) => v.success
       case None => 
         val wdString = underlying.warpDescriptor.map(_.toString).getOrElse("no WarpDescriptor")
-        NoSuchElementProblem(s"""The WarpObject($wdString) does not contain an element with label "$label"""").failure
+        val labelsStr = underlying.elements.map(_.label).mkString("[", ",", "]")
+        NoSuchElementProblem(s"""The WarpObject($wdString) does not contain an element with label "$label". The following labels were found: $labelsStr.""").failure
     }
 
 }
