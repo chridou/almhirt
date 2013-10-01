@@ -135,9 +135,9 @@ trait AggregateRootRepositoryWithCellSourceActor extends AggregateRootRepository
 
   override final protected def getCell(aggregateRootId: JUUID): AlmFuture[GetResult] =
     (cellCache ? GetCell(aggregateRootId, arTag.runtimeClass.asInstanceOf[Class[AggregateRoot[_, _]]]))(cacheAskMaxDuration)
-    	.successfulAlmFuture[AggregateRootCellSourceResult]
-    	.mapTimeoutMessage(m => s"""$m(Timeout = ${cacheAskMaxDuration.defaultUnitString})""")
-    	.map { _.cellHandle }
+      .successfulAlmFuture[AggregateRootCellSourceResult]
+      .mapTimeoutMessage(m => s"""$m(Timeout = ${cacheAskMaxDuration.defaultUnitString})""")
+      .map { _.cellHandle }
 
   override final protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => AlmFuture[T]): AlmFuture[T] =
     result.onceWithCell(f)
@@ -155,10 +155,26 @@ object AggregateRootRepository {
       new almhirt.domain.impl.AggregateRootRepositoryImpl[TAR, TEvent](theAlmhirt, cellCache, cellAskMaxDuration, cacheAskMaxDuration))
 
   def props[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, configPath: String, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[Props] =
-  	theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
-  	  props[TAR, TEvent](cellCache,configSection, theAlmhirt))
+    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
+      props[TAR, TEvent](cellCache, configSection, theAlmhirt))
 
   def props[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[Props] =
-  	  props[TAR, TEvent](cellCache,"almhirt.repositories", theAlmhirt)
-  	  
+    props[TAR, TEvent](cellCache, "almhirt.repositories", theAlmhirt)
+
+  def apply[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, configSection: Config, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[ActorRef] =
+    for {
+      theProps <- props[TAR, TEvent](cellCache, configSection, theAlmhirt)
+    } yield {
+      theAlmhirt.actorSystem.actorOf(theProps, s"aggregate-root-repository-${tagAr.runtimeClass.getSimpleName()}")
+    }
+
+  def apply[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, configPath: String, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[ActorRef] =
+    for {
+      configSection <- theAlmhirt.config.v[Config](configPath)
+      theRepo <- apply[TAR, TEvent](cellCache, configSection, theAlmhirt)
+    } yield theRepo
+
+  def apply[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[ActorRef] =
+    apply[TAR, TEvent](cellCache, "almhirt.repositories", theAlmhirt)
+
 }
