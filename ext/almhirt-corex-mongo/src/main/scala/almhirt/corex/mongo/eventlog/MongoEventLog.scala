@@ -116,7 +116,7 @@ object MongoEventLog {
         props(driver, serializeEvent, deserializeEvent, collector, configSection, theAlmhirt)
       }
     } yield {
-      val actor = theAlmhirt.actorSystem.actorOf(props)
+      val actor = theAlmhirt.actorSystem.actorOf(props, "event-log")
       (actor, CloseHandle.noop)
     }
 
@@ -154,7 +154,7 @@ class MongoEventLog(
   private case object Initialized
 
   def EventToDocument(event: Event): AlmValidation[BSONDocument] = {
-    for {
+    (for {
       serialized <- {
         val start = Deadline.now
         val res = serializeEvent(event)
@@ -166,7 +166,7 @@ class MongoEventLog(
         ("_id" -> uuidToBson(event.eventId)),
         ("timestamp" -> localDateTimeToBsonDateTime(event.timestamp)),
         ("event" -> serialized))
-    }
+    }).leftMap(p => SerializationProblem(s"""Could not serialize a "${event.getClass().getName()}".""", cause = Some(p)))
   }
 
   def documentToEvent(document: BSONDocument): AlmValidation[Event] = {

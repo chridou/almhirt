@@ -30,6 +30,7 @@ object MongoDomainEventLog {
     readWarnThreshold: FiniteDuration,
     serializationExecutor: ExecutionContext,
     statisticsCollector: Option[ActorRef],
+    maxCollectionSize: Option[Long],
     theAlmhirt: Almhirt): Props =
     Props(new MongoDomainEventLog(
       db,
@@ -39,7 +40,8 @@ object MongoDomainEventLog {
       writeWarnThreshold,
       readWarnThreshold,
       serializationExecutor,
-      statisticsCollector)(theAlmhirt))
+      statisticsCollector,
+      maxCollectionSize)(theAlmhirt))
 
   def propsRaw(
     db: DB with DBMetaCommands,
@@ -50,6 +52,7 @@ object MongoDomainEventLog {
     readWarnThreshold: FiniteDuration,
     useNumberCruncherForSerialization: Boolean,
     statisticsCollector: Option[ActorRef],
+    maxCollectionSize: Option[Long],
     theAlmhirt: Almhirt): Props = {
     val serCtx = if (useNumberCruncherForSerialization) theAlmhirt.numberCruncher else theAlmhirt.futuresExecutor
     propsRaw(
@@ -61,6 +64,7 @@ object MongoDomainEventLog {
       readWarnThreshold,
       serCtx,
       statisticsCollector,
+      maxCollectionSize,
       theAlmhirt)
   }
 
@@ -70,12 +74,19 @@ object MongoDomainEventLog {
       writeWarnThreshold <- configSection.v[FiniteDuration]("write-warn-threshold-duration")
       readWarnThreshold <- configSection.v[FiniteDuration]("read-warn-threshold-duration")
       useNumberCruncherForSerialization <- configSection.v[Boolean]("use-number-cruncher-for-serialization")
+      capCollection <- configSection.v[Boolean]("cap-collection")
+      maxCollectionSize <- if (capCollection)
+        configSection.v[Long]("max-collection-size").map(Some(_))
+      else
+        None.success
     } yield {
       theAlmhirt.log.info(s"""MongoDomainEventLog: table-name = $collectionName""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: write-warn-threshold-duration = ${writeWarnThreshold.defaultUnitString}""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: read-warn-threshold-duration = ${readWarnThreshold.defaultUnitString}""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: use-number-cruncher-for-serialization = $useNumberCruncherForSerialization""")
-      propsRaw(db, collectionName, serializeDomainEvent, deserializeDomainEvent, writeWarnThreshold, readWarnThreshold, useNumberCruncherForSerialization, statisticsCollector, theAlmhirt)
+      val maxSize = maxCollectionSize.map(_.toString).getOrElse("unlimited")
+      theAlmhirt.log.info(s"""MongoDomainEventLog: max-collection-size = $maxSize""")
+      propsRaw(db, collectionName, serializeDomainEvent, deserializeDomainEvent, writeWarnThreshold, readWarnThreshold, useNumberCruncherForSerialization, statisticsCollector, maxCollectionSize, theAlmhirt)
     }
 
   def props(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], statisticsCollector: Option[ActorRef], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
@@ -120,10 +131,10 @@ object MongoDomainEventLog {
             Some(theAlmhirt.actorSystem.actorOf(Props[LogStatisticsCollector], "domain-event-log-statistics-collector"))
           else
             None
-        props(driver, serializeDomainEvent, deserializeDomainEvent, collector , configSection, theAlmhirt)
+        props(driver, serializeDomainEvent, deserializeDomainEvent, collector, configSection, theAlmhirt)
       }
     } yield {
-      val actor = theAlmhirt.actorSystem.actorOf(props)
+      val actor = theAlmhirt.actorSystem.actorOf(props, "domain-event-log")
       (actor, CloseHandle.noop)
     }
 
@@ -146,7 +157,8 @@ class MongoDomainEventLog(
   writeWarnThreshold: FiniteDuration,
   readWarnThreshold: FiniteDuration,
   serializationExecutor: ExecutionContext,
-  statisticsCollector: Option[ActorRef])(implicit theAlmhirt: Almhirt) extends Actor with ActorLogging with DomainEventLog {
+  statisticsCollector: Option[ActorRef],
+  maxCollectionSize: Option[Long])(implicit theAlmhirt: Almhirt) extends Actor with ActorLogging with DomainEventLog {
   import DomainEventLog._
   import almhirt.corex.mongo.LogStatisticsCollector._
   import almhirt.corex.mongo.BsonConverter._
@@ -249,13 +261,18 @@ class MongoDomainEventLog(
       val collection = db(collectionName)
       val indexesRes =
         for {
+          capRes <- maxCollectionSize match {
+            case Some(maxSize) => collection.convertToCapped(maxSize, None)
+            case None => scala.concurrent.Promise.successful(false).future
+          }
           a <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending), unique = false))
           b <- collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending, "version" -> IndexType.Ascending), unique = false))
-        } yield (a, b)
+        } yield (a, b, capRes)
       indexesRes.onComplete {
-        case scala.util.Success((a, b)) =>
+        case scala.util.Success((a, b, capRes)) =>
           log.info(s"""Index on "aggid" created: $a""")
           log.info(s"""Index on "aggid, version" created: $b""")
+          log.info(s"""Collection capped: $capRes""")
           self ! Initialized
         case scala.util.Failure(exn) =>
           log.error(exn, "Failed to ensure indexes.")
