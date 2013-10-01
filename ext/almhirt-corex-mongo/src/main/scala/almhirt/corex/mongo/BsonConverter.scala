@@ -2,7 +2,7 @@ package almhirt.corex.mongo
 
 import java.util.{ UUID => JUUID }
 import reactivemongo.bson._
-import almhirt.util.UuidConverter
+import almhirt.converters.UuidConverter
 import org.joda.time.LocalDateTime
 
 object BsonConverter {

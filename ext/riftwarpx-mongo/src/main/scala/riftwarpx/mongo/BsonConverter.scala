@@ -2,7 +2,7 @@ package riftwarpx.mongo
 
 import java.util.{ UUID => JUUID }
 import reactivemongo.bson._
-import almhirt.util.UuidConverter
+import almhirt.converters.UuidConverter
 
 object BsonConverter {
   def uuidToBson(uuid: JUUID): BSONBinary =

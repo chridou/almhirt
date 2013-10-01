@@ -1,6 +1,7 @@
-package almhirt.util
+package almhirt.converters
 
 import java.util.{ UUID => JUUID }
+import java.nio.ByteBuffer
 
 object UuidConverter {
   import java.nio.ByteBuffer

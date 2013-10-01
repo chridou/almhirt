@@ -7,7 +7,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
-import almhirt.util.UuidConverter
+import almhirt.converters.UuidConverter
 import almhirt.configuration._
 import almhirt.domaineventlog._
 import almhirt.messaging.MessagePublisher
