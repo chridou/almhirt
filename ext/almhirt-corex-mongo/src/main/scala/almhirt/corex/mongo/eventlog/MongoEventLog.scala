@@ -130,7 +130,7 @@ object MongoEventLog {
       }
     } yield {
       if (!enabled)
-        theAlmhirt.log.info(s"""MongoEventLog: THE EVENT LOG IS DISABLED""")
+        theAlmhirt.log.warning(s"""MongoEventLog: THE EVENT LOG IS DISABLED""")
       val actor = 
         if(enabled)
         	theAlmhirt.actorSystem.actorOf(props, "event-log")
