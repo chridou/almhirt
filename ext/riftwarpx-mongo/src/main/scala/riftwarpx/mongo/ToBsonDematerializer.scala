@@ -8,7 +8,6 @@ import scalaz.Cord._
 import scalaz.std._
 import almhirt.almvalidation.kit._
 import almhirt.common._
-import almhirt.util.UuidConverter
 import reactivemongo.bson._
 import riftwarp._
 import riftwarp.std.DematerializerTemplate
@@ -37,7 +36,7 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
       case WarpUuid(value) => BsonConverter.uuidToBson(value)
       case WarpUri(value) => BSONString(value.toString)
       case WarpDateTime(value) => BSONString(value.toString)
-      case WarpLocalDateTime(value) => BSONDateTime(value.toDateTime(DateTimeZone.UTC).getMillis())
+      case WarpLocalDateTime(value) => BSONTimestamp(value.toDateTime(DateTimeZone.UTC).getMillis())
       case WarpDuration(value) => BSONLong(value.toNanos)
     }
 
