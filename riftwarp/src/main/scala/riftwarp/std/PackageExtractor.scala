@@ -17,15 +17,16 @@ trait WarpObjectLookUp {
       case None => NoSuchElementProblem("Object has no WarpDescriptor").failure
     }
 
-  def tryGetWarpPackage(label: String): AlmValidation[Option[WarpPackage]]
+  def tryGetWarpPackage(label: String): Option[WarpPackage]
 
   def getWarpPackage(label: String): AlmValidation[WarpPackage] =
-    tryGetWarpPackage(label).fold(
-      fail => fail.failure,
-      optV => optV match {
-        case Some(v) => v.success
-        case None => NoSuchElementProblem(s"""The WarpObject contains an element with label "$label" but it has no value""").failure
-      })
+    tryGetWarpPackage(label) match {
+      case Some(wp) => wp.success
+      case None =>
+        val wdString = underlying.warpDescriptor.map(_.toString).getOrElse("no WarpDescriptor")
+        val labelsStr = underlying.elements.map(_.label).mkString("[", ",", "]")
+        NoSuchElementProblem(s"""The WarpObject($wdString) does not contain an element with label "$label". The following labels were found: $labelsStr.""").failure
+    }
 
   def tryGetWarpPrimitive(label: String): AlmValidation[Option[WarpPrimitive]] =
     getAndCheck(label) {
@@ -259,12 +260,11 @@ trait WarpObjectLookUp {
     getMandatory(label, x => tryGetTreeTyped[T](x, overrideDescriptor))
 
   private def getAndCheck[T](label: String)(checkType: WarpPackage => AlmValidation[T]): AlmValidation[Option[T]] =
-    tryGetWarpPackage(label).fold(
-      fail => fail.failure,
-      succ => option.fold(succ)(
-        some => checkType(some).map(Some(_)),
-        None.success))
-
+    tryGetWarpPackage(label) match {
+    case Some(wp) => checkType(wp).map(Some(_))
+    case None => None.success
+  }
+ 
   private def getMandatory[T](label: String, get: String => AlmValidation[Option[T]]): AlmValidation[T] =
     get(label).fold(
       fail => fail.failure,
@@ -276,7 +276,7 @@ trait WarpObjectLookUp {
   private def unpack(what: WarpPackage, overrideDescriptor: Option[WarpDescriptor], backUpDescriptor: Option[WarpDescriptor])(implicit unpackers: WarpUnpackers): AlmValidation[Any] = {
     overrideDescriptor match {
       case Some(pd) =>
-        unpackers.get(pd).leftMap(old => NoSuchElementProblem(s"WarpDescriptor has been overriden", cause = Some(old) )).flatMap(_(what))
+        unpackers.get(pd).leftMap(old => NoSuchElementProblem(s"WarpDescriptor has been overriden", cause = Some(old))).flatMap(_(what))
       case None =>
         what match {
           case wp: WarpPrimitive => wp.value.success
@@ -312,13 +312,13 @@ trait WarpObjectLookUp {
             for {
               va <- unpack(a, None, None)
               vb <- unpack(b, None, None)
-            } yield(va, vb)
+            } yield (va, vb)
           case WarpTuple3(a, b, c) =>
             for {
               va <- unpack(a, None, None)
               vb <- unpack(b, None, None)
               vc <- unpack(c, None, None)
-            } yield(va, vb, vc)
+            } yield (va, vb, vc)
         }
     }
   }
@@ -328,13 +328,10 @@ trait WarpObjectLookUp {
 private class MapBasedWarpObjectLookUp(override val underlying: WarpObject) extends WarpObjectLookUp {
   private val theMap = underlying.elements.map(e => (e.label, e.value)).toMap
   override val warpDescriptor = underlying.warpDescriptor
-  override def tryGetWarpPackage(label: String): AlmValidation[Option[WarpPackage]] =
+  override def tryGetWarpPackage(label: String): Option[WarpPackage] =
     theMap.get(label) match {
-      case Some(v) => v.success
-      case None => 
-        val wdString = underlying.warpDescriptor.map(_.toString).getOrElse("no WarpDescriptor")
-        val labelsStr = underlying.elements.map(_.label).mkString("[", ",", "]")
-        NoSuchElementProblem(s"""The WarpObject($wdString) does not contain an element with label "$label". The following labels were found: $labelsStr.""").failure
+      case Some(x) => x
+      case None => None
     }
 
 }
