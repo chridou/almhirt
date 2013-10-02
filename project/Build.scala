@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.96"
+  val buildVersion      = "0.5.97"
   val buildScalaVersion = "2.10.2"
 
   val akkaVersion = "2.2.+"
@@ -43,6 +43,7 @@ object Dependencies {
 	lazy val spray_routing = "io.spray" % "spray-routing" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_json =  "io.spray" %%  "spray-json" % "1.2.5"
 	lazy val spray_testkit =  "io.spray" % "spray-testkit" % BuildSettings.sprayVersion % "test"
+	lazy val spray_client = "io.spray" % "spray-client" % BuildSettings.sprayVersion % "provided"
 	
     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+" % "provided"
@@ -179,6 +180,7 @@ trait CorexSprayBuild {
 	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += spray_client,
 	  libraryDependencies += spray_routing,
 	  libraryDependencies += spray_testkit,
 	  libraryDependencies += scalatest
