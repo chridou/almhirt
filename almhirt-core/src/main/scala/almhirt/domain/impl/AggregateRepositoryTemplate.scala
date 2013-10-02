@@ -46,78 +46,78 @@ trait AggregateRootRepositoryWithCacheTemplate { actor: Actor with AggregateRepo
       handleUpdate(newState, eventsToNewState, sender)
   }
 
-  protected def handleGet(arId: JUUID, sender: ActorRef) {
+  protected def handleGet(arId: JUUID, requester: ActorRef) {
     getCell(arId).onComplete(
       fail => {
         fail match {
           case OperationTimedOutProblem(p) =>
-            sender ! AggregateRootFetchFailed(arId, OperationTimedOutProblem(s"""Getting the cell for "$arId" for "get" timed out.""", cause = Some(fail)))
+            requester ! AggregateRootFetchFailed(arId, OperationTimedOutProblem(s"""Getting the cell for "$arId" for "get" timed out.""", cause = Some(fail)))
           case _ =>
-            sender ! AggregateRootFetchFailed(arId, UnspecifiedProblem(s"""Getting the cell for "$arId" for "get" failed.""", cause = Some(fail)))
+            requester ! AggregateRootFetchFailed(arId, UnspecifiedProblem(s"""Getting the cell for "$arId" for "get" failed.""", cause = Some(fail)))
         }
       },
-      getResult => onceWithGetResult(getResult, cell => askCellForAr(arId, cell, sender)))
+      getResult => onceWithGetResult(getResult, cell => askCellForAr(arId, cell, requester)))
   }
 
-  protected def handleUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], sender: ActorRef) {
+  protected def handleUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], requester: ActorRef) {
     if (!newState.castTo[AR].isSuccess)
-      sender ! IncompatibleAggregateRoot(newState, arTag.runtimeClass.getName())
+      requester ! IncompatibleAggregateRoot(newState, arTag.runtimeClass.getName())
     else if (!eventsToNewState.forall(_.castTo[Event].isSuccess))
-      sender ! IncompatibleDomainEvent(eventTag.runtimeClass.getName())
+      requester ! IncompatibleDomainEvent(eventTag.runtimeClass.getName())
     else
       getCell(newState.id).onComplete(
         fail => {
           fail match {
             case OperationTimedOutProblem(p) =>
-              sender ! AggregateRootUpdateFailed(newState.id, OperationTimedOutProblem(s"""Getting the cell for "${newState.id}" for "update" timed out.""", cause = Some(fail)))
+              requester ! AggregateRootUpdateFailed(newState.id, OperationTimedOutProblem(s"""Getting the cell for "${newState.id}" for "update" timed out.""", cause = Some(fail)))
             case _ =>
-              sender ! AggregateRootUpdateFailed(newState.id, UnspecifiedProblem(s"""Getting the cell for "${newState.id}" for "update" failed.""", cause = Some(fail)))
+              requester ! AggregateRootUpdateFailed(newState.id, UnspecifiedProblem(s"""Getting the cell for "${newState.id}" for "update" failed.""", cause = Some(fail)))
           }
         },
-        getResult => onceWithGetResult(getResult, cell => askCellForUpdate(newState, eventsToNewState, cell, sender)))
+        getResult => onceWithGetResult(getResult, cell => askCellForUpdate(newState, eventsToNewState, cell, requester)))
   }
 
-  private def askCellForAr(arId: JUUID, cell: ActorRef, sender: ActorRef) = {
+  private def askCellForAr(arId: JUUID, cell: ActorRef, requester: ActorRef) = {
     (cell ? GetManagedAggregateRoot)(cellAskMaxDuration).successfulAlmFuture[Any].fold(
       fail =>
         fail match {
           case OperationTimedOutProblem(p) =>
-            sender ! AggregateRootFetchFailed(arId, OperationTimedOutProblem(s"""Getting the AR from cell for "$arId" timed out(Timeout: ${cellAskMaxDuration.defaultUnitString}).""", cause = Some(fail)))
+            requester ! AggregateRootFetchFailed(arId, OperationTimedOutProblem(s"""Getting the AR from cell for "$arId" timed out(Timeout: ${cellAskMaxDuration.defaultUnitString}).""", cause = Some(fail)))
           case _ =>
-            sender ! AggregateRootFetchFailed(arId, UnspecifiedProblem(s"""Getting the AR from cell for "$arId" failed.""", cause = Some(fail)))
+            requester ! AggregateRootFetchFailed(arId, UnspecifiedProblem(s"""Getting the AR from cell for "$arId" failed.""", cause = Some(fail)))
         },
       {
         case RequestedAggregateRoot(ar) =>
           ar.castTo[AR].fold(
             fail => AggregateRootFetchFailed(arId, fail),
             ar => {
-              sender ! RequestedAggregateRoot(ar)
+              requester ! RequestedAggregateRoot(ar)
             })
         case m: AggregateRootNotFound =>
-          sender ! m
+          requester ! m
         case m: AggregateRootFetchFailed =>
-          sender ! m
+          requester ! m
       })
   }
 
-  private def askCellForUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], cell: ActorRef, sender: ActorRef) = {
+  private def askCellForUpdate(newState: IsAggregateRoot, eventsToNewState: IndexedSeq[DomainEvent], cell: ActorRef, requester: ActorRef) = {
     (cell ? UpdateAggregateRoot(newState, eventsToNewState))(cellAskMaxDuration).successfulAlmFuture[Any].fold(
       fail =>
         fail match {
           case OperationTimedOutProblem(p) =>
-            sender ! AggregateRootUpdateFailed(newState.id, OperationTimedOutProblem(s"""Updating the AR in cell for "${newState.id}" timed out(Timeout: ${cellAskMaxDuration.defaultUnitString}).""", cause = Some(fail)))
+            requester ! AggregateRootUpdateFailed(newState.id, OperationTimedOutProblem(s"""Updating the AR in cell for "${newState.id}" timed out(Timeout: ${cellAskMaxDuration.defaultUnitString}).""", cause = Some(fail)))
           case _ =>
-            sender ! AggregateRootUpdateFailed(newState.id, UnspecifiedProblem(s"""Updating the AR in cell for "${newState.id}" failed.""", cause = Some(fail)))
+            requester ! AggregateRootUpdateFailed(newState.id, UnspecifiedProblem(s"""Updating the AR in cell for "${newState.id}" failed.""", cause = Some(fail)))
         },
       {
         case m: AggregateRootUpdated =>
-          sender ! m
+          requester ! m
         case AggregateRootNotFound(arId) =>
-          sender ! AggregateRootUpdateFailed(newState.id, AggregateRootNotFoundProblem(arId))
+          requester ! AggregateRootUpdateFailed(newState.id, AggregateRootNotFoundProblem(arId))
         case AggregateRootFetchFailed(arId, problem) =>
-          sender ! AggregateRootUpdateFailed(newState.id, problem)
+          requester ! AggregateRootUpdateFailed(newState.id, problem)
         case m: AggregateRootUpdateFailed =>
-          sender ! m
+          requester ! m
       })
   }
 }
@@ -132,7 +132,8 @@ trait AggregateRootRepositoryWithCellSourceActor extends AggregateRootRepository
   override final protected def getCell(aggregateRootId: JUUID): AlmFuture[GetResult] =
     (cellCache ? GetCell(aggregateRootId, arTag.runtimeClass.asInstanceOf[Class[AggregateRoot[_, _]]]))(cacheAskMaxDuration)
       .successfulAlmFuture[AggregateRootCellSourceResult]
-      .mapTimeoutMessage(m => s"""$m(Timeout = ${cacheAskMaxDuration.defaultUnitString})""")
+      .mapTimeout(p => OperationTimedOutProblem(s"""Asking the cell cache for cell($aggregateRootId) timed out(Timeout = ${cacheAskMaxDuration.defaultUnitString}).""", cause = Some(p))
+        )
       .map { _.cellHandle }
 
   override final protected def onceWithGetResult[T](result: GetResult, f: (ActorRef) => AlmFuture[T]): AlmFuture[T] =
