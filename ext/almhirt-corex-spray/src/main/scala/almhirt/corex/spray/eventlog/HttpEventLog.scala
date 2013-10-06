@@ -4,7 +4,6 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import akka.actor._
-import akka.routing.RoundRobinRouter
 import almhirt.messaging.MessagePublisher
 import almhirt.common._
 import almhirt.configuration._
@@ -14,11 +13,9 @@ import almhirt.core.Almhirt
 import almhirt.eventlog.EventLog
 import spray.http._
 import spray.client.pipelining._
-import com.typesafe.config._
-import almhirt.eventlog.impl.DevNullEventLog
 
-class HttpEventLog(
-  endpointUri: String,
+abstract class HttpEventLog(
+//  endpointUri: String,
   serializer: EventStringSerializer,
   serializationChannel: String,
   serializationExecutor: ExecutionContext,
@@ -27,6 +24,9 @@ class HttpEventLog(
 
   implicit val executionContext = theAlmhirt.futuresExecutor
 
+  def createUri(event: Event): String    
+  def evaluateResponse(response: HttpResponse): AlmValidation[Unit]
+  
   def eventContentType(channel: String): AlmValidation[ContentType] = {
     val eventMediaType = MediaType.custom(s"""$mediaTypePrefix.Event+$channel""")
     ContentType(eventMediaType, HttpCharsets.`UTF-8`).success
@@ -46,26 +46,11 @@ class HttpEventLog(
       contentType <- eventContentType(channel)
     } yield HttpRequest(
       method = HttpMethods.PUT,
-      uri = Uri(endpointUri),
+      uri = Uri(createUri(event)),
       headers = Nil,
       entity = HttpEntity(contentType, serialized._1))
   }
 
-  def evaluateResponse(response: HttpResponse): AlmValidation[Boolean] =
-    response.status match {
-      case StatusCodes.OK =>
-        true.success
-      case x =>
-        response.entity.toOption match {
-          case Some(body) =>
-            if (body.contentType.mediaType.isText)
-              UnspecifiedProblem(s"Received a text message on status code ${response.status}: ${body.asString}").failure
-            else
-              UnspecifiedProblem(s"Received content on status code ${response.status}: ${body.asString}").failure
-          case None =>
-            UnspecifiedProblem(s"""Event log endpoint "$endpointUri" returned an error encoded in status code ${response.status}.""").failure
-        }
-    }
 
   val pipeline: HttpRequest => Future[HttpResponse] = (sendReceive)
 
@@ -127,54 +112,3 @@ class HttpEventLog(
   override def receive: Receive = receiveEventLogMsg
 }
 
-object HttpEventLog {
-  def propsRaw(endpointUri: String,
-    serializer: EventStringSerializer,
-    serializationChannel: String,
-    serializationExecutor: ExecutionContext,
-    mediaTypePrefix: String,
-    theAlmhirt: Almhirt): Props =
-    Props(new HttpEventLog(endpointUri, serializer, serializationChannel, serializationExecutor, mediaTypePrefix)(theAlmhirt))
-
-  def propsRaw(endpointUri: String,
-    serializer: EventStringSerializer,
-    serializationChannel: String,
-    mediaTypePrefix: String,
-    theAlmhirt: Almhirt): Props =
-    Props(new HttpEventLog(endpointUri, serializer, serializationChannel, theAlmhirt.numberCruncher, mediaTypePrefix)(theAlmhirt))
-
-  def props(serializer: EventStringSerializer, configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
-    for {
-      endpointUri <- configSection.v[String]("endpoint-uri")
-      serializationChannel <- configSection.v[String]("transfer-channel")
-      mediaTypePrefix <- configSection.v[String]("media-type-prefix")
-    } yield {
-        theAlmhirt.log.info(s"""HttpEventLog: endpoint-uri = "$endpointUri"""")
-        theAlmhirt.log.info(s"""HttpEventLog: transfer-channel = "$serializationChannel"""")
-        theAlmhirt.log.info(s"""HttpEventLog: media-type-prefix = "$mediaTypePrefix"""")
-      propsRaw(endpointUri, serializer, serializationChannel, mediaTypePrefix, theAlmhirt)
-    }
-
-  def props(serializer: EventStringSerializer, configPath: String, theAlmhirt: Almhirt): AlmValidation[Props] =
-    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
-      props(serializer, configSection, theAlmhirt: Almhirt))
-
-  def props(serializer: EventStringSerializer, theAlmhirt: Almhirt): AlmValidation[Props] =
-    props(serializer, "almhirt.http-event-log", theAlmhirt: Almhirt)
-
-  def apply(serializer: EventStringSerializer, configSection: Config, theAlmhirt: Almhirt): AlmValidation[ActorRef] =
-    configSection.v[Boolean]("enabled").flatMap(enabled =>
-      if (enabled)
-        props(serializer, configSection, theAlmhirt).map(props =>
-        theAlmhirt.actorSystem.actorOf(props, "http-event-log"))
-      else {
-        theAlmhirt.log.warning("""HttpEventLog: THE HTTP EVENT LOG IS DISABLED""")
-        theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "event-log").success
-      })
-
-  def apply(serializer: EventStringSerializer, configPath: String, theAlmhirt: Almhirt): AlmValidation[ActorRef] =
-    theAlmhirt.config.v[Config](configPath).flatMap(configSection => apply(serializer, configSection, theAlmhirt))
-
-  def apply(serializer: EventStringSerializer, theAlmhirt: Almhirt): AlmValidation[ActorRef] =
-    apply(serializer, "almhirt.http-event-log", theAlmhirt)
-}
