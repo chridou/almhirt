@@ -19,12 +19,13 @@ import almhirt.eventlog.impl.DevNullEventLog
 
 class ElasticSearchEventLog(
   endpointUri: String,
+  ttl: FiniteDuration,
   serializer: EventStringSerializer,
   serializationExecutor: ExecutionContext,
   mediaTypePrefix: String)(implicit theAlmhirt: Almhirt) extends HttpEventLog(serializer, "json", serializationExecutor, mediaTypePrefix)(theAlmhirt) {
 
   override def createUri(event: Event) =
-    s"""$endpointUri/${event.eventId}?op_type=create"""
+    s"""$endpointUri/${event.eventId}?op_type=create&ttl=${ttl.toMillis}"""
 
   def evaluateResponse(response: HttpResponse): AlmValidation[Unit] =
     response.status match {
@@ -41,34 +42,37 @@ class ElasticSearchEventLog(
             UnspecifiedProblem(s"""Event log endpoint "$endpointUri" returned an error encoded in status code ${response.status}.""").failure
         }
     }
-    
+
 }
 
 object ElasticSearchEventLog {
   def propsRaw(
     endpointUri: String,
+    ttl: FiniteDuration,
     serializer: EventStringSerializer,
     serializationChannel: String,
     serializationExecutor: ExecutionContext,
     mediaTypePrefix: String,
     theAlmhirt: Almhirt): Props =
-    Props(new ElasticSearchEventLog(endpointUri, serializer, serializationExecutor, mediaTypePrefix)(theAlmhirt))
+    Props(new ElasticSearchEventLog(endpointUri, ttl, serializer, serializationExecutor, mediaTypePrefix)(theAlmhirt))
 
   def propsRaw(
     endpointUri: String,
+    ttl: FiniteDuration,
     serializer: EventStringSerializer,
     mediaTypePrefix: String,
     theAlmhirt: Almhirt): Props =
-    Props(new ElasticSearchEventLog(endpointUri, serializer, theAlmhirt.numberCruncher, mediaTypePrefix)(theAlmhirt))
+    Props(new ElasticSearchEventLog(endpointUri, ttl, serializer, theAlmhirt.numberCruncher, mediaTypePrefix)(theAlmhirt))
 
   def props(serializer: EventStringSerializer, configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
     for {
       endpointUri <- configSection.v[String]("endpoint-uri")
+      ttl <- configSection.v[FiniteDuration]("time-to-live")
       mediaTypePrefix <- configSection.v[String]("media-type-prefix")
     } yield {
-        theAlmhirt.log.info(s"""HttpEventLog: endpoint-uri = "$endpointUri"""")
-        theAlmhirt.log.info(s"""HttpEventLog: media-type-prefix = "$mediaTypePrefix"""")
-      propsRaw(endpointUri, serializer, mediaTypePrefix, theAlmhirt)
+      theAlmhirt.log.info(s"""HttpEventLog: endpoint-uri = "$endpointUri"""")
+      theAlmhirt.log.info(s"""HttpEventLog: media-type-prefix = "$mediaTypePrefix"""")
+      propsRaw(endpointUri, ttl, serializer, mediaTypePrefix, theAlmhirt)
     }
 
   def props(serializer: EventStringSerializer, configPath: String, theAlmhirt: Almhirt): AlmValidation[Props] =
