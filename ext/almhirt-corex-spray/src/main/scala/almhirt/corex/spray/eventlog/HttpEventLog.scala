@@ -149,6 +149,9 @@ object HttpEventLog {
       serializationChannel <- configSection.v[String]("transfer-channel")
       mediaTypePrefix <- configSection.v[String]("media-type-prefix")
     } yield {
+        theAlmhirt.log.info(s"""HttpEventLog: endpoint-uri = "$endpointUri"""")
+        theAlmhirt.log.info(s"""HttpEventLog: transfer-channel = "$serializationChannel"""")
+        theAlmhirt.log.info(s"""HttpEventLog: media-type-prefix = "$mediaTypePrefix"""")
       propsRaw(endpointUri, serializer, serializationChannel, mediaTypePrefix, theAlmhirt)
     }
 
@@ -165,7 +168,7 @@ object HttpEventLog {
         props(serializer, configSection, theAlmhirt).map(props =>
         theAlmhirt.actorSystem.actorOf(props, "http-event-log"))
       else {
-        theAlmhirt.log.warning("""THE HTTP EVENT LOG IS DISABLED""")
+        theAlmhirt.log.warning("""HttpEventLog: THE HTTP EVENT LOG IS DISABLED""")
         theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "event-log").success
       })
 
