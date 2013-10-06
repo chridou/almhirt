@@ -15,7 +15,6 @@ import spray.http._
 import spray.client.pipelining._
 
 abstract class HttpEventLog(
-//  endpointUri: String,
   serializer: EventStringSerializer,
   serializationChannel: String,
   serializationExecutor: ExecutionContext,
