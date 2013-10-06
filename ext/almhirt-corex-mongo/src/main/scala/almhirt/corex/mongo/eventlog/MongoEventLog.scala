@@ -131,11 +131,11 @@ object MongoEventLog {
     } yield {
       if (!enabled)
         theAlmhirt.log.warning(s"""MongoEventLog: THE EVENT LOG IS DISABLED""")
-      val actor = 
-        if(enabled)
-        	theAlmhirt.actorSystem.actorOf(props, "event-log")
+      val actor =
+        if (enabled)
+          theAlmhirt.actorSystem.actorOf(props, "event-log")
         else
-           theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "event-log")
+          theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "event-log")
       (actor, CloseHandle.noop)
     }
 
@@ -259,18 +259,18 @@ class MongoEventLog(
       log.info("Initializing")
       val collection = db(collectionName)
       (for {
+        idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
         capRes <- maxCollectionSize match {
           case Some(maxSize) => collection.convertToCapped(maxSize, None)
           case None => scala.concurrent.Promise.successful(false).future
         }
-        idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
       } yield (capRes, idxRes)).onComplete {
         case scala.util.Success((capRes, idxRes)) =>
-          log.info(s"""Index on "timestamp" created: $idxRes""")
           log.info(s"""Collection capped: $capRes""")
+          log.info(s"""Index on "timestamp" created: $idxRes""")
           self ! Initialized
         case scala.util.Failure(exn) =>
-          log.error(exn, "Failed to ensure indexes and/or collection capping,")
+          log.error(exn, "Failed to ensure indexes and/or collection capping")
           this.context.stop(self)
       }
     case Initialized =>
