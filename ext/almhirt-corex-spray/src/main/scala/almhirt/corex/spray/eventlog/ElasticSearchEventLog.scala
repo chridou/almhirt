@@ -70,8 +70,9 @@ object ElasticSearchEventLog {
       ttl <- configSection.v[FiniteDuration]("time-to-live")
       mediaTypePrefix <- configSection.v[String]("media-type-prefix")
     } yield {
-      theAlmhirt.log.info(s"""HttpEventLog: endpoint-uri = "$endpointUri"""")
-      theAlmhirt.log.info(s"""HttpEventLog: media-type-prefix = "$mediaTypePrefix"""")
+      theAlmhirt.log.info(s"""ElasticSearchEventLog: endpoint-uri = "$endpointUri"""")
+      theAlmhirt.log.info(s"""ElasticSearchEventLog: time-to-live = ${ttl.defaultUnitString}""")
+      theAlmhirt.log.info(s"""ElasticSearchEventLog: media-type-prefix = "$mediaTypePrefix"""")
       propsRaw(endpointUri, ttl, serializer, mediaTypePrefix, theAlmhirt)
     }
 
@@ -80,15 +81,15 @@ object ElasticSearchEventLog {
       props(serializer, configSection, theAlmhirt: Almhirt))
 
   def props(serializer: EventStringSerializer, theAlmhirt: Almhirt): AlmValidation[Props] =
-    props(serializer, "almhirt.http-event-log", theAlmhirt: Almhirt)
+    props(serializer, "almhirt.elastic-search-event-log", theAlmhirt: Almhirt)
 
   def apply(serializer: EventStringSerializer, configSection: Config, theAlmhirt: Almhirt): AlmValidation[ActorRef] =
     configSection.v[Boolean]("enabled").flatMap(enabled =>
       if (enabled)
         props(serializer, configSection, theAlmhirt).map(props =>
-        theAlmhirt.actorSystem.actorOf(props, "http-event-log"))
+        theAlmhirt.actorSystem.actorOf(props, "elastic-search-event-log"))
       else {
-        theAlmhirt.log.warning("""HttpEventLog: THE HTTP EVENT LOG IS DISABLED""")
+        theAlmhirt.log.warning("""ElasticSearchEventLog: THE HTTP EVENT LOG IS DISABLED""")
         theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "event-log").success
       })
 
@@ -96,5 +97,5 @@ object ElasticSearchEventLog {
     theAlmhirt.config.v[Config](configPath).flatMap(configSection => apply(serializer, configSection, theAlmhirt))
 
   def apply(serializer: EventStringSerializer, theAlmhirt: Almhirt): AlmValidation[ActorRef] =
-    apply(serializer, "almhirt.http-event-log", theAlmhirt)
+    apply(serializer, "almhirt.elastic-search-event-log", theAlmhirt)
 }
