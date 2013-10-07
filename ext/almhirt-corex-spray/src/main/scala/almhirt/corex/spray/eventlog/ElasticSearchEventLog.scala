@@ -20,6 +20,7 @@ import almhirt.eventlog.impl.DevNullEventLog
 class ElasticSearchEventLog(
   host: String,
   index: String,
+  fixedTypeName: Option[String],
   ttl: FiniteDuration,
   serializer: EventStringSerializer,
   serializationExecutor: ExecutionContext,
@@ -27,8 +28,10 @@ class ElasticSearchEventLog(
 
   val uriprefix = s"""http://$host/$index"""
 
-  override def createUri(event: Event) =
-    s"""$uriprefix/${event.getClass().getSimpleName()}/${event.eventId}?op_type=create&ttl=${ttl.toMillis}"""
+  override def createUri(event: Event) = {
+    val typeName = fixedTypeName.getOrElse(event.getClass().getSimpleName())
+    s"""$uriprefix/$typeName/${event.eventId}?op_type=create&ttl=${ttl.toMillis}"""
+  }
 
   def evaluateResponse(response: HttpResponse): AlmValidation[Unit] =
     response.status match {
@@ -52,35 +55,44 @@ object ElasticSearchEventLog {
   def propsRaw(
     host: String,
     index: String,
+    fixedTypeName: Option[String],
     ttl: FiniteDuration,
     serializer: EventStringSerializer,
     serializationChannel: String,
     serializationExecutor: ExecutionContext,
     mediaTypePrefix: String,
     theAlmhirt: Almhirt): Props =
-    Props(new ElasticSearchEventLog(host, index, ttl, serializer, serializationExecutor, mediaTypePrefix)(theAlmhirt))
+    Props(new ElasticSearchEventLog(host, index, fixedTypeName, ttl, serializer, serializationExecutor, mediaTypePrefix)(theAlmhirt))
 
   def propsRaw(
     host: String,
     index: String,
+    fixedTypeName: Option[String],
     ttl: FiniteDuration,
     serializer: EventStringSerializer,
     mediaTypePrefix: String,
     theAlmhirt: Almhirt): Props =
-    Props(new ElasticSearchEventLog(host, index, ttl, serializer, theAlmhirt.numberCruncher, mediaTypePrefix)(theAlmhirt))
+    Props(new ElasticSearchEventLog(host, index, fixedTypeName, ttl, serializer, theAlmhirt.numberCruncher, mediaTypePrefix)(theAlmhirt))
 
   def props(serializer: EventStringSerializer, configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
     for {
       host <- configSection.v[String]("host")
       index <- configSection.v[String]("index")
+      useFixedType <- configSection.v[Boolean]("use-fixed-type")
+      fixedTypeName <- if (useFixedType)
+        configSection.v[String]("fixed-type-name").map(Some(_))
+      else
+        None.success
       ttl <- configSection.v[FiniteDuration]("time-to-live")
       mediaTypePrefix <- configSection.v[String]("media-type-prefix")
     } yield {
       theAlmhirt.log.info(s"""ElasticSearchEventLog: host = "$host"""")
       theAlmhirt.log.info(s"""ElasticSearchEventLog: index = "$index"""")
+      theAlmhirt.log.info(s"""ElasticSearchEventLog: use-fixed-type = $useFixedType""")
+      fixedTypeName.foreach(ftn => theAlmhirt.log.info(s"""ElasticSearchEventLog: fixed-type-name = "$ftn""""))
       theAlmhirt.log.info(s"""ElasticSearchEventLog: time-to-live = ${ttl.defaultUnitString}""")
       theAlmhirt.log.info(s"""ElasticSearchEventLog: media-type-prefix = "$mediaTypePrefix"""")
-      propsRaw(host, index, ttl, serializer, mediaTypePrefix, theAlmhirt)
+      propsRaw(host, index, fixedTypeName, ttl, serializer, mediaTypePrefix, theAlmhirt)
     }
 
   def props(serializer: EventStringSerializer, configPath: String, theAlmhirt: Almhirt): AlmValidation[Props] =
