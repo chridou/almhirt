@@ -29,7 +29,7 @@ class ElasticSearchEventLog(
 
   def evaluateResponse(response: HttpResponse): AlmValidation[Unit] =
     response.status match {
-      case StatusCodes.OK =>
+      case StatusCodes.Created =>
         ().success
       case x =>
         response.entity.toOption match {
