@@ -108,8 +108,8 @@ object ElasticSearchEventLog {
         props(serializer, configSection, theAlmhirt).map(props =>
         theAlmhirt.actorSystem.actorOf(props, "elastic-search-event-log"))
       else {
-        theAlmhirt.log.warning("""ElasticSearchEventLog: THE HTTP EVENT LOG IS DISABLED""")
-        theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "event-log").success
+        theAlmhirt.log.warning("""ElasticSearchEventLog: THE ELASTIC SEARCH EVENT LOG IS DISABLED""")
+        theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "elastic-search-event-log").success
       })
 
   def apply(serializer: EventStringSerializer, configPath: String, theAlmhirt: Almhirt): AlmValidation[ActorRef] =
