@@ -19,6 +19,7 @@ import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index => MIndex }
 import reactivemongo.api.indexes.IndexType
 import com.typesafe.config.Config
+import play.api.libs.iteratee.Enumerator
 
 object MongoDomainEventLog {
   def propsRaw(
@@ -75,7 +76,7 @@ object MongoDomainEventLog {
       theAlmhirt.log.info(s"""MongoDomainEventLog: write-warn-threshold-duration = ${writeWarnThreshold.defaultUnitString}""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: read-warn-threshold-duration = ${readWarnThreshold.defaultUnitString}""")
       theAlmhirt.log.info(s"""MongoDomainEventLog: use-number-cruncher-for-serialization = $useNumberCruncherForSerialization""")
-     propsRaw(db, collectionName, serializeDomainEvent, deserializeDomainEvent, writeWarnThreshold, readWarnThreshold, useNumberCruncherForSerialization, statisticsCollector, theAlmhirt)
+      propsRaw(db, collectionName, serializeDomainEvent, deserializeDomainEvent, writeWarnThreshold, readWarnThreshold, useNumberCruncherForSerialization, statisticsCollector, theAlmhirt)
     }
 
   def props(driver: MongoDriver, serializeDomainEvent: DomainEvent => AlmValidation[BSONDocument], deserializeDomainEvent: BSONDocument => AlmValidation[DomainEvent], statisticsCollector: Option[ActorRef], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
@@ -192,29 +193,23 @@ class MongoDomainEventLog(
     }
   }
 
-  def insertDocument(document: BSONDocument): AlmFuture[Unit] = {
+  def insertDocuments(documents: Seq[BSONDocument]): AlmFuture[Int] = {
     val collection = db(collectionName)
-    for {
-      lastError <- collection.insert(document).toSuccessfulAlmFuture
-      _ <- if (lastError.ok)
-        AlmFuture.successful(())
-      else {
-        val msg = lastError.errMsg.getOrElse("unknown error")
-        AlmFuture.failed(PersistenceProblem(msg))
-      }
-    } yield ()
+    val enum = Enumerator(documents: _*)
+    collection.bulkInsert(enum, bulk.MaxDocs, bulk.MaxBulkSize).toSuccessfulAlmFuture
   }
 
-  def storeDomainEvent(domainEvent: DomainEvent): AlmFuture[DomainEvent] =
+  def commitDomainEvents(domainEvents: Seq[DomainEvent]): AlmFuture[Seq[DomainEvent]] = {
     for {
-      serialized <- AlmFuture { domainEventToDocument(domainEvent: DomainEvent) }(serializationExecutor)
-      _ <- insertDocument(serialized)
-    } yield domainEvent
-
-  def commitDomainEvent(domainEvent: DomainEvent): AlmFuture[DomainEvent] = {
-    storeDomainEvent(domainEvent) andThen (
-      fail => log.error(fail.toString()),
-      succ => publishCommittedEvent(succ))
+      serialized <- AlmFuture {
+        domainEvents.toVector.map(x => domainEventToDocument(x).toAgg).sequence
+      }(serializationExecutor)
+      numInserted <- insertDocuments(serialized)
+      storeResult <- if (numInserted == domainEvents.size)
+        AlmFuture.successful { domainEvents }
+      else
+        AlmFuture.failed { PersistenceProblem(s"""Only $numInserted domain events of ${domainEvents.size} were stored.""") }
+    } yield domainEvents
   }
 
   def getEvents(query: BSONDocument, sort: BSONDocument): AlmFuture[Seq[DomainEvent]] = {
@@ -270,7 +265,7 @@ class MongoDomainEventLog(
     case CommitDomainEvents(events) =>
       val pinnedSender = sender
       val start = Deadline.now
-      val committedEvents = AlmFuture.sequence(events.map(commitDomainEvent))
+      val committedEvents = commitDomainEvents(events)
       committedEvents.fold(
         problem => {
           pinnedSender ! CommitDomainEventsFailed(problem)
@@ -281,6 +276,7 @@ class MongoDomainEventLog(
           if (lap > writeWarnThreshold)
             log.warning(s"""Storing ${events.size} domain events took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
           statisticsCollector.foreach(_ ! AddWriteDuration(lap))
+          succ.foreach(publishCommittedEvent)
           pinnedSender ! CommittedDomainEvents(events)
         })
 
