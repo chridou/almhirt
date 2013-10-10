@@ -25,6 +25,7 @@ object DematerializersRegistry {
     val reg = new DematerializersRegistry()
     reg.add(ToJsonStringDematerializer)
     reg.add(ToNoisyXmlStringDematerializer)
+    reg.add(ToHtmlStringDematerializer)
     reg
   }
   

@@ -1,4 +1,5 @@
 package riftwarp.std
+
 import scala.annotation.tailrec
 import scala.xml.{ Elem => XmlElem, NodeSeq, Null, TopScope, UnprefixedAttribute }
 import scalaz._

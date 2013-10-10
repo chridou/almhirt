@@ -19,6 +19,13 @@ object ToNoisyXmlStringDematerializer extends Dematerializer[String @@ WarpTags.
     WarpTags.XmlString(ToNoisyXmlElemDematerializer.dematerialize(what).toString)
 }
 
+object ToHtmlStringDematerializer extends Dematerializer[String @@ WarpTags.Html] {
+  val channel = "xml"
+  val dimension = classOf[String].getName()
+  def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): String @@ WarpTags.Html =
+    WarpTags.HtmlString(ToHtmlElemDematerializer.dematerialize(what).toString)
+}
+
 object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Json] {
   import scala.util.parsing.json._
   val channel = "json"
