@@ -26,6 +26,8 @@ object DematerializersRegistry {
     reg.add(ToJsonStringDematerializer)
     reg.add(ToNoisyXmlStringDematerializer)
     reg.add(ToHtmlStringDematerializer)
+    reg.add(ToWarpPackageDematerializer)
+    reg.add(ToExplodedDematerializer)
     reg
   }
   

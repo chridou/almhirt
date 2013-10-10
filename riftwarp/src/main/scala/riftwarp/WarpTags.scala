@@ -23,4 +23,6 @@ object WarpTags {
   def TextString(v: String): String @@ Text = Tag[String, Text](v)
   def TextCord(v: Cord): Cord @@ Text = Tag[Cord, Text](v)
   
+  sealed trait Exploded
+  def ExplodedAny(v: Any): Any @@ Exploded = Tag[Any, Exploded](v)
 }

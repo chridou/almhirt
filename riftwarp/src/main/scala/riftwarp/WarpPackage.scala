@@ -10,7 +10,7 @@ sealed trait WarpPackage {
   def asWarpObject: AlmValidation[WarpObject] =
     this match {
       case wo: WarpObject => wo.success
-      case _ => UnspecifiedProblem("No WarpObject").failure
+      case _ => MappingProblem("Not a WarpObject").failure
     }
 }
 
