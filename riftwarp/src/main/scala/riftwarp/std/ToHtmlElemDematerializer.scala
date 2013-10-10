@@ -40,7 +40,7 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
       case WarpUri(value) => <span class="primitive-value">{ value.toString }</span>
       case WarpDateTime(value) => <span class="primitive-value">{ value.toString() }</span>
       case WarpLocalDateTime(value) => <span class="primitive-value">{ value.toString() }</span>
-      case WarpDuration(value) => <span class="primitive-value">{ value.toString() }</span>
+      case WarpDuration(value) => <span class="primitive-value">{ value.defaultUnitString }</span>
     }
 
   protected override def getObjectRepr(warpObject: WarpObject): XmlElem = {
@@ -78,11 +78,11 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
     <span>{ s"(${tuple._1};${tuple._2};${tuple._3})" }</span>
 
   protected override def foldAssocRepr(assoc: Traversable[(XmlElem, XmlElem)]): XmlElem = {
-    val inner = assoc.map(x => <tr><td>{ x._1 }</td><td>{ x._2 }</td></tr>)
+    val inner = assoc.map(x => <tr><td valign="top">{ x._1 }</td><td valign="top">=</td><td>{ x._2 }</td></tr>)
     <div>
       <span>{ s"Associative collection of ${assoc.size} items" }</span><br/>
       <table>
-        <tr><th>Key</th><th>Value</th></tr>
+        <tr><th>Key</th><th/><th>Value</th></tr>
         { inner }
       </table>
     </div>
@@ -106,8 +106,8 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
 
   private def createElemRepr(elem: WarpElement): XmlElem =
     elem.value match {
-      case Some(v) => <tr><td><b>{ elem.label + ":" }</b></td><td>{ transform(v) }</td></tr>
-      case None => <tr><td><b>{ elem.label + ":" }</b></td><td><i>{ "null" }</i></td></tr>
+      case Some(v) => <tr><td valign="top"><b>{ elem.label + ":" }</b></td><td>{ transform(v) }</td></tr>
+      case None => <tr><td valign="top"><b>{ elem.label + ":" }</b></td><td><i>{ "null" }</i></td></tr>
     }
 
   private def foldTree(tree: scalaz.Tree[XmlElem]): XmlElem =
