@@ -3,18 +3,28 @@ package almhirt.corex.spray.marshalling
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import spray.http.MediaType
+import spray.http.{ MediaType, MediaTypes }
 
 private[marshalling] object Helper {
   def extractChannel(mediaType: MediaType): String =
-    mediaType.value.split('+')(1)
+    if (mediaType == MediaTypes.`text/html`)
+      "html"
+    else
+      mediaType.value.split('+')(1)
+
+  def isValidMediaType(mediaType: MediaType): Boolean =
+    if (mediaType == MediaTypes.`text/html`)
+      true
+    else
+      mediaType.value.split('+').size == 2
 
   def validateMediaTypes(mediaTypes: Seq[MediaType]): AlmValidation[Seq[MediaType]] = {
     val res =
       mediaTypes.map(mediaType =>
-        mediaType.value.mustFulfill(
-          _.split('+').size == 2,
-          x => s"""Not a valid media type: $x""").toAgg.map(_ => mediaType)).toList
+        if (isValidMediaType(mediaType))
+          mediaType.success
+        else
+          UnspecifiedProblem(s"""Not a valid media type: "${mediaType.value}".""").failure).map(_.toAgg).toList
     res.sequence[AlmValidationAP, MediaType]
   }
 }
