@@ -46,14 +46,14 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   protected override def getObjectRepr(warpObject: WarpObject): XmlElem = {
     warpObject.warpDescriptor match {
       case Some(desc) =>
-        <div class="object-container">
+        <div style="border:1px solid black; padding: 10px;">
           <h2>{ desc.unqualifiedName }</h2>
           <table>
             { warpObject.elements.map(createElemRepr) }
           </table>
         </div>
       case None =>
-        <div class="object-container">
+        <div class="border:1px solid black; padding: 10px;">
           <table>
             { warpObject.elements.map(createElemRepr) }
           </table>
@@ -82,7 +82,7 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
     <div>
       <span>{ s"Associative collection of ${assoc.size} items" }</span><br/>
       <table>
-        <tr><th>Key</th><th>value</th></tr>
+        <tr><th>Key</th><th>Value</th></tr>
         { inner }
       </table>
     </div>
@@ -106,7 +106,7 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
 
   private def createElemRepr(elem: WarpElement): XmlElem =
     elem.value match {
-      case Some(v) => XmlElem(null, elem.label, Null, TopScope, true, transform(v))
+      case Some(v) => <tr><td><b>{ elem.label + ":" }</b></td><td>{ transform(v) }</td></tr>
       case None => <tr><td><b>{ elem.label + ":" }</b></td><td><i>{ "null" }</i></td></tr>
     }
 
