@@ -17,14 +17,16 @@ private[marshalling] object Helper {
       true
     else
       mediaType.value.split('+').size == 2
-
+      
+      
   def validateMediaTypes(mediaTypes: Seq[MediaType]): AlmValidation[Seq[MediaType]] = {
     val res =
       mediaTypes.map(mediaType =>
         if (isValidMediaType(mediaType))
           mediaType.success
         else
-          UnspecifiedProblem(s"""Not a valid media type: "${mediaType.value}".""").failure).map(_.toAgg).toList
+          UnspecifiedProblem(s"""Not a valid media type: "${mediaType.value}".""").failure
+        ).map(_.toAgg).toList
     res.sequence[AlmValidationAP, MediaType]
   }
 }

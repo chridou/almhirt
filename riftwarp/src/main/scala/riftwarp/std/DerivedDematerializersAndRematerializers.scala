@@ -20,7 +20,7 @@ object ToNoisyXmlStringDematerializer extends Dematerializer[String @@ WarpTags.
 }
 
 object ToHtmlStringDematerializer extends Dematerializer[String @@ WarpTags.Html] {
-  val channel = "xml"
+  val channel = "html"
   val dimension = classOf[String].getName()
   def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): String @@ WarpTags.Html =
     WarpTags.HtmlString(ToHtmlElemDematerializer.dematerialize(what).toString)
