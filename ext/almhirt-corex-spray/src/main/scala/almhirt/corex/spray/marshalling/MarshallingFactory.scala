@@ -17,7 +17,7 @@ trait MarshallingFactory[T] {
     validateMediaTypes(contentTypes.map(_.mediaType)).map { _ =>
       Marshaller.of[T](contentTypes: _*) { (value, contentType, ctx) =>
         val channel = extractChannel(contentType.mediaType)
-        if (contentType.mediaType.binary) {
+        if (contentType.mediaType.binary && channel != "json") {
           binarySerializer match {
             case Some(binSer) =>
               val (res, _) = binSer.serialize(channel)(value).resultOrEscalate
@@ -53,7 +53,7 @@ trait MarshallingFactory[T] {
               }
               else {
                 val channel = extractChannel(contentType.mediaType)
-                  if (contentType.mediaType.binary) {
+                  if (contentType.mediaType.binary && channel != "json") {
                     binarySerializer match {
                       case Some(binSer) =>
                         binSer.deserialize(channel)(buffer, Map.empty).fold(
