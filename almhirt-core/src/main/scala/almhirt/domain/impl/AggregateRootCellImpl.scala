@@ -94,6 +94,10 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     case ReportCellState =>
       reportCellState(CellStateUninitialized)
   }
+  
+  private def fetchArState() : Receive = {
+    case _ => ???
+  }
 
   def idleState(ar: AR, idleSince: LocalDateTime): Receive = {
     case GetManagedAggregateRoot =>
