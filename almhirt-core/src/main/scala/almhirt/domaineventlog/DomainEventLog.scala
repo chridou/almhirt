@@ -6,6 +6,7 @@ import almhirt.domain.DomainEvent
 import akka.actor.Actor
 import almhirt.domain.AggregateRoot
 import almhirt.messaging.MessagePublisher
+import play.api.libs.iteratee.Enumerator
 
 object DomainEventLog {
   trait DomainEventLogMessage
@@ -33,7 +34,7 @@ object DomainEventLog {
   final case class FetchedDomainEventsBatch(
     events: Seq[DomainEvent]) extends FetchedDomainEvents
 
-  final case class FetchedDomainEventsChunks() extends FetchedDomainEvents
+  final case class FetchedDomainEventsChunks(enumerator: Enumerator[DomainEvent]) extends FetchedDomainEvents
 
   final case class FetchedDomainEventsFailure(problem: Problem) extends FetchedDomainEvents
 

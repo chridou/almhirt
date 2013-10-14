@@ -201,7 +201,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
           None.success
         else
           rebuildAr(events).map(Some(_))
-      case FetchedDomainEventsChunks() =>
+      case FetchedDomainEventsChunks(enumerator) =>
         UnspecifiedProblem("FetchedDomainEventsChunks not supported").failure
       case FetchedDomainEventsFailure(problem) =>
         problem.failure
