@@ -32,6 +32,7 @@ object Dependencies {
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "provided"
+	lazy val scalaz_iteratee   = "org.scalaz" %% "scalaz-iteratee" % "7.0.+" % "provided"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
@@ -79,6 +80,7 @@ trait CoreBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += scalaz_iteratee,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
