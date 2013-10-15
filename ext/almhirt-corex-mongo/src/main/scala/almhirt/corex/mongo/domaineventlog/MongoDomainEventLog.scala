@@ -165,7 +165,7 @@ class MongoDomainEventLog(
   private case object Initialize
   private case object Initialized
 
-  private val fromBsonDocTotoDomainEvent: Enumeratee[BSONDocument, DomainEvent] = Enumeratee.map[BSONDocument] { doc => documentToDomainEvent(doc).resultOrEscalate }
+  private val fromBsonDocTotoDomainEvent: Enumeratee[BSONDocument, AlmValidation[DomainEvent]] = Enumeratee.map[BSONDocument] { doc => documentToDomainEvent(doc) }
 
   def domainEventToDocument(domainEvent: DomainEvent): AlmValidation[BSONDocument] = {
     (for {
@@ -223,7 +223,7 @@ class MongoDomainEventLog(
     collection.find(query, projectionFilter).sort(sort).cursor.enumerate(1000, true)
   }
 
-  def getEvents(query: BSONDocument, sort: BSONDocument): Enumerator[DomainEvent] = {
+  def getEvents(query: BSONDocument, sort: BSONDocument): Enumerator[AlmValidation[DomainEvent]] = {
     val docsEnumerator = getEventsDocs(query, sort)
     docsEnumerator.through(fromBsonDocTotoDomainEvent)
   }

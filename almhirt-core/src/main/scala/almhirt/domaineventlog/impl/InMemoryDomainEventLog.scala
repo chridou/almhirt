@@ -1,5 +1,6 @@
 package almhirt.domaineventlog.impl
 
+import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
 import almhirt.configuration._
@@ -66,20 +67,20 @@ trait InMemoryDomainEventLog extends DomainEventLog { actor: Actor with ActorLog
       sender ! CommittedDomainEvents(events)
       events.foreach(publishCommittedEvent)
     case GetAllDomainEvents =>
-      sender ! FetchedDomainEvents(Enumerator(domainEventLog: _*))
+      sender ! FetchedDomainEvents(Enumerator(domainEventLog.map(_.success): _*))
     case GetDomainEvent(eventId) =>
       sender ! QueriedDomainEvent(eventId, domainEventLog.find(_.id == eventId))
     case GetAllDomainEventsFor(aggId) =>
-      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(_.aggId == aggId): _*))
+      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(_.aggId == aggId).map(_.success): _*))
     case GetDomainEventsFrom(aggId, fromVersion) =>
-      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion >= fromVersion): _*))
+      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion >= fromVersion).map(_.success): _*))
     case GetDomainEventsTo(aggId, toVersion) =>
-      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion <= toVersion): _*))
+      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion <= toVersion).map(_.success): _*))
     case GetDomainEventsUntil(aggId, untilVersion) =>
-      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion < untilVersion): _*))
+      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion < untilVersion).map(_.success): _*))
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
-      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion >= fromVersion && event.aggVersion <= toVersion): _*))
+      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion >= fromVersion && event.aggVersion <= toVersion).map(_.success): _*))
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
-      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion >= fromVersion && event.aggVersion < untilVersion): _*))
+      sender ! FetchedDomainEvents(Enumerator(domainEventLog.filter(event => event.aggId == aggId && event.aggVersion >= fromVersion && event.aggVersion < untilVersion).map(_.success): _*))
   }
 }

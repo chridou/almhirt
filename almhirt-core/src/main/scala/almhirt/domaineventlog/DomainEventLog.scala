@@ -30,7 +30,7 @@ object DomainEventLog {
   final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem) extends SingleDomainEventQueryResult
 
   sealed trait FetchDomainEventsResult extends DomainEventLogMessage
-  final case class FetchedDomainEvents(enumerator: Enumerator[DomainEvent]) extends FetchDomainEventsResult
+  final case class FetchedDomainEvents(enumerator: Enumerator[AlmValidation[DomainEvent]]) extends FetchDomainEventsResult
   final case class FetchDomainEventsFailed(problem: Problem) extends FetchDomainEventsResult
 
 //  final case class FetchedDomainEventsBatch(
