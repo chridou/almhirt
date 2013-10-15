@@ -165,8 +165,8 @@ class MongoDomainEventLog(
   private case object Initialize
   private case object Initialized
 
-  private val fromBsonDocTotoDomainEvent: Enumeratee[BSONDocument,DomainEvent] = Enumeratee.map[BSONDocument]{ doc => documentToDomainEvent(doc).resultOrEscalate }
-  
+  private val fromBsonDocTotoDomainEvent: Enumeratee[BSONDocument, DomainEvent] = Enumeratee.map[BSONDocument] { doc => documentToDomainEvent(doc).resultOrEscalate }
+
   def domainEventToDocument(domainEvent: DomainEvent): AlmValidation[BSONDocument] = {
     (for {
       serialized <- {
@@ -217,9 +217,12 @@ class MongoDomainEventLog(
 
   def getEventsDocs(query: BSONDocument, sort: BSONDocument): Enumerator[BSONDocument] = {
     val collection = db(collectionName)
+//    collection.find(query, projectionFilter).sort(sort).cursor.enumerate(1000, true).apply(Iteratee.foreach { doc =>
+//      println("found document: " + BSONDocument.pretty(doc))
+//    })
     collection.find(query, projectionFilter).sort(sort).cursor.enumerate(1000, true)
   }
-  
+
   def getEvents(query: BSONDocument, sort: BSONDocument): Enumerator[DomainEvent] = {
     val docsEnumerator = getEventsDocs(query, sort)
     docsEnumerator.through(fromBsonDocTotoDomainEvent)
@@ -229,10 +232,10 @@ class MongoDomainEventLog(
     val start = Deadline.now
     val eventsEnumerator = getEvents(query, sort)
     eventsEnumerator.onDoneEnumerating(() => {
-        val lap = start.lap
-        if (lap > readWarnThreshold)
-          log.warning(s"""Fetching domain events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
-        statisticsCollector.foreach(_ ! AddReadDuration(lap))
+      val lap = start.lap
+      if (lap > readWarnThreshold)
+        log.warning(s"""Fetching domain events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+      statisticsCollector.foreach(_ ! AddReadDuration(lap))
     })
     respondTo ! FetchedDomainEvents(eventsEnumerator)
   }
@@ -258,6 +261,27 @@ class MongoDomainEventLog(
       context.become(receiveDomainEventLogMsg)
     case m: DomainEventLogMessage =>
       log.warning(s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+      val problem = PersistenceProblem("The event log is not yet initialized")
+      m match {
+        case CommitDomainEvents(events) =>
+          sender ! CommitDomainEventsFailed(problem)
+        case GetAllDomainEvents =>
+          sender ! FetchDomainEventsFailed(problem)
+        case GetDomainEvent(eventId) =>
+          sender ! DomainEventQueryFailed(eventId, problem)
+        case GetAllDomainEventsFor(aggId) =>
+          sender ! FetchDomainEventsFailed(problem)
+        case GetDomainEventsFrom(aggId, fromVersion) =>
+          sender ! FetchDomainEventsFailed(problem)
+        case GetDomainEventsTo(aggId, toVersion) =>
+          sender ! FetchDomainEventsFailed(problem)
+        case GetDomainEventsUntil(aggId, untilVersion) =>
+          sender ! FetchDomainEventsFailed(problem)
+        case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
+          sender ! FetchDomainEventsFailed(problem)
+        case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
+          sender ! FetchDomainEventsFailed(problem)
+      }
   }
 
   override def receiveDomainEventLogMsg: Receive = {
