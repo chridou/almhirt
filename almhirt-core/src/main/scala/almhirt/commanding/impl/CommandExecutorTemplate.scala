@@ -87,7 +87,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
           fail => handleFailure(cmd, fail),
           succMsg => {
             val time = start.lap
-            messagePublisher.publish(CommandExecuted(cmd.commandId))
+            messagePublisher.publish(CommandExecuted(cmd))
             if (cmd.canBeTracked) messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(cmd.trackingId, succMsg)))
             if (time.exceeds(maxExecutionTimePerCommandWarnThreshold)) {
               if (cmd.canBeTracked)
@@ -135,7 +135,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       fail => handleFailure(cmd, fail),
       ar => {
         val time = start.lap
-        messagePublisher.publish(CommandExecuted(cmd.commandId))
+        messagePublisher.publish(CommandExecuted(cmd))
         if (cmd.canBeTracked)
           messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             cmd.trackingId,
@@ -168,7 +168,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       fail => handleFailure(cmd, fail),
       ar => {
         val time = start.lap
-        messagePublisher.publish(CommandExecuted(cmd.commandId))
+        messagePublisher.publish(CommandExecuted(cmd))
         if (cmd.canBeTracked)
           messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             cmd.trackingId,
@@ -221,11 +221,11 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     } yield updatedAr).onComplete(
       fail => {
         handleFailure(trackingId, fail)
-        domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandNotExecuted(cmd.commandId, fail)))
+        domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandNotExecuted(cmd, fail)))
       },
       ar => {
         val lap = start.lap
-        domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandExecuted(cmd.commandId)))
+        domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandExecuted(cmd)))
         trackingId.foreach(trId =>
           messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             trId,
@@ -286,7 +286,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
 
   private def handleFailure(cmd: Command, problem: Problem) {
     log.error(s"""An error occured executing command of type ${cmd.getClass().getName()} with id ${cmd.commandId}:\n${problem.toString()}""")
-    messagePublisher.publish(CommandNotExecuted(cmd.header.id, problem))
+    messagePublisher.publish(CommandNotExecuted(cmd, problem))
     handleFailure(cmd.tryGetTrackingId, problem)
   }
 

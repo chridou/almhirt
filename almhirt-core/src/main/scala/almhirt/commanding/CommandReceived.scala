@@ -12,7 +12,12 @@ trait CommandReceivedEvent extends Event {
 
 object CommandReceivedEvent {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedEvent =
-    CommandReceived(EventHeader(), command)
+    command match {
+      case cmd: DomainCommand =>
+        CommandReceived(EventHeader(Map("aggregate-root-id" -> cmd.targettedAggregateRootId.toString(), "aggregate-root-version" -> cmd.targettedVersion.toString())), command)
+      case cmd =>
+        CommandReceived(EventHeader(), command)
+    }
   def apply(commandHeader: CommandHeader, commandType: String)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedEvent =
     apply(EventHeader(), commandHeader, commandType)
   def apply(header: EventHeader, commandHeader: CommandHeader, commandType: String)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedEvent =
@@ -25,7 +30,12 @@ final case class CommandReceived(val header: EventHeader, val command: Command) 
 
 object CommandReceived {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceived =
-    CommandReceived(EventHeader(), command)
+    command match {
+      case cmd: DomainCommand =>
+        CommandReceived(EventHeader(Map("aggregate-root-id" -> cmd.targettedAggregateRootId.toString(), "aggregate-root-version" -> cmd.targettedVersion.toString())), command)
+      case cmd =>
+        CommandReceived(EventHeader(), command)
+    }
 }
 
 final case class CommandReceivedAsHeader(val header: EventHeader, val commandHeader: CommandHeader, commandType: String) extends CommandReceivedEvent {
@@ -34,7 +44,12 @@ final case class CommandReceivedAsHeader(val header: EventHeader, val commandHea
 
 object CommandReceivedAsHeader {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceivedAsHeader =
-    CommandReceivedAsHeader(EventHeader(), command.header, command.getClass().getName())
+    command match {
+      case cmd: DomainCommand =>
+        CommandReceivedAsHeader(EventHeader(Map("aggregate-root-id" -> cmd.targettedAggregateRootId.toString(), "aggregate-root-version" -> cmd.targettedVersion.toString())), command)
+      case cmd =>
+        CommandReceivedAsHeader(EventHeader(), command)
+    }
   def apply(header: EventHeader, command: Command): CommandReceivedAsHeader =
     CommandReceivedAsHeader(header, command.header, command.getClass().getName())
 }
