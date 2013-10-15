@@ -1,6 +1,7 @@
 package almhirt.corex.mongo.domaineventlog
 
-import scala.concurrent.ExecutionContext
+import scala.language.reflectiveCalls
+import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz._, Scalaz._
 import akka.actor._
@@ -19,7 +20,7 @@ import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index => MIndex }
 import reactivemongo.api.indexes.IndexType
 import com.typesafe.config.Config
-import play.api.libs.iteratee.Enumerator
+import play.api.libs.iteratee._
 
 object MongoDomainEventLog {
   def propsRaw(
@@ -164,6 +165,8 @@ class MongoDomainEventLog(
   private case object Initialize
   private case object Initialized
 
+  private val fromBsonDocTotoDomainEvent: Enumeratee[BSONDocument,DomainEvent] = Enumeratee.map[BSONDocument]{ doc => documentToDomainEvent(doc).resultOrEscalate }
+  
   def domainEventToDocument(domainEvent: DomainEvent): AlmValidation[BSONDocument] = {
     (for {
       serialized <- {
@@ -212,30 +215,26 @@ class MongoDomainEventLog(
     } yield domainEvents
   }
 
-  def getEvents(query: BSONDocument, sort: BSONDocument): AlmFuture[Seq[DomainEvent]] = {
+  def getEventsDocs(query: BSONDocument, sort: BSONDocument): Enumerator[BSONDocument] = {
     val collection = db(collectionName)
-    for {
-      docs <- collection.find(query, projectionFilter).sort(sort).cursor.toList.toSuccessfulAlmFuture
-      domainEvents <- AlmFuture {
-        docs.map(x => documentToDomainEvent(x).toAgg).sequence
-      }(serializationExecutor)
-    } yield domainEvents
+    collection.find(query, projectionFilter).sort(sort).cursor.enumerate
+  }
+  
+  def getEvents(query: BSONDocument, sort: BSONDocument): Enumerator[DomainEvent] = {
+    val docsEnumerator = getEventsDocs(query, sort)
+    docsEnumerator.through(fromBsonDocTotoDomainEvent)
   }
 
   def fetchAndDispatchDomainEvents(query: BSONDocument, sort: BSONDocument, respondTo: ActorRef) {
     val start = Deadline.now
-    getEvents(query, sort).fold(
-      problem => {
-        sender ! FetchedDomainEventsFailure(problem)
-        log.error(problem.toString())
-      },
-      domainEvents => {
+    val eventsEnumerator = getEvents(query, sort)
+    eventsEnumerator.onDoneEnumerating(() => {
         val lap = start.lap
-        respondTo ! FetchedDomainEventsBatch(domainEvents)
         if (lap > readWarnThreshold)
-          log.warning(s"""Fetching ${domainEvents.size} domain events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+          log.warning(s"""Fetching domain events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
         statisticsCollector.foreach(_ ! AddReadDuration(lap))
-      })
+    })
+    respondTo ! FetchedDomainEvents(eventsEnumerator)
   }
 
   def uninitialized: Receive = {

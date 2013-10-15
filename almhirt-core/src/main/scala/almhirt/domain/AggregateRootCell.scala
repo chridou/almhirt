@@ -23,7 +23,7 @@ object AggregateRootCell {
   import almhirt.core.Almhirt
   import almhirt.messaging.MessagePublisher
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     cellStateReportingDelay: FiniteDuration,
     publisher: MessagePublisher,
@@ -37,7 +37,7 @@ object AggregateRootCell {
       Props(
         new impl.AggregateRootCellImpl[TAR, TEvent](
           arId,
-          aggregateRootFactory,
+          createFreshAggregateRoot,
           theDomainEventLog,
           reportCellStateSink,
           cellStateReportingDelay,
@@ -50,7 +50,7 @@ object AggregateRootCell {
           updateArTimeout))
 
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     cellStateReportingDelay: FiniteDuration,
     theAlmhirt: Almhirt,
@@ -59,7 +59,7 @@ object AggregateRootCell {
     getArTimeout: FiniteDuration,
     updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) => Props =
     propsFactoryRaw(
-      aggregateRootFactory,
+      createFreshAggregateRoot,
       theDomainEventLog,
       cellStateReportingDelay,
       theAlmhirt.messageBus,
@@ -71,12 +71,12 @@ object AggregateRootCell {
       updateArTimeout)
 
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     cellStateReportingDelay: FiniteDuration,
     theAlmhirt: Almhirt): (JUUID, AggregateRootCellStateSink) => Props =
     propsFactoryRaw(
-      aggregateRootFactory,
+      createFreshAggregateRoot,
       theDomainEventLog,
       cellStateReportingDelay,
       theAlmhirt.messageBus,
@@ -90,7 +90,7 @@ object AggregateRootCell {
   import almhirt.configuration._
   import com.typesafe.config.Config
   def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     configSection: Config,
     theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
@@ -101,7 +101,7 @@ object AggregateRootCell {
       getArTimeout <- configSection.v[FiniteDuration]("get-ar-timeout")
       updateArTimeout <- configSection.v[FiniteDuration]("update-ar-timeout")
     } yield propsFactoryRaw(
-      aggregateRootFactory,
+      createFreshAggregateRoot,
       theDomainEventLog,
       cellStateReportingDelay,
       theAlmhirt.messageBus,
@@ -113,23 +113,23 @@ object AggregateRootCell {
       updateArTimeout)
 
   def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     configPath: String,
     theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
     theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
       propsFactory(
-        aggregateRootFactory,
+        createFreshAggregateRoot,
         theDomainEventLog,
         configSection,
         theAlmhirt))
 
   def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
     propsFactory(
-      aggregateRootFactory,
+      createFreshAggregateRoot,
       theDomainEventLog,
       "almhirt.aggregate-root-cell",
       theAlmhirt)

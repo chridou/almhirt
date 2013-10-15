@@ -29,14 +29,15 @@ object DomainEventLog {
   final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent]) extends SingleDomainEventQueryResult
   final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem) extends SingleDomainEventQueryResult
 
-  sealed trait FetchedDomainEvents extends DomainEventLogMessage
+  sealed trait FetchDomainEventsResult extends DomainEventLogMessage
+  final case class FetchedDomainEvents(enumerator: Enumerator[DomainEvent]) extends FetchDomainEventsResult
+  final case class FetchDomainEventsFailed(problem: Problem) extends FetchDomainEventsResult
 
-  final case class FetchedDomainEventsBatch(
-    events: Seq[DomainEvent]) extends FetchedDomainEvents
+//  final case class FetchedDomainEventsBatch(
+//    events: Seq[DomainEvent]) extends FetchedDomainEvents
 
-  final case class FetchedDomainEventsChunks(enumerator: Enumerator[DomainEvent]) extends FetchedDomainEvents
 
-  final case class FetchedDomainEventsFailure(problem: Problem) extends FetchedDomainEvents
+//  final case class FetchedDomainEventsFailure(problem: Problem) extends FetchedDomainEvents
 
   object CommitFailed {
     def unapply(what: CommitDomainEventsResult): Option[Problem] =

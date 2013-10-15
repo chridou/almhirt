@@ -11,6 +11,7 @@ import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
 import almhirt.core.HasAlmhirt
 import almhirt.domain._
+import play.api.libs.iteratee.Iteratee
 
 abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
@@ -89,18 +90,21 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res1F =
           for {
             _ <- (eventlog ? CommitDomainEvents(events1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetAllDomainEventsFor(events1.head.aggId))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res
+            enumerator <- (eventlog ? GetAllDomainEventsFor(events1.head.aggId))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events
         val res2F =
           for {
             _ <- (eventlog ? CommitDomainEvents(events2))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetAllDomainEventsFor(events2.head.aggId))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res
+            enumerator <- (eventlog ? GetAllDomainEventsFor(events2.head.aggId))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events
         val res3F =
           for {
             _ <- (eventlog ? CommitDomainEvents(events3))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetAllDomainEventsFor(events3.head.aggId))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res
+            enumerator <- (eventlog ? GetAllDomainEventsFor(events3.head.aggId))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events
 
         val res =
           (for {
@@ -109,9 +113,9 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
             res3 <- res3F
           } yield (res1, res2, res3)).awaitResultOrEscalate(defaultDuration)
         res should equal((
-          FetchedDomainEventsBatch(events1),
-          FetchedDomainEventsBatch(events2),
-          FetchedDomainEventsBatch(events3)))
+          events1,
+          events2,
+          events3))
       }
     }
 
@@ -122,9 +126,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetAllDomainEventsFor(arId))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events))
+            enumerator <- (eventlog ? GetAllDomainEventsFor(arId))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events)
       }
     }
 
@@ -135,9 +140,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFrom(arId, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events))
+            enumerator <- (eventlog ? GetDomainEventsFrom(arId, 0L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events)
       }
     }
 
@@ -148,9 +154,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFrom(arId, 3L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.drop(3)))
+            enumerator <- (eventlog ? GetDomainEventsFrom(arId, 3L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.drop(3))
       }
     }
 
@@ -161,9 +168,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFrom(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(Seq(events.last)))
+            enumerator <- (eventlog ? GetDomainEventsFrom(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(Seq(events.last))
       }
     }
 
@@ -174,9 +182,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFrom(arId, events.last.aggVersion + 1L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(Seq.empty))
+            enumerator <- (eventlog ? GetDomainEventsFrom(arId, events.last.aggVersion + 1L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(Seq.empty)
       }
     }
 
@@ -187,9 +196,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsTo(arId, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.take(1)))
+            enumerator <- (eventlog ? GetDomainEventsTo(arId, 0L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.take(1))
       }
     }
 
@@ -200,9 +210,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsTo(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events))
+            enumerator <- (eventlog ? GetDomainEventsTo(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events)
       }
     }
 
@@ -213,9 +224,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsTo(arId, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events))
+            enumerator <- (eventlog ? GetDomainEventsTo(arId, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events)
       }
     }
 
@@ -226,10 +238,11 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsTo(arId, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.take(11)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(10L)
+            enumerator <- (eventlog ? GetDomainEventsTo(arId, 10L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.take(11))
+        res.last.aggVersion should equal(10L)
       }
     }
 
@@ -240,9 +253,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsUntil(arId, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(Seq.empty))
+            enumerator <- (eventlog ? GetDomainEventsUntil(arId, 0L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(Seq.empty)
       }
     }
 
@@ -253,10 +267,11 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsUntil(arId, 1L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.take(1)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(0L)
+            enumerator <- (eventlog ? GetDomainEventsUntil(arId, 1L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.take(1))
+        res.last.aggVersion should equal(0L)
       }
     }
 
@@ -267,10 +282,11 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsUntil(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.init))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(events.last.aggVersion - 1)
+            enumerator <- (eventlog ? GetDomainEventsUntil(arId, events.last.aggVersion))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.init)
+        res.last.aggVersion should equal(events.last.aggVersion - 1)
       }
     }
 
@@ -281,9 +297,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsUntil(arId, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events))
+            enumerator <- (eventlog ? GetDomainEventsUntil(arId, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events)
       }
     }
 
@@ -294,10 +311,11 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsUntil(arId, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.take(10)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(9L)
+            enumerator <- (eventlog ? GetDomainEventsUntil(arId, 10L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.take(10))
+        res.last.aggVersion should equal(9L)
       }
     }
 
@@ -308,9 +326,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.take(1)))
+            enumerator <- (eventlog ? GetDomainEventsFromTo(arId, 0L, 0L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.take(1))
       }
     }
 
@@ -321,9 +340,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events))
+            enumerator <- (eventlog ? GetDomainEventsFromTo(arId, 0L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events)
       }
     }
 
@@ -334,11 +354,12 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.take(11)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(0L)
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(10L)
+            enumerator <- (eventlog ? GetDomainEventsFromTo(arId, 0L, 10L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.take(11))
+        res.head.aggVersion should equal(0L)
+        res.last.aggVersion should equal(10L)
       }
     }
 
@@ -349,9 +370,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 0L, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events))
+            enumerator <- (eventlog ? GetDomainEventsFromTo(arId, 0L, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events)
       }
     }
 
@@ -362,11 +384,12 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 10L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.drop(10)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(events.last.aggVersion)
+            enumerator <- (eventlog ? GetDomainEventsFromTo(arId, 10L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.drop(10))
+        res.head.aggVersion should equal(10L)
+        res.last.aggVersion should equal(events.last.aggVersion)
       }
     }
     it("""should when queried with "GetDomainEventsFromTo(x < maxVersion,  y < maxVersion)" return all events from including x to the one including y""") {
@@ -376,11 +399,12 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 20L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.drop(10).take(11)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(20L)
+            enumerator <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 20L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.drop(10).take(11))
+        res.head.aggVersion should equal(10L)
+        res.last.aggVersion should equal(20L)
       }
     }
     it("""should when queried with "GetDomainEventsFromTo(0L x < maxVersion,  y = x)" return the event with version x""") {
@@ -390,11 +414,12 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.drop(10).take(1)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(10L)
+            enumerator <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 10L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.drop(10).take(1))
+        res.head.aggVersion should equal(10L)
+        res.last.aggVersion should equal(10L)
       }
     }
 
@@ -405,9 +430,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 9L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(IndexedSeq.empty))
+            enumerator <- (eventlog ? GetDomainEventsFromTo(arId, 10L, 9L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(IndexedSeq.empty)
       }
     }
 
@@ -419,9 +445,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, 0L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(IndexedSeq.empty))
+            enumerator <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, 0L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(Vector.empty)
       }
     }
 
@@ -432,11 +459,12 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.init))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(0L)
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(events.last.aggVersion - 1L)
+            enumerator <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.init)
+        res.head.aggVersion should equal(0L)
+        res.last.aggVersion should equal(events.last.aggVersion - 1L)
       }
     }
 
@@ -447,11 +475,12 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.take(10)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(0L)
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(9L)
+            enumerator <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, 10L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.take(10))
+        res.head.aggVersion should equal(0L)
+        res.last.aggVersion should equal(9L)
       }
     }
 
@@ -462,9 +491,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events))
+            enumerator <- (eventlog ? GetDomainEventsFromUntil(arId, 0L, events.last.aggVersion + 1))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events)
       }
     }
 
@@ -475,11 +505,12 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.drop(10).init))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(events.last.aggVersion - 1L)
+            enumerator <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, events.last.aggVersion))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.drop(10).init)
+        //        res.head.aggVersion should equal(10L)
+        //        res.last.aggVersion should equal(events.last.aggVersion - 1L)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(x < maxVersion,  y < maxVersion)" return all events from including x to the one excluding y""") {
@@ -489,11 +520,12 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 20L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(events.drop(10).take(10)))
-        res.asInstanceOf[FetchedDomainEventsBatch].events.head.aggVersion should equal(10L)
-        res.asInstanceOf[FetchedDomainEventsBatch].events.last.aggVersion should equal(19L)
+            enumerator <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 20L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(events.drop(10).take(10))
+        res.head.aggVersion should equal(10L)
+        res.last.aggVersion should equal(19L)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(0L x < maxVersion,  y = x)" return no event""") {
@@ -503,9 +535,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 10L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(Seq.empty))
+            enumerator <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 10L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(Seq.empty)
       }
     }
 
@@ -516,9 +549,10 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 9L))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-          } yield res).awaitResultOrEscalate(defaultDuration)
-        res should equal(FetchedDomainEventsBatch(IndexedSeq.empty))
+            enumerator <- (eventlog ? GetDomainEventsFromUntil(arId, 10L, 9L))(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
+            events <- enumerator.run(Iteratee.getChunks[DomainEvent]).toSuccessfulAlmFuture
+          } yield events).awaitResultOrEscalate(defaultDuration)
+        res should equal(IndexedSeq.empty)
       }
     }
 
@@ -529,7 +563,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEvent(events(10).id))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
+            res <- (eventlog ? GetDomainEvent(events(10).id))(defaultDuration).successfulAlmFuture[QueriedDomainEvent]
           } yield res).awaitResultOrEscalate(defaultDuration)
         res should equal(QueriedDomainEvent(events(10).id, Some(events(10))))
       }
@@ -543,7 +577,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
         val res =
           (for {
             _ <- (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
-            res <- (eventlog ? GetDomainEvent(nonexistingid))(defaultDuration).successfulAlmFuture[DomainEventLogMessage]
+            res <- (eventlog ? GetDomainEvent(nonexistingid))(defaultDuration).successfulAlmFuture[QueriedDomainEvent]
           } yield res).awaitResultOrEscalate(defaultDuration)
         res should equal(QueriedDomainEvent(nonexistingid, None))
       }

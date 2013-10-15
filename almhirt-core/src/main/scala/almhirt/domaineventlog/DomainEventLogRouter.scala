@@ -3,6 +3,7 @@ package almhirt.domaineventlog
 import java.util.{ UUID => JUUID }
 import akka.actor._
 import almhirt.common._
+import play.api.libs.iteratee.Enumerator
 
 class DomainEventLogRouter(numChildren: Int, childProps: Props) extends Actor {
   import DomainEventLog._
@@ -24,7 +25,7 @@ class DomainEventLogRouter(numChildren: Int, childProps: Props) extends Actor {
         else
           dispatch(aggId, m)
       }
-    case m: GetAllDomainEvents.type => sender ! FetchedDomainEventsFailure(UnspecifiedProblem("""DomainEventLogRouter does not support "GetAllDomainEvents"."""))
+    case m: GetAllDomainEvents.type => sender ! FetchDomainEventsFailed(UnspecifiedProblem("""DomainEventLogRouter does not support "GetAllDomainEvents"."""))
     case m: GetDomainEvent => sender ! DomainEventQueryFailed(m.eventId, UnspecifiedProblem("""DomainEventLogRouter does not support "GetDomainEvent"."""))
     case m: GetAllDomainEventsFor => dispatch(m.aggId, m)
     case m: GetDomainEventsFrom => dispatch(m.aggId, m)

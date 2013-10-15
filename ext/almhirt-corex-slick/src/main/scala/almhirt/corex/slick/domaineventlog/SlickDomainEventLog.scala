@@ -1,15 +1,16 @@
 package almhirt.corex.slick.domaineventlog
 
-import scalaz.syntax.validation._
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain._
 import almhirt.domaineventlog._
 import almhirt.messaging.MessagePublisher
-import scala.concurrent.ExecutionContext
 import almhirt.problem.Problem
+import play.api.libs.iteratee.Enumerator
 
 trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLogging =>
   import DomainEventLog._
@@ -93,10 +94,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
-          sender ! FetchedDomainEventsFailure(problem)
+          sender ! FetchDomainEventsFailed(problem)
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
 
     case GetDomainEvent(eventId) =>
       (for {
@@ -127,10 +128,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
-          sender ! FetchedDomainEventsFailure(problem)
+          sender ! FetchDomainEventsFailed(problem)
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
 
     case GetDomainEventsFrom(aggId, fromVersion) =>
       (for {
@@ -146,10 +147,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
-          sender ! FetchedDomainEventsFailure(problem)
+          sender ! FetchDomainEventsFailed(problem)
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
 
     case GetDomainEventsTo(aggId, toVersion) =>
       (for {
@@ -165,10 +166,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
-          sender ! FetchedDomainEventsFailure(problem)
+          sender ! FetchDomainEventsFailed(problem)
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
 
     case GetDomainEventsUntil(aggId, untilVersion) =>
       (for {
@@ -184,10 +185,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
-          sender ! FetchedDomainEventsFailure(problem)
+          sender ! FetchDomainEventsFailed(problem)
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
 
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
       (for {
@@ -203,10 +204,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
-          sender ! FetchedDomainEventsFailure(problem)
+          sender ! FetchDomainEventsFailed(problem)
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
 
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
       (for {
@@ -222,10 +223,10 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
         domainEvents <- rowsToDomainEvents(rows)
       } yield domainEvents).fold(
         problem => {
-          sender ! FetchedDomainEventsFailure(problem)
+          sender ! FetchDomainEventsFailed(problem)
           throw new EscalatedProblemException(problem)
         },
-        domainEvents => sender ! FetchedDomainEventsBatch(domainEvents))
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
         
     case almhirt.serialization.UseSerializationChannel(newChannel) =>
       context.become(currentState(newChannel))

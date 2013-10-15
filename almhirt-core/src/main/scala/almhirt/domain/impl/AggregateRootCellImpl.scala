@@ -1,8 +1,8 @@
 package almhirt.domain.impl
 
 import java.util.{ UUID => JUUID }
+import scala.concurrent._
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
 import org.joda.time.LocalDateTime
 import scalaz.syntax.validation._
 import akka.actor._
@@ -16,6 +16,7 @@ import almhirt.domain._
 import almhirt.domain.DomainEvent
 import almhirt.messaging.MessagePublisher
 import almhirt.common.CanCreateUuidsAndDateTimes
+import play.api.libs.iteratee._
 
 trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCellWithEventValidation { actor: Actor with ActorLogging =>
   import AggregateRootCell._
@@ -36,7 +37,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 
   protected implicit def ccuad: CanCreateUuidsAndDateTimes
 
-  def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR]
+  protected def createFreshAggregateRoot: Event => DomainValidation[AR]
 
   protected def getArWarnThreshold: FiniteDuration
   protected def getArTimeout: FiniteDuration
@@ -93,10 +94,6 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       ()
     case ReportCellState =>
       reportCellState(CellStateUninitialized)
-  }
-  
-  private def fetchArState() : Receive = {
-    case _ => ???
   }
 
   def idleState(ar: AR, idleSince: LocalDateTime): Receive = {
@@ -187,29 +184,45 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       reportCellState(CellStateError(problem))
   }
 
-  def rebuildAr(events: Seq[DomainEvent]): AlmValidation[AR] = {
-    rebuildAggregateRoot(events.map(_.asInstanceOf[Event]))
-  }
+  //  def rebuildAr(events: Seq[DomainEvent]): AlmValidation[AR] = {
+  //    rebuildAggregateRoot(events.map(_.asInstanceOf[Event]))
+  //  }
+
+  //  val buildArIteratee = new Iteratee[DomainEvent, Option[AR]] {
+  //    def fold[B](folder: Step[DomainEvent, Option[AR]] => Future[B]): Future[B] = {
+  //      case 
+  //  }
+  //}
+
+  //  private def arFolder(step: Step[DomainEvent,Option[AR]]):Future[Option[AR]] = step match {
+  //    case Step.Done(a, e) => future(a)
+  //    case Step.Cont(k) => future(None)
+  //  }
 
   def fetchAR(): AlmFuture[Option[AR]] = {
     val warnDeadline = Deadline.now
-    (domainEventLog ? GetAllDomainEventsFor(managedAggregateRooId))(getArTimeout).successfulAlmFuture[FetchedDomainEvents].collectV {
-      case FetchedDomainEventsBatch(events) =>
-        warnDeadline.whenTooLate(getArWarnThreshold, elapsed =>
-          log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than ${getArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString})."""))
-        if (events.isEmpty)
-          None.success
-        else
-          rebuildAr(events).map(Some(_))
-      case FetchedDomainEventsChunks(enumerator) =>
-        UnspecifiedProblem("FetchedDomainEventsChunks not supported").failure
-      case FetchedDomainEventsFailure(problem) =>
-        problem.failure
-    }.mapTimeout(tp => {
-      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within ${getArTimeout.defaultUnitString}.""", cause = Some(tp))
-    })
+    (domainEventLog ? GetAllDomainEventsFor(managedAggregateRooId))(getArTimeout).successfulAlmFuture[FetchDomainEventsResult].flatMap {
+      case FetchedDomainEvents(enumerator) =>
+        val iteratee: Iteratee[DomainEvent, Option[AR]] = Iteratee.fold[DomainEvent, Option[AR]](None) {
+          case (agg, nextEvent) =>
+            val typedDomainEvent = nextEvent.asInstanceOf[Event]
+            if (typedDomainEvent.isInstanceOf[CreatesNewAggregateRootEvent] && agg.isEmpty)
+              Some(createFreshAggregateRoot(typedDomainEvent).resultOrEscalate)
+            else if (agg.isDefined)
+              agg.map(x => x.applyEvent(typedDomainEvent).resultOrEscalate)
+            else CollisionProblem(s"""There is no aggregate($managedAggregateRooId) root to apply the event ${nextEvent.getClass().getName()} to.""").escalate
+        }
+        enumerator.onDoneEnumerating(() =>
+          warnDeadline.whenTooLate(getArWarnThreshold, elapsed =>
+            log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than ${getArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString}).""")))
+        val res = enumerator.run(iteratee)
+        res.toSuccessfulAlmFuture
+      case FetchDomainEventsFailed(problem) =>
+        AlmFuture.failed(problem)
+    }.mapTimeout(tp =>
+      OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within ${getArTimeout.defaultUnitString}.""", cause = Some(tp)))
   }
-
+  
   def updateAggregateRoot(arOpt: Option[AR], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Unit = {
     AlmFuture { getNextUpdateTask(arOpt, pendingUpdates).success }.onComplete(
       problem => {
@@ -321,7 +334,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 
 class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
   aggregateRooId: JUUID,
-  aggregateRootFactory: Iterable[TEvent] => DomainValidation[TAR],
+  override val createFreshAggregateRoot: TEvent => DomainValidation[TAR],
   theDomainEventLog: ActorRef,
   reportCellStateSink: AggregateRootCellStateSink,
   override val cellStateReportingDelay: FiniteDuration,
@@ -347,8 +360,6 @@ class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainE
   }
 
   val managedAggregateRooId = aggregateRooId
-
-  def rebuildAggregateRoot(events: Iterable[Event]): DomainValidation[AR] = aggregateRootFactory(events)
 
   protected def domainEventLog: ActorRef = theDomainEventLog
 
