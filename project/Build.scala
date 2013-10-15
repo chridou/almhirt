@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.112"
+  val buildVersion      = "0.5.115"
   val buildScalaVersion = "2.10.2"
 
   val akkaVersion = "2.2.+"
@@ -168,8 +168,9 @@ trait CorexMongoBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += typesafe_config,
-	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "0.10-SNAPSHOT" % "provided"     
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "0.10.0-SNAPSHOT" % "provided"
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
  	  libraryDependencies += scalatest
@@ -221,7 +222,7 @@ trait RiftWarpMongoExtBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
-	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-bson" % "0.10-SNAPSHOT" % "provided"     
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-bson" % "0.10.0-SNAPSHOT" % "provided"     
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
 	  libraryDependencies += scalaz,

@@ -235,7 +235,7 @@ class MongoEventLog(
   def getEvents(query: BSONDocument, sort: BSONDocument): AlmFuture[Seq[Event]] = {
     val collection = db(collectionName)
     for {
-      docs <- collection.find(query, projectionFilter).sort(sort).cursor.toList.toSuccessfulAlmFuture
+      docs <- collection.find(query, projectionFilter).sort(sort).cursor.collect[List](1000, true).toSuccessfulAlmFuture
       Events <- AlmFuture {
         docs.map(x => documentToEvent(x).toAgg).sequence
       }(serializationExecutor)
@@ -293,7 +293,7 @@ class MongoEventLog(
       val query = BSONDocument("_id" -> BSONBinary(UuidConverter.uuidToBytes(eventId), Subtype.UuidSubtype))
       val res =
         for {
-          docs <- collection.find(query).cursor.toList.toSuccessfulAlmFuture
+          docs <- collection.find(query).cursor.collect[List](2, true).toSuccessfulAlmFuture
           Event <- AlmFuture {
             docs match {
               case Nil => None.success

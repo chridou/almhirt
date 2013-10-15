@@ -217,7 +217,7 @@ class MongoDomainEventLog(
 
   def getEventsDocs(query: BSONDocument, sort: BSONDocument): Enumerator[BSONDocument] = {
     val collection = db(collectionName)
-    collection.find(query, projectionFilter).sort(sort).cursor.enumerate
+    collection.find(query, projectionFilter).sort(sort).cursor.enumerate(1000, true)
   }
   
   def getEvents(query: BSONDocument, sort: BSONDocument): Enumerator[DomainEvent] = {
@@ -288,7 +288,7 @@ class MongoDomainEventLog(
       val query = BSONDocument("_id" -> BSONBinary(UuidConverter.uuidToBytes(eventId), Subtype.UuidSubtype))
       val res =
         for {
-          docs <- collection.find(query).cursor.toList.toSuccessfulAlmFuture
+          docs <- collection.find(query).cursor.collect[List](2, true).toSuccessfulAlmFuture
           domainEvent <- AlmFuture {
             docs match {
               case Nil => None.success
