@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.115"
+  val buildVersion      = "0.5.116"
   val buildScalaVersion = "2.10.2"
 
   val akkaVersion = "2.2.+"
@@ -245,6 +245,24 @@ trait RiftWarpSprayJsonExtBuild {
 	  libraryDependencies += scalatest
   )
 }
+
+trait RiftWarpMessagePackExtBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpMessagePackExtProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  resolvers += "spray repo" at "http://repo.spray.io",
+	  libraryDependencies += scala_reflect,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += "org.msgpack" % "msgpack" % "0.6.0",
+	  libraryDependencies += apache_codecs,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest
+  )
+}
+
+
 trait RiftWarpAutomaticBuild {
   import Dependencies._
   import Resolvers._
@@ -259,8 +277,6 @@ trait RiftWarpAutomaticBuild {
   )
 }
 
-
-
 object AlmHirtBuild extends Build 
 	with CommonBuild 
 	with CoreBuild 
@@ -273,10 +289,11 @@ object AlmHirtBuild extends Build
 	with RiftWarpBuild 
 	with RiftWarpMongoExtBuild 
 	with RiftWarpSprayJsonExtBuild 
+	with RiftWarpMessagePackExtBuild 
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpMongoProject, riftwarpSprayProject)
+	                        base = file(".")) aggregate(common, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpMongoProject, riftwarpSprayProject, riftwarpMessagePackProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -311,6 +328,9 @@ object AlmHirtBuild extends Build
 								
   lazy val riftwarpSprayProject = riftwarpSprayJsonExtProject(	name = "riftwarpx-sprayjson",
                        			baseFile = file("./ext/riftwarpx-sprayjson")) dependsOn(common, riftwarp)
+								
+  lazy val riftwarpMessagePackProject = riftwarpMessagePackExtProject(	name = "riftwarpx-messagepack",
+                       			baseFile = file("./ext/riftwarpx-messagepack")) dependsOn(common, riftwarp)
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
