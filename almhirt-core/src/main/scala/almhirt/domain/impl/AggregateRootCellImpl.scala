@@ -203,7 +203,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
     val warnDeadline = Deadline.now
     (domainEventLog ? GetAllDomainEventsFor(managedAggregateRooId))(getArTimeout).successfulAlmFuture[FetchDomainEventsResult].flatMap {
       case FetchedDomainEvents(enumerator) =>
-        val iteratee: Iteratee[AlmValidation[DomainEvent], Option[AR]] = Iteratee.fold[AlmValidation[DomainEvent], Option[AR]](None) {
+        val iteratee: Iteratee[DomainEvent, Option[AR]] = Iteratee.fold[DomainEvent, Option[AR]](None) {
           case (agg, nextEvent) =>
             val typedDomainEvent = nextEvent.asInstanceOf[Event]
             if (typedDomainEvent.isInstanceOf[CreatesNewAggregateRootEvent] && agg.isEmpty)

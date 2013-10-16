@@ -19,10 +19,11 @@ class MongoDomainEventLogTests
   with CreatesDomainEventLog {
 
   override val defaultDuration = FiniteDuration(5, "s")
-  override val sleepBeforeEachTest: Option[FiniteDuration] = Some(FiniteDuration(2, "s"))
+  override val sleepBeforeEachTest: Option[FiniteDuration] = Some(FiniteDuration(1500, "ms"))
+  override val sleepAfterInsert: Option[FiniteDuration] = None
 
   val dbUuid = java.util.UUID.randomUUID()
-  
+
   def configStr =
     """
 almhirt {
