@@ -18,6 +18,9 @@ object WarpTags {
   
   sealed trait Bson
   def BsonBinary(v: Array[Byte]): Array[Byte] @@ Bson = Tag[Array[Byte], Bson](v)
+
+  sealed trait MessagePack
+  def MessagePack(v: Array[Byte]): Array[Byte] @@ MessagePack = Tag[Array[Byte], MessagePack](v)
   
   sealed trait Text
   def TextString(v: String): String @@ Text = Tag[String, Text](v)
