@@ -8,7 +8,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
-import almhirt.converters.UuidConverter
+import almhirt.converters.BinaryConverter
 import almhirt.configuration._
 import almhirt.domaineventlog._
 import almhirt.messaging.MessagePublisher
@@ -216,7 +216,7 @@ class MongoDomainEventLog(
     case GetDomainEvent(eventId) =>
       val pinnedSender = sender
       val collection = db(collectionName)
-      val query = BSONDocument("_id" -> BSONBinary(UuidConverter.uuidToBytes(eventId), Subtype.UuidSubtype))
+      val query = BSONDocument("_id" -> BSONBinary(BinaryConverter.uuidToBytes(eventId), Subtype.UuidSubtype))
       val res =
         for {
           docs <- collection.find(query).cursor.collect[List](2, true).toSuccessfulAlmFuture

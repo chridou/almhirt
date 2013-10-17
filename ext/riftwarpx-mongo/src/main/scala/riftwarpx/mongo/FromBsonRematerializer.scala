@@ -5,7 +5,7 @@ import scalaz._
 import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.converters.UuidConverter
+import almhirt.converters.BinaryConverter
 import reactivemongo.bson._
 import riftwarp._
 
@@ -56,7 +56,7 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
       case BSONLong(value) => WarpLong(value).success
       case BSONDouble(value) => WarpDouble(value).success
       case BSONTimestamp(value) => WarpLocalDateTime(new LocalDateTime(value, DateTimeZone.UTC)).success
-      case BSONBinary(value, Subtype.UuidSubtype) => WarpUuid(UuidConverter.bytesToUuid(value.readArray(16))).success
+      case BSONBinary(value, Subtype.UuidSubtype) => WarpUuid(BinaryConverter.bytesToUuid(value.readArray(16))).success
       case BSONBinary(value, st) => 
         Failure(UnspecifiedProblem(s"""A BSONBinary with subtype ${st.toString()} is not a primitive type."""))
       case x => 

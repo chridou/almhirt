@@ -8,7 +8,7 @@ import riftwarp._
 import riftwarp.std._
 import org.msgpack.MessagePack
 import org.msgpack.packer.Packer
-import almhirt.converters.UuidConverter
+import almhirt.converters.BinaryConverter
 
 object ToMessagePackDematerializer extends Dematerializer[Array[Byte] @@ WarpTags.MessagePack] {
   override val channel = "messagepack"
@@ -56,7 +56,7 @@ object ToMessagePackDematerializer extends Dematerializer[Array[Byte] @@ WarpTag
       case WarpFloat(value) => packer.write(value)
       case WarpDouble(value) => packer.write(value)
       case WarpBigDecimal(value) => packer.write(value.toString())
-      case WarpUuid(value) => packer.write(UuidConverter.uuidToBytes(value))
+      case WarpUuid(value) => packer.write(BinaryConverter.uuidToBytes(value))
       case WarpUri(value) => packer.write(value.toString())
       case WarpDateTime(value) => packer.write(value.toString())
       case WarpLocalDateTime(value) => packer.write(value.toString())
