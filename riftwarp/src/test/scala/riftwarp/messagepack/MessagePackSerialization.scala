@@ -11,7 +11,6 @@ import riftwarp._
 import riftwarp.std._
 import riftwarp.std.kit._
 import riftwarp.std.default._
-import SerializationDefaults._
 import riftwarp.util.WarpSerializerToString
 import riftwarp.util.Serializers
 import scala.concurrent.duration.FiniteDuration
@@ -20,8 +19,10 @@ import almhirt.io.BinaryWriter
 class MessagePackSerialization extends FunSuite with MustMatchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
+  
+  val maxSize = 12 * 1024 * 1024
 
-  implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(1024 * 1024) }
+  implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(maxSize) }
   
   val blobPackage = (WarpDescriptor("a") ~> Blob("theBlob", Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 0).map(_.toByte))).forceResult
 
@@ -60,6 +61,20 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     rematerialized must equal(sample)
   }
 
+  test("""A WarpString(31 chars) must dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpString((for(i <- 1 to 31) yield 'x').mkString)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(sample)
+  }
+  
+  test("""A WarpString(32 chars) must dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpString((for(i <- 1 to 32) yield 'x').mkString)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(sample)
+  }
+  
   test("""A WarpString(1000 chars) must dematerialize and rematerialize to an equal instance""") {
     val sample = WarpString((for(i <- 1 to 1000) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -239,7 +254,7 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val sample = WarpDateTime(DateTime.now())
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
+    rematerialized.toString() must equal(sample.toString())
   }
 
   test("A WarpLocalDateTime must dematerialize and rematerialize to an equal instance") {
@@ -363,8 +378,8 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     rematerialized must equal(sample)
   }
   
-  test("A WarpTuple3(WarpByte(1), WarpByte(2), WarpByte(3)) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpTuple3(WarpByte(1), WarpByte(2), WarpByte(3))
+  test("A WarpTuple3(WarpByte(11), WarpByte(22), WarpByte(33)) must dematerialize and rematerialize to an equal instance") {
+    val sample = WarpTuple3(WarpByte(11), WarpByte(22), WarpByte(33))
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(sample)
@@ -418,6 +433,26 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(sample)
   }
+
+  test(s"A WarpBytes(${256*256*32} bytes) must dematerialize and rematerialize to an equal instance") {
+    val sample = WarpBytes(Array.fill(256*256*32)(1.toByte))
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(sample)
+  }
+  
+  test(s"WarpBytes(${maxSize-10} bytes) must dematerialize") {
+    val sample = WarpBytes(Array.fill(maxSize-10)(1.toByte))
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+  }
+
+  test(s"WarpBytes(${maxSize-10} bytes) must dematerialize and rematerialize") {
+    val sample = WarpBytes(Array.fill(maxSize-10)(1.toByte))
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+  }
+  
+
   
 //  test("A WarpObject  must dematerialize and rematerialize to an equal instance") {
 //    val obj = WarpObject(None, Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))

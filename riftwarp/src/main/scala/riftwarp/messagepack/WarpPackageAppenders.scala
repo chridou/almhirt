@@ -72,10 +72,10 @@ object WarpPackageAppenders {
       val c = 0x80 | size // 10000000
       writer.writeUnsignedByte(c)
     } else if (size < 256 * 256) {
-      writer.writeUnsignedByte(MessagePackTypecodes.Array16)
+      writer.writeUnsignedByte(MessagePackTypecodes.Map16)
       writer.writeUnsignedShort(size)
     } else {
-      writer.writeUnsignedByte(MessagePackTypecodes.Array32)
+      writer.writeUnsignedByte(MessagePackTypecodes.Map32)
       writer.writeInt(size)
     }
     v.items.foreach { x =>
@@ -108,18 +108,19 @@ object WarpPackageAppenders {
   }
 
   def appendWarpTuple2(v: WarpTuple2, writer: BinaryWriter): BinaryWriter = {
-    val tupleWriter = writer.spawnNew(None)
+    val tupleWriter = writer.spawnNew()
     appendWarpPackage(v.a, tupleWriter)
     appendWarpPackage(v.b, tupleWriter)
-    RiftWarpPrimitiveAppenders.appendExt(tupleWriter.toArray, RiftwarpTypecodes.Tuple2Code, writer)
+    val x = tupleWriter.toArray
+    RiftWarpPrimitiveAppenders.appendExt(x, RiftwarpTypecodes.Tuple2Code, writer)
   }
 
   def appendWarpTuple3(v: WarpTuple3, writer: BinaryWriter): BinaryWriter = {
-    val tupleWriter = writer.spawnNew(None)
+    val tupleWriter = writer.spawnNew()
     appendWarpPackage(v.a, tupleWriter)
     appendWarpPackage(v.b, tupleWriter)
     appendWarpPackage(v.c, tupleWriter)
-    RiftWarpPrimitiveAppenders.appendExt(tupleWriter.toArray, RiftwarpTypecodes.Tuple2Code, writer)
+    RiftWarpPrimitiveAppenders.appendExt(tupleWriter.toArray, RiftwarpTypecodes.Tuple3Code, writer)
   }
 
   def appendBinaryWarpPackage(v: BinaryWarpPackage, writer: BinaryWriter): BinaryWriter = {

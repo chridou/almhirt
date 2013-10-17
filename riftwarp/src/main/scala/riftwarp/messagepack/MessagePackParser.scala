@@ -18,7 +18,7 @@ object MessagePackParser {
   def parseUnsafe(reader: BinaryReader): WarpPackage = {
     val formatByte = reader.readUnsignedByte
     if (formatByte == MessagePackTypecodes.Null) {
-      throw new Exception("Null is only allowed inside a WarpElement")
+      throw new Exception("Null is only allowed within a WarpElement")
     } else if (formatByte == MessagePackTypecodes.True) {
       WarpBoolean(true)
     } else if (formatByte == MessagePackTypecodes.False) {
