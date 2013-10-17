@@ -8,8 +8,6 @@ import almhirt.io.BinaryReader
 trait FromMessagePackByteArrayRematerializer extends Rematerializer[Array[Byte] @@ WarpTags.MessagePack] {
   def rematerialize(what: Array[Byte] @@ WarpTags.MessagePack, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] = {
     val reader = BinaryReader(what)
-    ???
-    
+    MessagePackParser.parse(reader)
   }
-
 }

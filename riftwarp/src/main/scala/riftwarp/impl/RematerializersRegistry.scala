@@ -1,7 +1,7 @@
 package riftwarp.impl
 
 
-import scalaz.syntax.validation._
+import scalaz._, Scalaz._
 import almhirt.common._
 import riftwarp._
 import riftwarp.std._
@@ -23,11 +23,13 @@ class RematerializersRegistry extends Rematerializers {
 
 object RematerializersRegistry {
   def apply(): RematerializersRegistry = {
+    val messagePackRematerializer = new messagepack.FromMessagePackByteArrayRematerializer{}
     val reg = new RematerializersRegistry()
     reg.addTyped("json", (what: String, options: Map[String, Any]) => FromJsonStringRematerializer.rematerialize(WarpTags.JsonString(what), options))
     reg.addTyped("json", (what: scalaz.Cord, options: Map[String, Any]) => FromJsonCordRematerializer.rematerialize(WarpTags.JsonCord(what), options))
     reg.addTyped("xml", (what: String, options: Map[String, Any]) => FromXmlStringRematerializer.rematerialize(WarpTags.XmlString(what), options))
     reg.addTyped("warppackage", (what: WarpPackage, options: Map[String, Any]) => FromWarpPackageRematerializer.rematerialize(what, options))
+    reg.addTyped("messagepack", (what: Array[Byte], options: Map[String, Any]) => messagePackRematerializer.rematerialize(WarpTags.MessagePack(what), options))
     reg
   }
   

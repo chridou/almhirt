@@ -64,7 +64,7 @@ object RiftWarpPrimitiveAppenders {
 
   @inline
   def appendUuid(v: java.util.UUID, writer: BinaryWriter): BinaryWriter = {
-    val bytes = v.toString.getBytes()
+    val bytes = BinaryConverter.uuidToBytesBigEndian(v)
     writer.writeUnsignedByte(MessagePackTypecodes.Fixext16).writeUnsignedByte(RiftwarpTypecodes.UuidCode).writeByteArray(bytes)
   }
 

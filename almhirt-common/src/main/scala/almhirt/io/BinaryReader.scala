@@ -11,7 +11,8 @@ trait BinaryReader {
   def readFloat: Float
   def readDouble: Double
   def readBigInt: BigInt
-  def readByteArray: Array[Byte]
+  def readByteArray(size: Int): Array[Byte]
+  final def readBytes(size: Int): Array[Byte] = readByteArray(size)
 }
 
 object BinaryReader {
