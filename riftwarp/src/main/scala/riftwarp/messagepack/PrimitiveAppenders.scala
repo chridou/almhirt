@@ -9,11 +9,11 @@ object RiftWarpPrimitiveAppenders {
     val bytes = v.getBytes()
     if (bytes.length < 32) {
       val h = 0xa0 | bytes.length
-      writer.write(h.toByte).writeByteArray(bytes)
+      writer.writeUnsignedByte(h).writeByteArray(bytes)
     } else if (bytes.length <= 256) {
-      writer.writeUnsignedByte(MessagePackTypecodes.Str8).write(BinaryConverter.toUnsignedByte(bytes.length)).writeByteArray(bytes)
+      writer.writeUnsignedByte(MessagePackTypecodes.Str8).writeUnsignedByte(bytes.length).writeByteArray(bytes)
     } else if (bytes.length < 256 * 256) {
-      writer.writeUnsignedByte(MessagePackTypecodes.Str16).writeShort(BinaryConverter.toUnsignedShort(bytes.length)).writeByteArray(bytes)
+      writer.writeUnsignedByte(MessagePackTypecodes.Str16).writeUnsignedShort(bytes.length).writeByteArray(bytes)
     } else {
       writer.writeUnsignedByte(MessagePackTypecodes.Str32).writeInt(bytes.length).writeByteArray(bytes)
     }
@@ -40,7 +40,7 @@ object RiftWarpPrimitiveAppenders {
 
   @inline
   def appendLong(v: Long, writer: BinaryWriter): BinaryWriter =
-    writer.writeUnsignedByte(MessagePackTypecodes.Int32).writeLong(v)
+    writer.writeUnsignedByte(MessagePackTypecodes.Int64).writeLong(v)
 
   @inline
   def appendBigInt(v: BigInt, writer: BinaryWriter): BinaryWriter = {

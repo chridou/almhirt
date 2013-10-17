@@ -23,6 +23,8 @@ object MessagePackParser {
       WarpBoolean(true)
     } else if (formatByte == MessagePackTypecodes.False) {
       WarpBoolean(false)
+    } else if (MessagePackTypecodes.isStr(formatByte)) {
+      parseString(formatByte, reader)
     } else if (formatByte == MessagePackTypecodes.Int8) {
       WarpByte(reader.readByte)
     } else if (formatByte == MessagePackTypecodes.Int16) {
@@ -31,6 +33,10 @@ object MessagePackParser {
       WarpInt(reader.readInt)
     } else if (formatByte == MessagePackTypecodes.Int64) {
       WarpLong(reader.readLong)
+    } else if (formatByte == MessagePackTypecodes.Float) {
+      WarpFloat(reader.readFloat)
+    } else if (formatByte == MessagePackTypecodes.Double) {
+      WarpDouble(reader.readDouble)
     } else if (MessagePackTypecodes.isExt(formatByte)) {
       parseSpecialType(formatByte, reader)
     } else if (MessagePackTypecodes.isArray(formatByte)) {
@@ -42,6 +48,12 @@ object MessagePackParser {
     } else {
       throw new Exception(s"Invalid format byte: $formatByte")
     }
+  }
+
+  def parseString(formatByte: Int, reader: BinaryReader): WarpString = {
+    val size = MessagePackTypecodes.parseStrHeader(formatByte, reader)
+    val bytes = reader.readByteArray(size)
+    WarpString(new String(bytes, "utf-8"))
   }
 
   def parseSpecialType(formatByte: Int, reader: BinaryReader): WarpPackage = {

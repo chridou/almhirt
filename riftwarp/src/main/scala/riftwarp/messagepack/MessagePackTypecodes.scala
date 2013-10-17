@@ -12,10 +12,10 @@ object MessagePackTypecodes {
   val Str16 = 0xda
   val Str32 = 0xdb
 
-  val Int8 = 0xcc
-  val Int16 = 0xcd
-  val Int32 = 0xce
-  val Int64 = 0xcf
+  val Int8 = 0xd0
+  val Int16 = 0xd1
+  val Int32 = 0xd2
+  val Int64 = 0xd3
 
   val Float = 0xca
   val Double = 0xcb
@@ -60,10 +60,30 @@ object MessagePackTypecodes {
     (customType, size)
   }
 
+  def isStr(formatByte: Int): Boolean = {
+    formatByte == Str8 ||
+      formatByte == Str16 ||
+      formatByte == Str32 ||
+      (formatByte & 0xa0) == 0xa0
+  }
+
+  def parseStrHeader(formatByte: Int, reader: BinaryReader): Int = {
+    val length =
+      if (formatByte == Str8)
+        reader.readUnsignedByte
+      else if (formatByte == Str16)
+        reader.readUnsignedShort
+      else if (formatByte == Str32)
+        reader.readInt
+      else
+        formatByte & 0x1f
+    length
+  }
+
   def isArray(formatByte: Int): Boolean = {
     formatByte == Array16 ||
       formatByte == Array32 ||
-      (formatByte & 0x90) != 0
+      (formatByte & 0x90) == 0x90
   }
 
   def parseArrayHeader(formatByte: Int, reader: BinaryReader): Int = {
@@ -72,13 +92,13 @@ object MessagePackTypecodes {
     else if (formatByte == Array32)
       reader.readInt
     else
-      formatByte & 0xf
+      formatByte & 0x0f
   }
 
   def isMap(formatByte: Int): Boolean = {
     formatByte == Map16 ||
       formatByte == Map32 ||
-      (formatByte & 0x80) != 0
+      (formatByte & 0x80) == 0x80
   }
 
   def parseMapHeader(formatByte: Int, reader: BinaryReader): Int = {
@@ -87,7 +107,7 @@ object MessagePackTypecodes {
     else if (formatByte == Map32)
       reader.readInt
     else
-      formatByte & 0xf
+      formatByte & 0x0f
   }
 
   def isBin(formatByte: Int): Boolean = {
@@ -103,5 +123,5 @@ object MessagePackTypecodes {
       case Bin32 => reader.readInt
     }
   }
-  
+
 }

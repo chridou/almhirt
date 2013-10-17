@@ -1,6 +1,7 @@
 package riftwarp
 
 import almhirt.common._
+import almhirt.io.BinaryWriter
 
 package object std {
   object funs extends WarpPackageFuns with PackageBuilderFuns with PackageExtractorFuns
@@ -18,6 +19,9 @@ package object std {
     implicit val StdLibXmlRematerializer = FromStdLibXmlRematerializer
     implicit val StdLibXmlStringRematerializer = FromXmlStringRematerializer
 
+    implicit val MessagePackRematerializer =  new messagepack.FromMessagePackByteArrayRematerializer{}
+    implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(1024 * 32) }
+ 
   }
   
   implicit val WarpPrimitiveBooleanPacker = BooleanWarpPacker
