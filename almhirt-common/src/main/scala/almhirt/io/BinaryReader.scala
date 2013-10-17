@@ -12,5 +12,10 @@ trait BinaryReader {
   def readDouble: Double
   def readBigInt: BigInt
   def readByteArray: Array[Byte]
+}
 
+object BinaryReader {
+  def apply(bytes: Array[Byte]): BinaryReader = {
+    ???
+  }
 }
