@@ -30,6 +30,7 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
       case WarpBoolean(value) => <span class="primitive-value">{ value.toString }</span>
       case WarpString(value) => <span class="primitive-value">{ value }</span>
       case WarpByte(value) => <span class="primitive-value">{ value.toString }</span>
+      case WarpShort(value) => <span class="primitive-value">{ value.toString }</span>
       case WarpInt(value) => <span class="primitive-value">{ value.toString }</span>
       case WarpLong(value) => <span class="primitive-value">{ value.toString }</span>
       case WarpBigInt(value) => <span class="primitive-value">{ value.toString }</span>

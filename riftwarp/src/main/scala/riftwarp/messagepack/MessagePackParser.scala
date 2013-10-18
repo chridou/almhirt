@@ -2,6 +2,7 @@ package riftwarp.messagepack
 
 import scalaz._, Scalaz._
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.io.BinaryReader
 import almhirt.converters.BinaryConverter
 import riftwarp._
@@ -17,6 +18,10 @@ object MessagePackParser {
 
   def parseUnsafe(reader: BinaryReader): WarpPackage = {
     val formatByte = reader.readUnsignedByte
+    parseUnsafe(formatByte, reader)
+  }
+
+  def parseUnsafe(formatByte: Int, reader: BinaryReader): WarpPackage = {
     if (formatByte == MessagePackTypecodes.Null) {
       throw new Exception("Null is only allowed within a WarpElement")
     } else if (formatByte == MessagePackTypecodes.True) {
@@ -52,15 +57,38 @@ object MessagePackParser {
     }
   }
 
-  def parseString(formatByte: Int, reader: BinaryReader): WarpString = {
+  def readInteger(formatByte: Int, reader: BinaryReader): WarpIntegralInteger = {
+    if ((formatByte & 0x80) == 0) { // 10000000
+      WarpByte(formatByte.toByte)
+    } else if (formatByte == MessagePackTypecodes.Int8) {
+      WarpByte(reader.readByte)
+    } else if (formatByte == MessagePackTypecodes.Int16) {
+      WarpShort(reader.readShort)
+    } else if (formatByte == MessagePackTypecodes.Int32) {
+      WarpInt(reader.readInt)
+    } else if (formatByte == MessagePackTypecodes.Int64) {
+      WarpLong(reader.readLong)
+    } else {
+      throw new Exception(s"$formatByte is not a format byte for any integer number")
+    }
+  }
+
+  @inline
+  def readString(formatByte: Int, reader: BinaryReader) = {
     val size = MessagePackTypecodes.parseStrHeader(formatByte, reader)
     val bytes = reader.readByteArray(size)
-    WarpString(new String(bytes, "utf-8"))
+    new String(bytes, "utf-8")
+  }
+
+  def parseString(formatByte: Int, reader: BinaryReader): WarpString = {
+    WarpString(readString(formatByte, reader))
   }
 
   def parseSpecialType(formatByte: Int, reader: BinaryReader): WarpPackage = {
     val (customType, size) = MessagePackTypecodes.parseExtHeader(formatByte, reader)
     customType match {
+      case RiftwarpTypecodes.ObjectCode =>
+        parseObject(size, reader)
       case RiftwarpTypecodes.BigIntCode =>
         parseBigInt(size, reader)
       case RiftwarpTypecodes.BigDecimalCode =>
@@ -164,15 +192,54 @@ object MessagePackParser {
   }
 
   def parseWarpDescriptor(formatByte: Int, reader: BinaryReader): WarpDescriptor = {
-    ???
+    try {
+      MessagePackTypecodes.parseExtHeader(formatByte, reader)
+      val identifier = readString(reader.readUnsignedByte, reader)
+      val version: Option[Int] = reader.readUnsignedByte match {
+        case MessagePackTypecodes.Null =>
+          None
+        case formatByte =>
+          val v = readInteger(formatByte, reader).as[Int].resultOrEscalate
+          Some(v)
+      }
+      WarpDescriptor(identifier, version)
+    } catch {
+      case scala.util.control.NonFatal(exn) => throw new Exception("Could not parse WarpDescriptor", exn)
+    }
   }
 
-  def parseElement(formatByte: Int, reader: BinaryReader): WarpElement = {
-    ???
+  def parseElement(reader: BinaryReader): WarpElement = {
+    try {
+      reader.advance(1)
+      val label = readString(reader.readUnsignedByte, reader)
+      val formatByte = reader.readUnsignedByte
+      val value: Option[WarpPackage] = formatByte match {
+        case MessagePackTypecodes.Null =>
+          None
+        case formatByte =>
+          Some(parseUnsafe(formatByte, reader))
+      }
+      WarpElement(label, value)
+    } catch {
+      case scala.util.control.NonFatal(exn) => throw new Exception("Could not parse WarpElement", exn)
+    }
   }
 
-  def parseObject(formatByte: Int, reader: BinaryReader): WarpObject = {
-    ???
+  def parseObject(size: Int, reader: BinaryReader): WarpObject = {
+    try {
+      val wdFormatByte = reader.readUnsignedByte
+      val wd: Option[WarpDescriptor] = wdFormatByte match {
+        case MessagePackTypecodes.Null =>
+          None
+        case formatByte => 
+          Some(parseWarpDescriptor(wdFormatByte, reader))
+      }
+      val numElems = MessagePackTypecodes.parseArrayHeader(reader.readUnsignedByte, reader)
+      val elems = (for (n <- 0 until numElems) yield parseElement(reader))
+      WarpObject(wd, elems.toVector)
+    } catch {
+      case scala.util.control.NonFatal(exn) => throw new Exception("Could not parse WarpObject", exn)
+    }
   }
 
 }

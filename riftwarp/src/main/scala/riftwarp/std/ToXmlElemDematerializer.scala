@@ -21,6 +21,7 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
       case WarpBoolean(value) => <Value type="Boolean">{ value.toString }</Value>
       case WarpString(value) => <Value type="String">{ value }</Value>
       case WarpByte(value) => <Value type="Byte">{ value.toString }</Value>
+      case WarpShort(value) => <Value type="Short">{ value.toString }</Value>
       case WarpInt(value) => <Value type="Int">{ value.toString }</Value>
       case WarpLong(value) => <Value type="Long">{ value.toString }</Value>
       case WarpBigInt(value) => <Value type="BigInt">{ value.toString }</Value>

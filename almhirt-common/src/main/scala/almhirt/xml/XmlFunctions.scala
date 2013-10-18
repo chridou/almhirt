@@ -83,6 +83,15 @@ trait XmlFunctions {
       None.success
     else
       byteFromXmlNode(node) fold (_.failure, Some(_).success)
+
+  def shortFromXmlNode(node: Elem): AlmValidation[Short] =
+    notEmptyOrWhitespace(node.text) flatMap (ne => parseShortAlm(ne)) bimap (f => f.withLabel(node.label), s => s)
+
+  def optionalShortFromXmlNode(node: Elem): AlmValidation[Option[Short]] =
+    if (node.text.trim.isEmpty)
+      None.success
+    else
+      shortFromXmlNode(node) fold (_.failure, Some(_).success)
       
   def intFromXmlNode(node: Elem): AlmValidation[Int] =
     notEmptyOrWhitespace(node.text) flatMap (ne => parseIntAlm(ne)) bimap (f => f.withLabel(node.label), s => s)
@@ -222,6 +231,13 @@ trait XmlFunctions {
 
   def stringOptionFromChild(node: Elem, label: String): Option[String] =
     elems(node)(label).headOption.flatMap(optionalStringFromXmlNode)
+
+  def shortFromChild(node: Elem, label: String): AlmValidation[Short] =
+    firstChildNodeMandatory(node, label)
+      .flatMap { node => parseShortAlm(node.text) } bimap (f => f.withLabel(label), s => s)
+
+  def shortOptionFromChild(node: Elem, label: String): AlmValidation[Option[Short]] =
+    flatMapOptionalFirstChild(node, label, n => emptyStringIsNone(n.text, s => parseShortAlm(s))) bimap (f => f.withLabel(label), s => s)
 
   def intFromChild(node: Elem, label: String): AlmValidation[Int] =
     firstChildNodeMandatory(node, label)

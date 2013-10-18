@@ -103,6 +103,7 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
         case "String" => extractString(value)
         case "Boolean" => extractBoolean(value)
         case "Byte" => extractByte(value)
+        case "Short" => extractShort(value)
         case "Int" => extractInt(value)
         case "Long" => extractLong(value)
         case "BigInt" => extractBigInt(value)
@@ -120,6 +121,7 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
   private def extractString(value: XmlElem): AlmValidation[WarpPrimitive] = WarpString(unescapeString(value.text)).success
   private def extractBoolean(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractBoolean.map(WarpBoolean(_))
   private def extractByte(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractByte.map(WarpByte(_))
+  private def extractShort(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractShort.map(WarpShort(_))
   private def extractInt(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractInt.map(WarpInt(_))
   private def extractLong(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractLong.map(WarpLong(_))
   private def extractBigInt(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractBigInt.map(WarpBigInt(_))

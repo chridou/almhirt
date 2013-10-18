@@ -16,8 +16,8 @@ sealed trait WarpPackage {
 
 final case class WarpElement(label: String, value: Option[WarpPackage])
 
-sealed trait WarpPrimitive extends WarpPackage {
-  def as[T](implicit conv: WarpPrimitiveConverter[T]): AlmValidation[T] = conv.convert(this)
+sealed trait WarpPrimitive extends WarpPackage { self =>
+  def as[T: WarpPrimitiveConverter]: AlmValidation[T] = implicitly[WarpPrimitiveConverter[T]].convert(self)
   def value: Any
 }
 

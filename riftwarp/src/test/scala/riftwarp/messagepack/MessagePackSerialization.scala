@@ -24,8 +24,6 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
 
   implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(maxSize) }
 
-  val blobPackage = (WarpDescriptor("a") ~> Blob("theBlob", Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 0).map(_.toByte))).forceResult
-
   test("A WarpBoolean(false) must dematerialize and rematerialize to an equal instance") {
     val sample = WarpBoolean(false)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -569,29 +567,20 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
   }
 
-//  test(s"""WarpTree("A") must dematerialize and rematerialize""") {
-//    val sample = WarpTree(WarpString("A").asInstanceOf[WarpPackage].leaf)
-//    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-//    val rematerialized = dematerialized.rematerialize.forceResult
-//  }
-//
-//  test(s"""WarpTree("A(B(), C(D(), E()))") must dematerialize and rematerialize""") {
-//    val sample = WarpTree(
-//      WarpString("A").asInstanceOf[WarpPackage].node(
-//        WarpString("B").asInstanceOf[WarpPackage].leaf,
-//        WarpString("C").asInstanceOf[WarpPackage].node(
-//          WarpString("D").asInstanceOf[WarpPackage].leaf,
-//          WarpString("E").asInstanceOf[WarpPackage].leaf)))
-//    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-//    val rematerialized = dematerialized.rematerialize.forceResult
-//  }
-
-  //  test("A WarpObject  must dematerialize and rematerialize to an equal instance") {
-  //    val obj = WarpObject(None, Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))
-  //    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+  //  test(s"""WarpTree("A") must dematerialize and rematerialize""") {
+  //    val sample = WarpTree(WarpString("A").asInstanceOf[WarpPackage].leaf)
+  //    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
   //    val rematerialized = dematerialized.rematerialize.forceResult
-  //    rematerialized must equal(obj)
   //  }
   //
-
+  //  test(s"""WarpTree("A(B(), C(D(), E()))") must dematerialize and rematerialize""") {
+  //    val sample = WarpTree(
+  //      WarpString("A").asInstanceOf[WarpPackage].node(
+  //        WarpString("B").asInstanceOf[WarpPackage].leaf,
+  //        WarpString("C").asInstanceOf[WarpPackage].node(
+  //          WarpString("D").asInstanceOf[WarpPackage].leaf,
+  //          WarpString("E").asInstanceOf[WarpPackage].leaf)))
+  //    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+  //    val rematerialized = dematerialized.rematerialize.forceResult
+  //  }
 }
