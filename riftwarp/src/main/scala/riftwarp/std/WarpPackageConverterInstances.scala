@@ -28,6 +28,7 @@ trait WarpPrimitiveToStringConverter extends WarpPrimitiveConverter[String] {
       case WarpString(value) => value.success
       case WarpByte(value) => value.toString.success
       case WarpInt(value) => value.toString.success
+      case WarpShort(value) => value.toString.success
       case WarpLong(value) => value.toString.success
       case WarpBigInt(value) => value.toString.success
       case WarpFloat(value) => value.toString.success
@@ -48,6 +49,7 @@ trait WarpPrimitiveToByteConverter extends WarpPrimitiveConverter[Byte] {
       case WarpString(value) => value.toByteAlm
       case WarpByte(value) => value.success
       case WarpInt(value) => value.toByte.success
+      case WarpShort(value) => value.toByte.success
       case WarpLong(value) => value.toByte.success
       case WarpFloat(value) => value.toByte.success
       case WarpDouble(value) => value.toByte.success
@@ -57,11 +59,28 @@ trait WarpPrimitiveToByteConverter extends WarpPrimitiveConverter[Byte] {
   override def convertBack(what: Byte) = WarpByte(what)
 }
 
+trait WarpPrimitiveToShortConverter extends WarpPrimitiveConverter[Short] {
+  override def convert(what: WarpPackage): AlmValidation[Short] =
+    what match {
+      case WarpString(value) => value.toShortAlm
+      case WarpByte(value) => value.toShort.success
+      case WarpShort(value) => value.success
+      case WarpInt(value) => value.toShort.success
+      case WarpLong(value) => value.toShort.success
+      case WarpFloat(value) => value.toShort.success
+      case WarpDouble(value) => value.toShort.success
+      case WarpBigDecimal(value) => value.toShort.success
+      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not be a Short""").failure
+    }
+  override def convertBack(what: Short) = WarpShort(what)
+}
+
 trait WarpPrimitiveToIntConverter extends WarpPrimitiveConverter[Int] {
   override def convert(what: WarpPackage): AlmValidation[Int] =
     what match {
       case WarpString(value) => value.toIntAlm
       case WarpByte(value) => value.toInt.success
+      case WarpShort(value) => value.toInt.success
       case WarpInt(value) => value.success
       case WarpLong(value) => value.toInt.success
       case WarpFloat(value) => value.toInt.success
@@ -77,6 +96,7 @@ trait WarpPrimitiveToLongConverter extends WarpPrimitiveConverter[Long] {
     what match {
       case WarpString(value) => value.toLongAlm
       case WarpByte(value) => value.toLong.success
+      case WarpShort(value) => value.toLong.success
       case WarpInt(value) => value.toLong.success
       case WarpLong(value) => value.success
       case WarpFloat(value) => value.toLong.success
@@ -92,6 +112,7 @@ trait WarpPrimitiveToBigIntConverter extends WarpPrimitiveConverter[BigInt] {
     what match {
       case WarpString(value) => value.toBigIntAlm
       case WarpByte(value) => BigInt(value).success
+      case WarpShort(value) => BigInt(value).success
       case WarpInt(value) => BigInt(value).success
       case WarpLong(value) => BigInt(value).success
       case WarpBigInt(value) => value.success
@@ -107,6 +128,7 @@ trait WarpPrimitiveToFloatConverter extends WarpPrimitiveConverter[Float] {
     what match {
       case WarpString(value) => value.toFloatAlm
       case WarpByte(value) => value.toFloat.success
+      case WarpShort(value) => value.toFloat.success
       case WarpInt(value) => value.toFloat.success
       case WarpLong(value) => value.toFloat.success
       case WarpBigInt(value) => value.toFloat.success
@@ -123,6 +145,7 @@ trait WarpPrimitiveToDoubleConverter extends WarpPrimitiveConverter[Double] {
     what match {
       case WarpString(value) => value.toDoubleAlm
       case WarpByte(value) => value.toDouble.success
+      case WarpShort(value) => value.toDouble.success
       case WarpInt(value) => value.toDouble.success
       case WarpLong(value) => value.toDouble.success
       case WarpBigInt(value) => value.toDouble.success
@@ -139,6 +162,7 @@ trait WarpPrimitiveToBigDecimalConverter extends WarpPrimitiveConverter[BigDecim
     what match {
       case WarpString(value) => value.toDecimalAlm
       case WarpByte(value) => BigDecimal(value).success
+      case WarpShort(value) => BigDecimal(value).success
       case WarpInt(value) => BigDecimal(value).success
       case WarpLong(value) => BigDecimal(value).success
       case WarpBigInt(value) => BigDecimal(value).success

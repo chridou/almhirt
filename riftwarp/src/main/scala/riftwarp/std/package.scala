@@ -58,6 +58,7 @@ package object std {
   implicit object WarpPrimitiveToBooleanConverterInst extends WarpPrimitiveToBooleanConverter
   implicit object WarpPrimitiveToStringConverterInst extends WarpPrimitiveToStringConverter
   implicit object WarpPrimitiveToByteConverterInst extends WarpPrimitiveToByteConverter
+  implicit object WarpPrimitiveToShortConverterInst extends WarpPrimitiveToShortConverter
   implicit object WarpPrimitiveToIntConverterInst extends WarpPrimitiveToIntConverter
   implicit object WarpPrimitiveToLongConverterInst extends WarpPrimitiveToLongConverter
   implicit object WarpPrimitiveToBigIntConverterInst extends WarpPrimitiveToBigIntConverter
