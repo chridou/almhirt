@@ -25,10 +25,12 @@ object MessagePackParser {
       WarpBoolean(false)
     } else if (MessagePackTypecodes.isStr(formatByte)) {
       parseString(formatByte, reader)
+    } else if ((formatByte & 0x80) == 0) { // 10000000
+      WarpByte(formatByte.toByte)
     } else if (formatByte == MessagePackTypecodes.Int8) {
       WarpByte(reader.readByte)
     } else if (formatByte == MessagePackTypecodes.Int16) {
-      WarpInt(reader.readShort.toInt)
+      WarpShort(reader.readShort)
     } else if (formatByte == MessagePackTypecodes.Int32) {
       WarpInt(reader.readInt)
     } else if (formatByte == MessagePackTypecodes.Int64) {
@@ -59,15 +61,28 @@ object MessagePackParser {
   def parseSpecialType(formatByte: Int, reader: BinaryReader): WarpPackage = {
     val (customType, size) = MessagePackTypecodes.parseExtHeader(formatByte, reader)
     customType match {
-      case RiftwarpTypecodes.BigIntCode => parseBigInt(size, reader)
-      case RiftwarpTypecodes.BigDecimalCode => parseBigDecimal(size, reader)
-      case RiftwarpTypecodes.UuidCode => parseUuid(reader)
-      case RiftwarpTypecodes.UriCode => parseUri(size, reader)
-      case RiftwarpTypecodes.DateTimeCode => parseDateTime(size, reader)
-      case RiftwarpTypecodes.LocalDateTimeCode => parseLocalDateTime(size, reader)
-      case RiftwarpTypecodes.Tuple2Code => parseTuple2(size, reader)
-      case RiftwarpTypecodes.Tuple3Code => parseTuple3(size, reader)
-      case RiftwarpTypecodes.DurationCode => parseDuration(reader)
+      case RiftwarpTypecodes.BigIntCode =>
+        parseBigInt(size, reader)
+      case RiftwarpTypecodes.BigDecimalCode =>
+        parseBigDecimal(size, reader)
+      case RiftwarpTypecodes.UuidCode =>
+        parseUuid(reader)
+      case RiftwarpTypecodes.UriCode =>
+        parseUri(size, reader)
+      case RiftwarpTypecodes.DateTimeCode =>
+        parseDateTime(size, reader)
+      case RiftwarpTypecodes.LocalDateTimeCode =>
+        parseLocalDateTime(size, reader)
+      case RiftwarpTypecodes.Tuple2Code =>
+        parseTuple2(size, reader)
+      case RiftwarpTypecodes.Tuple3Code =>
+        parseTuple3(size, reader)
+      case RiftwarpTypecodes.DurationCode =>
+        parseDuration(reader)
+      case RiftwarpTypecodes.TreeCode =>
+        parseTree(size, reader)
+      case x =>
+        throw new Exception(s"$x is not a valid custom type for a WarpPackage encoded in a MessagePack 'ext' type")
     }
   }
 
@@ -116,8 +131,18 @@ object MessagePackParser {
     WarpAssociativeCollection((for (i <- 0 until numElems) yield (parseUnsafe(reader), parseUnsafe(reader))).toVector)
   }
 
-  def parseTree(formatByte: Int, reader: BinaryReader): WarpTree = {
-    ???
+  def parseTree(size: Int, reader: BinaryReader): WarpTree = {
+    val formatByte = reader.readUnsignedByte
+    val nestedTreeCollection = parseCollection(formatByte, reader)
+    WarpTree(parseTreeNode(nestedTreeCollection))
+  }
+
+  private def parseTreeNode(nestedTreeCollection: WarpPackage): Tree[WarpPackage] = {
+    nestedTreeCollection match {
+      case WarpCollection(Vector(label, WarpCollection(subforest))) =>
+        label.node(subforest.map(parseTreeNode): _*)
+      case x => throw new Exception("A tree node must be a collection of size 2 with the first element representing the label and the second representing the subforest.")
+    }
   }
 
   def parseTuple2(size: Int, reader: BinaryReader): WarpTuple2 = {

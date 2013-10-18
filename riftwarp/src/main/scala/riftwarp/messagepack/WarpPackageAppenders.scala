@@ -36,6 +36,7 @@ object WarpPackageAppenders {
       case prim: WarpBoolean => appendWarpBoolean(prim, writer)
       case prim: WarpString => appendWarpString(prim, writer)
       case prim: WarpByte => appendWarpByte(prim, writer)
+      case prim: WarpShort => appendWarpShort(prim, writer)
       case prim: WarpInt => appendWarpInt(prim, writer)
       case prim: WarpLong => appendWarpLong(prim, writer)
       case prim: WarpBigInt => appendWarpBigInt(prim, writer)
@@ -91,6 +92,7 @@ object WarpPackageAppenders {
   }
 
   private def appendWarpTreeNode(tree: scalaz.Tree[WarpPackage], writer: BinaryWriter) {
+    writer.writeUnsignedByte(0x80 | 2)
     appendWarpPackage(tree.rootLabel, writer)
     val children = tree.subForest.toVector
     val size = children.size
@@ -179,6 +181,10 @@ object WarpPackageAppenders {
   @inline
   def appendWarpByte(v: WarpByte, writer: BinaryWriter): BinaryWriter =
     RiftWarpPrimitiveAppenders.appendByte(v.value, writer)
+  
+  @inline
+  def appendWarpShort(v: WarpShort, writer: BinaryWriter): BinaryWriter =
+    RiftWarpPrimitiveAppenders.appendShort(v.value, writer)
 
   @inline
   def appendWarpInt(v: WarpInt, writer: BinaryWriter): BinaryWriter =

@@ -21,14 +21,15 @@ sealed trait WarpPrimitive extends WarpPackage {
   def value: Any
 }
 
-sealed trait WarpInteger extends WarpPrimitive
+sealed trait WarpIntegralInteger extends WarpPrimitive
 
 final case class WarpBoolean(override val value: Boolean) extends WarpPrimitive
 final case class WarpString(override val value: String) extends WarpPrimitive
-final case class WarpByte(override val value: Byte) extends WarpInteger
-final case class WarpInt(override val value: Int) extends WarpInteger
-final case class WarpLong(override val value: Long) extends WarpInteger
-final case class WarpBigInt(override val value: BigInt) extends WarpInteger
+final case class WarpByte(override val value: Byte) extends WarpIntegralInteger
+final case class WarpInt(override val value: Int) extends WarpIntegralInteger
+final case class WarpShort(override val value: Short) extends WarpIntegralInteger
+final case class WarpLong(override val value: Long) extends WarpIntegralInteger
+final case class WarpBigInt(override val value: BigInt) extends WarpPrimitive
 final case class WarpFloat(override val value: Float) extends WarpPrimitive
 final case class WarpDouble(override val value: Double) extends WarpPrimitive
 final case class WarpBigDecimal(override val value: BigDecimal) extends WarpPrimitive

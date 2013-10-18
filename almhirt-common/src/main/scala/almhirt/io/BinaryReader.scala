@@ -2,6 +2,7 @@ package almhirt.io
 
 trait BinaryReader {
   final def read = readByte
+  final def readBytes(size: Int): Array[Byte] = readByteArray(size)
   def readByte: Byte
   def readUnsignedByte: Int
   def readShort: Short
@@ -11,13 +12,17 @@ trait BinaryReader {
   def readFloat: Float
   def readDouble: Double
   def readByteArray(size: Int): Array[Byte]
-  final def readBytes(size: Int): Array[Byte] = readByteArray(size)
+  def slice(size: Int): BinaryReader
+  def advance(distance: Int)
 }
 
 object BinaryReader {
   def apply(bytes: Array[Byte]): BinaryReader = {
     val byteBuffer = java.nio.ByteBuffer.wrap(bytes)
-    new BinaryReader {
+    new SimpleReaderImpl(byteBuffer)
+  }
+  
+  private class SimpleReaderImpl(byteBuffer: java.nio.ByteBuffer) extends BinaryReader {
       def readByte: Byte = byteBuffer.get
       def readUnsignedByte: Int = byteBuffer.get & 0xff
       def readShort: Short = byteBuffer.getShort
@@ -29,7 +34,18 @@ object BinaryReader {
       def readByteArray(size: Int): Array[Byte] = {
         val array = Array.ofDim[Byte](size)
         byteBuffer.get(array)
-        array}
-    }
+        array
+      }
+      def advance(distance: Int) {
+        byteBuffer.position(byteBuffer.position() + distance)
+      }
+      def slice(size: Int): BinaryReader = {
+        val sliceBuffer = byteBuffer.slice()
+        sliceBuffer.position(byteBuffer.position())
+        sliceBuffer.limit(byteBuffer.position()+size)
+        new SimpleReaderImpl(sliceBuffer)
+      }
   }
+  
+  
 }

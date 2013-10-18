@@ -5,10 +5,10 @@ import scalaz._, Scalaz._
 /**
  * Writes items as binary representations.
  *
- * Warning! Implementations tend to be mutable!
+ * Warning! Consider implementations to be mutable!
  */
-trait BinaryWriter {
-  final def write(v: Byte) = writeByte(v)
+trait BinaryWriter { self =>
+  final def write[T: CanWriteIntoBinaryWriter](v: T) = implicitly[CanWriteIntoBinaryWriter[T]].writeInto(v, self)
   def writeByte(v: Byte): BinaryWriter
   def writeUnsignedByte(v: Int): BinaryWriter
   def writeShort(v: Short): BinaryWriter

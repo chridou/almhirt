@@ -28,19 +28,31 @@ object RiftWarpPrimitiveAppenders {
 
   @inline
   def appendByte(v: Byte, writer: BinaryWriter): BinaryWriter =
-    writer.writeUnsignedByte(MessagePackTypecodes.Int8).write(v)
+    if ((v & 0x80) == 0) { // 10000000
+      writer.writeUnsignedByte(v)
+    } else
+      writer.writeUnsignedByte(MessagePackTypecodes.Int8).writeByte(v)
 
   @inline
   def appendShort(v: Short, writer: BinaryWriter): BinaryWriter =
-    writer.writeUnsignedByte(MessagePackTypecodes.Int16).writeShort(v)
+    if (v >= Byte.MinValue && v <= Byte.MaxValue)
+      appendByte(v.toByte, writer)
+    else
+      writer.writeUnsignedByte(MessagePackTypecodes.Int16).writeShort(v)
 
   @inline
   def appendInt(v: Int, writer: BinaryWriter): BinaryWriter =
-    writer.writeUnsignedByte(MessagePackTypecodes.Int32).writeInt(v)
+    if (v >= Short.MinValue && v <= Short.MaxValue)
+      appendShort(v.toShort, writer)
+    else
+      writer.writeUnsignedByte(MessagePackTypecodes.Int32).writeInt(v)
 
   @inline
   def appendLong(v: Long, writer: BinaryWriter): BinaryWriter =
-    writer.writeUnsignedByte(MessagePackTypecodes.Int64).writeLong(v)
+    if (v >= Int.MinValue && v <= Int.MaxValue)
+      appendInt(v.toInt, writer)
+    else
+      writer.writeUnsignedByte(MessagePackTypecodes.Int64).writeLong(v)
 
   @inline
   def appendBigInt(v: BigInt, writer: BinaryWriter): BinaryWriter = {
@@ -95,9 +107,9 @@ object RiftWarpPrimitiveAppenders {
   @inline
   def appendExt(data: Array[Byte], customType: Int, writer: BinaryWriter): BinaryWriter = {
     if (data.length < 256) {
-      writer.writeUnsignedByte(MessagePackTypecodes.Ext8).write(BinaryConverter.toUnsignedByte(data.length)).writeUnsignedByte(customType).writeByteArray(data)
+      writer.writeUnsignedByte(MessagePackTypecodes.Ext8).writeUnsignedByte(data.length).writeUnsignedByte(customType).writeByteArray(data)
     } else if (data.length < 256 * 256) {
-      writer.writeUnsignedByte(MessagePackTypecodes.Ext16).writeShort(BinaryConverter.toUnsignedShort(data.length)).writeUnsignedByte(customType).writeByteArray(data)
+      writer.writeUnsignedByte(MessagePackTypecodes.Ext16).writeUnsignedShort(data.length).writeUnsignedByte(customType).writeByteArray(data)
     } else {
       writer.writeUnsignedByte(MessagePackTypecodes.Ext32).writeInt(data.length).writeUnsignedByte(customType).writeByteArray(data)
     }
