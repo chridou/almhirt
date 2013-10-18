@@ -25,19 +25,19 @@ class MessagePackWarpObjectSerialization extends FunSuite with MustMatchers {
   implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(maxSize) }
 
 
-//  test("""A WarpObject with elements and without a WarpDecriptor must dematerialize and rematerialize to an equal instance""") {
-//    val obj = WarpObject(None, Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))
-//    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-//    val rematerialized = dematerialized.rematerialize.forceResult
-//    rematerialized must equal(obj)
-//  }
-//  
-//  test("""A WarpObject with elements and with a WarpDecriptor("a", None) must dematerialize and rematerialize to an equal instance""") {
-//    val obj = WarpObject(Some(WarpDescriptor("a", None)), Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))
-//    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-//    val rematerialized = dematerialized.rematerialize.forceResult
-//    rematerialized must equal(obj)
-//  }
+  test("""A WarpObject with elements and without a WarpDecriptor must dematerialize and rematerialize to an equal instance""") {
+    val obj = WarpObject(None, Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))
+    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(obj)
+  }
+  
+  test("""A WarpObject with elements and with a WarpDecriptor("a", None) must dematerialize and rematerialize to an equal instance""") {
+    val obj = WarpObject(Some(WarpDescriptor("a", None)), Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))
+    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(obj)
+  }
   
   test("""A WarpObject with elements and with a WarpDecriptor("a", Some(1)) must dematerialize and rematerialize to an equal instance""") {
     val obj = WarpObject(Some(WarpDescriptor("a", Some(1))), Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))
@@ -46,25 +46,25 @@ class MessagePackWarpObjectSerialization extends FunSuite with MustMatchers {
     rematerialized must equal(obj)
   }
   
-//  test("""A WarpObject without elements and without a WarpDecriptor must dematerialize and rematerialize to an equal instance""") {
-//    val obj = WarpObject(None, Vector.empty)
-//    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-//    val rematerialized = dematerialized.rematerialize.forceResult
-//    rematerialized must equal(obj)
-//  }
-//  
-//  test("""A WarpObject without elements and with a WarpDecriptor("a", None) must dematerialize and rematerialize to an equal instance""") {
-//    val obj = WarpObject(Some(WarpDescriptor("a", None)), Vector.empty)
-//    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-//    val rematerialized = dematerialized.rematerialize.forceResult
-//    rematerialized must equal(obj)
-//  }
-//  
-//  test("""A WarpObject without elements and with a WarpDecriptor("a", Some(1)) must dematerialize and rematerialize to an equal instance""") {
-//    val obj = WarpObject(Some(WarpDescriptor("a", Some(1))), Vector.empty)
-//    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-//    val rematerialized = dematerialized.rematerialize.forceResult
-//    rematerialized must equal(obj)
-//  }
+  test("""A WarpObject without elements and without a WarpDecriptor must dematerialize and rematerialize to an equal instance""") {
+    val obj = WarpObject(None, Vector.empty)
+    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(obj)
+  }
+  
+  test("""A WarpObject without elements and with a WarpDecriptor("a", None) must dematerialize and rematerialize to an equal instance""") {
+    val obj = WarpObject(Some(WarpDescriptor("a", None)), Vector.empty)
+    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(obj)
+  }
+  
+  test("""A WarpObject without elements and with a WarpDecriptor("a", Some(1)) must dematerialize and rematerialize to an equal instance""") {
+    val obj = WarpObject(Some(WarpDescriptor("a", Some(1))), Vector.empty)
+    val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(obj)
+  }
 
 }

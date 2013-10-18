@@ -195,11 +195,12 @@ object MessagePackParser {
     try {
       MessagePackTypecodes.parseExtHeader(formatByte, reader)
       val identifier = readString(reader.readUnsignedByte, reader)
-      val version: Option[Int] = reader.readUnsignedByte match {
+      val versionFormatByte = reader.readUnsignedByte
+      val version: Option[Int] = versionFormatByte match {
         case MessagePackTypecodes.Null =>
           None
-        case formatByte =>
-          val v = readInteger(formatByte, reader).as[Int].resultOrEscalate
+        case _ =>
+          val v = readInteger(versionFormatByte, reader).as[Int].resultOrEscalate
           Some(v)
       }
       WarpDescriptor(identifier, version)
@@ -232,7 +233,7 @@ object MessagePackParser {
         case MessagePackTypecodes.Null =>
           None
         case formatByte => 
-          Some(parseWarpDescriptor(wdFormatByte, reader))
+          Some(parseWarpDescriptor(formatByte, reader))
       }
       val numElems = MessagePackTypecodes.parseArrayHeader(reader.readUnsignedByte, reader)
       val elems = (for (n <- 0 until numElems) yield parseElement(reader))

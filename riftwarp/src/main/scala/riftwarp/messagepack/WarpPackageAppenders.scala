@@ -20,17 +20,6 @@ object WarpPackageAppenders {
   }
 
   @inline
-  def appendWarpDescriptor(wd: WarpDescriptor, writer: BinaryWriter): BinaryWriter = {
-    val wdWriter = writer.spawnNew()
-    RiftWarpPrimitiveAppenders.appendString(wd.identifier, wdWriter)
-    wd.version match {
-      case Some(v) => wdWriter.writeInt(v)
-      case None => wdWriter.writeUnsignedByte(MessagePackTypecodes.Null)
-    }
-    RiftWarpPrimitiveAppenders.appendExt(wdWriter.toArray, RiftwarpTypecodes.WarpDescriptorCode, writer)
-  }
-
-  @inline
   def appendWarpPrimitive(p: WarpPrimitive, writer: BinaryWriter): BinaryWriter = {
     p match {
       case prim: WarpBoolean => appendWarpBoolean(prim, writer)
@@ -138,6 +127,19 @@ object WarpPackageAppenders {
       writer.writeInt(size)
     }
     writer.writeBytes(v.bytes)
+  }
+  
+  @inline
+  def appendWarpDescriptor(wd: WarpDescriptor, writer: BinaryWriter): BinaryWriter = {
+    val wdWriter = writer.spawnNew()
+    RiftWarpPrimitiveAppenders.appendString(wd.identifier, wdWriter)
+    wd.version match {
+      case Some(v) => 
+        RiftWarpPrimitiveAppenders.appendInt(v, wdWriter)
+      case None => 
+        wdWriter.writeUnsignedByte(MessagePackTypecodes.Null)
+    }
+    RiftWarpPrimitiveAppenders.appendExt(wdWriter.toArray, RiftwarpTypecodes.WarpDescriptorCode, writer)
   }
 
   def appendWarpObject(v: WarpObject, writer: BinaryWriter): BinaryWriter = {
