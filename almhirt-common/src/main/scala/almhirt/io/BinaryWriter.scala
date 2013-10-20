@@ -26,7 +26,13 @@ trait BinaryWriter { self =>
 }
 
 object BinaryWriter {
-  def apply(underlying: Array[Byte]): BinaryWriter = {
+  def apply(initialCapacity: Int, maxSize: Option[Int] = None, maxIncrement: Option[Int] = None): BinaryWriter = {
+    val effMaxInc = maxIncrement | initialCapacity
+    val effMaxSize = maxSize | Int.MaxValue
+    new GrowingBinaryWriter(initialCapacity, effMaxInc, effMaxSize)
+  }
+
+  def backed(underlying: Array[Byte]): BinaryWriter = {
     val writer = java.nio.ByteBuffer.wrap(underlying)
     var count = 0
     new BinaryWriter {
@@ -53,11 +59,11 @@ object BinaryWriter {
       }
 
       def spawnNew(capacity: Option[Int] = None): BinaryWriter =
-        BinaryWriter(new Array[Byte](capacity | underlying.length))
+        backed(new Array[Byte](capacity | underlying.length))
     }
   }
 
-  def apply(fixedCapacity: Int): BinaryWriter = {
+  def fixed(fixedCapacity: Int): BinaryWriter = {
     val writer = java.nio.ByteBuffer.allocate(fixedCapacity)
     var count = 0
     new BinaryWriter {
@@ -83,14 +89,29 @@ object BinaryWriter {
         target
       }
 
-      def spawnNew(capacity: Option[Int] = None): BinaryWriter = BinaryWriter(capacity | fixedCapacity)
+      def spawnNew(capacity: Option[Int] = None): BinaryWriter = fixed(capacity | fixedCapacity)
     }
   }
 
-  def apply(initialCapacity: Int, maxIncrement: Option[Int] = None, maxSize: Option[Int] = None): BinaryWriter = {
-    val effMaxInc = maxIncrement | initialCapacity
-    val effMaxSize = maxSize | Int.MaxValue
-    ???
-  }
+}
+
+private[io] class GrowingBinaryWriter(initialCapacity: Int, maxIncrement: Int, maxSize: Int) extends BinaryWriter {
+  var count = 0
+  var currentBuffer: java.nio.ByteBuffer = java.nio.ByteBuffer.allocate(initialCapacity)
+  
+  override def writeByte(v: Byte): BinaryWriter = ???
+  override def writeUnsignedByte(v: Int): BinaryWriter = ???
+  override def writeShort(v: Short): BinaryWriter = ???
+  override def writeUnsignedShort(v: Int): BinaryWriter = ???
+  override def writeInt(v: Int): BinaryWriter = ???
+  override def writeLong(v: Long): BinaryWriter = ???
+  override def writeFloat(v: Float): BinaryWriter = ???
+  override def writeDouble(v: Double): BinaryWriter = ???
+  override def writeByteArray(v: Array[Byte]): BinaryWriter = ???
+  override def writeBytes(v: Seq[Byte]): BinaryWriter = ???
+
+  override def toArray: Array[Byte] = ???
+
+  override def spawnNew(capacity: Option[Int] = None): BinaryWriter = new GrowingBinaryWriter(initialCapacity, maxIncrement, maxSize)
 
 }
