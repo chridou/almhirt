@@ -56,8 +56,12 @@ object RiftWarpPrimitiveAppenders {
 
   @inline
   def appendBigInt(v: BigInt, writer: BinaryWriter): BinaryWriter = {
-    val bytes = v.toByteArray
-    appendExt(bytes, RiftwarpTypecodes.BigIntCode, writer)
+    if (v >= Long.MinValue && v <= Long.MaxValue)
+      appendLong(v.toLong, writer)
+    else {
+      val bytes = v.toByteArray
+      appendExt(bytes, RiftwarpTypecodes.BigIntCode, writer)
+    }
   }
 
   @inline

@@ -114,7 +114,7 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(sample)
   }
-  
+
   test("A WarpByte(Byte.MinValue) must dematerialize and rematerialize to an equal instance") {
     val sample = WarpByte(Byte.MinValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -135,7 +135,7 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(WarpByte(Byte.MinValue))
   }
-  
+
   test("A WarpShort(Byte.MaxValue) must dematerialize and rematerialize to a WarpByte(Byte.MaxValue)") {
     val sample = WarpShort(Byte.MaxValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -149,14 +149,14 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(sample)
   }
-  
+
   test("A WarpShort(Short.MaxValue) must dematerialize and rematerialize to an equal instance") {
     val sample = WarpShort(Short.MaxValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(sample)
   }
-  
+
   test("A WarpInt(0) must dematerialize and rematerialize to a WarpByte(0)") {
     val sample = WarpInt(0)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -170,7 +170,7 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(WarpByte(Byte.MinValue))
   }
-  
+
   test("A WarpInt(Byte.MaxValue) must dematerialize and rematerialize to a WarpByte(Byte.MaxValue)") {
     val sample = WarpInt(Byte.MaxValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -184,14 +184,14 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(WarpShort(Short.MinValue))
   }
-  
+
   test("A WarpInt(Short.MaxValue) must dematerialize and rematerialize to a WarpShort(Short.MaxValue)") {
     val sample = WarpInt(Short.MaxValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(WarpShort(Short.MaxValue))
   }
-  
+
   test("A WarpInt(Int.MinValue) must dematerialize and rematerialize to an equal instance") {
     val sample = WarpInt(Int.MinValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -219,7 +219,7 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(WarpByte(Byte.MinValue))
   }
-  
+
   test("A WarpLong(Byte.MaxValue) must dematerialize and rematerialize to a WarpByte(Byte.MaxValue)") {
     val sample = WarpLong(Byte.MaxValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -233,14 +233,14 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(WarpShort(Short.MinValue))
   }
-  
+
   test("A WarpLong(Short.MaxValue) must dematerialize and rematerialize to a WarpShort(Short.MaxValue)") {
     val sample = WarpLong(Short.MaxValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(WarpShort(Short.MaxValue))
   }
-  
+
   test("A WarpLong(Int.MinValue) must dematerialize and rematerialize to a WarpInt(Int.MinValue)") {
     val sample = WarpLong(Int.MinValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -254,7 +254,7 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(WarpInt(Int.MaxValue))
   }
-  
+
   test("A WarpLong(Long.MinValue) must dematerialize and rematerialize to an equal instance") {
     val sample = WarpLong(Long.MinValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -269,8 +269,78 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     rematerialized must equal(sample)
   }
 
-  test("A WarpBigInt(0) must dematerialize and rematerialize to an equal instance") {
+  test("A WarpBigInt(0) must dematerialize and rematerialize to a WarpByte(0)") {
     val sample = WarpBigInt(0)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpByte(0))
+  }
+
+  test("A WarpBigInt(Byte.MinValue) must dematerialize and rematerialize to a WarpByte(Byte.MinValue)") {
+    val sample = WarpBigInt(Byte.MinValue)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpByte(Byte.MinValue))
+  }
+
+  test("A WarpBigInt(Byte.MaxValue) must dematerialize and rematerialize to a WarpByte(Byte.MaxValue)") {
+    val sample = WarpBigInt(Byte.MaxValue)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpByte(Byte.MaxValue))
+  }
+
+  test("A WarpBigInt(Short.MinValue) must dematerialize and rematerialize to a WarpShort(Short.MinValue)") {
+    val sample = WarpBigInt(Short.MinValue)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpShort(Short.MinValue))
+  }
+
+  test("A WarpBigInt(Short.MaxValue) must dematerialize and rematerialize to a WarpShort(Short.MaxValue)") {
+    val sample = WarpBigInt(Short.MaxValue)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpShort(Short.MaxValue))
+  }
+
+  test("A WarpBigInt(Int.MinValue) must dematerialize and rematerialize to a WarpInt(Int.MinValue)") {
+    val sample = WarpBigInt(Int.MinValue)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpInt(Int.MinValue))
+  }
+
+  test("A WarpBigInt(Int.MaxValue) must dematerialize and rematerialize to a WarpInt(Int.MaxValue)") {
+    val sample = WarpBigInt(Int.MaxValue)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpInt(Int.MaxValue))
+  }
+
+  test("A WarpBigInt(Long.MinValue) must dematerialize and rematerialize to a WarpLong(Int.MaxValue)") {
+    val sample = WarpBigInt(Long.MinValue)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpLong(Long.MinValue))
+  }
+
+  test("A WarpBigInt(Long.MaxValue) must dematerialize and rematerialize to a WarpLong(Int.MaxValue)") {
+    val sample = WarpBigInt(Long.MaxValue)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(WarpLong(Long.MaxValue))
+  }
+
+  test("A WarpBigInt(Long.MinValue - 1) must dematerialize and rematerialize to an equal instance") {
+    val sample = WarpBigInt(BigInt(Long.MinValue) - 1)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(sample)
+  }
+
+  test("A WarpBigInt(Long.MaxValue + 1) must dematerialize and rematerialize to an equal instance") {
+    val sample = WarpBigInt(BigInt(Long.MaxValue) + 1)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(sample)
