@@ -77,16 +77,17 @@ object WarpPackageAppenders {
 
   def appendWarpTree(v: WarpTree, writer: BinaryWriter): BinaryWriter = {
     val treeWriter = writer.spawnNew(None)
+    appendWarpTreeNode(v.tree, treeWriter)
     RiftWarpPrimitiveAppenders.appendExt(treeWriter.toArray, RiftwarpTypecodes.TreeCode, writer)
   }
 
   private def appendWarpTreeNode(tree: scalaz.Tree[WarpPackage], writer: BinaryWriter) {
-    writer.writeUnsignedByte(0x80 | 2)
+    writer.writeUnsignedByte(0x90 | 2)
     appendWarpPackage(tree.rootLabel, writer)
     val children = tree.subForest.toVector
     val size = children.size
     if (size < 16) {
-      val c = 0x80 | size // 10000000
+      val c = 0x90 | size 
       writer.writeUnsignedByte(c)
     } else if (size < 256 * 256) {
       writer.writeUnsignedByte(MessagePackTypecodes.Array16)

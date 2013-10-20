@@ -169,7 +169,15 @@ object MessagePackParser {
     nestedTreeCollection match {
       case WarpCollection(Vector(label, WarpCollection(subforest))) =>
         label.node(subforest.map(parseTreeNode): _*)
-      case x => throw new Exception("A tree node must be a collection of size 2 with the first element representing the label and the second representing the subforest.")
+      case WarpCollection(items @ Vector(a,b)) =>
+        throw new Exception(
+          s"""	|A tree node must be a collection of size 2 with the first element representing the label and the second representing the subforest. 
+          		|Received a WarpCollection of size ${items.size}.
+          		|The first element is a "$a",
+          		|the second is a "$b".""".stripMargin)
+      case x =>
+        throw new Exception(
+          s"""A tree node must be a collection of size 2 with the first element representing the label and the second representing the subforest. Received a $x.""")
     }
   }
 
@@ -232,7 +240,7 @@ object MessagePackParser {
       val wd: Option[WarpDescriptor] = wdFormatByte match {
         case MessagePackTypecodes.Null =>
           None
-        case formatByte => 
+        case formatByte =>
           Some(parseWarpDescriptor(formatByte, reader))
       }
       val numElems = MessagePackTypecodes.parseArrayHeader(reader.readUnsignedByte, reader)

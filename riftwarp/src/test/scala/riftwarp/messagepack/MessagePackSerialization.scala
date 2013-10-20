@@ -566,21 +566,4 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
   }
-
-  //  test(s"""WarpTree("A") must dematerialize and rematerialize""") {
-  //    val sample = WarpTree(WarpString("A").asInstanceOf[WarpPackage].leaf)
-  //    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-  //    val rematerialized = dematerialized.rematerialize.forceResult
-  //  }
-  //
-  //  test(s"""WarpTree("A(B(), C(D(), E()))") must dematerialize and rematerialize""") {
-  //    val sample = WarpTree(
-  //      WarpString("A").asInstanceOf[WarpPackage].node(
-  //        WarpString("B").asInstanceOf[WarpPackage].leaf,
-  //        WarpString("C").asInstanceOf[WarpPackage].node(
-  //          WarpString("D").asInstanceOf[WarpPackage].leaf,
-  //          WarpString("E").asInstanceOf[WarpPackage].leaf)))
-  //    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-  //    val rematerialized = dematerialized.rematerialize.forceResult
-  //  }
 }
