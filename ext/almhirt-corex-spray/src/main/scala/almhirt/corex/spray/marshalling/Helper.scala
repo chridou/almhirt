@@ -4,6 +4,7 @@ import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import spray.http.{ MediaType, MediaTypes }
+import almhirt.corex.spray.AlmhirtMediaTypes
 
 private[marshalling] object Helper {
   def extractChannel(mediaType: MediaType): String =
@@ -13,6 +14,8 @@ private[marshalling] object Helper {
       "json"
     else if (mediaType == MediaTypes.`application/xml`)
       "xml"
+    else if (mediaType == AlmhirtMediaTypes.`application/x-msgpack`)
+      "msgpack"
     else
       mediaType.value.split('+')(1)
 
@@ -22,6 +25,8 @@ private[marshalling] object Helper {
     else if (mediaType == MediaTypes.`application/json`)
       true
     else if (mediaType == MediaTypes.`application/xml`)
+      true
+    else if (mediaType == AlmhirtMediaTypes.`application/x-msgpack`)
       true
     else
       mediaType.value.split('+').size == 2
