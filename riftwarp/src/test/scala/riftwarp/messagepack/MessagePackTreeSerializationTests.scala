@@ -20,10 +20,6 @@ class MessagePackTreeSerializationTests extends FunSuite with MustMatchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
 
-  val maxSize = 12 * 1024 * 1024
-
-  implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(maxSize) }
-
   test(s"""WarpTree("A") must dematerialize and rematerialize""") {
     val sample = WarpTree(WarpString("A").asInstanceOf[WarpPackage].leaf)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]

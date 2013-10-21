@@ -22,8 +22,6 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
 
   val maxSize = 12 * 1024 * 1024
 
-  implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(maxSize) }
-
   test("A WarpBoolean(false) must dematerialize and rematerialize to an equal instance") {
     val sample = WarpBoolean(false)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]

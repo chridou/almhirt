@@ -20,11 +20,6 @@ class MessagePackWarpObjectSerialization extends FunSuite with MustMatchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
 
-  val maxSize = 12 * 1024 * 1024
-
-  implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(maxSize) }
-
-
   test("""A WarpObject with elements and without a WarpDecriptor must dematerialize and rematerialize to an equal instance""") {
     val obj = WarpObject(None, Vector(WarpElement("propA", Some(WarpDouble(123.456))), WarpElement("propB", None)))
     val dematerialized = obj.dematerialize[Array[Byte] @@ WarpTags.MessagePack]

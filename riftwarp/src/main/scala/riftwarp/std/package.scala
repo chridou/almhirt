@@ -20,8 +20,7 @@ package object std {
     implicit val StdLibXmlStringRematerializer = FromXmlStringRematerializer
 
     implicit val MessagePackRematerializer =  new messagepack.FromMessagePackByteArrayRematerializer{}
-    implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(1024 * 32) }
- 
+    implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter() }
   }
   
   implicit val WarpPrimitiveBooleanPacker = BooleanWarpPacker

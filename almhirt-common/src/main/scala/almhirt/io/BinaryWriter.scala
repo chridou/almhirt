@@ -1,6 +1,8 @@
 package almhirt.io
 
+import scala.annotation.tailrec
 import scalaz._, Scalaz._
+import almhirt.io.impl.GrowingBinaryWriter
 
 /**
  * Writes items as binary representations.
@@ -26,10 +28,9 @@ trait BinaryWriter { self =>
 }
 
 object BinaryWriter {
-  def apply(initialCapacity: Int, maxSize: Option[Int] = None, maxIncrement: Option[Int] = None): BinaryWriter = {
-    val effMaxInc = maxIncrement | initialCapacity
+  def apply(initialCapacity: Int = 2048, maxSize: Option[Int] = None, maxIncrement: Int = 4 * 1024 * 1024): BinaryWriter = {
     val effMaxSize = maxSize | Int.MaxValue
-    new GrowingBinaryWriter(initialCapacity, effMaxInc, effMaxSize)
+    new GrowingBinaryWriter(initialCapacity, effMaxSize, maxIncrement)
   }
 
   def backed(underlying: Array[Byte]): BinaryWriter = {
@@ -92,26 +93,5 @@ object BinaryWriter {
       def spawnNew(capacity: Option[Int] = None): BinaryWriter = fixed(capacity | fixedCapacity)
     }
   }
-
-}
-
-private[io] class GrowingBinaryWriter(initialCapacity: Int, maxIncrement: Int, maxSize: Int) extends BinaryWriter {
-  var count = 0
-  var currentBuffer: java.nio.ByteBuffer = java.nio.ByteBuffer.allocate(initialCapacity)
-  
-  override def writeByte(v: Byte): BinaryWriter = ???
-  override def writeUnsignedByte(v: Int): BinaryWriter = ???
-  override def writeShort(v: Short): BinaryWriter = ???
-  override def writeUnsignedShort(v: Int): BinaryWriter = ???
-  override def writeInt(v: Int): BinaryWriter = ???
-  override def writeLong(v: Long): BinaryWriter = ???
-  override def writeFloat(v: Float): BinaryWriter = ???
-  override def writeDouble(v: Double): BinaryWriter = ???
-  override def writeByteArray(v: Array[Byte]): BinaryWriter = ???
-  override def writeBytes(v: Seq[Byte]): BinaryWriter = ???
-
-  override def toArray: Array[Byte] = ???
-
-  override def spawnNew(capacity: Option[Int] = None): BinaryWriter = new GrowingBinaryWriter(initialCapacity, maxIncrement, maxSize)
 
 }

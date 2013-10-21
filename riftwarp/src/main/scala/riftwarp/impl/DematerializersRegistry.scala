@@ -29,7 +29,7 @@ object DematerializersRegistry {
     reg.add(ToHtmlStringDematerializer)
     reg.add(ToWarpPackageDematerializer)
     reg.add(ToExplodedDematerializer)
-    reg.add(new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter(1024 * 32) })
+    reg.add(new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter() })
     reg
   }
 
