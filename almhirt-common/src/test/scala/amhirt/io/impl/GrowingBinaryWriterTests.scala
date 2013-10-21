@@ -120,6 +120,34 @@ class GrowingBinaryWriterTests extends FunSuite with MustMatchers {
     writer.toArray must equal(expected)
   }
 
+  test("""A GrowingBinaryWriter(initialCapacity = 0, maxSize = 0, maxIncrement = 0) must store an empty Array""") {
+    val writer = new GrowingBinaryWriter(initialCapacity = 0, maxSize = 0, maxIncrement = 0)
+    val sample = Array.empty[Byte]
+    writer.writeByteArray(sample)
+    writer.toArray must equal(sample)
+  }
+
+  test("""A GrowingBinaryWriter(initialCapacity = 0, maxSize = 1, maxIncrement = 0) must store an empty Array""") {
+    val writer = new GrowingBinaryWriter(initialCapacity = 0, maxSize = 1, maxIncrement = 0)
+    val sample = Array.empty[Byte]
+    writer.writeByteArray(sample)
+    writer.toArray must equal(sample)
+  }
+
+  test("""A GrowingBinaryWriter(initialCapacity = 1, maxSize = 1, maxIncrement = 0) must store an empty Array""") {
+    val writer = new GrowingBinaryWriter(initialCapacity = 1, maxSize = 1, maxIncrement = 0)
+    val sample = Array.empty[Byte]
+    writer.writeByteArray(sample)
+    writer.toArray must equal(sample)
+  }
+  
+  test("""A GrowingBinaryWriter(initialCapacity = 1, maxSize = 1, maxIncrement = 1) must store an empty Array""") {
+    val writer = new GrowingBinaryWriter(initialCapacity = 1, maxSize = 1, maxIncrement = 1)
+    val sample = Array.empty[Byte]
+    writer.writeByteArray(sample)
+    writer.toArray must equal(sample)
+  }
+  
   test("""A GrowingBinaryWriter(initialCapacity = 1, maxSize = 1, maxIncrement = 0) must store an Array of 1 byte""") {
     val writer = new GrowingBinaryWriter(initialCapacity = 1, maxSize = 1, maxIncrement = 0)
     val sample = Array(1.toByte)

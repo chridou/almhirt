@@ -20,8 +20,6 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
 
-  val maxSize = 12 * 1024 * 1024
-
   test("A WarpBoolean(false) must dematerialize and rematerialize to an equal instance") {
     val sample = WarpBoolean(false)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -566,72 +564,5 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized must equal(sample)
-  }
-
-  test("A WarpBytes(empty) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpBytes(Vector.empty)
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
-  }
-
-  test("A WarpBytes(1 byte) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpBytes(Array.fill(1)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
-  }
-
-  test("A WarpBytes(255 bytes) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpBytes(Array.fill(255)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
-  }
-
-  test("A WarpBytes(256 bytes) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpBytes(Array.fill(256)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
-  }
-
-  test("A WarpBytes(256*256-1 bytes) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpBytes(Array.fill(256 * 256 - 1)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
-  }
-
-  test("A WarpBytes(256*256 bytes) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpBytes(Array.fill(256 * 256)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
-  }
-
-  test("A WarpBytes(256*256*2 bytes) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpBytes(Array.fill(256 * 256 * 2)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
-  }
-
-  test(s"A WarpBytes(${256 * 256 * 32} bytes) must dematerialize and rematerialize to an equal instance") {
-    val sample = WarpBytes(Array.fill(256 * 256 * 32)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized must equal(sample)
-  }
-
-  test(s"WarpBytes(${maxSize - 10} bytes) must dematerialize") {
-    val sample = WarpBytes(Array.fill(maxSize - 10)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-  }
-
-  test(s"WarpBytes(${maxSize - 10} bytes) must dematerialize and rematerialize") {
-    val sample = WarpBytes(Array.fill(maxSize - 10)(1.toByte))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
   }
 }
