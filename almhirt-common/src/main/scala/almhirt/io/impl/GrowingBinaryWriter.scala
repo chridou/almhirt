@@ -99,7 +99,7 @@ class GrowingBinaryWriter(initialCapacity: Int, maxSize: Int, maxIncrement: Int)
     this
   }
 
-  override def writeBytes(v: Seq[Byte]): BinaryWriter = writeBytes(v.toArray)
+  override def writeBytes(v: Seq[Byte]): BinaryWriter = writeByteArray(v.toArray)
 
   override def toArray: Array[Byte] = {
     createCompleteArray(addBufferArray(currentBuffer, previousData))
