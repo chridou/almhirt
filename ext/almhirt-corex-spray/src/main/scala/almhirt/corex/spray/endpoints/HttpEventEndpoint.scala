@@ -2,9 +2,6 @@ package almhirt.corex.spray.endpoints
 
 import scala.language.postfixOps
 import almhirt.common._
-import almhirt.components.CommandEndpoint
-import almhirt.components.ExecutionStateTracker._
-import almhirt.commanding._
 import spray.routing._
 import spray.http._
 import spray.routing.directives._
