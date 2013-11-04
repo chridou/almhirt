@@ -7,8 +7,7 @@ import riftwarp._
 import spray.json._
 
 object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Json] {
-  val channel = "json"
-  val dimension = classOf[String].getName()
+  override val channel = WarpChannels.`rift-json`
   def rematerialize(what: String @@ WarpTags.Json, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] = {
     if (what.startsWith("{") || what.startsWith("[")) {
       try {

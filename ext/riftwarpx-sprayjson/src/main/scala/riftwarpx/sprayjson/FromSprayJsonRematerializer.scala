@@ -9,6 +9,7 @@ import spray.json._
 import riftwarp.std.Base64BlobWarpUnpacker
 
 object FromSprayJsonRematerializer extends Rematerializer[JsValue] {
+  override val channel = WarpChannels.`rift-json-spray`
   override def rematerialize(what: JsValue, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
     extract(what)
 

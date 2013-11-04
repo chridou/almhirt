@@ -10,8 +10,7 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   type ValueRepr = XmlElem
   type ObjRepr = XmlElem
 
-  val channel = "html"
-  val dimension = classOf[XmlElem].getName()
+  override val channel = WarpChannels.`rift-html-std`
 
   override def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): XmlElem =
     <html>

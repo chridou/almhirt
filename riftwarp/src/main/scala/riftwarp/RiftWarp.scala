@@ -16,29 +16,31 @@ trait RiftWarp {
   def dematerializers: Dematerializers
   def rematerializers: Rematerializers
 
-  def departure(dimension: String, channel: String, what: Any, options: Map[String, Any] = Map.empty): AlmValidation[(Any, WarpDescriptor)] =
+  def departure(channel: String, what: Any, options: Map[String, Any] = Map.empty): AlmValidation[(Any, WarpDescriptor)] =
     for {
       packer <- packers.getFor(what, None, None)
       packed <- packer.packBlind(what)(packers)
-      dematerialize <- dematerializers.get(dimension, channel)
+      dematerialize <- dematerializers.get(channel)
     } yield (dematerialize(packed, options), packer.warpDescriptor)
 
-  def departureTyped[TDim](channel: String, what: Any, options: Map[String, Any] = Map.empty)(implicit tag: ClassTag[TDim]): AlmValidation[(TDim, WarpDescriptor)] =
-    departure(tag.runtimeClass.getName(), channel, what, options).flatMap(x => x._1.castTo[TDim].map((_, x._2)))
+//  def departureTyped[TDim : WarpDimension](what: Any, options: Map[String, Any] = Map.empty): AlmValidation[(TDim, WarpDescriptor)] = {
+//    val dim = implicitly[WarpDimension[TDim]]
+//      departure(dim.channel.channelDescriptor, what, options).flatMap(x => dim.cast(x._1).map((_, x._2)))
+//    }
 
-  def arrival(dimension: String, channel: String, from: Any, options: Map[String, Any] = Map.empty): AlmValidation[Any] =
+  def arrival(channel: String, from: Any, options: Map[String, Any] = Map.empty): AlmValidation[Any] =
     for {
-      rematerialize <- rematerializers.get(dimension, channel)
-      arrived <- myFuns.handleFreeArrivalWith(from, rematerialize, None, None, options)(unpackers)
+      rematerializer <- rematerializers.getTyped[Any](channel)
+      arrived <- myFuns.handleFreeArrivalWith(from, rematerializer, None, None, options)(unpackers)
     } yield arrived
 
-  def arrivalTyped[TDim, U](channel: String, from: TDim, options: Map[String, Any] = Map.empty)(implicit tagDim: ClassTag[TDim], tagTarget: ClassTag[U]): AlmValidation[U] =
-    for {
-      fromTyped <- from.castTo[TDim]
-      rematerialized <- rematerializers.rematerializeTyped[TDim](channel, fromTyped, options)
-      arrived <- myFuns.unpack(rematerialized, None, None)(unpackers)
-      arrivedTyped <- arrived.castTo[U]
-    } yield arrivedTyped
+//  def arrivalTyped[TDim, U](channel: String, from: TDim, options: Map[String, Any] = Map.empty)(implicit tagDim: ClassTag[TDim], tagTarget: ClassTag[U]): AlmValidation[U] =
+//    for {
+//      fromTyped <- from.castTo[TDim]
+//      rematerialized <- rematerializers.rematerializeTyped[TDim](channel, fromTyped, options)
+//      arrived <- myFuns.unpack(rematerialized, None, None)(unpackers)
+//      arrivedTyped <- arrived.castTo[U]
+//    } yield arrivedTyped
 
 }
 

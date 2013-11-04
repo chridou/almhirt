@@ -13,8 +13,7 @@ object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.
   type ValueRepr = Cord
   type ObjRepr = Cord
   
-  val channel = "json"
-  val dimension = classOf[Cord].getName()
+  override val channel = WarpChannels.`rift-json-cord`
   
   protected def valueReprToDim(repr: Cord): Cord @@ WarpTags.Json =
     WarpTags.JsonCord(repr)

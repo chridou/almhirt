@@ -16,8 +16,7 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
   type ValueRepr = BSONValue
   type ObjRepr = BSONDocument
 
-  val channel = "bson-value"
-  val dimension = classOf[BSONValue].getName()
+  override val channel = WarpChannels.`rift-bson-reactive-mongo`
 
   protected def valueReprToDim(repr: BSONValue): BSONValue =
     repr

@@ -12,7 +12,7 @@ import riftwarp.WarpTags._
 
 object ToExplodedDematerializer extends Dematerializer[Any @@ Exploded] {
 
-  val channel = "exploded"
+  override val channel = WarpChannels.`rift-exploded`
   val dimension = classOf[Any].getName()
 
   override def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): Any @@ Exploded = ExplodedAny(transform(what))

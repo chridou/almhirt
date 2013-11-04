@@ -181,21 +181,21 @@ class JsonSerialization extends FunSuite with MustMatchers {
 
   test("RiftWarp must dematerialize pete without error") {
     val riftwarp = RiftWarp(packers, unpackers)
-    val dematV = riftwarp.departureTyped[String]("json", TestObjectA.pete)
+    val dematV = riftwarp.departure("json", TestObjectA.pete)
     dematV.isSuccess must be(true)
   }
   
   test("RiftWarp must dematerialize the PrimitiveTypes and rematerialize them") {
     val riftwarp = RiftWarp(packers, unpackers)
-    val dematV = riftwarp.departureTyped[String]("json", TestObjectA.pete.primitiveTypes)
-    val resV = riftwarp.arrivalTyped[String, PrimitiveTypes]("json", dematV.forceResult._1)
+    val dematV = riftwarp.departure("json", TestObjectA.pete.primitiveTypes).flatMap(x => x._1.castTo[String].map((_, x._2)))
+    val resV = riftwarp.arrival("json", dematV.forceResult._1)
     resV.forceResult must equal(TestObjectA.pete.primitiveTypes)
   }
 
   test("RiftWarp must dematerialize a UUID") {
     val riftwarp = RiftWarp(packers, unpackers)
     val uuid = JUUID.randomUUID()
-    val dematV = riftwarp.departureTyped[String]("json", uuid)
+    val dematV = riftwarp.departure("json", uuid).flatMap(x => x._1.castTo[String].map((_, x._2)))
     dematV.forceResult must equal(("\""+uuid.toString()+"\"", WarpDescriptor("UUID")))
   }
 

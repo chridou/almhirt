@@ -7,7 +7,7 @@ import riftwarp.impl.DematerializersRegistry
 
 trait Dematerializers {
   def add[T](dematerializer: Dematerializer[T])
-  def get(dimension: String, channel: String): AlmValidation[Dematerializer[Any]]
+  def get(channel: String): AlmValidation[Dematerializer[Any]]
 
 }
 
@@ -17,13 +17,13 @@ object Dematerializers {
   
   
   implicit class DematerializersOps(self: Dematerializers) {
-    def dematerialize(warpStreamName: String, channel: String, what: WarpPackage, options: Map[String, Any] = Map.empty): AlmValidation[Any] = {
-      self.get(warpStreamName, channel).map(f => f(what, options))
+    def dematerialize(channel: String, what: WarpPackage, options: Map[String, Any] = Map.empty): AlmValidation[Any] = {
+      self.get(channel).map(f => f(what, options))
     }
 
-    def dematerializeTyped[T](warpStreamName: String, channel: String, what: WarpPackage, options: Map[String, Any] = Map.empty)(implicit tag: ClassTag[T]): AlmValidation[T] = {
+    def dematerializeTyped[T](channel: String, what: WarpPackage, options: Map[String, Any] = Map.empty)(implicit tag: ClassTag[T]): AlmValidation[T] = {
       for {
-        dematerializer <- self.get(warpStreamName, channel)
+        dematerializer <- self.get(channel)
         typed <- dematerializer(what, options).castTo[T]
       } yield typed
     }
