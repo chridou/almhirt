@@ -18,6 +18,7 @@ import riftwarp.util.RiftCommandStringSerializer
 import almhirt.commanding._
 import spray.http._
 import almhirt.domain.AggregateRootRef
+import riftwarp.util.WarpWireSerializer
 
 class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpCommandEndpoint with ScalatestRouteTest with HttpService {
   def actorRefFactory = system
@@ -49,22 +50,22 @@ class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpComm
   lazy val `application/vnd.acme.Problem+json` = MediaTypes.register(MediaType.custom("""application/vnd.acme.ExecutionState+json"""))
   lazy val `application/vnd.acme.Problem+xml` = MediaTypes.register(MediaType.custom("""application/vnd.acme.ExecutionState+xml"""))
 
-  lazy val commandStringSerializer = RiftCommandStringSerializer.apply(myRiftwarp)
-  lazy val execStateStringSerializer = riftwarp.util.Serializers.createSpecificForStrings[ExecutionState](myRiftwarp)
-  lazy val problemStringSerializer = riftwarp.util.Serializers.createSpecificForStrings[Problem](myRiftwarp)
+  lazy val commandSerializer = WarpWireSerializer.commands(myRiftwarp)
+  lazy val execStateSerializer = WarpWireSerializer[ExecutionState, ExecutionState](myRiftwarp)
+  lazy val problemSerializer = WarpWireSerializer.problems(myRiftwarp)
 
   val commandWithoutTrackingId = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
-  val commandWithoutTrackingIdJson = commandStringSerializer.serialize("json")(commandWithoutTrackingId).resultOrEscalate._1
-  val commandWithoutTrackingIdXml = commandStringSerializer.serialize("xml")(commandWithoutTrackingId).resultOrEscalate._1
+  val commandWithoutTrackingIdJson = commandSerializer.serialize("json")(commandWithoutTrackingId).resultOrEscalate._1.value.asInstanceOf[String]
+  val commandWithoutTrackingIdXml = commandSerializer.serialize("xml")(commandWithoutTrackingId).resultOrEscalate._1.value.asInstanceOf[String]
   val commandWithTrackingId = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a").track
-  val commandWithTrackingIdJson = commandStringSerializer.serialize("json")(commandWithoutTrackingId).resultOrEscalate._1
-  val commandWithTrackingIdXml = commandStringSerializer.serialize("xml")(commandWithoutTrackingId).resultOrEscalate._1
+  val commandWithTrackingIdJson = commandSerializer.serialize("json")(commandWithoutTrackingId).resultOrEscalate._1.value.asInstanceOf[String]
+  val commandWithTrackingIdXml = commandSerializer.serialize("xml")(commandWithoutTrackingId).resultOrEscalate._1.value.asInstanceOf[String]
 
-  override lazy val executionStateMarshaller = ExecutionStateMarshalling.marshaller(Some(execStateStringSerializer), None, ContentType(`application/vnd.acme.ExecutionState+json`), `application/vnd.acme.ExecutionState+xml`).resultOrEscalate
-  implicit lazy val executionStateUnmarshaller = ExecutionStateMarshalling.unmarshaller(Some(execStateStringSerializer), None, `application/vnd.acme.ExecutionState+json`, `application/vnd.acme.ExecutionState+xml`).resultOrEscalate
-  override lazy val problemMarshaller = ProblemMarshalling.marshaller(Some(problemStringSerializer), None, `application/vnd.acme.Problem+json`, `application/vnd.acme.Problem+xml`).resultOrEscalate
-  override lazy val commandUnmarshaller = CommandMarshalling.unmarshaller(Some(commandStringSerializer), None, `application/vnd.acme.Command+json`, `application/vnd.acme.Command+xml`).resultOrEscalate
-  lazy val commandMarshaller = CommandMarshalling.marshaller(Some(commandStringSerializer), None, `application/vnd.acme.Command+json`, `application/vnd.acme.Command+xml`).resultOrEscalate
+  override lazy val executionStateMarshaller = ExecutionStateMarshalling.marshaller(execStateSerializer, ContentType(`application/vnd.acme.ExecutionState+json`), `application/vnd.acme.ExecutionState+xml`).resultOrEscalate
+  implicit lazy val executionStateUnmarshaller = ExecutionStateMarshalling.unmarshaller(execStateSerializer, `application/vnd.acme.ExecutionState+json`, `application/vnd.acme.ExecutionState+xml`).resultOrEscalate
+  override lazy val problemMarshaller = ProblemMarshalling.marshaller(problemSerializer, `application/vnd.acme.Problem+json`, `application/vnd.acme.Problem+xml`).resultOrEscalate
+  override lazy val commandUnmarshaller = CommandMarshalling.unmarshaller(commandSerializer, `application/vnd.acme.Command+json`, `application/vnd.acme.Command+xml`).resultOrEscalate
+  lazy val commandMarshaller = CommandMarshalling.marshaller(commandSerializer, `application/vnd.acme.Command+json`, `application/vnd.acme.Command+xml`).resultOrEscalate
 
   private val executeCommandRoute = executeCommandTerminator
 

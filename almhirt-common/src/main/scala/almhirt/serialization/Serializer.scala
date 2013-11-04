@@ -14,6 +14,10 @@ trait WorksWithBinaryRepresentation extends WorksWithSerializedRepresentation {
   override type SerializedRepr = Array[Byte]
 }
 
+trait WorksWithWireRepresentation extends WorksWithSerializedRepresentation {
+  override type SerializedRepr = WireRepresentation
+}
+
 trait CanSerialize[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
   def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(SerializedRepr, Option[String])]

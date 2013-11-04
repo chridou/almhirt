@@ -36,3 +36,10 @@ class WarpWireSerializer[-TIn, +TOut](riftWarp: RiftWarp)(implicit tag: ClassTag
       }
     } yield result
 }
+
+object WarpWireSerializer{
+  def apply[TIn, TOut](rw: RiftWarp)(implicit tag: ClassTag[TOut]): WarpWireSerializer[TIn, TOut] = new WarpWireSerializer[TIn, TOut](rw)
+  def commands(rw: RiftWarp): WarpWireSerializer[Command, Command] = new WarpWireSerializer[Command, Command](rw)
+  def events(rw: RiftWarp): WarpWireSerializer[Event, Event] = new WarpWireSerializer[Event, Event](rw)
+  def problems(rw: RiftWarp): WarpWireSerializer[Problem, Problem] = new WarpWireSerializer[Problem, Problem](rw)
+}
