@@ -17,9 +17,9 @@ trait HttpEventEndpoint extends Directives {
 
   def publish(payload: Any)
 
-  val eventDirective = put & entity(as[Event])
+  val putEventDirective = put & entity(as[Event])
 
-  val eventEndpintTerminator = eventDirective {
+  val eventEndpointTerminator = putEventDirective {
     event =>
       ctx => {
         publish(event)
