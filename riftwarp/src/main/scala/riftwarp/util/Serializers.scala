@@ -20,7 +20,7 @@ object Serializers {
     
     
   def createForBinary[TIn, TOut](riftWarp: RiftWarp)(implicit tag: ClassTag[TOut]): BinaryBasedSerializer[TIn, TOut] = {
-    val serializer = new ToBinaryWarpSerializer[TIn](riftWarp)
+    val serializer = new BinaryWarpSerializer[TIn](riftWarp)
     val deserializer = new WarpDeserializerFromBinary[TOut](riftWarp)
     new BinaryBasedSerializer[TIn, TOut] {
       def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty) = serializer.serialize(channel)(what, options)

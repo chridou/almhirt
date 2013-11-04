@@ -8,7 +8,7 @@ import almhirt.serialization._
 import riftwarp._
 import scala.reflect.ClassTag
 
-class ToBinaryWarpSerializer[TIn <: Any](riftWarp: RiftWarp) extends CanSerialize[TIn] {
+class BinaryWarpSerializer[TIn <: Any](riftWarp: RiftWarp) extends CanSerialize[TIn] {
   type SerializedRepr = Array[Byte]
 
   private def serializeWithRiftWarp(what: TIn, channel: String, options: Map[String, Any]): AlmValidation[(Array[Byte], WarpDescriptor)] =

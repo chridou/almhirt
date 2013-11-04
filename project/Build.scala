@@ -309,7 +309,7 @@ object AlmHirtBuild extends Build
                        			baseFile = file("./ext/riftwarpx-mongo")) dependsOn(common, riftwarp)
 								
   lazy val riftwarpSprayProject = riftwarpSprayJsonExtProject(	name = "riftwarpx-sprayjson",
-                       			baseFile = file("./ext/riftwarpx-sprayjson")) dependsOn(common, riftwarp)
+                       			baseFile = file("./ext/riftwarpx-sprayjson")) dependsOn(common, riftwarp % "compile->compile;test->test" )
 								
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
