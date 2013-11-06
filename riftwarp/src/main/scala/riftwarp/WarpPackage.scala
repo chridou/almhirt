@@ -4,7 +4,7 @@ import scalaz._, Scalaz._
 import scalaz.Tree._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import riftwarp.std.{WarpPrimitiveConverter, WarpPackageConverter}
+import riftwarp.std.{ WarpPrimitiveConverter, WarpPackageConverter }
 
 sealed trait WarpPackage {
   def toWarpObject: AlmValidation[WarpObject] =
@@ -12,8 +12,8 @@ sealed trait WarpPackage {
       case wo: WarpObject => wo.success
       case _ => MappingProblem("Not a WarpObject").failure
     }
-   
-  def to[T <: WarpPackage : WarpPackageConverter]: AlmValidation[T] = 
+
+  def to[T <: WarpPackage: WarpPackageConverter]: AlmValidation[T] =
     implicitly[WarpPackageConverter[T]].convert(this)
 }
 
@@ -53,8 +53,8 @@ final case class WarpObject(warpDescriptor: Option[WarpDescriptor], elements: Ve
 final case class WarpCollection(items: Vector[WarpPackage]) extends WarpPackage
 final case class WarpAssociativeCollection(items: Vector[(WarpPackage, WarpPackage)]) extends WarpPackage
 final case class WarpTree(tree: scalaz.Tree[WarpPackage]) extends WarpPackage
-final case class WarpTuple2(a: WarpPackage, b:WarpPackage) extends WarpPackage
-final case class WarpTuple3(a: WarpPackage, b:WarpPackage, c: WarpPackage) extends WarpPackage
+final case class WarpTuple2(a: WarpPackage, b: WarpPackage) extends WarpPackage
+final case class WarpTuple3(a: WarpPackage, b: WarpPackage, c: WarpPackage) extends WarpPackage
 
 sealed trait BinaryWarpPackage extends WarpPackage { def bytes: IndexedSeq[Byte] }
 final case class WarpBytes(override val bytes: IndexedSeq[Byte]) extends BinaryWarpPackage
@@ -112,6 +112,43 @@ object WarpCollection {
 
 object WarpAssociativeCollection {
   def apply(): WarpAssociativeCollection = WarpAssociativeCollection(Vector.empty)
+
+  implicit class WarpAssociativeCollectionOps(self: WarpAssociativeCollection) {
+    def typedItemPackages[T <: WarpPackage: WarpPackageConverter, U <: WarpPackage: WarpPackageConverter]: AlmValidation[IndexedSeq[(T, U)]] = {
+      val ca = implicitly[WarpPackageConverter[T]]
+      val cb = implicitly[WarpPackageConverter[U]]
+
+      val typedV = self.items.map {
+        case (a, b) =>
+          ca.convert(a).flatMap(a1 =>
+            cb.convert(b).map(b1 =>
+              (a1, b1))).toAgg
+      }
+      typedV.sequence.map(_.toIndexedSeq)
+    }
+
+    def unpackItems[T: WarpUnpacker, U: WarpUnpacker](implicit unpackers: WarpUnpackers = WarpUnpackers.empty): AlmValidation[IndexedSeq[(T, U)]] = {
+      val upA = implicitly[WarpUnpacker[T]]
+      val upB = implicitly[WarpUnpacker[U]]
+      val typedV = self.items.map {
+        case (a, b) =>
+          upA.unpack(a).flatMap(a1 =>
+            upB.unpack(b).map(b1 =>
+              (a1, b1))).toAgg
+      }
+      typedV.sequence.map(_.toIndexedSeq)
+    }
+
+    def unpackFirstItems[T: WarpUnpacker](implicit unpackers: WarpUnpackers = WarpUnpackers.empty): AlmValidation[IndexedSeq[(T, WarpPackage)]] = {
+      val upA = implicitly[WarpUnpacker[T]]
+      val typedV = self.items.map {
+        case (a, b) =>
+          upA.unpack(a).map(a1 => (a1, b)).toAgg
+      }
+      typedV.sequence.map(_.toIndexedSeq)
+    }
+
+  }
 }
 
 object WarpPackage {

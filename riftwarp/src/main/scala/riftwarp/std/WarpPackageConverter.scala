@@ -33,6 +33,7 @@ trait ToWarpAssocCollectionConverter extends WarpPackageConverter[WarpAssociativ
   def convert(what: WarpPackage): AlmValidation[WarpAssociativeCollection] =
     what match {
       case x: WarpAssociativeCollection => x.success
+      case x: WarpCollection => x.associative
       case x => MappingProblem(s""""${x.getClass().getSimpleName()}" cannot be converted to a "WarpAssociativeCollection".""").failure
     }
 }
