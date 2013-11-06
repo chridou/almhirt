@@ -283,6 +283,24 @@ trait PackageBuilderOps {
             fail => fail.failure,
             succ => WarpObject(succObj.warpDescriptor, succObj.elements :+ succ).success))
 
+    def +>(next: => WarpElement): AlmValidation[WarpObject] =
+      self.fold(
+        fail => fail.failure,
+        succObj => WarpObject(succObj.warpDescriptor, succObj.elements :+ next).success)
+
+    def ~*>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
+      self.fold(
+        fail => fail.failure,
+        succObj =>
+          next.fold(
+            fail => fail.failure,
+            succ => WarpObject(succObj.warpDescriptor, succObj.elements ++ succ).success))
+        
+    def +*>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
+      self.fold(
+        fail => fail.failure,
+        succObj => WarpObject(succObj.warpDescriptor, succObj.elements ++ next).success)
+
     def ~?>[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
       ~>(tuple2WarpElement(next))
 
