@@ -115,7 +115,7 @@ object WarpCollection {
             if (innerItems.length == 2)
               (innerItems(0), innerItems(1)).success
             else
-              UnspecifiedProblem("An inner item must have a length of to, when tranforming a WarpCollection to a WarpAssociativeCollection").failure
+              UnspecifiedProblem("An inner item must have a length of 2, when tranforming a WarpCollection to a WarpAssociativeCollection").failure
           case _ => UnspecifiedProblem("An inner item must be a WarpCollection of WarpCollections in order to transform a WarpCollection to a WarpAssociativeCollection").failure
         }).toAgg).sequence.map(WarpAssociativeCollection(_))
 
