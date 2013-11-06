@@ -4,14 +4,17 @@ import scalaz._, Scalaz._
 import scalaz.Tree._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import riftwarp.std.WarpPrimitiveConverter
+import riftwarp.std.{WarpPrimitiveConverter, WarpPackageConverter}
 
 sealed trait WarpPackage {
-  def asWarpObject: AlmValidation[WarpObject] =
+  def toWarpObject: AlmValidation[WarpObject] =
     this match {
       case wo: WarpObject => wo.success
       case _ => MappingProblem("Not a WarpObject").failure
     }
+   
+  def to[T <: WarpPackage : WarpPackageConverter]: AlmValidation[T] = 
+    implicitly[WarpPackageConverter[T]].convert(this)
 }
 
 final case class WarpElement(label: String, value: Option[WarpPackage])

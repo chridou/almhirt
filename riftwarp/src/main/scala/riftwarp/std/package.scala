@@ -70,12 +70,15 @@ package object std {
   implicit object WarpPrimitiveToLocalDateTimeConverterInst extends WarpPrimitiveToLocalDateTimeConverter
   implicit object WarpPrimitiveToDurationConverterInst extends WarpPrimitiveToDurationConverter
 
+  implicit object ToWarpPackageCollectionConverterInst extends ToWarpPackageCollectionConverter
+  implicit object ToWarpPackageAssocCollectionConverterInst extends ToWarpPackageAssocCollectionConverter
+  
   implicit class RematerializeFromOps[From](self: From) {
     def rematerialize(implicit rematerializer: Rematerializer[From]): AlmValidation[WarpPackage] =
       rematerializer.rematerialize(self)
   }
 
-  implicit class PackagingyOps[T](self: T) {
+  implicit class PackagingOps[T](self: T) {
     def pack(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpPackage] = packer.pack(self)
     def packFlat(implicit packer: WarpPacker[T]): AlmValidation[WarpPackage] = packer.pack(self)(WarpPackers.NoWarpPackers)
   }
