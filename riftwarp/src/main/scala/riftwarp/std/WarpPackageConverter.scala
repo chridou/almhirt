@@ -8,7 +8,16 @@ trait WarpPackageConverter[To <: WarpPackage] {
   def convert(what: WarpPackage): AlmValidation[To]
 }
 
-trait ToWarpPackageCollectionConverter extends WarpPackageConverter[WarpCollection] {
+
+trait ToWarpStringConverter extends WarpPackageConverter[WarpString] {
+  def convert(what: WarpPackage): AlmValidation[WarpString] =
+    what match {
+      case x: WarpString => x.success
+      case x: WarpPrimitive => WarpString(x.value.toString).success
+      case x => MappingProblem(s""""${x.getClass().getSimpleName()}" cannot be converted to a "WarpString".""").failure
+    }
+}
+trait ToWarpCollectionConverter extends WarpPackageConverter[WarpCollection] {
   def convert(what: WarpPackage): AlmValidation[WarpCollection] =
     what match {
       case x: WarpCollection => x.success
@@ -20,7 +29,7 @@ trait ToWarpPackageCollectionConverter extends WarpPackageConverter[WarpCollecti
     }
 }
 
-trait ToWarpPackageAssocCollectionConverter extends WarpPackageConverter[WarpAssociativeCollection] {
+trait ToWarpAssocCollectionConverter extends WarpPackageConverter[WarpAssociativeCollection] {
   def convert(what: WarpPackage): AlmValidation[WarpAssociativeCollection] =
     what match {
       case x: WarpAssociativeCollection => x.success

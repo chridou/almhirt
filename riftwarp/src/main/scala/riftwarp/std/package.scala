@@ -70,8 +70,10 @@ package object std {
   implicit object WarpPrimitiveToLocalDateTimeConverterInst extends WarpPrimitiveToLocalDateTimeConverter
   implicit object WarpPrimitiveToDurationConverterInst extends WarpPrimitiveToDurationConverter
 
-  implicit object ToWarpPackageCollectionConverterInst extends ToWarpPackageCollectionConverter
-  implicit object ToWarpPackageAssocCollectionConverterInst extends ToWarpPackageAssocCollectionConverter
+  
+  implicit object ToWarpStringConverterInst extends ToWarpStringConverter
+  implicit object ToWarpCollectionConverterInst extends ToWarpCollectionConverter
+  implicit object ToWarpAssocCollectionConverterInst extends ToWarpAssocCollectionConverter
   
   implicit class RematerializeFromOps[From](self: From) {
     def rematerialize(implicit rematerializer: Rematerializer[From]): AlmValidation[WarpPackage] =
