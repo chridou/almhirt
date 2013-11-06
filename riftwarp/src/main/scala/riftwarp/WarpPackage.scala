@@ -94,6 +94,20 @@ object WarpCollection {
     }
 
   implicit class WarpCollectionOps(self: WarpCollection) {
+    
+    def typedItemPackages[T <: WarpPackage: WarpPackageConverter]: AlmValidation[IndexedSeq[T]] = {
+      val conv = implicitly[WarpPackageConverter[T]]
+ 
+      val typedV = self.items.map(conv.convert(_).toAgg)
+      typedV.sequence.map(_.toIndexedSeq)
+    }
+    
+    def unpackItems[T: WarpUnpacker](implicit unpackers: WarpUnpackers = WarpUnpackers.empty): AlmValidation[IndexedSeq[T]] = {
+      val up = implicitly[WarpUnpacker[T]]
+      val typedV = self.items.map(up(_).toAgg)
+      typedV.sequence.map(_.toIndexedSeq)
+    }
+    
     def associative: AlmValidation[WarpAssociativeCollection] =
       self.items.map(item =>
         (item match {
