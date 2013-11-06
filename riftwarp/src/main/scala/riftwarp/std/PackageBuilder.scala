@@ -239,8 +239,8 @@ trait PackageBuilderOps {
         succ => WarpObject(self.warpDescriptor, self.elements ++ succ).success)
 
     def +*>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
-WarpObject(self.warpDescriptor, self.elements ++ next).success
-        
+      WarpObject(self.warpDescriptor, self.elements ++ next).success
+
     def ~?>[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
       ~>(tuple2WarpElement(next))
 
