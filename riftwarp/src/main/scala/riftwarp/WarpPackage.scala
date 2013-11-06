@@ -139,7 +139,7 @@ object WarpAssociativeCollection {
       typedV.sequence.map(_.toIndexedSeq)
     }
 
-    def unpackFirstItems[T: WarpUnpacker](implicit unpackers: WarpUnpackers = WarpUnpackers.empty): AlmValidation[IndexedSeq[(T, WarpPackage)]] = {
+    def unpackTupleItems[T: WarpUnpacker](implicit unpackers: WarpUnpackers = WarpUnpackers.empty): AlmValidation[IndexedSeq[(T, WarpPackage)]] = {
       val upA = implicitly[WarpUnpacker[T]]
       val typedV = self.items.map {
         case (a, b) =>
@@ -148,6 +148,16 @@ object WarpAssociativeCollection {
       typedV.sequence.map(_.toIndexedSeq)
     }
 
+    def unpackedAsTypedBs[T: WarpUnpacker, U <: WarpPackage: WarpPackageConverter](implicit unpackers: WarpUnpackers = WarpUnpackers.empty): AlmValidation[IndexedSeq[(T, U)]] = {
+      val upA = implicitly[WarpUnpacker[T]]
+      val cb = implicitly[WarpPackageConverter[U]]
+      val typedV = self.items.map {
+        case (a, b) =>
+          upA.unpack(a).flatMap(a1 => 
+            cb.convert(b).map((a1,_))).toAgg
+      }
+      typedV.sequence.map(_.toIndexedSeq)
+    }
   }
 }
 
