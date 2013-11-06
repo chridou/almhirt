@@ -202,15 +202,15 @@ trait PackageBuilderOps {
         fail => fail.failure,
         succ => WarpObject(None, Vector(self, succ)).success)
 
-    def +>(next: => WarpElement): AlmValidation[WarpObject] =
+    def ~+>(next: => WarpElement): AlmValidation[WarpObject] =
       WarpObject(None, Vector(self, next)).success
 
-    def ~*>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
+    def ~~>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
         succ => WarpObject(None, (self +: succ.toVector)).success)
 
-    def +*>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
+    def ~~+>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
       WarpObject(None, (self +: next.toVector)).success
 
     def ~?>[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
@@ -230,15 +230,15 @@ trait PackageBuilderOps {
         fail => fail.failure,
         succ => WarpObject(self.warpDescriptor, self.elements :+ succ).success)
 
-    def +>(next: => WarpElement): AlmValidation[WarpObject] =
+    def ~+>(next: => WarpElement): AlmValidation[WarpObject] =
       WarpObject(self.warpDescriptor, self.elements :+ next).success
 
-    def ~*>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
+    def ~~>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
         succ => WarpObject(self.warpDescriptor, self.elements ++ succ).success)
 
-    def +*>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
+    def ~~+>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
       WarpObject(self.warpDescriptor, self.elements ++ next).success
 
     def ~?>[T](next: => (String, Option[T]))(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpObject] =
@@ -258,7 +258,7 @@ trait PackageBuilderOps {
         fail => fail.failure,
         succ => WarpObject(Some(self), Vector(succ)).success)
 
-    def ~*>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
+    def ~~>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
       next.fold(
         fail => fail.failure,
         succ => WarpObject(Some(self), succ.toVector).success)
@@ -283,12 +283,12 @@ trait PackageBuilderOps {
             fail => fail.failure,
             succ => WarpObject(succObj.warpDescriptor, succObj.elements :+ succ).success))
 
-    def +>(next: => WarpElement): AlmValidation[WarpObject] =
+    def ~+>(next: => WarpElement): AlmValidation[WarpObject] =
       self.fold(
         fail => fail.failure,
         succObj => WarpObject(succObj.warpDescriptor, succObj.elements :+ next).success)
 
-    def ~*>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
+    def ~~>(next: => AlmValidation[Seq[WarpElement]]): AlmValidation[WarpObject] =
       self.fold(
         fail => fail.failure,
         succObj =>
@@ -296,7 +296,7 @@ trait PackageBuilderOps {
             fail => fail.failure,
             succ => WarpObject(succObj.warpDescriptor, succObj.elements ++ succ).success))
         
-    def +*>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
+    def ~~+>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
       self.fold(
         fail => fail.failure,
         succObj => WarpObject(succObj.warpDescriptor, succObj.elements ++ next).success)
