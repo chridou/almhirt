@@ -7,6 +7,7 @@ import riftwarp._
 
 trait DematerializerTemplate[T] extends Dematerializer[T] {
   type ValueRepr
+  type ObjRepr <: ValueRepr
 
   def transform(what: WarpPackage): ValueRepr =
     what match {
@@ -35,7 +36,7 @@ trait DematerializerTemplate[T] extends Dematerializer[T] {
     
   protected def valueReprToDim(repr: ValueRepr): T
   protected def getPrimitiveRepr(prim: WarpPrimitive): ValueRepr
-  protected def getObjectRepr(warpObject: WarpObject): ValueRepr
+  protected def getObjectRepr(warpObject: WarpObject): ObjRepr
   protected def foldReprs(elems: Traversable[ValueRepr]): ValueRepr
   protected def foldAssocRepr(assoc: Traversable[(ValueRepr, ValueRepr)]): ValueRepr
   protected def foldTuple2Reprs(tuple: (ValueRepr, ValueRepr)): ValueRepr

@@ -1,14 +1,16 @@
 package almhirt.corex.slick.domaineventlog
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.domain._
-import almhirt.domaineventlog.DomainEventLog
+import almhirt.domaineventlog._
 import almhirt.messaging.MessagePublisher
-import scala.concurrent.ExecutionContext
 import almhirt.problem.Problem
+import play.api.libs.iteratee.Enumerator
 
 trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLogging =>
   import DomainEventLog._
@@ -16,16 +18,23 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
   type TRow <: DomainEventLogRow
 
   def messagePublisher: MessagePublisher
-  
-  def storeComponent: DomainEventLogStoreComponent[TRow]
 
-  implicit def syncIoExecutionContext: ExecutionContext
+  def storeComponent: DomainEventLogStoreComponent[TRow]
 
   def domainEventToRow(domainEvent: DomainEvent, channel: String): AlmValidation[TRow]
   def rowToDomainEvent(row: TRow): AlmValidation[DomainEvent]
 
-  private def domainEventsToRows(domainEvents: Seq[DomainEvent], channel: String): AlmValidation[Seq[TRow]] =
-    domainEvents.foldLeft(Seq.empty[TRow].successAlm) { (accV, cur) =>
+  def writeWarnThreshold: FiniteDuration
+  def readWarnThreshold: FiniteDuration
+
+  var writeStatistics = DomainEventLogWriteStatistics()
+  var readStatistics = DomainEventLogReadStatistics()
+  var serializationStatistics = DomainEventLogSerializationStatistics.forSerializing
+  var deserializationStatistics = DomainEventLogSerializationStatistics.forDeserializing
+
+  private def domainEventsToRows(domainEvents: Seq[DomainEvent], channel: String): AlmValidation[Seq[TRow]] = {
+    val start = Deadline.now
+    val res = domainEvents.foldLeft(Seq.empty[TRow].successAlm) { (accV, cur) =>
       accV match {
         case scalaz.Success(acc) =>
           domainEventToRow(cur, channel).map(acc :+ _)
@@ -33,9 +42,14 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           problem.failure
       }
     }
+    val time = start.lap
+    serializationStatistics = serializationStatistics add time
+    res
+  }
 
-  private def rowsToDomainEvents(rows: Seq[TRow]): AlmValidation[Seq[DomainEvent]] =
-    rows.foldLeft(Seq.empty[DomainEvent].successAlm) { (accV, cur) =>
+  private def rowsToDomainEvents(rows: Seq[TRow]): AlmValidation[Seq[DomainEvent]] = {
+    val start = Deadline.now
+    val res = rows.foldLeft(Seq.empty[DomainEvent].successAlm) { (accV, cur) =>
       accV match {
         case scalaz.Success(acc) =>
           rowToDomainEvent(cur).map(acc :+ _)
@@ -43,127 +57,177 @@ trait SlickDomainEventLog extends DomainEventLog { actor: Actor with ActorLoggin
           problem.failure
       }
     }
+    val time = start.lap
+    deserializationStatistics = deserializationStatistics add time
+    res
+  }
 
   final protected def currentState(serializationChannel: String): Receive = {
     case CommitDomainEvents(events) =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- domainEventsToRows(events, serializationChannel)
-          storeResult <- storeComponent.insertManyEventRows(rows)
-        } yield storeResult
-      }.onComplete(
+      (for {
+        rows <- domainEventsToRows(events, serializationChannel)
+        storeResult <- {
+          val start = Deadline.now
+          val res = storeComponent.insertManyEventRows(rows)
+          val time = start.lap
+          if (!events.isEmpty)
+            writeStatistics = writeStatistics add time
+          else
+            writeStatistics addNoOp ()
+          if (time > writeWarnThreshold)
+            log.warning(s"""Writing ${events.size} events took longer than ${writeWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
+          res
+        }
+      } yield storeResult).fold(
         problem => {
-          pinnedSender ! CommittedDomainEvents(Seq.empty, Some((events, problem)))
+          sender ! CommitDomainEventsFailed(problem)
+          throw new EscalatedProblemException(problem)
         },
-        succ => pinnedSender ! CommittedDomainEvents(events, None))
-        
+        succ => {
+          sender ! CommittedDomainEvents(events)
+          events.foreach(publishCommittedEvent)
+        })
+
     case GetAllDomainEvents =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- storeComponent.getAllEventRows
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      }.onComplete(
+      (for {
+        rows <- storeComponent.getAllEventRows
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          sender ! FetchDomainEventsFailed(problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
+
     case GetDomainEvent(eventId) =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          row <- storeComponent.getEventRowById(eventId)
-          event <- rowToDomainEvent(row)
-        } yield event
-      }.onComplete(
+      (for {
+        row <- storeComponent.getEventRowById(eventId)
+        event <- rowToDomainEvent(row)
+      } yield event).fold(
         problem => {
           problem match {
-            case Problem(_, NotFoundProblem,_) => pinnedSender ! QueriedDomainEvent(eventId, None)
-            case p => pinnedSender ! DomainEventQueryFailed(eventId, p)
+            case Problem(_, NotFoundProblem, _) => sender ! QueriedDomainEvent(eventId, None)
+            case p =>
+              sender ! DomainEventQueryFailed(eventId, problem)
+              throw new EscalatedProblemException(problem)
           }
         },
-        event => pinnedSender ! QueriedDomainEvent(eventId, Some(event)))
-        
+        event => sender ! QueriedDomainEvent(eventId, Some(event)))
+
     case GetAllDomainEventsFor(aggId) =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- storeComponent.getAllEventRowsFor(aggId)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      }.onComplete(
+      (for {
+        rows <- {
+          val start = Deadline.now
+          val res = storeComponent.getAllEventRowsFor(aggId)
+          val time = start.lap
+          readStatistics = readStatistics add time
+          if (time > readWarnThreshold)
+            log.warning(s"""Reading events(GetAllDomainEventsFor(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
+          res
+        }
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          sender ! FetchDomainEventsFailed(problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
+
     case GetDomainEventsFrom(aggId, fromVersion) =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      }.onComplete(
+      (for {
+        rows <- {
+          val start = Deadline.now
+          val res = storeComponent.getAllEventRowsForFrom(aggId, fromVersion)
+          val time = start.lap
+          readStatistics = readStatistics add time
+          if (time > readWarnThreshold)
+            log.warning(s"""Reading events(GetDomainEventsFrom(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
+          res
+        }
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          sender ! FetchDomainEventsFailed(problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
+
     case GetDomainEventsTo(aggId, toVersion) =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- storeComponent.getAllEventRowsForTo(aggId, toVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      }.onComplete(
+      (for {
+        rows <- {
+          val start = Deadline.now
+          val res = storeComponent.getAllEventRowsForTo(aggId, toVersion)
+          val time = start.lap
+          readStatistics = readStatistics add time
+          if (time > readWarnThreshold)
+            log.warning(s"""Reading events(GetDomainEventsTo(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
+          res
+        }
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          sender ! FetchDomainEventsFailed(problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
+
     case GetDomainEventsUntil(aggId, untilVersion) =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      }.onComplete(
+      (for {
+        rows <- {
+          val start = Deadline.now
+          val res = storeComponent.getAllEventRowsForUntil(aggId, untilVersion)
+          val time = start.lap
+          readStatistics = readStatistics add time
+          if (time > readWarnThreshold)
+            log.warning(s"""Reading events(GetDomainEventsUntil(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
+          res
+        }
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          sender ! FetchDomainEventsFailed(problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
+
     case GetDomainEventsFromTo(aggId, fromVersion, toVersion) =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      }.onComplete(
+      (for {
+        rows <- {
+          val start = Deadline.now
+          val res = storeComponent.getAllEventRowsForFromTo(aggId, fromVersion, toVersion)
+          val time = start.lap
+          readStatistics = readStatistics add time
+          if (time > readWarnThreshold)
+            log.warning(s"""Reading events(GetDomainEventsFromTo(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
+          res
+        }
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          sender ! FetchDomainEventsFailed(problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
-        
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
+
     case GetDomainEventsFromUntil(aggId, fromVersion, untilVersion) =>
-      val pinnedSender = sender
-      AlmFuture {
-        for {
-          rows <- storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
-          domainEvents <- rowsToDomainEvents(rows)
-        } yield domainEvents
-      }.onComplete(
+      (for {
+        rows <- {
+          val start = Deadline.now
+          val res = storeComponent.getAllEventRowsForFromUntil(aggId, fromVersion, untilVersion)
+          val time = start.lap
+          readStatistics = readStatistics add time
+          if (time > readWarnThreshold)
+            log.warning(s"""Reading events(GetDomainEventsFromUntil(aggId=$aggId)) took longer than ${readWarnThreshold.defaultUnitString}(${time.defaultUnitString}).""")
+          res
+        }
+        domainEvents <- rowsToDomainEvents(rows)
+      } yield domainEvents).fold(
         problem => {
-          pinnedSender ! DomainEventsChunkFailure(0, problem)
+          sender ! FetchDomainEventsFailed(problem)
+          throw new EscalatedProblemException(problem)
         },
-        domainEvents => pinnedSender ! DomainEventsChunk(0, true, domainEvents))
+        domainEvents => sender ! FetchedDomainEvents(Enumerator(domainEvents: _*)))
+        
     case almhirt.serialization.UseSerializationChannel(newChannel) =>
       context.become(currentState(newChannel))
   }

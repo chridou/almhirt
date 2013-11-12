@@ -86,7 +86,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         eventlog ! LogEvent(event)
         waitSomeTime()
         val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector(event)))
+        res should equal(FetchedEventsBatch(Vector(event)))
       }
     }
     it("""should accept many events and return the same number of events logged when queired with GetAllEvents""") {
@@ -95,7 +95,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(theAlmhirt.getUuid, baseTime.plusMillis(n-1)), n)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
-        val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventsChunk].awaitResultOrEscalate(defaultDuration)
+        val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[FetchedEventsBatch].awaitResultOrEscalate(defaultDuration)
         res.events.size should equal(events.size)
       }
     }
@@ -105,7 +105,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(theAlmhirt.getUuid, baseTime.plusMillis(n-1)), n)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
-        val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventsChunk].awaitResultOrEscalate(defaultDuration)
+        val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[FetchedEventsBatch].awaitResultOrEscalate(defaultDuration)
         res.events.map(_.timestamp).toSet should equal(events.map(_.timestamp).toSet)
       }
     }
@@ -116,7 +116,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events))
+        res should equal(FetchedEventsBatch(events))
       }
     }
     it("""should accept many events and return a QueriedEvent(Some(event)) when queried with GetEvent""") {
@@ -143,7 +143,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events.reverse foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetAllEvents)(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events))
+        res should equal(FetchedEventsBatch(events))
       }
     }
     
@@ -154,7 +154,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
-        val res = (eventlog ? GetEventsFrom(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventsChunk].awaitResultOrEscalate(defaultDuration)
+        val res = (eventlog ? GetEventsFrom(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[FetchedEventsBatch].awaitResultOrEscalate(defaultDuration)
         res.events.size should equal(events.size)
       }
     }
@@ -165,7 +165,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events))
+        res should equal(FetchedEventsBatch(events))
       }
     }
     
@@ -175,7 +175,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(refTimestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events))
+        res should equal(FetchedEventsBatch(events))
       }
     }
     
@@ -185,7 +185,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(refTimestamp.plusHours(24)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events.drop(2)))
+        res should equal(FetchedEventsBatch(events.drop(2)))
       }
     }
  
@@ -195,7 +195,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(events.last.timestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector(events.last)))
+        res should equal(FetchedEventsBatch(Vector(events.last)))
       }
     }
 
@@ -205,7 +205,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsFrom(events.last.timestamp.plusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector.empty))
+        res should equal(FetchedEventsBatch(Vector.empty))
       }
     }
 
@@ -217,7 +217,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events))
+        res should equal(FetchedEventsBatch(events))
       }
     }
 
@@ -227,7 +227,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(refTimestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events.tail))
+        res should equal(FetchedEventsBatch(events.tail))
       }
     }
     
@@ -237,7 +237,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(refTimestamp.plusHours(24)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events.drop(3)))
+        res should equal(FetchedEventsBatch(events.drop(3)))
       }
     }
  
@@ -247,7 +247,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(events.last.timestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector.empty))
+        res should equal(FetchedEventsBatch(Vector.empty))
       }
     }
 
@@ -257,7 +257,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsAfter(events.last.timestamp.plusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector.empty))
+        res should equal(FetchedEventsBatch(Vector.empty))
       }
     }
 
@@ -269,7 +269,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector.empty))
+        res should equal(FetchedEventsBatch(Vector.empty))
       }
     }
 
@@ -279,7 +279,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(refTimestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector(events.head)))
+        res should equal(FetchedEventsBatch(Vector(events.head)))
       }
     }
     
@@ -289,7 +289,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(refTimestamp.plusHours(24)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events.take(3)))
+        res should equal(FetchedEventsBatch(events.take(3)))
       }
     }
  
@@ -299,7 +299,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(events.last.timestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events))
+        res should equal(FetchedEventsBatch(events))
       }
     }
 
@@ -309,7 +309,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsTo(events.last.timestamp.plusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events))
+        res should equal(FetchedEventsBatch(events))
       }
     }
 
@@ -321,7 +321,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(refTimestamp.minusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector.empty))
+        res should equal(FetchedEventsBatch(Vector.empty))
       }
     }
 
@@ -331,7 +331,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(refTimestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, Vector.empty))
+        res should equal(FetchedEventsBatch(Vector.empty))
       }
     }
     
@@ -341,7 +341,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(refTimestamp.plusHours(24)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events.take(2)))
+        res should equal(FetchedEventsBatch(events.take(2)))
       }
     }
  
@@ -351,7 +351,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(events.last.timestamp))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events.init))
+        res should equal(FetchedEventsBatch(events.init))
       }
     }
 
@@ -361,7 +361,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         events foreach(eventlog ! LogEvent(_))
         waitSomeTime()
         val res = (eventlog ? GetEventsUntil(events.last.timestamp.plusMillis(10)))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
-        res should equal(EventsChunk(0, true, events))
+        res should equal(FetchedEventsBatch(events))
       }
     }
     

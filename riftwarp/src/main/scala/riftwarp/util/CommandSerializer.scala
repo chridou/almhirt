@@ -15,3 +15,4 @@ object RiftCommandStringSerializer {
     }
   }
 }
+

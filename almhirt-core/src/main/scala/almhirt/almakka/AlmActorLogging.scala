@@ -28,8 +28,8 @@ import almhirt.common.AlmFuture
 trait AlmActorLogging extends CanLogProblems { self: akka.actor.Actor =>
   val log = Logging(context.system, this)
 
-  override def logProblemAsDebug(prob: Problem) = log.debug(prob.toString)
-  override def logProblemAsInfo(prob: Problem) = log.info(prob.toString)
-  override def logProblemAsWarning(prob: Problem) = log.warning(prob.toString)
-  override def logProblemAsError(prob: Problem) = log.error(prob.toString)
+  override def logProblemAsDebug(prob: Problem) = log.debug(prob.withArg("actor", self.path).toString)
+  override def logProblemAsInfo(prob: Problem) = log.info(prob.withArg("actor", self.path).toString)
+  override def logProblemAsWarning(prob: Problem) = log.warning(prob.withArg("actor", self.path).toString)
+  override def logProblemAsError(prob: Problem) = log.error(prob.withArg("actor", self.path).toString)
 }

@@ -6,27 +6,27 @@ import almhirt.common._
 import almhirt.problem._
 
 class SeveritySpec extends FlatSpec with ShouldMatchers {
-  "A Severity has a zero of 'NoProblem' and" should
-    "return 'Critical' when 'NoProblem' and 'Critical'" in {
-      NoProblem.and(Critical) should equal(Critical)
+  "A Severity has a zero of 'Warning' and" should
+    "return 'Critical' when 'Warning' and 'Critical'" in {
+      Warning.and(Critical) should equal(Critical)
     }
-  it should "return 'Critical' when 'Critical' and 'NoProblem'" in {
-    Critical.and(NoProblem) should equal(Critical)
+  it should "return 'Critical' when 'Critical' and 'Warning'" in {
+    Critical.and(Warning) should equal(Critical)
   }
-  it should "return 'Major' when 'Major' and 'NoProblem'" in {
-    Major.and(NoProblem) should equal(Major)
+  it should "return 'Major' when 'Major' and 'Warning'" in {
+    Major.and(Warning) should equal(Major)
   }
-  it should "return 'Major' when 'NoProblem' and 'Major'" in {
-    NoProblem.and(Major) should equal(Major)
+  it should "return 'Major' when 'Warning' and 'Major'" in {
+    Warning.and(Major) should equal(Major)
   }
-  it should "return 'Minor' when 'NoProblem' and 'Minor'" in {
-    NoProblem.and(Minor) should equal(Minor)
+  it should "return 'Minor' when 'Warning' and 'Minor'" in {
+    Warning.and(Minor) should equal(Minor)
   }
-  it should "return 'Minor' when 'Minor' and 'NoProblem'" in {
-    Minor.and(NoProblem) should equal(Minor)
+  it should "return 'Minor' when 'Minor' and 'Warning'" in {
+    Minor.and(Warning) should equal(Minor)
   }
-  it should "return 'NoProblem' when 'NoProblem' and 'NoProblem'" in {
-    NoProblem.and(NoProblem) should equal(NoProblem)
+  it should "return 'Warning' when 'Warning' and 'Warning'" in {
+    Warning.and(Warning) should equal(Warning)
   }
 
   "A Severity combines always to the most severe and so" should
@@ -39,8 +39,8 @@ class SeveritySpec extends FlatSpec with ShouldMatchers {
   it should "return 'Critical' when 'Minor' and 'Minor'" in {
     Critical.and(Minor) should equal(Critical)
   }
-  it should "return 'Critical' when 'Critical' and 'NoProblem'" in {
-    Critical.and(NoProblem) should equal(Critical)
+  it should "return 'Critical' when 'Critical' and 'Warning'" in {
+    Critical.and(Warning) should equal(Critical)
   }
 
   it should "return 'Critical' when 'Major' and 'Critical'" in {
@@ -52,8 +52,8 @@ class SeveritySpec extends FlatSpec with ShouldMatchers {
   it should "return 'Major' when 'Major' and 'Minor'" in {
     Major.and(Minor) should equal(Major)
   }
-  it should "return 'Major' when 'Major' and 'NoProblem'" in {
-    Major.and(NoProblem) should equal(Major)
+  it should "return 'Major' when 'Major' and 'Warning'" in {
+    Major.and(Warning) should equal(Major)
   }
 
   it should "return 'Critical' when 'Minor' and 'Critical'" in {
@@ -65,20 +65,20 @@ class SeveritySpec extends FlatSpec with ShouldMatchers {
   it should "return 'Minor' when 'Minor' and 'Minor'" in {
     Minor.and(Minor) should equal(Minor)
   }
-  it should "return 'Minor' when 'Minor' and 'NoProblem'" in {
-    Minor.and(NoProblem) should equal(Minor)
+  it should "return 'Minor' when 'Minor' and 'Warning'" in {
+    Minor.and(Warning) should equal(Minor)
   }
 
-  it should "return 'Critical' when 'NoProblem' and 'Critical'" in {
-    NoProblem.and(Critical) should equal(Critical)
+  it should "return 'Critical' when 'Warning' and 'Critical'" in {
+    Warning.and(Critical) should equal(Critical)
   }
-  it should "return 'Major' when 'NoProblem' and 'Major'" in {
-    NoProblem.and(Major) should equal(Major)
+  it should "return 'Major' when 'Warning' and 'Major'" in {
+    Warning.and(Major) should equal(Major)
   }
-  it should "return 'Minor' when 'NoProblem' and 'Minor'" in {
-    NoProblem.and(Minor) should equal(Minor)
+  it should "return 'Minor' when 'Warning' and 'Minor'" in {
+    Warning.and(Minor) should equal(Minor)
   }
-  it should "return 'NoProblem' when 'NoProblem' and 'NoProblem'" in {
-    NoProblem.and(NoProblem) should equal(NoProblem)
+  it should "return 'Warning' when 'Warning' and 'Warning'" in {
+    Warning.and(Warning) should equal(Warning)
   }
 }

@@ -53,6 +53,8 @@ object WarpUnpackers {
     unpackers.addTyped(UuidWarpUnpacker)
     unpackers.addTyped(UriWarpUnpacker)
     unpackers.addTyped(DateTimeWarpUnpacker)
+    unpackers.addTyped(LocalDateTimeWarpUnpacker)
+    unpackers.addTyped(DurationWarpUnpacker)
     unpackers.addTyped(ByteArrayWarpUnpacker)
     unpackers.addTyped(Base64BlobWarpUnpacker)
 

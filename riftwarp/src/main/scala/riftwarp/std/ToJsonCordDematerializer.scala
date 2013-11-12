@@ -11,9 +11,9 @@ import riftwarp._
 
 object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.Json] {
   type ValueRepr = Cord
+  type ObjRepr = Cord
   
-  val channel = "json"
-  val dimension = classOf[Cord].getName()
+  override val channel = WarpChannels.`rift-json-cord`
   
   protected def valueReprToDim(repr: Cord): Cord @@ WarpTags.Json =
     WarpTags.JsonCord(repr)
@@ -23,6 +23,7 @@ object ToJsonCordDematerializer extends DematerializerTemplate[Cord @@ WarpTags.
       case WarpBoolean(value) => Cord(value.toString)
       case WarpString(value) => Cord(mapStringLike(launderString(value)))
       case WarpByte(value) => Cord(value.toString)
+      case WarpShort(value) => Cord(value.toString)
       case WarpInt(value) => Cord(value.toString)
       case WarpLong(value) => Cord(value.toString)
       case WarpBigInt(value) => Cord(mapStringLike(value.toString))

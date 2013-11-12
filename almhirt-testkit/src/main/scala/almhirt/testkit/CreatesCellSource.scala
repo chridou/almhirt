@@ -2,8 +2,9 @@ package almhirt.testkit
 
 import java.util.{UUID => JUUID}
 import akka.actor._
+import scala.concurrent.duration.FiniteDuration
 import almhirt.components.impl.AggregateRootCellSourceImpl
-import almhirt.domain.impl.AggregateRootCellImpl
+import almhirt.domain._
 import almhirt.testkit.domain._
 import almhirt.core.HasAlmhirt
 
@@ -12,13 +13,14 @@ trait CreatesCellSource {
 }
 
 trait CreatesCellSourceForTestAggregateRoots extends CreatesCellSource { self: HasAlmhirt =>
-
   def createCellSource(testId: Int, eventlog: ActorRef): ActorRef = { 
-    val propsFactories: Map[Class[_], (JUUID, () => Unit) => Props] =
+    val ar1Factory = AggregateRootCell.propsFactoryRaw[AR1, AR1Event](AR1.applyEvent _, eventlog, FiniteDuration(5, "s"), theAlmhirt)
+    val ar2Factory = AggregateRootCell.propsFactoryRaw[AR2, AR2Event](AR2.applyEvent _, eventlog, FiniteDuration(5, "s"), theAlmhirt)
+    val propsFactories: Map[Class[_], (JUUID, AggregateRootCellStateSink) => Props] =
       Map(
-        (classOf[AR1], (arId: JUUID, notifyDoesNotExist: () => Unit) => Props(new AggregateRootCellImpl[AR1, AR1Event](arId, AR1.rebuildFromHistory, eventlog, notifyDoesNotExist))),
-        (classOf[AR2], (arId: JUUID, notifyDoesNotExist: () => Unit) => Props(new AggregateRootCellImpl[AR2, AR2Event](arId, AR2.rebuildFromHistory, eventlog, notifyDoesNotExist))))
-    val props = Props(new AggregateRootCellSourceImpl(propsFactories.lift))
+        (classOf[AR1], ar1Factory),
+        (classOf[AR2], ar2Factory))
+    val props = Props(new AggregateRootCellSourceImpl(propsFactories.lift, theAlmhirt))
     this.theAlmhirt.actorSystem.actorOf(props, "CellSource_" + testId.toString())
   }  
 }

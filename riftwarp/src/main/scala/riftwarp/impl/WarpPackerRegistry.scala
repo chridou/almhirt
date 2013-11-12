@@ -24,7 +24,7 @@ class WarpPackerRegistry extends WarpPackers {
     import scala.collection.JavaConversions._
     predicatedPackers.iterator().find(x => x._1(what)) match {
       case Some(x) => x._2.success
-      case None => NoSuchElementProblem("There is no packer registered with a predicate that returns true for the given argument.").failure
+      case None => NoSuchElementProblem(s"""There is no packer registered with a predicate that returns true for the given argument of type "${what.getClass.getName()}".""").failure
     }
   }
   

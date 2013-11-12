@@ -14,7 +14,7 @@ object HasAThrowableDescribedPacker extends WarpPacker[HasAThrowableDescribed] w
   override def pack(what: HasAThrowableDescribed)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     this.warpDescriptor ~>
       P("classname", what.classname) ~>
-      P("mesage", what.message) ~>
+      P("message", what.message) ~>
       P("stacktrace", what.stacktrace) ~>
       WithOpt("cause", what.cause, this)
   }

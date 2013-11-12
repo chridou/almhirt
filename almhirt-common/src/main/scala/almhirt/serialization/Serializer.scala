@@ -14,6 +14,10 @@ trait WorksWithBinaryRepresentation extends WorksWithSerializedRepresentation {
   override type SerializedRepr = Array[Byte]
 }
 
+trait WorksWithWireRepresentation extends WorksWithSerializedRepresentation {
+  override type SerializedRepr = WireRepresentation
+}
+
 trait CanSerialize[-TIn] extends WorksWithSerializedRepresentation {
   // (type, serialized)
   def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(SerializedRepr, Option[String])]
@@ -30,5 +34,5 @@ trait CanDeserializeFromFixedChannel[+TOut] extends WorksWithSerializedRepresent
 
 trait CanSerializeAndDeserialize[-TIn, +TOut] extends CanSerialize[TIn] with CanDeserialize[TOut]
 
-trait StringSerializing[-TIn, +TOut] extends CanSerializeAndDeserialize[TIn, TOut] with WorksWithStringRepresentation
-trait BinarySerializing[-TIn, +TOut] extends CanSerializeAndDeserialize[TIn, TOut] with WorksWithBinaryRepresentation
+trait StringBasedSerializer[-TIn, +TOut] extends CanSerializeAndDeserialize[TIn, TOut] with WorksWithStringRepresentation
+trait BinaryBasedSerializer[-TIn, +TOut] extends CanSerializeAndDeserialize[TIn, TOut] with WorksWithBinaryRepresentation

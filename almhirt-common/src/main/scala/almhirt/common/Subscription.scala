@@ -18,6 +18,6 @@ import java.util.UUID
 
 /** An object that when disposed cancels the assigned registration */
 trait Subscription {
-  def cancel: Unit
+  def cancel(): Unit
 }
 

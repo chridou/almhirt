@@ -39,6 +39,8 @@ trait AlmValidationOps0 extends Ops[String] {
     parseBooleanAlm(self)
   def toByteAlm(): AlmValidation[Byte] =
     parseByteAlm(self)
+  def toShortAlm(): AlmValidation[Short] =
+    parseShortAlm(self)
   def toIntAlm(): AlmValidation[Int] =
     parseIntAlm(self)
   def toLongAlm(): AlmValidation[Long] =

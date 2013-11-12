@@ -28,14 +28,6 @@ import almhirt.common._
 trait AlmValidationParseFunctions {
   import almhirt.almvalidation.funs._
   import almhirt.problem.all._
-
-  def parseByteAlm(toParse: String): AlmValidation[Byte] =
-    try {
-      toParse.toByte.success
-    } catch {
-      case err: Exception => ParsingProblem("Not a valid number(Int):%s".format(toParse)).failure
-    }
-
   def parseBooleanAlm(toParse: String): AlmValidation[Boolean] =
     try {
       toParse.toBoolean.success
@@ -43,6 +35,20 @@ trait AlmValidationParseFunctions {
       case err: Exception => ParsingProblem("Not a valid Boolean: %s".format(toParse)).failure[Boolean]
     }
 
+  def parseByteAlm(toParse: String): AlmValidation[Byte] =
+    try {
+      toParse.toByte.success
+    } catch {
+      case err: Exception => ParsingProblem("Not a valid number(Byte):%s".format(toParse)).failure
+    }
+
+  def parseShortAlm(toParse: String): AlmValidation[Short] =
+    try {
+      toParse.toShort.success
+    } catch {
+      case err: Exception => ParsingProblem("Not a valid number(Short):%s".format(toParse)).failure
+    }
+    
   def parseIntAlm(toParse: String): AlmValidation[Int] =
     try {
       toParse.toInt.success

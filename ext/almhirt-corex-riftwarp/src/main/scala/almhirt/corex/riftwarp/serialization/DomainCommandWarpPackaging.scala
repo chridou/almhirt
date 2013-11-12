@@ -12,8 +12,9 @@ import riftwarp.std.WarpObjectLookUp
 import almhirt.domain.AggregateRootRef
 
 object DomainCommandHeaderWarpPackaging extends WarpPacker[DomainCommandHeader] with RegisterableWarpPacker with RegisterableWarpUnpacker[DomainCommandHeader] {
+  import almhirt.commanding.DomainCommandHeader.BasicDomainCommandHeader
   val warpDescriptor = WarpDescriptor("DomainCommandHeader")
-  val alternativeWarpDescriptors = WarpDescriptor(classOf[DomainCommandHeader]) :: Nil
+  val alternativeWarpDescriptors = WarpDescriptor(classOf[DomainCommandHeader]) :: WarpDescriptor(classOf[BasicDomainCommandHeader]) :: Nil
   override def pack(what: DomainCommandHeader)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     this.warpDescriptor ~>
       P("id", what.id) ~>
@@ -35,7 +36,7 @@ object DomainCommandHeaderWarpPackaging extends WarpPacker[DomainCommandHeader] 
     }
 }
 
-trait DomainCommandWarpPackagingTemplate[TEvent <: DomainCommand] extends WarpPacker[TEvent] with RegisterableWarpUnpacker[TEvent]{
+trait DomainCommandWarpPackagingTemplate[TEvent <: DomainCommand] extends WarpPacker[TEvent] with RegisterableWarpUnpacker[TEvent] {
   override def pack(what: TEvent)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     (this.warpDescriptor ~> With("header", what.header, DomainCommandHeaderWarpPackaging)).flatMap(obj =>
       addCommandParams(what, obj))
@@ -46,7 +47,7 @@ trait DomainCommandWarpPackagingTemplate[TEvent <: DomainCommand] extends WarpPa
       lookup.getWith("header", DomainCommandHeaderWarpPackaging).flatMap(header =>
         extractCommandParams(lookup, header))
     }
-  
+
   def addCommandParams(what: TEvent, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage]
 
   def extractCommandParams(from: WarpObjectLookUp, header: DomainCommandHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TEvent]

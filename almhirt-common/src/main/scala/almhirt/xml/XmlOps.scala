@@ -27,81 +27,130 @@ import org.joda.time.{DateTime, LocalDateTime}
 trait XmlOps0 extends Ops[Elem]{
   def extractString(): AlmValidation[String] =
     almhirt.almvalidation.funs.notEmptyOrWhitespace(self.text)
+    
   def extractOptionalString(): Option[String] =
     extractString.toOption
+    
   def extractBoolean(): AlmValidation[Boolean] = 
     funs.booleanFromXmlNode(self)
+    
   def extractOptionalBoolean(): AlmValidation[Option[Boolean]] = 
     funs.optionalBooleanFromXmlNode(self)
+    
   def extractByte(): AlmValidation[Byte] = 
     funs.byteFromXmlNode(self)
+    
   def extractOptionalByte(): AlmValidation[Option[Byte]] = 
     funs.optionalByteFromXmlNode(self)
+    
+  def extractShort(): AlmValidation[Short] = 
+    funs.shortFromXmlNode(self)
+    
+  def extractOptionalShort(): AlmValidation[Option[Short]] = 
+    funs.optionalShortFromXmlNode(self)
+    
   def extractInt(): AlmValidation[Int] = 
     funs.intFromXmlNode(self)
+    
   def extractOptionalInt(): AlmValidation[Option[Int]] = 
     funs.optionalIntFromXmlNode(self)
+    
   def extractLong(): AlmValidation[Long] = 
     funs.longFromXmlNode(self)
+    
   def extractOptionalLong(): AlmValidation[Option[Long]] = 
     funs.optionalLongFromXmlNode(self)
+    
   def extractBigInt(): AlmValidation[BigInt] = 
     funs.bigIntFromXmlNode(self)
+    
   def extractOptionalBigInt(): AlmValidation[Option[BigInt]] = 
     funs.optionalBigIntFromXmlNode(self)
+    
   def extractFloat(): AlmValidation[Float] = 
     funs.floatFromXmlNode(self)
+    
   def extractOptionalFloat(): AlmValidation[Option[Float]] = 
     funs.optionalFloatFromXmlNode(self)
+    
   def extractDouble(): AlmValidation[Double] = 
     funs.doubleFromXmlNode(self)
+    
   def extractOptionalDouble(): AlmValidation[Option[Double]] = 
     funs.optionalDoubleFromXmlNode(self)
+    
   def extractDecimal(): AlmValidation[BigDecimal] = 
     funs.decimalFromXmlNode(self)
+    
   def extractOptionalDecimal(): AlmValidation[Option[BigDecimal]] = 
     funs.optionalDecimalFromXmlNode(self)
+    
   def extractDateTime(): AlmValidation[DateTime] = 
     funs.dateTimeFromXmlNode(self)
+    
   def extractLocalDateTime(): AlmValidation[LocalDateTime] = 
     funs.localDateTimeFromXmlNode(self)
+    
   def extractOptionalDateTime(): AlmValidation[Option[DateTime]] = 
     funs.optionalDateTimeFromXmlNode(self)
+    
   def extractDuration(): AlmValidation[FiniteDuration] = 
     funs.durationFromXmlNode(self)
+    
   def extractOptionalDuration(): AlmValidation[Option[FiniteDuration]] = 
     funs.optionalDurationFromXmlNode(self)
+    
   def extractUuid(): AlmValidation[JUUID] = 
     funs.uuidFromXmlNode(self)
+    
   def extractOptionalUuid(): AlmValidation[Option[JUUID]] = 
     funs.optionalUuidFromXmlNode(self)
+    
   def extractUri(): AlmValidation[java.net.URI] = 
     funs.uriFromXmlNode(self)
+    
   def extractOptionalUri(): AlmValidation[Option[java.net.URI]] = 
     funs.optionalUriFromXmlNode(self)
     
   def extractStringFromChild(label: String): AlmValidation[String] = 
     funs.stringFromChild(self, label)
+    
   def extractOptionalStringFromChild(label: String): Option[String] = 
     funs.stringOptionFromChild(self, label)
+    
+  def extractShortFromChild(label: String): AlmValidation[Short] = 
+    funs.shortFromChild(self, label)
+    
+  def extractOptionalShortFromChild(label: String): AlmValidation[Option[Short]] = 
+    funs.shortOptionFromChild(self, label)
+
   def extractIntFromChild(label: String): AlmValidation[Int] = 
     funs.intFromChild(self, label)
+    
   def extractOptionalIntFromChild(label: String): AlmValidation[Option[Int]] = 
     funs.intOptionFromChild(self, label)
+    
   def extractLongFromChild(label: String): AlmValidation[Long] = 
     funs.longFromChild(self, label)
+    
   def extractOptionalLongFromChild(label: String): AlmValidation[Option[Long]] = 
     funs.longOptionFromChild(self, label)
+    
   def extractDoubleFromChild(label: String): AlmValidation[Double] = 
     funs.doubleFromChild(self, label)
+    
   def extractOptionalDoubleFromChild(label: String): AlmValidation[Option[Double]] =
     funs.doubleOptionFromChild(self, label)
+    
   def extractDateTimeFromChild(label: String): AlmValidation[DateTime] = 
     funs.dateTimeFromChild(self, label)
+    
   def extractOptionalDateTimeFromChild(label: String): AlmValidation[Option[DateTime]] = 
     funs.dateTimeOptionFromChild(self, label)
+    
   def extractUuidFromChild(label: String): AlmValidation[JUUID] = 
     funs.uuidFromChild(self, label)
+    
   def extractOptionalUuidFromChild(label: String): AlmValidation[Option[JUUID]] =
     funs.uuidOptionFromChild(self, label)
     

@@ -1,7 +1,9 @@
 package almhirt.core
 
+import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
-import almhirt.messaging.MessageBus
+import almhirt.common._
+import almhirt.messaging._
 import com.typesafe.config.Config
 
 trait HasActorSystem {
@@ -26,6 +28,10 @@ trait HasDomainEventChannel {
 
 trait HasCommandChannel {
   def commandChannel : CommandChannel
+}
+
+trait HasChannelRegistry {
+  def channelRegistry: ChannelRegistry
 }
 
 trait HasFuturesExecutor {

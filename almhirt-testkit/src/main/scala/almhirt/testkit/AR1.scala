@@ -80,7 +80,9 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
           executionContext)
       val changeBAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComChangeB, AR1Event, AR1](
-          (ar, command) => ar.changeB(command.newB).result,
+          (ar, command) => { 
+            ar.changeB(command.newB).result 
+            },
           executionContext)
       val deleteTestArAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComDeleteAR1, AR1Event, AR1](

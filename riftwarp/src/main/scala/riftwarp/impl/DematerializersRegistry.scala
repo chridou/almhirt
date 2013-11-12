@@ -4,17 +4,18 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import riftwarp._
 import riftwarp.std._
+import almhirt.io.BinaryWriter
 
 class DematerializersRegistry extends Dematerializers {
-  private val dematerializers = new _root_.java.util.concurrent.ConcurrentHashMap[(String, String), Dematerializer[Any]](32)
+  private val dematerializers = new _root_.java.util.concurrent.ConcurrentHashMap[String, Dematerializer[Any]](32)
 
   override def add[T](dematerializer: Dematerializer[T]) {
-    dematerializers.put((dematerializer.channel, dematerializer.dimension), dematerializer)
+    dematerializers.put((dematerializer.channel.channelDescriptor), dematerializer)
   }
-    
-  override def get(dimension: String, channel: String): AlmValidation[Dematerializer[Any]] =
-    dematerializers.get((channel, dimension)) match {
-      case null => NoSuchElementProblem(s"""No Dematerialzer found  found for channel "$channel" and dimension "$dimension"""").failure
+
+  override def get(channel: String): AlmValidation[Dematerializer[Any]] =
+    dematerializers.get(channel) match {
+      case null => NoSuchElementProblem(s"""No Dematerialzer found  found for channel "$channel".""").failure
       case x => x.success
     }
 
@@ -25,8 +26,12 @@ object DematerializersRegistry {
     val reg = new DematerializersRegistry()
     reg.add(ToJsonStringDematerializer)
     reg.add(ToNoisyXmlStringDematerializer)
+    reg.add(ToHtmlStringDematerializer)
+    reg.add(ToWarpPackageDematerializer)
+    reg.add(ToExplodedDematerializer)
+    reg.add(new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter() })
     reg
   }
-  
+
   def empty: DematerializersRegistry = new DematerializersRegistry()
 }

@@ -60,65 +60,65 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
   }
 
   describe("An AggregateRootCell interacting with an eventlog") {
-    it("should be creatable") {
-      useCellWithDomainEventLog {
-        case (cell, eventlog) =>
-          true should be(true)
-      }
+//    it("should be creatable") {
+//      useCellWithDomainEventLog {
+//        case (cell, eventlog) =>
+//          true should be(true)
+//      }
+//    }
+//
+//    it("should answer with a AggregateRootNotFound when the aggregate root does not exist") {
+//      useCellWithDomainEventLog {
+//        case (cell, eventlog) =>
+//          val resF = (cell ? GetManagedAggregateRoot)(defaultDuration).mapTo[DomainMessage]
+//          val res = Await.result(resF, defaultDuration)
+//          res should equal(AggregateRootNotFound(managedAggregateRootId))
+//      }
+//    }
+//
+//    it("should answer with an AggregateRoot when the aggregate root does exist") {
+//      val (ar, events) =
+//        (for {
+//          state1 <- AR1.fromScratch(managedAggregateRootId, "a")
+//          state2 <- state1.changeB(Some("b"))
+//        } yield state2).result.forceResult
+//      useCellWithDomainEventLog {
+//        case (cell, eventlog) =>
+//          Await.result((eventlog ? CommitDomainEvents(events))(defaultDuration), defaultDuration)
+//          val resF = (cell ? GetManagedAggregateRoot)(defaultDuration)
+//          val res = Await.result(resF, defaultDuration)
+//          res should equal(RequestedAggregateRoot(ar))
+//      }
+//    }
+
+    ignore("should answer with an AggregateRootWasDeleted when the aggregate root is marked as deleted") {
+//      val (ar, events) =
+//        (for {
+//          state1 <- AR1.fromScratch(managedAggregateRootId, "a")
+//          state2 <- state1.changeB(Some("b"))
+//          state3 <- state2.delete
+//        } yield state3).result.forceResult
+//      useCellWithDomainEventLog {
+//        case (cell, eventlog) =>
+//          Await.result((eventlog ? CommitDomainEvents(events))(defaultDuration), defaultDuration)
+//          val resF = (cell ? GetManagedAggregateRoot)(defaultDuration)
+//          val res = Await.result(resF, defaultDuration)
+//          res should equal(AggregateRootWasDeleted(managedAggregateRootId))
+//      }
     }
 
-    it("should answer with a AggregateRootNotFound when the aggregate root does not exist") {
-      useCellWithDomainEventLog {
-        case (cell, eventlog) =>
-          val resF = (cell ? GetManagedAggregateRoot)(defaultDuration).mapTo[DomainMessage]
-          val res = Await.result(resF, defaultDuration)
-          res should equal(AggregateRootNotFound(managedAggregateRootId))
-      }
-    }
-
-    it("should answer with an AggregateRoot when the aggregate root does exist") {
-      val (ar, events) =
-        (for {
-          state1 <- AR1.fromScratch(managedAggregateRootId, "a")
-          state2 <- state1.changeB(Some("b"))
-        } yield state2).result.forceResult
-      useCellWithDomainEventLog {
-        case (cell, eventlog) =>
-          Await.result((eventlog ? CommitDomainEvents(events))(defaultDuration), defaultDuration)
-          val resF = (cell ? GetManagedAggregateRoot)(defaultDuration)
-          val res = Await.result(resF, defaultDuration)
-          res should equal(RequestedAggregateRoot(ar))
-      }
-    }
-
-    it("should answer with an AggregateRootWasDeleted when the aggregate root is marked as deleted") {
-      val (ar, events) =
-        (for {
-          state1 <- AR1.fromScratch(managedAggregateRootId, "a")
-          state2 <- state1.changeB(Some("b"))
-          state3 <- state2.delete
-        } yield state3).result.forceResult
-      useCellWithDomainEventLog {
-        case (cell, eventlog) =>
-          Await.result((eventlog ? CommitDomainEvents(events))(defaultDuration), defaultDuration)
-          val resF = (cell ? GetManagedAggregateRoot)(defaultDuration)
-          val res = Await.result(resF, defaultDuration)
-          res should equal(AggregateRootWasDeleted(managedAggregateRootId))
-      }
-    }
-
-    it("should create a new aggregate root") {
-      val (ar, events) =
-        (for {
-          state1 <- AR1.fromScratch(managedAggregateRootId, "a")
-          state2 <- state1.changeB(Some("b"))
-        } yield state2).result.forceResult
-      useCellWithDomainEventLog {
-        case (cell, eventlog) =>
-          val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultDuration)
-          Await.result(updF, defaultDuration) should equal(AggregateRootUpdated(ar))
-      }
-    }
+//    it("should create a new aggregate root") {
+//      val (ar, events) =
+//        (for {
+//          state1 <- AR1.fromScratch(managedAggregateRootId, "a")
+//          state2 <- state1.changeB(Some("b"))
+//        } yield state2).result.forceResult
+//      useCellWithDomainEventLog {
+//        case (cell, eventlog) =>
+//          val updF = (cell ? UpdateAggregateRoot(ar, events))(defaultDuration)
+//          Await.result(updF, defaultDuration) should equal(AggregateRootUpdated(ar))
+//      }
+//    }
 
     it("should update an existing aggreagate root") {
       val initialStateRecorder =

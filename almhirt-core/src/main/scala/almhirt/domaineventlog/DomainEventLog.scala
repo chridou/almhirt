@@ -5,10 +5,12 @@ import almhirt.common._
 import almhirt.domain.DomainEvent
 import akka.actor.Actor
 import almhirt.domain.AggregateRoot
+import almhirt.messaging.MessagePublisher
+import play.api.libs.iteratee.Enumerator
 
 object DomainEventLog {
   trait DomainEventLogMessage
-  
+
   final case class CommitDomainEvents(events: Seq[DomainEvent]) extends DomainEventLogMessage
   case object GetAllDomainEvents extends DomainEventLogMessage
   final case class GetDomainEvent(eventId: JUUID) extends DomainEventLogMessage
@@ -19,55 +21,55 @@ object DomainEventLog {
   final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long) extends DomainEventLogMessage
   final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long) extends DomainEventLogMessage
 
-  final case class CommittedDomainEvents(committed: Seq[DomainEvent], uncommitted: Option[(Seq[DomainEvent], Problem)]) extends DomainEventLogMessage
+  sealed trait CommitDomainEventsResult extends DomainEventLogMessage
+  final case class CommittedDomainEvents(committed: Seq[DomainEvent]) extends CommitDomainEventsResult
+  final case class CommitDomainEventsFailed(problem: Problem) extends CommitDomainEventsResult
 
   sealed trait SingleDomainEventQueryResult extends DomainEventLogMessage
-  final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent])  extends SingleDomainEventQueryResult
-  final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem)  extends SingleDomainEventQueryResult
+  final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent]) extends SingleDomainEventQueryResult
+  final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem) extends SingleDomainEventQueryResult
 
-  sealed trait FetchedDomainEventsPart extends DomainEventLogMessage {
-    def index: Int
-    def isLast: Boolean
+  sealed trait FetchDomainEventsResult extends DomainEventLogMessage
+  final case class FetchedDomainEvents(enumerator: Enumerator[DomainEvent]) extends FetchDomainEventsResult
+  final case class FetchDomainEventsFailed(problem: Problem) extends FetchDomainEventsResult
+
+//  final case class FetchedDomainEventsBatch(
+//    events: Seq[DomainEvent]) extends FetchedDomainEvents
+
+
+//  final case class FetchedDomainEventsFailure(problem: Problem) extends FetchedDomainEvents
+
+  object CommitFailed {
+    def unapply(what: CommitDomainEventsResult): Option[Problem] =
+      what match {
+        case CommitDomainEventsFailed(p) => Some(p)
+        case _ => None
+      }
   }
 
-  final case class DomainEventsChunk(
-    /**
-     * Starts with Zero
-     */
-    index: Int,
-    isLast: Boolean,
-    events: Seq[DomainEvent]) extends FetchedDomainEventsPart
-
-  final case class DomainEventsChunkFailure(
-    /**
-     * Starts with Zero
-     */
-    index: Int,
-    problem: Problem) extends FetchedDomainEventsPart {
-    override def isLast = true
-  }
-  
   object NothingCommitted {
-    def unapply(what: CommittedDomainEvents): Boolean =
-      what.committed.isEmpty && what.uncommitted.isEmpty
-  }
-  
-  object AllDomainEventsSuccessfullyCommitted {
-    def unapply(what: CommittedDomainEvents): Option[Seq[DomainEvent]] =
-      if (!what.committed.isEmpty && what.uncommitted.isEmpty) Some(what.committed) else None
+    def unapply(what: CommitDomainEventsResult): Boolean =
+      what match {
+        case CommitDomainEventsFailed(p) => false
+        case CommittedDomainEvents(committed) => committed.isEmpty
+      }
   }
 
-  object DomainEventsPartiallyCommitted {
-    def unapply(what: CommittedDomainEvents): Option[(Seq[DomainEvent], Problem, Seq[DomainEvent])] =
-      if (!what.committed.isEmpty && !what.uncommitted.isEmpty) Some((what.committed, what.uncommitted.get._2,  what.uncommitted.get._1)) else None
-  }
-
-  object CommitDomainEventsFailed {
-    def unapply(what: CommittedDomainEvents): Option[(Problem, Seq[DomainEvent])] =
-      if (what.committed.isEmpty && what.uncommitted.isDefined) Some((what.uncommitted.get._2,  what.uncommitted.get._1)) else None
+  object DomainEventsSuccessfullyCommitted {
+    def unapply(what: CommitDomainEventsResult): Option[Seq[DomainEvent]] =
+      what match {
+        case CommitDomainEventsFailed(p) => None
+        case CommittedDomainEvents(committed) =>
+          if (committed.isEmpty)
+            None
+          else
+            Some(committed)
+      }
   }
 }
 
 trait DomainEventLog { actor: Actor =>
+  def publishCommittedEvent(event: DomainEvent)
+
   protected def receiveDomainEventLogMsg: Receive
 }

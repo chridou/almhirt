@@ -3,6 +3,7 @@ package almhirt.corex.slick.eventlog
 import scala.concurrent.ExecutionContext
 import scalaz.syntax.validation._
 import akka.actor._
+import akka.routing.RoundRobinRouter
 import almhirt.messaging.MessagePublisher
 import almhirt.common._
 import almhirt.serialization._
@@ -13,7 +14,6 @@ import almhirt.corex.slick.SlickCreationParams
 class SlickTextEventLog private (
   override val messagePublisher: MessagePublisher,
   override val storeComponent: EventLogStoreComponent[TextEventLogRow],
-  override val syncIoExecutionContext: ExecutionContext,
   override val canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes,
   serializer: EventStringSerializer,
   serializationChannel: String)
@@ -39,17 +39,15 @@ object SlickTextEventLog {
   import almhirt.configuration._
   import almhirt.almvalidation.kit._
 
-  def props(
+  def propsRaw(
     messagePublisher: MessagePublisher,
     storeComponent: EventLogStoreComponent[TextEventLogRow],
-    syncIoExecutionContext: ExecutionContext,
     canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes,
     serializer: EventStringSerializer,
     serializationChannel: String): AlmValidation[Props] =
     Props(new SlickTextEventLog(
       messagePublisher,
       storeComponent,
-      syncIoExecutionContext,
       canCreateUuidsAndDateTimes,
       serializer,
       serializationChannel)).success
@@ -58,12 +56,19 @@ object SlickTextEventLog {
     configSection: Config,
     messagePublisher: MessagePublisher,
     storeComponent: EventLogStoreComponent[TextEventLogRow],
-    syncIoExecutionContext: ExecutionContext,
     canCreateUuidsAndDateTimes: CanCreateUuidsAndDateTimes,
     serializer: EventStringSerializer): AlmValidation[Props] =
     for {
       channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(messagePublisher, storeComponent, syncIoExecutionContext, canCreateUuidsAndDateTimes, serializer, channel)
+      dispatcher <- configSection.v[String]("sync-io-dispatcher").flatMap(_.notEmptyOrWhitespace)
+      numActors <- configSection.v[Int]("number-of-actors")
+      resRaw <- propsRaw(messagePublisher, storeComponent, canCreateUuidsAndDateTimes, serializer, channel)
+      resDisp <- resRaw.withDispatcher(dispatcher).success
+      res <- if(numActors > 1) {
+        resDisp.withRouter(RoundRobinRouter(numActors)).success
+      } else {
+        resDisp.success
+      }
     } yield res
 
   def props(
@@ -73,8 +78,7 @@ object SlickTextEventLog {
     serializer: EventStringSerializer): AlmValidation[Props] =
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
-      channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, theAlmhirt, serializer, channel)
+      res <- props(theAlmhirt, configPath, storeComponent, serializer)
     } yield res
 
   def props(
@@ -83,42 +87,40 @@ object SlickTextEventLog {
     storeComponent: EventLogStoreComponent[TextEventLogRow],
     serializer: EventStringSerializer): AlmValidation[Props] =
     for {
-      channel <- configSection.v[String]("serialization-channel").flatMap(_.notEmptyOrWhitespace)
-      res <- props(theAlmhirt.messageBus, storeComponent, theAlmhirt.syncIoWorker, theAlmhirt, serializer, channel)
+      res <- props(configSection, theAlmhirt.messageBus, storeComponent, theAlmhirt, serializer)
     } yield res
     
-  def create(theAlmhirt: Almhirt, configPath: String, serializer: EventStringSerializer): AlmValidation[SlickCreationParams] =
+  def props(
+    theAlmhirt: Almhirt,
+    storeComponent: EventLogStoreComponent[TextEventLogRow],
+    serializer:EventStringSerializer): AlmValidation[Props] =
     for {
-      configSection <- theAlmhirt.config.v[Config](configPath)
+      configSection <- theAlmhirt.config.v[Config]("almhirt.eventlog") 
+      res <- props(theAlmhirt, configSection, storeComponent, serializer)
+    } yield res
+
+  def create(theAlmhirt: Almhirt, configSection: Config, serializer: EventStringSerializer): AlmValidation[SlickCreationParams] =
+    for {
       storeComponent <- TextEventLogDataAccess(configSection)
       createSchema <- configSection.opt[Boolean]("create-schema").map(_.getOrElse(false))
       dropSchema <- configSection.opt[Boolean]("drop-schema").map(_.getOrElse(false))
-      theProps <- props(theAlmhirt, configPath, storeComponent, serializer)
+      theProps <- props(theAlmhirt, configSection, storeComponent, serializer)
     } yield new SlickCreationParams {
       val props = theProps
       val initAction = () => if (createSchema) storeComponent.create else ().success
       val closeAction = () => if (dropSchema) storeComponent.drop else ().success
     }
     
-  def create(theAlmhirt: Almhirt, configPath: String, serializer: EventStringSerializer, createAndDrop: Boolean): AlmValidation[SlickCreationParams] =
+  def create(theAlmhirt: Almhirt, configPath: String, serializer: EventStringSerializer): AlmValidation[SlickCreationParams] =
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
-      storeComponent <- TextEventLogDataAccess(configSection)
-      theProps <- props(theAlmhirt, configPath, storeComponent, serializer)
-    } yield new SlickCreationParams {
-      val props = theProps
-      val initAction = () => if (createAndDrop) storeComponent.create else ().success
-      val closeAction = () => if (createAndDrop) storeComponent.drop else ().success
-    }
+      res <- create(theAlmhirt, configSection, serializer)
+    } yield res
 
-  def create(theAlmhirt: Almhirt, configSection: Config, serializer: EventStringSerializer, createAndDrop: Boolean): AlmValidation[SlickCreationParams] =
+  def create(theAlmhirt: Almhirt, serializer: EventStringSerializer): AlmValidation[SlickCreationParams] =
     for {
-      storeComponent <- TextEventLogDataAccess(configSection)
-      theProps <- props(theAlmhirt, configSection, storeComponent, serializer)
-    } yield new SlickCreationParams {
-      val props = theProps
-      val initAction = () => if (createAndDrop) storeComponent.create else ().success
-      val closeAction = () => if (createAndDrop) storeComponent.drop else ().success
-    }
+      configSection <- theAlmhirt.config.v[Config]("almhirt.eventlog") 
+      res <- create(theAlmhirt, configSection, serializer)
+    } yield res
     
 }

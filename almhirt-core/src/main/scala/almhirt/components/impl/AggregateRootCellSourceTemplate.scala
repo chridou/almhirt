@@ -1,140 +1,121 @@
 package almhirt.components.impl
 
 import java.util.{ UUID => JUUID }
+import scala.concurrent.duration.FiniteDuration
 import akka.actor._
+import almhirt.almvalidation.kit._
 import almhirt.components._
+import com.typesafe.config.Config
+import almhirt.core.Almhirt
+import scala.concurrent.ExecutionContext
+import almhirt.domain.AggregateRoot
 
 trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor with ActorLogging =>
   import AggregateRootCellSource._
 
-  private var currentHandleId = 0L
+  def cacheControlHeartBeatInterval: Option[FiniteDuration]
 
-  private def nextChacheState(currentState: CacheState): Receive = {
+  def maxCachedAggregateRootAge: Option[FiniteDuration]
+  def maxDoesNotExistAge: Option[FiniteDuration]
+  def maxUninitializedAge: Option[FiniteDuration]
+
+  implicit def executionContext: ExecutionContext
+
+  private val cacheState = new MutableAggregateRootCellCache(
+    createCell,
+    cell => {
+      this.context.watch(cell)
+      this.context.stop(cell)
+    },
+    handleId => self ! Unbook(handleId))
+
+  private var lastStatsAfterCleanUp = cacheState.stats
+  
+  val pendingRequests = scala.collection.mutable.HashMap.empty[JUUID, scala.collection.mutable.Buffer[(Class[_ <: AggregateRoot[_, _]], ActorRef)]]
+
+  override def receiveAggregateRootCellSourceMessage: Receive = {
     case GetCell(arId, arType) =>
-      val (handle, nextState) = bookCellFor(arId, arType, currentState)
-      sender ! AggregateRootCellSourceResult(arId, handle)
-      context.become(nextChacheState(cleanUp(nextState)))
+      val (bookingResult, _) = cacheState.bookCell(arId, arType, log.warning)
+      bookingResult match {
+        case MutableAggregateRootCellCache.CellBooked(handle) =>
+          sender ! AggregateRootCellSourceResult(arId, handle)
+        case MutableAggregateRootCellCache.AwaitingDeathCertificate =>
+          enqueueRequest(arId, arType, sender)
+      }
     case Unbook(handleId) =>
-      val nextState = currentState.unbook(handleId)
-      context.become(nextChacheState(cleanUp(nextState)))
-    case DoesNotExistNotification(arId) =>
-      val nextState = currentState.markForRemoval(arId)
-      context.become(nextChacheState(cleanUp(nextState)))
-    case Remove(arId) =>
-      val nextState = currentState.markForRemoval(arId)
-      context.become(nextChacheState(cleanUp(nextState)))
+      cacheState.unbookCell(handleId, log.warning)
+    case CellStateNotification(managedArId, reportedState) =>
+      cacheState.updateCellState(managedArId, reportedState)
     case GetStats =>
-      sender ! AggregateRootCellSourceStats(
-        currentState.cellByArId.size,
-        currentState.handleIdsByArId.size,
-        currentState.arIdByHandleId.size)
+      sender ! AggregateRootCellSourceStats(cacheState.stats)
+    case Terminated(cell) =>
+      this.context.unwatch(cell)
+      cacheState.arIdForUnconfirmedKill(cell) match {
+        case Some(arId) =>
+          cacheState.confirmDeath(cell, log.warning)
+          handlePendingRequestsOnDeathCertificate(arId)
+        case None =>
+          val msg = s"""There was a confirmed kill for "${cell.path.toString()}" but it is not in the list of unconfirmed kills."""
+          log.error(msg)
+          throw new CriticalAggregateRootCellSourceException(msg, null)
+      }
+    case CleanUp =>
+      val oldStats = lastStatsAfterCleanUp
+      val statsBeforeCleanUp = cacheState.stats
+      val (_, timings) =
+        try {
+          cacheState.cleanUp(maxDoesNotExistAge, maxCachedAggregateRootAge, maxUninitializedAge)
+        } catch {
+          case scala.util.control.NonFatal(exn) =>
+            throw new CriticalAggregateRootCellSourceException(s"The cell cache failed to perform a clean up: ${exn.getMessage()}", exn)
+        }
+      lastStatsAfterCleanUp = cacheState.stats
+      val numPendingRequest = pendingRequests.map(_._2).flatten.size
+      cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
+      val comparisonString = AggregateRootCellCacheStats.tripletComparisonString(oldStats, statsBeforeCleanUp, lastStatsAfterCleanUp, "last clean up", "before clean up", "after clean up")
+      log.info(s"""Performed clean up.\n$comparisonString\n${timings.toNiceString()}\n\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
   }
 
-  override def receiveAggregateRootCellSourceMessage: Receive = nextChacheState(CacheState.empty)
-
-  private def cleanUp(currentState: CacheState): CacheState = {
-    val (removed, nextState) = currentState.removeCandidatesForRemoval
-    removed.foreach(cell => this.context.stop(cell))
-    nextState
-  }
-
-  private def cellIsBooked(arId: JUUID, currentState: CacheState): Boolean =
-    currentState.handleIdsByArId.get(arId).map(handleIds => !handleIds.isEmpty).getOrElse(false)
-
-  private def cellForArExists(arId: JUUID, currentState: CacheState): Boolean =
-    currentState.cellByArId.contains(arId)
-
-  private def bookCellFor(arId: JUUID, arType: Class[_], currentState: CacheState): (CellHandle, CacheState) =
-    if (cellForArExists(arId, currentState)) {
-      bookExistingCell(arId, currentState)
-    } else {
-      bookNewCell(arId, arType, currentState)
+  private def enqueueRequest(arId: JUUID, arType: Class[_ <: AggregateRoot[_, _]], waitingCaller: ActorRef) {
+    pendingRequests.get(arId) match {
+      case Some(requests) =>
+        requests.append((arType, waitingCaller))
+      case None =>
+        pendingRequests.put(arId, scala.collection.mutable.Buffer((arType, waitingCaller)))
     }
-
-  private def bookExistingCell(arId: JUUID, currentState: CacheState): (CellHandle, CacheState) = {
-    val theCell = currentState.getCell(arId)
-    currentHandleId = currentHandleId + 1L
-    val pinnedHandleId = currentHandleId
-    val handle = new CellHandle {
-      val cell = theCell
-      def release() = self ! Unbook(pinnedHandleId)
-    }
-    (handle, currentState.book(arId, pinnedHandleId))
   }
 
-  private def bookNewCell(arId: JUUID, arType: Class[_], currentState: CacheState): (CellHandle, CacheState) = {
-    val newCell = createCell(arId, arType)
-    val stateWithNewCell = currentState.addCell(arId, newCell)
-    currentHandleId = currentHandleId + 1L
-    val pinnedHandleId = currentHandleId
-    val handle = new CellHandle {
-      val cell = newCell
-      def release() = self ! Unbook(pinnedHandleId)
+  private def handlePendingRequestsOnDeathCertificate(arId: JUUID) {
+    pendingRequests.get(arId) match {
+      case Some(waiting) =>
+        val stillWaiting = scala.collection.mutable.Buffer[(JUUID, Class[_ <: AggregateRoot[_, _]], ActorRef)]()
+        waiting.foreach {
+          case (arType, caller) =>
+            val (bookingResult, _) = cacheState.bookCell(arId, arType, log.warning)
+            bookingResult match {
+              case MutableAggregateRootCellCache.CellBooked(handle) =>
+                caller ! AggregateRootCellSourceResult(arId, handle)
+              case MutableAggregateRootCellCache.AwaitingDeathCertificate =>
+                stillWaiting.append((arId, arType, caller))
+            }
+        }
+        pendingRequests.remove(arId)
+        stillWaiting.foreach {
+          case (arId, arType, waitingCaller) =>
+            enqueueRequest(arId, arType, waitingCaller)
+        }
+      case None =>
+        ()
     }
-    val newState = currentState.book(arId, pinnedHandleId).addCell(arId, newCell)
-    (handle, newState)
   }
 
-  private case class Remove(arId: JUUID)
   private case class Unbook(handleId: Long)
 
-  private case class CacheState(
-    cellByArId: Map[JUUID, ActorRef],
-    handleIdsByArId: Map[JUUID, Set[Long]],
-    arIdByHandleId: Map[Long, JUUID],
-    markedForRemoval: Set[JUUID]) {
+  private object CleanUp
 
-    def unbook(handleId: Long): CacheState = {
-      val arId = arIdByHandleId(handleId)
-      val newHandleIdsByArId = {
-        val newHandlesForArId = handleIdsByArId(arId) - handleId
-        if (newHandlesForArId.isEmpty)
-          handleIdsByArId - arId
-        else
-          handleIdsByArId + (arId -> newHandlesForArId)
-      }
-      CacheState(cellByArId, newHandleIdsByArId, arIdByHandleId - handleId, markedForRemoval)
-    }
-
-    def book(arId: JUUID, handleId: Long): CacheState = {
-      val newArIdByHandleId = arIdByHandleId + (handleId -> arId)
-      val newHandleIdsByArId =
-        if (handleIdsByArId.contains(arId)) {
-          handleIdsByArId + (arId -> (handleIdsByArId(arId) + handleId))
-        } else {
-          handleIdsByArId + (arId -> Set(handleId))
-
-        }
-      CacheState(cellByArId, newHandleIdsByArId, newArIdByHandleId, markedForRemoval)
-    }
-
-    def addCell(arId: JUUID, cell: ActorRef): CacheState =
-      copy(cellByArId = this.cellByArId + (arId -> cell))
-
-    def getCell(arId: JUUID): ActorRef =
-      cellByArId(arId)
-
-    def markForRemoval(arId: JUUID): CacheState =
-      copy(markedForRemoval = this.markedForRemoval + arId)
-
-    def bookedCellIds = handleIdsByArId.keySet
-
-    def getCandidatesForRemoval: Set[JUUID] =
-      if (markedForRemoval.isEmpty)
-        Set.empty
-      else {
-        markedForRemoval diff bookedCellIds
-      }
-
-    def removeCandidatesForRemoval(): (Iterable[ActorRef], CacheState) = {
-      val cellIdsToRemove = getCandidatesForRemoval
-      val cellsToRemove = cellIdsToRemove.map(cellByArId)
-      val newCellsByArId = cellByArId.filterKeys(cellId => !cellIdsToRemove.contains(cellId))
-      (cellsToRemove, this.copy(cellByArId = newCellsByArId, markedForRemoval = Set.empty))
-    }
+  protected def requestCleanUp() {
+    self ! CleanUp
   }
 
-  private object CacheState {
-    def empty: CacheState = CacheState(Map.empty, Map.empty, Map.empty, Set.empty)
-  }
+  protected def stats = cacheState.stats
 }

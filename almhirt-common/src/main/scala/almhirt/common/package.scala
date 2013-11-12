@@ -15,13 +15,13 @@
 package almhirt
 
 import language.implicitConversions
-
+import scala.util.control.NonFatal
 import scalaz.syntax.validation
 import scala.concurrent.ExecutionContext
 import almhirt.problem._
 
 /** Classes and traits needed at other places*/
-package object common {
+package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   type AlmValidation[+α] = scalaz.Validation[almhirt.problem.Problem, α]
   type AlmValidationAP[+α] = scalaz.Validation[almhirt.problem.AggregateProblem, α]
 
@@ -31,10 +31,10 @@ package object common {
 
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T] { def equal(p1: T, p2: T): Boolean = p1 == p2 }
 
-  def launderException(exn: Exception): SingleProblem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
+  def launderException(exn: Throwable): SingleProblem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
   def handleThrowable(throwable: Throwable): Problem =
     throwable match {
-      case exn: Exception => launderException(exn)
+      case NonFatal(exn) => launderException(exn)
     }
 
   implicit object DateTimeOrdering extends Ordering[org.joda.time.DateTime] {
@@ -44,12 +44,13 @@ package object common {
   implicit object LocalDateTimeOrdering extends Ordering[org.joda.time.LocalDateTime] {
     def compare(a: org.joda.time.LocalDateTime, b: org.joda.time.LocalDateTime) = a.compareTo(b)
   }
-  
+
+ 
   object Severity {
     val Critical = almhirt.problem.Critical
     val Major = almhirt.problem.Major
     val Minor = almhirt.problem.Minor
-    val NoProblem = almhirt.problem.NoProblem
+    val Warning = almhirt.problem.Warning
   }
 
   val UnspecifiedProblem = almhirt.problem.problemtypes.UnspecifiedProblem

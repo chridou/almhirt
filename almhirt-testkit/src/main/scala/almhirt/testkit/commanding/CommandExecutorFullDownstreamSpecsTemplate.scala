@@ -2,6 +2,7 @@ package almhirt.testkit.commanding
 
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.FunSpec
+import scala.concurrent.duration.FiniteDuration
 import akka.testkit.TestProbe
 import almhirt.testkit._
 import scala.concurrent.Await
@@ -38,7 +39,7 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
     val probe = TestProbe()
     val handlers = AR2.Commanding.addCommands(AR1.Commanding.addCommands(CommandHandlerRegistry()))
     val publisher = MessagePublisher.sendToActor(probe.ref)
-    (this.system.actorOf(Props(new CommandExecutorImpl(handlers, repositories, publisher, theAlmhirt)), "CommandExecutor_" + testId), probe)
+    (this.system.actorOf(Props(new CommandExecutorImpl(handlers, repositories, publisher, theAlmhirt, FiniteDuration(5, "s"), FiniteDuration(5, "s"), 1000L)), "CommandExecutor_" + testId), probe)
   }
 
   def useExecutorWithEventLog[T](f: (ActorRef, ActorRef, TestProbe) => T): T = {
@@ -58,7 +59,7 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
         throw exn
     }
   }
-  
+
   describe("CommandExecutor") {
     it("should be creatable") {
       useExecutorWithEventLog {
@@ -92,6 +93,7 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
       useExecutorWithEventLog {
         (executor, eventLog, probe) =>
           val theFirstCommand = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
+
           executor ! theFirstCommand
           probe.fishForMessage(defaultDuration, "I'm fishing for the first CommandExecuted") {
             case Message(_, CommandExecuted(_, cmdId)) => cmdId == theFirstCommand.commandId

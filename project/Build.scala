@@ -3,12 +3,13 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.4"
+  val buildVersion      = "0.5.128"
   val buildScalaVersion = "2.10.2"
 
   val akkaVersion = "2.2.+"
   val scalatestVersion = "2.0.M5b"
-  
+  val sprayVersion = "1.2-20130822"
+   
   val buildSettings = Defaults.defaultSettings ++ Seq (
 	organization := buildOrganization,
     version      := buildVersion,
@@ -30,16 +31,24 @@ object Dependencies {
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "compile"
-	
-	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "provided"
 
-	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.+"
+	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.2.+" % "provided"
+	
+	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
+	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
+
+	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.+" % "provided"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "compile"
-	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+"
+	lazy val spray_routing = "io.spray" % "spray-routing" % BuildSettings.sprayVersion % "provided"
+	lazy val spray_json =  "io.spray" %%  "spray-json" % "1.2.5"
+	lazy val spray_testkit =  "io.spray" % "spray-testkit" % BuildSettings.sprayVersion % "test"
+	lazy val spray_client = "io.spray" % "spray-client" % BuildSettings.sprayVersion % "provided"
+	
+    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
+	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+" % "provided"
 
 	
     lazy val scalatest = "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"	
@@ -72,6 +81,7 @@ trait CoreBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
@@ -105,6 +115,7 @@ trait TestKitBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "compile",
@@ -136,11 +147,52 @@ trait CorexSlickBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += slick,
+	  libraryDependencies += typesafe_config,
 	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
-	  libraryDependencies += "postgresql" % "postgresql" % "9.1-901.jdbc4" % "test",
 	  libraryDependencies += scalatest
   )
+}
+
+trait CorexMongoBuild {
+  import Dependencies._
+  import Resolvers._
+  def corexMongoProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  resolvers += "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += play2_iteratees,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "0.10.0-SNAPSHOT" % "provided"
+		exclude("ch.qos.logback", "logback-core")
+		exclude("ch.qos.logback", "logback-classic"),
+ 	  libraryDependencies += scalatest
+  )
+}
+
+trait CorexSprayBuild {
+  import Dependencies._
+  import Resolvers._
+  def corexSprayProject(name: String, baseFile: java.io.File) = {
+ 	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  //resolvers += "spray repo" at "http://repo.spray.io",
+	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
+	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += spray_client,
+	  libraryDependencies += spray_routing,
+	  libraryDependencies += spray_testkit,
+	  libraryDependencies += scalatest
+	  )
+	  }
+  
 }
 
 trait RiftWarpBuild {
@@ -154,6 +206,42 @@ trait RiftWarpBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
+	  libraryDependencies += "com.chuusai" %% "shapeless" % "1.2.4",
+	  libraryDependencies += scalatest
+  )
+}
+
+trait RiftWarpMongoExtBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpMongoExtProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sonatypeReleases,
+	  resolvers += "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
+	  libraryDependencies += scala_reflect,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-bson" % "0.10.0-SNAPSHOT" % "provided"     
+		exclude("ch.qos.logback", "logback-core")
+		exclude("ch.qos.logback", "logback-classic"),
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest
+  )
+}
+
+trait RiftWarpSprayJsonExtBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpSprayJsonExtProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  resolvers += "spray repo" at "http://repo.spray.io",
+	  libraryDependencies += scala_reflect,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += spray_json,
 	  libraryDependencies += scalatest
   )
 }
@@ -172,30 +260,6 @@ trait RiftWarpAutomaticBuild {
   )
 }
 
-
-trait CorexSprayBuild {
-  import Dependencies._
-  import Resolvers._
-  def corexSprayProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  //resolvers += "spray repo" at "http://repo.spray.io",
-	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
-	  libraryDependencies += "io.spray" % "spray-routing" % "1.2-20130710"
-	  )
-  
-}
-
-trait AppBuild {
-  import Dependencies._
-  import Resolvers._
-  def appProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  libraryDependencies += "org.clapper" %% "argot" % "1.0.0" % "compile",
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases)
-  
-}
-
 object AlmHirtBuild extends Build 
 	with CommonBuild 
 	with CoreBuild 
@@ -203,13 +267,15 @@ object AlmHirtBuild extends Build
 	with TestKitBuild 
 	with CorexRiftwarpBuild 
 	with CorexSlickBuild 
+	with CorexMongoBuild 
 	with CorexSprayBuild 
 	with RiftWarpBuild 
-	with RiftWarpAutomaticBuild 
-	with AppBuild {
+	with RiftWarpMongoExtBuild 
+	with RiftWarpSprayJsonExtBuild 
+	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, core, coreTesting, testKit, riftwarp, corexRiftwarp, slickExtensions, corexSpray)
+	                        base = file(".")) aggregate(common, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpMongoProject, riftwarpSprayProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -230,22 +296,25 @@ object AlmHirtBuild extends Build
   lazy val slickExtensions = corexSlickProject(	name = "almhirt-corex-slick",
                        			baseFile = file("./ext/almhirt-corex-slick")) dependsOn(core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 
- lazy val corexSpray = corexSprayProject(	name = "almhirt-corex-spray",
-	                       				baseFile = file("./ext/almhirt-corex-spray")) dependsOn(core)
+  lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
+                       			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(core, riftwarp % "test->test", corexRiftwarp % "test->test", riftwarpMongoProject % "test", testKit % "test")
+								
+  lazy val corexSpray = corexSprayProject(	name = "almhirt-corex-spray",
+	                       				baseFile = file("./ext/almhirt-corex-spray")) dependsOn(common, core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)
+								
+  lazy val riftwarpMongoProject = riftwarpMongoExtProject(	name = "riftwarpx-mongo",
+                       			baseFile = file("./ext/riftwarpx-mongo")) dependsOn(common, riftwarp)
+								
+  lazy val riftwarpSprayProject = riftwarpSprayJsonExtProject(	name = "riftwarpx-sprayjson",
+                       			baseFile = file("./ext/riftwarpx-sprayjson")) dependsOn(common, riftwarp % "compile->compile;test->test" )
+								
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
 
- 
-
-  lazy val docit = docitProject(	name = "almhirt-docit",
-                       			baseFile = file("almhirt-docit")) dependsOn(common)
-
+*/
 								
-
- val app = appProject(	name = "almhirt-app",
-	                       	baseFile = file("almhirt-app")) dependsOn(core) */										
 }

@@ -70,6 +70,8 @@ object WarpPackers {
     packers.addTyped(UuidWarpPacker)
     packers.addTyped(UriWarpPacker)
     packers.addTyped(DateTimeWarpPacker)
+    packers.addTyped(LocalDateTimeWarpPacker)
+    packers.addTyped(DurationWarpPacker)
     packers.addTyped(ByteArrayWarpPacker)
     packers.addTyped(Base64BlobWarpPacker)
 

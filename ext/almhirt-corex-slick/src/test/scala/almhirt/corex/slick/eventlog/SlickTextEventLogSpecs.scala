@@ -13,13 +13,15 @@ object SlickTextEventLogSpecsConfig {
   def configStr = 
     """
 almhirt {
-		  texteventlog {
+		  text-event-log {
 		  	profile = "h2"
 		  	connection = "jdbc:h2:mem:almhirtslicktest;DB_CLOSE_DELAY=-1"
 		  	table-name = ""
 		    serialization-channel = "json"
-		    create-schema = false
-		  	drop-schema = false
+		    create-schema = true
+		  	drop-schema = true
+            sync-io-dispatcher = "akka.actor.default-dispatcher"
+		  	number-of-actors = 1
 		  	properties {
 		  		user = "testuser"
 		  		password = "testuser"
@@ -29,9 +31,11 @@ almhirt {
     """
     
     val baseConfig = ConfigFactory.parseString(configStr)
+
+    val fullConfig = baseConfig.withFallback(ConfigFactory.load())
     
     def config(testId: Int) =
-      ConfigFactory.parseString(s"""almhirt.texteventlog.table-name = "texteventlog_${testId}"""").withFallback(baseConfig)
+      ConfigFactory.parseString(s"""almhirt.text-event-log.table-name = "texteventlog_${testId}"""").withFallback(fullConfig)
 }
 
 trait CreatesSlickTextEventLog extends CreatesEventLog { self: HasAlmhirt =>
@@ -40,8 +44,8 @@ trait CreatesSlickTextEventLog extends CreatesEventLog { self: HasAlmhirt =>
     import almhirt.configuration._
     val theRiftwarp = almhirt.testkit.testevents.Serialization.addTestEventSerializers(riftwarp.RiftWarp())
     val serializer = riftwarp.util.RiftEventStringSerializer(theRiftwarp)
-    val configSection = SlickTextEventLogSpecsConfig.config(testId).v[Config]("almhirt.texteventlog").resultOrEscalate
-    val createParams = SlickTextEventLog.create(theAlmhirt, configSection, serializer, true).resultOrEscalate
+    val configSection = SlickTextEventLogSpecsConfig.config(testId).v[Config]("almhirt.text-event-log").resultOrEscalate
+    val createParams = SlickTextEventLog.create(theAlmhirt, configSection, serializer).resultOrEscalate
     createParams.initAction().resultOrEscalate
     (theAlmhirt.actorSystem.actorOf(createParams.props, "texteeventlog_"+testId), () => createParams.closeAction().resultOrEscalate)
   }
@@ -49,7 +53,8 @@ trait CreatesSlickTextEventLog extends CreatesEventLog { self: HasAlmhirt =>
 
 class SlickTextEventLogSpecs
   extends EventLogSpecTemplate(ActorSystem("SlickTextEventLogSpecs", TestConfigs.default))
-  with AlmhirtFromAkkaTestKitWithoutConfiguration
+  with AlmhirtFromAkkaTestKitWithConfiguration
   with CreatesSlickTextEventLog{
+  override def config = SlickTextEventLogSpecsConfig.fullConfig
   override val sleepMillisAfterWrite = Some(100)
 }

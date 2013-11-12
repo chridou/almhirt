@@ -42,8 +42,12 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
   def successfulAlmFuture[T](implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
     new AlmFuture[T](self.mapTo[T].map(_.success)(executionContext))
 
-  def mapToAlmFutureOver[T,U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
-    new AlmFuture[U](self.mapTo[T].map(x => compute(x))(executionContext))
+//  def mapToAlmFutureOver[T,U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
+//    new AlmFuture[U](self.mapTo[T].map(x => compute(x))(executionContext))
+//
+//  def mapExtractToAlmFutureOver[T,U](compute: T => U)(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
+//    new AlmFuture[U](self.mapTo[T].map(x => compute(x).success)(executionContext))
+
 }
 
 trait AlmFutureOps1[T] extends Ops[Future[AlmValidation[T]]] {
@@ -86,6 +90,7 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
   def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit executionContext: ExecutionContext): Unit =
     doAsync(failure, sideEffect)
 
+  
   /** In case of a success: Execute the computation as an already computed result
    * 
    * @param compute The computation

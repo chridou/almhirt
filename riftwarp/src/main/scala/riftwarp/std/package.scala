@@ -1,6 +1,7 @@
 package riftwarp
 
 import almhirt.common._
+import almhirt.io.BinaryWriter
 
 package object std {
   object funs extends WarpPackageFuns with PackageBuilderFuns with PackageExtractorFuns
@@ -18,6 +19,8 @@ package object std {
     implicit val StdLibXmlRematerializer = FromStdLibXmlRematerializer
     implicit val StdLibXmlStringRematerializer = FromXmlStringRematerializer
 
+    implicit val MessagePackRematerializer =  new messagepack.FromMessagePackByteArrayRematerializer{}
+    implicit val MessagePackDematerializer = new messagepack.ToMessagePackDematerializer { def createBinaryWriter(): BinaryWriter = BinaryWriter() }
   }
   
   implicit val WarpPrimitiveBooleanPacker = BooleanWarpPacker
@@ -54,6 +57,7 @@ package object std {
   implicit object WarpPrimitiveToBooleanConverterInst extends WarpPrimitiveToBooleanConverter
   implicit object WarpPrimitiveToStringConverterInst extends WarpPrimitiveToStringConverter
   implicit object WarpPrimitiveToByteConverterInst extends WarpPrimitiveToByteConverter
+  implicit object WarpPrimitiveToShortConverterInst extends WarpPrimitiveToShortConverter
   implicit object WarpPrimitiveToIntConverterInst extends WarpPrimitiveToIntConverter
   implicit object WarpPrimitiveToLongConverterInst extends WarpPrimitiveToLongConverter
   implicit object WarpPrimitiveToBigIntConverterInst extends WarpPrimitiveToBigIntConverter
@@ -66,12 +70,17 @@ package object std {
   implicit object WarpPrimitiveToLocalDateTimeConverterInst extends WarpPrimitiveToLocalDateTimeConverter
   implicit object WarpPrimitiveToDurationConverterInst extends WarpPrimitiveToDurationConverter
 
+  
+  implicit object ToWarpStringConverterInst extends ToWarpStringConverter
+  implicit object ToWarpCollectionConverterInst extends ToWarpCollectionConverter
+  implicit object ToWarpAssocCollectionConverterInst extends ToWarpAssocCollectionConverter
+  
   implicit class RematerializeFromOps[From](self: From) {
     def rematerialize(implicit rematerializer: Rematerializer[From]): AlmValidation[WarpPackage] =
       rematerializer.rematerialize(self)
   }
 
-  implicit class PackagingyOps[T](self: T) {
+  implicit class PackagingOps[T](self: T) {
     def pack(implicit packer: WarpPacker[T], packers: WarpPackers): AlmValidation[WarpPackage] = packer.pack(self)
     def packFlat(implicit packer: WarpPacker[T]): AlmValidation[WarpPackage] = packer.pack(self)(WarpPackers.NoWarpPackers)
   }

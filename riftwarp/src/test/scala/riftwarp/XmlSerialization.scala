@@ -177,21 +177,21 @@ class XmlSerialization extends FunSuite with MustMatchers {
 
   test("RiftWarp must dematerialize pete without error") {
     val riftwarp = RiftWarp(packers, unpackers)
-    val dematV = riftwarp.departureTyped[String]("xml", TestObjectA.pete)
+    val dematV = riftwarp.departure("xml", TestObjectA.pete).flatMap(x => x._1.castTo[String].map((_, x._2)))
     dematV.isSuccess must be(true)
   }
 
   test("RiftWarp must dematerialize the PrimitiveTypes and rematerialize them") {
     val riftwarp = RiftWarp(packers, unpackers)
-    val dematV = riftwarp.departureTyped[String]("xml", TestObjectA.pete.primitiveTypes)
-    val resV = riftwarp.arrivalTyped[String, PrimitiveTypes]("xml", dematV.forceResult._1)
+    val dematV = riftwarp.departure("xml", TestObjectA.pete.primitiveTypes).flatMap(x => x._1.castTo[String].map((_, x._2)))
+    val resV = riftwarp.arrival("xml", dematV.forceResult._1)
     resV.forceResult must equal(TestObjectA.pete.primitiveTypes)
   }
 
   test("RiftWarp must dematerialize a UUID") {
     val riftwarp = RiftWarp(packers, unpackers)
     val uuid = JUUID.randomUUID()
-    val dematV = riftwarp.departureTyped[String]("xml", uuid)
+    val dematV = riftwarp.departure("xml", uuid).flatMap(x => x._1.castTo[String].map((_, x._2)))
     dematV.forceResult must equal((s"""<Value type="Uuid">${uuid.toString()}</Value>""", WarpDescriptor("UUID")))
   }
 

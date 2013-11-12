@@ -1,4 +1,5 @@
 package riftwarp.std
+
 import scala.annotation.tailrec
 import scala.xml.{ Elem => XmlElem, NodeSeq, Null, TopScope, UnprefixedAttribute }
 import scalaz._
@@ -7,9 +8,9 @@ import riftwarp._
 
 object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   type ValueRepr = XmlElem
+  type ObjRepr = XmlElem
 
-  val channel = "xml"
-  val dimension = classOf[XmlElem].getName()
+  override val channel = WarpChannels.`rift-xml-std`
 
   protected def valueReprToDim(repr: XmlElem): XmlElem =
     repr
@@ -19,6 +20,7 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
       case WarpBoolean(value) => <Value type="Boolean">{ value.toString }</Value>
       case WarpString(value) => <Value type="String">{ value }</Value>
       case WarpByte(value) => <Value type="Byte">{ value.toString }</Value>
+      case WarpShort(value) => <Value type="Short">{ value.toString }</Value>
       case WarpInt(value) => <Value type="Int">{ value.toString }</Value>
       case WarpLong(value) => <Value type="Long">{ value.toString }</Value>
       case WarpBigInt(value) => <Value type="BigInt">{ value.toString }</Value>

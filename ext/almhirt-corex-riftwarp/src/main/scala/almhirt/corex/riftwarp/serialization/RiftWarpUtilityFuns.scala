@@ -39,15 +39,15 @@ object RiftWarpUtilityFuns {
     riftWarp.unpackers.addTyped(ExecutionInProcessWarpPackaging)
     
     riftWarp.packers.addTyped(ExecutionSuccessfulWarpPackaging)
-    riftWarp.packers.addTyped(ExecutionSuccessfulWarpPackaging)
+    riftWarp.unpackers.addTyped(ExecutionSuccessfulWarpPackaging)
     
     riftWarp.packers.addTyped(ExecutionFailedWarpPackaging)
-    riftWarp.packers.addTyped(ExecutionFailedWarpPackaging)
+    riftWarp.unpackers.addTyped(ExecutionFailedWarpPackaging)
     
     riftWarp.packers.addTyped(ExecutionFinishedStateWarpPackaging)
-    riftWarp.packers.addTyped(ExecutionFinishedStateWarpPackaging)
+    riftWarp.unpackers.addTyped(ExecutionFinishedStateWarpPackaging)
     
     riftWarp.packers.addTyped(ExecutionStateWarpPackaging)
-    riftWarp.packers.addTyped(ExecutionStateWarpPackaging)
+    riftWarp.unpackers.addTyped(ExecutionStateWarpPackaging)
   }
 }
