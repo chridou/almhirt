@@ -2,7 +2,8 @@
 
 # Almhirt - A CQRS Framework for Scala
 
-Warning! This project is still in an early phase! Everything is subject to change! 
+Warning! This project is still in an early phase! Everything is subject to change!
+The API isn't well documented yet. 
 
 ## What is Almhirt?
 
