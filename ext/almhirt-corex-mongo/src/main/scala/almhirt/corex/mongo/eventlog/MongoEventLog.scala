@@ -173,7 +173,7 @@ class MongoEventLog(
   private case object Initialize
   private case object Initialized
 
-  def EventToDocument(event: Event): AlmValidation[BSONDocument] = {
+  def eventToDocument(event: Event): AlmValidation[BSONDocument] = {
     (for {
       serialized <- {
         val start = Deadline.now
@@ -217,7 +217,7 @@ class MongoEventLog(
 
   def storeEvent(event: Event): AlmFuture[Deadline] =
     for {
-      serialized <- AlmFuture { EventToDocument(event: Event) }(serializationExecutor)
+      serialized <- AlmFuture { eventToDocument(event: Event) }(serializationExecutor)
       start <- insertDocument(serialized)
     } yield start
 
