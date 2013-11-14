@@ -32,6 +32,8 @@ object MessagePackParser {
       parseString(formatByte, reader)
     } else if ((formatByte & 0x80) == 0) { // 10000000
       WarpByte(formatByte.toByte)
+    } else if ((formatByte & 0xE0) == 0xE0) { // 10000000
+      WarpByte((-(formatByte & 0x1F)).toByte)
     } else if (formatByte == MessagePackTypecodes.Int8) {
       WarpByte(reader.readByte)
     } else if (formatByte == MessagePackTypecodes.Int16) {

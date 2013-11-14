@@ -104,6 +104,27 @@ class MessagePackSerialization extends FunSuite with MustMatchers {
     rematerialized must equal(sample)
   }
 
+  test("A WarpByte(-31) must dematerialize and rematerialize to an equal instance") {
+    val sample = WarpByte(-31)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(sample)
+  }
+  
+  test("A WarpByte(-32) must dematerialize and rematerialize to an equal instance") {
+    val sample = WarpByte(-32)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(sample)
+  }
+  
+  test("A WarpByte(-33) must dematerialize and rematerialize to an equal instance") {
+    val sample = WarpByte(-33)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized must equal(sample)
+  }
+  
   test("A WarpByte(Byte.MaxValue) must dematerialize and rematerialize to an equal instance") {
     val sample = WarpByte(Byte.MaxValue)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
