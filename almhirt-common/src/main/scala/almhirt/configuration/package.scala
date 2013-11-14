@@ -45,6 +45,7 @@ package object configuration {
   implicit val ConfigJodaDurationListMsExtractorInst = new ConfigJodaDurationListMsExtractor {}
   implicit val ConfigUuidListExtractorInst = new ConfigUuidListExtractor {}
   implicit val ConfigUriListExtractorInst = new ConfigUriListExtractor {}
+  implicit val ConfigConfigListExtractorExtractorInst = new ConfigConfigListExtractor {}
 
   implicit val ConfigConfigExtractorInst = new ConfigConfigExtractor {}
   implicit val ConfigJavaPropertiesExtractorInst = new ConfigJavaPropertiesExtractor {}
