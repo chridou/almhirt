@@ -1,17 +1,14 @@
 package almhirt.corex.spray
 
+import scala.concurrent._
+import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almfuture.all._
 import spray.http._
-import spray.httpx.marshalling.Marshaller
 import almhirt.serialization._
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
 
 trait HttpExternalConnector {
-
   case class RequestSettings(
     targetEndpoint: spray.http.Uri,
     mediaType: MediaType,
@@ -24,22 +21,6 @@ trait HttpExternalConnector {
   def pipeline: HttpRequest => Future[HttpResponse]
 
   def problemDeserializer: CanDeserializeFromWire[Problem]
-
-  def createEntityRequest[T: CanSerializeToWire](payload: T, settings: RequestSettings): AlmValidation[HttpRequest] = {
-    val serializer = implicitly[CanSerializeToWire[T]]
-    for {
-      channel <- almhirt.corex.spray.marshalling.Helper.extractChannel(settings.mediaType).success
-      serialized <- serializer.serialize(channel)(payload, Map.empty)
-    } yield HttpRequest(
-      method = settings.method,
-      uri = settings.targetEndpoint,
-      headers = Nil,
-      entity =
-        serialized._1 match {
-          case TextWire(data) => HttpEntity(ContentType(settings.mediaType), data)
-          case BinaryWire(data) => HttpEntity(ContentType(settings.mediaType), data)
-        })
-  }
 
   def sendRequest(request: HttpRequest): AlmFuture[(HttpResponse, FiniteDuration)] = {
     val start = Deadline.now
@@ -68,34 +49,26 @@ trait HttpExternalConnector {
 
 }
 
-trait HttpExternalPublisher { self: HttpExternalConnector =>
-  def publishToExternalEndpoint[T: CanSerializeToWire](payload: T, settings: RequestSettings): AlmFuture[(T, FiniteDuration)] =
+trait RequestsWithEntity { self: HttpExternalConnector =>
+  def createEntityRequest[T: CanSerializeToWire](payload: T, settings: RequestSettings): AlmValidation[HttpRequest] = {
+    val serializer = implicitly[CanSerializeToWire[T]]
     for {
-      request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
-      resonseAndTime <- sendRequest(request)
-      _ <- AlmFuture(evaluateAck(resonseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
-    } yield (payload, resonseAndTime._2)
-
-  def evaluateAck(response: HttpResponse, acceptAsSuccess: Set[StatusCode]): AlmValidation[HttpResponse] = {
-    if (acceptAsSuccess(response.status))
-      response.success
-    else
-      deserializeProblem(response).fold(
-        fail => SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
-        succ => succ.failure)
+      channel <- almhirt.corex.spray.marshalling.Helper.extractChannel(settings.mediaType).success
+      serialized <- serializer.serialize(channel)(payload, Map.empty)
+    } yield HttpRequest(
+      method = settings.method,
+      uri = settings.targetEndpoint,
+      headers = Nil,
+      entity =
+        serialized._1 match {
+          case TextWire(data) => HttpEntity(ContentType(settings.mediaType), data)
+          case BinaryWire(data) => HttpEntity(ContentType(settings.mediaType), data)
+        })
   }
 }
 
-trait HttpExternalConversation { self: HttpExternalConnector =>
-  def conversationWithExternalEndpoint[T: CanSerializeToWire, U: CanDeserializeFromWire](payload: T, settings: RequestSettings): AlmFuture[(U, FiniteDuration)] =
-    for {
-      request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
-      resonseAndTime <- sendRequest(request)
-      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
-    } yield (entity, resonseAndTime._2)
-  
-  
-  private def evaluateEntityResponse[T: CanDeserializeFromWire](response: HttpResponse, acceptAsSuccess: Set[StatusCode]): AlmValidation[T] = {
+trait AwaitingEntityResponse { self: HttpExternalConnector =>
+  def evaluateEntityResponse[T: CanDeserializeFromWire](response: HttpResponse, acceptAsSuccess: Set[StatusCode]): AlmValidation[T] = {
     if (acceptAsSuccess(response.status))
       deserializeEntity(response)
     else
@@ -121,4 +94,47 @@ trait HttpExternalConversation { self: HttpExternalConnector =>
       case None =>
         UnspecifiedProblem(s"""Expected an entity from endpoint "XXXX" there was no content. Status code ${response.status}.""").failure
     }
+
+}
+
+trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntity =>
+  def publishToExternalEndpoint[T: CanSerializeToWire](payload: T, settings: RequestSettings): AlmFuture[(T, FiniteDuration)] =
+    for {
+      request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
+      resonseAndTime <- sendRequest(request)
+      _ <- AlmFuture(evaluateAck(resonseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
+    } yield (payload, resonseAndTime._2)
+
+  def evaluateAck(response: HttpResponse, acceptAsSuccess: Set[StatusCode]): AlmValidation[HttpResponse] = {
+    if (acceptAsSuccess(response.status))
+      response.success
+    else
+      deserializeProblem(response).fold(
+        fail => SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
+        succ => succ.failure)
+  }
+}
+
+trait HttpExternalQuery { self: HttpExternalConnector with AwaitingEntityResponse =>
+  def createSimpleQueryRequest(settings: RequestSettings): HttpRequest =
+    HttpRequest(
+      method = settings.method,
+      uri = settings.targetEndpoint,
+      headers = Nil,
+      entity = HttpData.Empty)
+
+  def externalQuery[U: CanDeserializeFromWire](settings: RequestSettings): AlmFuture[(U, FiniteDuration)] =
+    for {
+      resonseAndTime <- sendRequest(createSimpleQueryRequest(settings))
+      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
+    } yield (entity, resonseAndTime._2)
+}
+
+trait HttpExternalConversation { self: HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse =>
+  def conversationWithExternalEndpoint[T: CanSerializeToWire, U: CanDeserializeFromWire](payload: T, settings: RequestSettings): AlmFuture[(U, FiniteDuration)] =
+    for {
+      request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
+      resonseAndTime <- sendRequest(request)
+      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
+    } yield (entity, resonseAndTime._2)
 }
