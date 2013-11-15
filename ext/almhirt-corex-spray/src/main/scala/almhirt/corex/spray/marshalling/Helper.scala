@@ -6,7 +6,7 @@ import almhirt.almvalidation.kit._
 import spray.http.{ MediaType, MediaTypes }
 import almhirt.corex.spray.AlmhirtMediaTypes
 
-private[marshalling] object Helper {
+object Helper {
   def extractChannel(mediaType: MediaType): String =
     if (mediaType == MediaTypes.`text/html`)
       "html"

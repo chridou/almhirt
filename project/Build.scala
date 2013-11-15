@@ -8,7 +8,7 @@ object BuildSettings {
 
   val akkaVersion = "2.2.+"
   val scalatestVersion = "2.0.M5b"
-  val sprayVersion = "1.2-20130822"
+  val sprayVersion = "1.2-RC3"
    
   val buildSettings = Defaults.defaultSettings ++ Seq (
 	organization := buildOrganization,
@@ -182,8 +182,7 @@ trait CorexSprayBuild {
   import Resolvers._
   def corexSprayProject(name: String, baseFile: java.io.File) = {
  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  //resolvers += "spray repo" at "http://repo.spray.io",
-	  resolvers += "spray nightlies repo" at "http://nightlies.spray.io",
+	  resolvers += "spray repo" at "http://repo.spray.io",
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += spray_client,

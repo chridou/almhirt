@@ -6,6 +6,7 @@ import spray.http._
 import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling._
 import almhirt.serialization._
+import spray.http.HttpEntity.{ NonEmpty, Empty }
 
 trait MarshallingFactory[T] {
   import Helper._
@@ -37,23 +38,23 @@ trait MarshallingFactory[T] {
       new Unmarshaller[T] {
         override def apply(entity: HttpEntity): Deserialized[T] =
           entity match {
-            case HttpBody(contentType, buffer) =>
+            case NonEmpty(contentType, httpData) =>
               if (!supported.contains(contentType)) {
                 val msgSupp = supported.map(_.value).mkString("Expected '", "' or '", "'")
                 Left(UnsupportedContentType(s""""${contentType}" is not supported. $msgSupp"""))
               } else {
                 val channel = extractChannel(contentType.mediaType)
                 if (contentType.mediaType.binary && channel != "json") {
-                  deserializer.deserialize(channel)(BinaryWire(buffer)).fold(
+                  deserializer.deserialize(channel)(BinaryWire(httpData.toByteArray)).fold(
                     fail => Left(MalformedContent(fail.message, None)),
                     succ => Right(succ))
                 } else {
-                  deserializer.deserialize(channel)(TextWire(buffer.asString)).fold(
+                  deserializer.deserialize(channel)(TextWire(httpData.asString)).fold(
                     fail => Left(MalformedContent(fail.message, None)),
                     succ => Right(succ))
                 }
               }
-            case EmptyEntity =>
+            case Empty =>
               Left(ContentExpected)
           }
       }

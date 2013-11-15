@@ -22,24 +22,25 @@ class ElasticSearchEventPublisher(
   index: String,
   fixedTypeName: Option[String],
   ttl: FiniteDuration,
-  serializer: CanSerializeToWire[Event],
-  problemSerializer: CanDeserializeFromWire[Problem],
-  serializationExecutor: ExecutionContext,
-  mediaTypePrefix: String)(implicit theAlmhirt: Almhirt) extends HttpEventPublisherBase(serializer, problemSerializer, "json", serializationExecutor, mediaTypePrefix)(theAlmhirt) with ActorLogging {
+  override val serializer: CanSerializeToWire[Event],
+  override val problemDeserializer: CanDeserializeFromWire[Problem])(implicit theAlmhirt: Almhirt) extends HttpEventPublisher() with ActorLogging {
 
   val uriprefix = s"""http://$host/$index"""
 
-  override def createUri(event: Event) = {
+  override val mediaType: MediaType = MediaTypes.`application/json`
+  override val method: HttpMethod = HttpMethods.PUT
+  override val acceptAsSuccess: Set[StatusCode] = Set(StatusCodes.Accepted)
+
+  override def createUri(event: Event): Uri = {
     val typeName = fixedTypeName.getOrElse(event.getClass().getSimpleName())
-    s"""$uriprefix/$typeName/${event.eventId}?op_type=create&ttl=${ttl.toMillis}"""
+    Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create&ttl=${ttl.toMillis}""")
   }
 
-  def onProblem(event: Event, problem: Problem) {
+  override def onProblem(event: Event, problem: Problem) {
     log.error(s"""Transmitting the event with id "${event.eventId} of type "${event.getClass().getName()}" failed: $problem""")
   }
-  
 
-  override def receive: Receive = logEventHandler
+  override def onSuccess(event: Event, time: FiniteDuration) {}
 
 }
 
@@ -50,12 +51,9 @@ object ElasticSearchEventLog {
     fixedTypeName: Option[String],
     ttl: FiniteDuration,
     serializer: CanSerializeToWire[Event],
-  problemSerializer: CanDeserializeFromWire[Problem],
-    serializationChannel: String,
-    serializationExecutor: ExecutionContext,
-    mediaTypePrefix: String,
+    problemSerializer: CanDeserializeFromWire[Problem],
     theAlmhirt: Almhirt): Props =
-    Props(new ElasticSearchEventPublisher(host, index, fixedTypeName, ttl, serializer, problemSerializer, serializationExecutor, mediaTypePrefix)(theAlmhirt))
+    Props(new ElasticSearchEventPublisher(host, index, fixedTypeName, ttl, serializer, problemSerializer)(theAlmhirt))
 
   def propsRaw(
     host: String,
@@ -63,10 +61,10 @@ object ElasticSearchEventLog {
     fixedTypeName: Option[String],
     ttl: FiniteDuration,
     serializer: CanSerializeToWire[Event],
-  problemSerializer: CanDeserializeFromWire[Problem],
+    problemSerializer: CanDeserializeFromWire[Problem],
     mediaTypePrefix: String,
     theAlmhirt: Almhirt): Props =
-    Props(new ElasticSearchEventPublisher(host, index, fixedTypeName, ttl, serializer, problemSerializer, theAlmhirt.numberCruncher, mediaTypePrefix)(theAlmhirt))
+    Props(new ElasticSearchEventPublisher(host, index, fixedTypeName, ttl, serializer, problemSerializer)(theAlmhirt))
 
   def props(serializer: CanSerializeToWire[Event], problemSerializer: CanDeserializeFromWire[Problem], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
     for {
