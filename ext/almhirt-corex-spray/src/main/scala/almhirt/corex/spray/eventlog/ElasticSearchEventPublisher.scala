@@ -36,11 +36,11 @@ class ElasticSearchEventPublisher(
     Uri(s"""$uriprefix/$typeName/${event.eventId}?op_type=create&ttl=${ttl.toMillis}""")
   }
 
-  override def onProblem(event: Event, problem: Problem) {
+  override def onProblem(event: Event, problem: Problem, respondTo: ActorRef) {
     log.error(s"""Transmitting the event with id "${event.eventId} of type "${event.getClass().getName()}" failed: $problem""")
   }
 
-  override def onSuccess(event: Event, time: FiniteDuration) {}
+  override def onSuccess(event: Event, time: FiniteDuration, respondTo: ActorRef) {}
 
 }
 

@@ -19,13 +19,13 @@ abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends SingleT
   import almhirt.eventlog.EventLog._
 
   override def createUri(event: Event): Uri
-  def onProblem(event: Event, problem: Problem)
-  def onSuccess(event: Event, time: FiniteDuration)
+  def onProblem(event: Event, problem: Problem, respondTo: ActorRef)
+  def onSuccess(event: Event, time: FiniteDuration, respondTo: ActorRef)
 
   def publishEventOverWire(event: Event) {
     publishOverWire(event).onComplete(
-      fail => onProblem(event, fail),
-      success => onSuccess(success._1, success._2))
+      fail => onProblem(event, fail, sender),
+      success => onSuccess(success._1, success._2, sender))
   }
 
   override def receive: Receive = {
