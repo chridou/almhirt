@@ -18,12 +18,13 @@ abstract class SingleTypeHttpPublisher[T]() extends Actor with ActorLogging with
   def acceptAsSuccess: Set[StatusCode]
   override def problemDeserializer: CanDeserializeFromWire[Problem]
   def serializer: CanSerializeToWire[T]
-  def mediaType: MediaType
+  def contentMediaType: MediaType
+
   def method: HttpMethod
   def createUri(entity: T): Uri
   
   def publishOverWire(entity: T): AlmFuture[(T, FiniteDuration)] = {
-    val settings = RequestSettings(createUri(entity), mediaType, method, acceptAsSuccess)
+    val settings = EntityRequestSettings(createUri(entity), contentMediaType, Seq.empty, method, acceptAsSuccess)
     publishToExternalEndpoint(entity, settings)(serializer)
   }
 }
@@ -36,12 +37,12 @@ abstract class SingleTypeHttpQuery[U]() extends Actor with ActorLogging with Htt
   def acceptAsSuccess: Set[StatusCode]
   override def problemDeserializer: CanDeserializeFromWire[Problem]
   def deserializer: CanDeserializeFromWire[U]
-  def mediaType: MediaType
+  def acceptMediaTypes: Seq[MediaType]
   def method: HttpMethod
   def createUri(id: ResourceId): Uri
   
   def queryOverWire(id: ResourceId): AlmFuture[(U, FiniteDuration)] = {
-    val settings = RequestSettings(createUri(id), mediaType, method, acceptAsSuccess)
+    val settings = BasicRequestSettings(createUri(id), acceptMediaTypes, method, acceptAsSuccess)
     externalQuery(settings)(deserializer)
   }
 }
@@ -51,14 +52,15 @@ abstract class SingleTypeHttpConversation[T, U]() extends Actor with ActorLoggin
   def deserializer: CanDeserializeFromWire[T]
   def problemDeserializer: CanDeserializeFromWire[Problem]
   def acceptAsSuccess: Set[StatusCode]
-  def mediaType: MediaType
+  def contentMediaType: MediaType
+  def acceptMediaTypes: Seq[MediaType]
   def method: HttpMethod
   def createUri(entity: T): Uri
 
   override val pipeline = (sendReceive)
 
   def conversationOverWire(entity: T): AlmFuture[(T, FiniteDuration)] = {
-    val settings = RequestSettings(createUri(entity), mediaType, method, acceptAsSuccess)
+    val settings = EntityRequestSettings(createUri(entity), contentMediaType, acceptMediaTypes, method, acceptAsSuccess)
     conversationWithExternalEndpoint(entity, settings)(serializer, deserializer)
   }
 

@@ -27,7 +27,7 @@ class ElasticSearchEventPublisher(
 
   val uriprefix = s"""http://$host/$index"""
 
-  override val mediaType: MediaType = MediaTypes.`application/json`
+  override val contentMediaType: MediaType = MediaTypes.`application/json`
   override val method: HttpMethod = HttpMethods.PUT
   override val acceptAsSuccess: Set[StatusCode] = Set(StatusCodes.Accepted)
 
