@@ -1,12 +1,12 @@
-package almhirt.corex.spray.marshalling
+package almhirt.httpx.spray.marshalling
 
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import spray.http.{ MediaType, MediaTypes }
-import almhirt.corex.spray.AlmhirtMediaTypes
+import almhirt.httpx.spray.AlmhirtMediaTypes
 
-private[marshalling] object Helper {
+object Helper {
   def extractChannel(mediaType: MediaType): String =
     if (mediaType == MediaTypes.`text/html`)
       "html"

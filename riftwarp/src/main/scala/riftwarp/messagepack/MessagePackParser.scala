@@ -32,6 +32,8 @@ object MessagePackParser {
       parseString(formatByte, reader)
     } else if ((formatByte & 0x80) == 0) { // 10000000
       WarpByte(formatByte.toByte)
+    } else if ((formatByte & 0xE0) == 0xE0) { // 10000000
+      WarpByte((-(formatByte & 0x1F)).toByte)
     } else if (formatByte == MessagePackTypecodes.Int8) {
       WarpByte(reader.readByte)
     } else if (formatByte == MessagePackTypecodes.Int16) {
@@ -169,7 +171,7 @@ object MessagePackParser {
     nestedTreeCollection match {
       case WarpCollection(Vector(label, WarpCollection(subforest))) =>
         label.node(subforest.map(parseTreeNode): _*)
-      case WarpCollection(items @ Vector(a,b)) =>
+      case WarpCollection(items @ Vector(a, b)) =>
         throw new Exception(
           s"""	|A tree node must be a collection of size 2 with the first element representing the label and the second representing the subforest. 
           		|Received a WarpCollection of size ${items.size}.
@@ -219,7 +221,6 @@ object MessagePackParser {
 
   def parseElement(reader: BinaryReader): WarpElement = {
     try {
-      reader.advance(1)
       val label = readString(reader.readUnsignedByte, reader)
       val formatByte = reader.readUnsignedByte
       val value: Option[WarpPackage] = formatByte match {
@@ -243,7 +244,7 @@ object MessagePackParser {
         case formatByte =>
           Some(parseWarpDescriptor(formatByte, reader))
       }
-      val numElems = MessagePackTypecodes.parseArrayHeader(reader.readUnsignedByte, reader)
+      val numElems = MessagePackTypecodes.parseMapHeader(reader.readUnsignedByte, reader)
       val elems = (for (n <- 0 until numElems) yield parseElement(reader))
       WarpObject(wd, elems.toVector)
     } catch {

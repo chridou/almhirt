@@ -19,6 +19,7 @@ import almhirt.commanding._
 import spray.http._
 import almhirt.domain.AggregateRootRef
 import riftwarp.util.WarpWireSerializer
+import almhirt.httpx.spray.marshalling._
 
 class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpCommandEndpoint with ScalatestRouteTest with HttpService {
   def actorRefFactory = system
@@ -73,42 +74,42 @@ class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpComm
     it("""should return a MethodNotAllowed error for GET requests to the "/execute" path""") {
       Get("/execute") ~> sealRoute(executeCommandRoute) ~> check {
         status should equal(MethodNotAllowed)
-        entityAs[String] === "HTTP method not allowed, supported methods: PUT"
+        responseAs[String] === "HTTP method not allowed, supported methods: PUT"
       }
     }
 
     it("""should return a MethodNotAllowed error for POST requests to the "/execute" path""") {
       Post("/execute") ~> sealRoute(executeCommandRoute) ~> check {
         status should equal(MethodNotAllowed)
-        entityAs[String] === "HTTP method not allowed, supported methods: PUT"
+        responseAs[String] === "HTTP method not allowed, supported methods: PUT"
       }
     }
 
     it("""should accept a command without a tracking id PUT to the "/execute" path with contentType "application/vnd.acme.Command+json" and respond with an empty body.""") {
       Put("/execute", commandWithoutTrackingId)(commandMarshaller) ~> executeCommandRoute ~> check {
         status should equal(Accepted)
-        entityAs[String] should equal("")
+        responseAs[String] should equal("")
       }
     }
 
     it("""should accept a command with a tracking id PUT to the "/execute" path with contentType "application/vnd.acme.Command+json" and respond with the tracking id.""") {
       Put("/execute", commandWithTrackingId)(commandMarshaller) ~> executeCommandRoute ~> check {
         status should equal(Accepted)
-        entityAs[String] should equal(commandWithTrackingId.trackingId)
+        responseAs[String] should equal(commandWithTrackingId.trackingId)
       }
     }
 
     it("""should accept a command with a tracking id PUT to the "/execute?tracked" path with contentType "application/vnd.acme.Command+json" and respond with the tracking id.""") {
       Put("/execute?tracked", commandWithTrackingId)(commandMarshaller) ~> executeCommandRoute ~> check {
         status should equal(Accepted)
-        entityAs[String] should equal(commandWithTrackingId.trackingId)
+        responseAs[String] should equal(commandWithTrackingId.trackingId)
       }
     }
 
     it("""should accept a command without a tracking id PUT to the "/execute?tracked" path with contentType "application/vnd.acme.Command+json" and respond with a new tracking id.""") {
       Put("/execute?tracked", commandWithoutTrackingId)(commandMarshaller) ~> executeCommandRoute ~> check {
         status should equal(Accepted)
-        entityAs[String] should not be ('empty)
+        responseAs[String] should not be ('empty)
       }
     }
 
@@ -118,7 +119,7 @@ class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpComm
       tracker ! ExecutionStateChanged(execState)
       Put("/execute?sync", cmd)(commandMarshaller) ~> executeCommandRoute ~> check {
         status should equal(OK)
-        entityAs[ExecutionState] should equal(execState)
+        responseAs[ExecutionState] should equal(execState)
       }
     }
     

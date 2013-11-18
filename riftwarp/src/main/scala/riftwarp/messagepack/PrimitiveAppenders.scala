@@ -28,8 +28,10 @@ object RiftWarpPrimitiveAppenders {
 
   @inline
   def appendByte(v: Byte, writer: BinaryWriter): BinaryWriter =
-    if ((v & 0x80) == 0) { // 10000000
+    if ((v & 0x80) == 0) // 10000000
       writer.writeUnsignedByte(v)
+    else if (v < 0 && v > -32) {
+      writer.writeUnsignedByte((-v) | 0xE0)
     } else
       writer.writeUnsignedByte(MessagePackTypecodes.Int8).writeByte(v)
 

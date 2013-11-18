@@ -184,6 +184,23 @@ trait ConfigConfigExtractor extends ConfigExtractor[Config] {
     ConfigHelper.tryGetFromConfigSafely(path, config.getConfig)
 }
 
+trait ConfigConfigListExtractor extends ConfigExtractor[List[Config]] {
+  import almhirt.almvalidation.kit._
+  import scala.collection.JavaConversions._
+  def getValue(config: Config, path: String): AlmValidation[List[Config]] =
+    for {
+      items <- ConfigHelper.getFromConfigSafely(path, config.getConfigList)
+      typed <- items.map(c => inTryCatch { c.asInstanceOf[Config] }.toAgg).toList.sequence
+    } yield typed
+
+  def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Config]]] =
+    computeSafely {
+      ConfigHelper.tryGetFromConfigSafely(path, config.getConfigList).map(lOpt =>
+        lOpt.map(l => l.toList.map(cfg =>
+          cfg.asInstanceOf[Config])))
+    }
+}
+
 trait ConfigJavaPropertiesExtractor extends ConfigExtractor[java.util.Properties] {
   import java.util.Properties
   import collection.JavaConversions._

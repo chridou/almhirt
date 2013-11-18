@@ -1,4 +1,4 @@
-package almhirt.corex.spray
+package almhirt.httpx.spray
 
 import spray.http.MediaTypes
 import spray.http.MediaType

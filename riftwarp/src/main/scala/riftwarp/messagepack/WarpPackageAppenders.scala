@@ -151,13 +151,13 @@ object WarpPackageAppenders {
     }
     val size = v.elements.size
     if (size < 16) {
-      val c = 0x80 | size // 10000000
+      val c = 0x80 | size // 10000000, fixmap
       objWriter.writeUnsignedByte(c)
     } else if (size < 256 * 256) {
-      objWriter.writeUnsignedByte(MessagePackTypecodes.Array16)
+      objWriter.writeUnsignedByte(MessagePackTypecodes.Map16)
       objWriter.writeUnsignedShort(size)
     } else {
-      objWriter.writeUnsignedByte(MessagePackTypecodes.Array32)
+      objWriter.writeUnsignedByte(MessagePackTypecodes.Map32)
       objWriter.writeInt(size)
     }
     v.elements.foreach(e => appendWarpElement(e, objWriter))
@@ -165,7 +165,7 @@ object WarpPackageAppenders {
   }
 
   private def appendWarpElement(v: WarpElement, writer: BinaryWriter): BinaryWriter = {
-    writer.writeUnsignedByte(0x82) // 10000010
+    //writer.writeUnsignedByte(0x82) // 10000010
     RiftWarpPrimitiveAppenders.appendString(v.label, writer)
     v.value match {
       case Some(v) => appendWarpPackage(v, writer)
