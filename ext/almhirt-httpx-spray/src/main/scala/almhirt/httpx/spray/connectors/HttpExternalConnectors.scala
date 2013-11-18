@@ -1,4 +1,4 @@
-package almhirt.corex.spray
+package almhirt.httpx.spray.connectors
 
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -7,6 +7,8 @@ import almhirt.common._
 import almhirt.almfuture.all._
 import spray.http._
 import almhirt.serialization._
+import almhirt.problem.ProblemCause.prob2ProblemCause
+import spray.http.HttpEntity.apply
 
 trait HttpExternalConnector {
   case class RequestSettings(
@@ -37,7 +39,7 @@ trait HttpExternalConnector {
         if (mediaType == MediaTypes.`text/plain`)
           UnspecifiedProblem(s"Received a text message on status code ${response.status}: ${body.asString}").failure
         else {
-          val channel = almhirt.corex.spray.marshalling.Helper.extractChannel(body.contentType.mediaType)
+          val channel = almhirt.httpx.spray.marshalling.Helper.extractChannel(body.contentType.mediaType)
           if (mediaType.binary && channel != "json")
             problemDeserializer.deserialize(channel)(BinaryWire(body.data.toByteArray), Map.empty)
           else
@@ -53,7 +55,7 @@ trait RequestsWithEntity { self: HttpExternalConnector =>
   def createEntityRequest[T: CanSerializeToWire](payload: T, settings: RequestSettings): AlmValidation[HttpRequest] = {
     val serializer = implicitly[CanSerializeToWire[T]]
     for {
-      channel <- almhirt.corex.spray.marshalling.Helper.extractChannel(settings.mediaType).success
+      channel <- almhirt.httpx.spray.marshalling.Helper.extractChannel(settings.mediaType).success
       serialized <- serializer.serialize(channel)(payload, Map.empty)
     } yield HttpRequest(
       method = settings.method,
@@ -85,7 +87,7 @@ trait AwaitingEntityResponse { self: HttpExternalConnector =>
           UnspecifiedProblem(s"Expected an entity but received a text message on status code ${response.status}: ${body.asString}").failure
         else {
           val deserializer = implicitly[CanDeserializeFromWire[T]]
-          val channel = almhirt.corex.spray.marshalling.Helper.extractChannel(body.contentType.mediaType)
+          val channel = almhirt.httpx.spray.marshalling.Helper.extractChannel(body.contentType.mediaType)
           if (mediaType.binary && channel != "json")
             deserializer.deserialize(channel)(BinaryWire(body.data.toByteArray), Map.empty)
           else

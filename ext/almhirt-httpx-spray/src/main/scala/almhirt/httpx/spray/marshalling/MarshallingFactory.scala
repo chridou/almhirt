@@ -1,4 +1,4 @@
-package almhirt.corex.spray.marshalling
+package almhirt.httpx.spray.marshalling
 
 import almhirt.common._
 import almhirt.almvalidation.kit._

@@ -19,6 +19,7 @@ import almhirt.commanding._
 import spray.http._
 import almhirt.domain.AggregateRootRef
 import riftwarp.util.WarpWireSerializer
+import almhirt.httpx.spray.marshalling._
 
 class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpCommandEndpoint with ScalatestRouteTest with HttpService {
   def actorRefFactory = system

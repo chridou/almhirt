@@ -17,7 +17,7 @@ import almhirt.corex.spray.SingleTypeHttpPublisher
 
 abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends SingleTypeHttpPublisher[Event]() {
   import almhirt.eventlog.EventLog._
-
+  
   override def createUri(event: Event): Uri
   def onProblem(event: Event, problem: Problem, respondTo: ActorRef)
   def onSuccess(event: Event, time: FiniteDuration, respondTo: ActorRef)
@@ -25,7 +25,7 @@ abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends SingleT
   def publishEventOverWire(event: Event) {
     publishOverWire(event).onComplete(
       fail => onProblem(event, fail, sender),
-      success => onSuccess(success._1, success._2, sender))
+      success => onSuccess(success._1, success._2, sender))(myAlmhirt.futuresExecutor)
   }
 
   override def receive: Receive = {
