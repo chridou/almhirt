@@ -19,8 +19,8 @@ import almhirt.eventlog.EventLog.LogEvent
 abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends almhirt.httpx.spray.connectors.SingleTypeHttpPublisher[Event]() {
   import almhirt.eventlog.EventLog._
 
-  override val executionContext = myAlmhirt.futuresExecutor
-  override val serializationExecutionContext = myAlmhirt.numberCruncher
+  override lazy val executionContext = myAlmhirt.futuresExecutor
+  override lazy val serializationExecutionContext = myAlmhirt.numberCruncher
   
   override def createUri(event: Event): Uri
   def onProblem(event: Event, problem: Problem, respondTo: ActorRef)
