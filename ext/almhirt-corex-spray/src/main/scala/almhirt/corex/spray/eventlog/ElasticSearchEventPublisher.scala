@@ -23,7 +23,7 @@ class ElasticSearchEventPublisher(
   fixedTypeName: Option[String],
   ttl: FiniteDuration,
   override val serializer: CanSerializeToWire[Event],
-  override val problemDeserializer: CanDeserializeFromWire[Problem])(implicit theAlmhirt: Almhirt) extends HttpEventPublisher() with ActorLogging {
+  override val problemDeserializer: CanDeserializeFromWire[Problem])(implicit theAlmhirt: Almhirt) extends HttpEventPublisher() {
 
   val uriprefix = s"""http://$host/$index"""
 

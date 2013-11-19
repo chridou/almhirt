@@ -72,7 +72,7 @@ object HttpEventPublisher {
         Props(new Actor { def receive = Actor.emptyBehavior }).success
       }
     } yield {
-      val actor = theAlmhirt.actorSystem.actorOf(theProps)
+      val actor = theAlmhirt.actorSystem.actorOf(theProps, actorName)
       val close = CloseHandle.noop
       (actor, close)
     }
