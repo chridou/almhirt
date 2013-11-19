@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.137"
+  val buildVersion      = "0.5.138"
   val buildScalaVersion = "2.10.3"
 
   val akkaVersion = "2.2.+"
