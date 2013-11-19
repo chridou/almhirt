@@ -60,6 +60,7 @@ object HttpEventPublisher {
   }
 
   def apply(mediaType: MediaType, serializesEvent: CanSerializeToWire[Event], deserialzesProblem: CanDeserializeFromWire[Problem], configPath: String, theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = {
+    theAlmhirt.log.info(s"""Creating HttpEventPublisher from config "$configPath".""")
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
       enabled <- configSection.v[Boolean]("enabled")
