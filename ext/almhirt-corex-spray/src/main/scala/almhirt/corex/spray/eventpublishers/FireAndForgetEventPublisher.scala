@@ -1,8 +1,7 @@
-package almhirt.corex.spray.eventlog
+package almhirt.corex.spray.eventpublishers
 
 import almhirt.common._
 import almhirt.core.Almhirt
-import almhirt.corex.spray.SingleTypeHttpPublisher
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRef
 

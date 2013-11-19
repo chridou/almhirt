@@ -1,25 +1,27 @@
-package almhirt.corex.spray.eventlog
+package almhirt.corex.spray.eventpublishers
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scalaz._, Scalaz._
+import scalaz._
+import scalaz.Scalaz._
 import akka.actor._
-import almhirt.messaging.MessagePublisher
 import almhirt.common._
 import almhirt.configuration._
 import almhirt.almfuture.all._
 import almhirt.serialization._
 import almhirt.core.Almhirt
-import almhirt.eventlog.EventLog
 import spray.http._
 import spray.client.pipelining._
-import almhirt.corex.spray.SingleTypeHttpPublisher
 import com.typesafe.config.Config
 import akka.event.LoggingAdapter
+import almhirt.eventlog.EventLog.LogEvent
 
-abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends SingleTypeHttpPublisher[Event]() {
+abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends almhirt.httpx.spray.connectors.SingleTypeHttpPublisher[Event]() {
   import almhirt.eventlog.EventLog._
 
+  override val executionContext = myAlmhirt.futuresExecutor
+  override val serializationExecutionContext = myAlmhirt.numberCruncher
+  
   override def createUri(event: Event): Uri
   def onProblem(event: Event, problem: Problem, respondTo: ActorRef)
   def onSuccess(event: Event, time: FiniteDuration, respondTo: ActorRef)
@@ -31,7 +33,7 @@ abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends SingleT
   }
 
   override def receive: Receive = {
-    case LogEvent(event) => publishEventOverWire(event)
+    case event : Event => publishEventOverWire(event)
   }
 }
 
