@@ -57,9 +57,8 @@ object WarpWireSerializer {
     def serializeInternal(what: Seq[T], channel: String): AlmValidation[WireRepresentation] =
       for {
         theChannel <- WarpChannels.getChannel(channel)
-        rematerializer <- rw.rematerializers.getTyped[Any](channel)
-        packed <- packAll(what.toVector)
-        serialized <- rematerializer(packed)
+        dematerializer <- rw.dematerializers.get(channel)
+        serialized <- packAll(what.toVector).map(wc => dematerializer.dematerialize(wc, Map.empty))
         typedSerialized <- theChannel.wireTransmission match {
           case WireTransmissionAsBinary => serialized.castTo[Array[Byte]].map(BinaryWire)
           case WireTransmissionAsText => serialized.castTo[String].map(TextWire)
