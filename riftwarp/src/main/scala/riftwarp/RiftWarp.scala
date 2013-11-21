@@ -23,25 +23,11 @@ trait RiftWarp {
       dematerialize <- dematerializers.get(channel)
     } yield (dematerialize(packed, options), packer.warpDescriptor)
 
-//  def departureTyped[TDim : WarpDimension](what: Any, options: Map[String, Any] = Map.empty): AlmValidation[(TDim, WarpDescriptor)] = {
-//    val dim = implicitly[WarpDimension[TDim]]
-//      departure(dim.channel.channelDescriptor, what, options).flatMap(x => dim.cast(x._1).map((_, x._2)))
-//    }
-
   def arrival(channel: String, from: Any, options: Map[String, Any] = Map.empty): AlmValidation[Any] =
     for {
       rematerializer <- rematerializers.getTyped[Any](channel)
       arrived <- myFuns.handleFreeArrivalWith(from, rematerializer, None, None, options)(unpackers)
     } yield arrived
-
-//  def arrivalTyped[TDim, U](channel: String, from: TDim, options: Map[String, Any] = Map.empty)(implicit tagDim: ClassTag[TDim], tagTarget: ClassTag[U]): AlmValidation[U] =
-//    for {
-//      fromTyped <- from.castTo[TDim]
-//      rematerialized <- rematerializers.rematerializeTyped[TDim](channel, fromTyped, options)
-//      arrived <- myFuns.unpack(rematerialized, None, None)(unpackers)
-//      arrivedTyped <- arrived.castTo[U]
-//    } yield arrivedTyped
-
 }
 
 object RiftWarp {
