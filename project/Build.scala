@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.144"
+  val buildVersion      = "0.5.145"
   val buildScalaVersion = "2.10.3"
 
   val akkaVersion = "2.2.+"
@@ -47,6 +47,7 @@ object Dependencies {
 	lazy val spray_json =  "io.spray" %%  "spray-json" % "1.2.5"
 	lazy val spray_testkit =  "io.spray" % "spray-testkit" % BuildSettings.sprayVersion % "test"
 	lazy val spray_client = "io.spray" % "spray-client" % BuildSettings.sprayVersion % "provided"
+	lazy val spray_httpx = "io.spray" % "spray-httpx" % BuildSettings.sprayVersion % "provided"
 	
     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+" % "provided"
@@ -227,6 +228,22 @@ trait RiftWarpBuild {
   )
 }
 
+trait RiftWarpHttpSprayBuild {
+  import Dependencies._
+  import Resolvers._
+  def riftwarpHttpSprayProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += scala_reflect,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
+	  libraryDependencies += spray_httpx,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest
+  )
+}
+
 trait RiftWarpMongoExtBuild {
   import Dependencies._
   import Resolvers._
@@ -287,12 +304,13 @@ object AlmHirtBuild extends Build
 	with CorexMongoBuild 
 	with CorexSprayBuild 
 	with RiftWarpBuild 
+	with RiftWarpHttpSprayBuild
 	with RiftWarpMongoExtBuild 
 	with RiftWarpSprayJsonExtBuild 
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, httpxSpray, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpMongoProject, riftwarpSprayProject)
+	                        base = file(".")) aggregate(common, httpxSpray, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -328,6 +346,9 @@ object AlmHirtBuild extends Build
 								
   lazy val riftwarpMongoProject = riftwarpMongoExtProject(	name = "riftwarpx-mongo",
                        			baseFile = file("./ext/riftwarpx-mongo")) dependsOn(common, riftwarp)
+
+	lazy val riftwarpHttpSpray = riftwarpHttpSprayProject(	name = "riftwarpx-http-spray",
+                       			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)
 								
   lazy val riftwarpSprayProject = riftwarpSprayJsonExtProject(	name = "riftwarpx-sprayjson",
                        			baseFile = file("./ext/riftwarpx-sprayjson")) dependsOn(common, riftwarp % "compile->compile;test->test" )
