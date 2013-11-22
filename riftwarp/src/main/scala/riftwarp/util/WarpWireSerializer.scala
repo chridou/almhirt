@@ -43,52 +43,17 @@ object WarpWireSerializer {
   def events(rw: RiftWarp): WarpWireSerializer[Event, Event] = new WarpWireSerializer[Event, Event](rw)
   def problems(rw: RiftWarp): WarpWireSerializer[Problem, Problem] = new WarpWireSerializer[Problem, Problem](rw)
 
-  def collection[T: WarpPacker: WarpUnpacker](rw: RiftWarp): WireSerializer[Seq[T], Seq[T]] = {
-    def packAll(items: Vector[T])(implicit packer: WarpPacker[T]): AlmValidation[WarpCollection] = {
-      val mapped = items.map(item => packer.pack(item)(rw.packers).toAgg).sequence
-      mapped.map(WarpCollection(_))
+  def direct[T: WarpPacker: WarpUnpacker](rw: RiftWarp): WireSerializer[T, T] =
+    new CustomWireSerializer[T, T] with SimpleWireSerializer[T,T] with RiftWarpWireSerializer[T, T] {
+      lazy val packer = implicitly[WarpPacker[T]]
+      lazy val unpacker = implicitly[WarpUnpacker[T]]
+      lazy val riftwarp = rw
     }
 
-    def unpackAll(coll: WarpCollection)(implicit unpacker: WarpUnpacker[T]): AlmValidation[Vector[T]] = {
-      val mapped = coll.items.map(item => unpacker.unpack(item)(rw.unpackers).toAgg).sequence
-      mapped
+  def collection[T: WarpPacker: WarpUnpacker](rw: RiftWarp): WireSerializer[Seq[T], Seq[T]] = 
+    new CustomWireSerializer[Seq[T], Seq[T]] with  CollectionWireSerializer[T, T] with RiftWarpWireSerializer[Seq[T], Seq[T]] {
+      lazy val packer = implicitly[WarpPacker[T]]
+      lazy val unpacker = implicitly[WarpUnpacker[T]]
+      lazy val riftwarp = rw
     }
-
-    def serializeInternal(what: Seq[T], channel: String): AlmValidation[WireRepresentation] =
-      for {
-        theChannel <- WarpChannels.getChannel(channel)
-        dematerializer <- rw.dematerializers.get(channel)
-        serialized <- packAll(what.toVector).map(wc => dematerializer.dematerialize(wc, Map.empty))
-        typedSerialized <- theChannel.wireTransmission match {
-          case WireTransmissionAsBinary => serialized.castTo[Array[Byte]].map(BinaryWire)
-          case WireTransmissionAsText => serialized.castTo[String].map(TextWire)
-          case NoWireTransmission => UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
-        }
-
-      } yield typedSerialized
-
-    def deserializeInternal(channel: String)(what: WireRepresentation): AlmValidation[Seq[T]] =
-      for {
-        theChannel <- WarpChannels.getChannel(channel)
-        rematerialized <- what match {
-          case BinaryWire(bytes) if theChannel.wireTransmission == WireTransmissionAsBinary =>
-            rw.rematerializers.getTyped[Array[Byte]](theChannel.channelDescriptor).flatMap(_(bytes))
-          case TextWire(text) if theChannel.wireTransmission == WireTransmissionAsText =>
-            rw.rematerializers.getTyped[String](theChannel.channelDescriptor).flatMap(_(text))
-          case _ =>
-            UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" -> "${theChannel.wireTransmission}").""").failure
-        }
-        warpCollection <- rematerialized.to[WarpCollection]
-        unpacked <- unpackAll(warpCollection)
-      } yield unpacked
-
-    new WireSerializer[Seq[T], Seq[T]] {
-      override def serialize(channel: String)(what: Seq[T], options: Map[String, Any] = Map.empty): AlmValidation[(WireRepresentation, Option[String])] =
-        serializeInternal(what, channel).map(x => (x, None))
-
-      override def deserialize(channel: String)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[Seq[T]] =
-        deserializeInternal(channel)(what)
-    }
-  }
-
 }
