@@ -1,15 +1,12 @@
-package almhirt.httpx.spray.connectors
+package almhirt.httpx.spray.client
 
+import scala.concurrent.duration.FiniteDuration
 import akka.actor._
 import almhirt.common._
 import almhirt.serialization.CanDeserializeFromWire
 import almhirt.serialization.CanSerializeToWire
-import spray.http.Uri
+import spray.http._
 import spray.client.pipelining._
-import spray.http.StatusCode
-import spray.http.MediaType
-import spray.http.HttpMethod
-import scala.concurrent.duration.FiniteDuration
 
 abstract class SingleTypeHttpPublisher[T]() extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
 

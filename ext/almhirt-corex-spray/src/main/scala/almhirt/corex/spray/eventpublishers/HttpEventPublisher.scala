@@ -16,7 +16,7 @@ import com.typesafe.config.Config
 import akka.event.LoggingAdapter
 import almhirt.eventlog.EventLog.LogEvent
 
-abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends almhirt.httpx.spray.connectors.SingleTypeHttpPublisher[Event]() {
+abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends almhirt.httpx.spray.client.SingleTypeHttpPublisher[Event]() {
   import almhirt.eventlog.EventLog._
 
   override lazy val executionContext = myAlmhirt.futuresExecutor

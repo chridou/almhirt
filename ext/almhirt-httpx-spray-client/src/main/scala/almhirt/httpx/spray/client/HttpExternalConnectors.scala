@@ -1,12 +1,15 @@
-package almhirt.httpx.spray.connectors
+package almhirt.httpx.spray.client
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scalaz._, Scalaz._
+import scalaz._
+import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almfuture.all._
 import spray.http._
 import almhirt.serialization._
+import almhirt.problem.ProblemCause.prob2ProblemCause
+import spray.http.HttpEntity.apply
 
 trait HttpExternalConnector {
   trait RequestSettings {
