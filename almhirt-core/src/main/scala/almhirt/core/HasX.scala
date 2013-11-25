@@ -10,25 +10,30 @@ trait HasActorSystem {
   def actorSystem: akka.actor.ActorSystem
 }
 
-trait HasAlmhirt {
-  implicit def theAlmhirt: Almhirt
+trait HasCanCreateUuidsAndDateTimes {
+  implicit def ccuad: CanCreateUuidsAndDateTimes
+}
+
+trait HasAlmhirt extends HasCanCreateUuidsAndDateTimes {
+  def theAlmhirt: Almhirt
+  implicit override def ccuad = theAlmhirt
 }
 
 trait HasMessageBus {
   def messageBus: MessageBus
 }
 
-trait HasEventChannel {
-  def eventChannel : EventChannel
-}
-
-trait HasDomainEventChannel {
-  def domainEventChannel : DomainEventChannel
-}
-
-trait HasCommandChannel {
-  def commandChannel : CommandChannel
-}
+//trait HasEventChannel {
+//  def eventChannel : EventChannel
+//}
+//
+//trait HasDomainEventChannel {
+//  def domainEventChannel : DomainEventChannel
+//}
+//
+//trait HasCommandChannel {
+//  def commandChannel : CommandChannel
+//}
 
 trait HasChannelRegistry {
   def channelRegistry: ChannelRegistry

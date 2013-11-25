@@ -1,17 +1,14 @@
-package almhirt.corex.spray.eventlog
+package almhirt.corex.spray.eventpublishers
 
 import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz._, Scalaz._
 import akka.actor._
-import akka.routing.RoundRobinRouter
-import almhirt.messaging.MessagePublisher
 import almhirt.common._
 import almhirt.configuration._
 import almhirt.almfuture.all._
 import almhirt.serialization._
 import almhirt.core.Almhirt
-import almhirt.eventlog.EventLog
 import spray.http._
 import spray.client.pipelining._
 import com.typesafe.config._
@@ -23,11 +20,11 @@ class ElasticSearchEventPublisher(
   fixedTypeName: Option[String],
   ttl: FiniteDuration,
   override val serializer: CanSerializeToWire[Event],
-  override val problemDeserializer: CanDeserializeFromWire[Problem])(implicit theAlmhirt: Almhirt) extends HttpEventPublisher() with ActorLogging {
+  override val problemDeserializer: CanDeserializeFromWire[Problem])(implicit theAlmhirt: Almhirt) extends HttpEventPublisher() {
 
   val uriprefix = s"""http://$host/$index"""
 
-  override val mediaType: MediaType = MediaTypes.`application/json`
+  override val contentMediaType: MediaType = MediaTypes.`application/json`
   override val method: HttpMethod = HttpMethods.PUT
   override val acceptAsSuccess: Set[StatusCode] = Set(StatusCodes.Accepted)
 

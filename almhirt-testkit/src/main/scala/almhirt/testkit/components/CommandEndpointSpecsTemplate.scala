@@ -19,7 +19,6 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
   with ShouldMatchers { self: CreatesCommandEndpoint =>
 
   implicit def execContext = theAlmhirt.futuresExecutor
-  implicit def ccuad = theAlmhirt
     
   val fixedUniqueString = "x"
   def fixedStringGen() = fixedUniqueString

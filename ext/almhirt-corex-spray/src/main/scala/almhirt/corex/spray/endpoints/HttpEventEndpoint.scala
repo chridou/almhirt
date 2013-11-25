@@ -12,7 +12,7 @@ trait HttpEventEndpoint extends Directives {
   implicit def problemMarshaller: Marshaller[Problem]
   implicit def eventUnmarshaller: Unmarshaller[Event]
 
-  def publish(payload: Any)
+  def publish(payload: AnyRef)
 
   val putEventDirective = put & entity(as[Event])
 

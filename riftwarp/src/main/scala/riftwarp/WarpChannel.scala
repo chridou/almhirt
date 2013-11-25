@@ -51,7 +51,7 @@ object WarpChannels {
   }
  
   def registeredOverWireAsBinary(theChannelDescriptor: String, isSchemaless: Boolean): WarpChannel = {
-    val ch = WarpChannel.notWireCapable(theChannelDescriptor: String, isSchemaless: Boolean)
+    val ch = WarpChannel.overWireAsBinary(theChannelDescriptor: String, isSchemaless: Boolean)
     register(ch)
     ch
   }
@@ -73,7 +73,8 @@ object WarpChannels {
     getChannel(channelDescriptor).flatMap(ch =>
       ch.wireTransmission match {
         case WireTransmissionAsBinary => ch.success
-        case _ => UnspecifiedProblem(s""""$channelDescriptor" is not a binary channel.""").failure
+        case NoWireTransmission => UnspecifiedProblem(s""""$channelDescriptor" is not transmittable over a wire.""").failure
+        case WireTransmissionAsText => UnspecifiedProblem(s""""$channelDescriptor" is not a binary channel. It is a text channel.""").failure
       })
   }
   
@@ -81,7 +82,8 @@ object WarpChannels {
     getChannel(channelDescriptor).flatMap(ch =>
       ch.wireTransmission match {
         case WireTransmissionAsText => ch.success
-        case _ => UnspecifiedProblem(s""""$channelDescriptor" is not a text channel.""").failure
+        case NoWireTransmission => UnspecifiedProblem(s""""$channelDescriptor" is not transmittable over a wire.""").failure
+        case WireTransmissionAsBinary => UnspecifiedProblem(s""""$channelDescriptor" is not a text channel. It is a binary channel""").failure
       })
   }
   

@@ -1,8 +1,9 @@
-package almhirt.httpx.spray.connectors
+package almhirt.httpx.spray.client
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scalaz.syntax.validation._
+import scalaz._
+import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almfuture.all._
 import spray.http._
@@ -11,12 +12,26 @@ import almhirt.problem.ProblemCause.prob2ProblemCause
 import spray.http.HttpEntity.apply
 
 trait HttpExternalConnector {
-  case class RequestSettings(
+  trait RequestSettings {
+    def targetEndpoint: spray.http.Uri
+    def acceptMediaTypes: Seq[MediaType]
+    def method: HttpMethod
+    def acceptAsSuccess: Set[StatusCode]
+  }
+  
+  case class BasicRequestSettings(
     targetEndpoint: spray.http.Uri,
-    mediaType: MediaType,
+    acceptMediaTypes: Seq[MediaType],
     method: HttpMethod,
-    acceptAsSuccess: Set[StatusCode])
+    acceptAsSuccess: Set[StatusCode]) extends RequestSettings
 
+  case class EntityRequestSettings(
+    targetEndpoint: spray.http.Uri,
+    contentMediaType: MediaType,
+    acceptMediaTypes: Seq[MediaType],
+    method: HttpMethod,
+    acceptAsSuccess: Set[StatusCode]) extends RequestSettings
+   
   implicit def executionContext: ExecutionContext
   def serializationExecutionContext: ExecutionContext
 
@@ -52,10 +67,10 @@ trait HttpExternalConnector {
 }
 
 trait RequestsWithEntity { self: HttpExternalConnector =>
-  def createEntityRequest[T: CanSerializeToWire](payload: T, settings: RequestSettings): AlmValidation[HttpRequest] = {
+  def createEntityRequest[T: CanSerializeToWire](payload: T, settings: EntityRequestSettings): AlmValidation[HttpRequest] = {
     val serializer = implicitly[CanSerializeToWire[T]]
     for {
-      channel <- almhirt.httpx.spray.marshalling.Helper.extractChannel(settings.mediaType).success
+      channel <- almhirt.httpx.spray.marshalling.Helper.extractChannel(settings.contentMediaType).success
       serialized <- serializer.serialize(channel)(payload, Map.empty)
     } yield HttpRequest(
       method = settings.method,
@@ -63,8 +78,8 @@ trait RequestsWithEntity { self: HttpExternalConnector =>
       headers = Nil,
       entity =
         serialized._1 match {
-          case TextWire(data) => HttpEntity(ContentType(settings.mediaType), data)
-          case BinaryWire(data) => HttpEntity(ContentType(settings.mediaType), data)
+          case TextWire(data) => HttpEntity(ContentType(settings.contentMediaType), data)
+          case BinaryWire(data) => HttpEntity(ContentType(settings.contentMediaType), data)
         })
   }
 }
@@ -100,7 +115,7 @@ trait AwaitingEntityResponse { self: HttpExternalConnector =>
 }
 
 trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntity =>
-  def publishToExternalEndpoint[T: CanSerializeToWire](payload: T, settings: RequestSettings): AlmFuture[(T, FiniteDuration)] =
+  def publishToExternalEndpoint[T: CanSerializeToWire](payload: T, settings: EntityRequestSettings): AlmFuture[(T, FiniteDuration)] =
     for {
       request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
       resonseAndTime <- sendRequest(request)
@@ -133,7 +148,7 @@ trait HttpExternalQuery { self: HttpExternalConnector with AwaitingEntityRespons
 }
 
 trait HttpExternalConversation { self: HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse =>
-  def conversationWithExternalEndpoint[T: CanSerializeToWire, U: CanDeserializeFromWire](payload: T, settings: RequestSettings): AlmFuture[(U, FiniteDuration)] =
+  def conversationWithExternalEndpoint[T: CanSerializeToWire, U: CanDeserializeFromWire](payload: T, settings: EntityRequestSettings): AlmFuture[(U, FiniteDuration)] =
     for {
       request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
       resonseAndTime <- sendRequest(request)
