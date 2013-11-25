@@ -20,10 +20,8 @@ trait Almhirt
   with HasNumberCruncher
   with HasSyncIoWorker
   with HasLoggingAdapter {
-  def commandConsumer: Consumer[Command]
-  def eventConsumer: Consumer[Event]
-  def domainEventConsumer: Consumer[DomainEvent]
   def dispatcherPath(name: String): AlmValidation[String]
+  def channel[T: ClassTag] = this.channelRegistry[T]()
 }
 
 object DispatcherNames {
