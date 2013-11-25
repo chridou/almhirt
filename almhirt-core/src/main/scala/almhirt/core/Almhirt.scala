@@ -12,9 +12,6 @@ import com.typesafe.config._
 trait Almhirt
   extends HasActorSystem
   with HasMessageBus
-  with HasCommandChannel
-  with HasEventChannel
-  with HasDomainEventChannel
   with HasChannelRegistry
   with CanCreateUuidsAndDateTimes
   with HasDurations
