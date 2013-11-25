@@ -83,12 +83,49 @@ trait HttpxSprayBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += spray_httpx,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest
+  )
+}
+
+trait HttpxSprayClientBuild {
+  import Dependencies._
+  import Resolvers._
+  def httpxSprayClientProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += spray_httpx,
 	  libraryDependencies += spray_client,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest
   )
 }
+
+trait HttpxSprayServiceBuild {
+  import Dependencies._
+  import Resolvers._
+  def httpxSprayServiceProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += spray_httpx,
+	  libraryDependencies += spray_routing,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest
+  )
+}
+
 trait CoreBuild {
   import Dependencies._
   import Resolvers._
@@ -296,6 +333,8 @@ trait RiftWarpAutomaticBuild {
 object AlmHirtBuild extends Build 
 	with CommonBuild 
 	with HttpxSprayBuild
+	with HttpxSprayClientBuild
+	with HttpxSprayServiceBuild
 	with CoreBuild 
 	with CoreTestingBuild 
 	with TestKitBuild 
@@ -310,14 +349,19 @@ object AlmHirtBuild extends Build
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, httpxSpray, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
+	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
   lazy val httpxSpray = httpxSprayProject(	name = "almhirt-httpx-spray",
                        			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
+
+  lazy val httpxSprayClient = httpxSprayClientProject(	name = "almhirt-httpx-spray-client",
+                       			baseFile = file("./ext/almhirt-httpx-spray-client")) dependsOn(common)
 								
+  lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
+                       			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common)
 								
   lazy val core = coreProject(	name = "almhirt-core",
 	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile")
