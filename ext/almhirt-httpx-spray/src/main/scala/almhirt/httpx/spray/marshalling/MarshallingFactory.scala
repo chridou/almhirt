@@ -8,7 +8,7 @@ import spray.httpx.unmarshalling._
 import almhirt.serialization._
 import spray.http.HttpEntity.{ NonEmpty, Empty }
 
-trait MarshallingFactory[T] {
+trait MarshallerFactory[T] { self =>
   import Helper._
   import spray.util._
 
@@ -29,6 +29,18 @@ trait MarshallingFactory[T] {
         }
       }
     }
+
+  def marshalToContentType(implicit mctProvider: MarshallingContentTypesProvider[T]): ContentTypeBoundMarshallerFactory[T] =
+    new ContentTypeBoundMarshallerFactory[T] {
+      val baseMarshallerFactory: MarshallerFactory[T] = self
+      val marshallingContentTypes: Seq[ContentType] = mctProvider.marshallingContentTypes
+    }
+
+}
+
+trait UnmarshallerFactory[T] { self =>
+  import Helper._
+  import spray.util._
 
   def unmarshaller(
     deserializer: CanDeserializeFromWire[T],
@@ -60,4 +72,22 @@ trait MarshallingFactory[T] {
       }
     }
   }
+
+  def unmarshalFromContentType(implicit umctProvider: UnmarshallingContentTypesProvider[T]): ContentTypeBoundUnmarshallerFactory[T] =
+    new ContentTypeBoundUnmarshallerFactory[T] {
+      val baseUnmarshallerFactory: UnmarshallerFactory[T] = self
+      val unmarshallingContentTypes: Seq[ContentType] = umctProvider.unmarshallingContentTypes
+    }
 }
+
+trait MarshallingFactory[T] extends MarshallerFactory[T] with UnmarshallerFactory[T] { self =>
+  def bindToContentType(implicit mctProvider: MarshallingContentTypesProvider[T], umctProvider: UnmarshallingContentTypesProvider[T]): ContentTypeBoundMarshallingFactory[T] =
+    new ContentTypeBoundMarshallingFactory[T] {
+      val baseMarshallerFactory: MarshallerFactory[T] = self
+      val baseUnmarshallerFactory: UnmarshallerFactory[T] = self
+      val marshallingContentTypes: Seq[ContentType] = mctProvider.marshallingContentTypes
+      val unmarshallingContentTypes: Seq[ContentType] = umctProvider.unmarshallingContentTypes
+    }
+}
+
+

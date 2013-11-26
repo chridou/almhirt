@@ -37,6 +37,8 @@ trait ServiceWorkflow {
   protected def completeWithOk[T: Marshaller](ctx: RequestContext, responseFuture: AlmFuture[T])(implicit executionContext: ExecutionContext) {
     completeWith(ctx, responseFuture, StatusCodes.OK)
   }
+  
+  
 }
 
 //trait LocalizedServiceWorkflow{ self: ServiceWorkflow =>
