@@ -39,8 +39,6 @@ object Dependencies {
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
 
-	lazy val slick  = "com.typesafe.slick" %% "slick" % "1.0.+" % "provided"
-
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
 
 	lazy val spray_routing = "io.spray" % "spray-routing" % BuildSettings.sprayVersion % "provided"
@@ -192,25 +190,6 @@ trait CorexRiftwarpBuild {
   )
 }
 
-trait CorexSlickBuild {
-  import Dependencies._
-  import Resolvers._
-  def corexSlickProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += akka_actor,
-	  libraryDependencies += play2_iteratees,
-	  libraryDependencies += slick,
-	  libraryDependencies += typesafe_config,
-	  libraryDependencies += "com.h2database" % "h2" % "1.3.168" % "test",
-	  libraryDependencies += scalatest
-  )
-}
-
 trait CorexMongoBuild {
   import Dependencies._
   import Resolvers._
@@ -339,7 +318,6 @@ object AlmHirtBuild extends Build
 	with CoreTestingBuild 
 	with TestKitBuild 
 	with CorexRiftwarpBuild 
-	with CorexSlickBuild 
 	with CorexMongoBuild 
 	with CorexSprayBuild 
 	with RiftWarpBuild 
@@ -349,7 +327,7 @@ object AlmHirtBuild extends Build
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, core, coreTesting, testKit, corexRiftwarp, slickExtensions, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
+	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -374,10 +352,6 @@ object AlmHirtBuild extends Build
 
   lazy val corexRiftwarp = corexRiftWarpProject(	name = "almhirt-corex-riftwarp",
 	                       		baseFile = file("./ext/almhirt-corex-riftwarp")) dependsOn(common, core % "compile; test->test", riftwarp)
-								
-
-  lazy val slickExtensions = corexSlickProject(	name = "almhirt-corex-slick",
-                       			baseFile = file("./ext/almhirt-corex-slick")) dependsOn(core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
                        			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(core, riftwarp % "test->test", corexRiftwarp % "test->test", riftwarpMongoProject % "test", testKit % "test")
