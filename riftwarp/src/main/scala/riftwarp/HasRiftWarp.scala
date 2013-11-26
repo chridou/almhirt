@@ -1,5 +1,5 @@
 package riftwarp
 
-trait RequiresRiftWarp {
+trait HasRiftWarp {
   def riftwarp: RiftWarp
 }
