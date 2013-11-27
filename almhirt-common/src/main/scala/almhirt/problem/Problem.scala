@@ -6,54 +6,57 @@ sealed trait Problem {
   def message: String
   def problemType: ProblemType
   def args: Map[String, Any]
+  private[problem] def baseInfo(indentLevel: Int): StringBuilder
 }
 
 sealed trait SingleProblem extends Problem {
   def cause: Option[ProblemCause]
 
-  protected def baseInfo(): StringBuilder = {
+  override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
+    val indentation = (0 until (indentLevel*2)).map(_ => " ").mkString
     val builder = new StringBuilder()
-    builder.append("SingleProblem\n")
-    builder.append("%s\n".format(message))
-    builder.append("%s\n".format(problemType))
-    builder.append("Arguments: %s\n".format(args))
+    builder.append(indentation+"%s\n".format(problemType))
+    builder.append(indentation+"%s\n".format(message))
+    builder.append(indentation+"Arguments: %s\n".format(args))
     cause match {
       case None =>
         ()
       case Some(CauseIsThrowable(HasAThrowable(exn))) =>
-        builder.append("Message: %s\n".format(exn.toString))
-        builder.append("Stacktrace:\n%s\n".format(exn.getStackTraceString))
+        builder.append(indentation+"  Message: %s\n".format(exn.toString))
+        builder.append(indentation+"  Stacktrace:\n%s\n".format(exn.getStackTraceString))
       case Some(CauseIsThrowable(desc @ HasAThrowableDescribed(_, _, _, _))) =>
-        builder.append("Description: %s\n".format(desc.toString))
+        builder.append(indentation+"  Description: %s\n".format(desc.toString))
       case Some(CauseIsProblem(prob)) =>
-        builder.append("Problem: %s\n".format(prob.toString))
+        builder.append(indentation+"  Problem:")
+        builder.append(prob.baseInfo(indentLevel+1))
     }
     builder
   }
 
-  override def toString() = baseInfo.result
+  override def toString() = baseInfo(0).result
 
 }
 
 sealed trait AggregateProblem extends Problem {
   def problems: Seq[Problem]
-  protected def baseInfo(): StringBuilder = {
+  override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
+    val indentation = (0 until (indentLevel*2)).map(_ => " ").mkString
     val builder = new StringBuilder()
-    builder.append("AggregateProblem\n")
-    builder.append("%s\n".format(message))
-    builder.append("%s\n".format(problemType))
-    builder.append("Arguments: %s\n".format(args))
-    builder
-  }
-  override def toString(): String = {
-    val builder = baseInfo
-    builder.append("Aggregated problems:\n")
+    builder.append(indentation+"%s\n".format(problemType))
+    builder.append(indentation+"%s\n".format(message))
+    builder.append(indentation+"Arguments: %s\n".format(args))
+    builder.append(indentation+"Aggregated problems:\n")
     problems.zipWithIndex.foreach {
       case (p, i) => {
-        builder.append("Problem %d:\n".format(i))
-        builder.append(p.toString())
+        builder.append(indentation+"Problem %d:\n".format(i))
+        builder.append(p.baseInfo(indentLevel+1))
       }
     }
+    builder
+  }
+  
+  override def toString(): String = {
+    val builder = baseInfo(0)
     builder.result
   }
 }
