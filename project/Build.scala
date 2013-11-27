@@ -124,6 +124,21 @@ trait HttpxSprayServiceBuild {
   )
 }
 
+trait AggregateRootsBuild {
+  import Dependencies._
+  import Resolvers._
+  def aggregateRootsProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += logback,
+	  libraryDependencies += scalatest
+  )
+}
+
 trait CoreBuild {
   import Dependencies._
   import Resolvers._
@@ -314,6 +329,7 @@ object AlmHirtBuild extends Build
 	with HttpxSprayBuild
 	with HttpxSprayClientBuild
 	with HttpxSprayServiceBuild
+	with AggregateRootsBuild
 	with CoreBuild 
 	with CoreTestingBuild 
 	with TestKitBuild 
@@ -327,7 +343,7 @@ object AlmHirtBuild extends Build
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
+	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, aggregateRoots, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -341,8 +357,11 @@ object AlmHirtBuild extends Build
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
 								
+  lazy val aggregateRoots = aggregateRootsProject(	name = "almhirt-aggregate-roots",
+	                       		baseFile = file("almhirt-aggregate-roots")) dependsOn(common % "compile; test->compile")
+
   lazy val core = coreProject(	name = "almhirt-core",
-	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile")
+	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile", aggregateRoots)
 
   lazy val coreTesting = coreTestingProject(	name = "almhirt-testing-core",
 	                       		baseFile = file("./test/almhirt-testing-core")) dependsOn(core, testKit)
