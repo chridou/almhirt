@@ -10,16 +10,18 @@ import spray.http._
 import spray.routing.directives._
 import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling.Unmarshaller
+import almhirt.httpx.spray.marshalling._
+import almhirt.corex.spray.marshalling.HasCoreMarshallers
 
-trait HttpCommandEndpoint extends Directives {
+trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with HasCommonUnmarshallers with HasCoreMarshallers =>
 
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
 
-  implicit def executionStateMarshaller: Marshaller[ExecutionState]
-  implicit def problemMarshaller: Marshaller[Problem]
-  implicit def commandUnmarshaller: Unmarshaller[Command]
+//  implicit def executionStateMarshaller: Marshaller[ExecutionState]
+//  implicit def problemMarshaller: Marshaller[Problem]
+//  implicit def commandUnmarshaller: Unmarshaller[Command]
 
   val executeCommand = (put & parameters('tracked ?, 'sync ?)) & entity(as[Command])
 

@@ -1,10 +1,6 @@
 package almhirt.httpx.spray.marshalling
 
 object DefaultMarshallingInstances {
-  implicit val EventMarshallingInst = EventMarshalling
-  implicit val CommandMarshallingInst = CommandMarshalling
-  implicit val ProblemMarshallingInst = ProblemMarshalling
-
   implicit val BooleanMarshallingInst = BooleanMarshalling
   implicit val StringMarshallingInst = StringMarshalling
   implicit val ByteMarshallingInst = ByteMarshalling
@@ -36,4 +32,12 @@ object DefaultMarshallingInstances {
   implicit val LocalDateTimesMarshallingInst = LocalDateTimesMarshalling
   implicit val DateTimesMarshallingInst = DateTimesMarshalling
   implicit val DurationsMarshallingInst = DurationsMarshalling
+
+  implicit val EventMarshallingInst = EventMarshalling
+  implicit val CommandMarshallingInst = CommandMarshalling
+  implicit val ProblemMarshallingInst = ProblemMarshalling
+  
+  implicit val EventsMarshallingInst = EventsMarshalling
+  implicit val CommandsMarshallingInst = CommandsMarshalling
+  implicit val ProblemsMarshallingInst = ProblemsMarshalling
 }

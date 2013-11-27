@@ -7,11 +7,9 @@ import spray.http._
 import spray.routing.directives._
 import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling.Unmarshaller
+import almhirt.httpx.spray.marshalling._
 
-trait HttpEventEndpoint extends Directives {
-  implicit def problemMarshaller: Marshaller[Problem]
-  implicit def eventUnmarshaller: Unmarshaller[Event]
-
+trait HttpEventEndpoint extends Directives { self: HasCommonMarshallers with HasCommonUnmarshallers =>
   def publish(payload: AnyRef)
 
   val putEventDirective = put & entity(as[Event])

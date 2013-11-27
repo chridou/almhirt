@@ -1,6 +1,7 @@
 package almhirt.httpx.spray.marshalling
 
 import spray.http._
+import almhirt.httpx.spray.MediaTypesProvider
 
 trait MarshallingContentTypesProvider[T] {
   def marshallingContentTypes: Seq[ContentType]
@@ -17,6 +18,13 @@ object MarshallingContentTypesProvider {
     new MarshallingContentTypesProvider[T] {
       val marshallingContentTypes = contentTypes
     }
+
+  def apply[T: MediaTypesProvider]: MarshallingContentTypesProvider[T] = {
+    val mdt = implicitly[MediaTypesProvider[T]]
+    new MarshallingContentTypesProvider[T] {
+      val marshallingContentTypes = mdt.marshallableMediaTypes.map(ContentType(_))
+    }
+  }
 }
 
 object UnmarshallingContentTypesProvider {
@@ -24,9 +32,18 @@ object UnmarshallingContentTypesProvider {
     new UnmarshallingContentTypesProvider[T] {
       val unmarshallingContentTypes = contentTypes
     }
+
+  def apply[T: MediaTypesProvider]: UnmarshallingContentTypesProvider[T] = {
+    val mdt = implicitly[MediaTypesProvider[T]]
+    new UnmarshallingContentTypesProvider[T] {
+      val unmarshallingContentTypes = mdt.unmarshallableMediaTypes.map(ContentType(_))
+    }
+  }
 }
 
 object FullContentTypeProvider {
+  def empty[T]: FullContentTypeProvider[T] = FullContentTypeProvider[T](Seq.empty, Seq.empty)
+
   def apply[T](contentTypesForMarshalling: Seq[ContentType], contentTypesForUnmarshalling: Seq[ContentType]): FullContentTypeProvider[T] =
     new FullContentTypeProvider[T] {
       val marshallingContentTypes = contentTypesForMarshalling
@@ -38,5 +55,13 @@ object FullContentTypeProvider {
       val marshallingContentTypes = marshalling.marshallingContentTypes
       val unmarshallingContentTypes = unmarshalling.unmarshallingContentTypes
     }
+
+  def apply[T: MediaTypesProvider]: FullContentTypeProvider[T] = {
+    val mdt = implicitly[MediaTypesProvider[T]]
+    new FullContentTypeProvider[T] {
+      val marshallingContentTypes = mdt.marshallableMediaTypes.map(ContentType(_))
+      val unmarshallingContentTypes = mdt.unmarshallableMediaTypes.map(ContentType(_))
+    }
+  }
 
 }

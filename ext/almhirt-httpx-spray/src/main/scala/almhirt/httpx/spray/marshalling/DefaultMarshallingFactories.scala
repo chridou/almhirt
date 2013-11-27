@@ -2,10 +2,6 @@ package almhirt.httpx.spray.marshalling
 
 import almhirt.common._
 
-object EventMarshalling extends MarshallingFactory[Event]
-object CommandMarshalling extends MarshallingFactory[Command]
-object ProblemMarshalling extends MarshallingFactory[almhirt.common.Problem]
-
 object BooleanMarshalling extends MarshallingFactory[Boolean]
 object StringMarshalling extends MarshallingFactory[String]
 object ByteMarshalling extends MarshallingFactory[Byte]
@@ -36,4 +32,12 @@ object UrisMarshalling extends MarshallingFactory[Seq[java.net.URI]]
 object UuidsMarshalling extends MarshallingFactory[Seq[java.util.UUID]]
 object LocalDateTimesMarshalling extends MarshallingFactory[Seq[org.joda.time.LocalDateTime]]
 object DateTimesMarshalling extends MarshallingFactory[Seq[org.joda.time.DateTime]]
-object DurationsMarshalling extends MarshallingFactory[Seq[scala.concurrent.duration.Duration]]
+object DurationsMarshalling extends MarshallingFactory[Seq[scala.concurrent.duration.FiniteDuration]]
+
+object EventMarshalling extends MarshallingFactory[Event]
+object CommandMarshalling extends MarshallingFactory[Command]
+object ProblemMarshalling extends MarshallingFactory[almhirt.common.Problem]
+
+object EventsMarshalling extends MarshallingFactory[Seq[Event]]
+object CommandsMarshalling extends MarshallingFactory[Seq[Command]]
+object ProblemsMarshalling extends MarshallingFactory[Seq[almhirt.common.Problem]]
