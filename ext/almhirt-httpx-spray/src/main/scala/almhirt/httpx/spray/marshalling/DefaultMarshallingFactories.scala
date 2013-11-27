@@ -20,7 +20,7 @@ object UriMarshalling extends MarshallingFactory[java.net.URI]
 object UuidMarshalling extends MarshallingFactory[java.util.UUID]
 object LocalDateTimeMarshalling extends MarshallingFactory[org.joda.time.LocalDateTime]
 object DateTimeMarshalling extends MarshallingFactory[org.joda.time.DateTime]
-object DurationMarshalling extends MarshallingFactory[scala.concurrent.duration.Duration]
+object DurationMarshalling extends MarshallingFactory[scala.concurrent.duration.FiniteDuration]
 
 object BooleansMarshalling extends MarshallingFactory[Seq[Boolean]]
 object StringsMarshalling extends MarshallingFactory[Seq[String]]

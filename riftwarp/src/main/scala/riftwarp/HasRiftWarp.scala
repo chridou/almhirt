@@ -1,5 +1,5 @@
 package riftwarp
 
 trait HasRiftWarp {
-  def riftwarp: RiftWarp
+  def myRiftWarp: RiftWarp
 }

@@ -24,7 +24,7 @@ import almhirt.httpx.spray.marshalling._
 class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpCommandEndpoint with ScalatestRouteTest with HttpService {
   def actorRefFactory = system
 
-  lazy val myRiftwarp: RiftWarp = {
+  lazy val myRiftWarp: RiftWarp = {
     val rw = RiftWarp()
     almhirt.corex.riftwarp.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(rw)
     almhirt.testkit.AR1.Serialization.addAr1Serializers(rw)
@@ -51,9 +51,9 @@ class HttpCommandEndpointSpecs extends FunSpec with ShouldMatchers with HttpComm
   lazy val `application/vnd.acme.Problem+json` = MediaTypes.register(MediaType.custom("""application/vnd.acme.ExecutionState+json"""))
   lazy val `application/vnd.acme.Problem+xml` = MediaTypes.register(MediaType.custom("""application/vnd.acme.ExecutionState+xml"""))
 
-  lazy val commandSerializer = WarpWireSerializer.commands(myRiftwarp)
-  lazy val execStateSerializer = WarpWireSerializer[ExecutionState, ExecutionState](myRiftwarp)
-  lazy val problemSerializer = WarpWireSerializer.problems(myRiftwarp)
+  lazy val commandSerializer = WarpWireSerializer.command(myRiftWarp)
+  lazy val execStateSerializer = WarpWireSerializer[ExecutionState, ExecutionState](myRiftWarp)
+  lazy val problemSerializer = WarpWireSerializer.problem(myRiftWarp)
 
   val commandWithoutTrackingId = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
   val commandWithoutTrackingIdJson = commandSerializer.serialize("json")(commandWithoutTrackingId).resultOrEscalate._1.value.asInstanceOf[String]

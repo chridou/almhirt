@@ -6,11 +6,10 @@ import almhirt.almvalidation.kit._
 import almhirt.serialization._
 import riftwarp._
 
-trait CustomWireSerializer[TIn, TOut] extends WireSerializer[TIn, TOut] {
-  type TTIn
-  type TTOut
-  def packer: WarpPacker[TTIn]
-  def unpacker: WarpUnpacker[TTOut]
+trait CustomWireSerializer[TIn, TOut] extends CustomWireSerializerTemplate[TIn, TOut] with WireSerializer[TIn, TOut] {
+  
+  def packer: AlmValidation[WarpPacker[TTIn]]
+  def unpacker: AlmValidation[WarpUnpacker[TTOut]]
 
   def packers: WarpPackers
   def unpackers: WarpUnpackers
@@ -18,55 +17,15 @@ trait CustomWireSerializer[TIn, TOut] extends WireSerializer[TIn, TOut] {
   def dematerializers: Dematerializers
   def rematerializers: Rematerializers
 
-  protected def packInner(what: TTIn): AlmValidation[WarpPackage] =
-    packer(what)(packers)
+  override protected def getDematerializer(channel: WarpChannel): AlmValidation[Dematerializer[Any]] = dematerializers.get(channel.channelDescriptor)
+  override protected def getStringRematerializer(channel: String): AlmValidation[Rematerializer[String]] = rematerializers.getTyped[String](channel)
+  override protected def getBinaryRematerializer(channel: String): AlmValidation[Rematerializer[Array[Byte]]] = rematerializers.getTyped[Array[Byte]](channel)
+  
+  override protected def packInner(what: TTIn): AlmValidation[WarpPackage] =
+    packer.flatMap(_(what)(packers))
 
-  protected def unpackInner(what: WarpPackage): AlmValidation[TTOut] =
-    unpacker(what)(unpackers)
-
-  protected def packOuter(in: TIn): AlmValidation[WarpPackage]  
-  protected def unpackOuter(out: WarpPackage): AlmValidation[TOut]  
-    
-  protected def serializeInternal(what: TIn, channel: String, pack: TIn => AlmValidation[WarpPackage]): AlmValidation[WireRepresentation] =
-    for {
-      theChannel <- WarpChannels.getChannel(channel)
-      dematerializer <- dematerializers.get(channel)
-      serialized <- pack(what).map(wc => dematerializer.dematerialize(wc, Map.empty))
-      typedSerialized <- theChannel.wireTransmission match {
-        case WireTransmissionAsBinary => serialized.castTo[Array[Byte]].map(BinaryWire)
-        case WireTransmissionAsText => serialized.castTo[String].map(TextWire)
-        case NoWireTransmission => UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
-      }
-
-    } yield typedSerialized
-
-  protected def deserializeInternal(channel: String)(what: WireRepresentation, unpack: WarpPackage => AlmValidation[TOut]): AlmValidation[TOut] =
-    for {
-      theChannel <- WarpChannels.getChannel(channel)
-      rematerialized <- what match {
-        case BinaryWire(bytes) if theChannel.wireTransmission == WireTransmissionAsBinary =>
-          rematerializers.getTyped[Array[Byte]](theChannel.channelDescriptor).flatMap(_(bytes))
-        case TextWire(text) if theChannel.wireTransmission == WireTransmissionAsText =>
-          rematerializers.getTyped[String](theChannel.channelDescriptor).flatMap(_(text))
-        case _ =>
-          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" -> "${theChannel.wireTransmission}").""").failure
-      }
-      unpacked <- unpack(rematerialized)
-    } yield unpacked
-
-  override def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(WireRepresentation, Option[String])] =
-    serializeInternal(what, channel, packOuter).map(x => (x, None))
-
-  override def deserialize(channel: String)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[TOut] =
-    deserializeInternal(channel)(what, unpackOuter)
-}
-
-trait SimpleWireSerializer[TIn, TOut] { self : CustomWireSerializer[TIn, TOut] =>
-  type TTIn = TIn
-  type TTOut = TOut
-
-  override protected def packOuter(in: TIn): AlmValidation[WarpPackage]  = packInner(in)
-  override def unpackOuter(out: WarpPackage): AlmValidation[TOut]= unpackInner(out)
+  override protected def unpackInner(what: WarpPackage): AlmValidation[TTOut] =
+    unpacker.flatMap(_(what)(unpackers))
 }
 
 trait FlatWireSerializer[TIn, TOut] { self : CustomWireSerializer[TIn, TOut] =>

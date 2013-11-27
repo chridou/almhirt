@@ -29,6 +29,8 @@ package object std {
   implicit val WarpPrimitiveStringUnpacker = StringWarpUnpacker
   implicit val WarpPrimitiveBytePacker = ByteWarpPacker
   implicit val WarpPrimitiveByteUnpacker = ByteWarpUnpacker
+  implicit val WarpPrimitiveShortPacker = ShortWarpPacker
+  implicit val WarpPrimitiveShortUnpacker = ShortWarpUnpacker
   implicit val WarpPrimitiveIntPacker = IntWarpPacker
   implicit val WarpPrimitiveIntUnpacker = IntWarpUnpacker
   implicit val WarpPrimitiveLongPacker = LongWarpPacker
