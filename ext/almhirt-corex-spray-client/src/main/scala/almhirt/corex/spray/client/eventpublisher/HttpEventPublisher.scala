@@ -15,7 +15,7 @@ import spray.client.pipelining._
 import com.typesafe.config.Config
 import akka.event.LoggingAdapter
 
-abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends almhirt.httpx.spray.client.SingleTypeHttpPublisher[Event]() {
+abstract class HttpEventPublisher(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], myAlmhirt: Almhirt) extends almhirt.httpx.spray.client.SingleTypeHttpPublisher[Event] {
 
   override lazy val executionContext = myAlmhirt.futuresExecutor
   override lazy val serializationExecutionContext = myAlmhirt.numberCruncher
@@ -36,7 +36,7 @@ abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends almhirt
 }
 
 object HttpEventPublisher {
-  def props(theAlmhirt: Almhirt, mediaType: MediaType, serializesEvent: CanSerializeToWire[Event], deserialzesProblem: CanDeserializeFromWire[Problem], configSection: Config): AlmValidation[Props] = {
+  def props(mediaType: MediaType, configSection: Config)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], myAlmhirt: Almhirt): AlmValidation[Props] = {
     for {
       endpointUri <- configSection.v[String]("endpoint-uri")
       failureLogMode <- configSection.opt[String]("on-failure")
@@ -50,23 +50,21 @@ object HttpEventPublisher {
         case Some(x) => UnspecifiedProblem(s"""Invalid failure action: "$x"""").failure
       }
     } yield {
-      Props(new HttpEventPublisherImpl(failureAction, addEventId, endpointUri)(theAlmhirt) {
+      Props(new HttpEventPublisherImpl(failureAction, addEventId, endpointUri) {
         val method = HttpMethods.PUT
         val contentMediaType = mediaType
-        override val problemDeserializer = deserialzesProblem
-        override val serializer = serializesEvent
       })
     }
   }
 
-  def apply(mediaType: MediaType, serializesEvent: CanSerializeToWire[Event], deserialzesProblem: CanDeserializeFromWire[Problem], configPath: String, theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = {
+  def apply(mediaType: MediaType, configPath: String)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] = {
     theAlmhirt.log.info(s"""Creating HttpEventPublisher from config "$configPath".""")
     for {
       configSection <- theAlmhirt.config.v[Config](configPath)
       enabled <- configSection.v[Boolean]("enabled")
       actorName <- configSection.v[String]("actor-name")
       theProps <- if (enabled)
-        props(theAlmhirt, mediaType, serializesEvent, deserialzesProblem, configSection)
+        props(mediaType, configSection)
       else {
         theAlmhirt.log.warning(s"""The HttpEventPublisher configured in "$configPath" is DISABLED.""")
         Props(new Actor { def receive = Actor.emptyBehavior }).success
@@ -78,7 +76,7 @@ object HttpEventPublisher {
     }
   }
 
-  private abstract class HttpEventPublisherImpl(logAction: (String, LoggingAdapter) => Unit, addEventId: Boolean, endpointUri: String)(implicit myAlmhirt: Almhirt) extends HttpEventPublisher() {
+  private abstract class HttpEventPublisherImpl(logAction: (String, LoggingAdapter) => Unit, addEventId: Boolean, endpointUri: String)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], myAlmhirt: Almhirt) extends HttpEventPublisher() {
 
     override val acceptAsSuccess: Set[StatusCode] = Set(StatusCodes.OK, StatusCodes.Accepted)
 

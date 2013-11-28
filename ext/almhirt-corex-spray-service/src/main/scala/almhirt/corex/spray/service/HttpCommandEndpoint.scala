@@ -19,11 +19,6 @@ trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with H
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
-
-//  implicit def executionStateMarshaller: Marshaller[ExecutionState]
-//  implicit def problemMarshaller: Marshaller[Problem]
-//  implicit def commandUnmarshaller: Unmarshaller[Command]
-
   val executeCommand = (put & parameters('tracked ?, 'sync ?)) & entity(as[Command])
 
   val executeCommandTerminator = path("execute") {

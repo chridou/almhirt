@@ -5,8 +5,9 @@ import almhirt.core.Almhirt
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
+import almhirt.serialization._
 
-abstract class RespondingEventPublisher()(implicit myAlmhirt: Almhirt) extends HttpEventPublisher() {
+abstract class RespondingEventPublisher(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], myAlmhirt: Almhirt) extends HttpEventPublisher {
   import RespondingEventPublisher._
 
   override def onProblem(event: Event, problem: Problem, respondTo: ActorRef) {
