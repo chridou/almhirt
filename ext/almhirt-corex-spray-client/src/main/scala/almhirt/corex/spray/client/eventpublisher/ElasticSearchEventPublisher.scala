@@ -12,7 +12,6 @@ import almhirt.core.Almhirt
 import spray.http._
 import spray.client.pipelining._
 import com.typesafe.config._
-import almhirt.eventlog.impl.DevNullEventLog
 
 class ElasticSearchEventPublisher(
   host: String,
@@ -98,7 +97,7 @@ object ElasticSearchEventLog {
         theAlmhirt.actorSystem.actorOf(props, "elastic-search-event-log"))
       else {
         theAlmhirt.log.warning("""ElasticSearchEventLog: THE ELASTIC SEARCH EVENT LOG IS DISABLED""")
-        theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "elastic-search-event-log").success
+        theAlmhirt.actorSystem.actorOf(Props(new DisabledElasticSearchPublisher()), "elastic-search-event-log").success
       })
 
   def apply(serializer: CanSerializeToWire[Event], problemSerializer: CanDeserializeFromWire[Problem], configPath: String, theAlmhirt: Almhirt): AlmValidation[ActorRef] =
@@ -106,4 +105,11 @@ object ElasticSearchEventLog {
 
   def apply(serializer: CanSerializeToWire[Event], problemSerializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): AlmValidation[ActorRef] =
     apply(serializer, problemSerializer, "almhirt.elastic-search-event-log", theAlmhirt)
+    
+  private class DisabledElasticSearchPublisher extends Actor {
+    override def receive: Receive = {
+      case ev: Event => ()
+    }
+  }  
+    
 }

@@ -14,7 +14,6 @@ import spray.http._
 import spray.client.pipelining._
 import com.typesafe.config.Config
 import akka.event.LoggingAdapter
-import almhirt.eventlog.EventLog.LogEvent
 
 abstract class HttpEventPublisher()(implicit myAlmhirt: Almhirt) extends almhirt.httpx.spray.client.SingleTypeHttpPublisher[Event]() {
 
