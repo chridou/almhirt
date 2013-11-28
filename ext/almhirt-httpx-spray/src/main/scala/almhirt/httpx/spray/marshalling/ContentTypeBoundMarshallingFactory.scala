@@ -15,7 +15,7 @@ trait ContentTypeBoundMarshallerFactory[T] {
   def baseMarshallerFactory: MarshallerFactory[T]
   def marshallingContentTypes: Seq[ContentType]
 
-  def marshaller(implicit serializer: CanSerializeToWire[T]): AlmValidation[Marshaller[T]] =
+  def marshaller(implicit serializer: CanSerializeToWire[T]): Marshaller[T] =
     baseMarshallerFactory.marshaller(serializer, marshallingContentTypes: _*)
 }
 
@@ -35,7 +35,7 @@ trait ContentTypeBoundUnmarshallerFactory[T] {
   def baseUnmarshallerFactory: UnmarshallerFactory[T]
   def unmarshallingContentTypes: Seq[ContentType]
 
-  def unmarshaller(implicit deserializer: CanDeserializeFromWire[T]): AlmValidation[Unmarshaller[T]] =
+  def unmarshaller(implicit deserializer: CanDeserializeFromWire[T]): Unmarshaller[T] =
     baseUnmarshallerFactory.unmarshaller(deserializer, unmarshallingContentTypes: _*)
 }
 

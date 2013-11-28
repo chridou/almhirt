@@ -3,6 +3,7 @@ package almhirt.domain
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.core.types._
 import almhirt.commanding._
 
 trait TestArEvent extends DomainEvent

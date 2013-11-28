@@ -2,13 +2,14 @@ package almhirt.testkit.domain
 
 import org.scalatest.FunSpec
 import org.scalatest.matchers.ShouldMatchers
+import scala.concurrent._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
-import almhirt.testkit._
 import akka.testkit.TestProbe
+import almhirt.testkit._
 import almhirt.domain._
-import scala.concurrent._
+import almhirt.core.types._
 import almhirt.almvalidation.kit._
 import almhirt.core.HasAlmhirt
 

@@ -1,5 +1,7 @@
 package almhirt.domain
 
+import almhirt.core.types._
+
 object DomainMessages {
   sealed trait DomainMessage
   final case class GetAggregateRoot(arId: java.util.UUID) extends DomainMessage

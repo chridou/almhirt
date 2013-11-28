@@ -2,9 +2,9 @@ package almhirt.testkit
 
 import akka.actor._
 import almhirt.core.HasAlmhirt
+import almhirt.core.types._
 import almhirt.domaineventlog.impl.InMemoryDomainEventLog
 import almhirt.messaging.MessagePublisher
-import almhirt.domain.DomainEvent
 
 trait CreatesDomainEventLog {
   def createDomainEventLog(testId: Int): (ActorRef, () => Unit)

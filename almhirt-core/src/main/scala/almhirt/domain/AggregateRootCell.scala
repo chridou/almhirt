@@ -3,6 +3,7 @@ package almhirt.domain
 import java.util.{ UUID => JUUID }
 import akka.actor._
 import almhirt.common._
+import almhirt.core.types._
 
 object AggregateRootCell {
   sealed trait AggregateRootCellMessage

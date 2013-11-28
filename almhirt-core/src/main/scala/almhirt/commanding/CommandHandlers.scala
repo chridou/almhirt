@@ -4,6 +4,7 @@ import scala.reflect.ClassTag
 import scala.concurrent.ExecutionContext
 import almhirt.common._
 import almhirt.core.Almhirt
+import almhirt.core.types._
 import almhirt.domain._
 import almhirt.components.AggregateRootRepositoryRegistry
 

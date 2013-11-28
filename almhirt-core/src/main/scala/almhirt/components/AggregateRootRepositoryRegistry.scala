@@ -3,7 +3,7 @@ package almhirt.components
 import scala.reflect.ClassTag
 import akka.actor._
 import almhirt.common._
-import almhirt.domain.AggregateRoot
+import almhirt.core.types._
 
 trait AggregateRootRepositoryRegistry {
   def register(arType: Class[_ <: AggregateRoot[_, _]], repository: ActorRef)

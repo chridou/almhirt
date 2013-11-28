@@ -39,21 +39,27 @@ class WarpWireSerializer[-TIn, +TOut](riftWarp: RiftWarp)(implicit tag: ClassTag
 
 object WarpWireSerializer {
   def apply[TIn, TOut](rw: RiftWarp)(implicit tag: ClassTag[TOut]): WarpWireSerializer[TIn, TOut] = new WarpWireSerializer[TIn, TOut](rw)
-  def commands(rw: RiftWarp): WarpWireSerializer[Command, Command] = new WarpWireSerializer[Command, Command](rw)
-  def events(rw: RiftWarp): WarpWireSerializer[Event, Event] = new WarpWireSerializer[Event, Event](rw)
-  def problems(rw: RiftWarp): WarpWireSerializer[Problem, Problem] = new WarpWireSerializer[Problem, Problem](rw)
+  def command(rw: RiftWarp): WarpWireSerializer[Command, Command] = new WarpWireSerializer[Command, Command](rw)
+  def event(rw: RiftWarp): WarpWireSerializer[Event, Event] = new WarpWireSerializer[Event, Event](rw)
+  def problem(rw: RiftWarp): WarpWireSerializer[Problem, Problem] = new WarpWireSerializer[Problem, Problem](rw)
 
+  def collection[T](rw: RiftWarp)(implicit tag: ClassTag[T]): WireSerializer[Seq[T], Seq[T]] = 
+    new CustomWireSerializerByLookUp[Seq[T], Seq[T]] with CollectionWireSerializer[T, T] with HasRiftWarp {
+      val myRiftWarp = rw
+      def outTag: ClassTag[TTOut] = tag
+    }
+  
   def direct[T: WarpPacker: WarpUnpacker](rw: RiftWarp): WireSerializer[T, T] =
     new CustomWireSerializer[T, T] with SimpleWireSerializer[T,T] with RiftWarpWireSerializer[T, T] {
-      lazy val packer = implicitly[WarpPacker[T]]
-      lazy val unpacker = implicitly[WarpUnpacker[T]]
+      lazy val packer = implicitly[WarpPacker[T]].success
+      lazy val unpacker = implicitly[WarpUnpacker[T]].success
       lazy val riftwarp = rw
     }
 
-  def collection[T: WarpPacker: WarpUnpacker](rw: RiftWarp): WireSerializer[Seq[T], Seq[T]] = 
+  def collectionDirect[T: WarpPacker: WarpUnpacker](rw: RiftWarp): WireSerializer[Seq[T], Seq[T]] = 
     new CustomWireSerializer[Seq[T], Seq[T]] with  CollectionWireSerializer[T, T] with RiftWarpWireSerializer[Seq[T], Seq[T]] {
-      lazy val packer = implicitly[WarpPacker[T]]
-      lazy val unpacker = implicitly[WarpUnpacker[T]]
+      lazy val packer = implicitly[WarpPacker[T]].success
+      lazy val unpacker = implicitly[WarpUnpacker[T]].success
       lazy val riftwarp = rw
     }
 }

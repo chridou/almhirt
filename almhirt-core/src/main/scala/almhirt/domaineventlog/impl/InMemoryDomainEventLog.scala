@@ -4,9 +4,9 @@ import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
 import almhirt.configuration._
-import almhirt.domain.DomainEvent
-import almhirt.domaineventlog.DomainEventLog
 import almhirt.core.Almhirt
+import almhirt.core.types._
+import almhirt.domaineventlog.DomainEventLog
 import almhirt.domaineventlog.DomainEventLogRouter
 import com.typesafe.config.Config
 import play.api.libs.iteratee.Enumerator

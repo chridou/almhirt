@@ -3,6 +3,7 @@ package almhirt.commanding
 import scala.reflect.ClassTag
 import scalaz.syntax.validation._
 import almhirt.common._
+import almhirt.core.types._
 
 trait CommandHandlerRegistry {
   def register(forCommandType: Class[_], handler: CommandHandler)

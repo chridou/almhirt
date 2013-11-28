@@ -8,13 +8,11 @@ import almhirt.serialization.CanSerializeToWire
 import spray.http._
 import spray.client.pipelining._
 
-abstract class SingleTypeHttpPublisher[T]() extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
+abstract class SingleTypeHttpPublisher[T](implicit serializer: CanSerializeToWire[T], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
 
   override val pipeline = (sendReceive)
 
   def acceptAsSuccess: Set[StatusCode]
-  override def problemDeserializer: CanDeserializeFromWire[Problem]
-  def serializer: CanSerializeToWire[T]
   def contentMediaType: MediaType
 
   def method: HttpMethod
@@ -22,32 +20,27 @@ abstract class SingleTypeHttpPublisher[T]() extends Actor with ActorLogging with
   
   def publishOverWire(entity: T): AlmFuture[(T, FiniteDuration)] = {
     val settings = EntityRequestSettings(createUri(entity), contentMediaType, Seq.empty, method, acceptAsSuccess)
-    publishToExternalEndpoint(entity, settings)(serializer)
+    publishToExternalEndpoint(entity, settings)(serializer, problemDeserializer)
   }
 }
 
-abstract class SingleTypeHttpQuery[U]() extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
+abstract class SingleTypeHttpQuery[U](implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
   type ResourceId
 
   override val pipeline = (sendReceive)
 
   def acceptAsSuccess: Set[StatusCode]
-  override def problemDeserializer: CanDeserializeFromWire[Problem]
-  def deserializer: CanDeserializeFromWire[U]
   def acceptMediaTypes: Seq[MediaType]
   def method: HttpMethod
   def createUri(id: ResourceId): Uri
   
   def queryOverWire(id: ResourceId): AlmFuture[(U, FiniteDuration)] = {
     val settings = BasicRequestSettings(createUri(id), acceptMediaTypes, method, acceptAsSuccess)
-    externalQuery(settings)(deserializer)
+    externalQuery(settings)(deserializer, problemDeserializer)
   }
 }
 
-abstract class SingleTypeHttpConversation[T, U]() extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse with HttpExternalConversation {
-  def serializer: CanSerializeToWire[T]
-  def deserializer: CanDeserializeFromWire[T]
-  def problemDeserializer: CanDeserializeFromWire[Problem]
+abstract class SingleTypeHttpConversation[T, U](implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[T], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse with HttpExternalConversation {
   def acceptAsSuccess: Set[StatusCode]
   def contentMediaType: MediaType
   def acceptMediaTypes: Seq[MediaType]
@@ -58,7 +51,7 @@ abstract class SingleTypeHttpConversation[T, U]() extends Actor with ActorLoggin
 
   def conversationOverWire(entity: T): AlmFuture[(T, FiniteDuration)] = {
     val settings = EntityRequestSettings(createUri(entity), contentMediaType, acceptMediaTypes, method, acceptAsSuccess)
-    conversationWithExternalEndpoint(entity, settings)(serializer, deserializer)
+    conversationWithExternalEndpoint(entity, settings)(serializer, deserializer, problemDeserializer)
   }
 
 }

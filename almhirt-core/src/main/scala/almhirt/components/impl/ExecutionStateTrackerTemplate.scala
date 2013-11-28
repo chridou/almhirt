@@ -5,8 +5,8 @@ import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
 import almhirt.core._
+import almhirt.core.types._
 import almhirt.components.{ ExecutionStateTracker, ExecutionStateStore, ExecutionStateEntry }
-import almhirt.commanding._
 import almhirt.messaging.MessagePublisher
 import almhirt.problem.{ Major, Minor }
 

@@ -4,6 +4,7 @@ import org.scalatest.FunSpec
 import org.scalatest.matchers.ShouldMatchers
 import scalaz._
 import almhirt.common._
+import almhirt.core.types._
 import almhirt.almvalidation.kit._
 
 class AggregateRootSpecs extends FunSpec with ShouldMatchers {

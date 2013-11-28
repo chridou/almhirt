@@ -7,7 +7,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.configuration._
 import almhirt.core.Almhirt
-import almhirt.domain.AggregateRoot
+import almhirt.core.types._
 import almhirt.domain.AggregateRootCellStateSink
 import almhirt.domain.AggregateRootCell.AggregateRootCellState
 import almhirt.components.impl.AggregateRootCellCacheStats

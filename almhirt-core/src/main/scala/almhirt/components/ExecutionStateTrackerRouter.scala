@@ -1,7 +1,8 @@
 package almhirt.components
 
 import akka.actor._
-import almhirt.commanding.ExecutionStateChanged
+import almhirt.common._
+import almhirt.core.types._
 import almhirt.base._
 
 class ExecutionStateTrackerRouter(numChildren: Int, childProps: Props) extends SelectorBasedRouter(numChildren,childProps) with StringBasedRouter with Actor {

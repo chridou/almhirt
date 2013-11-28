@@ -2,18 +2,19 @@ package almhirt.testkit.domaineventlog
 
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.FunSpec
+import scala.concurrent.duration.FiniteDuration
 import akka.testkit.TestProbe
 import almhirt.testkit._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
+import almhirt.core.types._
 import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
 import almhirt.core.HasAlmhirt
 import almhirt.domain._
 import play.api.libs.iteratee.Iteratee
-import scala.concurrent.duration.FiniteDuration
 
 abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)

@@ -5,8 +5,8 @@ import scalaz.syntax.validation._
 import akka.actor._
 import almhirt.common._
 import almhirt.core.Almhirt
+import almhirt.core.types._
 import almhirt.commanding._
-import almhirt.domain.AggregateRootRef
 
 trait DomainCommandsSequencerTemplate extends DomainCommandsSequencer { actor: Actor with ActorLogging =>
   import DomainCommandsSequencer._

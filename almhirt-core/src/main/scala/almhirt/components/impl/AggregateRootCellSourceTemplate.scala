@@ -1,14 +1,14 @@
 package almhirt.components.impl
 
 import java.util.{ UUID => JUUID }
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
 import almhirt.almvalidation.kit._
+import almhirt.core.types._
+import almhirt.core.Almhirt
 import almhirt.components._
 import com.typesafe.config.Config
-import almhirt.core.Almhirt
-import scala.concurrent.ExecutionContext
-import almhirt.domain.AggregateRoot
 
 trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with SupervisioningActorCellSource { actor: Actor with ActorLogging =>
   import AggregateRootCellSource._

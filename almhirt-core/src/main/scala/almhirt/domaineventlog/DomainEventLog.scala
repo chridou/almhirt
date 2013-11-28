@@ -2,9 +2,8 @@ package almhirt.domaineventlog
 
 import java.util.{ UUID => JUUID }
 import almhirt.common._
-import almhirt.domain.DomainEvent
 import akka.actor.Actor
-import almhirt.domain.AggregateRoot
+import almhirt.core.types._
 import almhirt.messaging.MessagePublisher
 import play.api.libs.iteratee.Enumerator
 

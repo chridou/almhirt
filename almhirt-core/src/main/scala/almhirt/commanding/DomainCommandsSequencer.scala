@@ -3,7 +3,7 @@ package almhirt.commanding
 import org.joda.time.DateTime
 import akka.actor._
 import almhirt.common._
-import almhirt.domain.AggregateRootRef
+import almhirt.core.types._
 
 object DomainCommandsSequencer {
   sealed trait DomainCommandsSequencerMessage

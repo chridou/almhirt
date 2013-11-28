@@ -4,6 +4,7 @@ import org.scalatest.FunSpec
 import org.scalatest.matchers.ShouldMatchers
 import scalaz._
 import almhirt.common._
+import almhirt.core.types._
 
 class CanCreateAggregateRootSpecs extends FunSpec with ShouldMatchers {
   implicit val ccuad = CanCreateUuidsAndDateTimes()

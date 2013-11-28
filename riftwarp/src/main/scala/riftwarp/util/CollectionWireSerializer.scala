@@ -6,7 +6,7 @@ import almhirt.almvalidation.kit._
 import almhirt.serialization._
 import riftwarp._
 
-trait CollectionWireSerializer[TIn, TOut] extends CustomWireSerializer[Seq[TIn], Seq[TOut]] {
+trait CollectionWireSerializer[TIn, TOut]{ self : CustomWireSerializerTemplate[Seq[TIn], Seq[TOut]] =>
   type TTIn = TIn
   type TTOut = TOut
 

@@ -8,6 +8,7 @@ import akka.util.Timeout
 import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.core.Almhirt
+import almhirt.core.types._
 import almhirt.domain._
 import almhirt.commanding._
 import almhirt.components.AggregateRootRepositoryRegistry

@@ -13,7 +13,7 @@ import almhirt.almfuture.all._
 import almhirt.core.Almhirt
 import almhirt.domain.AggregateRootCell
 import almhirt.domain._
-import almhirt.domain.DomainEvent
+import almhirt.core.types._
 import almhirt.messaging.MessagePublisher
 import almhirt.common.CanCreateUuidsAndDateTimes
 import play.api.libs.iteratee._
