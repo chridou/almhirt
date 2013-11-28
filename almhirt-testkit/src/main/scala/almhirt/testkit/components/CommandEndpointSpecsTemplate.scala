@@ -8,7 +8,7 @@ import akka.actor._
 import akka.pattern._
 import almhirt.components.CommandEndpoint
 import almhirt.commanding._
-import almhirt.domain.AggregateRootRef
+import almhirt.core.types._
 import almhirt.common.Message
 import almhirt.common.CanCreateUuidsAndDateTimes
 import almhirt.components.ExecutionStateTracker._

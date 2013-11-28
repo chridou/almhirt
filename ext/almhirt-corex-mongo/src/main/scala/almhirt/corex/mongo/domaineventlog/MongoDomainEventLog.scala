@@ -12,7 +12,7 @@ import almhirt.converters.BinaryConverter
 import almhirt.configuration._
 import almhirt.domaineventlog._
 import almhirt.messaging.MessagePublisher
-import almhirt.domain.DomainEvent
+import almhirt.core.types._
 import almhirt.core.Almhirt
 import almhirt.corex.mongo.LogStatisticsCollector
 import reactivemongo.bson._

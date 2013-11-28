@@ -1,7 +1,7 @@
 package almhirt.corex.riftwarp.serializers
 
 import almhirt.common._
-import almhirt.domain._
+import almhirt.core.types._
 import riftwarp.RiftWarp
 
 object RiftDomainEventStringSerializer {

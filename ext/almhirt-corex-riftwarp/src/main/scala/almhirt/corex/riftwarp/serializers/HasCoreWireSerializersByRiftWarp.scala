@@ -1,8 +1,7 @@
 package almhirt.corex.riftwarp.serializers
 
-import almhirt.core.serialization.HasCoreWireSerializers
-import almhirt.domain.DomainEvent
-import almhirt.commanding.ExecutionState
+import almhirt.core.types._
+import almhirt.core.types.serialization.HasCoreWireSerializers
 import riftwarp.HasRiftWarp
 import riftwarp.util.WarpWireSerializer
 

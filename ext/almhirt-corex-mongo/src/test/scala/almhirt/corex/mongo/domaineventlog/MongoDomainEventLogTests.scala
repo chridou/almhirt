@@ -7,7 +7,7 @@ import almhirt.testkit._
 import almhirt.testkit.domaineventlog.DomainEventLogSpecTemplate
 import com.typesafe.config.ConfigFactory
 import reactivemongo.api.MongoDriver
-import almhirt.domain.DomainEvent
+import almhirt.core.types._
 import reactivemongo.bson.BSONDocument
 import riftwarpx.mongo.BsonDocumentSerializer
 import com.typesafe.config.Config

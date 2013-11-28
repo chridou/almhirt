@@ -5,7 +5,7 @@ import org.joda.time.DateTime
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.commanding._
+import almhirt.core.types._
 import riftwarp._
 import riftwarp.std.kit._
 import riftwarp.serialization.common.EventWarpPackagingTemplate
