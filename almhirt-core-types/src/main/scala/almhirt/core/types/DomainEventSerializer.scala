@@ -1,4 +1,4 @@
-package almhirt.domain
+package almhirt.core.types
 
 import almhirt.serialization._
 

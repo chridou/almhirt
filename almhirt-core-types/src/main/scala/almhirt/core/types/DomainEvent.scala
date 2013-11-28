@@ -12,13 +12,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.domain
+package almhirt.core.types
 
 import scala.language.implicitConversions
 import java.util.UUID
 import org.joda.time.LocalDateTime
 import almhirt.common._
-import almhirt.core._
 
 /** These events can create or mutate an aggregate root in the dimension of time */
 trait DomainEvent extends Event {

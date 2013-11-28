@@ -1,4 +1,4 @@
-package almhirt.domain
+package almhirt.core.types
 
 import language.implicitConversions
 

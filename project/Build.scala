@@ -124,21 +124,6 @@ trait HttpxSprayServiceBuild {
   )
 }
 
-trait DomainTypesBuild {
-  import Dependencies._
-  import Resolvers._
-  def domainTypesProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-  	  resolvers += typesafeRepo,
-  	  resolvers += sonatypeReleases,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += logback,
-	  libraryDependencies += scalatest
-  )
-}
-
 trait CoreTypesBuild {
   import Dependencies._
   import Resolvers._
@@ -344,7 +329,6 @@ object AlmHirtBuild extends Build
 	with HttpxSprayBuild
 	with HttpxSprayClientBuild
 	with HttpxSprayServiceBuild
-	with DomainTypesBuild
 	with CoreTypesBuild 
 	with CoreBuild 
 	with CoreTestingBuild 
@@ -359,7 +343,7 @@ object AlmHirtBuild extends Build
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, domainTypes, coreTypes, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
+	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, coreTypes, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSpray, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -373,14 +357,11 @@ object AlmHirtBuild extends Build
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
 								
-  lazy val domainTypes = domainTypesProject(	name = "almhirt-domain-types",
-	                       		baseFile = file("almhirt-domain-types")) dependsOn(common % "compile; test->compile")
- 
   lazy val coreTypes = coreTypesProject(	name = "almhirt-core-types",
 	                       		baseFile = file("almhirt-core-types")) dependsOn(common % "compile; test->compile", domainTypes)
 
   lazy val core = coreProject(	name = "almhirt-core",
-	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile", domainTypes, coreTypes)
+	                       		baseFile = file("almhirt-core")) dependsOn(common % "compile; test->compile", coreTypes)
 
   lazy val coreTesting = coreTestingProject(	name = "almhirt-testing-core",
 	                       		baseFile = file("./test/almhirt-testing-core")) dependsOn(core, testKit)

@@ -12,12 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.domain
+package almhirt.core.types
 
 import java.util.UUID
 import scala.annotation.tailrec
 import scalaz._, Scalaz._
-import almhirt.core._
 import almhirt.common._
 
 /** Functionality to create a new aggregate root */

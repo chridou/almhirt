@@ -1,9 +1,8 @@
-package almhirt.commanding
+package almhirt.core.types
 
 import java.util.{UUID => JUUID}
 import org.joda.time.LocalDateTime
 import almhirt.common._
-import almhirt.domain.AggregateRootRef
 
 trait DomainCommandHeader extends CommandHeader {
   def aggRef: AggregateRootRef

@@ -1,4 +1,4 @@
-package almhirt.commanding
+package almhirt.core.types
 
 import almhirt.common._
 import org.joda.time.LocalDateTime

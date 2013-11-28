@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.domain
+package almhirt.core.types
 
 import java.util.UUID
 import scala.annotation.tailrec

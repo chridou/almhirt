@@ -12,15 +12,10 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.domain
+package almhirt.core.types
 
-/** Implementors are supposed to be able to handle domain events
- * 
- * @tparam AR The type of the aggregate root this trait is mixed in
- * @tparam Event The base type of [[almhirt.domain.DomainEvent]]s handled by this trait
- */
-trait CanHandleDomainEvent[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] {
-  /** A function that applies a single [[almhirt.domain.DomainEvent]] and returns the effect */
-  def applyEvent(event: Event): DomainValidation[AR]
-  def applyEvents(events: Iterable[Event]): DomainValidation[AR]
-}
+/** Marks an event that creates a new aggregate root */
+trait CreatesNewAggregateRootEvent
+
+/** Marks an event that deletes an aggregate root */
+trait DeletesAggregateRootEvent

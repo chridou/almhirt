@@ -1,4 +1,4 @@
-package almhirt.control
+package almhirt.core.types
 
 import almhirt.common._
 
