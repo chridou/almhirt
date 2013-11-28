@@ -2,7 +2,7 @@ package almhirt
 
 import almhirt.common._
 import almhirt.messaging.MessageChannel
-import almhirt.domain.DomainEvent
+import almhirt.core.types._
 
 package object core {
   type EventChannel = MessageChannel[Event]

@@ -3,9 +3,9 @@ package almhirt.components
 import scala.concurrent.duration._
 import org.joda.time.LocalDateTime
 import akka.actor._
-import almhirt.core.Almhirt
-import almhirt.commanding._
 import almhirt.common._
+import almhirt.core.Almhirt
+import almhirt.core.types._
 
 object ExecutionStateTracker {
 

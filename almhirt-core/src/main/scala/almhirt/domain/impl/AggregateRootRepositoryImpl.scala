@@ -3,7 +3,7 @@ package almhirt.domain.impl
 import scala.reflect.ClassTag
 import akka.actor._
 import almhirt.core.Almhirt
-import almhirt.domain._
+import almhirt.core.types._
 
 class AggregateRootRepositoryImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
   val theAlmhirt: Almhirt,

@@ -1,4 +1,4 @@
-package almhirt.commanding
+package almhirt.core.types
 
 import java.util.{ UUID => JUUID }
 import almhirt.common._

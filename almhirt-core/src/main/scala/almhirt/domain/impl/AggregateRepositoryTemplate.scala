@@ -8,6 +8,7 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
+import almhirt.core.types._
 import almhirt.almvalidation.kit._
 import almhirt.core.Almhirt
 import almhirt.almfuture.all._

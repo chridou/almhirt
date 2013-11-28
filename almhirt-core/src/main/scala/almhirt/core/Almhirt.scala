@@ -6,7 +6,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.configuration._
 import almhirt.messaging._
-import almhirt.domain.DomainEvent
+import almhirt.core.types._
 import com.typesafe.config._
 
 trait Almhirt

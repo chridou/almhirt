@@ -3,7 +3,7 @@ package almhirt.components
 import java.util.{ UUID => JUUID }
 import akka.actor._
 import akka.actor.SupervisorStrategy._
-import almhirt.commanding.ExecutionStateChanged
+import almhirt.core.types._
 import almhirt.base._
 
 class AggregateRootCellSourceRouter(numChildren: Int, childProps: Props) extends SelectorBasedRouter(numChildren,childProps) with UuidBasedRouter with Actor {

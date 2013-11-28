@@ -1,6 +1,6 @@
 package almhirt.core
 
 import almhirt.common.Consumer
-import almhirt.domain.DomainEvent
+import almhirt.core.types._
 
 trait DomainEventConsumer extends Consumer[DomainEvent]

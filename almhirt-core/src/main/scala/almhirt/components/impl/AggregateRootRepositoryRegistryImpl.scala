@@ -3,7 +3,7 @@ package almhirt.components.impl
 import scalaz.syntax.validation._
 import akka.actor.ActorRef
 import almhirt.common._
-import almhirt.domain.AggregateRoot
+import almhirt.core.types._
 import almhirt.components.AggregateRootRepositoryRegistry
 
 class AggregateRootRepositoryRegistryImpl extends AggregateRootRepositoryRegistry {
