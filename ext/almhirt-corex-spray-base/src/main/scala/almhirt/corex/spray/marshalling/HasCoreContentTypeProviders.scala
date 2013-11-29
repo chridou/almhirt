@@ -5,7 +5,7 @@ import almhirt.core.types._
 import almhirt.corex.spray.HasCoreMediaTypesProviders
 
 trait HasCoreContentTypeProviders {
-  implicit def domainEventContentTypeProvider: FullContentTypeProvider[DomainEvent]
+  def domainEventContentTypeProvider: FullContentTypeProvider[DomainEvent]
   implicit def executionStateContentTypeProvider: FullContentTypeProvider[ExecutionState]
   
   implicit def domainEventsContentTypeProvider: FullContentTypeProvider[Seq[DomainEvent]]
