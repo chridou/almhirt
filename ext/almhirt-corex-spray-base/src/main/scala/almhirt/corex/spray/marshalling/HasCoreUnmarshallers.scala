@@ -9,6 +9,6 @@ trait HasCoreUnmarshallers  { self: HasCoreWireSerializers with HasCoreContentTy
   val domainEventUnmarshaller = ContentTypeBoundUnmarshallerFactory[DomainEvent](domainEventContentTypeProvider, DomainEventMarshallingInst).unmarshaller(domainEventWireSerializer)
   implicit val executionStateUnmarshaller = ContentTypeBoundUnmarshallerFactory[ExecutionState].unmarshaller
 
-  implicit val domainEvenstUnmarshaller = ContentTypeBoundUnmarshallerFactory[Seq[DomainEvent]].unmarshaller
+  implicit val domainEventsUnmarshaller = ContentTypeBoundUnmarshallerFactory[Seq[DomainEvent]].unmarshaller
   implicit val executionStatesUnmarshaller = ContentTypeBoundUnmarshallerFactory[Seq[ExecutionState]].unmarshaller
 }
