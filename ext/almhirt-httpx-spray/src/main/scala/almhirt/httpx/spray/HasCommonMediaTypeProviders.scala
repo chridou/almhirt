@@ -1,5 +1,7 @@
 package almhirt.httpx.spray
 
+import almhirt.http._
+
 trait HasCommonMediaTypesProviders {
   implicit def booleanMediaTypesProvider: MediaTypesProvider[Boolean]
   implicit def stringMediaTypesProvider: MediaTypesProvider[String]
@@ -11,8 +13,8 @@ trait HasCommonMediaTypesProviders {
   implicit def floatMediaTypesProvider: MediaTypesProvider[Float]
   implicit def doubleMediaTypesProvider: MediaTypesProvider[Double]
   implicit def bigDecimalMediaTypesProvider: MediaTypesProvider[BigDecimal]
-  implicit def uriWireMediaTypesProvider: MediaTypesProvider[java.net.URI]
-  implicit def uuidWireMediaTypesProvider: MediaTypesProvider[java.util.UUID]
+  implicit def uriMediaTypesProvider: MediaTypesProvider[java.net.URI]
+  implicit def uuidMediaTypesProvider: MediaTypesProvider[java.util.UUID]
   implicit def localDateTimeMediaTypesProvider: MediaTypesProvider[org.joda.time.LocalDateTime]
   implicit def dateTimeMediaTypesProvider: MediaTypesProvider[org.joda.time.DateTime]
   implicit def finiteDurationMediaTypesProvider: MediaTypesProvider[scala.concurrent.duration.FiniteDuration]
@@ -27,8 +29,8 @@ trait HasCommonMediaTypesProviders {
   implicit def floatsMediaTypesProvider: MediaTypesProvider[Seq[Float]]
   implicit def doublesMediaTypesProvider: MediaTypesProvider[Seq[Double]]
   implicit def bigsDecimalMediaTypesProvider: MediaTypesProvider[Seq[BigDecimal]]
-  implicit def urisWireMediaTypesProvider: MediaTypesProvider[Seq[java.net.URI]]
-  implicit def uuidsWireMediaTypesProvider: MediaTypesProvider[Seq[java.util.UUID]]
+  implicit def urisMediaTypesProvider: MediaTypesProvider[Seq[java.net.URI]]
+  implicit def uuidsMediaTypesProvider: MediaTypesProvider[Seq[java.util.UUID]]
   implicit def localDateTimesMediaTypesProvider: MediaTypesProvider[Seq[org.joda.time.LocalDateTime]]
   implicit def dateTimesMediaTypesProvider: MediaTypesProvider[Seq[org.joda.time.DateTime]]
   implicit def finiteDurationsMediaTypesProvider: MediaTypesProvider[Seq[scala.concurrent.duration.FiniteDuration]]
@@ -54,8 +56,8 @@ trait DelegatingCommonMediaTypesProviders extends HasCommonMediaTypesProviders {
   lazy val floatMediaTypesProvider = commmonMediaTypesProviders.floatMediaTypesProvider
   lazy val doubleMediaTypesProvider = commmonMediaTypesProviders.doubleMediaTypesProvider
   lazy val bigDecimalMediaTypesProvider = commmonMediaTypesProviders.bigDecimalMediaTypesProvider
-  lazy val uriWireMediaTypesProvider = commmonMediaTypesProviders.uriWireMediaTypesProvider
-  lazy val uuidWireMediaTypesProvider = commmonMediaTypesProviders.uuidWireMediaTypesProvider
+  lazy val uriMediaTypesProvider = commmonMediaTypesProviders.uriMediaTypesProvider
+  lazy val uuidMediaTypesProvider = commmonMediaTypesProviders.uuidMediaTypesProvider
   lazy val localDateTimeMediaTypesProvider = commmonMediaTypesProviders.localDateTimeMediaTypesProvider
   lazy val dateTimeMediaTypesProvider = commmonMediaTypesProviders.dateTimeMediaTypesProvider
   lazy val finiteDurationMediaTypesProvider = commmonMediaTypesProviders.finiteDurationMediaTypesProvider
@@ -70,8 +72,8 @@ trait DelegatingCommonMediaTypesProviders extends HasCommonMediaTypesProviders {
   lazy val floatsMediaTypesProvider = commmonMediaTypesProviders.floatsMediaTypesProvider
   lazy val doublesMediaTypesProvider = commmonMediaTypesProviders.doublesMediaTypesProvider
   lazy val bigsDecimalMediaTypesProvider = commmonMediaTypesProviders.bigsDecimalMediaTypesProvider
-  lazy val urisWireMediaTypesProvider = commmonMediaTypesProviders.urisWireMediaTypesProvider
-  lazy val uuidsWireMediaTypesProvider = commmonMediaTypesProviders.uuidsWireMediaTypesProvider
+  lazy val urisMediaTypesProvider = commmonMediaTypesProviders.urisMediaTypesProvider
+  lazy val uuidsMediaTypesProvider = commmonMediaTypesProviders.uuidsMediaTypesProvider
   lazy val localDateTimesMediaTypesProvider = commmonMediaTypesProviders.localDateTimesMediaTypesProvider
   lazy val dateTimesMediaTypesProvider = commmonMediaTypesProviders.dateTimesMediaTypesProvider
   lazy val finiteDurationsMediaTypesProvider = commmonMediaTypesProviders.finiteDurationsMediaTypesProvider
@@ -88,44 +90,44 @@ trait DelegatingCommonMediaTypesProviders extends HasCommonMediaTypesProviders {
 
 trait VendorBasedCommonMediaTypesProviders extends HasCommonMediaTypesProviders {
   implicit def vendorProvider: MediaTypeVendorProvider
-  override val booleanMediaTypesProvider = MediaTypesProvider.registeredDefaults[Boolean]("Boolean")
-  override val stringMediaTypesProvider = MediaTypesProvider.registeredDefaults[String]("String")
-  override val byteMediaTypesProvider = MediaTypesProvider.registeredDefaults[Byte]("Byte")
-  override val shortMediaTypesProvider = MediaTypesProvider.registeredDefaults[Short]("Short")
-  override val intMediaTypesProvider = MediaTypesProvider.registeredDefaults[Int]("Int")
-  override val longMediaTypesProvider = MediaTypesProvider.registeredDefaults[Long]("Long")
-  override val bigIntMediaTypesProvider = MediaTypesProvider.registeredDefaults[BigInt]("BigInt")
-  override val floatMediaTypesProvider = MediaTypesProvider.registeredDefaults[Float]("Float")
-  override val doubleMediaTypesProvider = MediaTypesProvider.registeredDefaults[Double]("Double")
-  override val bigDecimalMediaTypesProvider = MediaTypesProvider.registeredDefaults[BigDecimal]("BigDecimal")
-  override val uriWireMediaTypesProvider = MediaTypesProvider.registeredDefaults[java.net.URI]("Uri")
-  override val uuidWireMediaTypesProvider = MediaTypesProvider.registeredDefaults[java.util.UUID]("Uuid")
-  override val localDateTimeMediaTypesProvider = MediaTypesProvider.registeredDefaults[org.joda.time.LocalDateTime]("LocalDateTime")
-  override val dateTimeMediaTypesProvider = MediaTypesProvider.registeredDefaults[org.joda.time.DateTime]("DateTime")
-  override val finiteDurationMediaTypesProvider = MediaTypesProvider.registeredDefaults[scala.concurrent.duration.FiniteDuration]("FiniteDuration")
+  override lazy val booleanMediaTypesProvider = MediaTypesProvider.defaults[Boolean]("Boolean")
+  override lazy val stringMediaTypesProvider = MediaTypesProvider.defaults[String]("String")
+  override lazy val byteMediaTypesProvider = MediaTypesProvider.defaults[Byte]("Byte")
+  override lazy val shortMediaTypesProvider = MediaTypesProvider.defaults[Short]("Short")
+  override lazy val intMediaTypesProvider = MediaTypesProvider.defaults[Int]("Int")
+  override lazy val longMediaTypesProvider = MediaTypesProvider.defaults[Long]("Long")
+  override lazy val bigIntMediaTypesProvider = MediaTypesProvider.defaults[BigInt]("BigInt")
+  override lazy val floatMediaTypesProvider = MediaTypesProvider.defaults[Float]("Float")
+  override lazy val doubleMediaTypesProvider = MediaTypesProvider.defaults[Double]("Double")
+  override lazy val bigDecimalMediaTypesProvider = MediaTypesProvider.defaults[BigDecimal]("BigDecimal")
+  override lazy val uriMediaTypesProvider = MediaTypesProvider.defaults[java.net.URI]("Uri")
+  override lazy val uuidMediaTypesProvider = MediaTypesProvider.defaults[java.util.UUID]("Uuid")
+  override lazy val localDateTimeMediaTypesProvider = MediaTypesProvider.defaults[org.joda.time.LocalDateTime]("LocalDateTime")
+  override lazy val dateTimeMediaTypesProvider = MediaTypesProvider.defaults[org.joda.time.DateTime]("DateTime")
+  override lazy val finiteDurationMediaTypesProvider = MediaTypesProvider.defaults[scala.concurrent.duration.FiniteDuration]("FiniteDuration")
 
-  override val booleansMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[Boolean]]("Booleans")
-  override val stringsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[String]]("Strings")
-  override val bytesMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[Byte]]("Bytes")
-  override val shortsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[Short]]("Shorts")
-  override val intsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[Int]]("Ints")
-  override val longsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[Long]]("Longs")
-  override val bigsIntMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[BigInt]]("BigInts")
-  override val floatsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[Float]]("Floats")
-  override val doublesMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[Double]]("Doubles")
-  override val bigsDecimalMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[BigDecimal]]("BigDecimals")
-  override val urisWireMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[java.net.URI]]("Uris")
-  override val uuidsWireMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[java.util.UUID]]("Uuids")
-  override val localDateTimesMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[org.joda.time.LocalDateTime]]("LocalDateTimes")
-  override val dateTimesMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[org.joda.time.DateTime]]("DateTimes")
-  override val finiteDurationsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[scala.concurrent.duration.FiniteDuration]]("FiniteDurations")
+  override lazy val booleansMediaTypesProvider = MediaTypesProvider.defaults[Seq[Boolean]]("Booleans")
+  override lazy val stringsMediaTypesProvider = MediaTypesProvider.defaults[Seq[String]]("Strings")
+  override lazy val bytesMediaTypesProvider = MediaTypesProvider.defaults[Seq[Byte]]("Bytes")
+  override lazy val shortsMediaTypesProvider = MediaTypesProvider.defaults[Seq[Short]]("Shorts")
+  override lazy val intsMediaTypesProvider = MediaTypesProvider.defaults[Seq[Int]]("Ints")
+  override lazy val longsMediaTypesProvider = MediaTypesProvider.defaults[Seq[Long]]("Longs")
+  override lazy val bigsIntMediaTypesProvider = MediaTypesProvider.defaults[Seq[BigInt]]("BigInts")
+  override lazy val floatsMediaTypesProvider = MediaTypesProvider.defaults[Seq[Float]]("Floats")
+  override lazy val doublesMediaTypesProvider = MediaTypesProvider.defaults[Seq[Double]]("Doubles")
+  override lazy val bigsDecimalMediaTypesProvider = MediaTypesProvider.defaults[Seq[BigDecimal]]("BigDecimals")
+  override lazy val urisMediaTypesProvider = MediaTypesProvider.defaults[Seq[java.net.URI]]("Uris")
+  override lazy val uuidsMediaTypesProvider = MediaTypesProvider.defaults[Seq[java.util.UUID]]("Uuids")
+  override lazy val localDateTimesMediaTypesProvider = MediaTypesProvider.defaults[Seq[org.joda.time.LocalDateTime]]("LocalDateTimes")
+  override lazy val dateTimesMediaTypesProvider = MediaTypesProvider.defaults[Seq[org.joda.time.DateTime]]("DateTimes")
+  override lazy val finiteDurationsMediaTypesProvider = MediaTypesProvider.defaults[Seq[scala.concurrent.duration.FiniteDuration]]("FiniteDurations")
 
-  override val eventMediaTypesProvider = MediaTypesProvider.registeredDefaults[almhirt.common.Event]("Event")
-  override val commandMediaTypesProvider = MediaTypesProvider.registeredDefaults[almhirt.common.Command]("Command")
-  override val problemMediaTypeProvider = MediaTypesProvider.registeredDefaults[almhirt.common.Problem]("Problem")
+  override lazy val eventMediaTypesProvider = MediaTypesProvider.defaults[almhirt.common.Event]("Event")
+  override lazy val commandMediaTypesProvider = MediaTypesProvider.defaults[almhirt.common.Command]("Command")
+  override lazy val problemMediaTypeProvider = MediaTypesProvider.defaults[almhirt.common.Problem]("Problem")
 
-  override val eventsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[almhirt.common.Event]]("Events")
-  override val commandsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[almhirt.common.Command]]("Commands")
-  override val problemsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[almhirt.common.Problem]]("Problems")
+  override lazy val eventsMediaTypesProvider = MediaTypesProvider.defaults[Seq[almhirt.common.Event]]("Events")
+  override lazy val commandsMediaTypesProvider = MediaTypesProvider.defaults[Seq[almhirt.common.Command]]("Commands")
+  override lazy val problemsMediaTypesProvider = MediaTypesProvider.defaults[Seq[almhirt.common.Problem]]("Problems")
 
 }

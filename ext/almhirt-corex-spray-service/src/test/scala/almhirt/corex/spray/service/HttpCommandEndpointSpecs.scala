@@ -13,7 +13,6 @@ import almhirt.components._
 import almhirt.components.impl._
 import almhirt.corex.spray.marshalling._
 import almhirt.corex.spray.VendorBasedCoreMediaTypesProviders
-import almhirt.httpx.spray.MediaTypeVendorProvider
 import almhirt.httpx.spray.VendorBasedCommonMediaTypesProviders
 import almhirt.corex.riftwarp.serializers.HasCoreWireSerializersByRiftWarp
 import almhirt.core.types._
@@ -26,6 +25,7 @@ import riftwarp.HasRiftWarp
 import spray.http._
 import spray.routing.HttpService
 import spray.http.StatusCodes._
+import almhirt.http.MediaTypeVendorProvider
 
 class HttpCommandEndpointSpecs extends FunSpec 
 	with ScalatestRouteTest 

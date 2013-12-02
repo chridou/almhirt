@@ -1,8 +1,8 @@
 package almhirt.corex.spray
 
 import almhirt.httpx.spray.MediaTypesProvider
-import almhirt.httpx.spray.MediaTypeVendorProvider
 import almhirt.core.types._
+import almhirt.http.MediaTypeVendorProvider
 
 
 trait HasCoreMediaTypesProviders {
@@ -23,8 +23,8 @@ trait DelegatingCoreMediaTypesProviders extends HasCoreMediaTypesProviders {
 
 trait VendorBasedCoreMediaTypesProviders extends HasCoreMediaTypesProviders {
   implicit def vendorProvider: MediaTypeVendorProvider
-  override lazy val domainEventMediaTypesProvider = MediaTypesProvider.registeredDefaults[DomainEvent]("DomainEvent")
-  override lazy val executionStateMediaTypesProvider = MediaTypesProvider.registeredDefaults[ExecutionState]("ExecutionState")
-  override lazy val domainEventsMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[DomainEvent]]("DomainEvents")
-  override lazy val executionStatesMediaTypesProvider = MediaTypesProvider.registeredDefaults[Seq[ExecutionState]]("ExecutionStates")
+  override lazy val domainEventMediaTypesProvider = MediaTypesProvider.defaults[DomainEvent]("DomainEvent")
+  override lazy val executionStateMediaTypesProvider = MediaTypesProvider.defaults[ExecutionState]("ExecutionState")
+  override lazy val domainEventsMediaTypesProvider = MediaTypesProvider.defaults[Seq[DomainEvent]]("DomainEvents")
+  override lazy val executionStatesMediaTypesProvider = MediaTypesProvider.defaults[Seq[ExecutionState]]("ExecutionStates")
 }

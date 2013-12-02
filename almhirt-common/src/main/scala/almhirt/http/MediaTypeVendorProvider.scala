@@ -1,4 +1,4 @@
-package almhirt.httpx.spray
+package almhirt.http
 
 trait MediaTypeVendorProvider {
   def vendor: String

@@ -2,6 +2,7 @@ package almhirt.httpx.spray
 
 import spray.http.MediaType
 import spray.http.MediaTypes
+import almhirt.http._
 
 trait MediaTypesProvider[T] {
   def marshallableMediaTypes: Seq[MediaType]
@@ -15,7 +16,7 @@ object MediaTypesProvider {
       val unmarshallableMediaTypes = theUnmarshallableMediaTypes
     }
   
-  def registeredDefaults[T](forType: String)(implicit mtvp: MediaTypeVendorProvider = AlmhirtMediaTypeVendorProvider): MediaTypesProvider[T] = {
+  def defaults[T](forType: String)(implicit mtvp: MediaTypeVendorProvider = AlmhirtMediaTypeVendorProvider): MediaTypesProvider[T] = {
     val registeredDefaults = AlmhirtMediaTypes.createDefaultMediaTypes(forType)
     val theMarshallableMediaTypes = registeredDefaults ++ Seq(MediaTypes.`application/json`, MediaTypes.`application/xml`, AlmhirtMediaTypes.`application/x-msgpack`, MediaTypes.`text/html`)
     val theUnmarshallableMediaTypes = registeredDefaults
@@ -25,7 +26,7 @@ object MediaTypesProvider {
     }
   }
 
-  def registeredQualifiedOnlyDefaults[T](forType: String)(implicit mtvp: MediaTypeVendorProvider = AlmhirtMediaTypeVendorProvider): MediaTypesProvider[T] = {
+  def qualifiedOnlyDefaults[T](forType: String)(implicit mtvp: MediaTypeVendorProvider = AlmhirtMediaTypeVendorProvider): MediaTypesProvider[T] = {
     val registeredDefaults = AlmhirtMediaTypes.createDefaultMediaTypes(forType)
     val theMarshallableMediaTypes = registeredDefaults
     val theUnmarshallableMediaTypes = registeredDefaults
