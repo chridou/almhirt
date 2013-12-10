@@ -32,6 +32,21 @@ import almhirt.corex.riftwarp.serializers.CoreWireSerializersByRiftWarp
 import almhirt.httpx.spray.HasCommonMediaTypesProviders
 import almhirt.corex.spray.HasCoreMediaTypesProviders
 
+object Requirements {
+  val riftWarp: RiftWarp = {
+    val rw = RiftWarp()
+    almhirt.corex.riftwarp.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(rw)
+    almhirt.testkit.AR1.Serialization.addAr1Serializers(rw)
+    rw
+  }
+  val almhirtProvider = MediaTypeVendorProvider("almhirt")
+  val commonWireSerializers: HasCommonWireSerializers = new { val myRiftWarp = riftWarp } with CommonWireSerializersByRiftWarp with HasRiftWarp
+  val commonContentTypeProviders: HasCommonContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCommonMediaTypesProviders with VendorBasedCommonMediaTypesProviders with CommonContentTypeProvidersFromMediaTypes
+  val coreWireSerializers: HasCoreWireSerializers = new { val myRiftWarp = riftWarp } with CoreWireSerializersByRiftWarp with HasRiftWarp
+  val coreContentTypeProviders: HasCoreContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCoreMediaTypesProviders with VendorBasedCoreMediaTypesProviders with CoreContentTypeProvidersFromMediaTypes
+
+}
+
 class HttpCommandEndpointSpecs extends FunSpec
   with ScalatestRouteTest
   with ShouldMatchers
@@ -44,24 +59,17 @@ class HttpCommandEndpointSpecs extends FunSpec
 
   val almhirtProvider = MediaTypeVendorProvider("almhirt")
 
-  val riftWarp: RiftWarp = {
-    val rw = RiftWarp()
-    almhirt.corex.riftwarp.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(rw)
-    almhirt.testkit.AR1.Serialization.addAr1Serializers(rw)
-    rw
-  }
+  //  object coreMediaTypes extends VendorBasedCoreMediaTypesProviders {
+  //    val vendorProvider = almhirtProvider
+  //  }
 
-//  object coreMediaTypes extends VendorBasedCoreMediaTypesProviders {
-//    val vendorProvider = almhirtProvider
-//  }
+  lazy val commonWireSerializers: HasCommonWireSerializers = Requirements.commonWireSerializers
 
-  override lazy val commonWireSerializers: HasCommonWireSerializers = new { val myRiftWarp = riftWarp } with CommonWireSerializersByRiftWarp with HasRiftWarp
+  lazy val commonContentTypeProviders: HasCommonContentTypeProviders = Requirements.commonContentTypeProviders
 
-  override lazy val commonContentTypeProviders: HasCommonContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCommonMediaTypesProviders with VendorBasedCommonMediaTypesProviders with CommonContentTypeProvidersFromMediaTypes
+  lazy val coreWireSerializers: HasCoreWireSerializers = Requirements.coreWireSerializers
 
-  override lazy val coreWireSerializers: HasCoreWireSerializers = new { val myRiftWarp = riftWarp } with CoreWireSerializersByRiftWarp with HasRiftWarp
-
-  override lazy val coreContentTypeProviders: HasCoreContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCoreMediaTypesProviders with VendorBasedCoreMediaTypesProviders with CoreContentTypeProvidersFromMediaTypes
+  lazy val coreContentTypeProviders: HasCoreContentTypeProviders = Requirements.coreContentTypeProviders
 
   val (myAlmhirt, closeHandle) = almhirt.core.Almhirt.notFromConfig(system).awaitResultOrEscalate(FiniteDuration(2, "s"))
 
@@ -76,9 +84,9 @@ class HttpCommandEndpointSpecs extends FunSpec
   override val maxSyncDuration = theAlmhirt.durations.shortDuration
   override val executionContext = theAlmhirt.futuresExecutor
 
-  lazy val commandSerializer = WarpWireSerializer.command(riftWarp)
-  lazy val execStateSerializer = WarpWireSerializer[ExecutionState, ExecutionState](riftWarp)
-  lazy val problemSerializer = WarpWireSerializer.problem(riftWarp)
+  lazy val commandSerializer = WarpWireSerializer.command(Requirements.riftWarp)
+  lazy val execStateSerializer = WarpWireSerializer[ExecutionState, ExecutionState](Requirements.riftWarp)
+  lazy val problemSerializer = WarpWireSerializer.problem(Requirements.riftWarp)
 
   val commandWithoutTrackingId = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
   val commandWithoutTrackingIdJson = commandSerializer.serialize("json")(commandWithoutTrackingId).resultOrEscalate._1.value.asInstanceOf[String]
