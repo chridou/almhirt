@@ -7,7 +7,7 @@ import almhirt.http.AlmhirtMediaTypeVendorProvider
 
 class CommonContentTypeProvidersTest extends FunSuite with MustMatchers {
   test("CommonContentTypeProvidersFromMediaTypes must provide a boolean content type provider") {
-     val provider = new CommonContentTypeProvidersFromMediaTypes with VendorBasedCommonMediaTypesProviders {
+     val provider = new CommonContentTypeProvidersFromMediaTypes with HasCommonMediaTypesProviders with VendorBasedCommonMediaTypesProviders {
       override val vendorProvider = AlmhirtMediaTypeVendorProvider
     }
      
@@ -15,7 +15,7 @@ class CommonContentTypeProvidersTest extends FunSuite with MustMatchers {
   }
 
   test("DelegatingCommonContentTypeProvidersFromMediaTypes must provide a boolean content type provider") {
-    val mediaTypesProvider = new VendorBasedCommonMediaTypesProviders {
+    val mediaTypesProvider = new HasCommonMediaTypesProviders with VendorBasedCommonMediaTypesProviders  {
       override val vendorProvider = AlmhirtMediaTypeVendorProvider
     }
     

@@ -12,7 +12,7 @@ trait HasCoreMediaTypesProviders {
   implicit def executionStatesMediaTypesProvider: MediaTypesProvider[Seq[ExecutionState]]
 }
 
-trait DelegatingCoreMediaTypesProviders extends HasCoreMediaTypesProviders {
+trait DelegatingCoreMediaTypesProviders { self: HasCoreMediaTypesProviders =>
   def coreMediaTypesProviders: HasCoreMediaTypesProviders
   override lazy val domainEventMediaTypesProvider = coreMediaTypesProviders.domainEventMediaTypesProvider
   override lazy val executionStateMediaTypesProvider = coreMediaTypesProviders.executionStateMediaTypesProvider
@@ -21,7 +21,7 @@ trait DelegatingCoreMediaTypesProviders extends HasCoreMediaTypesProviders {
 
 }
 
-trait VendorBasedCoreMediaTypesProviders extends HasCoreMediaTypesProviders {
+trait VendorBasedCoreMediaTypesProviders { self: HasCoreMediaTypesProviders =>
   implicit def vendorProvider: MediaTypeVendorProvider
   override lazy val domainEventMediaTypesProvider = MediaTypesProvider.defaults[DomainEvent]("DomainEvent")
   override lazy val executionStateMediaTypesProvider = MediaTypesProvider.defaults[ExecutionState]("ExecutionState")

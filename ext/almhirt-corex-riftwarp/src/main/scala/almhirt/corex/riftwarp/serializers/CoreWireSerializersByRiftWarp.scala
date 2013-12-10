@@ -5,7 +5,7 @@ import almhirt.core.types.serialization.HasCoreWireSerializers
 import riftwarp.HasRiftWarp
 import riftwarp.util.WarpWireSerializer
 
-trait HasCoreWireSerializersByRiftWarp extends HasCoreWireSerializers { self: HasRiftWarp =>
+trait CoreWireSerializersByRiftWarp extends HasCoreWireSerializers { self: HasRiftWarp =>
   implicit override val domainEventWireSerializer = WarpWireSerializer[DomainEvent, DomainEvent](myRiftWarp)
   implicit override val executionStateWireSerializer =  WarpWireSerializer[ExecutionState, ExecutionState](myRiftWarp)
   implicit override val domainEventsWireSerializer =  WarpWireSerializer.collection[DomainEvent](myRiftWarp)

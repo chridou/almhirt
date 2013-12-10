@@ -433,7 +433,7 @@ object AlmHirtBuild extends Build
 	                       				baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, coreFoundation, corexSprayBase, httpxSprayClient, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
 
   lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
-	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, corexSprayBase, httpxSprayService, core, riftwarp % "test->test", corexRiftwarp % "test->test", testKit % "test")
+	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, corexSprayBase, httpxSprayService, core, riftwarp % "test", corexRiftwarp % "test", testKit % "test")
 										
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)

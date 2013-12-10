@@ -6,7 +6,7 @@ import riftwarp.util.WarpWireSerializer
 import almhirt.common.Event
 import almhirt.common.Command
 
-trait HasCommonWireSerializersByRiftWarp extends HasCommonWireSerializers { self: HasRiftWarp =>
+trait CommonWireSerializersByRiftWarp extends HasCommonWireSerializers { self: HasRiftWarp =>
   import riftwarp.std._
   override lazy val booleanWireSerializer = WarpWireSerializer.direct[Boolean](myRiftWarp)
   override lazy val stringWireSerializer = WarpWireSerializer.direct[String](myRiftWarp)
