@@ -12,4 +12,4 @@ final case class TextWire(value: String) extends WireRepresentation
 trait CanSerializeToWire[-TIn]extends CanSerialize[TIn] with WorksWithWireRepresentation
 trait CanDeserializeFromWire[+TOut]extends CanDeserialize[TOut] with WorksWithWireRepresentation
 
-trait WireSerializer[-TIn, +TOut] extends CanSerializeToWire[TIn] with CanDeserializeFromWire[TOut]
+trait WireSerializer[T] extends CanSerializeToWire[T] with CanDeserializeFromWire[T]

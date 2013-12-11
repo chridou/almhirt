@@ -7,19 +7,18 @@ import almhirt.almvalidation.kit._
 import almhirt.serialization._
 import riftwarp._
 
-trait CustomWireSerializerTemplate[TIn, TOut] extends WireSerializer[TIn, TOut] {
-  type TTIn
-  type TTOut
+trait CustomWireSerializerTemplate[T] extends WireSerializer[T] {
+  type TT
 
-  protected def packInner(what: TTIn): AlmValidation[WarpPackage]
-  protected def unpackInner(what: WarpPackage): AlmValidation[TTOut]
-  protected def packOuter(in: TIn): AlmValidation[WarpPackage]  
-  protected def unpackOuter(out: WarpPackage): AlmValidation[TOut]  
+  protected def packInner(what: TT): AlmValidation[WarpPackage]
+  protected def unpackInner(what: WarpPackage): AlmValidation[TT]
+  protected def packOuter(in: T): AlmValidation[WarpPackage]  
+  protected def unpackOuter(out: WarpPackage): AlmValidation[T]  
   protected def getDematerializer(channel: WarpChannel): AlmValidation[Dematerializer[Any]]
   protected def getStringRematerializer(channel: String): AlmValidation[Rematerializer[String]]
   protected def getBinaryRematerializer(channel: String): AlmValidation[Rematerializer[Array[Byte]]]
   
-  protected def serializeInternal(what: TIn, channel: String, pack: TIn => AlmValidation[WarpPackage]): AlmValidation[WireRepresentation] =
+  protected def serializeInternal(what: T, channel: String, pack: T => AlmValidation[WarpPackage]): AlmValidation[WireRepresentation] =
     for {
       theChannel <- WarpChannels.getChannel(channel)
       dematerializer <- getDematerializer(theChannel)
@@ -32,7 +31,7 @@ trait CustomWireSerializerTemplate[TIn, TOut] extends WireSerializer[TIn, TOut] 
 
     } yield typedSerialized
 
-  protected def deserializeInternal(channel: String)(what: WireRepresentation, unpack: WarpPackage => AlmValidation[TOut]): AlmValidation[TOut] =
+  protected def deserializeInternal(channel: String)(what: WireRepresentation, unpack: WarpPackage => AlmValidation[T]): AlmValidation[T] =
     for {
       theChannel <- WarpChannels.getChannel(channel)
       rematerialized <- what match {
@@ -46,19 +45,18 @@ trait CustomWireSerializerTemplate[TIn, TOut] extends WireSerializer[TIn, TOut] 
       unpacked <- unpack(rematerialized)
     } yield unpacked
 
-  override def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(WireRepresentation, Option[String])] =
+  override def serialize(channel: String)(what: T, options: Map[String, Any] = Map.empty): AlmValidation[(WireRepresentation, Option[String])] =
     serializeInternal(what, channel, packOuter).map(x => (x, None))
 
-  override def deserialize(channel: String)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[TOut] =
+  override def deserialize(channel: String)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[T] =
     deserializeInternal(channel)(what, unpackOuter)
 }
 
 
-trait SimpleWireSerializer[TIn, TOut] { self : CustomWireSerializerTemplate[TIn, TOut] =>
-  type TTIn = TIn
-  type TTOut = TOut
+trait SimpleWireSerializer[T] { self : CustomWireSerializerTemplate[T] =>
+  type TT = T
 
-  override protected def packOuter(in: TIn): AlmValidation[WarpPackage]  = packInner(in)
-  override def unpackOuter(out: WarpPackage): AlmValidation[TOut]= unpackInner(out)
+  override protected def packOuter(in: T): AlmValidation[WarpPackage]  = packInner(in)
+  override def unpackOuter(out: WarpPackage): AlmValidation[T]= unpackInner(out)
 }
 

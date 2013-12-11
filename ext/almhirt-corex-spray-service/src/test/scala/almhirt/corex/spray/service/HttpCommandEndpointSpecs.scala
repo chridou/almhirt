@@ -85,7 +85,7 @@ class HttpCommandEndpointSpecs extends FunSpec
   override val executionContext = theAlmhirt.futuresExecutor
 
   lazy val commandSerializer = WarpWireSerializer.command(Requirements.riftWarp)
-  lazy val execStateSerializer = WarpWireSerializer[ExecutionState, ExecutionState](Requirements.riftWarp)
+  lazy val execStateSerializer = WarpWireSerializer[ExecutionState](Requirements.riftWarp)
   lazy val problemSerializer = WarpWireSerializer.problem(Requirements.riftWarp)
 
   val commandWithoutTrackingId = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")

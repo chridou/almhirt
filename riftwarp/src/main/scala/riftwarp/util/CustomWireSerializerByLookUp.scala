@@ -8,23 +8,23 @@ import riftwarp._
 import riftwarp.std.RiftWarpFuns
 import scala.reflect.ClassTag
 
-trait CustomWireSerializerByLookUp[TIn, TOut] extends CustomWireSerializerTemplate[TIn, TOut] with WireSerializer[TIn, TOut] with RiftWarpFuns { self: HasRiftWarp =>
-  def outTag: ClassTag[TTOut]
+trait CustomWireSerializerByLookUp[T] extends CustomWireSerializerTemplate[T] with WireSerializer[T] with RiftWarpFuns { self: HasRiftWarp =>
+  def tag: ClassTag[TT]
 
   override protected def getDematerializer(channel: WarpChannel): AlmValidation[Dematerializer[Any]] = myRiftWarp.dematerializers.get(channel.channelDescriptor)
   override protected def getStringRematerializer(channel: String): AlmValidation[Rematerializer[String]] = myRiftWarp.rematerializers.getTyped[String](channel)
   override protected def getBinaryRematerializer(channel: String): AlmValidation[Rematerializer[Array[Byte]]] = myRiftWarp.rematerializers.getTyped[Array[Byte]](channel)
   
   
-  protected def packInner(what: TTIn): AlmValidation[WarpPackage] =
+  protected def packInner(what: TT): AlmValidation[WarpPackage] =
     for {
       packer <- myRiftWarp.packers.getFor(what, None, None)
       packed <- packer.packBlind(what)(myRiftWarp.packers)
     } yield packed
 
-  protected def unpackInner(what: WarpPackage): AlmValidation[TTOut] =
+  protected def unpackInner(what: WarpPackage): AlmValidation[TT] =
     for {
       unpacked <- unpack(what, None, None)(myRiftWarp.unpackers)
-      casted <- unpacked.castTo[TTOut](outTag)
+      casted <- unpacked.castTo[TT](tag)
     } yield casted
 }
