@@ -7,7 +7,7 @@ object BuildSettings {
   val buildScalaVersion = "2.10.3"
 
   val akkaVersion = "2.2.+"
-  val scalatestVersion = "2.0.M5b"
+  val scalatestVersion = "2.0"
   val sprayVersion = "1.2.0"
    
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -28,7 +28,7 @@ object Resolvers {
 }
 
 object Dependencies {
-	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % "2.10.2"
+	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % "2.10.3"
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
@@ -78,6 +78,7 @@ trait HttpxSprayBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
+  	  resolvers += sprayRepo,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
@@ -95,6 +96,7 @@ trait HttpxSprayClientBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
+  	  resolvers += sprayRepo,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
@@ -113,6 +115,7 @@ trait HttpxSprayServiceBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
+  	  resolvers += sprayRepo,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
