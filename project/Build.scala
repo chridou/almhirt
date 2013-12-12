@@ -8,7 +8,7 @@ object BuildSettings {
 
   val akkaVersion = "2.2.+"
   val scalatestVersion = "2.0.M5b"
-  val sprayVersion = "1.2-RC3"
+  val sprayVersion = "1.2.0"
    
   val buildSettings = Defaults.defaultSettings ++ Seq (
 	organization := buildOrganization,
