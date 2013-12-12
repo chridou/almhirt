@@ -1,30 +1,30 @@
 package almhirt.corex.spray
 
-import almhirt.httpx.spray.MediaTypesProvider
 import almhirt.core.types._
 import almhirt.http.MediaTypeVendorProvider
+import almhirt.http.AlmMediaTypesProvider
 
 
-trait HasCoreMediaTypesProviders {
-  implicit def domainEventMediaTypesProvider: MediaTypesProvider[DomainEvent]
-  implicit def executionStateMediaTypesProvider: MediaTypesProvider[ExecutionState]
-  implicit def domainEventsMediaTypesProvider: MediaTypesProvider[Seq[DomainEvent]]
-  implicit def executionStatesMediaTypesProvider: MediaTypesProvider[Seq[ExecutionState]]
+trait HasCoreAlmMediaTypesProviders {
+  implicit def domainEventAlmMediaTypesProvider: AlmMediaTypesProvider[DomainEvent]
+  implicit def executionStateAlmMediaTypesProvider: AlmMediaTypesProvider[ExecutionState]
+  implicit def domainEventsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[DomainEvent]]
+  implicit def executionStatesAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[ExecutionState]]
 }
 
-trait DelegatingCoreMediaTypesProviders { self: HasCoreMediaTypesProviders =>
-  def coreMediaTypesProviders: HasCoreMediaTypesProviders
-  override lazy val domainEventMediaTypesProvider = coreMediaTypesProviders.domainEventMediaTypesProvider
-  override lazy val executionStateMediaTypesProvider = coreMediaTypesProviders.executionStateMediaTypesProvider
-  override lazy val domainEventsMediaTypesProvider = coreMediaTypesProviders.domainEventsMediaTypesProvider
-  override lazy val executionStatesMediaTypesProvider = coreMediaTypesProviders.executionStatesMediaTypesProvider
+trait DelegatingCoreAlmMediaTypesProviders { self: HasCoreAlmMediaTypesProviders =>
+  def coreAlmMediaTypesProviders: HasCoreAlmMediaTypesProviders
+  override lazy val domainEventAlmMediaTypesProvider = coreAlmMediaTypesProviders.domainEventAlmMediaTypesProvider
+  override lazy val executionStateAlmMediaTypesProvider = coreAlmMediaTypesProviders.executionStateAlmMediaTypesProvider
+  override lazy val domainEventsAlmMediaTypesProvider = coreAlmMediaTypesProviders.domainEventsAlmMediaTypesProvider
+  override lazy val executionStatesAlmMediaTypesProvider = coreAlmMediaTypesProviders.executionStatesAlmMediaTypesProvider
 
 }
 
-trait VendorBasedCoreMediaTypesProviders { self: HasCoreMediaTypesProviders =>
+trait VendorBasedCoreAlmMediaTypesProviders { self: HasCoreAlmMediaTypesProviders =>
   implicit def vendorProvider: MediaTypeVendorProvider
-  override lazy val domainEventMediaTypesProvider = MediaTypesProvider.defaults[DomainEvent]("DomainEvent")
-  override lazy val executionStateMediaTypesProvider = MediaTypesProvider.defaults[ExecutionState]("ExecutionState")
-  override lazy val domainEventsMediaTypesProvider = MediaTypesProvider.defaults[Seq[DomainEvent]]("DomainEvents")
-  override lazy val executionStatesMediaTypesProvider = MediaTypesProvider.defaults[Seq[ExecutionState]]("ExecutionStates")
+  override lazy val domainEventAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[DomainEvent]("DomainEvent").withGenericMarshalling
+  override lazy val executionStateAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[ExecutionState]("ExecutionState").withGenericMarshalling
+  override lazy val domainEventsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainEvent]]("DomainEvents").withGenericMarshalling
+  override lazy val executionStatesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[ExecutionState]]("ExecutionStates").withGenericMarshalling
 }

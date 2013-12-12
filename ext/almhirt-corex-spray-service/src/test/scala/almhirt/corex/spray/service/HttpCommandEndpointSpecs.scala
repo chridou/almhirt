@@ -12,8 +12,6 @@ import almhirt.commanding._
 import almhirt.components._
 import almhirt.components.impl._
 import almhirt.corex.spray.marshalling._
-import almhirt.corex.spray.VendorBasedCoreMediaTypesProviders
-import almhirt.httpx.spray.VendorBasedCommonMediaTypesProviders
 import almhirt.core.types._
 import almhirt.httpx.spray.marshalling._
 import riftwarp.RiftWarp
@@ -29,8 +27,8 @@ import almhirt.serialization.HasCommonWireSerializers
 import almhirt.core.types.serialization.HasCoreWireSerializers
 import riftwarp.serialization.common.CommonWireSerializersByRiftWarp
 import almhirt.corex.riftwarp.serializers.CoreWireSerializersByRiftWarp
-import almhirt.httpx.spray.HasCommonMediaTypesProviders
-import almhirt.corex.spray.HasCoreMediaTypesProviders
+import almhirt.http._
+import almhirt.corex.spray._
 
 object Requirements {
   val riftWarp: RiftWarp = {
@@ -41,9 +39,9 @@ object Requirements {
   }
   val almhirtProvider = MediaTypeVendorProvider("almhirt")
   val commonWireSerializers: HasCommonWireSerializers = new { val myRiftWarp = riftWarp } with CommonWireSerializersByRiftWarp with HasRiftWarp
-  val commonContentTypeProviders: HasCommonContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCommonMediaTypesProviders with VendorBasedCommonMediaTypesProviders with CommonContentTypeProvidersFromMediaTypes
+  val commonContentTypeProviders: HasCommonContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCommonAlmMediaTypesProviders with VendorBasedCommonAlmMediaTypesProviders with CommonContentTypeProvidersFromMediaTypes
   val coreWireSerializers: HasCoreWireSerializers = new { val myRiftWarp = riftWarp } with CoreWireSerializersByRiftWarp with HasRiftWarp
-  val coreContentTypeProviders: HasCoreContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCoreMediaTypesProviders with VendorBasedCoreMediaTypesProviders with CoreContentTypeProvidersFromMediaTypes
+  val coreContentTypeProviders: HasCoreContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCoreAlmMediaTypesProviders with VendorBasedCoreAlmMediaTypesProviders with CoreContentTypeProvidersFromMediaTypes
 
 }
 
@@ -59,7 +57,7 @@ class HttpCommandEndpointSpecs extends FunSpec
 
   val almhirtProvider = MediaTypeVendorProvider("almhirt")
 
-  //  object coreMediaTypes extends VendorBasedCoreMediaTypesProviders {
+  //  object coreMediaTypes extends VendorBasedCoreAlmMediaTypesProviders {
   //    val vendorProvider = almhirtProvider
   //  }
 

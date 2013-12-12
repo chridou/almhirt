@@ -2,7 +2,7 @@ package almhirt.corex.spray.marshalling
 
 import almhirt.httpx.spray.marshalling.FullContentTypeProvider
 import almhirt.core.types._
-import almhirt.corex.spray.HasCoreMediaTypesProviders
+import almhirt.corex.spray.HasCoreAlmMediaTypesProviders
 
 trait HasCoreContentTypeProviders {
   def domainEventContentTypeProvider: FullContentTypeProvider[DomainEvent]
@@ -20,7 +20,7 @@ trait EmptyCoreContentTypeProviders extends HasCoreContentTypeProviders {
   override lazy val executionStatesContentTypeProvider = FullContentTypeProvider.empty[Seq[ExecutionState]]
 }
 
-trait CoreContentTypeProvidersFromMediaTypes extends HasCoreContentTypeProviders { self: HasCoreMediaTypesProviders =>
+trait CoreContentTypeProvidersFromMediaTypes extends HasCoreContentTypeProviders { self: HasCoreAlmMediaTypesProviders =>
   override lazy val domainEventContentTypeProvider = FullContentTypeProvider[DomainEvent]
   override lazy val executionStateContentTypeProvider = FullContentTypeProvider[ExecutionState]
   
