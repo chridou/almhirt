@@ -2,7 +2,7 @@ package almhirt.corex.spray.marshalling
 
 import almhirt.httpx.spray.marshalling.FullContentTypeProvider
 import almhirt.core.types._
-import almhirt.corex.spray.HasCoreAlmMediaTypesProviders
+import almhirt.core.http.HasCoreAlmMediaTypesProviders
 
 trait HasCoreContentTypeProviders {
   def domainEventContentTypeProvider: FullContentTypeProvider[DomainEvent]

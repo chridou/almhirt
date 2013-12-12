@@ -29,6 +29,7 @@ import riftwarp.serialization.common.CommonWireSerializersByRiftWarp
 import almhirt.corex.riftwarp.serializers.CoreWireSerializersByRiftWarp
 import almhirt.http._
 import almhirt.corex.spray._
+import almhirt.core.http._
 
 object Requirements {
   val riftWarp: RiftWarp = {

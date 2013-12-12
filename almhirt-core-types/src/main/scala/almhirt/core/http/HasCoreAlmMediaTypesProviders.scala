@@ -1,4 +1,4 @@
-package almhirt.corex.spray
+package almhirt.core.http
 
 import almhirt.core.types._
 import almhirt.http.MediaTypeVendorProvider
