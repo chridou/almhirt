@@ -1,8 +1,6 @@
 package almhirt.http
 
-import scala.annotation.tailrec
 import scalaz._, Scalaz._
-import java.util.concurrent.atomic.AtomicReference
 
 sealed trait MediaTypeVendorPart {
   def value: Option[String] =
@@ -94,56 +92,40 @@ object AlmMediaType {
   def structuredImageTextual(imageType: String, format: String): AlmMediaType =
     AlmMediaType("image", AlmMediaSubTypeParts(imageType, format), false, TextualMedia(None), Seq.empty, false)
 
-  def applicationTextual(vendor: String, content: String, format: String) =
-    AlmMediaType("application", AlmMediaSubTypeParts(vendor, content, format), false, TextualMedia(None), Seq.empty, false)
+  def applicationTextual(subType: AlmMediaSubTypeParts): AlmMediaType =
+    AlmMediaType("application", subType, false, TextualMedia(None), Seq.empty, false)
+    
+  def applicationTextual(vendor: String, content: String, format: String): AlmMediaType =
+    applicationTextual(AlmMediaSubTypeParts(vendor, content, format))
 
-  def applicationBinary(vendor: String, content: String, format: String) =
-    AlmMediaType("application", AlmMediaSubTypeParts(vendor, content, format), false, BinaryMedia, Seq.empty, false)
+  def applicationTextual(content: String): AlmMediaType =
+    applicationTextual(AlmMediaSubTypeParts(content))
 
-  def applicationAuto(vendor: String, content: String, format: String) =
+  def applicationTextual(vendor: MediaTypeVendorPart, content: String, format: String): AlmMediaType =
+    applicationTextual(AlmMediaSubTypeParts(vendor, StructuredContent(content, format)))
+
+ 
+  def applicationBinary(subType: AlmMediaSubTypeParts): AlmMediaType =
+    AlmMediaType("application", subType, false, BinaryMedia, Seq.empty, false)
+    
+  def applicationBinary(vendor: String, content: String, format: String): AlmMediaType =
+    applicationBinary(AlmMediaSubTypeParts(vendor, content, format))
+
+  def applicationBinary(content: String): AlmMediaType =
+    applicationBinary(AlmMediaSubTypeParts(NoVendor, RawContent(content)))
+
+  def applicationBinary(vendor: MediaTypeVendorPart, content: String, format: String): AlmMediaType =
+    applicationBinary(AlmMediaSubTypeParts(vendor, StructuredContent(content, format)))
+    
+  def text(content: String) =
+    AlmMediaType("text", AlmMediaSubTypeParts(NoVendor, RawContent(content)), false, TextualMedia(None), Seq.empty, false)
+    
+  def applicationStructured(vendor: MediaTypeVendorPart, content: String, format: String) =
     format match {
-      case "json" => AlmMediaType("application", AlmMediaSubTypeParts(vendor, content, format), false, TextualMedia(None), Seq.empty, false)
-      case "xml" => AlmMediaType("application", AlmMediaSubTypeParts(vendor, content, format), false, TextualMedia(None), Seq.empty, false)
-      case "html" => AlmMediaType("application", AlmMediaSubTypeParts(vendor, content, format), false, TextualMedia(None), Seq.empty, false)
-      case "msgpack" => AlmMediaType("application", AlmMediaSubTypeParts(vendor, content, format), false, BinaryMedia, Seq.empty, false)
-      case _ => AlmMediaType("application", AlmMediaSubTypeParts(vendor, content, format), false, BinaryMedia, Seq.empty, false)
+      case "json" => applicationTextual(vendor, content, format)
+      case "xml" => applicationTextual(vendor, content, format)
+      case "html" => applicationTextual(vendor, content, format)
+      case "msgpack" => applicationBinary(vendor, content, format)
+      case _ => throw new Exception(s""""$format" is an unknown media format.""")
     }
-}
-
-trait AlmMediaTypesRegistry {
-  private val byMainAndSubTypes = new AtomicReference(Map.empty[String, Map[String, AlmMediaType]])
-  private val byMainTypeAndContent = new AtomicReference(Map.empty[String, Map[String, List[AlmMediaType]]])
-
-  def register(mediaType: AlmMediaType) {
-    @tailrec def registerByMainAndSubTypeType(): Unit = {
-      val current = byMainAndSubTypes.get()
-      val updated = current.get(mediaType.mainType) match {
-        case Some(bySubType) => current.updated(mediaType.mainType, bySubType.updated(mediaType.subTypeValue, mediaType))
-        case None => current.updated(mediaType.mainType, Map(mediaType.subTypeValue -> mediaType))
-      }
-      if (!byMainAndSubTypes.compareAndSet(current, updated)) registerByMainAndSubTypeType()
-    }
-
-    @tailrec def registerByMainTypeAndContent(): Unit = {
-      val current = byMainTypeAndContent.get()
-      val updated = current.get(mediaType.mainType) match {
-        case Some(byContentValue) =>
-          byContentValue.get(mediaType.contentValue) match {
-            case Some(mediaTypes) =>
-              current.updated(mediaType.mainType, byContentValue.updated(mediaType.contentValue, (mediaType :: mediaTypes)))
-            case None =>
-              current.updated(mediaType.mainType, byContentValue.updated(mediaType.contentValue, List(mediaType)))
-          }
-        case None =>
-          current.updated(mediaType.mainType, Map(mediaType.contentValue -> List(mediaType)))
-      }
-      if (!byMainTypeAndContent.compareAndSet(current, updated)) registerByMainTypeAndContent()
-    }
-    registerByMainAndSubTypeType()
-    registerByMainTypeAndContent()
-  }
-}
-
-object AlmMediaTypes extends AlmMediaTypesRegistry {
-
 }

@@ -3,26 +3,29 @@ package almhirt.httpx.spray
 import org.scalatest._
 import org.scalatest.matchers.MustMatchers
 import almhirt.http.AlmhirtMediaTypeVendorProvider
+import almhirt.http.HasCommonAlmMediaTypesProviders
+import almhirt.http.VendorBasedCommonAlmMediaTypesProviders
+import almhirt.http.DelegatingCommonAlmMediaTypesProviders
 
 class CommonMediaTypesProvidersTests extends FunSuite with MustMatchers {
 
   test("The providers instance must supply a boolean media types provider") {
-    val provider = new HasCommonMediaTypesProviders with VendorBasedCommonMediaTypesProviders {
+    val provider = new HasCommonAlmMediaTypesProviders with VendorBasedCommonAlmMediaTypesProviders {
       override val vendorProvider = AlmhirtMediaTypeVendorProvider
     }
-    val booleanMediaTypesProvider = provider.booleanMediaTypesProvider
+    val booleanMediaTypesProvider = provider.booleanAlmMediaTypesProvider
     booleanMediaTypesProvider.marshallableMediaTypes must not be ('empty)
   }
 
   test("The delegating providers must supply a int media types provider") {
-    val innrerProvider = new HasCommonMediaTypesProviders with VendorBasedCommonMediaTypesProviders {
+    val innrerProvider = new HasCommonAlmMediaTypesProviders with VendorBasedCommonAlmMediaTypesProviders {
       override val vendorProvider = AlmhirtMediaTypeVendorProvider
     }
-    val delagatingProvider = new HasCommonMediaTypesProviders with DelegatingCommonMediaTypesProviders {
-      val commmonMediaTypesProviders = innrerProvider
+    val delagatingProvider = new HasCommonAlmMediaTypesProviders with DelegatingCommonAlmMediaTypesProviders {
+      val commmonAlmMediaTypesProviders = innrerProvider
     }
 
-    val booleanMediaTypesProvider = delagatingProvider.intMediaTypesProvider
+    val booleanMediaTypesProvider = delagatingProvider.intAlmMediaTypesProvider
     booleanMediaTypesProvider.marshallableMediaTypes must not be ('empty)
   }
 

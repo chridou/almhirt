@@ -1,6 +1,6 @@
 package almhirt.httpx.spray.marshalling
 
-import almhirt.httpx.spray.HasCommonMediaTypesProviders
+import almhirt.http.HasCommonAlmMediaTypesProviders
 
 trait HasCommonContentTypeProviders {
   implicit def booleanContentTypeProvider: FullContentTypeProvider[Boolean]
@@ -86,7 +86,7 @@ trait EmptyCommonContentTypeProviders extends HasCommonContentTypeProviders {
   override val problemsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.Problem]]
 }
 
-trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProviders { self: HasCommonMediaTypesProviders =>
+trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProviders { self: HasCommonAlmMediaTypesProviders =>
   override lazy val booleanContentTypeProvider = FullContentTypeProvider[Boolean]
   override lazy val stringContentTypeProvider = FullContentTypeProvider[String]
   override lazy val byteContentTypeProvider = FullContentTypeProvider[Byte]
@@ -129,44 +129,44 @@ trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProvi
 }
 
 trait DelegatingCommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProviders {
-  def hasCommonMediaTypesProviders: HasCommonMediaTypesProviders
-  override lazy val booleanContentTypeProvider = FullContentTypeProvider[Boolean](hasCommonMediaTypesProviders.booleanMediaTypesProvider)
-  override lazy val stringContentTypeProvider = FullContentTypeProvider[String](hasCommonMediaTypesProviders.stringMediaTypesProvider)
-  override lazy val byteContentTypeProvider = FullContentTypeProvider[Byte](hasCommonMediaTypesProviders.byteMediaTypesProvider)
-  override lazy val shortContentTypeProvider = FullContentTypeProvider[Short](hasCommonMediaTypesProviders.shortMediaTypesProvider)
-  override lazy val intContentTypeProvider = FullContentTypeProvider[Int](hasCommonMediaTypesProviders.intMediaTypesProvider)
-  override lazy val longContentTypeProvider = FullContentTypeProvider[Long](hasCommonMediaTypesProviders.longMediaTypesProvider)
-  override lazy val bigIntContentTypeProvider = FullContentTypeProvider[BigInt](hasCommonMediaTypesProviders.bigIntMediaTypesProvider)
-  override lazy val floatContentTypeProvider = FullContentTypeProvider[Float](hasCommonMediaTypesProviders.floatMediaTypesProvider)
-  override lazy val doubleContentTypeProvider = FullContentTypeProvider[Double](hasCommonMediaTypesProviders.doubleMediaTypesProvider)
-  override lazy val bigDecimalContentTypeProvider = FullContentTypeProvider[BigDecimal](hasCommonMediaTypesProviders.bigDecimalMediaTypesProvider)
-  override lazy val uriContentTypeProvider = FullContentTypeProvider[java.net.URI](hasCommonMediaTypesProviders.uriMediaTypesProvider)
-  override lazy val uuidContentTypeProvider = FullContentTypeProvider[java.util.UUID](hasCommonMediaTypesProviders.uuidMediaTypesProvider)
-  override lazy val localDateTimeContentTypeProvider = FullContentTypeProvider[org.joda.time.LocalDateTime](hasCommonMediaTypesProviders.localDateTimeMediaTypesProvider)
-  override lazy val dateTimeContentTypeProvider = FullContentTypeProvider[org.joda.time.DateTime](hasCommonMediaTypesProviders.dateTimeMediaTypesProvider)
-  override lazy val finiteDurationTypeProvider = FullContentTypeProvider[scala.concurrent.duration.FiniteDuration](hasCommonMediaTypesProviders.finiteDurationMediaTypesProvider)
+  def hasCommonAlmMediaTypesProviders: HasCommonAlmMediaTypesProviders
+  override lazy val booleanContentTypeProvider = FullContentTypeProvider[Boolean](hasCommonAlmMediaTypesProviders.booleanAlmMediaTypesProvider)
+  override lazy val stringContentTypeProvider = FullContentTypeProvider[String](hasCommonAlmMediaTypesProviders.stringAlmMediaTypesProvider)
+  override lazy val byteContentTypeProvider = FullContentTypeProvider[Byte](hasCommonAlmMediaTypesProviders.byteAlmMediaTypesProvider)
+  override lazy val shortContentTypeProvider = FullContentTypeProvider[Short](hasCommonAlmMediaTypesProviders.shortAlmMediaTypesProvider)
+  override lazy val intContentTypeProvider = FullContentTypeProvider[Int](hasCommonAlmMediaTypesProviders.intAlmMediaTypesProvider)
+  override lazy val longContentTypeProvider = FullContentTypeProvider[Long](hasCommonAlmMediaTypesProviders.longAlmMediaTypesProvider)
+  override lazy val bigIntContentTypeProvider = FullContentTypeProvider[BigInt](hasCommonAlmMediaTypesProviders.bigIntAlmMediaTypesProvider)
+  override lazy val floatContentTypeProvider = FullContentTypeProvider[Float](hasCommonAlmMediaTypesProviders.floatAlmMediaTypesProvider)
+  override lazy val doubleContentTypeProvider = FullContentTypeProvider[Double](hasCommonAlmMediaTypesProviders.doubleAlmMediaTypesProvider)
+  override lazy val bigDecimalContentTypeProvider = FullContentTypeProvider[BigDecimal](hasCommonAlmMediaTypesProviders.bigDecimalAlmMediaTypesProvider)
+  override lazy val uriContentTypeProvider = FullContentTypeProvider[java.net.URI](hasCommonAlmMediaTypesProviders.uriAlmMediaTypesProvider)
+  override lazy val uuidContentTypeProvider = FullContentTypeProvider[java.util.UUID](hasCommonAlmMediaTypesProviders.uuidAlmMediaTypesProvider)
+  override lazy val localDateTimeContentTypeProvider = FullContentTypeProvider[org.joda.time.LocalDateTime](hasCommonAlmMediaTypesProviders.localDateTimeAlmMediaTypesProvider)
+  override lazy val dateTimeContentTypeProvider = FullContentTypeProvider[org.joda.time.DateTime](hasCommonAlmMediaTypesProviders.dateTimeAlmMediaTypesProvider)
+  override lazy val finiteDurationTypeProvider = FullContentTypeProvider[scala.concurrent.duration.FiniteDuration](hasCommonAlmMediaTypesProviders.finiteDurationAlmMediaTypesProvider)
 
-  override lazy val booleansContentTypeProvider = FullContentTypeProvider[Seq[Boolean]](hasCommonMediaTypesProviders.booleansMediaTypesProvider)
-  override lazy val stringsContentTypeProvider = FullContentTypeProvider[Seq[String]](hasCommonMediaTypesProviders.stringsMediaTypesProvider)
-  override lazy val bytesContentTypeProvider = FullContentTypeProvider[Seq[Byte]](hasCommonMediaTypesProviders.bytesMediaTypesProvider)
-  override lazy val shortsContentTypeProvider = FullContentTypeProvider[Seq[Short]](hasCommonMediaTypesProviders.shortsMediaTypesProvider)
-  override lazy val intsContentTypeProvider = FullContentTypeProvider[Seq[Int]](hasCommonMediaTypesProviders.intsMediaTypesProvider)
-  override lazy val longsContentTypeProvider = FullContentTypeProvider[Seq[Long]](hasCommonMediaTypesProviders.longsMediaTypesProvider)
-  override lazy val bigIntsContentTypeProvider = FullContentTypeProvider[Seq[BigInt]](hasCommonMediaTypesProviders.bigIntsMediaTypesProvider)
-  override lazy val floatsContentTypeProvider = FullContentTypeProvider[Seq[Float]](hasCommonMediaTypesProviders.floatsMediaTypesProvider)
-  override lazy val doublesContentTypeProvider = FullContentTypeProvider[Seq[Double]](hasCommonMediaTypesProviders.doublesMediaTypesProvider)
-  override lazy val bigDecimalsContentTypeProvider = FullContentTypeProvider[Seq[BigDecimal]](hasCommonMediaTypesProviders.bigDecimalsMediaTypesProvider)
-  override lazy val urisContentTypeProvider = FullContentTypeProvider[Seq[java.net.URI]](hasCommonMediaTypesProviders.urisMediaTypesProvider)
-  override lazy val uuidsContentTypeProvider = FullContentTypeProvider[Seq[java.util.UUID]](hasCommonMediaTypesProviders.uuidsMediaTypesProvider)
-  override lazy val localDateTimesContentTypeProvider = FullContentTypeProvider[Seq[org.joda.time.LocalDateTime]](hasCommonMediaTypesProviders.localDateTimesMediaTypesProvider)
-  override lazy val dateTimesContentTypeProvider = FullContentTypeProvider[Seq[org.joda.time.DateTime]](hasCommonMediaTypesProviders.dateTimesMediaTypesProvider)
-  override lazy val finiteDurationsContentTypeProvider = FullContentTypeProvider[Seq[scala.concurrent.duration.FiniteDuration]](hasCommonMediaTypesProviders.finiteDurationsMediaTypesProvider)
+  override lazy val booleansContentTypeProvider = FullContentTypeProvider[Seq[Boolean]](hasCommonAlmMediaTypesProviders.booleansAlmMediaTypesProvider)
+  override lazy val stringsContentTypeProvider = FullContentTypeProvider[Seq[String]](hasCommonAlmMediaTypesProviders.stringsAlmMediaTypesProvider)
+  override lazy val bytesContentTypeProvider = FullContentTypeProvider[Seq[Byte]](hasCommonAlmMediaTypesProviders.bytesAlmMediaTypesProvider)
+  override lazy val shortsContentTypeProvider = FullContentTypeProvider[Seq[Short]](hasCommonAlmMediaTypesProviders.shortsAlmMediaTypesProvider)
+  override lazy val intsContentTypeProvider = FullContentTypeProvider[Seq[Int]](hasCommonAlmMediaTypesProviders.intsAlmMediaTypesProvider)
+  override lazy val longsContentTypeProvider = FullContentTypeProvider[Seq[Long]](hasCommonAlmMediaTypesProviders.longsAlmMediaTypesProvider)
+  override lazy val bigIntsContentTypeProvider = FullContentTypeProvider[Seq[BigInt]](hasCommonAlmMediaTypesProviders.bigIntsAlmMediaTypesProvider)
+  override lazy val floatsContentTypeProvider = FullContentTypeProvider[Seq[Float]](hasCommonAlmMediaTypesProviders.floatsAlmMediaTypesProvider)
+  override lazy val doublesContentTypeProvider = FullContentTypeProvider[Seq[Double]](hasCommonAlmMediaTypesProviders.doublesAlmMediaTypesProvider)
+  override lazy val bigDecimalsContentTypeProvider = FullContentTypeProvider[Seq[BigDecimal]](hasCommonAlmMediaTypesProviders.bigDecimalsAlmMediaTypesProvider)
+  override lazy val urisContentTypeProvider = FullContentTypeProvider[Seq[java.net.URI]](hasCommonAlmMediaTypesProviders.urisAlmMediaTypesProvider)
+  override lazy val uuidsContentTypeProvider = FullContentTypeProvider[Seq[java.util.UUID]](hasCommonAlmMediaTypesProviders.uuidsAlmMediaTypesProvider)
+  override lazy val localDateTimesContentTypeProvider = FullContentTypeProvider[Seq[org.joda.time.LocalDateTime]](hasCommonAlmMediaTypesProviders.localDateTimesAlmMediaTypesProvider)
+  override lazy val dateTimesContentTypeProvider = FullContentTypeProvider[Seq[org.joda.time.DateTime]](hasCommonAlmMediaTypesProviders.dateTimesAlmMediaTypesProvider)
+  override lazy val finiteDurationsContentTypeProvider = FullContentTypeProvider[Seq[scala.concurrent.duration.FiniteDuration]](hasCommonAlmMediaTypesProviders.finiteDurationsAlmMediaTypesProvider)
 
-  override lazy val eventContentTypeProvider = FullContentTypeProvider[almhirt.common.Event](hasCommonMediaTypesProviders.eventMediaTypesProvider)
-  override lazy val commandContentTypeProvider = FullContentTypeProvider[almhirt.common.Command](hasCommonMediaTypesProviders.commandMediaTypesProvider)
-  override lazy val problemContentTypeProvider = FullContentTypeProvider[almhirt.common.Problem](hasCommonMediaTypesProviders.problemMediaTypeProvider)
+  override lazy val eventContentTypeProvider = FullContentTypeProvider[almhirt.common.Event](hasCommonAlmMediaTypesProviders.eventAlmMediaTypesProvider)
+  override lazy val commandContentTypeProvider = FullContentTypeProvider[almhirt.common.Command](hasCommonAlmMediaTypesProviders.commandAlmMediaTypesProvider)
+  override lazy val problemContentTypeProvider = FullContentTypeProvider[almhirt.common.Problem](hasCommonAlmMediaTypesProviders.problemAlmMediaTypesProvider)
 
-  override lazy val eventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Event]](hasCommonMediaTypesProviders.eventsMediaTypesProvider)
-  override lazy val commandsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Command]](hasCommonMediaTypesProviders.commandsMediaTypesProvider)
-  override lazy val problemsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Problem]](hasCommonMediaTypesProviders.problemsMediaTypesProvider)
+  override lazy val eventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Event]](hasCommonAlmMediaTypesProviders.eventsAlmMediaTypesProvider)
+  override lazy val commandsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Command]](hasCommonAlmMediaTypesProviders.commandsAlmMediaTypesProvider)
+  override lazy val problemsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Problem]](hasCommonAlmMediaTypesProviders.problemsAlmMediaTypesProvider)
 }
