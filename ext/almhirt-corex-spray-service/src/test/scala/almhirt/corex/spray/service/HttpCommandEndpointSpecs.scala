@@ -57,10 +57,6 @@ class HttpCommandEndpointSpecs extends FunSpec
 
   val almhirtProvider = MediaTypeVendorProvider("almhirt")
 
-  //  object coreMediaTypes extends VendorBasedCoreAlmMediaTypesProviders {
-  //    val vendorProvider = almhirtProvider
-  //  }
-
   lazy val commonWireSerializers: HasCommonWireSerializers = Requirements.commonWireSerializers
 
   lazy val commonContentTypeProviders: HasCommonContentTypeProviders = Requirements.commonContentTypeProviders
