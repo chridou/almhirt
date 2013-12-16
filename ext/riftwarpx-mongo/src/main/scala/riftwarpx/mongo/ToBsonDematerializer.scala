@@ -26,6 +26,7 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
       case WarpBoolean(value) => BSONBoolean(value)
       case WarpString(value) => BSONString(value)
       case WarpByte(value) => BSONInteger(value.toInt)
+      case WarpShort(value) => BSONInteger(value.toInt)
       case WarpInt(value) => BSONInteger(value)
       case WarpLong(value) => BSONLong(value)
       case WarpBigInt(value) => BSONString(value.toString)

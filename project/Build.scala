@@ -28,7 +28,7 @@ object Resolvers {
 }
 
 object Dependencies {
-	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % "2.10.3"
+	lazy val scala_reflect = "org.scala-lang" % "scala-reflect" % BuildSettings.buildScalaVersion
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.1" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.1" % "compile"
