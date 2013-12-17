@@ -1,7 +1,6 @@
 package almhirt.corex.spray.service
 
-import org.scalatest.FunSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import spray.testkit.ScalatestRouteTest
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
@@ -48,7 +47,7 @@ object Requirements {
 
 class HttpCommandEndpointSpecs extends FunSpec
   with ScalatestRouteTest
-  with ShouldMatchers
+  with Matchers
   with HasCommonMarshallers with CommonMarshallerInstances
   with HasCommonUnmarshallers with CommonUnmarshallerInstances
   with HasCoreMarshallers with CoreMarshallerInstances
