@@ -35,6 +35,9 @@ trait AlmMediaTypesRegistry extends Iterable[AlmMediaType] {
     registerByMainAndSubTypeType()
     registerByMainTypeAndContent()
   }
+  
+  def find(mediaType: String): Option[AlmMediaType] =
+    ???
 
   override def iterator: Iterator[AlmMediaType] = {
     val current = byMainAndSubTypes.get()
