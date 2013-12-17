@@ -1,7 +1,6 @@
 package almhirt.testkit.components
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.FunSpec
+import org.scalatest._
 import scala.concurrent.Await
 import akka.testkit.TestProbe
 import almhirt.testkit._
@@ -20,8 +19,8 @@ import almhirt.components.ExecutionStateTracker
 abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
-  with FunSpec
-  with ShouldMatchers { self: CreatesExecutionTracker =>
+  with FunSpecLike
+  with Matchers { self: CreatesExecutionTracker =>
 
   import ExecutionStateTracker._  
 

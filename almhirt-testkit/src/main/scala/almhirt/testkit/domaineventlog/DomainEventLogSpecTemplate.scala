@@ -1,7 +1,6 @@
 package almhirt.testkit.domaineventlog
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.FunSpec
+import org.scalatest._
 import scala.concurrent.duration.FiniteDuration
 import akka.testkit.TestProbe
 import almhirt.testkit._
@@ -19,8 +18,8 @@ import play.api.libs.iteratee.Iteratee
 abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
-  with FunSpec
-  with ShouldMatchers { self: CreatesDomainEventLog =>
+  with FunSpecLike
+  with Matchers { self: CreatesDomainEventLog =>
 
   implicit def execContext = theAlmhirt.futuresExecutor
 

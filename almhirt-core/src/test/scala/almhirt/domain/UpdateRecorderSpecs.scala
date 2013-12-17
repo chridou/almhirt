@@ -1,13 +1,12 @@
 package almhirt.domain
 
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
 import java.util.{ UUID => JUUID }
 import almhirt.almvalidation.kit._
 import almhirt.core.types._
 import almhirt.common._
 
-class UpdateRecorderSpecs extends WordSpec with ShouldMatchers {
+class UpdateRecorderSpecs extends WordSpec with Matchers {
   implicit val ccuad = CanCreateUuidsAndDateTimes()
   
   val (testAr, events) = TestAr.fromScratch(ccuad.getUuid, "a").result.forceResult

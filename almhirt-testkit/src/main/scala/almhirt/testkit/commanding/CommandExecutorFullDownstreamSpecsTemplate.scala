@@ -1,7 +1,6 @@
 package almhirt.testkit.commanding
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.FunSpec
+import org.scalatest._
 import scala.concurrent.duration.FiniteDuration
 import akka.testkit.TestProbe
 import almhirt.testkit._
@@ -23,8 +22,8 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
   with CreatesCellSourceForTestAggregateRoots
-  with FunSpec
-  with ShouldMatchers { self: CreatesDomainEventLog =>
+  with FunSpecLike
+  with Matchers { self: CreatesDomainEventLog =>
 
   def createRepositoryRegistry(testId: Int, cellSource: ActorRef): (AggregateRootRepositoryRegistry, () => Unit) = {
     val repo1 = this.system.actorOf(Props(new AggregateRootRepositoryImpl[AR1, AR1Event](theAlmhirt, cellSource, defaultDuration, defaultDuration)), "AR1Repo_" + testId.toString)
