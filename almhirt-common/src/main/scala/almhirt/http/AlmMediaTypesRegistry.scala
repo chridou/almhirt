@@ -35,12 +35,20 @@ trait AlmMediaTypesRegistry extends Iterable[AlmMediaType] {
     registerByMainAndSubTypeType()
     registerByMainTypeAndContent()
   }
-  
-  def find(mediaType: String): Option[AlmMediaType] =
-    ???
+
+  def find(mediaTypeValue: String): Option[AlmMediaType] = {
+    mediaTypeValue.split("/") match {
+      case Array(main, sub) =>
+        val current = byMainAndSubTypes.get()
+        current.get(main).flatMap(_.get(sub))
+      case _ => None
+    }
+  }
 
   override def iterator: Iterator[AlmMediaType] = {
     val current = byMainAndSubTypes.get()
     current.values.flatMap(_.values).toIterator
   }
+
+  def nonIanaItarator: Iterator[AlmMediaType] = iterator.filterNot(_.ianaRegistered)
 }
