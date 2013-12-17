@@ -13,4 +13,12 @@ package object spray {
     amts.map(almMediaType2SprayMediaType(_))
   }
   
+  implicit class AlmMediaTypeOps(self: AlmMediaType) {
+    def toSprayMediaType: MediaType = almMediaType2SprayMediaType(self)
+  }
+
+  implicit class AlmMediaTypesOps(self: Seq[AlmMediaType]) {
+    def toSprayMediaTypes: Seq[MediaType] = almMediaTypes2SprayMediaTypes(self)
+  }
+  
 }
