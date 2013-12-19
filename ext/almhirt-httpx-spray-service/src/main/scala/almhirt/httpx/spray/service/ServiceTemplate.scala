@@ -14,6 +14,7 @@ trait ServiceWorkflow {
     def completeWith[T: Marshaller](responseFuture: AlmFuture[T], successCode: StatusCode)(implicit executionContext: ExecutionContext) {
       ServiceWorkflow.this.completeWith(self, responseFuture, successCode)
     }
+    
     def completeWithOk[T: Marshaller](responseFuture: AlmFuture[T])(implicit executionContext: ExecutionContext) {
       ServiceWorkflow.this.completeWith(self, responseFuture, StatusCodes.OK)
     }
@@ -37,27 +38,6 @@ trait ServiceWorkflow {
   protected def completeWithOk[T: Marshaller](ctx: RequestContext, responseFuture: AlmFuture[T])(implicit executionContext: ExecutionContext) {
     completeWith(ctx, responseFuture, StatusCodes.OK)
   }
-  
-  
 }
 
-//trait LocalizedServiceWorkflow{ self: ServiceWorkflow =>
-//  
-//  private def extractLocale(ctx: RequestContext, paramLocale: Option[String]): AlmValidation[String] =
-//    paramLocale match {
-//      case Some(loc) => loc.success
-//      case None =>
-//        val languages = (ctx.request.headers.collectFirst { case HttpHeaders.`Accept-Language`(al) => al } | Seq.empty).map(_.primaryTag)
-//        val supportedLanguages = languages.map(toValidLocale(_)).collect {
-//          case scalaz.Success(loc) => Some(loc)
-//          case _ => None
-//        }.flatten
-//        supportedLanguages.headOption match {
-//          case Some(selected) => selected.success
-//          case None =>
-//            LocaleNotSupportedProblem(s"""None of the queried locales [${languages.mkString(" ,")}] is supported. The supported locales are [${supportedLocales.supportedLocales.mkString(" ,")}].""").failure
-//        }
-//    }
-//  
-//}  
   
