@@ -26,5 +26,4 @@ class CommonContentTypeProvidersTest extends FunSuite with Matchers {
 
     provider.booleanContentTypeProvider.marshallingContentTypes should not be('empty)
   }
-  
 }

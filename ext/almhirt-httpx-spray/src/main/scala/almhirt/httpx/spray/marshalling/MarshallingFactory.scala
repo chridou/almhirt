@@ -14,26 +14,26 @@ trait MarshallerFactory[T] { self =>
 
   def marshaller(
     serializer: CanSerializeToWire[T],
-    contentTypes: ContentType*): Marshaller[T] =
+    contentTypes: ContentType*): Marshaller[T] = {
     Marshaller.of[T](contentTypes: _*) { (value, contentType, ctx) =>
       val channel = extractChannel(contentType.mediaType)
       if (contentType.mediaType.binary && channel != "json") {
         serializer.serialize(channel)(value).fold(
           fail => ctx.handleError(fail.escalate),
-          succ => ctx.marshalTo(HttpEntity(contentType, succ._1.value.asInstanceOf[Array[Byte]])))
+          succ => ctx.marshalTo(HttpEntity(contentType.withoutDefinedCharset, succ._1.value.asInstanceOf[Array[Byte]])))
       } else {
         serializer.serialize(channel)(value).fold(
           fail => ctx.handleError(fail.escalate),
           succ => ctx.marshalTo(HttpEntity(contentType, succ._1.value.asInstanceOf[String])))
       }
     }
+  }
 
   def marshalToContentType(implicit mctProvider: MarshallingContentTypesProvider[T]): ContentTypeBoundMarshallerFactory[T] =
     new ContentTypeBoundMarshallerFactory[T] {
       val baseMarshallerFactory: MarshallerFactory[T] = self
       val marshallingContentTypes: Seq[ContentType] = mctProvider.marshallingContentTypes
     }
-
 }
 
 trait UnmarshallerFactory[T] { self =>
