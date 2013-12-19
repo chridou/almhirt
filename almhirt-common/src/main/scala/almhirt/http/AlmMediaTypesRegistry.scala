@@ -44,7 +44,7 @@ trait AlmMediaTypesRegistry extends Iterable[AlmMediaType] {
       case _ => None
     }
   }
-
+  
   override def iterator: Iterator[AlmMediaType] = {
     val current = byMainAndSubTypes.get()
     current.values.flatMap(_.values).toIterator

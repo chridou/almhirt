@@ -17,6 +17,12 @@ case object UnspecifiedVendor extends MediaTypeVendorPart
 
 sealed trait MediaContentPart {
   def content: String
+  
+  final def contentFormat = this match {
+    case RawContent(content) => content
+    case StructuredContent(_, format) => format
+  }
+  
   final def value: String = this match {
     case RawContent(content) => content
     case StructuredContent(content, format) => s"$content+$format"
@@ -34,6 +40,7 @@ final case class AlmMediaSubTypeParts(vendor: MediaTypeVendorPart, content: Medi
   }
 
   def contentValue: String = content.content
+  def contentFormat: String = content.contentFormat
 }
 
 object AlmMediaSubTypeParts {
@@ -57,6 +64,7 @@ trait AlmMediaType {
   final def value: String = s"$mainType/$subTypeValue"
   final def binary = streamRepresentation == BinaryMedia
   final def contentValue = subTypeParts.contentValue
+  final def contentFormat = subTypeParts.contentFormat
 }
 
 object AlmMediaType {

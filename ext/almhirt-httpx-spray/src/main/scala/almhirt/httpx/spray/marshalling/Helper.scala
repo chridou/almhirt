@@ -9,8 +9,8 @@ import spray.http.{ MediaType, MediaTypes }
 
 object Helper {
   def extractChannel(mediaTypeValue: String): String = {
-    val subtype = mediaTypeValue.split("/")(1)
-    val potChannel = subtype.split("+") match {
+    val subtype = mediaTypeValue.split('/')(1)
+    val potChannel = subtype.split('+') match {
       case Array(x) => x
       case Array(_, y) => y
       case _ => throw new Exception(s"""Invalid media type: "$mediaTypeValue"""")
