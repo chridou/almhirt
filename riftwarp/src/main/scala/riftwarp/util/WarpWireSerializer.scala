@@ -32,7 +32,7 @@ class WarpWireSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) exten
         case TextWire(text) if theChannel.wireTransmission == WireTransmissionAsText =>
           riftWarp.arrival(channel, text, options).flatMap(_.castTo[T])
         case _ =>
-          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" -> "${theChannel.wireTransmission}").""").failure
+          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.wireTransmission}").""").failure
       }
     } yield result
 }
