@@ -18,7 +18,7 @@ trait HttpExternalConnector {
     def method: HttpMethod
     def acceptAsSuccess: Set[StatusCode]
   }
-  
+
   case class BasicRequestSettings(
     targetEndpoint: spray.http.Uri,
     acceptMediaTypes: Seq[MediaType],
@@ -31,7 +31,7 @@ trait HttpExternalConnector {
     acceptMediaTypes: Seq[MediaType],
     method: HttpMethod,
     acceptAsSuccess: Set[StatusCode]) extends RequestSettings
-   
+
   implicit def executionContext: ExecutionContext
   def serializationExecutionContext: ExecutionContext
 
@@ -93,7 +93,7 @@ trait AwaitingEntityResponse { self: HttpExternalConnector =>
   }
 
   def deserializeEntity[T: CanDeserializeFromWire](response: HttpResponse): AlmValidation[T] =
-    response.entity.toOption match {
+    (response.entity.toOption match {
       case Some(body) =>
         val mediaType = body.contentType.mediaType
         if (mediaType == MediaTypes.`text/plain`)
@@ -108,8 +108,10 @@ trait AwaitingEntityResponse { self: HttpExternalConnector =>
         }
       case None =>
         UnspecifiedProblem(s"""Expected an entity from endpoint "XXXX" there was no content. Status code ${response.status}.""").failure
+    }).leftMap { innerProb =>
+      val headers = response.headers.map(_.toString).mkString("\nHeaders:\n", "\n", "\n")
+      UnspecifiedProblem(s"""A problem occured handling the response.$headers""", cause = Some(innerProb))
     }
-
 }
 
 trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntity =>
@@ -141,7 +143,7 @@ trait HttpExternalQuery { self: HttpExternalConnector with AwaitingEntityRespons
   def externalQuery[U: CanDeserializeFromWire](settings: RequestSettings)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(U, FiniteDuration)] =
     for {
       resonseAndTime <- sendRequest(createSimpleQueryRequest(settings))
-      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[CanDeserializeFromWire[U]],problemDeserializer))(serializationExecutionContext)
+      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[CanDeserializeFromWire[U]], problemDeserializer))(serializationExecutionContext)
     } yield (entity, resonseAndTime._2)
 }
 
@@ -150,6 +152,6 @@ trait HttpExternalConversation { self: HttpExternalConnector with RequestsWithEn
     for {
       request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
       resonseAndTime <- sendRequest(request)
-      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[CanDeserializeFromWire[U]],problemDeserializer))(serializationExecutionContext)
+      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[CanDeserializeFromWire[U]], problemDeserializer))(serializationExecutionContext)
     } yield (entity, resonseAndTime._2)
 }

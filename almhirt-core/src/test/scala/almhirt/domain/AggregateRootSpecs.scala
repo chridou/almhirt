@@ -1,13 +1,12 @@
 package almhirt.domain
 
-import org.scalatest.FunSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import scalaz._
 import almhirt.common._
 import almhirt.core.types._
 import almhirt.almvalidation.kit._
 
-class AggregateRootSpecs extends FunSpec with ShouldMatchers {
+class AggregateRootSpecs extends FunSpec with Matchers {
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
   val initialState = TestAr((ccuad.getUuid, 1L), "a", None, false)

@@ -23,7 +23,7 @@ object ContentTypeBoundMarshallerFactory {
   def create[T: MarshallingContentTypesProvider]: ContentTypeBoundMarshallerFactory[T] = {
     new MarshallerFactory[T] {}.marshalToContentType
   }
-  def apply[T: MarshallingContentTypesProvider: UnmarshallingContentTypesProvider: MarshallerFactory]: ContentTypeBoundMarshallerFactory[T] = {
+  def apply[T: MarshallingContentTypesProvider: MarshallerFactory]: ContentTypeBoundMarshallerFactory[T] = {
     implicitly[MarshallerFactory[T]].marshalToContentType
   }
 }

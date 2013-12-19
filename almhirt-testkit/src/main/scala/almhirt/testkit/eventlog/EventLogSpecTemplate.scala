@@ -1,7 +1,6 @@
 package almhirt.testkit.eventlog
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.FunSpec
+import org.scalatest._
 import akka.testkit.TestProbe
 import almhirt.testkit._
 import almhirt.testkit.testevents._
@@ -16,8 +15,8 @@ import org.joda.time.LocalDateTime
 
 abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
-  with FunSpec
-  with ShouldMatchers { self: CreatesEventLog =>
+  with FunSpecLike
+  with Matchers { self: CreatesEventLog =>
 
   import almhirt.eventlog.EventLog._  
   import almhirt.eventlog.EventLog.EventLogMessage  

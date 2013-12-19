@@ -1,11 +1,10 @@
 package almhirt.almvalidation
 
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
 import scalaz._, Scalaz._
 import almhirt.common._
 
-class AlmValidationSpecs extends FlatSpec with ShouldMatchers {
+class AlmValidationSpecs extends FlatSpec with Matchers {
   import almhirt.almvalidation.funs._
   import almhirt.problem.inst._
   import almhirt.syntax.almvalidation._

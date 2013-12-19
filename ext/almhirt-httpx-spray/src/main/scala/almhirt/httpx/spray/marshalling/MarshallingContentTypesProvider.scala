@@ -1,7 +1,8 @@
 package almhirt.httpx.spray.marshalling
 
 import spray.http._
-import almhirt.httpx.spray.MediaTypesProvider
+import almhirt.httpx.spray._
+import almhirt.http.AlmMediaTypesProvider
 
 trait MarshallingContentTypesProvider[T] {
   def marshallingContentTypes: Seq[ContentType]
@@ -19,8 +20,8 @@ object MarshallingContentTypesProvider {
       val marshallingContentTypes = contentTypes
     }
 
-  def apply[T: MediaTypesProvider]: MarshallingContentTypesProvider[T] = {
-    val mdt = implicitly[MediaTypesProvider[T]]
+  def apply[T: AlmMediaTypesProvider]: MarshallingContentTypesProvider[T] = {
+    val mdt = implicitly[AlmMediaTypesProvider[T]]
     new MarshallingContentTypesProvider[T] {
       val marshallingContentTypes = mdt.marshallableMediaTypes.map(ContentType(_))
     }
@@ -33,8 +34,8 @@ object UnmarshallingContentTypesProvider {
       val unmarshallingContentTypes = contentTypes
     }
 
-  def apply[T: MediaTypesProvider]: UnmarshallingContentTypesProvider[T] = {
-    val mdt = implicitly[MediaTypesProvider[T]]
+  def apply[T: AlmMediaTypesProvider]: UnmarshallingContentTypesProvider[T] = {
+    val mdt = implicitly[AlmMediaTypesProvider[T]]
     new UnmarshallingContentTypesProvider[T] {
       val unmarshallingContentTypes = mdt.unmarshallableMediaTypes.map(ContentType(_))
     }
@@ -56,8 +57,8 @@ object FullContentTypeProvider {
       val unmarshallingContentTypes = unmarshalling.unmarshallingContentTypes
     }
 
-  def apply[T: MediaTypesProvider]: FullContentTypeProvider[T] = {
-    val mdt = implicitly[MediaTypesProvider[T]]
+  def apply[T: AlmMediaTypesProvider]: FullContentTypeProvider[T] = {
+    val mdt = implicitly[AlmMediaTypesProvider[T]]
     new FullContentTypeProvider[T] {
       val marshallingContentTypes = mdt.marshallableMediaTypes.map(ContentType(_))
       val unmarshallingContentTypes = mdt.unmarshallableMediaTypes.map(ContentType(_))

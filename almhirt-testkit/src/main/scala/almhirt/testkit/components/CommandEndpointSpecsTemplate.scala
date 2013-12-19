@@ -1,7 +1,6 @@
 package almhirt.testkit.components
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.FunSpec
+import org.scalatest._
 import akka.testkit.TestProbe
 import almhirt.testkit._
 import akka.actor._
@@ -15,8 +14,8 @@ import almhirt.components.ExecutionStateTracker._
 
 abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
-  with FunSpec
-  with ShouldMatchers { self: CreatesCommandEndpoint =>
+  with FunSpecLike
+  with Matchers { self: CreatesCommandEndpoint =>
 
   implicit def execContext = theAlmhirt.futuresExecutor
     

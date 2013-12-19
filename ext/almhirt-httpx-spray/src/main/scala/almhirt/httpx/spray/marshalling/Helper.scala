@@ -1,35 +1,36 @@
 package almhirt.httpx.spray.marshalling
 
+import scala.util.control.NonFatal
 import scalaz._, Scalaz._
 import almhirt.common._
+import almhirt.http._
 import almhirt.almvalidation.kit._
 import spray.http.{ MediaType, MediaTypes }
-import almhirt.httpx.spray.AlmhirtMediaTypes
 
 object Helper {
-  def extractChannel(mediaType: MediaType): String =
-    if (mediaType == MediaTypes.`text/html`)
-      "html"
-    else if (mediaType == MediaTypes.`application/json`)
-      "json"
-    else if (mediaType == MediaTypes.`application/xml`)
-      "xml"
-    else if (mediaType == AlmhirtMediaTypes.`application/x-msgpack`)
-      "msgpack"
+  def extractChannel(mediaTypeValue: String): String = {
+    val subtype = mediaTypeValue.split('/')(1)
+    val potChannel = subtype.split('+') match {
+      case Array(x) => x
+      case Array(_, y) => y
+      case _ => throw new Exception(s"""Invalid media type: "$mediaTypeValue"""")
+    }
+    if (potChannel.startsWith("x-"))
+      potChannel.drop(2)
     else
-      mediaType.value.split('+')(1)
+      potChannel
+  }
 
+  def extractChannel(mediaType: MediaType): String = extractChannel(mediaType.value)
+  def extractChannel(mediaType: AlmMediaType): String = extractChannel(mediaType.value)
+
+  private val validMediaTypeChannels = Set("html", "json", "xml", "msgpack")
   def isValidMediaType(mediaType: MediaType): Boolean =
-    if (mediaType == MediaTypes.`text/html`)
-      true
-    else if (mediaType == MediaTypes.`application/json`)
-      true
-    else if (mediaType == MediaTypes.`application/xml`)
-      true
-    else if (mediaType == AlmhirtMediaTypes.`application/x-msgpack`)
-      true
-    else
-      mediaType.value.split('+').size == 2
+    try {
+      validMediaTypeChannels.contains(extractChannel(mediaType))
+    } catch {
+      case NonFatal(exn) => false
+    }
 
   def validateMediaTypes(mediaTypes: Seq[MediaType]): AlmValidation[Seq[MediaType]] = {
     val res =

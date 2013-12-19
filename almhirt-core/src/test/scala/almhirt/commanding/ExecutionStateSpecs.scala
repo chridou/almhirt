@@ -1,14 +1,13 @@
 package almhirt.commanding
 
-import org.scalatest.FunSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import almhirt.commanding._
 import almhirt.core.types._
 import org.joda.time.LocalDateTime
 import almhirt.problem.Problem
 import almhirt.problem.problemtypes.UnspecifiedProblem
 
-class ExecutionStateSpecs extends FunSpec with ShouldMatchers{
+class ExecutionStateSpecs extends FunSpec with Matchers{
   val executionState = ExecutionState
   val problem = Problem("failedProblem", UnspecifiedProblem)
   val today = new LocalDateTime()

@@ -2,14 +2,14 @@ package almhirt.corex.spray.marshalling
 
 import almhirt.httpx.spray.marshalling.FullContentTypeProvider
 import almhirt.core.types._
-import almhirt.corex.spray.HasCoreMediaTypesProviders
+import almhirt.core.http.HasCoreAlmMediaTypesProviders
 
 trait HasCoreContentTypeProviders {
-  implicit def domainEventContentTypeProvider: FullContentTypeProvider[DomainEvent]
+  def domainEventContentTypeProvider: FullContentTypeProvider[DomainEvent]
   implicit def executionStateContentTypeProvider: FullContentTypeProvider[ExecutionState]
   
   implicit def domainEventsContentTypeProvider: FullContentTypeProvider[Seq[DomainEvent]]
-  implicit def executionStatesTypeProvider: FullContentTypeProvider[Seq[ExecutionState]]
+  implicit def executionStatesContentTypeProvider: FullContentTypeProvider[Seq[ExecutionState]]
 }
 
 trait EmptyCoreContentTypeProviders extends HasCoreContentTypeProviders {
@@ -17,13 +17,13 @@ trait EmptyCoreContentTypeProviders extends HasCoreContentTypeProviders {
   override lazy val executionStateContentTypeProvider = FullContentTypeProvider.empty[ExecutionState]
   
   override lazy val domainEventsContentTypeProvider = FullContentTypeProvider.empty[Seq[DomainEvent]]
-  override lazy val executionStatesTypeProvider = FullContentTypeProvider.empty[Seq[ExecutionState]]
+  override lazy val executionStatesContentTypeProvider = FullContentTypeProvider.empty[Seq[ExecutionState]]
 }
 
-trait CoreContentTypeProvidersFromMediaTypes extends HasCoreContentTypeProviders { self: HasCoreMediaTypesProviders =>
+trait CoreContentTypeProvidersFromMediaTypes extends HasCoreContentTypeProviders { self: HasCoreAlmMediaTypesProviders =>
   override lazy val domainEventContentTypeProvider = FullContentTypeProvider[DomainEvent]
   override lazy val executionStateContentTypeProvider = FullContentTypeProvider[ExecutionState]
   
   override lazy val domainEventsContentTypeProvider = FullContentTypeProvider[Seq[DomainEvent]]
-  override lazy val executionStatesTypeProvider = FullContentTypeProvider[Seq[ExecutionState]]
+  override lazy val executionStatesContentTypeProvider = FullContentTypeProvider[Seq[ExecutionState]]
  }

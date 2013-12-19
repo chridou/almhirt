@@ -1,7 +1,6 @@
 package almhirt.testkit.components
 
-import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.FunSpec
+import org.scalatest._
 import akka.testkit.TestProbe
 import almhirt.testkit._
 import scala.concurrent.Future
@@ -17,8 +16,8 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
   with HasAlmhirt
   with CreatesCellSourceForTestAggregateRoots
   with AggregateRootCellSourceSpecsOpsWithEventLog
-  with FunSpec
-  with ShouldMatchers { self: CreatesCellSource with CreatesDomainEventLog =>
+  with FunSpecLike
+  with Matchers { self: CreatesCellSource with CreatesDomainEventLog =>
   import almhirt.components.AggregateRootCellSource._
   import almhirt.domain.DomainMessages._
   import almhirt.domain.AggregateRootCell._

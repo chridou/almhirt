@@ -1,7 +1,6 @@
 package almhirt.corex.spray.service
 
-import org.scalatest.FunSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import spray.testkit.ScalatestRouteTest
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
@@ -12,46 +11,59 @@ import almhirt.commanding._
 import almhirt.components._
 import almhirt.components.impl._
 import almhirt.corex.spray.marshalling._
-import almhirt.corex.spray.VendorBasedCoreMediaTypesProviders
-import almhirt.httpx.spray.MediaTypeVendorProvider
-import almhirt.httpx.spray.VendorBasedCommonMediaTypesProviders
-import almhirt.corex.riftwarp.serializers.HasCoreWireSerializersByRiftWarp
 import almhirt.core.types._
 import almhirt.httpx.spray.marshalling._
 import riftwarp.RiftWarp
 import riftwarp.util.WarpWireSerializer
 import riftwarp.util.RiftCommandStringSerializer
-import riftwarp.serialization.common.HasCommonWireSerializersByRiftWarp
+import riftwarp.serialization.common.CommonWireSerializersByRiftWarp
 import riftwarp.HasRiftWarp
 import spray.http._
 import spray.routing.HttpService
 import spray.http.StatusCodes._
+import almhirt.http.MediaTypeVendorProvider
+import almhirt.serialization.HasCommonWireSerializers
+import almhirt.core.types.serialization.HasCoreWireSerializers
+import riftwarp.serialization.common.CommonWireSerializersByRiftWarp
+import almhirt.corex.riftwarp.serializers.CoreWireSerializersByRiftWarp
+import almhirt.http._
+import almhirt.corex.spray._
+import almhirt.core.http._
 
-class HttpCommandEndpointSpecs extends FunSpec 
-	with ScalatestRouteTest 
-    with HasRiftWarp
-	with ShouldMatchers 
-	with VendorBasedCommonMediaTypesProviders
-	with CommonContentTypeProvidersFromMediaTypes 
-	with HasCommonWireSerializersByRiftWarp
-	with HasCommonMarshallers 
-	with HasCommonUnmarshallers 
-	with HasCoreWireSerializersByRiftWarp
-	with VendorBasedCoreMediaTypesProviders
-	with CoreContentTypeProvidersFromMediaTypes
-	with HasCoreMarshallers 
-	with HttpCommandEndpoint  
-	with HttpService {
-  def actorRefFactory = system
-  
-  override lazy val vendorProvider = MediaTypeVendorProvider("almhirt")
-
-  override lazy val myRiftWarp: RiftWarp = {
+object Requirements {
+  val riftWarp: RiftWarp = {
     val rw = RiftWarp()
     almhirt.corex.riftwarp.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(rw)
     almhirt.testkit.AR1.Serialization.addAr1Serializers(rw)
     rw
   }
+  val almhirtProvider = MediaTypeVendorProvider("almhirt")
+  val commonWireSerializers: HasCommonWireSerializers = new { val myRiftWarp = riftWarp } with CommonWireSerializersByRiftWarp with HasRiftWarp
+  val commonContentTypeProviders: HasCommonContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCommonAlmMediaTypesProviders with VendorBasedCommonAlmMediaTypesProviders with CommonContentTypeProvidersFromMediaTypes
+  val coreWireSerializers: HasCoreWireSerializers = new { val myRiftWarp = riftWarp } with CoreWireSerializersByRiftWarp with HasRiftWarp
+  val coreContentTypeProviders: HasCoreContentTypeProviders = new { val vendorProvider = MediaTypeVendorProvider("almhirt") } with HasCoreAlmMediaTypesProviders with VendorBasedCoreAlmMediaTypesProviders with CoreContentTypeProvidersFromMediaTypes
+
+}
+
+class HttpCommandEndpointSpecs extends FunSpec
+  with ScalatestRouteTest
+  with Matchers
+  with HasCommonMarshallers with CommonMarshallerInstances
+  with HasCommonUnmarshallers with CommonUnmarshallerInstances
+  with HasCoreMarshallers with CoreMarshallerInstances
+  with HttpCommandEndpoint
+  with HttpService {
+  def actorRefFactory = system
+
+  val almhirtProvider = MediaTypeVendorProvider("almhirt")
+
+  lazy val commonWireSerializers: HasCommonWireSerializers = Requirements.commonWireSerializers
+
+  lazy val commonContentTypeProviders: HasCommonContentTypeProviders = Requirements.commonContentTypeProviders
+
+  lazy val coreWireSerializers: HasCoreWireSerializers = Requirements.coreWireSerializers
+
+  lazy val coreContentTypeProviders: HasCoreContentTypeProviders = Requirements.coreContentTypeProviders
 
   val (myAlmhirt, closeHandle) = almhirt.core.Almhirt.notFromConfig(system).awaitResultOrEscalate(FiniteDuration(2, "s"))
 
@@ -66,10 +78,9 @@ class HttpCommandEndpointSpecs extends FunSpec
   override val maxSyncDuration = theAlmhirt.durations.shortDuration
   override val executionContext = theAlmhirt.futuresExecutor
 
-
-  lazy val commandSerializer = WarpWireSerializer.command(myRiftWarp)
-  lazy val execStateSerializer = WarpWireSerializer[ExecutionState, ExecutionState](myRiftWarp)
-  lazy val problemSerializer = WarpWireSerializer.problem(myRiftWarp)
+  lazy val commandSerializer = WarpWireSerializer.command(Requirements.riftWarp)
+  lazy val execStateSerializer = WarpWireSerializer[ExecutionState](Requirements.riftWarp)
+  lazy val problemSerializer = WarpWireSerializer.problem(Requirements.riftWarp)
 
   val commandWithoutTrackingId = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
   val commandWithoutTrackingIdJson = commandSerializer.serialize("json")(commandWithoutTrackingId).resultOrEscalate._1.value.asInstanceOf[String]
@@ -123,21 +134,21 @@ class HttpCommandEndpointSpecs extends FunSpec
       }
     }
 
-//    it("""should accept a command with a tracking id PUT to the "/execute?sync" path with contentType "application/vnd.acme.Command+json" and respond with an ExecutionSuccessful.""") {
-//      val cmd = commandWithoutTrackingId.track
-//      val execState = ExecutionSuccessful(cmd.trackingId, "ahh!")
-//      tracker ! ExecutionStateChanged(execState)
-//      Put("/execute?sync", cmd)(commandMarshaller) ~> executeCommandRoute ~> check {
-//        status should equal(OK)
-//        responseAs[ExecutionState] should equal(execState)
-//      }
-//    }
-    
-//    it("""should rsssseturn a MethodNotAllowed error for POST requests to the "/execute" path""") {
-//      Put("/execute", "xx")  ~> sealRoute(executeCommandRoute) ~> check {
-//        status should equal(UnsupportedMediaType)
-//      }
-//    }
-    
+    //    it("""should accept a command with a tracking id PUT to the "/execute?sync" path with contentType "application/vnd.acme.Command+json" and respond with an ExecutionSuccessful.""") {
+    //      val cmd = commandWithoutTrackingId.track
+    //      val execState = ExecutionSuccessful(cmd.trackingId, "ahh!")
+    //      tracker ! ExecutionStateChanged(execState)
+    //      Put("/execute?sync", cmd)(commandMarshaller) ~> executeCommandRoute ~> check {
+    //        status should equal(OK)
+    //        responseAs[ExecutionState] should equal(execState)
+    //      }
+    //    }
+
+    //    it("""should rsssseturn a MethodNotAllowed error for POST requests to the "/execute" path""") {
+    //      Put("/execute", "xx")  ~> sealRoute(executeCommandRoute) ~> check {
+    //        status should equal(UnsupportedMediaType)
+    //      }
+    //    }
+
   }
 }

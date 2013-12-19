@@ -1,7 +1,6 @@
 package almhirt.messaging.impl
 
-import org.scalatest.FunSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import akka.testkit._
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
@@ -9,7 +8,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.messaging.Classifier
 
-class MessageOrderSpec extends TestKit(ActorSystem("MessageOrderSpec")) with FunSpec with ShouldMatchers{
+class MessageOrderSpec extends TestKit(ActorSystem("MessageOrderSpec")) with FunSpecLike with Matchers{
   implicit val defaultDuration = FiniteDuration(1, "s")
   implicit val ccuad = CanCreateUuidsAndDateTimes()
   implicit val executionContext = this.system.dispatcher

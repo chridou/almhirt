@@ -1,7 +1,6 @@
 package almhirt.testkit.domain
 
-import org.scalatest.FunSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest._
 import scala.concurrent._
 import akka.actor._
 import akka.pattern._
@@ -16,8 +15,8 @@ import almhirt.core.HasAlmhirt
 abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
-  with FunSpec
-  with ShouldMatchers { self: CreatesDomainEventLog =>
+  with FunSpecLike
+  with Matchers { self: CreatesDomainEventLog =>
   import almhirt.domain.DomainMessages._
   import almhirt.domain.AggregateRootCell._
   import almhirt.domaineventlog.DomainEventLog._

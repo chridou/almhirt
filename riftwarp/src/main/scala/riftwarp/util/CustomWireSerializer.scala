@@ -6,10 +6,10 @@ import almhirt.almvalidation.kit._
 import almhirt.serialization._
 import riftwarp._
 
-trait CustomWireSerializer[TIn, TOut] extends CustomWireSerializerTemplate[TIn, TOut] with WireSerializer[TIn, TOut] {
+trait CustomWireSerializer[T] extends CustomWireSerializerTemplate[T] with WireSerializer[T] {
   
-  def packer: AlmValidation[WarpPacker[TTIn]]
-  def unpacker: AlmValidation[WarpUnpacker[TTOut]]
+  def packer: AlmValidation[WarpPacker[TT]]
+  def unpacker: AlmValidation[WarpUnpacker[TT]]
 
   def packers: WarpPackers
   def unpackers: WarpUnpackers
@@ -21,19 +21,19 @@ trait CustomWireSerializer[TIn, TOut] extends CustomWireSerializerTemplate[TIn, 
   override protected def getStringRematerializer(channel: String): AlmValidation[Rematerializer[String]] = rematerializers.getTyped[String](channel)
   override protected def getBinaryRematerializer(channel: String): AlmValidation[Rematerializer[Array[Byte]]] = rematerializers.getTyped[Array[Byte]](channel)
   
-  override protected def packInner(what: TTIn): AlmValidation[WarpPackage] =
+  override protected def packInner(what: TT): AlmValidation[WarpPackage] =
     packer.flatMap(_(what)(packers))
 
-  override protected def unpackInner(what: WarpPackage): AlmValidation[TTOut] =
+  override protected def unpackInner(what: WarpPackage): AlmValidation[TT] =
     unpacker.flatMap(_(what)(unpackers))
 }
 
-trait FlatWireSerializer[TIn, TOut] { self : CustomWireSerializer[TIn, TOut] =>
+trait FlatWireSerializer[T] { self : CustomWireSerializer[T] =>
   def packers: WarpPackers = WarpPackers.empty
   def unpackers: WarpUnpackers = WarpUnpackers.empty
 }
 
-trait RiftWarpWireSerializer[TIn, TOut] { self : CustomWireSerializer[TIn, TOut] =>
+trait RiftWarpWireSerializer[T] { self : CustomWireSerializer[T] =>
   def riftwarp: RiftWarp
 
   override lazy val packers: WarpPackers = riftwarp.packers

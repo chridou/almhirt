@@ -1,11 +1,10 @@
 package almhirt.almvalidation
 
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
 import almhirt.common._
 import almhirt.problem._
 
-class SeveritySpec extends FlatSpec with ShouldMatchers {
+class SeveritySpec extends FlatSpec with Matchers {
   "A Severity has a zero of 'Warning' and" should
     "return 'Critical' when 'Warning' and 'Critical'" in {
       Warning.and(Critical) should equal(Critical)
