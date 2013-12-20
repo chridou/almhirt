@@ -51,7 +51,7 @@ object AlmMediaSubTypeParts {
 
 sealed trait MediaTypeRepresentation
 case object BinaryMedia extends MediaTypeRepresentation
-case class TextualMedia(defaultEncoding: Option[String]) extends MediaTypeRepresentation
+case class TextualMedia(preferredEncoding: Option[AlmCharacterEncoding]) extends MediaTypeRepresentation
 
 trait AlmMediaType {
   def mainType: String
@@ -83,7 +83,7 @@ object AlmMediaType {
     def makeCompressible = AlmMediaType(self.mainType, self.subTypeParts, true, self.streamRepresentation, self.fileExtensions, self.ianaRegistered)
     def addFileExtensions(fileExtensions: String*) = AlmMediaType(self.mainType, self.subTypeParts, self.compressible, self.streamRepresentation, self.fileExtensions ++ fileExtensions, self.ianaRegistered)
     def makeTextualWithEncoding(encoding: String) = AlmMediaType(self.mainType, self.subTypeParts, self.compressible, TextualMedia(None), self.fileExtensions, self.ianaRegistered)
-    def makeTextual(encoding: String) = AlmMediaType(self.mainType, self.subTypeParts, self.compressible, TextualMedia(Some(encoding)), self.fileExtensions, self.ianaRegistered)
+    def makeTextual(preferredEncoding: AlmCharacterEncoding) = AlmMediaType(self.mainType, self.subTypeParts, self.compressible, TextualMedia(Some(preferredEncoding)), self.fileExtensions, self.ianaRegistered)
     def makeBinary(encoding: String) = AlmMediaType(self.mainType, self.subTypeParts, self.compressible, BinaryMedia, self.fileExtensions, self.ianaRegistered)
     def registered = {
       AlmMediaTypes.register(self)
