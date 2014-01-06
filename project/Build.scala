@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.168"
+  val buildVersion      = "0.5.169"
   val buildScalaVersion = "2.10.3"
 
   val akkaVersion = "2.2.+"
@@ -231,14 +231,13 @@ trait CorexMongoBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += typesafeRepo,
   	  resolvers += sonatypeReleases,
-	  resolvers += "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += typesafe_config,
-	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "0.10.0-SNAPSHOT" % "provided"
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % "0.10.0" % "provided"
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
  	  libraryDependencies += scalatest
@@ -329,12 +328,11 @@ trait RiftWarpMongoExtBuild {
   def riftwarpMongoExtProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sonatypeReleases,
-	  resolvers += "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
 	  libraryDependencies += scala_reflect,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
-	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-bson" % "0.10.0-SNAPSHOT" % "provided"     
+	  libraryDependencies += "org.reactivemongo" %% "reactivemongo-bson" % "0.10.0" % "provided"     
 		exclude("ch.qos.logback", "logback-core")
 		exclude("ch.qos.logback", "logback-classic"),
 	  libraryDependencies += scalaz,
