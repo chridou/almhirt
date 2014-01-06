@@ -1,6 +1,6 @@
 package almhirt.corex.riftwarp.serialization
 
-object RiftWarpUtilityFuns {
+object Serialization {
   def addRiftWarpRegistrations(riftWarp: riftwarp.RiftWarp) {
     riftWarp.packers.addTyped(AggregateRootRefWarpPackaging)
     riftWarp.unpackers.addTyped(AggregateRootRefWarpPackaging)

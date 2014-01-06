@@ -33,7 +33,7 @@ import almhirt.core.http._
 object Requirements {
   val riftWarp: RiftWarp = {
     val rw = RiftWarp()
-    almhirt.corex.riftwarp.serialization.RiftWarpUtilityFuns.addRiftWarpRegistrations(rw)
+    almhirt.corex.riftwarp.serialization.Serialization.addRiftWarpRegistrations(rw)
     almhirt.testkit.AR1.Serialization.addAr1Serializers(rw)
     rw
   }
