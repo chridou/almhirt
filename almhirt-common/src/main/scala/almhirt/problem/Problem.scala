@@ -15,7 +15,7 @@ sealed trait SingleProblem extends Problem {
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
     val indentation = (0 until (indentLevel*2)).map(_ => " ").mkString
     val builder = new StringBuilder()
-    builder.append(indentation+"Problem:")
+    builder.append(indentation+"Problem:\n")
     builder.append(indentation+"Type: %s\n".format(problemType))
     builder.append(indentation+"Message: %s\n".format(message))
     builder.append(indentation+"Arguments: %s\n".format(args))
@@ -23,7 +23,7 @@ sealed trait SingleProblem extends Problem {
       case None =>
         ()
       case Some(CauseIsThrowable(HasAThrowable(exn))) =>
-        builder.append(indentation+"Caused by:")
+        builder.append(indentation+"Caused by:\n")
         builder.append(indentation+"  Message: %s\n".format(exn.toString))
         builder.append(indentation+"  Stacktrace:\n%s\n".format(exn.getStackTraceString))
       case Some(CauseIsThrowable(desc @ HasAThrowableDescribed(_, _, _, _))) =>
@@ -44,7 +44,7 @@ sealed trait AggregateProblem extends Problem {
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
     val indentation = (0 until (indentLevel*2)).map(_ => " ").mkString
     val builder = new StringBuilder()
-    builder.append(indentation+"Problem:")
+    builder.append(indentation+"Problem:\n")
     builder.append(indentation+"Type: %s\n".format(problemType))
     builder.append(indentation+"Message: %s\n".format(message))
     builder.append(indentation+"Arguments: %s\n".format(args))
