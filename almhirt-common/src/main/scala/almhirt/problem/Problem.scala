@@ -15,19 +15,21 @@ sealed trait SingleProblem extends Problem {
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
     val indentation = (0 until (indentLevel*2)).map(_ => " ").mkString
     val builder = new StringBuilder()
-    builder.append(indentation+"%s\n".format(problemType))
-    builder.append(indentation+"%s\n".format(message))
+    builder.append(indentation+"Problem:")
+    builder.append(indentation+"Type: %s\n".format(problemType))
+    builder.append(indentation+"Message: %s\n".format(message))
     builder.append(indentation+"Arguments: %s\n".format(args))
     cause match {
       case None =>
         ()
       case Some(CauseIsThrowable(HasAThrowable(exn))) =>
+        builder.append(indentation+"Caused by:")
         builder.append(indentation+"  Message: %s\n".format(exn.toString))
         builder.append(indentation+"  Stacktrace:\n%s\n".format(exn.getStackTraceString))
       case Some(CauseIsThrowable(desc @ HasAThrowableDescribed(_, _, _, _))) =>
         builder.append(indentation+"  Description: %s\n".format(desc.toString))
       case Some(CauseIsProblem(prob)) =>
-        builder.append(indentation+"  Problem:")
+        builder.append(indentation+"Caused by:")
         builder.append(prob.baseInfo(indentLevel+1))
     }
     builder
@@ -42,13 +44,13 @@ sealed trait AggregateProblem extends Problem {
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
     val indentation = (0 until (indentLevel*2)).map(_ => " ").mkString
     val builder = new StringBuilder()
-    builder.append(indentation+"%s\n".format(problemType))
-    builder.append(indentation+"%s\n".format(message))
+    builder.append(indentation+"Problem:")
+    builder.append(indentation+"Type: %s\n".format(problemType))
+    builder.append(indentation+"Message: %s\n".format(message))
     builder.append(indentation+"Arguments: %s\n".format(args))
     builder.append(indentation+"Aggregated problems:\n")
     problems.zipWithIndex.foreach {
       case (p, i) => {
-        builder.append(indentation+"Problem %d:\n".format(i))
         builder.append(p.baseInfo(indentLevel+1))
       }
     }
