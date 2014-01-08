@@ -29,7 +29,7 @@ trait RiftWarpFuns {
   def handleFreeArrival[U](from: U, overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit rematerializer: Rematerializer[U], unpackers: WarpUnpackers): AlmValidation[Any] =
     rematerializer.rematerialize(from, options).flatMap(pkg => unpack(pkg, overrideDescriptor, backUpDescriptor))
 
-  def handleTypedArrival[U, T](from : U, overrideDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit rematerializer: Rematerializer[U], unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[T] =
+  def handleTypedArrival[U, T](from: U, overrideDescriptor: Option[WarpDescriptor] = None, options: Map[String, Any] = Map.empty)(implicit rematerializer: Rematerializer[U], unpackers: WarpUnpackers, tag: ClassTag[T]): AlmValidation[T] =
     rematerializer.rematerialize(from, options).flatMap(pkg =>
       unpack(pkg, overrideDescriptor, Some(WarpDescriptor(tag.runtimeClass))).flatMap(res =>
         res.castTo[T]))
@@ -69,6 +69,17 @@ trait RiftWarpFuns {
                 unpack(item._2, None, None).map(v =>
                   (k, v))).toAgg).sequence
             x
+          case WarpTuple2(a, b) =>
+            for {
+              va <- unpack(a, None, None)
+              vb <- unpack(b, None, None)
+            } yield (va, vb)
+          case WarpTuple3(a, b, c) =>
+            for {
+              va <- unpack(a, None, None)
+              vb <- unpack(b, None, None)
+              vc <- unpack(c, None, None)
+            } yield (va, vb, vc)
           case WarpTree(tree) =>
             val x = tree.map(item => unpack(item, None, None).toAgg).sequence
             x
