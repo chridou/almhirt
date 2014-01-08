@@ -62,6 +62,24 @@ trait PackageBuilderFuns {
       case None => WarpElement(label).success
     }
 
+  def PTup2[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter](label: String, what: (A, B)): AlmValidation[WarpElement] =
+    WarpElement(label, Some(WarpTuple2(toWarpPrimitive(what._1), toWarpPrimitive(what._2)))).success
+
+  def PTup2Opt[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter](label: String, what: Option[(A, B)]): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) => PTup2(label, v)
+      case None => WarpElement(label).success
+    }
+
+  def PTup3[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter, C: WarpPrimitiveConverter](label: String, what: (A, B, C)): AlmValidation[WarpElement] =
+    WarpElement(label, Some(WarpTuple3(toWarpPrimitive(what._1), toWarpPrimitive(what._2), toWarpPrimitive(what._3)))).success
+
+  def PTup3Opt[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter, C: WarpPrimitiveConverter](label: String, what: Option[(A, B, C)]): AlmValidation[WarpElement] =
+    what match {
+      case Some(v) => PTup3(label, v)
+      case None => WarpElement(label).success
+    }
+
   def CP[A: WarpPrimitiveConverter](label: String, what: Traversable[A]): AlmValidation[WarpElement] =
     WarpElement(label, Some(toWarpPrimitivesCollection(what))).success
 
@@ -295,7 +313,7 @@ trait PackageBuilderOps {
           next.fold(
             fail => fail.failure,
             succ => WarpObject(succObj.warpDescriptor, succObj.elements ++ succ).success))
-        
+
     def ~~+>(next: => Seq[WarpElement]): AlmValidation[WarpObject] =
       self.fold(
         fail => fail.failure,

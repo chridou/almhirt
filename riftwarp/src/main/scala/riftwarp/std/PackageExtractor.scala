@@ -93,6 +93,26 @@ trait WarpObjectLookUp {
   def getAs[T: WarpPrimitiveConverter](label: String): AlmValidation[T] =
     getMandatory(label, x => tryGetAs[T](x))
 
+  def tryGet2As[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter](label: String): AlmValidation[Option[(A, B)]] =
+    getAndCheck(label) {
+      case WarpTuple2(a: WarpPrimitive, b: WarpPrimitive) => a.as[A].flatMap(a => b.as[B].map((a, _)))
+      case WarpCollection(Vector(a: WarpPrimitive, b: WarpPrimitive)) => a.as[A].flatMap(a => b.as[B].map((a, _)))
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpTuple2 of primitives""").failure
+    }
+
+  def get2As[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter](label: String): AlmValidation[(A, B)] =
+    getMandatory(label, x => tryGet2As[A, B](x))
+
+  def tryGet3As[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter, C: WarpPrimitiveConverter](label: String): AlmValidation[Option[(A, B, C)]] =
+    getAndCheck(label) {
+      case WarpTuple3(a: WarpPrimitive, b: WarpPrimitive, c: WarpPrimitive) => a.as[A].flatMap(a => b.as[B].flatMap(b => c.as[C].map((a, b, _))))
+      case WarpCollection(Vector(a: WarpPrimitive, b: WarpPrimitive, c: WarpPrimitive)) => a.as[A].flatMap(a => b.as[B].flatMap(b => c.as[C].map((a, b, _))))
+      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpTuple3 of primitives""").failure
+    }
+
+  def get3As[A: WarpPrimitiveConverter, B: WarpPrimitiveConverter, C: WarpPrimitiveConverter](label: String): AlmValidation[(A, B, C)] =
+    getMandatory(label, x => tryGet3As[A, B, C](x))
+
   def tryGetWith[T](label: String, unpacker: WarpUnpacker[T])(implicit unpackers: WarpUnpackers): AlmValidation[Option[T]] =
     getAndCheck(label) { what => unpacker(what) }
 
@@ -261,10 +281,10 @@ trait WarpObjectLookUp {
 
   private def getAndCheck[T](label: String)(checkType: WarpPackage => AlmValidation[T]): AlmValidation[Option[T]] =
     tryGetWarpPackage(label) match {
-    case Some(wp) => checkType(wp).map(Some(_))
-    case None => None.success
-  }
- 
+      case Some(wp) => checkType(wp).map(Some(_))
+      case None => None.success
+    }
+
   private def getMandatory[T](label: String, get: String => AlmValidation[Option[T]]): AlmValidation[T] =
     get(label).fold(
       fail => fail.failure,
