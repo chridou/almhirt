@@ -21,7 +21,7 @@ import almhirt.common._
 
 
 trait AlmFutureInstances {
-  /** Turn this [[akka.dispatch.Future]] into an [[almhirt.concurrent.Future]] */
+  /** Turn this [[scala.concurrent.Future]] into an [[almhirt.common.AlmFuture]] */
   implicit def akkaFutureToAlmhirtFuture[T](akkaFuture: Future[AlmValidation[T]]): AlmFuture[T] =
     new AlmFuture(akkaFuture)
 }

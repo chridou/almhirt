@@ -32,6 +32,7 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T] { def equal(p1: T, p2: T): Boolean = p1 == p2 }
 
   def launderException(exn: Throwable): SingleProblem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
+  
   def handleThrowable(throwable: Throwable): Problem =
     throwable match {
       case NonFatal(exn) => launderException(exn)

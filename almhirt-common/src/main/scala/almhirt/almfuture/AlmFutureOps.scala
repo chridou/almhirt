@@ -17,128 +17,121 @@ package almhirt.almfuture
 import scala.language.implicitConversions
 import scala.language.postfixOps
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.ClassTag
 import scalaz.Scalaz.ToValidationV
 import scalaz.syntax.Ops
 import almhirt.common._
 import almhirt.almvalidation.kit._
 
-/** Implicits on an untyped [[akka.dispatch.Future]] */
+/** Implicits on an untyped [[scala.concurrent.Future]] */
 trait AlmFutureOps0 extends Ops[Future[Any]] {
   import scala.reflect._
-  /** Turn this a [[akka.dispatch.Future]] into on AlmFuture of the given type 
-   * 
-   * '''The real type of the [[akka.dispatch.Future]] must be [[almhirt.validation.AlmValidation[T]]]'''
-   * 
-   * @tparam T The success type in [[almhirt.validation.AlmValidation[T]]]
+  /**
+   * Turn this [[scala.concurrent.Future]] into on [[almhirt.common.AlmFuture]] of the given type
+   *
+   * '''The real type of the [[scala.concurrent.Future]] must be [[almhirt.validation.AlmValidation[T]]]'''
+   *
+   * @tparam T The success type in [[almhirt.common.AlmValidation[T]]]
    */
-  def mapToAlmFuture[T](implicit m: ClassTag[T]): AlmFuture[T] = 
+  def mapToAlmFuture[T](implicit m: ClassTag[T]): AlmFuture[T] =
     new AlmFuture[T](self.mapTo[AlmValidation[T]])
 
-  def ~>[T](implicit m: ClassTag[T]): AlmFuture[T] = mapToAlmFuture   
-  def ↝[T](implicit m: ClassTag[T]): AlmFuture[T] = mapToAlmFuture   
-    
-  def successfulAlmFuture[T](implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] = 
+  /** Same as [[almhirt.almfuture.AlmFutureOps0.mapToAlmFuture]] */
+  def ~>[T](implicit m: ClassTag[T]): AlmFuture[T] = mapToAlmFuture
+  /** Same as [[almhirt.almfuture.AlmFutureOps0.mapToAlmFuture]] */
+  def ↝[T](implicit m: ClassTag[T]): AlmFuture[T] = mapToAlmFuture
+
+  /**
+   * Create a new [[almhirt.common.AlmFuture]] from a [[scala.concurrent.Future]] with T being a successful value
+   *
+   * '''The real type of the [[scala.concurrent.Future]] must NOT be [[almhirt.validation.AlmValidation]][_]'''
+   *
+   * @tparam T The successful result type of the Future
+   */
+  def successfulAlmFuture[T](implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] =
     new AlmFuture[T](self.mapTo[T].map(_.success)(executionContext))
-
-//  def mapToAlmFutureOver[T,U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
-//    new AlmFuture[U](self.mapTo[T].map(x => compute(x))(executionContext))
-//
-//  def mapExtractToAlmFutureOver[T,U](compute: T => U)(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
-//    new AlmFuture[U](self.mapTo[T].map(x => compute(x).success)(executionContext))
-
 }
 
 trait AlmFutureOps1[T] extends Ops[Future[AlmValidation[T]]] {
-  def toAlmFuture: AlmFuture[T] = 
+  /**
+   * Turn this [[scala.concurrent.Future]] into on [[almhirt.common.AlmFuture]] of the given type
+   *
+   * '''The real type of the [[scala.concurrent.Future]] must be [[almhirt.common.AlmValidation]][T]'''
+   *
+   * @tparam T The success type in the [[almhirt.common.AlmValidation]] of the successful Future of that [[almhirt.common.AlmValidation]]
+   */
+  def toAlmFuture: AlmFuture[T] =
     new AlmFuture[T](self)
 }
 
-/** Operations for starting a future operation from a [[almhirt.validation.AlmValidation]] */
+/** Operations for starting a future operation from a [[almhirt.common.AlmValidation]] */
 trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
-  /** In case of success start the given computation otherwise return the Failure 
-   * 
+  /**
+   * In case the [[almhirt.common.AlmValidation]] contains a value start the given computation otherwise return a failed [[almhirt.common.AlmFuture]]
+   *
    * @param compute The function to execute async
-   * @return The future containing the eventual result
+   * @return The future async computation
    */
   def continueAsync[U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
-    self fold(
-      prob => new AlmFuture(Future.successful(prob.failure)), 
-      r => new AlmFuture(Future[AlmValidation[U]]{compute(r)}(executionContext)))
+    self fold (
+      prob => AlmFuture.failed(prob),
+      r => AlmFuture { compute(r) })
 
-  /** In case of success start the given computation otherwise return the Failure 
-   * 
-   * @param compute The function to execute async
-   * @return The future containing the eventual result
-   */
-  def |~> [U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
+  /** Same as [[almhirt.almfuture.AlmFutureOps2.continueAsync]] */
+  def |~>[U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
     continueAsync[U](compute)
 
-  /** In case of success start the given side effect otherwise return the Failure 
-   * 
-   * @param compute The side effect to execute async
+  /**
+   * In case the [[almhirt.common.AlmValidation]] contains a value execute the given side effect otherwise do nothing.
+   *
+   * @param action The side effect to execute async
    */
-  def doAsync(failure: Problem => Unit, sideEffect: T => Unit)(implicit executionContext: ExecutionContext): Unit =
-    self fold(
-      prob => failure(prob), 
-      r => executionContext.execute(new Runnable{def run() = sideEffect(r)}))
-  /** In case of success start the given side effect otherwise return the Failure 
-   * 
-   * @param compute The side effect to execute async
-   */
-  def ~| (failure: Problem => Unit, sideEffect: T => Unit)(implicit executionContext: ExecutionContext): Unit =
-    doAsync(failure, sideEffect)
+  def doAsync(action: T => Unit)(implicit executionContext: ExecutionContext) {
+    self fold (
+      prob => (),
+      r => executionContext.execute(new Runnable { def run() = action(r) }))
+  }
 
-  
-  /** In case of a success: Execute the computation as an already computed result
-   * 
+  /** Same as [[almhirt.almfuture.AlmFutureOps2.doAsync]] */
+  def ~|(action: T => Unit)(implicit executionContext: ExecutionContext) {
+    doAsync(action)
+  }
+
+  /**
+   * Make this a completed [[almhirt.common.AlmFuture]]
+   *
    * @param compute The computation
    */
-  def continueWithPromise[U](compute: T => AlmValidation[U]): AlmFuture[U] =
-    self fold(
-      prob => new AlmFuture(Future.successful(prob.failure)), 
-      r => new AlmFuture(Future.successful(compute(r))))
-        
-  /** Execute the computation as an already computed result
-   * 
-   * @param compute The computation
-   */
-  def |->[U](compute: T => AlmValidation[U]): AlmFuture[U] =
-    continueWithPromise[U](compute)
-    
-  /** In case of a success: Start the given future
-   * 
+  def asCompleted: AlmFuture[T] =
+    self fold (
+      prob => new AlmFuture(Future.successful(prob.failure)),
+      r => AlmFuture.successful(r))
+
+  /**
+   * In case of a success: Start the given future
+   *
    * @param compute The computation which eventually returns a result
    */
   def continueWithFuture[U](futureComputation: T => AlmFuture[U]): AlmFuture[U] =
-    self fold(
-      prob => new AlmFuture(Future.successful((prob.failure))), 
+    self fold (
+      prob => new AlmFuture(Future.successful((prob.failure))),
       r => futureComputation(r))
-    
-  /** In case of a success: Start the given future
-   * 
-   * @param compute The computation which eventually returns a result
-   */
-  def |#>[U](future: T => AlmFuture[U]): AlmFuture[U] =
-    continueWithFuture[U](future)
 }
 
 trait AlmFutureOps3[T] extends Ops[Future[T]] {
-  def toSuccessfulAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] = 
+  /**
+   * Make the result a success for the returned [[almhirt.common.AlmFuture]]
+   *
+   * @param compute The computation which eventually returns a result
+   */
+  def toSuccessfulAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](self.map(_.success)(executionContext))
-    
-  def -+>(implicit executionContext: ExecutionContext): AlmFuture[T] = toSuccessfulAlmFuture  
-  def ⇸(implicit executionContext: ExecutionContext): AlmFuture[T] = toSuccessfulAlmFuture  
-  
-  def mapOver[U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
-    new AlmFuture[U](self.map(x => compute(x))(executionContext))
 }
 
-
 trait ToAlmFutureOps {
-  implicit def FromFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 {def self = a }
-  implicit def FromTypedFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] {def self = a }
-  implicit def FromAlmValidationToAlmFutureOps2[T](a: AlmValidation[T]): AlmFutureOps2[T] = new AlmFutureOps2[T]{def self = a }
-  implicit def FromTypedFutureToAlmFutureOps3[T](a: Future[T]): AlmFutureOps3[T] = new AlmFutureOps3[T]{def self = a }
+  implicit def FromFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 { def self = a }
+  implicit def FromTypedFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] { def self = a }
+  implicit def FromAlmValidationToAlmFutureOps2[T](a: AlmValidation[T]): AlmFutureOps2[T] = new AlmFutureOps2[T] { def self = a }
+  implicit def FromTypedFutureToAlmFutureOps3[T](a: Future[T]): AlmFutureOps3[T] = new AlmFutureOps3[T] { def self = a }
 }
