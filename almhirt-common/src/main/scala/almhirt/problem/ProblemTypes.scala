@@ -124,7 +124,7 @@ object problemtypes {
   }
 
   /**
-   * There is a problem with the persistent store. This problem is more of technical nature and thus by default a system problem.
+   * There is a problem with the persistent store.
    */
   case object PersistenceProblem extends ProblemType {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
@@ -166,7 +166,7 @@ object problemtypes {
   }
 
   /**
-   * Data couldn't be found. Use when looking for an entity or something similar. Do not use for a missing key in a map.
+   * Data couldn't be found. Use when looking for an entity or something similar. Do not use for a missing key in a map or so.
    */
   case object NotFoundProblem extends ProblemType {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
@@ -175,7 +175,7 @@ object problemtypes {
   }
 
   /**
-   * A constraint on an operation has been violated by a user(or a client).
+   * A constraint on an operation has been violated (usually)by a user(or a client).
    */
   case object ConstraintViolatedProblem extends ProblemType {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =

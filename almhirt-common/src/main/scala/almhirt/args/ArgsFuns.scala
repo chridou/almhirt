@@ -1,7 +1,7 @@
 package almhirt.args
 
-import almhirt.common._
 import scala.reflect.ClassTag
+import almhirt.common._
 
 trait ArgsFuns {
   import scalaz.syntax.validation._
@@ -37,7 +37,7 @@ trait ArgsFuns {
   def isBooleanTrue(ident: String, theMap: Map[String, Any]): Boolean =
     theMap.get(ident) match {
     case Some(x) => 
-      x.castTo[Boolean].isExplicitlyTrue
+      x.castTo[Boolean].explicitlyTrue
     case None => 
       false
   }
@@ -45,7 +45,7 @@ trait ArgsFuns {
   def isBooleanFalse(ident: String, theMap: Map[String, Any]): Boolean =
     theMap.get(ident) match {
     case Some(x) => 
-      x.castTo[Boolean].isExplicitlyFalse
+      x.castTo[Boolean].explicitlyFalse
     case None => 
       false
   }
@@ -53,7 +53,7 @@ trait ArgsFuns {
   def isBooleanNotTrue(ident: String, theMap: Map[String, Any]): Boolean =
     theMap.get(ident) match {
     case Some(x) => 
-      !(x.castTo[Boolean].isExplicitlyTrue)
+      !(x.castTo[Boolean].explicitlyTrue)
     case None => 
       true
   }
@@ -61,7 +61,7 @@ trait ArgsFuns {
 def isBooleanNotFalse(ident: String, theMap: Map[String, Any]): Boolean =
     theMap.get(ident) match {
     case Some(x) => 
-      !(x.castTo[Boolean].isExplicitlyFalse)
+      !(x.castTo[Boolean].explicitlyFalse)
     case None => 
       true
   }  

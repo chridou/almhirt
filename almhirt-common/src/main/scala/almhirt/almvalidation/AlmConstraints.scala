@@ -5,8 +5,16 @@ import scalaz.syntax.validation._
 import almhirt.common._
 
 trait AlmBooleanConstraints extends Ops[Boolean] {
+  /** Same as [[almhirt.almvalidation.AlmConstraintsFuns.mustBeTrue */
   def mustBeTrue(): AlmValidation[Boolean] = funs.mustBeTrue(self)
+  
+  /** Same as  [[almhirt.almvalidation.AlmConstraintsFuns.mustBeFalse */
   def mustBeFalse(): AlmValidation[Boolean] = funs.mustBeFalse(self)
+  
+  /** Completes with a [[almhirt.problem.problemtypes.ConstraintViolatedProblem]] if cond evaluates to false 
+   *  
+   * @param cond Something that evaluates to true or false
+   */
   def mustBe(cond: => Boolean): AlmValidation[Boolean] =
     if (cond == self)
       self.success
@@ -15,14 +23,19 @@ trait AlmBooleanConstraints extends Ops[Boolean] {
 }
 
 trait AlmStringConstraints extends Ops[String] {
-  def mustFulfill(pred: String => Boolean, msg: (String) => String): AlmValidation[String] =
-    if (pred(self)) self.success else ConstraintViolatedProblem(msg(self)).failure
+  /** Completes with a [[almhirt.problem.problemtypes.ConstraintViolatedProblem]] if the predicate is not met. 
+   *  
+   * @param pred The predicate
+   * @param createMessage Map the input of the Sting to an error message (or use the default)
+   */
+  def mustFulfill(pred: String => Boolean, createMessage: String => String = str => s"""Predicate not met for value "$str""""): AlmValidation[String] =
+    if (pred(self)) self.success else ConstraintViolatedProblem(createMessage(self)).failure
 
   def notEmptyOrWhitespace(): AlmValidation[String] =
     funs.notEmptyOrWhitespace(self)
 
-  def constrainedTo(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpace: Boolean = false): AlmValidation[String] =
-    funs.stringConstrained(self, minLength, maxLength, emptyOrWhiteSpace)
+  def constrainedTo(minLength: Option[Int], maxLength: Option[Int], emptyOrWhiteSpaceAllowed: Boolean = false): AlmValidation[String] =
+    funs.stringConstrained(self, minLength, maxLength, emptyOrWhiteSpaceAllowed)
 
   def minLength(minLength: Int): AlmValidation[String] =
     funs.stringConstrained(self, Some(minLength), None, true)
@@ -44,13 +57,17 @@ trait AlmStringConstraints extends Ops[String] {
 }
 
 trait AlmOptionStringConstraints extends Ops[Option[String]] {
-
   def notEmptyOrWhitespace(): AlmValidation[Option[String]] =
     onSome(x => funs.notEmptyOrWhitespace(x))
 
-  def mustFulfill(pred: String => Boolean, msg: String): AlmValidation[Option[String]] =
+  /** Completes with a [[almhirt.problem.problemtypes.ConstraintViolatedProblem]] if the predicate is not met for the option's value. 
+   *  
+   * @param pred The predicate
+   * @param createMessage Map the input of the Sting to an error message (or use the default)
+   */
+  def mustFulfill(pred: String => Boolean, createMessage: String => String = str => s"""Predicate not met for value "$str""""): AlmValidation[Option[String]] =
     self match {
-      case Some(str) => if (pred(str)) self.success else ConstraintViolatedProblem(msg).failure
+      case Some(str) => if (pred(str)) self.success else ConstraintViolatedProblem(createMessage(str)).failure
       case None => self.success
     }
 

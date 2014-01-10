@@ -21,7 +21,8 @@ import almhirt.common._
 
 trait AlmValidationFunctions {
   def successAlm[T](x: T): AlmValidation[T] = x.success[Problem]
-  
+
+  /** Evaluate an unsafe expression in a safe way */
   def inTryCatch[T](a: => T): AlmValidation[T] = {
     try {
       a.success[Problem]
@@ -30,6 +31,7 @@ trait AlmValidationFunctions {
     }
   }
 
+  /** Evaluate an unsafe expression in a safe way */
   def inTryCatchM[T](a: => T)(message: String): AlmValidation[T] = {
     try {
       a.success[Problem]
@@ -38,6 +40,7 @@ trait AlmValidationFunctions {
     }
   }
 
+  /** Evaluate an unsafe expression in a safe way */
   def inTryCatchMM[T](a: => T)(createMessage: Exception => String): AlmValidation[T] = {
     try {
       a.success[Problem]
@@ -45,7 +48,8 @@ trait AlmValidationFunctions {
       case exn: Exception => launderException(exn).withMessage(createMessage(exn)).failure
     }
   }
-  
+
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
   def computeSafely[T](a: => AlmValidation[T]): AlmValidation[T] = {
     try {
       a
@@ -53,7 +57,8 @@ trait AlmValidationFunctions {
       case exn: Exception => launderException(exn).failure
     }
   }
-  
+
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
   def computeSafelyM[T](a: => AlmValidation[T])(message: String): AlmValidation[T] = {
     try {
       a
@@ -62,6 +67,7 @@ trait AlmValidationFunctions {
     }
   }
 
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
   def computeSafelyMM[T](a: => AlmValidation[T])(createMessage: Exception => String): AlmValidation[T] = {
     try {
       a
@@ -69,16 +75,17 @@ trait AlmValidationFunctions {
       case exn: Exception => launderException(exn).withMessage(createMessage(exn)).failure
     }
   }
-  
+
+  /** Abort a workflow with the given Problem if the value evaluated to false */
   def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
-    if(cond) ().success else problem.failure[Unit]
-  
+    if (cond) ().success else problem.failure[Unit]
+
   def noneIsNoSuchElement[T](v: Option[T]): AlmValidation[T] =
     v match {
       case Some(that) => that.success
-      case None => MandatoryDataProblem("A value was required but None was supplied.").failure[T]
+      case None => NoSuchElementProblem("A value was required but None was supplied.").failure[T]
     }
-  
+
   def noneIsNotFound[T](v: Option[T]): AlmValidation[T] =
     v match {
       case Some(v) => v.success
@@ -90,18 +97,18 @@ trait AlmValidationFunctions {
       case Some(v) => v.success
       case None => MandatoryDataProblem("A value was expected but there was None").failure
     }
-  
-  def getFromMap[K,V](key: K, map: Map[K,V]): AlmValidation[V] = {
+
+  def getFromMap[K, V](key: K, map: Map[K, V]): AlmValidation[V] = {
     map.get(key) match {
       case Some(v) => v.success
-      case None => NoSuchElementProblem("Could not find a value for key '%s'".format(key)).failure
+      case None => NoSuchElementProblem(s"""Could not find a value for key "$key".""").failure
     }
   }
-  
-  def tryApply[K,V](x: K, f: K => Option[V]): AlmValidation[V] = {
-    f(x) match {
+
+  def tryApply[K, V](key: K, f: K => Option[V]): AlmValidation[V] = {
+    f(key) match {
       case Some(v) => v.success
-      case None => NoSuchElementProblem("Could not find a value for '%s'".format(x)).failure
+      case None => NoSuchElementProblem(s"""Could not find a value for key "$key".""").failure
     }
   }
 }

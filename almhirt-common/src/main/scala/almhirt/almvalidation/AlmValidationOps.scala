@@ -99,23 +99,20 @@ trait AlmValidationOps4[T] extends Ops[Validation[String, T]] {
 }
 
 trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
-  def onFailure(sideEffect: P => Unit): Unit =
+  def failureEffect(sideEffect: P => Unit): Unit =
     self fold (sideEffect, _ => ())
 
-  def onSuccess(sideEffect: T => Unit): Unit =
+  def successEffect(sideEffect: T => Unit): Unit =
     self fold (_ => (), sideEffect)
 
-  def onResult(failEffect: P => Unit, sucessEffect: T => Unit): Unit =
+  def effect(failEffect: P => Unit, sucessEffect: T => Unit): Unit =
     self fold (failEffect, sucessEffect)
 
   def withFailEffect(failEffect: P => Unit): Validation[P, T] =
     self fold (p => { failEffect(p); self }, _ => self)
 
   def recover(v: => T): Validation[P, T] =
-    self
-      .fold(
-        prob => v.success[P],
-        _ => self)
+    self.fold(prob => v.success[P], _ => self)
 
   /** Never use in production code! */
   def forceResult(): T =
@@ -128,33 +125,37 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   /**
    *  Escalate a problem.
    *  Call if you need a result and you don't no how to recover from a failure.
-   *  A failure will throw an "EscalatedProblemException" exception.
+   *  A failure will throw an [[almhirt.common.EscalatedProblemException]] exception.
    */
   def resultOrEscalate(): T =
     self fold (prob => throw new EscalatedProblemException(prob), v => v)
 
+  /** Returns a problem in a Some */
   def toProblemOption(): Option[Problem] =
     self fold (prob => Some(prob), _ => None)
 }
 
 trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
+  /** If the result is None return a  NoSuchElementProblem */
   def >!(x: T): AlmValidation[U] =
     self(x).map(_.success).getOrElse(NoSuchElementProblem(s"Key not found: ${x.toString}".format(x)).failure)
 }
 
 trait AlmValidationOps6A[A, B] extends Ops[Map[A, B]] {
-  def >!(key: A): AlmValidation[B] =
-    if (self.contains(key))
-      self(key).success
-    else
-      NoSuchElementProblem(s"The map does not contain a value for key ${key.toString}").failure
+  /** Get the value from the map or contain a NoSuchElementProblem */
+  def getV(key: A): AlmValidation[B] = funs.getFromMap(key, self)
+  
+  /** Get the value from the map or contain a NoSuchElementProblem */
+  def >!(key: A): AlmValidation[B] = funs.getFromMap(key, self)
 }
 
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
   def mandatory(): AlmValidation[T] =
     funs.argumentIsMandatory(self)
+    
   def noneIsNotFound(): AlmValidation[T] =
     funs.noneIsNotFound(self)
+    
   def noneIsNoSuchElement(): AlmValidation[T] =
     funs.noneIsNoSuchElement(self)
 }
@@ -186,19 +187,34 @@ trait AlmValidationOps11[T] extends Ops[Either[Throwable, T]] {
     self fold (exn => ExceptionCaughtProblem(exn).failure[T], _.success)
 }
 
-trait AlmValidationOps12[R] extends Ops[List[AlmValidation[R]]] {
+trait AlmValidationOps12A[R] extends Ops[List[AlmValidation[R]]] {
   import almhirt.syntax.problem._
   import almhirt.syntax.almvalidation._
-  def aggregateProblems(msg: String): Validation[AggregateProblem, List[R]] = {
+  
+  /** Aggregates all Problems into a single AggregateProblem or contains the results  */
+  def aggregateProblems: Validation[AggregateProblem, List[R]] = {
     self.partition(_.isSuccess) match {
-      case (succs, Nil) => succs.flatMap(_.toOption).toList.success
+      case (succs, Nil) => succs.flatMap(_.toOption).success
       case (_, probs) =>
         val problems = probs.flatMap(_.toProblemOption)
         (NonEmptyList(problems.head, problems.tail: _*).aggregate).failure
     }
   }
+}
 
-  def aggregateProblems(): Validation[AggregateProblem, List[R]] = aggregateProblems("One or more problems occured. See problems.")
+trait AlmValidationOps12B[R] extends Ops[Vector[AlmValidation[R]]] {
+  import almhirt.syntax.problem._
+  import almhirt.syntax.almvalidation._
+  
+  /** Aggregates all Problems into a single AggregateProblem or contains the results  */
+  def aggregateProblems: Validation[AggregateProblem, Vector[R]] = {
+    self.partition(_.isSuccess) match {
+      case (succs, Vector()) => succs.flatMap(_.toOption).success
+      case (_, probs) =>
+        val problems = probs.flatMap(_.toProblemOption)
+        (NonEmptyList(problems.head, problems.tail: _*).aggregate).failure
+    }
+  }
 }
 
 trait AlmValidationOps13 extends Ops[Any] {
@@ -206,10 +222,25 @@ trait AlmValidationOps13 extends Ops[Any] {
 }
 
 trait AlmValidationOps14 extends Ops[AlmValidation[Boolean]] {
-  def isExplicitlyTrue = self fold (_ => false, x => true == x)
-  def isExplicitlyFalse = self fold (_ => false, x => false == x)
-  def isFalseOrFailure = self fold (_ => true, x => false == x)
+  /** Does this Boolean validation a value that equals true ? */
+  def explicitlyTrue = self fold (_ => false, x => true == x)
+  
+  /** Does this Boolean validation a value that equals false ? */
+  def explicitlyFalse = self fold (_ => false, x => false == x)
+  
+  /** Does this Boolean validation a value that equals false or is a failure ? */
+  def falseOrFailure = self fold (_ => true, x => false == x)
 }
+
+trait AlmValidationOps15[T] extends Ops[scala.util.Try[T]] {
+  def toValidation(): AlmValidation[T] =
+    self match {
+    case scala.util.Success(x) => x.success
+    case scala.util.Failure(exn) => ExceptionCaughtProblem(exn).failure[T]
+  }
+}
+
+
 
 trait ToAlmValidationOps {
   implicit def FromStringToAlmValidationOps0(a: String): AlmValidationOps0 = new AlmValidationOps0 { def self = a }
@@ -221,11 +252,12 @@ trait ToAlmValidationOps {
   implicit def FromFunOptToAlmValidationOps6[T, U](a: T => Option[U]): AlmValidationOps6[T, U] = new AlmValidationOps6[T, U] { def self = a }
   implicit def FromFunOptToAlmValidationOps6A[A, B](a: Map[A, B]): AlmValidationOps6A[A, B] = new AlmValidationOps6A[A, B] { def self = a }
   implicit def FromOptionTOAlmAlmValidationOps7[T](a: Option[T]): AlmValidationOps7[T] = new AlmValidationOps7[T] { def self = a }
-  //  implicit def FromBadDataProblemValidationToAlmValidationOps8[T](a: AlmValidationSBD[T]): AlmValidationOps8[T] = new AlmValidationOps8[T] { def self = a }
   implicit def FromAlmValidationToAlmValidationOps9[T](a: AlmValidation[T]): AlmValidationOps9[T] = new AlmValidationOps9[T] { def self = a }
   implicit def FromValidationToAlmValidationOps10[T](a: Validation[Throwable, T]): AlmValidationOps10[T] = new AlmValidationOps10[T] { def self = a }
   implicit def FromEitherThrowableToAlmValidationOps11[T](a: Either[Throwable, T]): AlmValidationOps11[T] = new AlmValidationOps11[T] { def self = a }
-  implicit def FromListValidationToAlmValidationOps12[R](a: List[AlmValidation[R]]): AlmValidationOps12[R] = new AlmValidationOps12[R] { def self = a }
+  implicit def FromListValidationToAlmValidationOps12A[R](a: List[AlmValidation[R]]): AlmValidationOps12A[R] = new AlmValidationOps12A[R] { def self = a }
+  implicit def FromListValidationToAlmValidationOps12B[R](a: Vector[AlmValidation[R]]): AlmValidationOps12B[R] = new AlmValidationOps12B[R] { def self = a }
   implicit def FromAnyToAlmValidationOps13(a: Any): AlmValidationOps13 = new AlmValidationOps13 { def self = a }
   implicit def FromAnyToAlmValidationOps14(a: AlmValidation[Boolean]): AlmValidationOps14 = new AlmValidationOps14 { def self = a }
+  implicit def FromAnyToAlmValidationOps15[T](a: scala.util.Try[T]): AlmValidationOps15[T] = new AlmValidationOps15[T] { def self = a }
 }
