@@ -7,8 +7,8 @@ The API isn't well documented yet.
 
 ## What is Almhirt?
 
-Almhirt aims to be an application framework with a focus on CQRS but it doesn't force one to use the event sourcing part.
-What Almhirt forces to do is using commands and events.
+Almhirt aims to be an application framework with a focus on CQRS but it doesn't force one to use event sourcing.
+What Almhirt forces is using commands and events.
 It's goal is to help building immutable domain models, avoid exceptional code paths and using a message driven design.
 
 ## What's the motivation?
