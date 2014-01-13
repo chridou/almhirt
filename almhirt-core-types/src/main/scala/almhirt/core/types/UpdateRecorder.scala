@@ -76,8 +76,8 @@ sealed trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
       succ => {
         val nextAr = f(succ)
         val ar =
-          if (nextAr.id != succ.id) UnspecifiedProblem(s"You may not change the AR during a map operation. Original id is '${succ.id.toString()}', you returned an AR with id '${nextAr.id.toString()}'").withArg("AggregateRootId", succ.id).failure
-          else if (nextAr.version != succ.version) UnspecifiedProblem(s"You may not change the AR's version during a map operation. Original version is '${succ.version.toString()}', you returned an AR with version '${nextAr.version.toString()}'").withArg("AggregateRootId", succ.id).failure
+          if (nextAr.id != succ.id) UnspecifiedProblem(s"Map failed in UpdateRecorder: You may not change the AR during a map operation. Original id is '${succ.id.toString()}', you returned an AR with id '${nextAr.id.toString()}'").withArg("AggregateRootId", succ.id).failure
+          else if (nextAr.version != succ.version) UnspecifiedProblem(s"Map failed in UpdateRecorder: You may not change the AR's version during a map operation. Original version is '${succ.version.toString()}', you returned an AR with version '${nextAr.version.toString()}'").withArg("AggregateRootId", succ.id).failure
           else nextAr.success
         UpdateRecorder[AAR, EEvent](ar, events, targetVersion)
       })
@@ -98,10 +98,10 @@ sealed trait UpdateRecorder[+AR <: AggregateRoot[_, _], +Event <: DomainEvent] {
           UpdateRecorder[AAR, EEvent](prob.failure, newEvents, newTargetVersion),
         (newAr, newEvents, newTargetVersion) =>
           if (newAr.id != currAr.id) {
-            val prob = UnspecifiedProblem(s"FlatMap failed. You may not change the AR during a flatMap operation. Original id is '${currAr.id.toString()}', you returned an AR with id '${newAr.id.toString()}'").withArg("AggregateRootId", currAr.id)
+            val prob = UnspecifiedProblem(s"FlatMap failed in UpdateRecorder: You may not change the AR during a flatMap operation. Original id is '${currAr.id.toString()}', you returned an AR with id '${newAr.id.toString()}'").withArg("AggregateRootId", currAr.id)
             UpdateRecorder[AAR, EEvent](prob.failure, events, targetVersion)
           } else if (requiredTargetVersionOnNextEvent != newTargetVersion) {
-            val prob = UnspecifiedProblem(s"FlatMap failed. The computed UpdateRecorder targets version $newTargetVersion but the current UpdateRecorder must be targetted at version $requiredTargetVersionOnNextEvent.").withArg("AggregateRootId", currAr.id)
+            val prob = UnspecifiedProblem(s"FlatMap failed in UpdateRecorder: The computed UpdateRecorder targets version $newTargetVersion but the current UpdateRecorder must be targetted at version $requiredTargetVersionOnNextEvent.").withArg("AggregateRootId", currAr.id)
             UpdateRecorder[AAR, EEvent](prob.failure, events, targetVersion)
           } else
             UpdateRecorder[AAR, EEvent](newAr.success, events ++ newEvents , targetVersion)))
