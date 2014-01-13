@@ -108,9 +108,6 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   def effect(failEffect: P => Unit, sucessEffect: T => Unit): Unit =
     self fold (failEffect, sucessEffect)
 
-  def withFailEffect(failEffect: P => Unit): Validation[P, T] =
-    self fold (p => { failEffect(p); self }, _ => self)
-
   def recover(v: => T): Validation[P, T] =
     self.fold(prob => v.success[P], _ => self)
 
