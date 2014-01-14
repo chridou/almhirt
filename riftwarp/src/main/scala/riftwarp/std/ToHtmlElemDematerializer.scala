@@ -72,10 +72,10 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   }
 
   protected override def foldTuple2Reprs(tuple: (XmlElem, XmlElem)): XmlElem =
-    <span>{ s"(${tuple._1};${tuple._2})" }</span>
+    <span>({tuple._1};{tuple._2})</span>
 
   protected override def foldTuple3Reprs(tuple: (XmlElem, XmlElem, XmlElem)): XmlElem =
-    <span>{ s"(${tuple._1};${tuple._2};${tuple._3})" }</span>
+    <span>({tuple._1};{tuple._2};{tuple._3})</span>
 
   protected override def foldAssocRepr(assoc: Traversable[(XmlElem, XmlElem)]): XmlElem = {
     val inner = assoc.map(x => <tr><td valign="top">{ x._1 }</td><td valign="top">=</td><td>{ x._2 }</td></tr>)
