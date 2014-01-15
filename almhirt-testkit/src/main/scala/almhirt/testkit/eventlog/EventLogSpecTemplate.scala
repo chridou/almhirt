@@ -63,7 +63,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
   }
   
   describe("An event log") {
-    it("""should accept an event and return a QueriedEvent(Some(event)) when queried with GetEvent""") {
+    it("""should accept an event and return a QueriedEvent(Some(event)) when queried with GetEvent""", DbTest) {
       useEventLog { eventlog =>
       	val event = TestEvent1(EventHeader())
         eventlog ! LogEvent(event)
@@ -72,14 +72,14 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         res should equal(QueriedEvent(event.eventId, Some(event)))
       }
     }
-    it("""should return a QueriedEvent(None) when queried with GetEvent for a non existing event""") {
+    it("""should return a QueriedEvent(None) when queried with GetEvent for a non existing event""", DbTest) {
       useEventLog { eventlog =>
       	val event = TestEvent1(EventHeader())
         val res = (eventlog ? GetEvent(event.eventId))(defaultDuration).successfulAlmFuture[EventLogMessage].awaitResultOrEscalate(defaultDuration)
         res should equal(QueriedEvent(event.eventId, None))
       }
     }
-    it("""should accept an event and give it back as the only event when queried with GetAllEvents""") {
+    it("""should accept an event and give it back as the only event when queried with GetAllEvents""", DbTest) {
       useEventLog { eventlog =>
       	val event = TestEvent1(EventHeader())
         eventlog ! LogEvent(event)
@@ -88,7 +88,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         res should equal(FetchedEventsBatch(Vector(event)))
       }
     }
-    it("""should accept many events and return the same number of events logged when queired with GetAllEvents""") {
+    it("""should accept many events and return the same number of events logged when queired with GetAllEvents""", DbTest) {
       useEventLog { eventlog =>
         val baseTime = LocalDateTime.now()
       	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(theAlmhirt.getUuid, baseTime.plusMillis(n-1)), n)
@@ -98,7 +98,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         res.events.size should equal(events.size)
       }
     }
-    it("""should accept many events and return the same timestamps as the logged events when queried with GetAllEvents""") {
+    it("""should accept many events and return the same timestamps as the logged events when queried with GetAllEvents""", DbTest) {
       useEventLog { eventlog =>
         val baseTime = LocalDateTime.now()
       	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(theAlmhirt.getUuid, baseTime.plusMillis(n-1)), n)
@@ -108,7 +108,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         res.events.map(_.timestamp).toSet should equal(events.map(_.timestamp).toSet)
       }
     }
-    it("""should accept many events and return all events in the correct order when queried with GetAllEvents""") {
+    it("""should accept many events and return all events in the correct order when queried with GetAllEvents""", DbTest) {
       useEventLog { eventlog =>
         val baseTime = LocalDateTime.now()
       	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(theAlmhirt.getUuid, baseTime.plusMillis(n-1)), n)
@@ -118,7 +118,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         res should equal(FetchedEventsBatch(events))
       }
     }
-    it("""should accept many events and return a QueriedEvent(Some(event)) when queried with GetEvent""") {
+    it("""should accept many events and return a QueriedEvent(Some(event)) when queried with GetEvent""", DbTest) {
       useEventLog { eventlog =>
       	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(), n)
         events foreach(eventlog ! LogEvent(_))
@@ -127,7 +127,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         res should equal(QueriedEvent(events(10).eventId, Some(events(10))))
       }
     }
-    it("""should accept many events and return a QueriedEvent(None) when queried with GetEvent for a non existing event""") {
+    it("""should accept many events and return a QueriedEvent(None) when queried with GetEvent for a non existing event""", DbTest) {
       useEventLog { eventlog =>
       	val events = for(n <- 1 to 100) yield TestEvent2(EventHeader(), n)
         events.init.foreach(eventlog ! LogEvent(_))
@@ -136,7 +136,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
         res should equal(QueriedEvent(events.last.eventId, None))
       }
     }
-    it("""should accept many events ordered by their timestamps in reverse order and still return all events in the correct order by timestamp when queried with GetAllEvents""") {
+    it("""should accept many events ordered by their timestamps in reverse order and still return all events in the correct order by timestamp when queried with GetAllEvents""", DbTest) {
       useEventLog { eventlog =>
       	val events = createEvents(100, refTimestamp, 1)
         events.reverse foreach(eventlog ! LogEvent(_))
@@ -148,7 +148,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
     
     // GetEventsFrom
 
-    it("""should return the correct number of events when queried with GetEventsFrom(x < minTimestamp)""") {
+    it("""should return the correct number of events when queried with GetEventsFrom(x < minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -158,7 +158,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should return the all events when queried with GetEventsFrom(x < minTimestamp)""") {
+    it("""should return the all events when queried with GetEventsFrom(x < minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -168,7 +168,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     
-    it("""should return the correct events when queried with GetEventsFrom(x == minTimestamp)""") {
+    it("""should return the correct events when queried with GetEventsFrom(x == minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -178,7 +178,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     
-    it("""should return the correct events when queried with GetEventsFrom(x > minTimestamp)""") {
+    it("""should return the correct events when queried with GetEventsFrom(x > minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -188,7 +188,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
  
-    it("""should return the last event when queried with GetEventsFrom(x == maxTimestamp)""") {
+    it("""should return the last event when queried with GetEventsFrom(x == maxTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -198,7 +198,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should return no event when queried with GetEventsFrom(x > maxTimestamp)""") {
+    it("""should return no event when queried with GetEventsFrom(x > maxTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -210,7 +210,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     // GetEventsAfter
 
-    it("""should return the all events when queried with GetEventsAfter(x < minTimestamp)""") {
+    it("""should return the all events when queried with GetEventsAfter(x < minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -220,7 +220,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should return the all events except the first when queried with GetEventsAfter(x == minTimestamp)""") {
+    it("""should return the all events except the first when queried with GetEventsAfter(x == minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -230,7 +230,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     
-    it("""should return the correct events when queried with GetEventsAfter(x > minTimestamp)""") {
+    it("""should return the correct events when queried with GetEventsAfter(x > minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -240,7 +240,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
  
-    it("""should return no event when queried with GetEventsAfter(x == maxTimestamp)""") {
+    it("""should return no event when queried with GetEventsAfter(x == maxTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -250,7 +250,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should return no event when queried with GetEventsAfter(x > maxTimestamp)""") {
+    it("""should return no event when queried with GetEventsAfter(x > maxTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -262,7 +262,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     // GetEventsTo
 
-    it("""should no event when queried with GetEventsTo(x < minTimestamp)""") {
+    it("""should no event when queried with GetEventsTo(x < minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -272,7 +272,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should return the first event when queried with GetEventsTo(x == minTimestamp)""") {
+    it("""should return the first event when queried with GetEventsTo(x == minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -282,7 +282,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     
-    it("""should return the correct events when queried with GetEventsTo(x > minTimestamp)""") {
+    it("""should return the correct events when queried with GetEventsTo(x > minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -292,7 +292,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
  
-    it("""should return all events when queried with GetEventsTo(x == maxTimestamp)""") {
+    it("""should return all events when queried with GetEventsTo(x == maxTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -302,7 +302,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should return all events when queried with GetEventsTo(x > maxTimestamp)""") {
+    it("""should return all events when queried with GetEventsTo(x > maxTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -314,7 +314,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
 
     // GetEventsUntil
 
-    it("""should no event when queried with GetEventsUntil(x < minTimestamp)""") {
+    it("""should no event when queried with GetEventsUntil(x < minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -324,7 +324,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should return no event when queried with GetEventsUntil(x == minTimestamp)""") {
+    it("""should return no event when queried with GetEventsUntil(x == minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -334,7 +334,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     
-    it("""should return the correct events when queried with GetEventsUntil(x > minTimestamp)""") {
+    it("""should return the correct events when queried with GetEventsUntil(x > minTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -344,7 +344,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
  
-    it("""should return all events except the last when queried with GetEventsUntil(x == maxTimestamp)""") {
+    it("""should return all events except the last when queried with GetEventsUntil(x == maxTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
@@ -354,7 +354,7 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
 
-    it("""should return all events when queried with GetEventsUntil(x > maxTimestamp)""") {
+    it("""should return all events when queried with GetEventsUntil(x > maxTimestamp)""", DbTest) {
       useEventLog { eventlog =>
       	val events = defaultEvents12
         events foreach(eventlog ! LogEvent(_))
