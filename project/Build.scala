@@ -187,6 +187,7 @@ trait CoreTestingBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
+          libraryDependencies += play2_iteratees,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
