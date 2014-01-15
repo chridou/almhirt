@@ -55,11 +55,11 @@ trait UnmarshallerFactory[T] { self =>
               val channel = extractChannel(contentType.mediaType)
               if (contentType.mediaType.binary && channel != "json") {
                 deserializer.deserialize(channel)(BinaryWire(httpData.toByteArray)).fold(
-                  fail => Left(MalformedContent(fail.message, None)),
+                  fail => Left(MalformedContent(fail.toString, None)),
                   succ => Right(succ))
               } else {
                 deserializer.deserialize(channel)(TextWire(httpData.asString)).fold(
-                  fail => Left(MalformedContent(fail.message, None)),
+                  fail => Left(MalformedContent(fail.toString, None)),
                   succ => Right(succ))
               }
             }
