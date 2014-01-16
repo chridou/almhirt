@@ -36,13 +36,12 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   protected var numFailedReceived = 0L
 
   protected var numOldMessages = 0L
-  
+
   private var deadlinesBySubscriptions = Map.empty[ActorRef, Deadline]
   private var trackingIdsBySubscription = Map.empty[ActorRef, String]
-  
+
   private case object CleanUp
   private case object CheckSubscriptions
-
 
   protected def currentStateHandler(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, Set[ActorRef]]): Receive = {
     case ExecutionStateChanged(header, incomingExecutionState) =>
@@ -311,7 +310,8 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
         log.info(s"Nothing to clean up. Current state is ${tracked.size} items tracked and ${subscriptions.size} subscriptions.")
         (tracked, subscriptions)
       }
-    actor.context.system.scheduler.scheduleOnce(cleanUpInterval)(requestCleanUp())
+    if (!actor.context.system.isTerminated)
+      actor.context.system.scheduler.scheduleOnce(cleanUpInterval)(requestCleanUp())
     res
   }
 

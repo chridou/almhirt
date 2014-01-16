@@ -16,6 +16,7 @@ import org.joda.time.LocalDateTime
 abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesEventLog =>
 
   import almhirt.eventlog.EventLog._  

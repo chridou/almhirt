@@ -19,6 +19,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesDomainEventLog =>
 
   implicit def execContext = theAlmhirt.futuresExecutor

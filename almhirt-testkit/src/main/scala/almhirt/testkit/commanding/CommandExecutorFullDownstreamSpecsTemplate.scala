@@ -23,6 +23,7 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
   with HasAlmhirt
   with CreatesCellSourceForTestAggregateRoots
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesDomainEventLog =>
 
   def createRepositoryRegistry(testId: Int, cellSource: ActorRef): (AggregateRootRepositoryRegistry, () => Unit) = {

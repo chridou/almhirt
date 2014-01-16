@@ -20,6 +20,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesExecutionTracker =>
 
   import ExecutionStateTracker._  

@@ -9,5 +9,5 @@ class CommandEndpointSpecs
   extends CommandEndpointSpecsTemplate(ActorSystem("CommandEndpointSpecs", TestConfigs.default))
   with AlmhirtFromAkkaTestKitWithoutConfiguration
   with CreatesDefaultCommandEndpoint
-  with CreatesCreatesInMemoryExecutionTracker {
+  with CreatesInMemoryExecutionTracker {
 }

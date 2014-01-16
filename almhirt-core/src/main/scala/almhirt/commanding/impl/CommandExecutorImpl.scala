@@ -20,13 +20,13 @@ class CommandExecutorImpl(
 
   def receive: Receive = receiveCommandExecutorMessage
 
-  override def preRestart(reason: Throwable, messgae: Option[Any]) {
-    super.preRestart(reason, messgae)
+  override def preRestart(reason: Throwable, message: Option[Any]) {
+    super.preRestart(reason, message)
     log.warning("""Command executor is going to restart!""")
   }
 
   override def postStop {
     super.postStop()
-    log.info(s"Commands received: $commandsReceived, sequenced commands received: $sequencedCommandsReceived, command sequences received: $sequencesReceived, commandsFailed: $commandsFailed.")
+    log.info(s"Stopped. Commands received: $commandsReceived, sequenced commands received: $sequencedCommandsReceived, command sequences received: $sequencesReceived, commandsFailed: $commandsFailed.")
   }
 }

@@ -17,6 +17,7 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
   with CreatesCellSourceForTestAggregateRoots
   with AggregateRootCellSourceSpecsOpsWithEventLog
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesCellSource with CreatesDomainEventLog =>
   import almhirt.components.AggregateRootCellSource._
   import almhirt.domain.DomainMessages._

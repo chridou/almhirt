@@ -11,7 +11,7 @@ trait CreatesExecutionTracker {
   def createExecutionTracker(testId: Int, publishTo: MessagePublisher): (ActorRef, () => Unit)
 }
 
-trait CreatesCreatesInMemoryExecutionTracker extends CreatesExecutionTracker { self: akka.testkit.TestKit with HasAlmhirt =>
+trait CreatesInMemoryExecutionTracker extends CreatesExecutionTracker { self: akka.testkit.TestKit with HasAlmhirt =>
   override def createExecutionTracker(testId: Int): (ActorRef, () => Unit) =
     createExecutionTracker(testId, theAlmhirt.messageBus)
 
