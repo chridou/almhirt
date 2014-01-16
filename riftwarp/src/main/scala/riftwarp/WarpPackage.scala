@@ -24,6 +24,14 @@ sealed trait WarpPrimitive extends WarpPackage { self =>
   def value: Any
 }
 
+object WarpPrimitive {
+  def unapply(what: WarpPackage): Option[Any] =
+    what match {
+    case WarpPrimitive(v) => Some(v)
+    case _ => None
+  }
+}
+
 sealed trait WarpIntegralInteger extends WarpPrimitive
 
 final case class WarpBoolean(override val value: Boolean) extends WarpPrimitive
