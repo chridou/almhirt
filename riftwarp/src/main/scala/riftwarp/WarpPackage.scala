@@ -27,9 +27,9 @@ sealed trait WarpPrimitive extends WarpPackage { self =>
 object WarpPrimitive {
   def unapply(what: WarpPackage): Option[Any] =
     what match {
-    case WarpPrimitive(v) => Some(v)
-    case _ => None
-  }
+      case w: WarpPrimitive => Some(w.value)
+      case _ => None
+    }
 }
 
 sealed trait WarpIntegralInteger extends WarpPrimitive
@@ -102,20 +102,20 @@ object WarpCollection {
     }
 
   implicit class WarpCollectionOps(self: WarpCollection) {
-    
+
     def typedItemPackages[T <: WarpPackage: WarpPackageConverter]: AlmValidation[IndexedSeq[T]] = {
       val conv = implicitly[WarpPackageConverter[T]]
- 
+
       val typedV = self.items.map(conv.convert(_).toAgg)
       typedV.sequence.map(_.toIndexedSeq)
     }
-    
+
     def unpackItems[T: WarpUnpacker](implicit unpackers: WarpUnpackers = WarpUnpackers.empty): AlmValidation[IndexedSeq[T]] = {
       val up = implicitly[WarpUnpacker[T]]
       val typedV = self.items.map(up(_).toAgg)
       typedV.sequence.map(_.toIndexedSeq)
     }
-    
+
     def associative: AlmValidation[WarpAssociativeCollection] =
       self.items.map(item =>
         (item match {
@@ -175,8 +175,8 @@ object WarpAssociativeCollection {
       val cb = implicitly[WarpPackageConverter[U]]
       val typedV = self.items.map {
         case (a, b) =>
-          upA.unpack(a).flatMap(a1 => 
-            cb.convert(b).map((a1,_))).toAgg
+          upA.unpack(a).flatMap(a1 =>
+            cb.convert(b).map((a1, _))).toAgg
       }
       typedV.sequence.map(_.toIndexedSeq)
     }
