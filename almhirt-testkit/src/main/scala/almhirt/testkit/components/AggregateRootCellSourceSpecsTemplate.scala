@@ -25,6 +25,11 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
 
   implicit def execContext = theAlmhirt.futuresExecutor
 
+ override def afterAll() {
+   shutdown
+ }   
+  
+  
   describe("AggregateRootCellSource") {
     it("should return an aggregate root cell for an aggregate root of type A") {
       useCellSourceWithEventLog { (source, eventLog) =>

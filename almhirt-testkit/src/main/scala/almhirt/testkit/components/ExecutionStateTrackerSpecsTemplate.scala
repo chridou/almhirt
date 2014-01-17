@@ -25,6 +25,10 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
 
   import ExecutionStateTracker._  
 
+ override def afterAll() {
+   shutdown
+ }   
+  
   def sleepMillisAfterFireAndForget: Option[Int]
 
   protected def waitSomeTime() {

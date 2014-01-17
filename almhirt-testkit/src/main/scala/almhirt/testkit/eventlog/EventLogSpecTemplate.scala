@@ -23,6 +23,10 @@ abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
   import almhirt.eventlog.EventLog.EventLogMessage  
 
   implicit def execContext = theAlmhirt.futuresExecutor
+
+ override def afterAll() {
+   shutdown
+ }   
   
   def sleepMillisAfterWrite: Option[Int]
   

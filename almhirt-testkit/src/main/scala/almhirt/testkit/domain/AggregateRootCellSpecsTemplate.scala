@@ -22,6 +22,10 @@ abstract class AggregateRootCellSpecsTemplate(theActorSystem: ActorSystem)
   import almhirt.domain.AggregateRootCell._
   import almhirt.domaineventlog.DomainEventLog._
 
+ override def afterAll() {
+   shutdown
+ }   
+  
   lazy val managedAggregateRootId = theAlmhirt.getUuid
 
   def createCellForAR1(testId: Int, managedAggregateRootId: java.util.UUID, eventLog: ActorRef): ActorRef

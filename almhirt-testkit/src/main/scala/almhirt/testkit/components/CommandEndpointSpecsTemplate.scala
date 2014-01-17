@@ -19,7 +19,11 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
   with Matchers { self: CreatesCommandEndpoint =>
 
   implicit def execContext = theAlmhirt.futuresExecutor
-    
+
+ override def afterAll() {
+   shutdown
+ }   
+  
   val fixedUniqueString = "x"
   def fixedStringGen() = fixedUniqueString
   
