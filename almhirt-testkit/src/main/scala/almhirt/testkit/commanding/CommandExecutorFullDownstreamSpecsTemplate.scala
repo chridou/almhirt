@@ -23,8 +23,13 @@ abstract class CommandExecutorFullDownstreamSpecsTemplate(theActorSystem: ActorS
   with HasAlmhirt
   with CreatesCellSourceForTestAggregateRoots
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesDomainEventLog =>
 
+ override def afterAll() {
+   shutdown
+ }   
+    
   def createRepositoryRegistry(testId: Int, cellSource: ActorRef): (AggregateRootRepositoryRegistry, () => Unit) = {
     val repo1 = this.system.actorOf(Props(new AggregateRootRepositoryImpl[AR1, AR1Event](theAlmhirt, cellSource, defaultDuration, defaultDuration)), "AR1Repo_" + testId.toString)
     val repo2 = this.system.actorOf(Props(new AggregateRootRepositoryImpl[AR2, AR2Event](theAlmhirt, cellSource, defaultDuration, defaultDuration)), "AR2Repo_" + testId.toString)

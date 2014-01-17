@@ -20,10 +20,15 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with HasAlmhirt
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesExecutionTracker =>
 
   import ExecutionStateTracker._  
 
+ override def afterAll() {
+   shutdown
+ }   
+  
   def sleepMillisAfterFireAndForget: Option[Int]
 
   protected def waitSomeTime() {

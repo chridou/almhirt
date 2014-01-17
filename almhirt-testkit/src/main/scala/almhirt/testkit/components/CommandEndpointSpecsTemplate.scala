@@ -15,10 +15,15 @@ import almhirt.components.ExecutionStateTracker._
 abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesCommandEndpoint =>
 
   implicit def execContext = theAlmhirt.futuresExecutor
-    
+
+ override def afterAll() {
+   shutdown
+ }   
+  
   val fixedUniqueString = "x"
   def fixedStringGen() = fixedUniqueString
   

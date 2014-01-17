@@ -7,9 +7,8 @@ import almhirt.testkit.components.ExecutionStateTrackerSpecsTemplate
 class ExecutionStateTrackerSpec
   extends ExecutionStateTrackerSpecsTemplate(ActorSystem("ExecutionStateTrackerSpec", TestConfigs.default))
   with AlmhirtFromAkkaTestKitWithoutConfiguration
-  with CreatesCreatesInMemoryExecutionTracker {
+  with CreatesInMemoryExecutionTracker {
   
-  //override val defaultDuration = scala.concurrent.duration.FiniteDuration(120, "s")
   override val sleepMillisAfterFireAndForget = Some(20)
 
 }

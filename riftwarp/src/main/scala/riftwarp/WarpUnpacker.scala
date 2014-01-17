@@ -22,10 +22,13 @@ trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] =>
     std.funs.tryGetWarpDescriptor(from) match {
       case Some(wd) =>
         (divert >! wd).fold(
-          fail => NoSuchElementProblem(s"Could not find a Unpacker for ${wd.toString}").failure,
+          fail => {
+            val fromStr = from.toString.take(100)
+            NoSuchElementProblem(s"""[DivertingWarpUnpacker]: Tried to unpack a $fromStr.  Could not find a Unpacker for the found descriptor $wd""").failure
+          },
           unpacker => unpacker.unpack(from))
       case None =>
-        UnspecifiedProblem(s""""${from.toString()} has no Warpdescriptor nor one can be derived!""").failure
+        UnspecifiedProblem(s"""[DivertingWarpUnpacker]:"${from.toString()} has no WarpDescriptor nor one can be derived!""").failure
     }
 }
 

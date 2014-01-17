@@ -16,12 +16,17 @@ import org.joda.time.LocalDateTime
 abstract class EventLogSpecTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesEventLog =>
 
   import almhirt.eventlog.EventLog._  
   import almhirt.eventlog.EventLog.EventLogMessage  
 
   implicit def execContext = theAlmhirt.futuresExecutor
+
+ override def afterAll() {
+   shutdown
+ }   
   
   def sleepMillisAfterWrite: Option[Int]
   

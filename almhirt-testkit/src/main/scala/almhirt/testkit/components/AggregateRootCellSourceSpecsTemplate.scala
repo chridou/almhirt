@@ -17,6 +17,7 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
   with CreatesCellSourceForTestAggregateRoots
   with AggregateRootCellSourceSpecsOpsWithEventLog
   with FunSpecLike
+  with BeforeAndAfterAll
   with Matchers { self: CreatesCellSource with CreatesDomainEventLog =>
   import almhirt.components.AggregateRootCellSource._
   import almhirt.domain.DomainMessages._
@@ -24,6 +25,11 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
 
   implicit def execContext = theAlmhirt.futuresExecutor
 
+ override def afterAll() {
+   shutdown
+ }   
+  
+  
   describe("AggregateRootCellSource") {
     it("should return an aggregate root cell for an aggregate root of type A") {
       useCellSourceWithEventLog { (source, eventLog) =>

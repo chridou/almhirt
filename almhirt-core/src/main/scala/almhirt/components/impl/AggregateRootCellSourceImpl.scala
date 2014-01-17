@@ -83,6 +83,7 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
 
   override def postStop() {
     val numPendingRequest = pendingRequests.map(_._2).flatten.size
+    log.info("Aggregate root cell source stopped.")
     log.info(s"""${stats.toNiceString}\n\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
   }
 
