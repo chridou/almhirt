@@ -72,6 +72,13 @@ object AlmMediaTypes extends AlmMediaTypesRegistry {
       .addFileExtensions("jpeg", "jpg")
       .registered
 
+  val `image/png` =
+    AlmMediaType.binaryImage("png")
+      .makeIanaRegistered
+      .makeCompressible
+      .addFileExtensions("png")
+      .registered
+      
   val `image/svg+xml` =
     AlmMediaType.structuredImageTextual("svg", "xml")
       .makeIanaRegistered
