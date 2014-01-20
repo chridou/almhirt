@@ -58,6 +58,17 @@ object AlmMediaTypes extends AlmMediaTypesRegistry {
       .makeIanaRegistered
       .addFileExtensions("pdf")
       .registered
+
+  val `application/zip` =
+    AlmMediaType.applicationBinary("zip")
+      .makeIanaRegistered
+      .addFileExtensions("zip")
+      .registered
+
+  val `application/octet-stream` =
+    AlmMediaType.applicationBinary("octet-stream")
+      .makeIanaRegistered
+      .registered
       
   val `application/x-msgpack` =
     AlmMediaType.applicationBinary("x-msgpack")
