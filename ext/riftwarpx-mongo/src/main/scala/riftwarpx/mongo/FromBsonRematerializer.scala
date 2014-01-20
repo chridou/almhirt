@@ -19,6 +19,7 @@ object FromBsonRematerializer extends Rematerializer[BSONValue] {
     what match {
       case obj: BSONDocument => extractObject(obj, path)
       case arr: BSONArray => extractCollection(arr, path)
+      case BSONBinary(value, Subtype.GenericBinarySubtype) => WarpBytes(value.readArray(value.size)).success
       case other => extractPrimitive(other, path)
     }
 
