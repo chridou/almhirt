@@ -69,19 +69,21 @@ class MongoDomainEventLog(
   }
 
   def documentToDomainEvent(document: BSONDocument): AlmValidation[DomainEvent] = {
-    document.get("domainevent") match {
+    (document.get("domainevent") match {
       case Some(d: BSONDocument) =>
         val start = Deadline.now
         val res = deserializeDomainEvent(d)
         statisticsCollector.foreach(_ ! AddDeserializationDuration(start.lap))
         res
-      case Some(x) => 
+      case Some(x) =>
         val msg = s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}"."""
-        log.error(msg)
         MappingProblem(msg).failure
-      case None => 
-        log.error("BSONDocument for payload not found")
+      case None =>
         NoSuchElementProblem("BSONDocument for payload not found").failure
+    }).leftMap { p =>
+      val prob = MappingProblem("Could not deserialize BSONDocument to domain event.", cause = Some(p))
+      log.error(prob.toString)
+      prob
     }
   }
 
@@ -90,15 +92,15 @@ class MongoDomainEventLog(
     val enum = Enumerator(documents: _*)
     collection.bulkInsert(enum, bulk.MaxDocs, bulk.MaxBulkSize)
   }
-  
-//  def insertDocuments(documents: Seq[BSONDocument]): Future[Int] = {
-//    val collection = db(collectionName)
-//    val enumerator = Enumerator(documents: _*)
-//    val iteratee = Iteratee.foldM[BSONDocument, Int](0){case (acc, next) =>
-//      collection.insert(next, GetLastError(awaitJournalCommit = true)).map(_ => acc + 1)
-//    }
-//    enumerator.run(iteratee)
-//  }
+
+  //  def insertDocuments(documents: Seq[BSONDocument]): Future[Int] = {
+  //    val collection = db(collectionName)
+  //    val enumerator = Enumerator(documents: _*)
+  //    val iteratee = Iteratee.foldM[BSONDocument, Int](0){case (acc, next) =>
+  //      collection.insert(next, GetLastError(awaitJournalCommit = true)).map(_ => acc + 1)
+  //    }
+  //    enumerator.run(iteratee)
+  //  }
 
   def commitDomainEvents(domainEvents: Seq[DomainEvent]): AlmFuture[Seq[DomainEvent]] = {
     for {
@@ -166,11 +168,11 @@ class MongoDomainEventLog(
           log.error(exn, "Failed to ensure indexes.")
           this.context.stop(self)
       }
-      
+
     case Initialized =>
       log.info("Initialized")
       context.become(receiveDomainEventLogMsg)
-      
+
     case m: DomainEventLogMessage =>
       log.warning(s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized.""")
       val problem = PersistenceProblem("The event log is not yet initialized")
