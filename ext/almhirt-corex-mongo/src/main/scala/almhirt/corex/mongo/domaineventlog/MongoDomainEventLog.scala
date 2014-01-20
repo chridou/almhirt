@@ -75,8 +75,13 @@ class MongoDomainEventLog(
         val res = deserializeDomainEvent(d)
         statisticsCollector.foreach(_ ! AddDeserializationDuration(start.lap))
         res
-      case Some(x) => MappingProblem(s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
-      case None => NoSuchElementProblem("BSONDocument for payload not found").failure
+      case Some(x) => 
+        val msg = s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}"."""
+        log.error(msg)
+        MappingProblem(msg).failure
+      case None => 
+        log.error("BSONDocument for payload not found")
+        NoSuchElementProblem("BSONDocument for payload not found").failure
     }
   }
 
