@@ -15,14 +15,18 @@
 package almhirt.almvalidation
 
 import scala.language.implicitConversions
-
 import scala.reflect.ClassTag
 import java.util.UUID
 import scalaz.{ Validation, NonEmptyList }
 import scalaz.syntax.Ops
 import scalaz.syntax.validation._
-import org.joda.time.{DateTime, LocalDateTime}
+import org.joda.time.{ DateTime, LocalDateTime }
 import almhirt.common._
+import scala.collection.TraversableLike
+import scala.collection.generic.CanBuildFrom
+
+import scala.language.higherKinds
+import scala.collection.GenTraversableLike
 
 /**
  * Implicits for parsing Strings
@@ -141,7 +145,7 @@ trait AlmValidationOps6[T, U] extends Ops[T => Option[U]] {
 trait AlmValidationOps6A[A, B] extends Ops[Map[A, B]] {
   /** Get the value from the map or contain a NoSuchElementProblem */
   def getV(key: A): AlmValidation[B] = funs.getFromMap(key, self)
-  
+
   /** Get the value from the map or contain a NoSuchElementProblem */
   def >!(key: A): AlmValidation[B] = funs.getFromMap(key, self)
 }
@@ -149,10 +153,10 @@ trait AlmValidationOps6A[A, B] extends Ops[Map[A, B]] {
 trait AlmValidationOps7[T] extends Ops[Option[T]] {
   def mandatory(): AlmValidation[T] =
     funs.argumentIsMandatory(self)
-    
+
   def noneIsNotFound(): AlmValidation[T] =
     funs.noneIsNotFound(self)
-    
+
   def noneIsNoSuchElement(): AlmValidation[T] =
     funs.noneIsNoSuchElement(self)
 }
@@ -184,34 +188,49 @@ trait AlmValidationOps11[T] extends Ops[Either[Throwable, T]] {
     self fold (exn => ExceptionCaughtProblem(exn).failure[T], _.success)
 }
 
-trait AlmValidationOps12A[R] extends Ops[List[AlmValidation[R]]] {
-  import almhirt.syntax.problem._
-  import almhirt.syntax.almvalidation._
-  
-  /** Aggregates all Problems into a single AggregateProblem or contains the results  */
-  def aggregateProblems: Validation[AggregateProblem, List[R]] = {
-    self.partition(_.isSuccess) match {
-      case (succs, Nil) => succs.flatMap(_.toOption).success
-      case (_, probs) =>
-        val problems = probs.flatMap(_.toProblemOption)
-        (NonEmptyList(problems.head, problems.tail: _*).aggregate).failure
-    }
-  }
-}
+//trait AlmValidationOps12A[R] extends Ops[List[AlmValidation[R]]] {
+//  import almhirt.syntax.problem._
+//  import almhirt.syntax.almvalidation._
+//
+//  /** Aggregates all Problems into a single AggregateProblem or contains the results  */
+//  def aggregateProblems: Validation[AggregateProblem, List[R]] = {
+//    self.partition(_.isSuccess) match {
+//      case (succs, Nil) => succs.flatMap(_.toOption).success
+//      case (_, probs) =>
+//        val problems = probs.flatMap(_.toProblemOption)
+//        (NonEmptyList(problems.head, problems.tail: _*).aggregate).failure
+//    }
+//  }
+//}
 
-trait AlmValidationOps12B[R] extends Ops[Vector[AlmValidation[R]]] {
+trait AlmValidationOps12B[R, M[_] <: Traversable[_]] extends Ops[M[AlmValidation[R]]] {
   import almhirt.syntax.problem._
   import almhirt.syntax.almvalidation._
-  
+
   /** Aggregates all Problems into a single AggregateProblem or contains the results  */
-  def aggregateProblems: Validation[AggregateProblem, Vector[R]] = {
-    self.partition(_.isSuccess) match {
-      case (succs, Vector()) => succs.flatMap(_.toOption).success
-      case (_, probs) =>
-        val problems = probs.flatMap(_.toProblemOption)
-        (NonEmptyList(problems.head, problems.tail: _*).aggregate).failure
+  def aggregateProblems(implicit cbf: CanBuildFrom[M[R], R, M[R]]): Validation[AggregateProblem, M[R]] = {
+    val builderR = cbf()
+    val probs = scala.collection.mutable.ListBuffer[Problem]()
+    self.asInstanceOf[Traversable[AlmValidation[R]]].foreach {
+      case scalaz.Success(x) => builderR += x
+      case scalaz.Failure(x) => probs += x
     }
+    if (probs.isEmpty)
+      builderR.result.success
+    else
+      almhirt.problem.AggregateProblem(probs).failure
   }
+
+  def splitValidations(implicit cbfR: CanBuildFrom[M[R], R, M[R]], cbfP: CanBuildFrom[M[Problem], Problem, M[Problem]]): (M[Problem], M[R]) = {
+    val builderR = cbfR()
+    val builderP = cbfP()
+    self.asInstanceOf[Traversable[AlmValidation[R]]].foreach {
+      case scalaz.Success(x) => builderR += x
+      case scalaz.Failure(x) => builderP += x
+    }
+    (builderP.result, builderR.result)
+  }
+
 }
 
 trait AlmValidationOps13 extends Ops[Any] {
@@ -221,10 +240,10 @@ trait AlmValidationOps13 extends Ops[Any] {
 trait AlmValidationOps14 extends Ops[AlmValidation[Boolean]] {
   /** Does this Boolean validation a value that equals true ? */
   def explicitlyTrue = self fold (_ => false, x => true == x)
-  
+
   /** Does this Boolean validation a value that equals false ? */
   def explicitlyFalse = self fold (_ => false, x => false == x)
-  
+
   /** Does this Boolean validation a value that equals false or is a failure ? */
   def falseOrFailure = self fold (_ => true, x => false == x)
 }
@@ -232,12 +251,10 @@ trait AlmValidationOps14 extends Ops[AlmValidation[Boolean]] {
 trait AlmValidationOps15[T] extends Ops[scala.util.Try[T]] {
   def toValidation(): AlmValidation[T] =
     self match {
-    case scala.util.Success(x) => x.success
-    case scala.util.Failure(exn) => ExceptionCaughtProblem(exn).failure[T]
-  }
+      case scala.util.Success(x) => x.success
+      case scala.util.Failure(exn) => ExceptionCaughtProblem(exn).failure[T]
+    }
 }
-
-
 
 trait ToAlmValidationOps {
   implicit def FromStringToAlmValidationOps0(a: String): AlmValidationOps0 = new AlmValidationOps0 { def self = a }
@@ -252,8 +269,8 @@ trait ToAlmValidationOps {
   implicit def FromAlmValidationToAlmValidationOps9[T](a: AlmValidation[T]): AlmValidationOps9[T] = new AlmValidationOps9[T] { def self = a }
   implicit def FromValidationToAlmValidationOps10[T](a: Validation[Throwable, T]): AlmValidationOps10[T] = new AlmValidationOps10[T] { def self = a }
   implicit def FromEitherThrowableToAlmValidationOps11[T](a: Either[Throwable, T]): AlmValidationOps11[T] = new AlmValidationOps11[T] { def self = a }
-  implicit def FromListValidationToAlmValidationOps12A[R](a: List[AlmValidation[R]]): AlmValidationOps12A[R] = new AlmValidationOps12A[R] { def self = a }
-  implicit def FromListValidationToAlmValidationOps12B[R](a: Vector[AlmValidation[R]]): AlmValidationOps12B[R] = new AlmValidationOps12B[R] { def self = a }
+ // implicit def FromListValidationToAlmValidationOps12A[R](a: List[AlmValidation[R]]): AlmValidationOps12A[R] = new AlmValidationOps12A[R] { def self = a }
+  implicit def FromListValidationToAlmValidationOps12B[R, M[_] <: Traversable[_]](a: M[AlmValidation[R]]): AlmValidationOps12B[R, M] = new AlmValidationOps12B[R, M] { def self = a }
   implicit def FromAnyToAlmValidationOps13(a: Any): AlmValidationOps13 = new AlmValidationOps13 { def self = a }
   implicit def FromAnyToAlmValidationOps14(a: AlmValidation[Boolean]): AlmValidationOps14 = new AlmValidationOps14 { def self = a }
   implicit def FromAnyToAlmValidationOps15[T](a: scala.util.Try[T]): AlmValidationOps15[T] = new AlmValidationOps15[T] { def self = a }
