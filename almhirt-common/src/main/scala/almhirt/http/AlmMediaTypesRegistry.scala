@@ -2,6 +2,8 @@ package almhirt.http
 
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicReference
+import scalaz._, Scalaz._
+import almhirt.common._
 
 trait AlmMediaTypesRegistry extends Iterable[AlmMediaType] {
   private val byMainAndSubTypes = new AtomicReference(Map.empty[String, Map[String, AlmMediaType]])
@@ -42,6 +44,13 @@ trait AlmMediaTypesRegistry extends Iterable[AlmMediaType] {
         val current = byMainAndSubTypes.get()
         current.get(main).flatMap(_.get(sub))
       case _ => None
+    }
+  }
+ 
+  def get(mediaTypeValue: String): AlmValidation[AlmMediaType] = {
+    find(mediaTypeValue) match {
+      case Some(mt) => mt.success
+      case None => NoSuchElementProblem(s"""There is no media type with value "$mediaTypeValue" registered.""").failure
     }
   }
   
