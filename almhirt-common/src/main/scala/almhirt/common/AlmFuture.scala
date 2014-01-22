@@ -40,7 +40,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def mapV[T](compute: R => AlmValidation[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](underlying.map { validation => validation flatMap compute })
 
-  def mapFailure(withFailure: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
+  def leftMap(withFailure: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     val p = Promise[AlmValidation[R]]
     underlying.onComplete {
       case scala.util.Failure(exn) =>
@@ -51,6 +51,11 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
+
+  /** Alias for leftMap */
+  def mapFailure(withFailure: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = 
+    leftMap(withFailure)
+  
   def mapTimeout(withTimeout: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     val p = Promise[AlmValidation[R]]
     underlying.onComplete {
