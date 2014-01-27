@@ -361,7 +361,7 @@ trait PackageExtractorFuns {
   def withFastLookUp[T](from: WarpPackage)(f: WarpObjectLookUp => AlmValidation[T]): AlmValidation[T] =
     from match {
       case wo: WarpObject => f(fastLookUp(wo))
-      case x @ WarpPrimitive(v) => ArgumentProblem(s""""{x.getClass().getName()}" is not a WarpObject but a WarpPrimitive($v) so I cannot create a fast lookup""").failure
+      case x @ WarpPrimitive(v) => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject but a WarpPrimitive($v) so I cannot create a fast lookup""").failure
       case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject so I cannot create a fast lookup""").failure
     }
 }
