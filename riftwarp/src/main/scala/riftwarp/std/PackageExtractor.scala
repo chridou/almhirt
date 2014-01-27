@@ -35,7 +35,7 @@ trait WarpObjectLookUp {
     }
 
   def getWarpPrimitive(label: String): AlmValidation[WarpPrimitive] =
-    getMandatory(label, tryGetWarpPrimitive).leftMap(p => SerializationProblem(s"""The WarpObject with descriptor "${warpDescriptor.toString}" encountered a paroblem.""", cause = Some(p)))
+    getMandatory(label, tryGetWarpPrimitive).leftMap(p => SerializationProblem(s"""The WarpObject with descriptor "${warpDescriptor.toString}" encountered a problem.""", cause = Some(p)))
 
   def tryGetWarpObject(label: String): AlmValidation[Option[WarpObject]] =
     getAndCheck(label) {
@@ -290,7 +290,7 @@ trait WarpObjectLookUp {
       fail => fail.failure,
       optV => optV match {
         case Some(v) => v.success
-        case None => NoSuchElementProblem(s"""The WarpObject contains an element with label "$label" but it has no value.""").failure
+        case None => NoSuchElementProblem(s"""The WarpObject(${warpDescriptor.toString()}) contains an element with label "$label" but it has no value.""").failure
       })
 
   private def unpack(what: WarpPackage, overrideDescriptor: Option[WarpDescriptor], backUpDescriptor: Option[WarpDescriptor])(implicit unpackers: WarpUnpackers): AlmValidation[Any] = {
