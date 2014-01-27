@@ -35,19 +35,19 @@ object DomainCommandHeaderWarpPackaging extends WarpPacker[DomainCommandHeader] 
     }
 }
 
-trait DomainCommandWarpPackagingTemplate[TEvent <: DomainCommand] extends WarpPacker[TEvent] with RegisterableWarpUnpacker[TEvent] {
-  override def pack(what: TEvent)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+trait DomainCommandWarpPackagingTemplate[TCommand <: DomainCommand] extends WarpPacker[TCommand] with RegisterableWarpUnpacker[TCommand] {
+  override def pack(what: TCommand)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     (this.warpDescriptor ~> With("header", what.header, DomainCommandHeaderWarpPackaging)).flatMap(obj =>
       addCommandParams(what, obj))
   }
 
-  override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TEvent] =
+  override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TCommand] =
     withFastLookUp(from) { lookup =>
       lookup.getWith("header", DomainCommandHeaderWarpPackaging).flatMap(header =>
         extractCommandParams(lookup, header))
     }
 
-  def addCommandParams(what: TEvent, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage]
+  def addCommandParams(what: TCommand, into: WarpObject)(implicit packers: WarpPackers): AlmValidation[WarpPackage]
 
-  def extractCommandParams(from: WarpObjectLookUp, header: DomainCommandHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TEvent]
+  def extractCommandParams(from: WarpObjectLookUp, header: DomainCommandHeader)(implicit unpackers: WarpUnpackers): AlmValidation[TCommand]
 }
