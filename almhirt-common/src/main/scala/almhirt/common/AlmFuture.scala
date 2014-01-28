@@ -22,6 +22,8 @@ import scala.concurrent.{ Future, Promise, Await, ExecutionContext }
 import scala.concurrent.duration.Duration
 import almhirt.common._
 import almhirt.almfuture.all.akkaFutureToAlmhirtFuture
+import almhirt.problem.CauseIsThrowable
+import almhirt.problem.HasAThrowable
 
 /**
  * A future based on [[akka.dispatch.Future]].
@@ -51,11 +53,10 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
-
   /** Alias for leftMap */
-  def mapFailure(withFailure: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = 
+  def mapFailure(withFailure: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     leftMap(withFailure)
-  
+
   def mapTimeout(withTimeout: Problem => Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     val p = Promise[AlmValidation[R]]
     underlying.onComplete {
@@ -195,9 +196,33 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     } catch {
       case exn: Exception => launderException(exn).failure
     }
+
   def awaitResultOrEscalate(atMost: Duration): R = {
     import almhirt.syntax.almvalidation._
     awaitResult(atMost).resultOrEscalate
+  }
+
+  def toStdFuture(implicit executionContext: ExecutionContext): Future[R] = {
+    val p = Promise[R]
+    onComplete(
+      fail => {
+        val res: Throwable =
+          fail match {
+            case sp: SingleProblem =>
+              sp match {
+                case ExceptionCaughtProblem(_) =>
+                  sp.cause match {
+                    case Some(CauseIsThrowable(HasAThrowable(exn))) => exn
+                    case _ => new EscalatedProblemException(sp)
+                  }
+                case _ => new EscalatedProblemException(sp)
+              }
+            case pr => new EscalatedProblemException(pr)
+          }
+        p.complete(scala.util.Failure(res))
+      },
+      succ => p.complete(scala.util.Success(succ)))
+    p.future
   }
 }
 
