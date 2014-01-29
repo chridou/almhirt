@@ -1,3 +1,4 @@
+import scala.language.implicitConversions
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -15,4 +16,5 @@ package object riftwarp {
 //        case x => UnspecifiedProblem(s""""${self.toString}" is not a suitable HttpContentTYpe for use with RiftWarp.""").failure
 //      }
 //  }
+  implicit def warpChannel2String(ch: WarpChannel): String = ch.channelDescriptor
 }
