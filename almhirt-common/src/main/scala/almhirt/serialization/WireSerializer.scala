@@ -35,6 +35,7 @@ trait WireSerializer[T] extends CanSerializeToWire[T] with CanDeserializeFromWir
   final def marshallToFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[WireRepresentation] =
     mp.getForMarshalling(format).flatMap(mt => marshallTo(mt)(what, options))
   
+    
   final def unmarshallFrom(mediaType: AlmMediaType)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[T] =
     deserialize(mediaType.contentFormat)(what, options)
 
