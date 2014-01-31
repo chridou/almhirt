@@ -88,7 +88,7 @@ object AlmMediaTypesProvider {
     def getForUnmarshalling(contentFormat: String): AlmValidation[AlmMediaType] = {
       self.unmarshallableMediaTypes.find(_.contentFormat == contentFormat) match {
         case Some(mt) => mt.success
-        case None => NoSuchElementProblem(s"""No unmarshable media type has a content format "$contentFormat".""").failure
+        case None => NoSuchElementProblem(s"""No unmarshallable media type has a content format "$contentFormat".""").failure
       }
     }
         

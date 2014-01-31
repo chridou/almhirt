@@ -34,8 +34,35 @@ trait WireSerializer[T] extends CanSerializeToWire[T] with CanDeserializeFromWir
 
   final def marshallToFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(WireRepresentation, AlmMediaType)] =
     mp.getForMarshalling(format).flatMap(mt => marshallTo(mt)(what, options).map((_, mt)))
-  
-    
+
+  final def marshallToTextFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(String, AlmMediaType)] =
+    mp.getForMarshalling(format).flatMap(mt =>
+      if (mt.binary) {
+        NoSuchElementProblem(s""""${mt.value}" is not a media type for textual wire transfer.""").failure
+      } else {
+        for {
+          marshalled <- marshallTo(mt)(what, options)
+          text <- marshalled match {
+            case TextWire(txt) => txt.success
+            case BinaryWire(_) => UnspecifiedProblem(s"""A crazy problem occured. A "text"("${mt.value}") media type serialized to binary!""").failure
+          }
+        } yield (text, mt)
+      })
+
+  final def marshallToBinaryFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(Array[Byte], AlmMediaType)] =
+    mp.getForMarshalling(format).flatMap(mt =>
+      if (!mt.binary) {
+        NoSuchElementProblem(s""""${mt.value}" is not a media type for binary wire transfer.""").failure
+      } else {
+        for {
+          marshalled <- marshallTo(mt)(what, options)
+          binary <- marshalled match {
+            case BinaryWire(bin) => bin.success
+            case TextWire(_) => UnspecifiedProblem(s"""A crazy problem occured. A "binary"("${mt.value}") media type serialized to text!""").failure
+          }
+        } yield (binary, mt)
+      })
+
   final def unmarshallFrom(mediaType: AlmMediaType)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[T] =
     deserialize(mediaType.contentFormat)(what, options)
 
