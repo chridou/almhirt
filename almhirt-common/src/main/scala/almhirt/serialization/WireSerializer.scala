@@ -45,4 +45,8 @@ trait WireSerializer[T] extends CanSerializeToWire[T] with CanDeserializeFromWir
     } else {
       NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for unmarshalling.""").failure
     }
+
+  final def unmarshallFromFormat(format: String, what: WireRepresentation, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(T, AlmMediaType)] =
+    mp.getForUnmarshalling(format).flatMap(mt => unmarshallFrom(mt)(what, options).map((_, mt)))
+
 }

@@ -62,7 +62,7 @@ object AlmMediaTypesProvider {
     def getForMarshalling(contentFormat: String): AlmValidation[AlmMediaType] = {
       self.marshallableMediaTypes.find(_.contentFormat == contentFormat) match {
         case Some(mt) => mt.success
-        case None => NoSuchElementProblem(s"""No media type has a content format "$contentFormat".""").failure
+        case None => NoSuchElementProblem(s"""No marshallable media type has a content format "$contentFormat".""").failure
       }
     }
 
@@ -84,6 +84,14 @@ object AlmMediaTypesProvider {
         _ => None,
         succ => Some(succ))
 
+        
+    def getForUnmarshalling(contentFormat: String): AlmValidation[AlmMediaType] = {
+      self.unmarshallableMediaTypes.find(_.contentFormat == contentFormat) match {
+        case Some(mt) => mt.success
+        case None => NoSuchElementProblem(s"""No unmarshable media type has a content format "$contentFormat".""").failure
+      }
+    }
+        
     def getAppForMarshalling(contentFormat: String) = getForMarshalling("application", contentFormat)
     def findAppForMarshalling(contentFormat: String) = findForMarshalling("application", contentFormat)
   
