@@ -32,8 +32,8 @@ trait WireSerializer[T] extends CanSerializeToWire[T] with CanDeserializeFromWir
       NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for marshalling.""").failure
     }
 
-  final def marshallToFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[WireRepresentation] =
-    mp.getForMarshalling(format).flatMap(mt => marshallTo(mt)(what, options))
+  final def marshallToFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(WireRepresentation, AlmMediaType)] =
+    mp.getForMarshalling(format).flatMap(mt => marshallTo(mt)(what, options).map((_, mt)))
   
     
   final def unmarshallFrom(mediaType: AlmMediaType)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[T] =
