@@ -87,7 +87,8 @@ object AlmMediaTypesProvider {
     def getAppForMarshalling(contentFormat: String) = getForMarshalling("application", contentFormat)
     def findAppForMarshalling(contentFormat: String) = findForMarshalling("application", contentFormat)
   
-  
+    def defaultForMarshalling: Option[AlmMediaType] = self.marshallableMediaTypes.headOption
+    def defaultForUnmarshalling: Option[AlmMediaType] = self.unmarshallableMediaTypes.headOption
   }
 
   def createRegisteredDefaults(vendor: MediaTypeVendorPart, content: String): Seq[AlmMediaType] =
