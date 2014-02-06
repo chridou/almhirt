@@ -27,7 +27,7 @@ trait AlmValidationFunctions {
     try {
       a.success[Problem]
     } catch {
-      case exn: Exception => launderException(exn).failure
+      case scala.util.control.NonFatal(exn) => launderException(exn).failure
     }
   }
 
@@ -36,16 +36,16 @@ trait AlmValidationFunctions {
     try {
       a.success[Problem]
     } catch {
-      case exn: Exception => launderException(exn).withMessage(message).failure
+      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(message).failure
     }
   }
 
   /** Evaluate an unsafe expression in a safe way */
-  def inTryCatchMM[T](a: => T)(createMessage: Exception => String): AlmValidation[T] = {
+  def inTryCatchMM[T](a: => T)(createMessage: Throwable => String): AlmValidation[T] = {
     try {
       a.success[Problem]
     } catch {
-      case exn: Exception => launderException(exn).withMessage(createMessage(exn)).failure
+      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(createMessage(exn)).failure
     }
   }
 
@@ -54,7 +54,7 @@ trait AlmValidationFunctions {
     try {
       a
     } catch {
-      case exn: Exception => launderException(exn).failure
+      case scala.util.control.NonFatal(exn) => launderException(exn).failure
     }
   }
 
@@ -63,16 +63,16 @@ trait AlmValidationFunctions {
     try {
       a
     } catch {
-      case exn: Exception => launderException(exn).withMessage(message).failure
+      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(message).failure
     }
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
-  def computeSafelyMM[T](a: => AlmValidation[T])(createMessage: Exception => String): AlmValidation[T] = {
+  def computeSafelyMM[T](a: => AlmValidation[T])(createMessage: Throwable => String): AlmValidation[T] = {
     try {
       a
     } catch {
-      case exn: Exception => launderException(exn).withMessage(createMessage(exn)).failure
+      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(createMessage(exn)).failure
     }
   }
 

@@ -243,8 +243,15 @@ object AlmFuture {
     new AlmFuture(fut)
   }
 
-  def promise[T](what: => AlmValidation[T]) = new AlmFuture[T](Future.successful { what })
-  def successful[T](result: => T) = new AlmFuture[T](Future.successful { result.success })
-  def failed[T](prob: Problem) = new AlmFuture[T](Future.successful { prob.failure })
+  def compute[T](computation: => T)(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { almhirt.almvalidation.funs.inTryCatch(computation) })
+  def completed[T](what: => AlmValidation[T]) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.computeSafely(what) })
+  def successful[T](result: => T) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.inTryCatch(result) })
+  def failed[T](prob: => Problem) = new AlmFuture[T](Future.successful {
+    try {
+      prob.failure
+    } catch {
+      case scala.util.control.NonFatal(exn) => launderException(exn).failure
+    }
+  })
 
 }

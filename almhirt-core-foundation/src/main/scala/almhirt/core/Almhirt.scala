@@ -36,11 +36,11 @@ object Almhirt {
     implicit val execContext = system.dispatchers.defaultGlobalDispatcher
     implicit val ccuad = CanCreateUuidsAndDateTimes()
     for {
-      configSection <- AlmFuture.promise(theConfig.v[Config]("almhirt"))
-      theDurations <- AlmFuture.promise(configSection.v[Durations]("durations"))
-      futuresExecutorPath <- AlmFuture.promise(configSection.v[String]("executors.futures"))
-      cruncherExecutorPath <- AlmFuture.promise(configSection.v[String]("executors.number-cruncher"))
-      syncIoExecutorPath <- AlmFuture.promise(configSection.v[String]("executors.sync-io"))
+      configSection <- AlmFuture.completed(theConfig.v[Config]("almhirt"))
+      theDurations <- AlmFuture.completed(configSection.v[Durations]("durations"))
+      futuresExecutorPath <- AlmFuture.completed(configSection.v[String]("executors.futures"))
+      cruncherExecutorPath <- AlmFuture.completed(configSection.v[String]("executors.number-cruncher"))
+      syncIoExecutorPath <- AlmFuture.completed(configSection.v[String]("executors.sync-io"))
       theMessageBus <- MessageBus(system)
       theEventChannel <- theMessageBus._1.channel[Event]
       theDomainEventChannel <- theMessageBus._1.channel[DomainEvent]
