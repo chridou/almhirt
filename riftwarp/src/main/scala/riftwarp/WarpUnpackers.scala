@@ -14,6 +14,7 @@ trait WarpUnpackers {
   def getTyped[T](descriptor: WarpDescriptor)(implicit tag: ClassTag[T]): AlmValidation[WarpUnpacker[T]] =
     apply(descriptor).map(unpacker =>
       new WarpUnpacker[T] {
+        val warpDescriptor = descriptor
         def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[T] =
           computeSafely {
             unpacker.unpack(from).flatMap(_.castTo[T])
@@ -31,6 +32,7 @@ trait WarpUnpackers {
 
   protected def untypedToTyped[T](unpacker: WarpUnpacker[Any])(implicit tag: ClassTag[T]) =
     new WarpUnpacker[T] {
+      val warpDescriptor = unpacker.warpDescriptor
       def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[T] =
         computeSafely {
           unpacker.unpack(from).flatMap(_.castTo[T])
@@ -64,7 +66,7 @@ object WarpUnpackers {
     unpackers.addTyped(ProblemCauseUnpacker)
 
     unpackers.addTyped(WarpDescriptorUnpacker)
-    
+
     unpackers.addTyped(MessageHeaderWarpPackaging)
     unpackers.addTyped(MessageWarpPackaging)
 

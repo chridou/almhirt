@@ -4,13 +4,13 @@ import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 
-trait WarpUnpacker[+T] {
+trait WarpUnpacker[+T] extends HasWarpDescriptor {
+  def warpDescriptor: WarpDescriptor
   final def apply(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[T] = unpack(from)
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[T]
 }
 
 trait RegisterableWarpUnpacker[+T] extends WarpUnpacker[T] {
-  def warpDescriptor: WarpDescriptor
   def alternativeWarpDescriptors: List[WarpDescriptor]
   def allDescriptors: List[WarpDescriptor] = warpDescriptor :: alternativeWarpDescriptors
 }

@@ -3,7 +3,9 @@ package riftwarp
 import almhirt.common._
 import almhirt.almvalidation.kit._
 
-trait BlindWarpPacker {
+
+
+trait BlindWarpPacker extends HasWarpDescriptor {
   def warpDescriptor: WarpDescriptor
   def packBlind(what: Any)(implicit lookup: WarpPackers): AlmValidation[WarpPackage]
 }
