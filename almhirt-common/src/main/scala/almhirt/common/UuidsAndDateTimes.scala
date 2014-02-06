@@ -1,5 +1,6 @@
 package almhirt.common
 
+import scalaz._, Scalaz._
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 import org.joda.time.LocalDateTime
@@ -27,18 +28,21 @@ object CanCreateUuidsAndDateTimes {
     override def parseUuid(str: String): AlmValidation[java.util.UUID] = almhirt.almvalidation.funs.parseUuidAlm(str)
   }
 
-  def createUniqueString: String =
-    java.util.UUID.randomUUID().toString().view.filterNot(_ == '-').map {
-      case '0' => 'g'
-      case '1' => 'h'
-      case '2' => 'i'
-      case '3' => 'j'
-      case '4' => 'k'
-      case '5' => 'l'
-      case '6' => 'm'
-      case '7' => 'n'
-      case '8' => 'o'
-      case '9' => 'p'
-    }.toString
+  @inline
+  private def nibbleToChar(b: Int): Char =
+    (b + 'a').toChar
+
+  @inline
+  private def addByte(b: Byte, builder: StringBuilder) {
+     builder.append(nibbleToChar(b & 0x0F))
+     builder.append(nibbleToChar((b & 0xF0) >> 4))
+  }
+
+  @inline
+  def createUniqueString: String = {
+    val builder = new StringBuilder()
+    almhirt.converters.BinaryConverter.uuidToBytes(java.util.UUID.randomUUID()).foreach(b => addByte(b, builder))
+    builder.toString
+  }
 
 }
