@@ -80,7 +80,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
           val comparisonString = AggregateRootCellCacheStats.tripletComparisonString(oldStats, statsBeforeCleanUp, lastStatsAfterCleanUp, "last clean up", "before clean up", "after clean up")
           log.info(s"""Performed clean up.\n$comparisonString\n${timings.toNiceString()}\n\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
         } else {
-          log.info(s"""Performed clean up.\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
+          log.info(s"""Performed clean up. $numPendingRequest request(s) on unconfirmed cell kills left.""")
         }
       }
   }
