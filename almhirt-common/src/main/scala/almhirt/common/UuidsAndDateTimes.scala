@@ -4,7 +4,7 @@ import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 import org.joda.time.LocalDateTime
 
-trait CanCreateUuid { def getUuid(): java.util.UUID; def getUniqueString(): String }
+trait CanCreateUuid { def getUuid(): java.util.UUID; def getUniqueString(): String; def parseUuid(str: String): AlmValidation[java.util.UUID] }
 
 trait CanCreateDateTime { def getDateTime(): DateTime; def getUtcTimestamp: LocalDateTime }
 
@@ -16,6 +16,7 @@ object CanCreateUuidsAndDateTimes {
     override def getUniqueString(): String = createUniqueString
     override def getDateTime(): DateTime = new DateTime()
     override def getUtcTimestamp(): LocalDateTime = new LocalDateTime(DateTimeZone.UTC)
+    override def parseUuid(str: String): AlmValidation[java.util.UUID] = almhirt.almvalidation.funs.parseUuidAlm(str)
   }
 
   def utc(): CanCreateUuidsAndDateTimes = new CanCreateUuidsAndDateTimes {
@@ -23,6 +24,7 @@ object CanCreateUuidsAndDateTimes {
     override def getUniqueString(): String = createUniqueString
     override def getDateTime(): DateTime = new DateTime(DateTimeZone.UTC)
     override def getUtcTimestamp(): LocalDateTime = new LocalDateTime(DateTimeZone.UTC)
+    override def parseUuid(str: String): AlmValidation[java.util.UUID] = almhirt.almvalidation.funs.parseUuidAlm(str)
   }
 
   def createUniqueString: String =

@@ -75,6 +75,7 @@ object Almhirt {
         def getUniqueString = ccuad.getUniqueString
         def getDateTime = ccuad.getDateTime
         def getUtcTimestamp = ccuad.getUtcTimestamp
+        def parseUuid(str: String) = ccuad.parseUuid(str)
         def channelRegistry = theChannelRegistry
         def dispatcherPath(name: String): AlmValidation[String] = executorNames >! (name)
       }
@@ -139,6 +140,7 @@ object Almhirt {
         def getUniqueString = ccuad.getUniqueString
         def getDateTime = ccuad.getDateTime
         def getUtcTimestamp = ccuad.getUtcTimestamp
+        def parseUuid(str: String) = ccuad.parseUuid(str)
         def channelRegistry = theChannelRegistry
         def dispatcherPath(name: String): AlmValidation[String] = executorNames >! (name)
       }
