@@ -362,6 +362,11 @@ trait PackageExtractorFuns {
     from match {
       case wo: WarpObject => f(fastLookUp(wo))
       case x @ WarpPrimitive(v) => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject but a WarpPrimitive($v) so I cannot create a fast lookup""").failure
-      case x => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject so I cannot create a fast lookup""").failure
+      case x @ WarpCollection(v) => {
+        val valuesStrPrefix = v.mkString("[", ", ", "").ellipse(100) + "]"
+          ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject so I cannot create a fast lookup. The values in the collection are $valuesStrPrefix.""").failure
+      }
+      case x =>
+        ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject so I cannot create a fast lookup""").failure
     }
 }
