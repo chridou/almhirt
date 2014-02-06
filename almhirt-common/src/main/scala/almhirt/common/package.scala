@@ -46,6 +46,15 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
     def compare(a: org.joda.time.LocalDateTime, b: org.joda.time.LocalDateTime) = a.compareTo(b)
   }
 
+  implicit class AlmRichString(self: String) {
+    def ellipse(maxLength: Int): String = {
+      if(self.length > maxLength) {
+        self.take(maxLength-3) + "..."
+      } else {
+        self
+      }
+    }
+  }
  
   object Severity {
     val Critical = almhirt.problem.Critical
