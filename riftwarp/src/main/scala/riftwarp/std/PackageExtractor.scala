@@ -359,9 +359,11 @@ private class MapBasedWarpObjectLookUp(override val underlying: WarpObject) exte
 trait PackageExtractorFuns {
   def fastLookUp(obj: WarpObject): WarpObjectLookUp = new MapBasedWarpObjectLookUp(obj)
   
-  def withFastLookUp[T](from: WarpPackage)(f: WarpObjectLookUp => AlmValidation[T]): AlmValidation[T] = withFastLookUp(from, None)(f)
+  def withFastLookUp[T](from: WarpPackage)(f: WarpObjectLookUp => AlmValidation[T]): AlmValidation[T] = withFastLookUpAndCallerOpt(from, None)(f)
     
-  def withFastLookUp[T](from: WarpPackage, caller: Option[HasWarpDescriptor])(f: WarpObjectLookUp => AlmValidation[T]): AlmValidation[T] =
+  def withFastLookUp[T](from: WarpPackage, caller: HasWarpDescriptor)(f: WarpObjectLookUp => AlmValidation[T]): AlmValidation[T] = withFastLookUpAndCallerOpt(from, Some(caller))(f)
+  
+  def withFastLookUpAndCallerOpt[T](from: WarpPackage, caller: Option[HasWarpDescriptor])(f: WarpObjectLookUp => AlmValidation[T]): AlmValidation[T] =
     from match {
       case wo: WarpObject => f(fastLookUp(wo))
       case x @ WarpPrimitive(v) => ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject but a WarpPrimitive($v) so I cannot create a fast lookup. I was called from someone with a the following warp descriptor: ${caller.map(_.warpDescriptor)}""").failure
@@ -372,4 +374,5 @@ trait PackageExtractorFuns {
       case x =>
         ArgumentProblem(s""""${x.getClass().getName()}" is not a WarpObject so I cannot create a fast lookup. I was called from someone with a the following warp descriptor: ${caller.map(_.warpDescriptor)}""").failure
     }
+  
 }
