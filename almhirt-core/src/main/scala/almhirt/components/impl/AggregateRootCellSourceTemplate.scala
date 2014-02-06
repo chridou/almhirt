@@ -19,6 +19,9 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
   def maxDoesNotExistAge: Option[FiniteDuration]
   def maxUninitializedAge: Option[FiniteDuration]
 
+  def logCleanUpEvents: Boolean
+  def logCleanUpStatistics: Boolean
+
   implicit def executionContext: ExecutionContext
 
   private val cacheState = new MutableAggregateRootCellCache(
@@ -30,7 +33,7 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
     handleId => self ! Unbook(handleId))
 
   private var lastStatsAfterCleanUp = cacheState.stats
-  
+
   val pendingRequests = scala.collection.mutable.HashMap.empty[JUUID, scala.collection.mutable.Buffer[(Class[_ <: AggregateRoot[_, _]], ActorRef)]]
 
   override def receiveAggregateRootCellSourceMessage: Receive = {
@@ -72,8 +75,14 @@ trait AggregateRootCellSourceTemplate extends AggregateRootCellSource with Super
       lastStatsAfterCleanUp = cacheState.stats
       val numPendingRequest = pendingRequests.map(_._2).flatten.size
       cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
-      val comparisonString = AggregateRootCellCacheStats.tripletComparisonString(oldStats, statsBeforeCleanUp, lastStatsAfterCleanUp, "last clean up", "before clean up", "after clean up")
-      log.info(s"""Performed clean up.\n$comparisonString\n${timings.toNiceString()}\n\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
+      if (logCleanUpEvents) {
+        if (logCleanUpStatistics) {
+          val comparisonString = AggregateRootCellCacheStats.tripletComparisonString(oldStats, statsBeforeCleanUp, lastStatsAfterCleanUp, "last clean up", "before clean up", "after clean up")
+          log.info(s"""Performed clean up.\n$comparisonString\n${timings.toNiceString()}\n\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
+        } else {
+          log.info(s"""Performed clean up.\n$numPendingRequest request(s) on unconfirmed cell kills left.""")
+        }
+      }
   }
 
   private def enqueueRequest(arId: JUUID, arType: Class[_ <: AggregateRoot[_, _]], waitingCaller: ActorRef) {

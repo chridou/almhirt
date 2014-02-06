@@ -64,6 +64,10 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
       }
     }
 
+  
+  override val logCleanUpEvents = (configSection.v[Boolean]("log-cleanup-events").resultOrEscalate)
+  override val logCleanUpStatistics = (configSection.v[Boolean]("log-cleanup-statistics").resultOrEscalate)
+  
   override protected def createProps(aggregateRootId: JUUID, forArType: Class[_], aggregateRootCellStateSink: AggregateRootCellStateSink): Props =
     cellPropsFactories(forArType) match {
       case Some(factory) => factory(aggregateRootId, aggregateRootCellStateSink)
