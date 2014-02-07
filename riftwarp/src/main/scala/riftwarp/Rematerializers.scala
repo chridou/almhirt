@@ -15,17 +15,6 @@ object Rematerializers {
   def empty(): Rematerializers = RematerializersRegistry.empty
 
   implicit class RematerializersOps(self: Rematerializers) {
-//    def addTyped[T](channel: String, rematerialize: (T, Map[String, Any]) => AlmValidation[WarpPackage])(implicit tag: ClassTag[T]) =
-//      addByClass(
-//          tag.runtimeClass, channel, 
-//          (dim: Any, options: Map[String, Any]) => dim.castTo[T].flatMap(tDim => rematerialize(tDim, options)))
-//          
-//    def addByClass(dimensionType: Class[_], channel: String, rematerialize: (Any, Map[String, Any]) => AlmValidation[WarpPackage]) =
-//      self.add(dimensionType.getName(), channel, rematerialize)
-//
-//    def getByClass(dimensionType: Class[_], channel: String): AlmValidation[(Any, Map[String, Any]) => AlmValidation[WarpPackage]] =
-//      self.get(dimensionType.getName(), channel)
-    
     def getTyped[T](channel: String): AlmValidation[Rematerializer[T]] = {
       self.get(channel).map(_.asInstanceOf[Rematerializer[T]])
     }

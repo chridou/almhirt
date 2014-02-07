@@ -105,7 +105,7 @@ class GrowingBinaryWriter(initialCapacity: Int, maxSize: Int, maxIncrement: Int)
     createCompleteArray(addBufferArray(currentBuffer, previousData))
   }
 
-  override def spawnNew(capacity: Option[Int] = None): BinaryWriter = new GrowingBinaryWriter(initialCapacity, maxIncrement, maxSize)
+  override def spawnNew(capacity: Option[Int] = None): BinaryWriter = new GrowingBinaryWriter(initialCapacity, maxSize, maxIncrement)
 
   private def createCompleteArray(from: Vector[(Array[Byte], Int)]): Array[Byte] = {
     val size = from.foldLeft(0) { case (acc, next) => acc + next._2 }

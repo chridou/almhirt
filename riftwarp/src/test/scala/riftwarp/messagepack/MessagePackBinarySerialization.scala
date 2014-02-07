@@ -19,7 +19,7 @@ class MessagePackBinarySerialization extends FunSuite with Matchers {
   implicit val packers = Serialization.addPackers(WarpPackers())
   implicit val unpackers = Serialization.addUnpackers(WarpUnpackers())
 
-  val maxSize = 12 * 1024 * 1024
+  val maxSize = 24 * 1024 * 1024
 
   test("A WarpBytes(empty) should dematerialize and rematerialize to an equal instance") {
     val sample = WarpBytes(Vector.empty)
