@@ -115,23 +115,4 @@ class MessagePackAssociativeCollectionSerialization extends FunSuite with Matche
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
   }
-
-  test("""(In a WarpObject): With 2 Maps and some other data, it should dematerialize and rematerialize to an equal instance""") {
-    val sample = WarpObject(
-      Some(WarpDescriptor("abcde")),
-      Vector(
-        WarpElement("articleName", Some(WarpAssociativeCollection(Vector.fill(3)((WarpString("Ø 250 mm, H 90 mm, "), WarpString("Ø 250 mm, H 90 mm, ")))))),
-        WarpElement("brandName", Some(WarpAssociativeCollection(Vector.fill(3)((WarpString("Ø 250 mm, H 90 mm, "), WarpString("Ø 250 mm, H 90 mm, ")))))),
-        WarpElement("articleNumber", Some(WarpAssociativeCollection(Vector.fill(3)((WarpString("Ø 250 mm, H 90 mm, "), WarpString("Ø 250 mm, H 90 mm, ")))))),
-        WarpElement("description", Some(WarpAssociativeCollection(Vector.fill(3)((WarpString("Ø 250 mm, H 90 mm, "), WarpString("Ø 250 mm, H 90 mm, ")))))),
-        WarpElement("tenderText", Some(WarpAssociativeCollection(Vector.fill(3)((WarpString("Ø 250 mm, H 90 mm, "), WarpString("Ø 250 mm, H 90 mm, ")))))),
-        WarpElement("deeplinks", Some(WarpAssociativeCollection(Vector.fill(3)((WarpString("Ø 250 mm, H 90 mm, "), WarpString("Ø 250 mm, H 90 mm, ")))))),
-        WarpElement("productRequestEmail", Some(WarpAssociativeCollection(Vector.fill(3)((WarpString("Ø 250 mm, H 90 mm, "), WarpString("Ø 250 mm, H 90 mm, ")))))),
-        WarpElement("brandWebsite", Some(WarpAssociativeCollection(Vector.fill(3)((WarpString("Ø 250 mm, H 90 mm, "), WarpString("Ø 250 mm, H 90 mm, ")))))),
-        WarpElement("4", Some(WarpByte(1)))))
-    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
-    val rematerialized = dematerialized.rematerialize.forceResult
-    rematerialized should equal(sample)
-  }
-
 }

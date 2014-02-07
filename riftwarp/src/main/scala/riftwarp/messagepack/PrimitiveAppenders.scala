@@ -10,7 +10,7 @@ object RiftWarpPrimitiveAppenders {
     if (bytes.length < 32) {
       val h = 0xa0 | bytes.length
       writer.writeUnsignedByte(h).writeByteArray(bytes)
-    } else if (bytes.length <= 256) {
+    } else if (bytes.length < 256) {
       writer.writeUnsignedByte(MessagePackTypecodes.Str8).writeUnsignedByte(bytes.length).writeByteArray(bytes)
     } else if (bytes.length < 256 * 256) {
       writer.writeUnsignedByte(MessagePackTypecodes.Str16).writeUnsignedShort(bytes.length).writeByteArray(bytes)
