@@ -228,6 +228,7 @@ trait WarpObjectLookUp {
 
   @inline
   private def getPrimitiveAssocsMapping[A, B](label: String, warpPackage: WarpPackage)(implicit convA: WarpPrimitiveConverter[A], convB: WarpPrimitiveConverter[B]): AlmValidation[Vector[(A, B)]] = {
+    @inline
     def mapThem(wa: WarpAssociativeCollection) = wa.items.map(item => convA.convert(item._1).flatMap(a => convB.convert(item._2).map(b => (a, b))).toAgg).sequence
     warpPackage match {
       case wa: WarpAssociativeCollection => mapThem(wa)
@@ -244,6 +245,7 @@ trait WarpObjectLookUp {
 
   @inline
   private def getAssocsEachWithMapping[A, B](label: String, warpPackage: WarpPackage, unpackerA: WarpUnpacker[A], unpackerB: WarpUnpacker[B])(implicit unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] = {
+    @inline
     def mapThem(wa: WarpAssociativeCollection) = wa.items.map(item => unpackerA(item._1).flatMap(a => unpackerB(item._2).map(b => (a, b))).toAgg).sequence
     warpPackage match {
       case wa: WarpAssociativeCollection => mapThem(wa)
@@ -260,6 +262,7 @@ trait WarpObjectLookUp {
 
   @inline
   private def getAssocsWithMapping[A, B](label: String, warpPackage: WarpPackage, unpackerB: WarpUnpacker[B])(implicit convA: WarpPrimitiveConverter[A], unpackers: WarpUnpackers): AlmValidation[Vector[(A, B)]] = {
+    @inline
     def mapThem(wa: WarpAssociativeCollection) = wa.items.map(item => convA.convert(item._1).flatMap(a => unpackerB(item._2).map(b => (a, b))).toAgg).sequence
     warpPackage match {
       case wa: WarpAssociativeCollection => mapThem(wa)
@@ -276,6 +279,7 @@ trait WarpObjectLookUp {
 
   @inline
   private def getAssocsMapping[A](label: String, warpPackage: WarpPackage, overrideDescriptor: Option[WarpDescriptor] = None, backUpDescriptor: Option[WarpDescriptor] = None)(implicit unpackers: WarpUnpackers, conv: WarpPrimitiveConverter[A]): AlmValidation[Vector[(A, Any)]] = {
+    @inline
     def mapThem(wa: WarpAssociativeCollection) = wa.items.map(item => conv.convert(item._1).flatMap(a => unpack(item._2, overrideDescriptor, backUpDescriptor).map(b => (a, b))).toAgg).sequence
     warpPackage match {
       case wa: WarpAssociativeCollection => mapThem(wa)
@@ -292,6 +296,7 @@ trait WarpObjectLookUp {
 
   @inline
   private def getAssocsTypedMapping[A, B](label: String, warpPackage: WarpPackage, overrideDescriptor: Option[WarpDescriptor])(implicit unpackers: WarpUnpackers, tag: ClassTag[B], conv: WarpPrimitiveConverter[A]): AlmValidation[Vector[(A, B)]] = {
+    @inline
     def mapThem(wa: WarpAssociativeCollection) = wa.items.map(item =>
       conv.convert(item._1).flatMap(a =>
         unpack(item._2, overrideDescriptor, Some(WarpDescriptor(tag.runtimeClass))).flatMap(_.castTo[B]).map(b =>
@@ -312,6 +317,7 @@ trait WarpObjectLookUp {
 
   @inline
   private def getPrimitivesTreeMapping[T: WarpPrimitiveConverter](label: String, warpPackage: WarpPackage)(implicit conv: WarpPrimitiveConverter[T]): AlmValidation[Tree[T]] = {
+    @inline
     def mapThem(wt: WarpTree) = wt.tree.map(item => conv.convert(item).toAgg).sequence
     warpPackage match {
       case wt: WarpTree => mapThem(wt)
