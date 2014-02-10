@@ -75,6 +75,13 @@ class MessagePackSerialization extends FunSuite with Matchers {
     rematerialized should equal(sample)
   }
   
+  test("""A WarpString(256 chars) should dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpString((for (i <- 1 to 256) yield 'x').mkString)
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(sample)
+  }
+  
   test("""A WarpString(1000 chars) should dematerialize and rematerialize to an equal instance""") {
     val sample = WarpString((for (i <- 1 to 1000) yield 'x').mkString)
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -509,6 +516,21 @@ class MessagePackSerialization extends FunSuite with Matchers {
     rematerialized should equal(sample)
   }
 
+  test("""A WarpCollection(255 x WarpString("a")) should dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpCollection(Vector.fill(255)(WarpString("a")))
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(sample)
+  }
+  
+  test("""A WarpCollection(256 x WarpString("a")) should dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpCollection(Vector.fill(256)(WarpString("a")))
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(sample)
+  }
+  
+  
   test("""A WarpCollection(256*256-1 x WarpString("a")) should dematerialize and rematerialize to an equal instance""") {
     val sample = WarpCollection(Vector.fill(256 * 256 - 1)(WarpString("a")))
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
@@ -553,6 +575,20 @@ class MessagePackSerialization extends FunSuite with Matchers {
 
   test("""A WarpAssociativeCollection(16 x (WarpInt(1), WarpInt(-1))) should dematerialize and rematerialize to an equal instance""") {
     val sample = WarpAssociativeCollection(Vector.fill(16)((WarpString("a"), WarpString("b"))))
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(sample)
+  }
+
+  test("""A WarpAssociativeCollection(255 x (WarpInt(1), WarpInt(-1))) should dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpAssociativeCollection(Vector.fill(255)((WarpString("a"), WarpString("b"))))
+    val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
+    val rematerialized = dematerialized.rematerialize.forceResult
+    rematerialized should equal(sample)
+  }
+
+  test("""A WarpAssociativeCollection(256 x (WarpInt(1), WarpInt(-1))) should dematerialize and rematerialize to an equal instance""") {
+    val sample = WarpAssociativeCollection(Vector.fill(256)((WarpString("a"), WarpString("b"))))
     val dematerialized = sample.dematerialize[Array[Byte] @@ WarpTags.MessagePack]
     val rematerialized = dematerialized.rematerialize.forceResult
     rematerialized should equal(sample)
