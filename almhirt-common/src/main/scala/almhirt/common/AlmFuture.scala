@@ -185,9 +185,13 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     })
   }
 
+  @deprecated(message = "Use failureEffect", since = "0.5.210")
   def withFailure(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
-    andThen { _.fold(prob => effect(prob), succ => ()) }
+    failureEffect(effect)
 
+  def failureEffect(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
+    andThen { _.fold(prob => effect(prob), succ => ()) }
+  
   def isCompleted = underlying.isCompleted
 
   def awaitResult(atMost: Duration): AlmValidation[R] =
