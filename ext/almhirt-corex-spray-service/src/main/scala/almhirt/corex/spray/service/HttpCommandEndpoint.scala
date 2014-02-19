@@ -1,6 +1,7 @@
 package almhirt.corex.spray.service
 
 import scala.language.postfixOps
+import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.core.types._
 import almhirt.components.CommandEndpoint
@@ -19,19 +20,20 @@ trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with H
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
-  val executeCommand = (put & parameters('tracked ?, 'sync ?)) & entity(as[Command])
+  val executeCommand = (put & parameters('sync.as[Boolean] ?)) & entity(as[Command])
 
   val executeCommandTerminator = path("execute") {
-    executeCommand { (tracked, sync, cmd) =>
-      ctx =>
-        (tracked, sync) match {
-          case (None, None) =>
+    executeCommand { (sync, cmd) =>
+      ctx => {
+        val effSync = sync | false
+        (cmd.canBeTracked, effSync) match {
+          case (false, false) =>
             endpoint.execute(cmd)
-            ctx.complete(StatusCodes.Accepted, cmd.tryGetTrackingId.getOrElse(""))
-          case (Some(_), _) =>
+            ctx.complete(StatusCodes.Accepted, cmd.commandId)
+          case (true, false) =>
             val trackId = endpoint.executeTracked(cmd)
             ctx.complete(StatusCodes.Accepted, trackId)
-          case (_, Some(_)) =>
+          case (_, true) =>
             endpoint.executeSync(cmd, maxSyncDuration).onComplete(
               prob =>
                 prob match {
@@ -46,6 +48,7 @@ trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with H
                 }
               })
         }
+      }
     }
   }
 }
