@@ -93,15 +93,6 @@ class MongoDomainEventLog(
     collection.bulkInsert(enum, bulk.MaxDocs, bulk.MaxBulkSize)
   }
 
-  //  def insertDocuments(documents: Seq[BSONDocument]): Future[Int] = {
-  //    val collection = db(collectionName)
-  //    val enumerator = Enumerator(documents: _*)
-  //    val iteratee = Iteratee.foldM[BSONDocument, Int](0){case (acc, next) =>
-  //      collection.insert(next, GetLastError(awaitJournalCommit = true)).map(_ => acc + 1)
-  //    }
-  //    enumerator.run(iteratee)
-  //  }
-
   def commitDomainEvents(domainEvents: Seq[DomainEvent]): AlmFuture[Seq[DomainEvent]] = {
     for {
       serialized <- AlmFuture {
@@ -118,15 +109,6 @@ class MongoDomainEventLog(
   def getDomainEventsDocs(query: BSONDocument, sort: BSONDocument): Enumerator[BSONDocument] = {
     val collection = db(collectionName)
     val enumerator= collection.find(query, projectionFilter).sort(sort).cursor.enumerate(10000, true)
-//    val (enumeratorX, channel) = Concurrent.broadcast[BSONDocument]
-//    val buffer = Concurrent.dropInputIfNotReady[BSONDocument](10, java.util.concurrent.TimeUnit.SECONDS)
-//    val enumerator = enumeratorX.through(buffer)
-//    val res = collection.find(query, projectionFilter).sort(sort).cursor.collect[List](1000, true).onComplete {
-//      case scala.util.Success(docs) =>
-//        docs.foreach { doc => channel.push(doc) }
-//        channel.end()
-//      case scala.util.Failure(exn) => channel.end(exn)
-//    }
     enumerator
   }
 
