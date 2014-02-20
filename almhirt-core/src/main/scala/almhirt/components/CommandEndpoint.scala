@@ -1,17 +1,22 @@
 package almhirt.components
 
+import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.components.ExecutionStateTracker._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.messaging.MessagePublisher
+import almhirt.core.types._
 import scala.concurrent.ExecutionContext
 
 trait CommandEndpoint {
   def execute(command: Command): Unit
   def executeTracked(command: Command): String
   def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage]
+  def executeDomainCommandSequence(commands: Seq[DomainCommand]): Unit
+  def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmValidation[String]
+  def executeDomainCommandSequenceSync(commands: Seq[DomainCommand], atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage]
 }
 
 object CommandEndpoint {
@@ -47,8 +52,24 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
         command
       else
         command.track(getTrackingId())
+    val resF = (tracker ? SubscribeForFinishedState(cmd.trackingId))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage]
     publishTo.publish(cmd)
-    (tracker ? SubscribeForFinishedState(cmd.trackingId))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage]
+    resF
+
+  }
+
+  override def executeDomainCommandSequence(commands: Seq[DomainCommand]) {
+    DomainCommandSequence.validatedCommandSequence(commands).fold(
+      fail => ???,
+      succ => succ.foreach(execute))
+  }
+
+  override def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmValidation[String] = {
+    ???
+  }
+
+  override def executeDomainCommandSequenceSync(commands: Seq[DomainCommand], atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage] = {
+    ???
   }
 
 }

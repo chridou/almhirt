@@ -1,6 +1,7 @@
 package almhirt.common
 
 import org.joda.time.LocalDateTime
+import scalaz._, Scalaz._
 import almhirt.common._
 
 trait CommandHeader {
@@ -44,8 +45,15 @@ object Command {
     def getGrouping: AlmValidation[CommandGrouping] = CommandGrouping.fromMap(self.metadata.lift)
     def isPartOfAGroup: Boolean = self.metadata.contains("group-label")
     def tryGetGroupLabel: Option[String] = self.metadata.get("group-label")
+    def trackableGroup: T = self.addMetadata("trackable-as-group", "true")
+    def canBeTrackedAsGroup: Boolean = self.isPartOfAGroup && (self.metadata.get("trackable-as-group").map(_.toLowerCase() == "true") | false)
+    def tryGetGroupTrackingId: Option[String] = 
+      if(self.canBeTrackedAsGroup)
+        self.metadata.get("group-label")
+      else
+        None
     def track(trackId: String): T = self.addMetadata("track-id", trackId)
-    def track(implicit ccud: CanCreateUuid): T = track(ccud.getUuid.toString().filterNot(_ == '-'))
+    def track(implicit ccud: CanCreateUuid): T = track(ccud.getUniqueString)
     def canBeTracked: Boolean = self.metadata.contains("track-id")
     def tryGetTrackingId: Option[String] = self.metadata.get("track-id")
     def trackingId: String = self.metadata("track-id")
@@ -72,14 +80,19 @@ object CommandGrouping {
       isLast <- isLastStr.toBooleanAlm
     } yield CommandGrouping(label, idx, isLast)
 
-  def groupCommands[T <: Command](groupLabel: String, commands: List[T]): List[T] = {
+  def groupCommands[T <: Command](groupLabel: String, commands: List[T], trackableAsGroup: Boolean = false): List[T] = {
     @tailrec
     def groupRest(rest: List[T], idx: Int, acc: List[T]): List[T] =
       rest match {
         case Nil => acc
         case x :: Nil =>
           val grp = CommandGrouping(groupLabel, idx, true)
-          groupRest(Nil, idx + 1, (x.addGrouping(grp)) :: acc)
+          val cmd = if(trackableAsGroup) {
+            x.addGrouping(grp).trackableGroup
+          } else {
+            x.addGrouping(grp)
+          }
+          groupRest(Nil, idx + 1, cmd :: acc)
         case x :: xs =>
           val grp = CommandGrouping(groupLabel, idx, false)
           groupRest(xs, idx + 1, (x.addGrouping(grp)) :: acc)
@@ -87,4 +100,5 @@ object CommandGrouping {
     groupRest(commands, 1, Nil).reverse
   }
 }
+
 

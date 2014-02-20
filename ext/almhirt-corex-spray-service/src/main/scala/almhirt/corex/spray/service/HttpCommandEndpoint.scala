@@ -20,33 +20,66 @@ trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with H
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
-  val executeCommand = (put & parameters('sync.as[Boolean] ?)) & entity(as[Command])
+  val executeCommand = (put & parameters('sync.as[Boolean] ?, 'ensure_tracking.as[Boolean] ?)) & entity(as[Command])
+  val executeCommands = (put & parameters('sync.as[Boolean] ?, 'ensure_tracking.as[Boolean] ?)) & entity(as[Seq[DomainCommand]])
 
-  val executeCommandTerminator = path("execute") {
-    executeCommand { (sync, cmd) =>
-      ctx => {
-        val effSync = sync | false
-        (cmd.canBeTracked, effSync) match {
-          case (false, false) =>
-            endpoint.execute(cmd)
-            ctx.complete(StatusCodes.Accepted, cmd.commandId)
-          case (true, false) =>
-            val trackId = endpoint.executeTracked(cmd)
-            ctx.complete(StatusCodes.Accepted, trackId)
-          case (_, true) =>
-            endpoint.executeSync(cmd, maxSyncDuration).onComplete(
-              prob =>
-                prob match {
-                  case OperationTimedOutProblem(p) => ctx.complete(StatusCodes.InternalServerError, prob)
-                  case p => ctx.complete(StatusCodes.InternalServerError, prob)
-                },
-              res => {
-                res match {
-                  case FinishedExecutionStateResult(s: ExecutionSuccessful) => ctx.complete(StatusCodes.OK, s)
-                  case FinishedExecutionStateResult(s: ExecutionFailed) => ctx.complete(StatusCodes.InternalServerError, s)
-                  case ExecutionStateTrackingFailed(_, prob) => ctx.complete(StatusCodes.InternalServerError, prob)
-                }
-              })
+  val executeCommandTerminator = pathPrefix("execute") {
+    pathEnd {
+      executeCommand { (sync, ensure_tracking, cmd) =>
+        ctx => {
+          val effSync = sync | false
+          val effTrack = (ensure_tracking | false)
+          (effTrack, effSync) match {
+            case (false, false) =>
+              endpoint.execute(cmd)
+              ctx.complete(StatusCodes.Accepted, "")
+            case (true, false) =>
+              val trackId = endpoint.executeTracked(cmd)
+              ctx.complete(StatusCodes.Accepted, trackId)
+            case (_, true) =>
+              endpoint.executeSync(cmd, maxSyncDuration).onComplete(
+                prob =>
+                  prob match {
+                    case OperationTimedOutProblem(p) => ctx.complete(StatusCodes.InternalServerError, prob)
+                    case p => ctx.complete(StatusCodes.InternalServerError, prob)
+                  },
+                res => {
+                  res match {
+                    case FinishedExecutionStateResult(s: ExecutionSuccessful) => ctx.complete(StatusCodes.OK, s)
+                    case FinishedExecutionStateResult(s: ExecutionFailed) => ctx.complete(StatusCodes.InternalServerError, s)
+                    case ExecutionStateTrackingFailed(_, prob) => ctx.complete(StatusCodes.InternalServerError, prob)
+                  }
+                })
+          }
+        }
+      }
+    } ~ path("sequence") {
+      executeCommands { (sync, ensure_tracking, cmds) =>
+        ctx => {
+          val effSync = sync | false
+          val effTrack = (ensure_tracking | false)
+          (effTrack, effSync) match {
+            case (false, false) =>
+              endpoint.executeDomainCommandSequence(cmds)
+              ctx.complete(StatusCodes.Accepted, "")
+            case (true, false) =>
+              val trackId = endpoint.executeDomainCommandSequenceTracked(cmds)
+              ctx.complete(StatusCodes.Accepted, trackId)
+            case (_, true) =>
+              endpoint.executeDomainCommandSequenceSync(cmds, maxSyncDuration).onComplete(
+                prob =>
+                  prob match {
+                    case OperationTimedOutProblem(p) => ctx.complete(StatusCodes.InternalServerError, prob)
+                    case p => ctx.complete(StatusCodes.InternalServerError, prob)
+                  },
+                res => {
+                  res match {
+                    case FinishedExecutionStateResult(s: ExecutionSuccessful) => ctx.complete(StatusCodes.OK, s)
+                    case FinishedExecutionStateResult(s: ExecutionFailed) => ctx.complete(StatusCodes.InternalServerError, s)
+                    case ExecutionStateTrackingFailed(_, prob) => ctx.complete(StatusCodes.InternalServerError, prob)
+                  }
+                })
+          }
         }
       }
     }

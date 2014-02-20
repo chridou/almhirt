@@ -6,6 +6,7 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 import almhirt.common._
+import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
 import almhirt.core.Almhirt
 import almhirt.core.types._
@@ -188,17 +189,20 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
   private def executeDomainCommandSequence(domainCommandSequence: Iterable[DomainCommand]) {
     val start = Deadline.now
     val headCommand = domainCommandSequence.head
-    val trackingId = headCommand.tryGetTrackingId
-    trackingId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(trId))))
+    val groupLabel = headCommand.tryGetGroupLabel.get
+    val groupTrackingId = headCommand.tryGetGroupTrackingId
+    groupTrackingId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(trId))))
     (for {
       initialHandler <- AlmFuture.completed(handlers.getDomainCommandHandler(headCommand))
       repository <- AlmFuture.completed(repositories.get(initialHandler.typeOfAr))
       initialState <- {
-        trackingId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionInProcess(trId))))
-        initialHandler match {
+        groupTrackingId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionInProcess(trId))))
+        val initialCommandTrackId = headCommand.tryGetTrackingId
+        initialCommandTrackId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(trId))))
+        (initialHandler match {
           case hdl: CreatingDomainCommandHandler =>
             if (headCommand.targettedVersion != 0L)
-              AlmFuture.completed(CollisionProblem("A command to create a new aggregate root must have a version of 0!").failure)
+              AlmFuture.completed(CollisionProblem("A command to create a new aggregate root must target a version of 0!").failure)
             else {
               hdl(headCommand)
             }
@@ -214,30 +218,32 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
               }
               res <- hdl(fetchedState, headCommand)
             } yield res
-        }
+        }) andThen (
+          fail => initialCommandTrackId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(trId, fail)))),
+          succ => initialCommandTrackId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(trId, s"""Head command of sequence "$groupLabel" executed""")))))
       }
       finalState <- appendMutatingCommandSequence(domainCommandSequence.tail, initialState._1, initialState._2)
       updateRes <- (repository ? UpdateAggregateRoot(finalState._1, finalState._2))(futuresMaxDuration).successfulAlmFuture[DomainMessage]
       updatedAr <- AlmFuture { evaluateRepoUpdateResponse(updateRes) }
     } yield updatedAr).onComplete(
       fail => {
-        handleFailure(trackingId, fail)
+        handleFailure(groupTrackingId, fail)
         domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandNotExecuted(cmd, fail)))
       },
       ar => {
         val lap = start.lap
         domainCommandSequence.foreach(cmd => messagePublisher.publish(CommandExecuted(cmd)))
-        trackingId.foreach(trId =>
+        groupTrackingId.foreach(trId =>
           messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(
             trId,
             s"""The aggregate root of type "${ar.getClass().getName()}" with id "${ar.id}" was succesfully mutated(and maybe created) ending with version "${ar.version} from ${domainCommandSequence.size} commands."""",
             Map("aggregate-root-id" -> ar.id.toString(), "aggregate-root-version" -> ar.version.toString)))))
         if (lap.exceeds(maxExecutionTimePerCommandSequenceWarnThreshold)) {
-          trackingId match {
+          groupTrackingId match {
             case Some(trckId) =>
               log.warning(s"""Execution of domain command sequence (trckId "$trckId") took longer than ${maxExecutionTimePerCommandSequenceWarnThreshold.defaultUnitString}(${lap.defaultUnitString})."""")
             case None =>
-              log.warning(s"""Execution of domain command sequence took longer than ${maxExecutionTimePerCommandSequenceWarnThreshold.defaultUnitString}(${lap.defaultUnitString})."""")
+              log.warning(s"""Execution of a domain command sequence took longer than ${maxExecutionTimePerCommandSequenceWarnThreshold.defaultUnitString}(${lap.defaultUnitString})."""")
           }
         }
       })
@@ -245,10 +251,15 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
 
   private def appendMutatingCommandSequence(commands: Iterable[DomainCommand], currentState: IsAggregateRoot, previousEvents: IndexedSeq[DomainEvent]): AlmFuture[(IsAggregateRoot, IndexedSeq[DomainEvent])] = {
     def appendCommandResult(previousState: (IsAggregateRoot, IndexedSeq[DomainEvent]), command: DomainCommand): AlmFuture[(IsAggregateRoot, IndexedSeq[DomainEvent])] = {
-      for {
+      val trckId = command.tryGetTrackingId
+      val groupLabel = command.tryGetGroupLabel.get
+      trckId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionStarted(trId))))
+      (for {
         handler <- AlmFuture.completed { handlers.getMutatingDomainCommandHandler(command) }
         handlerRes <- handler(previousState._1, command)
-      } yield (handlerRes._1, previousState._2 ++ handlerRes._2)
+      } yield (handlerRes._1, previousState._2 ++ handlerRes._2)).andThen(
+        fail => trckId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(trId, fail)))),
+        succ => trckId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(trId, s"""Tail command of sequecne "$groupLabel" executed""")))))
     }
     commands.foldLeft(AlmFuture.successful((currentState, previousEvents))) { (acc, cur) =>
       acc.flatMap { previousState =>

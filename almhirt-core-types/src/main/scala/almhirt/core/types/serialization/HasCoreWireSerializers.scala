@@ -7,5 +7,6 @@ trait HasCoreWireSerializers {
   def domainEventWireSerializer: WireSerializer[DomainEvent]
   implicit def executionStateWireSerializer: WireSerializer[ExecutionState]
   implicit def domainEventsWireSerializer: WireSerializer[Seq[DomainEvent]]
+  implicit def domainCommandsWireSerializer: WireSerializer[Seq[DomainCommand]]
   implicit def executionStatesWireSerializer: WireSerializer[Seq[ExecutionState]]
 }
