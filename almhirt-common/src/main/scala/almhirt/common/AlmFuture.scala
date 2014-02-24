@@ -248,7 +248,7 @@ object AlmFuture {
   }
 
   def compute[T](computation: => T)(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { almhirt.almvalidation.funs.inTryCatch(computation) })
-  def completed[T](what: => AlmValidation[T]) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.computeSafely(what) })
+  def completed[T](what: => AlmValidation[T]) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.unsafe(what) })
   def successful[T](result: => T) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.inTryCatch(result) })
   def failed[T](prob: => Problem) = new AlmFuture[T](Future.successful {
     try {

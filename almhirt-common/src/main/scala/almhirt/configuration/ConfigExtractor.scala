@@ -194,7 +194,7 @@ trait ConfigConfigListExtractor extends ConfigExtractor[List[Config]] {
     } yield typed
 
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Config]]] =
-    computeSafely {
+    unsafe {
       ConfigHelper.tryGetFromConfigSafely(path, config.getConfigList).map(lOpt =>
         lOpt.map(l => l.toList.map(cfg =>
           cfg.asInstanceOf[Config])))
