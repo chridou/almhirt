@@ -51,8 +51,9 @@ class HttpCommandEndpointSpecs extends FunSpec
   with HasCommonMarshallers with CommonMarshallerInstances
   with HasCommonUnmarshallers with CommonUnmarshallerInstances
   with HasCoreMarshallers
-  with HasCoreUnmarshallers
   with CoreMarshallerInstances
+  with HasCoreUnmarshallers
+  with CoreUnmarshallerInstances
   with HttpCommandEndpoint
   with HttpService {
   def actorRefFactory = system

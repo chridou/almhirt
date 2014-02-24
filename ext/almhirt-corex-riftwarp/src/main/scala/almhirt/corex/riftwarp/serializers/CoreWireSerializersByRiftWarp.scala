@@ -9,5 +9,6 @@ trait CoreWireSerializersByRiftWarp extends HasCoreWireSerializers { self: HasRi
   implicit override val domainEventWireSerializer = WarpWireSerializer[DomainEvent](myRiftWarp)
   implicit override val executionStateWireSerializer =  WarpWireSerializer[ExecutionState](myRiftWarp)
   implicit override val domainEventsWireSerializer =  WarpWireSerializer.collection[DomainEvent](myRiftWarp)
+  implicit override val domainCommandsWireSerializer =  WarpWireSerializer.collection[DomainCommand](myRiftWarp)
   implicit override val executionStatesWireSerializer =  WarpWireSerializer.collection[ExecutionState](myRiftWarp)
 }
