@@ -13,9 +13,9 @@ import spray.routing.directives._
 import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling.Unmarshaller
 import almhirt.httpx.spray.marshalling._
-import almhirt.corex.spray.marshalling.HasCoreMarshallers
+import almhirt.corex.spray.marshalling.{ HasCoreMarshallers, HasCoreUnmarshallers }
 
-trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with HasCommonUnmarshallers with HasCoreMarshallers =>
+trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with HasCommonUnmarshallers with HasCoreMarshallers with HasCoreUnmarshallers =>
 
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
@@ -63,8 +63,9 @@ trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with H
               endpoint.executeDomainCommandSequence(cmds)
               ctx.complete(StatusCodes.Accepted, "")
             case (true, false) =>
-              val trackId = endpoint.executeDomainCommandSequenceTracked(cmds)
-              ctx.complete(StatusCodes.Accepted, trackId)
+              endpoint.executeDomainCommandSequenceTracked(cmds).fold(
+                fail => ctx.complete(StatusCodes.BadRequest, fail),
+                trId => ctx.complete(StatusCodes.Accepted, trId))
             case (_, true) =>
               endpoint.executeDomainCommandSequenceSync(cmds, maxSyncDuration).onComplete(
                 prob =>

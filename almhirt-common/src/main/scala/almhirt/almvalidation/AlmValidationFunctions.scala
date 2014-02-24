@@ -50,6 +50,16 @@ trait AlmValidationFunctions {
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
+  def unsafe[T](a: => AlmValidation[T]): AlmValidation[T] = {
+    try {
+      a
+    } catch {
+      case scala.util.control.NonFatal(exn) => launderException(exn).failure
+    }
+  }
+
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
+  @deprecated(message = "Use unsafe", since = "0.5.213")
   def computeSafely[T](a: => AlmValidation[T]): AlmValidation[T] = {
     try {
       a
@@ -59,6 +69,16 @@ trait AlmValidationFunctions {
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
+  def unsafeM[T](a: => AlmValidation[T])(message: String): AlmValidation[T] = {
+    try {
+      a
+    } catch {
+      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(message).failure
+    }
+  }
+
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
+  @deprecated(message = "Use unsafeM", since = "0.5.213")
   def computeSafelyM[T](a: => AlmValidation[T])(message: String): AlmValidation[T] = {
     try {
       a
@@ -68,7 +88,7 @@ trait AlmValidationFunctions {
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
-  def computeSafelyMM[T](a: => AlmValidation[T])(createMessage: Throwable => String): AlmValidation[T] = {
+  def unsafeMM[T](a: => AlmValidation[T])(createMessage: Throwable => String): AlmValidation[T] = {
     try {
       a
     } catch {
@@ -76,6 +96,16 @@ trait AlmValidationFunctions {
     }
   }
 
+  /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
+  @deprecated(message = "Use unsafeMM", since = "0.5.213")
+  def computeSafelyMM[T](a: => AlmValidation[T])(createMessage: Throwable => String): AlmValidation[T] = {
+    try {
+      a
+    } catch {
+      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(createMessage(exn)).failure
+    }
+  }
+  
   /** Abort a workflow with the given Problem if the value evaluated to false */
   def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
     if (cond) ().success else problem.failure[Unit]

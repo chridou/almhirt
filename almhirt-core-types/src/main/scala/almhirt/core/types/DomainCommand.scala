@@ -85,5 +85,6 @@ object DomainCommandSequence {
   def makeCommandSequence(groupLabel: String, cmds: Seq[DomainCommand], trackable: Boolean): AlmValidation[Seq[DomainCommand]] =
     validatedCandidates(cmds).map(candidates => CommandGrouping.groupCommands(groupLabel, cmds.toList, trackable))
 
-  def makeCommandSequence(cmds: Seq[DomainCommand], trackable: Boolean)(implicit ccuad: CanCreateUuid): AlmValidation[Seq[DomainCommand]] = makeCommandSequence(ccuad.getUniqueString, cmds, trackable)
+  def makeCommandSequence(cmds: Seq[DomainCommand], trackable: Boolean)(implicit ccuad: CanCreateUuid): AlmValidation[Seq[DomainCommand]] = 
+    makeCommandSequence(ccuad.getUniqueString, cmds, trackable)
 }

@@ -52,6 +52,11 @@ object Command {
         self.metadata.get("group-label")
       else
         None
+    def getGroupTrackingId: AlmValidation[String] = 
+      tryGetGroupTrackingId match {
+        case None => NoSuchElementProblem("Command is not trackable or has no tracking id for groups").failure
+        case Some(id) => id.success
+      }
     def track(trackId: String): T = self.addMetadata("track-id", trackId)
     def track(implicit ccud: CanCreateUuid): T = track(ccud.getUniqueString)
     def canBeTracked: Boolean = self.metadata.contains("track-id")

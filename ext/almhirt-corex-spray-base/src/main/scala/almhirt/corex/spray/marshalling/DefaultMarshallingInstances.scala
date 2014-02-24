@@ -5,5 +5,6 @@ object DefaultCoreMarshallingInstances {
   implicit val ExecutionStateMarshallingInst = ExecutionStateMarshalling
 
   implicit val DomainEventsMarshallingInst = DomainEventsMarshalling
+  implicit val DomainCommandsMarshallingInst = DomainCommandsMarshalling
   implicit val ExecutionStatesMarshallingInst = ExecutionStatesMarshalling
 }

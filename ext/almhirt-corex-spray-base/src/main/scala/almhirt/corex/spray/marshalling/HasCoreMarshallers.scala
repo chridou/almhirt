@@ -10,6 +10,7 @@ trait HasCoreMarshallers {
   implicit def executionStateMarshaller: Marshaller[ExecutionState]
 
   implicit def domainEventsMarshaller: Marshaller[Seq[DomainEvent]]
+  implicit def domainCommandsMarshaller: Marshaller[Seq[DomainCommand]]
   implicit def executionStatesMarshaller: Marshaller[Seq[ExecutionState]]
 }
 
@@ -24,6 +25,9 @@ trait CoreMarshallerInstances {self : HasCoreMarshallers =>
 
   override lazy val domainEventsMarshaller: Marshaller[Seq[DomainEvent]] = 
     ContentTypeBoundMarshallerFactory[Seq[DomainEvent]](coreContentTypeProviders.domainEventsContentTypeProvider, DefaultCoreMarshallingInstances.DomainEventsMarshallingInst).marshaller(coreWireSerializers.domainEventsWireSerializer)
+    
+  override lazy val domainCommandsMarshaller: Marshaller[Seq[DomainCommand]] = 
+    ContentTypeBoundMarshallerFactory[Seq[DomainCommand]](coreContentTypeProviders.domainCommandsContentTypeProvider, DefaultCoreMarshallingInstances.DomainCommandsMarshallingInst).marshaller(coreWireSerializers.domainCommandsWireSerializer)
     
   override lazy val executionStatesMarshaller: Marshaller[Seq[ExecutionState]] = 
     ContentTypeBoundMarshallerFactory[Seq[ExecutionState]](coreContentTypeProviders.executionStatesContentTypeProvider, DefaultCoreMarshallingInstances.ExecutionStatesMarshallingInst).marshaller(coreWireSerializers.executionStatesWireSerializer)

@@ -2,6 +2,8 @@ package almhirt.components
 
 import scalaz._, Scalaz._
 import almhirt.common._
+import almhirt.almvalidation.kit._
+import almhirt.almfuture.all._
 import almhirt.components.ExecutionStateTracker._
 import akka.actor._
 import akka.pattern._
@@ -14,7 +16,7 @@ trait CommandEndpoint {
   def execute(command: Command): Unit
   def executeTracked(command: Command): String
   def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage]
-  def executeDomainCommandSequence(commands: Seq[DomainCommand]): Unit
+  def executeDomainCommandSequence(commands: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]]
   def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmValidation[String]
   def executeDomainCommandSequenceSync(commands: Seq[DomainCommand], atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage]
 }
@@ -45,7 +47,6 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
 
   override def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage] = {
     import scalaz.syntax.validation._
-    import almhirt.almfuture.all._
     import almhirt.components.ExecutionStateTracker._
     val cmd =
       if (command.canBeTracked)
@@ -58,18 +59,36 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
 
   }
 
-  override def executeDomainCommandSequence(commands: Seq[DomainCommand]) {
-    DomainCommandSequence.validatedCommandSequence(commands).fold(
-      fail => ???,
-      succ => succ.foreach(execute))
+  override def executeDomainCommandSequence(commands: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]] = {
+    DomainCommandSequence.validatedCommandSequence(commands).andThenWhenSucceeded(succ => succ.foreach(publishTo.publish))
+  }
+
+  private def makeSequenceValidatedAndTrackable(commands: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]] = {
+    DomainCommandSequence.validatedCommandSequence(commands).flatMap { cs =>
+      val (head, tail) = (cs.head, cs.tail)
+      if (head.canBeTrackedAsGroup) {
+        commands.success
+      } else {
+        val headTrack = head.trackableGroup
+        (headTrack +: tail).success
+      }
+    }
   }
 
   override def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmValidation[String] = {
-    ???
+    makeSequenceValidatedAndTrackable(commands).flatMap { cs =>
+      cs.foreach(publishTo.publish)
+      unsafe { cs.head.getGroupTrackingId }
+    }
   }
 
   override def executeDomainCommandSequenceSync(commands: Seq[DomainCommand], atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage] = {
-    ???
+    makeSequenceValidatedAndTrackable(commands).flatMap(cs => unsafe { cs.head.getGroupTrackingId.map((_, cs)) }).fold(
+      fail => AlmFuture.failed(fail),
+      succ => {
+        val resF = (tracker ? SubscribeForFinishedState(succ._1))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage]
+        succ._2.foreach(publishTo.publish)
+        resF
+      })
   }
-
 }

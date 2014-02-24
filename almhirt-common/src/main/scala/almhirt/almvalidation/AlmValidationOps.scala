@@ -103,19 +103,46 @@ trait AlmValidationOps4[T] extends Ops[Validation[String, T]] {
 }
 
 trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
+  def onFailure(sideEffect: P => Unit): Unit =
+    self fold (sideEffect, _ => ())
+
+  @deprecated(message = "Use onFailure", since = "0.5.213")
   def failureEffect(sideEffect: P => Unit): Unit =
     self fold (sideEffect, _ => ())
 
+  def onSuccess(sideEffect: T => Unit): Unit =
+    self fold (_ => (), sideEffect)
+  
+  @deprecated(message = "Use onSuccess", since = "0.5.213")
   def successEffect(sideEffect: T => Unit): Unit =
     self fold (_ => (), sideEffect)
 
-  def effect(failEffect: P => Unit, sucessEffect: T => Unit): Unit =
+  def onComplete(failEffect: P => Unit, sucessEffect: T => Unit): Unit =
     self fold (failEffect, sucessEffect)
 
+  @deprecated(message = "Use onComplete", since = "0.5.213")
+  def effect(failEffect: P => Unit, sucessEffect: T => Unit): Unit =
+    self fold (failEffect, sucessEffect)
+  
   def recover(v: => T): Validation[P, T] =
     self.fold(prob => v.success[P], _ => self)
 
-  /** Never use in production code! */
+  def andThen(failEffect: Problem => Unit, sucessEffect: T => Unit): AlmValidation[T] = {
+    self fold (failEffect, sucessEffect)
+    self
+  }
+
+  def andThenWhenSucceeded(sucessEffect: T => Unit): AlmValidation[T] = {
+    self fold (_ => (), sucessEffect)
+    self
+  }
+
+  def andThenWhenFailed(failEffect: Problem => Unit): AlmValidation[T] = {
+    self fold (failEffect, _ => ())
+    self
+  }
+  
+    /** Never use in production code! */
   def forceResult(): T =
     self fold (prob => throw ResultForcedFromValidationException(prob), v => v)
 
