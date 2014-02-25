@@ -316,6 +316,7 @@ trait RiftWarpHttpSprayBuild {
 	  libraryDependencies += scala_reflect,
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
+    libraryDependencies += akka_actor,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += scalaz,
