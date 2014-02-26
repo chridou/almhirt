@@ -241,7 +241,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
         if (lap.exceeds(maxExecutionTimePerCommandSequenceWarnThreshold)) {
           groupTrackingId match {
             case Some(trckId) =>
-              log.warning(s"""Execution of domain command sequence (trckId "$trckId") took longer than ${maxExecutionTimePerCommandSequenceWarnThreshold.defaultUnitString}(${lap.defaultUnitString})."""")
+              log.warning(s"""Execution of domain command sequence (group-id "$trckId") took longer than ${maxExecutionTimePerCommandSequenceWarnThreshold.defaultUnitString}(${lap.defaultUnitString})."""")
             case None =>
               log.warning(s"""Execution of a domain command sequence took longer than ${maxExecutionTimePerCommandSequenceWarnThreshold.defaultUnitString}(${lap.defaultUnitString})."""")
           }
@@ -258,8 +258,12 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
         handler <- AlmFuture.completed { handlers.getMutatingDomainCommandHandler(command) }
         handlerRes <- handler(previousState._1, command)
       } yield (handlerRes._1, previousState._2 ++ handlerRes._2)).andThen(
-        fail => trckId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(trId, fail)))),
-        succ => trckId.foreach(trId => messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(trId, s"""Tail command of sequecne "$groupLabel" executed""")))))
+        fail =>
+          trckId.foreach(trId =>
+            messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(trId, fail)))),
+        succ =>
+          trckId.foreach(trId =>
+            messagePublisher.publish(ExecutionStateChanged(ExecutionSuccessful(trId, s"""Tail command of sequence "$groupLabel" executed""")))))
     }
     commands.foldLeft(AlmFuture.successful((currentState, previousEvents))) { (acc, cur) =>
       acc.flatMap { previousState =>

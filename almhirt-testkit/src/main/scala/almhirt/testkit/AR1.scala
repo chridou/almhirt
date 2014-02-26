@@ -46,7 +46,9 @@ case class AR1(ref: AggregateRootRef, theA: String, theB: Option[String], isDele
 
   def changeB(newB: Option[String])(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[AR1, AR1Event] =
     newB.map(_.notEmptyAlm).validationOut.fold(
-      fail => reject(fail),
+      fail => {
+        reject(fail)
+      },
       succ => update(AR1BChanged(ref, succ)))
 
   def delete()(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[AR1, AR1Event] =
@@ -72,17 +74,22 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
 
       val createTestArAdder =
         CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComCreateAR1, AR1Event, AR1](
-          command => AR1.fromScratch(command.targettedAggregateRootId, command.newA).result,
+          command =>
+            {
+              AR1.fromScratch(command.targettedAggregateRootId, command.newA).result
+            },
           executionContext)
       val changeAAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComChangeA, AR1Event, AR1](
-          (ar, command) => ar.changeA(command.newA).result,
+          (ar, command) => {
+            ar.changeA(command.newA).result
+          },
           executionContext)
       val changeBAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComChangeB, AR1Event, AR1](
-          (ar, command) => { 
-            ar.changeB(command.newB).result 
-            },
+          (ar, command) => {
+            ar.changeB(command.newB).result
+          },
           executionContext)
       val deleteTestArAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComDeleteAR1, AR1Event, AR1](

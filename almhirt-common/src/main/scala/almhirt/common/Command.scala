@@ -87,22 +87,19 @@ object CommandGrouping {
 
   def groupCommands[T <: Command](groupLabel: String, commands: List[T], trackableAsGroup: Boolean = false): List[T] = {
     @tailrec
-    def groupRest(rest: List[T], idx: Int, acc: List[T]): List[T] =
+    def groupRest(rest: List[T], idx: Int, acc: List[T], first: Boolean): List[T] =
       rest match {
         case Nil => acc
-        case x :: Nil =>
-          val grp = CommandGrouping(groupLabel, idx, true)
-          val cmd = if(trackableAsGroup) {
+        case x :: xs =>
+          val grp = CommandGrouping(groupLabel, idx, xs.isEmpty)
+          val cmd = if(first && trackableAsGroup) {
             x.addGrouping(grp).trackableGroup
           } else {
             x.addGrouping(grp)
           }
-          groupRest(Nil, idx + 1, cmd :: acc)
-        case x :: xs =>
-          val grp = CommandGrouping(groupLabel, idx, false)
-          groupRest(xs, idx + 1, (x.addGrouping(grp)) :: acc)
+          groupRest(xs, idx + 1, cmd :: acc, false)
       }
-    groupRest(commands, 1, Nil).reverse
+    groupRest(commands, 1, Nil, true).reverse
   }
 }
 
