@@ -58,7 +58,7 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
       publishTo.publish(cmd)
       resF
     } else {
-      AlmFuture.failed(BadDataProblem("A command issued for synchronuos exectution may not be part of a group."))
+      AlmFuture.failed(BadDataProblem("A command issued for synchronuos execution may not be part of a group."))
     }
   }
 
