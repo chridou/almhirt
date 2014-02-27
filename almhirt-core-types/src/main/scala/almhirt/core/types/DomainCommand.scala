@@ -74,7 +74,7 @@ object DomainCommandSequence {
           ConstraintViolatedProblem("There are duplicate indexes.").failure
         } else if (sortedIds.head != 1) {
           ConstraintViolatedProblem("The lowest index must be 1.").failure
-        } else if (sortedIds.sliding(2).forall(x => x.last - x.head == 1)) {
+        } else if (sortedIds.sliding(2).exists(x => x.last - x.head != 1)) {
           ConstraintViolatedProblem("There is at least one gap between the indexes.").failure
         } else {
           cmds.success
