@@ -22,8 +22,8 @@ trait HttpCommandEndpoint extends Directives {
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
   implicit def executionContext: scala.concurrent.ExecutionContext
-  val executeCommand = (put & parameters('sync.as[Boolean] ?, 'ensure_tracking.as[Boolean] ?)) & entity(as[Command])
-  val executeCommands = (put & parameters('sync.as[Boolean] ?, 'ensure_tracking.as[Boolean] ?)) & entity(as[Seq[DomainCommand]])
+  val executeCommand = (post & parameters('sync.as[Boolean] ?, 'ensure_tracking.as[Boolean] ?)) & entity(as[Command])
+  val executeCommands = (post & parameters('sync.as[Boolean] ?, 'ensure_tracking.as[Boolean] ?)) & entity(as[Seq[DomainCommand]])
 
   val executeCommandTerminator = pathPrefix("execute") {
     pathEnd {
