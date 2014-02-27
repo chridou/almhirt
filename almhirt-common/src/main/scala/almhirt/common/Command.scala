@@ -47,12 +47,12 @@ object Command {
     def tryGetGroupLabel: Option[String] = self.metadata.get("group-label")
     def trackableGroup: T = self.addMetadata("trackable-as-group", "true")
     def canBeTrackedAsGroup: Boolean = self.isPartOfAGroup && (self.metadata.get("trackable-as-group").map(_.toLowerCase() == "true") | false)
-    def tryGetGroupTrackingId: Option[String] = 
-      if(self.canBeTrackedAsGroup)
+    def tryGetGroupTrackingId: Option[String] =
+      if (self.canBeTrackedAsGroup)
         self.metadata.get("group-label")
       else
         None
-    def getGroupTrackingId: AlmValidation[String] = 
+    def getGroupTrackingId: AlmValidation[String] =
       tryGetGroupTrackingId match {
         case None => NoSuchElementProblem("Command is not trackable or has no tracking id for groups").failure
         case Some(id) => id.success
@@ -92,7 +92,7 @@ object CommandGrouping {
         case Nil => acc
         case x :: xs =>
           val grp = CommandGrouping(groupLabel, idx, xs.isEmpty)
-          val cmd = if(first && trackableAsGroup) {
+          val cmd = if (first && trackableAsGroup) {
             x.addGrouping(grp).trackableGroup
           } else {
             x.addGrouping(grp)
@@ -101,6 +101,44 @@ object CommandGrouping {
       }
     groupRest(commands, 1, Nil, true).reverse
   }
+
+  def isPotentialCommandSequence(cmds: Seq[Command]): Boolean = cmds.exists(_.isPartOfAGroup)
+
+  def validatedCandidates[T <: Command](cmds: Seq[T]): AlmValidation[Seq[T]] =
+    if (cmds.isEmpty) {
+      ConstraintViolatedProblem("The sequence may not be empty").failure
+    } else {
+      if (isPotentialCommandSequence(cmds)) {
+        ConstraintViolatedProblem("One or more commands are already part of a group.").failure
+      } else {
+        cmds.success
+      }
+    }
+
+  def validatedCommandSequence[T <: Command](cmds: Seq[T]): AlmValidation[Seq[T]] =
+    if (cmds.isEmpty) {
+      ConstraintViolatedProblem("The sequence may not be empty").failure
+    } else {
+      val headCmd = cmds.head
+      if (cmds.exists(!_.isPartOfAGroup)) {
+        ConstraintViolatedProblem("One or more commands are not part of a group.").failure
+      } else if (cmds.exists(headCmd.tryGetGroupLabel != _.tryGetGroupLabel)) {
+        ConstraintViolatedProblem("Group labels differ.").failure
+      } else {
+        val groupings = cmds.map(_.getGrouping.toOption).flatten
+        val sortedIds = groupings.map(_.index).sorted
+        if (groupings.map(_.index).toSet.size != groupings.size) {
+          ConstraintViolatedProblem("There are duplicate indexes.").failure
+        } else if (sortedIds.head != 1) {
+          ConstraintViolatedProblem("The lowest index must be 1.").failure
+        } else if (sortedIds.sliding(2).exists(x => x.last - x.head != 1)) {
+          ConstraintViolatedProblem("There is at least one gap between the indexes.").failure
+        } else {
+          cmds.success
+        }
+      }
+    }
+
 }
 
 

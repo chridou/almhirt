@@ -38,7 +38,7 @@ trait CreatingDomainCommand { self: DomainCommand => }
 object DomainCommandSequence {
   def isPotentialCommandSequence(cmds: Seq[DomainCommand]): Boolean = cmds.exists(_.isPartOfAGroup)
 
-  def validatedCandidates(cmds: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]] =
+  def validatedCandidates[T <: DomainCommand](cmds: Seq[T]): AlmValidation[Seq[T]] =
     if (cmds.isEmpty) {
       ConstraintViolatedProblem("The sequence may not be empty").failure
     } else {
@@ -54,19 +54,13 @@ object DomainCommandSequence {
       }
     }
 
-  def validatedCommandSequence(cmds: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]] =
-    if (cmds.isEmpty) {
-      ConstraintViolatedProblem("The sequence may not be empty").failure
-    } else {
+  def validatedCommandSequence[T <: DomainCommand](cmds: Seq[T]): AlmValidation[Seq[T]] =
+    CommandGrouping.validatedCommandSequence(cmds).flatMap { cmds =>
       val headCmd = cmds.head
       if (!cmds.forall(_.targettedAggregateRootId == headCmd.targettedAggregateRootId)) {
         ConstraintViolatedProblem("All commands must target the same aggregate root.").failure
       } else if (!cmds.forall(_.targettedVersion == headCmd.targettedVersion)) {
         ConstraintViolatedProblem("All commands must target the same version.").failure
-      } else if (cmds.exists(!_.isPartOfAGroup)) {
-        ConstraintViolatedProblem("One or more commands are not part of a group.").failure
-      } else if (cmds.exists(headCmd.tryGetGroupLabel != _.tryGetGroupLabel)) {
-        ConstraintViolatedProblem("Group labels differ.").failure
       } else {
         val groupings = cmds.map(_.getGrouping.toOption).flatten
         val sortedIds = groupings.map(_.index).sorted
@@ -85,6 +79,6 @@ object DomainCommandSequence {
   def makeCommandSequence(groupLabel: String, cmds: Seq[DomainCommand], trackable: Boolean): AlmValidation[Seq[DomainCommand]] =
     validatedCandidates(cmds).map(candidates => CommandGrouping.groupCommands(groupLabel, cmds.toList, trackable))
 
-  def makeCommandSequence(cmds: Seq[DomainCommand], trackable: Boolean)(implicit ccuad: CanCreateUuid): AlmValidation[Seq[DomainCommand]] = 
+  def makeCommandSequence(cmds: Seq[DomainCommand], trackable: Boolean)(implicit ccuad: CanCreateUuid): AlmValidation[Seq[DomainCommand]] =
     makeCommandSequence(ccuad.getUniqueString, cmds, trackable)
 }
