@@ -7,15 +7,17 @@ import almhirt.core.types._
 import almhirt.components.CommandEndpoint
 import almhirt.components.ExecutionStateTracker._
 import almhirt.commanding._
+import almhirt.httpx.spray.marshalling._
+import almhirt.corex.spray.marshalling.{ HasCoreMarshallers, HasCoreUnmarshallers }
+import almhirt.httpx.spray.service.AlmHttpEndpoint
 import spray.routing._
 import spray.http._
 import spray.routing.directives._
 import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling.Unmarshaller
-import almhirt.httpx.spray.marshalling._
-import almhirt.corex.spray.marshalling.{ HasCoreMarshallers, HasCoreUnmarshallers }
 
-trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with HasCommonUnmarshallers with HasCoreMarshallers with HasCoreUnmarshallers =>
+trait HttpCommandEndpoint extends Directives {
+  self: AlmHttpEndpoint with HasCommonMarshallers with HasCommonUnmarshallers with HasCoreMarshallers with HasCoreUnmarshallers =>
 
   def endpoint: CommandEndpoint
   def maxSyncDuration: scala.concurrent.duration.FiniteDuration
@@ -26,7 +28,7 @@ trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with H
   val executeCommandTerminator = pathPrefix("execute") {
     pathEnd {
       executeCommand { (sync, ensure_tracking, cmd) =>
-        ctx => {
+        implicit ctx => {
           val effSync = sync | false
           val effTrack = (ensure_tracking | false)
           (effTrack, effSync) match {
@@ -34,28 +36,19 @@ trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with H
               endpoint.execute(cmd)
               ctx.complete(StatusCodes.Accepted, "")
             case (true, false) =>
-              val trackId = endpoint.executeTracked(cmd)
-              ctx.complete(StatusCodes.Accepted, trackId)
+              endpoint.executeTracked(cmd).completeRequestAccepted
             case (_, true) =>
-              endpoint.executeSync(cmd, maxSyncDuration).onComplete(
-                prob =>
-                  prob match {
-                    case OperationTimedOutProblem(p) => ctx.complete(StatusCodes.InternalServerError, prob)
-                    case p => ctx.complete(StatusCodes.InternalServerError, prob)
-                  },
-                res => {
-                  res match {
-                    case FinishedExecutionStateResult(s: ExecutionSuccessful) => ctx.complete(StatusCodes.OK, s)
-                    case FinishedExecutionStateResult(s: ExecutionFailed) => ctx.complete(StatusCodes.InternalServerError, s)
-                    case ExecutionStateTrackingFailed(_, prob) => ctx.complete(StatusCodes.InternalServerError, prob)
-                  }
-                })
+              endpoint.executeSync(cmd, maxSyncDuration).completeRequestPostMapped[ExecutionState] {
+                case FinishedExecutionStateResult(s: ExecutionSuccessful) => SuccessContent(s)
+                case FinishedExecutionStateResult(s: ExecutionFailed) => FailureContent(s)
+                case ExecutionStateTrackingFailed(_, prob) => ProblemContent(prob)
+              }
           }
         }
       }
     } ~ path("sequence") {
       executeCommands { (sync, ensure_tracking, cmds) =>
-        ctx => {
+        implicit ctx => {
           val effSync = sync | false
           val effTrack = (ensure_tracking | false)
           (effTrack, effSync) match {
@@ -63,23 +56,13 @@ trait HttpCommandEndpoint extends Directives { self: HasCommonMarshallers with H
               endpoint.executeDomainCommandSequence(cmds)
               ctx.complete(StatusCodes.Accepted, "")
             case (true, false) =>
-              endpoint.executeDomainCommandSequenceTracked(cmds).fold(
-                fail => ctx.complete(StatusCodes.BadRequest, fail),
-                trId => ctx.complete(StatusCodes.Accepted, trId))
+              endpoint.executeDomainCommandSequenceTracked(cmds).completeRequestAccepted
             case (_, true) =>
-              endpoint.executeDomainCommandSequenceSync(cmds, maxSyncDuration).onComplete(
-                prob =>
-                  prob match {
-                    case OperationTimedOutProblem(p) => ctx.complete(StatusCodes.InternalServerError, prob)
-                    case p => ctx.complete(StatusCodes.InternalServerError, prob)
-                  },
-                res => {
-                  res match {
-                    case FinishedExecutionStateResult(s: ExecutionSuccessful) => ctx.complete(StatusCodes.OK, s)
-                    case FinishedExecutionStateResult(s: ExecutionFailed) => ctx.complete(StatusCodes.InternalServerError, s)
-                    case ExecutionStateTrackingFailed(_, prob) => ctx.complete(StatusCodes.InternalServerError, prob)
-                  }
-                })
+              endpoint.executeDomainCommandSequenceSync(cmds, maxSyncDuration).completeRequestPostMapped[ExecutionState] {
+                case FinishedExecutionStateResult(s: ExecutionSuccessful) => SuccessContent(s)
+                case FinishedExecutionStateResult(s: ExecutionFailed) => FailureContent(s)
+                case ExecutionStateTrackingFailed(_, prob) => ProblemContent(prob)
+              }
           }
         }
       }

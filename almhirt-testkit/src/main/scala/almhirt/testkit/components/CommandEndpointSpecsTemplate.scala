@@ -70,7 +70,7 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
     it("""should forward a command and add a tracking id to it when it doesn't have one on "tracked"""") {
       useCommandEndpoint{ (endpoint, spy, tracker) =>
         val cmd = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(ccuad.getUuid)), "a")
-        val trackIdRes = endpoint.executeTracked(cmd)
+        val trackIdRes = endpoint.executeTracked(cmd).awaitResultOrEscalate(theAlmhirt.durations.shortDuration)
         val res = spy.expectMsgPF(defaultDuration, "Waiting for a message containing the given command") {
           case Message(_, payload) => payload
         }

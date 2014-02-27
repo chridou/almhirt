@@ -29,6 +29,7 @@ import almhirt.corex.riftwarp.serializers.CoreWireSerializersByRiftWarp
 import almhirt.http._
 import almhirt.corex.spray._
 import almhirt.core.http._
+import almhirt.httpx.spray.service.AlmHttpEndpoint
 
 object Requirements {
   val riftWarp: RiftWarp = {
@@ -46,6 +47,7 @@ object Requirements {
 }
 
 class HttpCommandEndpointSpecs extends FunSpec
+  with AlmHttpEndpoint
   with ScalatestRouteTest
   with Matchers
   with HasCommonMarshallers with CommonMarshallerInstances

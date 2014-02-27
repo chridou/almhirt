@@ -3,7 +3,7 @@ package almhirt.httpx.spray.marshalling
 import almhirt.serialization.HasCommonWireSerializers
 import spray.httpx.marshalling.Marshaller
 
-trait HasCommonMarshallers {
+trait HasCommonMarshallers extends HasProblemMarshaller {
   implicit def booleanMarshaller: Marshaller[Boolean]
   implicit def stringMarshaller: Marshaller[String]
   implicit def byteMarshaller: Marshaller[Byte]

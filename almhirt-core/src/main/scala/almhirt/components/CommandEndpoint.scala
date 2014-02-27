@@ -14,10 +14,10 @@ import scala.concurrent.ExecutionContext
 
 trait CommandEndpoint {
   def execute(command: Command): Unit
-  def executeTracked(command: Command): String
+  def executeTracked(command: Command): AlmFuture[String]
   def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage]
-  def executeDomainCommandSequence(commands: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]]
-  def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmValidation[String]
+  def executeDomainCommandSequence(commands: Seq[DomainCommand]): AlmFuture[Seq[DomainCommand]]
+  def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmFuture[String]
   def executeDomainCommandSequenceSync(commands: Seq[DomainCommand], atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage]
 }
 
@@ -35,14 +35,14 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
     publishTo.publish(command)
   }
 
-  def executeTracked(command: Command): String = {
+  def executeTracked(command: Command): AlmFuture[String] = {
     val cmd =
       if (command.canBeTracked)
         command
       else
         command.track(getTrackingId())
     publishTo.publish(cmd)
-    cmd.trackingId
+    AlmFuture.successful(cmd.trackingId)
   }
 
   override def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage] = {
@@ -59,8 +59,8 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
 
   }
 
-  override def executeDomainCommandSequence(commands: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]] = {
-    DomainCommandSequence.validatedCommandSequence(commands).andThenWhenSucceeded(succ => succ.foreach(publishTo.publish))
+  override def executeDomainCommandSequence(commands: Seq[DomainCommand]): AlmFuture[Seq[DomainCommand]] = {
+    AlmFuture.completed(DomainCommandSequence.validatedCommandSequence(commands).andThenWhenSucceeded(succ => succ.foreach(publishTo.publish)))
   }
 
   private def makeSequenceValidatedAndTrackable(commands: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]] = {
@@ -75,10 +75,12 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
     }
   }
 
-  override def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmValidation[String] = {
-    makeSequenceValidatedAndTrackable(commands).flatMap { cs =>
-      cs.foreach(publishTo.publish)
-      unsafe { cs.head.getGroupTrackingId }
+  override def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmFuture[String] = {
+    AlmFuture.completed {
+      makeSequenceValidatedAndTrackable(commands).flatMap { cs =>
+        cs.foreach(publishTo.publish)
+        unsafe { cs.head.getGroupTrackingId }
+      }
     }
   }
 
