@@ -48,15 +48,18 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
   override def executeSync(command: Command, atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage] = {
     import scalaz.syntax.validation._
     import almhirt.components.ExecutionStateTracker._
-    val cmd =
-      if (command.canBeTracked)
-        command
-      else
-        command.track(getTrackingId())
-    val resF = (tracker ? SubscribeForFinishedState(cmd.trackingId))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage]
-    publishTo.publish(cmd)
-    resF
-
+    if (!command.isPartOfAGroup) {
+      val cmd =
+        if (command.canBeTracked)
+          command
+        else
+          command.track(getTrackingId())
+      val resF = (tracker ? SubscribeForFinishedState(cmd.trackingId))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage]
+      publishTo.publish(cmd)
+      resF
+    } else {
+      AlmFuture.failed(BadDataProblem("A command issued for synchronuos exectution may not be part of a group."))
+    }
   }
 
   override def executeDomainCommandSequence(commands: Seq[DomainCommand]): AlmFuture[Seq[DomainCommand]] = {
