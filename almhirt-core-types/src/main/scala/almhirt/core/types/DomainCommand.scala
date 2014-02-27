@@ -63,9 +63,9 @@ object DomainCommandSequence {
         ConstraintViolatedProblem("All commands must target the same aggregate root.").failure
       } else if (!cmds.forall(_.targettedVersion == headCmd.targettedVersion)) {
         ConstraintViolatedProblem("All commands must target the same version.").failure
-      } else if (cmds.forall(_.isPartOfAGroup)) {
+      } else if (cmds.exists(!_.isPartOfAGroup)) {
         ConstraintViolatedProblem("One or more commands are not part of a group.").failure
-      } else if (cmds.forall(headCmd.tryGetGroupLabel == _.tryGetGroupLabel)) {
+      } else if (cmds.exists(headCmd.tryGetGroupLabel != _.tryGetGroupLabel)) {
         ConstraintViolatedProblem("Group labels differ.").failure
       } else {
         val groupings = cmds.map(_.getGrouping.toOption).flatten
