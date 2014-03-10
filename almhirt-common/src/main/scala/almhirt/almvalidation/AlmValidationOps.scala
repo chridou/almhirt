@@ -73,13 +73,12 @@ trait AlmValidationOps0 extends Ops[String] {
    /** Parses each item of the string separated by sep with parser */
   def parseToManyAlm[A, M[_] <: Traversable[_]](parse: String => AlmValidation[A], sep: String = ";")(implicit cbf: CanBuildFrom[Seq[A], A, M[A]]): AlmValidation[M[A]] = {
     import almhirt.almvalidation.funs
-    funs.inTryCatch(self.split(sep).map(x => parse(x))).flatMap(parsedItems =>
-      funs.aggregateProblemsMN[A, Seq, M](parsedItems))
+    funs.parseToManyAlm(self, parse, sep)
   }
 
   /** Parses each item of the string separated by sep with parser and applies each String to String.trim before parsing */
   def parseTrimmedToManyAlm[A, M[_] <: Traversable[_]](parse: String => AlmValidation[A], sep: String = ";")(implicit cbf: CanBuildFrom[Seq[A], A, M[A]]): AlmValidation[M[A]] = {
-    parseToManyAlm(str => parse(str.trim), sep)
+    funs.parseTrimmedToManyAlm(self, parse, sep)
   }
 }
 
