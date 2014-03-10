@@ -16,7 +16,7 @@ trait WarpUnpackers {
       new WarpUnpacker[T] {
         val warpDescriptor = descriptor
         def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[T] =
-          computeSafely {
+          unsafe {
             unpacker.unpack(from).flatMap(_.castTo[T])
           }
       })
@@ -34,7 +34,7 @@ trait WarpUnpackers {
     new WarpUnpacker[T] {
       val warpDescriptor = unpacker.warpDescriptor
       def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[T] =
-        computeSafely {
+        unsafe {
           unpacker.unpack(from).flatMap(_.castTo[T])
         }
     }

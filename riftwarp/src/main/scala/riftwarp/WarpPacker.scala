@@ -13,7 +13,7 @@ trait BlindWarpPacker extends HasWarpDescriptor {
 trait WarpPacker[T] extends BlindWarpPacker  {
   final def apply(what: T)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = pack(what)
   def pack(what: T)(implicit packers: WarpPackers): AlmValidation[WarpPackage]
-  override final def packBlind(what: Any)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = computeSafely { pack(what.asInstanceOf[T]) }
+  override final def packBlind(what: Any)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = unsafe { pack(what.asInstanceOf[T]) }
 }
 
 trait SimpleWarpPacker[T] { self: WarpPacker[T] =>
