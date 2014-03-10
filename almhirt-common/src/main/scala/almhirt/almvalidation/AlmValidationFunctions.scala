@@ -14,6 +14,9 @@
 */
 package almhirt.almvalidation
 
+import scala.language.higherKinds
+
+import scala.collection.generic.CanBuildFrom
 import scalaz._
 import scalaz.syntax.validation._
 import org.joda.time.DateTime
@@ -105,7 +108,7 @@ trait AlmValidationFunctions {
       case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(createMessage(exn)).failure
     }
   }
-  
+
   /** Abort a workflow with the given Problem if the value evaluated to false */
   def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
     if (cond) ().success else problem.failure[Unit]
@@ -141,4 +144,32 @@ trait AlmValidationFunctions {
       case None => NoSuchElementProblem(s"""Could not find a value for key "$key".""").failure
     }
   }
+
+  /** Aggregates all Problems into a single AggregateProblem or contains the results  */
+  def aggregateProblems[R, M[_] <: Traversable[_]](m: M[AlmValidation[R]])(implicit cbf: CanBuildFrom[M[R], R, M[R]]): Validation[AggregateProblem, M[R]] =
+    aggregateProblemsMN[R, M, M](m)
+
+  def aggregateProblemsMN[R, M[_] <: Traversable[_], N[_] <: Traversable[_]](m: M[AlmValidation[R]])(implicit cbf: CanBuildFrom[M[R], R, N[R]]): Validation[AggregateProblem, N[R]] = {
+    val builderR = cbf()
+    val probs = scala.collection.mutable.ListBuffer[Problem]()
+    m.asInstanceOf[Traversable[AlmValidation[R]]].foreach {
+      case scalaz.Success(x) => builderR += x
+      case scalaz.Failure(x) => probs += x
+    }
+    if (probs.isEmpty)
+      builderR.result.success
+    else
+      almhirt.problem.AggregateProblem(probs).failure
+  }
+
+  def splitValidations[R, M[_] <: Traversable[_]](m: M[AlmValidation[R]])(implicit cbfR: CanBuildFrom[M[R], R, M[R]], cbfP: CanBuildFrom[M[Problem], Problem, M[Problem]]): (M[Problem], M[R]) = {
+    val builderR = cbfR()
+    val builderP = cbfP()
+    m.asInstanceOf[Traversable[AlmValidation[R]]].foreach {
+      case scalaz.Success(x) => builderR += x
+      case scalaz.Failure(x) => builderP += x
+    }
+    (builderP.result, builderR.result)
+  }
+
 }

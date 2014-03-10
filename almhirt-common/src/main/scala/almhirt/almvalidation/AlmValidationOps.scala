@@ -233,30 +233,14 @@ trait AlmValidationOps11[T] extends Ops[Either[Throwable, T]] {
 trait AlmValidationOps12B[R, M[_] <: Traversable[_]] extends Ops[M[AlmValidation[R]]] {
   import almhirt.syntax.problem._
   import almhirt.syntax.almvalidation._
+  import almhirt.almvalidation.funs
 
   /** Aggregates all Problems into a single AggregateProblem or contains the results  */
-  def aggregateProblems(implicit cbf: CanBuildFrom[M[R], R, M[R]]): Validation[AggregateProblem, M[R]] = {
-    val builderR = cbf()
-    val probs = scala.collection.mutable.ListBuffer[Problem]()
-    self.asInstanceOf[Traversable[AlmValidation[R]]].foreach {
-      case scalaz.Success(x) => builderR += x
-      case scalaz.Failure(x) => probs += x
-    }
-    if (probs.isEmpty)
-      builderR.result.success
-    else
-      almhirt.problem.AggregateProblem(probs).failure
-  }
+  def aggregateProblems(implicit cbf: CanBuildFrom[M[R], R, M[R]]): Validation[AggregateProblem, M[R]] = 
+    funs.aggregateProblems(self)
 
-  def splitValidations(implicit cbfR: CanBuildFrom[M[R], R, M[R]], cbfP: CanBuildFrom[M[Problem], Problem, M[Problem]]): (M[Problem], M[R]) = {
-    val builderR = cbfR()
-    val builderP = cbfP()
-    self.asInstanceOf[Traversable[AlmValidation[R]]].foreach {
-      case scalaz.Success(x) => builderR += x
-      case scalaz.Failure(x) => builderP += x
-    }
-    (builderP.result, builderR.result)
-  }
+  def splitValidations(implicit cbfR: CanBuildFrom[M[R], R, M[R]], cbfP: CanBuildFrom[M[Problem], Problem, M[Problem]]): (M[Problem], M[R]) = 
+    funs.splitValidations(self)
 
 }
 

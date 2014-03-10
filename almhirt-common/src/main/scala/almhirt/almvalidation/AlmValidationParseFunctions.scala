@@ -14,10 +14,13 @@
 */
 package almhirt.almvalidation
 
+import scala.language.higherKinds
+
 import java.util.UUID
+import scala.collection.generic.CanBuildFrom
 import scalaz.syntax.validation._
 import scalaz.std._
-import org.joda.time.{DateTime, LocalDateTime}
+import org.joda.time.{ DateTime, LocalDateTime }
 import almhirt.common._
 
 /**
@@ -48,7 +51,7 @@ trait AlmValidationParseFunctions {
     } catch {
       case err: Exception => ParsingProblem("Not a valid number(Short):%s".format(toParse)).failure
     }
-    
+
   def parseIntAlm(toParse: String): AlmValidation[Int] =
     try {
       toParse.toInt.success
@@ -104,7 +107,7 @@ trait AlmValidationParseFunctions {
     } catch {
       case err: Exception => ParsingProblem("Not a valid DateTime: %s".format(toParse)).failure
     }
-    
+
   def parseDurationAlm(toParse: String): AlmValidation[scala.concurrent.duration.FiniteDuration] =
     try {
       val dur = scala.concurrent.duration.Duration(toParse)
@@ -176,6 +179,13 @@ trait AlmValidationParseFunctions {
       None
     else
       Some(toTest)
+
+  /** Parses each item of the string toParse separated by sep with parser */
+  def parseToManyAlm[A, M[_] <: Traversable[_]](toParse: String, parse: String => AlmValidation[A], sep: String = ";")(implicit cbf: CanBuildFrom[Seq[A], A, M[A]]): AlmValidation[M[A]] = {
+    import almhirt.almvalidation.funs
+    funs.inTryCatch(toParse.split(sep).map(x => parse(x))).flatMap(parsedItems =>
+      funs.aggregateProblemsMN[A, Seq, M](parsedItems))
+  }
 
   private def emptyStringIsNone[T](str: String, f: String => AlmValidation[T]) =
     if (str.trim.isEmpty)
