@@ -187,7 +187,7 @@ trait AlmValidationParseFunctions {
       funs.aggregateProblemsMN[A, Seq, M](parsedItems))
   }
 
-  /** Parses each item of the string toParse separated by sep with parser and applies each String to String.trim */
+  /** Parses each item of the string toParse separated by sep with parser and applies each String to String.trim before parsing */
   def parseTrimmedToManyAlm[A, M[_] <: Traversable[_]](toParse: String, parse: String => AlmValidation[A], sep: String = ";")(implicit cbf: CanBuildFrom[Seq[A], A, M[A]]): AlmValidation[M[A]] = {
     parseToManyAlm(toParse, str => parse(str.trim))
   }
