@@ -2,7 +2,7 @@ import sbt._
 import Keys._
 import sbtrelease._
 import ReleasePlugin._
-import ReleaseTransformations._
+import ReleaseStateTransformations._
 import ReleaseKeys._
 
 object BuildSettings {
