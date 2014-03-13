@@ -1,16 +1,17 @@
 import sbt._
 import Keys._
+import sbtrelease.ReleasePlugin._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-  val buildVersion      = "0.5.244"
+  val buildVersion      = "0.5.244-SNAPSHOT"
   val buildScalaVersion = "2.10.3"
 
   val akkaVersion = "2.2.+"
   val scalatestVersion = "2.0"
   val sprayVersion = "1.2.0"
    
-  val buildSettings = Defaults.defaultSettings ++ Seq (
+  val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
     version      := buildVersion,
     scalaVersion := buildScalaVersion,
@@ -47,11 +48,11 @@ object Dependencies {
 	lazy val spray_client = "io.spray" % "spray-client" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_httpx = "io.spray" % "spray-httpx" % BuildSettings.sprayVersion % "provided"
 	
-    lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
+  lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.0.+" % "provided"
 
 	
-    lazy val scalatest = "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"	
+  lazy val scalatest = "org.scalatest" % "scalatest_2.10" % BuildSettings.scalatestVersion % "test"	
 	lazy val akka_testkit = "com.typesafe.akka" %% "akka-testkit" % BuildSettings.akkaVersion % "test"
 
 }
