@@ -15,7 +15,7 @@ object BuildSettings {
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
     scalaVersion := buildScalaVersion,
-    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
 
     releaseProcess <<= thisProjectRef apply { ref =>
      import ReleaseStateTransformations._
