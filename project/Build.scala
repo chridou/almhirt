@@ -4,7 +4,6 @@ import sbtrelease.ReleasePlugin._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
-//  val buildVersion      = "0.5.244-SNAPSHOT"
   val buildScalaVersion = "2.10.3"
 
   val akkaVersion = "2.2.+"
@@ -13,7 +12,6 @@ object BuildSettings {
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
-    version      := buildVersion,
     scalaVersion := buildScalaVersion,
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"))
 }
