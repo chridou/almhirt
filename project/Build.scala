@@ -1,6 +1,9 @@
 import sbt._
 import Keys._
-import sbtrelease.ReleasePlugin._
+import sbtrelease._
+import ReleasePlugin._
+import ReleaseTransformations._
+import ReleaseKeys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
@@ -14,6 +17,19 @@ object BuildSettings {
 	organization := buildOrganization,
     scalaVersion := buildScalaVersion,
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"))
+
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,              
+      inquireVersions,                       
+      //runTest,                              
+      setReleaseVersion,                   
+      commitReleaseVersion,               
+      tagRelease,                        
+      //publishArtifacts,                 
+      setNextVersion,                  
+      commitNextVersion,              
+      pushChanges                    
+   )
 }
 
 object Resolvers {
