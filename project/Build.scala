@@ -2,7 +2,6 @@ import sbt._
 import Keys._
 import sbtrelease._
 import ReleasePlugin._
-import ReleaseStateTransformations._
 import ReleaseKeys._
 
 object BuildSettings {
@@ -18,7 +17,9 @@ object BuildSettings {
     scalaVersion := buildScalaVersion,
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"))
 
-    releaseProcess := Seq[ReleaseStep](
+  releaseProcess <<= thisProjectRef apply { ref =>
+    import ReleaseStateTransformations._
+    Seq[ReleaseStep](
       checkSnapshotDependencies,              
       inquireVersions,                       
       //runTest,                              
@@ -28,8 +29,8 @@ object BuildSettings {
       //publishArtifacts,                 
       setNextVersion,                  
       commitNextVersion,              
-      pushChanges                    
-   )
+      pushChanges)
+  }
 }
 
 object Resolvers {
