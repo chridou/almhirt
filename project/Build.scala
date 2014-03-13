@@ -26,7 +26,7 @@ object BuildSettings {
        setReleaseVersion,                   
        commitReleaseVersion,               
        tagRelease,                        
-       //publishArtifacts,                 
+       publishArtifacts,                 
        setNextVersion,                  
        commitNextVersion,              
        pushChanges)
