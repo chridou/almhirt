@@ -52,6 +52,8 @@ object Dependencies {
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "provided"
 
 	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.2.+" % "provided"
+	lazy val play21   = "play" %% "play" % "2.1.+" % "provided"
+	lazy val play22   = "com.typesafe.play" %% "play" % "2.2.+" % "provided"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
@@ -138,6 +140,40 @@ trait HttpxSprayServiceBuild {
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += spray_routing,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest
+  )
+}
+
+trait HttpxPlay21ClientBuild {
+  import Dependencies._
+  import Resolvers._
+  def httpxPlay21ClientProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+  	  resolvers += sprayRepo,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += play21,
+	  libraryDependencies += typesafe_config,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += scalatest
+  )
+}
+
+trait HttpxPlay22ClientBuild {
+  import Dependencies._
+  import Resolvers._
+  def httpxPlay22ClientProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+  	  resolvers += typesafeRepo,
+  	  resolvers += sonatypeReleases,
+  	  resolvers += sprayRepo,
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += play22,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest
@@ -394,6 +430,8 @@ object AlmHirtBuild extends Build
 	with HttpxSprayBuild
 	with HttpxSprayClientBuild
 	with HttpxSprayServiceBuild
+	with HttpxPlay21ClientBuild
+	with HttpxPlay22ClientBuild
 	with CoreTypesBuild 
 	with CoreFoundationBuild 
 	with CoreBuild 
@@ -411,7 +449,7 @@ object AlmHirtBuild extends Build
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(	id = "almhirt",
 				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, coreTypes, coreFoundation, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSprayBase, corexSprayClient, corexSprayService, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
+	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, httpxPlay21Client, httpxPlay22Client, coreTypes, coreFoundation, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSprayBase, corexSprayClient, corexSprayService, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
 	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -424,6 +462,12 @@ object AlmHirtBuild extends Build
 								
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
+								
+  lazy val httpxPlay21Client = httpxPlay21ClientProject(	name = "almhirt-httpx-play21-client",
+                       			baseFile = file("./ext/almhirt-httpx-play21-client")) dependsOn(common)
+								
+  lazy val httpxPlay22Client = httpxPlay22ClientProject(	name = "almhirt-httpx-play22-client",
+                       			baseFile = file("./ext/almhirt-httpx-play22-client")) dependsOn(common)
 								
   lazy val coreTypes = coreTypesProject(	name = "almhirt-core-types",
 	                       		baseFile = file("almhirt-core-types")) dependsOn(common % "compile; test->compile")
