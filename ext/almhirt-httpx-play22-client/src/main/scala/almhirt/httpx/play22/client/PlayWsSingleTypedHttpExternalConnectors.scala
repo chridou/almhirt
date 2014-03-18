@@ -41,6 +41,24 @@ abstract class PlayWsSingleTypeHttpQuery[U](theSerializationExecutionContext: Op
   }
 }
 
+abstract class PlayWsSingleTypeDualParamHttpQuery[U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
+  type ResourceId1Type
+  type ResourceId2Type
+
+  implicit override val executionContext: ExecutionContext = theExecutionContext
+  override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
+
+  def acceptAsSuccess: Set[Int]
+  def acceptMediaTypes: Seq[AlmMediaType]
+  def method: HttpMethod
+  def createUri(id1: ResourceId1Type, id2: ResourceId2Type): String
+
+  def queryOverWire(id1: ResourceId1Type, id2: ResourceId2Type, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
+    val settings = BasicRequestSettings(createUri(id1, id2), acceptMediaTypes, method, acceptAsSuccess)
+    externalQuery(settings, requestParams: _*)(deserializer, problemDeserializer)
+  }
+}
+
 abstract class PlayWsSingleTypeStaticHttpQuery[U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
   implicit override val executionContext: ExecutionContext = theExecutionContext
   override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
@@ -55,7 +73,6 @@ abstract class PlayWsSingleTypeStaticHttpQuery[U](theSerializationExecutionConte
     externalQuery(settings, requestParams: _*)(deserializer, problemDeserializer)
   }
 }
-
 
 abstract class PlayWsSingleTypeHttpConversation[T, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[T], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsAwaitingEntityResponse with PlayWsHttpExternalConversation {
   implicit override val executionContext: ExecutionContext = theExecutionContext
