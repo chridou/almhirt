@@ -63,30 +63,30 @@ trait PlayWsHttpExternalConnector {
   implicit def executionContext: ExecutionContext
   def serializationExecutionContext: ExecutionContext
 
-  def sendRequest(settings: RequestSettings, payload: Option[(WireRepresentation, AlmMediaType)]): AlmFuture[(Response, FiniteDuration)] = {
+  def sendRequest(settings: RequestSettings, payload: Option[(WireRepresentation, AlmMediaType)], requestParams: Seq[(String, String)]): AlmFuture[(Response, FiniteDuration)] = {
     val start = Deadline.now
     settings.method match {
       case Get =>
         payload match {
           case Some(pl) => AlmFuture.failed(UnspecifiedProblem("""Method "Get" may not provide a payload(body)"""))
-          case None => play.api.libs.ws.WS.url(settings.targetEndpoint).get.map((_, start.lap)).toSuccessfulAlmFuture
+          case None => play.api.libs.ws.WS.url(settings.targetEndpoint).withQueryString(requestParams: _*).get.map((_, start.lap)).toSuccessfulAlmFuture
         }
       case Put =>
         payload match {
           case Some((BinaryWire(pl), mt)) =>
-            play.api.libs.ws.WS.url(settings.targetEndpoint).withHeaders(("Content-Type", mt.value)).put(pl).map((_, start.lap)).toSuccessfulAlmFuture
+            play.api.libs.ws.WS.url(settings.targetEndpoint).withHeaders(("Content-Type", mt.value)).withQueryString(requestParams: _*).put(pl).map((_, start.lap)).toSuccessfulAlmFuture
           case Some((TextWire(pl), mt)) =>
-            play.api.libs.ws.WS.url(settings.targetEndpoint).withHeaders(("Content-Type", mt.value)).put(pl).map((_, start.lap)).toSuccessfulAlmFuture
+            play.api.libs.ws.WS.url(settings.targetEndpoint).withHeaders(("Content-Type", mt.value)).withQueryString(requestParams: _*).put(pl).map((_, start.lap)).toSuccessfulAlmFuture
           case None => AlmFuture.failed(UnspecifiedProblem("""Method "Put" must provide a payload(body)"""))
         }
       case Post =>
         payload match {
           case Some((BinaryWire(pl), mt)) =>
-            play.api.libs.ws.WS.url(settings.targetEndpoint).withHeaders(("Content-Type", mt.value)).post(pl).map((_, start.lap)).toSuccessfulAlmFuture
+            play.api.libs.ws.WS.url(settings.targetEndpoint).withHeaders(("Content-Type", mt.value)).withQueryString(requestParams: _*).post(pl).map((_, start.lap)).toSuccessfulAlmFuture
           case Some((TextWire(pl), mt)) =>
-            play.api.libs.ws.WS.url(settings.targetEndpoint).withHeaders(("Content-Type", mt.value)).post(pl).map((_, start.lap)).toSuccessfulAlmFuture
+            play.api.libs.ws.WS.url(settings.targetEndpoint).withHeaders(("Content-Type", mt.value)).withQueryString(requestParams: _*).post(pl).map((_, start.lap)).toSuccessfulAlmFuture
           case None =>
-            play.api.libs.ws.WS.url(settings.targetEndpoint).post("").map((_, start.lap)).toSuccessfulAlmFuture
+            play.api.libs.ws.WS.url(settings.targetEndpoint).withQueryString(requestParams: _*).post("").map((_, start.lap)).toSuccessfulAlmFuture
         }
       case Patch =>
         AlmFuture.failed(UnspecifiedProblem("""Method "Patch" is not supported by PlayWsHttpExternalConnector"""))
@@ -140,10 +140,10 @@ trait PlayWsAwaitingEntityResponse { self: PlayWsHttpExternalConnector =>
 }
 
 trait PlayWsHttpExternalPublisher { self: PlayWsHttpExternalConnector with PlayWsRequestsWithEntity =>
-  def publishToExternalEndpoint[T: CanSerializeToWire](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(T, FiniteDuration)] =
+  def publishToExternalEndpoint[T: CanSerializeToWire](payload: T, settings: EntityRequestSettings, requestParams: (String, String)*)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(T, FiniteDuration)] =
     for {
       serializedPayload <- AlmFuture(serializeEntity(payload, settings))(serializationExecutionContext)
-      responseAndTime <- sendRequest(settings, Some(serializedPayload, settings.contentMediaType))
+      responseAndTime <- sendRequest(settings, Some(serializedPayload, settings.contentMediaType), requestParams)
       _ <- AlmFuture(evaluateAck(responseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
     } yield (payload, responseAndTime._2)
 
@@ -158,18 +158,18 @@ trait PlayWsHttpExternalPublisher { self: PlayWsHttpExternalConnector with PlayW
 }
 
 trait PlayWsHttpExternalQuery { self: PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse =>
-  def externalQuery[U: CanDeserializeFromWire](settings: RequestSettings)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(U, FiniteDuration)] =
+  def externalQuery[U: CanDeserializeFromWire](settings: RequestSettings, requestParams: (String, String)*)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(U, FiniteDuration)] =
     for {
-      resonseAndTime <- sendRequest(settings, None)
+      resonseAndTime <- sendRequest(settings, None, requestParams)
       entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[CanDeserializeFromWire[U]], problemDeserializer))(serializationExecutionContext)
     } yield (entity, resonseAndTime._2)
 }
 
 trait PlayWsHttpExternalConversation { self: PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsAwaitingEntityResponse =>
-  def conversationWithExternalEndpoint[T: CanSerializeToWire, U: CanDeserializeFromWire](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(U, FiniteDuration)] =
+  def conversationWithExternalEndpoint[T: CanSerializeToWire, U: CanDeserializeFromWire](payload: T, settings: EntityRequestSettings, requestParams: (String, String)*)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(U, FiniteDuration)] =
     for {
       serializedEntity <- AlmFuture(serializeEntity(payload, settings))(serializationExecutionContext)
-      resonseAndTime <- sendRequest(settings, Some(serializedEntity, settings.contentMediaType))
+      resonseAndTime <- sendRequest(settings, Some(serializedEntity, settings.contentMediaType), requestParams)
       entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[CanDeserializeFromWire[U]], problemDeserializer))(serializationExecutionContext)
     } yield (entity, resonseAndTime._2)
 }
