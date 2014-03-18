@@ -35,14 +35,12 @@ abstract class PlayWsSingleTypeHttpQuery[U](implicit deserializer: CanDeserializ
 }
 
 abstract class PlayWsSingleTypeStaticHttpQuery[U](implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
-  type ResourceId
-
   def acceptAsSuccess: Set[Int]
   def acceptMediaTypes: Seq[AlmMediaType]
   def method: HttpMethod
   def uri: String
 
-  def queryOverWire(id: ResourceId, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
+  def queryOverWire(requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
     val settings = BasicRequestSettings(uri, acceptMediaTypes, method, acceptAsSuccess)
     externalQuery(settings, requestParams: _*)(deserializer, problemDeserializer)
   }
