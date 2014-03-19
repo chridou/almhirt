@@ -58,7 +58,7 @@ object Dependencies {
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
 
-	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.6" 
+	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.9" 
 
 	lazy val spray_routing = "io.spray" % "spray-routing" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_json =  "io.spray" %%  "spray-json" % "1.2.5"
