@@ -3,6 +3,8 @@ import Keys._
 import sbtrelease._
 import ReleasePlugin._
 import ReleaseKeys._
+import sbtunidoc.Plugin._
+import sbtunidoc.Plugin.UnidocKeys._
 
 object BuildSettings {
   val buildOrganization = "org.almhirt"
@@ -355,7 +357,7 @@ trait RiftWarpBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += apache_codecs,
 	  libraryDependencies += scalaz,
-	  libraryDependencies += "com.chuusai" %% "shapeless" % "1.2.4",
+//	  libraryDependencies += "com.chuusai" %% "shapeless" % "1.2.4",
 	  libraryDependencies += scalatest
   )
 }
@@ -447,10 +449,12 @@ object AlmHirtBuild extends Build
 	with RiftWarpMongoExtBuild 
 	with RiftWarpSprayJsonExtBuild 
 	with RiftWarpAutomaticBuild {
-  lazy val root = Project(	id = "almhirt",
-				settings = BuildSettings.buildSettings ++ Unidoc.settings,
-	                        base = file(".")) aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, httpxPlay21Client, httpxPlay22Client, coreTypes, coreFoundation, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSprayBase, corexSprayClient, corexSprayService, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)
-	
+  lazy val root = Project(
+    id = "almhirt",
+		settings = BuildSettings.buildSettings,
+	  base = file("."))
+      .settings(unidocSettings: _*)
+      .aggregate(common, httpxSpray, httpxSprayClient, httpxSprayService, httpxPlay21Client, httpxPlay22Client, coreTypes, coreFoundation, core, coreTesting, testKit, corexRiftwarp, mongoExtensions, corexSprayBase, corexSprayClient, corexSprayService, riftwarp, riftwarpHttpSpray, riftwarpMongoProject, riftwarpSprayProject)	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
