@@ -24,18 +24,30 @@ abstract class SingleTypeHttpPublisher[T](implicit serializer: CanSerializeToWir
   }
 }
 
-abstract class SingleTypeHttpQuery[U](implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
-  type ResourceId
-
+abstract class SingleTypeOneParamHttpQuery[PathSegment, U](implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
   override val pipeline = (sendReceive)
 
   def acceptAsSuccess: Set[StatusCode]
   def acceptMediaTypes: Seq[MediaType]
   def method: HttpMethod
-  def createUri(id: ResourceId): Uri
+  def createUri(segment: PathSegment): Uri
   
-  def queryOverWire(id: ResourceId): AlmFuture[(U, FiniteDuration)] = {
-    val settings = BasicRequestSettings(createUri(id), acceptMediaTypes, method, acceptAsSuccess)
+  def queryOverWire(segment: PathSegment): AlmFuture[(U, FiniteDuration)] = {
+    val settings = BasicRequestSettings(createUri(segment), acceptMediaTypes, method, acceptAsSuccess)
+    externalQuery(settings)(deserializer, problemDeserializer)
+  }
+}
+
+abstract class SingleTypeTwoParamHttpQuery[PathSegment1, PathSegment2, U](implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
+  override val pipeline = (sendReceive)
+
+  def acceptAsSuccess: Set[StatusCode]
+  def acceptMediaTypes: Seq[MediaType]
+  def method: HttpMethod
+  def createUri(segment1: PathSegment1, segment2: PathSegment2): Uri
+  
+  def queryOverWire(segment1: PathSegment1, segment2: PathSegment2): AlmFuture[(U, FiniteDuration)] = {
+    val settings = BasicRequestSettings(createUri(segment1, segment2), acceptMediaTypes, method, acceptAsSuccess)
     externalQuery(settings)(deserializer, problemDeserializer)
   }
 }

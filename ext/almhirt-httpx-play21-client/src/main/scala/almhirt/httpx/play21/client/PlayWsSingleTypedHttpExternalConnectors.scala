@@ -24,7 +24,7 @@ abstract class PlayWsSingleTypeHttpPublisher[T](theSerializationExecutionContext
   }
 }
 
-abstract class PlayWsSingleTypeHttpQuery[ResourceIdType, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
+abstract class PlayWsSingleTypeHttpQuery[PathSegment, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
 
   implicit override val executionContext: ExecutionContext = theExecutionContext
   override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
@@ -32,25 +32,25 @@ abstract class PlayWsSingleTypeHttpQuery[ResourceIdType, U](theSerializationExec
   def acceptAsSuccess: Set[Int]
   def acceptMediaTypes: Seq[AlmMediaType]
   def method: HttpMethod
-  def createUri(id: ResourceIdType): String
+  def createUri(segment: PathSegment): String
 
-  def queryOverWire(id: ResourceIdType, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
-    val settings = BasicRequestSettings(createUri(id), acceptMediaTypes, method, acceptAsSuccess)
+  def queryOverWire(segment: PathSegment, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
+    val settings = BasicRequestSettings(createUri(segment), acceptMediaTypes, method, acceptAsSuccess)
     externalQuery(settings, requestParams: _*)(deserializer, problemDeserializer)
   }
 }
 
-abstract class PlayWsSingleTypeDualParamHttpQuery[ResourceId1Type, ResourceId2Type, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
+abstract class PlayWsSingleTypeDualParamHttpQuery[PathSegment1, PathSegment2, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
   implicit override val executionContext: ExecutionContext = theExecutionContext
   override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
 
   def acceptAsSuccess: Set[Int]
   def acceptMediaTypes: Seq[AlmMediaType]
   def method: HttpMethod
-  def createUri(id1: ResourceId1Type, id2: ResourceId2Type): String
+  def createUri(segment1: PathSegment1, segment2: PathSegment2): String
 
-  def queryOverWire(id1: ResourceId1Type, id2: ResourceId2Type, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
-    val settings = BasicRequestSettings(createUri(id1, id2), acceptMediaTypes, method, acceptAsSuccess)
+  def queryOverWire(segment1: PathSegment1, segment2: PathSegment2, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
+    val settings = BasicRequestSettings(createUri(segment1, segment2), acceptMediaTypes, method, acceptAsSuccess)
     externalQuery(settings, requestParams: _*)(deserializer, problemDeserializer)
   }
 }
