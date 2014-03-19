@@ -24,8 +24,7 @@ abstract class PlayWsSingleTypeHttpPublisher[T](theSerializationExecutionContext
   }
 }
 
-abstract class PlayWsSingleTypeHttpQuery[U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
-  type ResourceIdType
+abstract class PlayWsSingleTypeHttpQuery[ResourceIdType, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
 
   implicit override val executionContext: ExecutionContext = theExecutionContext
   override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
@@ -41,10 +40,7 @@ abstract class PlayWsSingleTypeHttpQuery[U](theSerializationExecutionContext: Op
   }
 }
 
-abstract class PlayWsSingleTypeDualParamHttpQuery[U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
-  type ResourceId1Type
-  type ResourceId2Type
-
+abstract class PlayWsSingleTypeDualParamHttpQuery[ResourceId1Type, ResourceId2Type, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
   implicit override val executionContext: ExecutionContext = theExecutionContext
   override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
 
