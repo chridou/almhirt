@@ -10,7 +10,8 @@ import almhirt.http.AlmMediaType
 
 /** Publishes an entity of type T to an external end point. 
  *  
- *  @type T The type of the entity to send 
+ * @constructor create a new publisher with an optional execution context for serialization. 
+ * @tparam T The type of the entity to send 
  */
 abstract class PlayWsHttpPublisher[T](theSerializationExecutionContext: Option[ExecutionContext])(implicit serializer: CanSerializeToWire[T], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsHttpExternalPublisher {
   implicit override val executionContext: ExecutionContext = theExecutionContext
@@ -36,10 +37,39 @@ abstract class PlayWsHttpPublisher[T](theSerializationExecutionContext: Option[E
   }
 }
 
+/** Query an entity of type U from an external service with a fixed URL.
+ *
+ * @constructor create a fixed URI query with an optional execution context for serialization. 
+ * @tparam U The type of the expected entity
+ */
+abstract class PlayWsFixedSegmentHttpQuery[U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
+  implicit override val executionContext: ExecutionContext = theExecutionContext
+  override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
+
+  def acceptAsSuccess: Set[Int]
+  def acceptMediaTypes: Seq[AlmMediaType]
+  def method: HttpMethod
+  
+  /** The fixed URL */
+  def uri: String
+
+  /** Request an entity T to the remote service
+   *  
+   *  @param requestParams URL encoded request parameters
+   *  @return The retrieved entity and the time the transmission took
+   */
+  def queryOverWire(requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
+    val settings = BasicRequestSettings(uri, acceptMediaTypes, method, acceptAsSuccess)
+    externalQuery(settings, requestParams: _*)(deserializer, problemDeserializer)
+  }
+}
+
+
 /** Query an entity of type U from an external service with a variable segment in the URL.
  *
- * @Type PathSegment A type from which the segment is formed
- * @Type U The type of the expected entity
+ * @constructor create a query  with one variable URI segment with an optional execution context for serialization. 
+ * @tparam PathSegment A type from which the segment is formed
+ * @tparam U The type of the expected entity
  */
 abstract class PlayWsSingleSegmentHttpQuery[PathSegment, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
 
@@ -67,9 +97,10 @@ abstract class PlayWsSingleSegmentHttpQuery[PathSegment, U](theSerializationExec
 
 /** Query an entity of type U from an external service with two variable segments in the URL.
  *
- * @Type PathSegment1 A type from which the first segment is formed
- * @Type PathSegment2 A type from which the second segment is formed
- * @Type U The type of the expected entity
+ * @constructor create a query with two variable URI segments with an optional execution context for serialization. 
+ * @tparam PathSegment1 A type from which the first segment is formed
+ * @tparam PathSegment2 A type from which the second segment is formed
+ * @tparam U The type of the expected entity
  */
 abstract class PlayDualSegmentHttpQuery[PathSegment1, PathSegment2, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
   implicit override val executionContext: ExecutionContext = theExecutionContext
@@ -95,39 +126,14 @@ abstract class PlayDualSegmentHttpQuery[PathSegment1, PathSegment2, U](theSerial
   }
 }
 
-/** Query an entity of type U from an external service with a fixed URL.
+
+/** Send an entity to a remote service and expect another entity as a response where the URI path is fixed
  *
- * @Type U The type of the expected entity
+ * @constructor create a conversation with an external service on a fixed URI path. 
+ * @tparam T The type of the entity to send
+ * @tparam U The type of the expected entity in return
  */
-abstract class PlayWsFixedSegmentHttpQuery[U](theSerializationExecutionContext: Option[ExecutionContext])(implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsAwaitingEntityResponse with PlayWsHttpExternalQuery {
-  implicit override val executionContext: ExecutionContext = theExecutionContext
-  override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
-
-  def acceptAsSuccess: Set[Int]
-  def acceptMediaTypes: Seq[AlmMediaType]
-  def method: HttpMethod
-  
-  /** The fixed URL */
-  def uri: String
-
-  /** Request an entity T to the remote service
-   *  
-   *  @param requestParams URL encoded request parameters
-   *  @return The retrieved entity and the time the transmission took
-   */
-  def queryOverWire(requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
-    val settings = BasicRequestSettings(uri, acceptMediaTypes, method, acceptAsSuccess)
-    externalQuery(settings, requestParams: _*)(deserializer, problemDeserializer)
-  }
-}
-
-
-/** Send an entity to a remote service and expect another entity as a response
- *
- * @Type T The type of the entity to send
- * @Type U The type of the expected entity
- */
-abstract class PlayWsHttpConversation[T, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[T], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsAwaitingEntityResponse with PlayWsHttpExternalConversation {
+abstract class PlayWsHttpConversation[T, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsAwaitingEntityResponse with PlayWsHttpExternalConversation {
   implicit override val executionContext: ExecutionContext = theExecutionContext
   override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
 
@@ -145,7 +151,7 @@ abstract class PlayWsHttpConversation[T, U](theSerializationExecutionContext: Op
    *  @param requestParams URL encoded request parameters
    *  @return The response entity and the time the transmission took
    */
-  def conversationOverWire(entity: T, requestParams: (String, String)*): AlmFuture[(T, FiniteDuration)] = {
+  def conversationOverWire(entity: T, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
     val settings = EntityRequestSettings(createUri(entity), contentMediaType, acceptMediaTypes, method, acceptAsSuccess)
     conversationWithExternalEndpoint(entity, settings, requestParams: _*)(serializer, deserializer, problemDeserializer)
   }
@@ -153,11 +159,12 @@ abstract class PlayWsHttpConversation[T, U](theSerializationExecutionContext: Op
 
 /** Send an entity to a remote service and expect another entity as a response
  *
- * @Type PathSegment A type from which the segment is formed
- * @Type T The type of the entity to send
- * @Type U The type of the expected entity
+ * @constructor create a a conversation with an external service on an URI path with one variable segment 
+ * @tparam PathSegment A type from which the segment is formed
+ * @tparam T The type of the entity to send
+ * @tparam U The type of the expected entity in return
  */
-abstract class PlayWsHttpSingleSegmentConversation[PathSegment, T, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[T], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsAwaitingEntityResponse with PlayWsHttpExternalConversation {
+abstract class PlayWsHttpSingleSegmentConversation[PathSegment, T, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsAwaitingEntityResponse with PlayWsHttpExternalConversation {
   implicit override val executionContext: ExecutionContext = theExecutionContext
   override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
 
@@ -176,7 +183,7 @@ abstract class PlayWsHttpSingleSegmentConversation[PathSegment, T, U](theSeriali
    *  @param requestParams URL encoded request parameters
    *  @return The response entity and the time the transmission took
    */
-  def conversationOverWire(segment: PathSegment, entity: T, requestParams: (String, String)*): AlmFuture[(T, FiniteDuration)] = {
+  def conversationOverWire(segment: PathSegment, entity: T, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
     val settings = EntityRequestSettings(createUri(segment, entity), contentMediaType, acceptMediaTypes, method, acceptAsSuccess)
     conversationWithExternalEndpoint(entity, settings, requestParams: _*)(serializer, deserializer, problemDeserializer)
   }
@@ -184,12 +191,13 @@ abstract class PlayWsHttpSingleSegmentConversation[PathSegment, T, U](theSeriali
 
 /** Send an entity to a remote service and expect another entity as a response
  *
- * @Type PathSegment1 A type from which the first segment is formed
- * @Type PathSegment2 A type from which the second segment is formed
- * @Type T The type of the entity to send
- * @Type U The type of the expected entity
+ * @constructor create a conversation with an external service on an URI path with two variable segments 
+ * @tparam PathSegment1 A type from which the first segment is formed
+ * @tparam PathSegment2 A type from which the second segment is formed
+ * @tparam T The type of the entity to send
+ * @tparam U The type of the expected entity in return
  */
-abstract class PlayWsHttpDualSegmentConversation[PathSegment1, PathSegment2, T, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[T], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsAwaitingEntityResponse with PlayWsHttpExternalConversation {
+abstract class PlayWsHttpDualSegmentConversation[PathSegment1, PathSegment2, T, U](theSerializationExecutionContext: Option[ExecutionContext])(implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem], theExecutionContext: ExecutionContext) extends PlayWsHttpExternalConnector with PlayWsRequestsWithEntity with PlayWsAwaitingEntityResponse with PlayWsHttpExternalConversation {
   implicit override val executionContext: ExecutionContext = theExecutionContext
   override val serializationExecutionContext: ExecutionContext = theSerializationExecutionContext.getOrElse(theExecutionContext)
 
@@ -208,7 +216,7 @@ abstract class PlayWsHttpDualSegmentConversation[PathSegment1, PathSegment2, T, 
    *  @param requestParams URL encoded request parameters
    *  @return The response entity and the time the transmission took
    */
-  def conversationOverWire(segment1: PathSegment1, segment2: PathSegment2, entity: T, requestParams: (String, String)*): AlmFuture[(T, FiniteDuration)] = {
+  def conversationOverWire(segment1: PathSegment1, segment2: PathSegment2, entity: T, requestParams: (String, String)*): AlmFuture[(U, FiniteDuration)] = {
     val settings = EntityRequestSettings(createUri(segment1, segment2, entity), contentMediaType, acceptMediaTypes, method, acceptAsSuccess)
     conversationWithExternalEndpoint(entity, settings, requestParams: _*)(serializer, deserializer, problemDeserializer)
   }

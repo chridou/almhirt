@@ -52,7 +52,7 @@ abstract class SingleTypeTwoParamHttpQuery[PathSegment1, PathSegment2, U](implic
   }
 }
 
-abstract class SingleTypeHttpConversation[T, U](implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[T], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse with HttpExternalConversation {
+abstract class SingleTypeHttpConversation[T, U](implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse with HttpExternalConversation {
   def acceptAsSuccess: Set[StatusCode]
   def contentMediaType: MediaType
   def acceptMediaTypes: Seq[MediaType]
@@ -61,7 +61,7 @@ abstract class SingleTypeHttpConversation[T, U](implicit serializer: CanSerializ
 
   override val pipeline = (sendReceive)
 
-  def conversationOverWire(entity: T): AlmFuture[(T, FiniteDuration)] = {
+  def conversationOverWire(entity: T): AlmFuture[(U, FiniteDuration)] = {
     val settings = EntityRequestSettings(createUri(entity), contentMediaType, acceptMediaTypes, method, acceptAsSuccess)
     conversationWithExternalEndpoint(entity, settings)(serializer, deserializer, problemDeserializer)
   }
