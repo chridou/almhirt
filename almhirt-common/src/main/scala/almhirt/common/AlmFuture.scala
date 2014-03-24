@@ -149,6 +149,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
+  /** Act on completetion */
   def onComplete(handler: AlmValidation[R] => Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => handler(validation)
@@ -156,6 +157,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     }
   }
 
+  /** Act on completetion */
   def onComplete(fail: Problem => Unit, succ: R => Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => validation fold (fail, succ)
@@ -163,11 +165,13 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     }
   }
 
+  /** Use when only interested in a success and a failure doesn't matter */
   def onSuccess(onRes: R => Unit)(implicit executionContext: ExecutionContext): Unit =
     underlying.onSuccess {
       case x => x fold (_ => (), onRes(_))
     }
 
+  /** Use when only interested in a failure and a successful result doesn't matter */
   def onFailure(onProb: Problem => Unit)(implicit executionContext: ExecutionContext): Unit =
     onComplete(_ fold (onProb(_), _ => ()))
 
@@ -189,9 +193,10 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def withFailure(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     failureEffect(effect)
 
+  /** As soon as a failure is known, execute the effect */
   def failureEffect(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(prob => effect(prob), succ => ()) }
-  
+
   def isCompleted = underlying.isCompleted
 
   def awaitResult(atMost: Duration): AlmValidation[R] =
@@ -206,6 +211,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     awaitResult(atMost).resultOrEscalate
   }
 
+  /** Convert this future to a future of the std lib */
   def toStdFuture(implicit executionContext: ExecutionContext): Future[R] = {
     val p = Promise[R]
     onComplete(
@@ -233,12 +239,21 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 object AlmFuture {
   import scala.language.higherKinds
 
+  /** Start a computation which can fail */
   def apply[T](compute: => AlmValidation[T])(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { compute }(executionContext))
 
+  /**
+   * Take an M of futures and get a future that completes as a whole sequence, once all futures in M completed
+   *
+   */
   def sequenceAkka[A, M[_] <: Traversable[_]](in: M[AlmFuture[A]])(implicit cbf: CanBuildFrom[M[AlmFuture[A]], AlmValidation[A], M[AlmValidation[A]]], executionContext: ExecutionContext): Future[M[AlmValidation[A]]] = {
     in.foldLeft(Future.successful(cbf(in)): Future[Builder[AlmValidation[A], M[AlmValidation[A]]]])((futAcc, futElem) ⇒ for (acc ← futAcc; a ← futElem.asInstanceOf[AlmFuture[A]].underlying) yield (acc += a)).map(_.result)
   }
 
+  /**
+   * Take a sequence of futures and get a future that completes as a whole sequence, once all futures in the sequence completed
+   *
+   */
   def sequence[A](in: Seq[AlmFuture[A]])(implicit executionContext: ExecutionContext): AlmFuture[Seq[A]] = {
     import almhirt.almvalidation.kit._
     import scalaz._, Scalaz._
@@ -247,9 +262,16 @@ object AlmFuture {
     new AlmFuture(fut)
   }
 
+  /** Start a computation that is not expected to fail */
   def compute[T](computation: => T)(implicit executionContext: ExecutionContext) = new AlmFuture[T](Future { almhirt.almvalidation.funs.inTryCatch(computation) })
+
+  /** Return a future where the result is already known */
   def completed[T](what: => AlmValidation[T]) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.unsafe(what) })
+
+  /** Return a future where the succesful result is already known */
   def successful[T](result: => T) = new AlmFuture[T](Future.successful { almhirt.almvalidation.funs.inTryCatch(result) })
+
+  /** Return a future where a failure is already known */
   def failed[T](prob: => Problem) = new AlmFuture[T](Future.successful {
     try {
       prob.failure
