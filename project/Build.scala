@@ -11,7 +11,7 @@ object BuildSettings {
   val buildScalaVersion = "2.10.4"
 
   val akkaVersion = "2.2.+"
-  val scalatestVersion = "2.0"
+  val scalatestVersion = "2.1.0"
   val sprayVersion = "1.2.0"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
