@@ -149,7 +149,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
-  /** Act on completetion */
+  /** Act on completion */
   def onComplete(handler: AlmValidation[R] => Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => handler(validation)
@@ -157,7 +157,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     }
   }
 
-  /** Act on completetion */
+  /** Act on completion */
   def onComplete(fail: Problem => Unit, succ: R => Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
       case scala.util.Success(validation) => validation fold (fail, succ)
@@ -167,15 +167,15 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
   /** Use when only interested in a success and a failure result doesn't matter */
   def onSuccess(onSucc: R => Unit)(implicit executionContext: ExecutionContext): Unit =
-    onComplete(_ fold (_ => (), _ => onSucc(_)))
+    onComplete(_ fold (_ => (), onSucc))
   
   /** Use when only interested in a success and a failure can be converted to a success to rejoin with the happy path */
   def onSuccessWithRejoinedFailure[U >: R](rejoin: Problem => U, onRes: U => Unit)(implicit executionContext: ExecutionContext): Unit =
-    rejoinFailure[U](rejoin).onSuccess(r => onRes(r))
+    this.rejoinFailure(rejoin).onSuccess(onRes)
 
   /** Use when only interested in a failure and a successful result doesn't matter */
   def onFailure(onProb: Problem => Unit)(implicit executionContext: ExecutionContext): Unit =
-    onComplete(_ fold (onProb(_), _ => ()))
+    onComplete(_ fold (onProb, _ => ()))
 
   def andThen(effect: AlmValidation[R] => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     new AlmFuture(underlying.andThen {
@@ -197,16 +197,16 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
 
   /** As soon as a failure is known, execute the effect */
   def failureEffect(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
-    andThen { _.fold(prob => effect(prob), succ => ()) }
+    andThen { _.fold(effect, succ => ()) }
 
   /** In case of a failure, rejoin with the happy path */
   def rejoinFailure[U >: R](rejoin: Problem => U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
-      fail => rejoin(fail),
+      rejoin,
       succ => succ
     )
   }
-  
+ 
   def isCompleted = underlying.isCompleted
 
   def awaitResult(atMost: Duration): AlmValidation[R] =
