@@ -17,7 +17,7 @@ package almhirt
 import language.implicitConversions
 import scala.util.control.NonFatal
 import scalaz.syntax.validation
-import scala.concurrent.ExecutionContext
+import scala.concurrent._
 import almhirt.problem._
 
 /** Classes and traits needed at other places*/
@@ -28,6 +28,12 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   type Problem = almhirt.problem.Problem
   type SingleProblem = almhirt.problem.SingleProblem
   type AggregateProblem = almhirt.problem.AggregateProblem
+  
+  implicit def almF2StdF[T](f: AlmFuture[T])(implicit execCtx: ExecutionContext): Future[T] = 
+    f.toStdFuture
+    
+  implicit def stdF2AlmF[T](f: Future[T])(implicit execCtx: ExecutionContext): AlmFuture[T] = 
+    new AlmFuture[T](f.map(scalaz.Success(_)))
 
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T] { def equal(p1: T, p2: T): Boolean = p1 == p2 }
 
