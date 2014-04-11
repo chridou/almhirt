@@ -129,9 +129,43 @@ trait AlmFutureOps3[T] extends Ops[Future[T]] {
     new AlmFuture[T](self.map(_.success)(executionContext))
 }
 
+trait AlmFutureOps4[T] extends Ops[AlmFuture[Option[T]]] {
+  def noneIsProblem(problem: Problem)(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    self.collectV {
+      case Some(x) => x.success
+      case None => problem.failure
+    }
+
+  def noneIsNotFoundProblem(msg: String)(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    self.collectV {
+      case Some(x) => x.success
+      case None => NotFoundProblem(msg).failure
+    }
+
+  def noneIsMandatoryDataProblem(msg: String)(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    self.collectV {
+      case Some(x) => x.success
+      case None => MandatoryDataProblem(msg).failure
+    }
+
+  def noneIsNoSuchElementProblem(msg: String)(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    self.collectV {
+      case Some(x) => x.success
+      case None => NoSuchElementProblem(msg).failure
+    }
+
+}
+
+trait AlmFutureOps5[T] extends Ops[AlmFuture[AlmFuture[T]]] {
+  def flatten(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    self.flatMap(x => x)
+}
+
 trait ToAlmFutureOps {
   implicit def FromFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 { def self = a }
   implicit def FromTypedFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] { def self = a }
   implicit def FromAlmValidationToAlmFutureOps2[T](a: AlmValidation[T]): AlmFutureOps2[T] = new AlmFutureOps2[T] { def self = a }
   implicit def FromTypedFutureToAlmFutureOps3[T](a: Future[T]): AlmFutureOps3[T] = new AlmFutureOps3[T] { def self = a }
+  implicit def FromAlmFutureOptionToAlmFutureOps4[T](a: AlmFuture[Option[T]]): AlmFutureOps4[T] = new AlmFutureOps4[T] { def self = a }
+  implicit def FromAlmFutureAlmFutureToAlmFutureOps5[T](a: AlmFuture[AlmFuture[T]]): AlmFutureOps5[T] = new AlmFutureOps5[T] { def self = a }
 }
