@@ -206,7 +206,19 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
       succ => succ
     )
   }
- 
+
+  /** A success can become a failure */
+  def divertToFailure(divert: PartialFunction[R,Problem])(implicit executionContext: ExecutionContext): AlmFuture[R] = {
+    this.foldV(
+      fail => fail.failure,
+      succ => if(divert.isDefinedAt(succ)){
+        divert(succ).failure
+      } else {
+        succ.success
+      }
+    )
+  }
+  
   def isCompleted = underlying.isCompleted
 
   def awaitResult(atMost: Duration): AlmValidation[R] =
