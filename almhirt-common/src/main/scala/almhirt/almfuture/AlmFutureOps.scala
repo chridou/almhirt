@@ -54,6 +54,9 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
     
   def actorExtractDivertSupport[T, U](extract: PartialFunction[T, U],divert: PartialFunction[T,Problem])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
     successfulAlmFuture[T].extractDivert(extract, divert)
+
+  def ?>![T, U](extract: PartialFunction[T, U],divert: PartialFunction[T,Problem])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
+    actorExtractDivertSupport[T, U](extract, divert)
 }
 
 trait AlmFutureOps1[T] extends Ops[Future[AlmValidation[T]]] {
