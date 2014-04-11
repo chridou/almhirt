@@ -207,7 +207,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     )
   }
 
-  /** A success can become a failure */
+  /** A some successes can become a failure */
   def divertToFailure(divert: PartialFunction[R,Problem])(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     this.foldV(
       fail => fail.failure,
