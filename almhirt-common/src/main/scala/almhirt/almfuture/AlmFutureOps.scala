@@ -161,6 +161,7 @@ trait AlmFutureOps5[T] extends Ops[AlmFuture[AlmFuture[T]]] {
     self.flatMap(x => x)
 }
 
+
 trait ToAlmFutureOps {
   implicit def FromFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 { def self = a }
   implicit def FromTypedFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] { def self = a }
