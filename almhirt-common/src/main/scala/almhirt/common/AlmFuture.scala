@@ -219,6 +219,19 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     )
   }
   
+  def extractDivert[U](extract: PartialFunction[R, U],divert: PartialFunction[R,Problem])(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+    this.foldV(
+      fail => fail.failure,
+      succ => if(divert.isDefinedAt(succ)){
+        divert(succ).failure
+      } else if (extract.isDefinedAt(succ)){
+        extract(succ).success
+      } else {
+        UnspecifiedProblem(s"""${succ} is neither handled by extract nor by divert.""").failure
+      }
+    )
+  }
+  
   def isCompleted = underlying.isCompleted
 
   def awaitResult(atMost: Duration): AlmValidation[R] =
