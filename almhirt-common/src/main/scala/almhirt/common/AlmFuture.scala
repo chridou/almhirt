@@ -168,6 +168,10 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   /** Use when only interested in a success and a failure result doesn't matter */
   def onSuccess(onSucc: R => Unit)(implicit executionContext: ExecutionContext): Unit =
     onComplete(_ fold (_ => (), onSucc))
+
+  /** As soon as a success is known, schedule the effect */
+  def successEffect(effect: R => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
+    andThen { _.fold(_ => (), succ => effect(succ)) }
   
   /** Use when only interested in a success and a failure can be converted to a success to rejoin with the happy path */
   def onSuccessWithRejoinedFailure[U >: R](rejoin: Problem => U, onRes: U => Unit)(implicit executionContext: ExecutionContext): Unit =
@@ -195,7 +199,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def withFailure(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     failureEffect(effect)
 
-  /** As soon as a failure is known, execute the effect */
+  /** As soon as a failure is known, schedule the effect */
   def failureEffect(effect: Problem => Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(effect, succ => ()) }
 
