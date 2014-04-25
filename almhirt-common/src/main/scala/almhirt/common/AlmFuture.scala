@@ -250,8 +250,9 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     awaitResult(atMost).resultOrEscalate
   }
 
+  
   /** Convert this future to a future of the std lib */
-  def toStdFuture(implicit executionContext: ExecutionContext): Future[R] = {
+  def std(implicit executionContext: ExecutionContext): Future[R] = {
     val p = Promise[R]
     onComplete(
       fail => {
@@ -273,6 +274,9 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
       succ => p.complete(scala.util.Success(succ)))
     p.future
   }
+
+ def toStdFuture(implicit executionContext: ExecutionContext): Future[R] = this.std
+ 
 }
 
 object AlmFuture {
