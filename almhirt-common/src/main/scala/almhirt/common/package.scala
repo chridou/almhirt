@@ -50,9 +50,9 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   }
 
   implicit class AlmRichString(self: String) {
-    def ellipse(maxLength: Int): String = {
+    def ellipse(maxLength: Int, suffix: String = "..."): String = {
       if(self.length > maxLength) {
-        self.take(maxLength-3) + "..."
+        self.take(maxLength-suffix.length) + suffix
       } else {
         self
       }
