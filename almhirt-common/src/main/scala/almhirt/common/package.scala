@@ -29,9 +29,6 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   type SingleProblem = almhirt.problem.SingleProblem
   type AggregateProblem = almhirt.problem.AggregateProblem
   
-  implicit def almF2StdF[T](f: AlmFuture[T])(implicit execCtx: ExecutionContext): Future[T] = 
-    f.toStdFuture
-    
   implicit def stdF2AlmF[T](f: Future[T])(implicit execCtx: ExecutionContext): AlmFuture[T] = 
     new AlmFuture[T](f.map(scalaz.Success(_)))
 
