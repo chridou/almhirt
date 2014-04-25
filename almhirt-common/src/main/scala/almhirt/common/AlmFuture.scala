@@ -93,6 +93,13 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
         r => compute(r).underlying)
     })
 
+  def filter(pred: R => Boolean)(implicit executor: ExecutionContext): AlmFuture[R] =
+    mapV {
+      r => if (pred(r)) r.success else NoSuchElementProblem("AlmFuture.filter predicate is not satisfied").failure
+    }
+  
+  final def withFilter(p: R => Boolean)(implicit executor: ExecutionContext): AlmFuture[R] = filter(p)(executor)
+  
   def fold[T](failure: Problem => T, success: R => T)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
     underlying.onComplete {
@@ -149,6 +156,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
+  
   /** Act on completion */
   def onComplete(handler: AlmValidation[R] => Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
