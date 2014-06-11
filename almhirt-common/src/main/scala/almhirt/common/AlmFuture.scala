@@ -347,7 +347,7 @@ object AlmFuture {
     }
   })
   
-  /** Returns the value after the given duration */
+  /** Returns the result after the given duration */
   def delayed[T](duration: scala.concurrent.duration.FiniteDuration)(result: => AlmValidation[T]): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
     val timer = new java.util.Timer()
@@ -356,10 +356,12 @@ object AlmFuture {
     new AlmFuture(p.future)
   }
 
+  /** Returns the value after the given duration */
   def delayedSuccess[T](duration: scala.concurrent.duration.FiniteDuration)(result: => T): AlmFuture[T] = {
     delayed(duration)(result.success)
   }
 
+  /** Returns the failure with the given Problem after the given duration */
   def delayedFailure[T](duration: scala.concurrent.duration.FiniteDuration)(problem: => Problem): AlmFuture[Nothing] = {
     delayed(duration)(problem.failure)
   }
