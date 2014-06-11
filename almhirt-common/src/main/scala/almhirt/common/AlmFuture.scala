@@ -257,6 +257,22 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     import almhirt.syntax.almvalidation._
     awaitResult(atMost).resultOrEscalate
   }
+  
+  def withTimeout(maxDuration: scala.concurrent.duration.FiniteDuration, createMessage: scala.concurrent.duration.FiniteDuration => String = t => s"A timeout occured after ${t}.")(implicit executionContext: ExecutionContext): AlmFuture[R] = {
+    val p = Promise[AlmValidation[R]]
+    
+    this.onComplete(
+  		fail => p.complete(scala.util.Success(fail.failure)),
+  		succ => p.complete(scala.util.Success(succ.success))
+    )
+    
+    val timer = new java.util.Timer()
+    val r = new java.util.TimerTask() { def run() { 
+      p.complete(scala.util.Success(OperationTimedOutProblem(createMessage(maxDuration)).failure)) } }
+    timer.schedule(r, maxDuration.toMillis)
+    
+    new AlmFuture(p.future)
+  }
 
   
   /** Convert this future to a future of the std lib */
@@ -283,7 +299,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     p.future
   }
 
- def toStdFuture(implicit executionContext: ExecutionContext): Future[R] = this.std
+  def toStdFuture(implicit executionContext: ExecutionContext): Future[R] = this.std
  
 }
 
@@ -330,5 +346,22 @@ object AlmFuture {
       case scala.util.control.NonFatal(exn) => launderException(exn).failure
     }
   })
+  
+  /** Returns the value after the given duration */
+  def delayed[T](duration: scala.concurrent.duration.FiniteDuration)(result: => AlmValidation[T]): AlmFuture[T] = {
+    val p = Promise[AlmValidation[T]]
+    val timer = new java.util.Timer()
+    val r = new java.util.TimerTask() { def run() { p.complete(scala.util.Success(result)) } }
+    timer.schedule(r, duration.toMillis)
+    new AlmFuture(p.future)
+  }
 
+  def delayedSuccess[T](duration: scala.concurrent.duration.FiniteDuration)(result: => T): AlmFuture[T] = {
+    delayed(duration)(result.success)
+  }
+
+  def delayedFailure[T](duration: scala.concurrent.duration.FiniteDuration)(problem: => Problem): AlmFuture[Nothing] = {
+    delayed(duration)(problem.failure)
+  }
+  
 }
