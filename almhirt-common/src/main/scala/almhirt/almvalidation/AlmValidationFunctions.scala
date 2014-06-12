@@ -131,6 +131,12 @@ trait AlmValidationFunctions {
       case None => MandatoryDataProblem("A value was expected but there was None").failure
     }
 
+  def argumentIsMandatoryM[T](v: Option[T], where: String): AlmValidation[T] =
+    v match {
+      case Some(v) => v.success
+      case None => MandatoryDataProblem(s"""A value was expected at "$where" but there was None""").failure
+    }
+  
   def getFromMap[K, V](key: K, map: Map[K, V]): AlmValidation[V] = {
     map.get(key) match {
       case Some(v) => v.success

@@ -191,6 +191,9 @@ trait AlmValidationOps7[T] extends Ops[Option[T]] {
   def mandatory(): AlmValidation[T] =
     funs.argumentIsMandatory(self)
 
+  def mandatoryM(where: String): AlmValidation[T] =
+    funs.argumentIsMandatoryM(self, where)
+    
   def noneIsNotFound(): AlmValidation[T] =
     funs.noneIsNotFound(self)
 
