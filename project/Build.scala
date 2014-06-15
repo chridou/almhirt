@@ -10,9 +10,9 @@ object BuildSettings {
   val buildOrganization = "org.almhirt"
   val buildScalaVersion = "2.10.4"
 
-  val akkaVersion = "2.2.+"
-  val scalatestVersion = "2.1.0"
-  val sprayVersion = "1.2.0"
+  val akkaVersion = "2.3.+"
+  val scalatestVersion = "2.1.+"
+  val sprayVersion = "1.2.+"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
