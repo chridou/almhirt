@@ -98,26 +98,24 @@ object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
   }
 
   private def extractPrimitiveFromElem(value: XmlElem): AlmValidation[WarpPrimitive] =
-    (value \@ "type").fold(
-      fail => BadDataProblem(s"Could not extract a primitive from an XmlElem because it lacks an attribute 'type' which specifies the contained data type. The element was: ${value.label}").failure,
-      succ => succ match {
-        case "String" => extractString(value)
-        case "Boolean" => extractBoolean(value)
-        case "Byte" => extractByte(value)
-        case "Short" => extractShort(value)
-        case "Int" => extractInt(value)
-        case "Long" => extractLong(value)
-        case "BigInt" => extractBigInt(value)
-        case "Float" => extractFloat(value)
-        case "Double" => extractDouble(value)
-        case "BigDecimal" => extractBigDecimal(value)
-        case "DateTime" => extractDateTime(value)
-        case "LocalDateTime" => extractLocalDateTime(value)
-        case "Duration" => extractDuration(value)
-        case "Uuid" => extractUuid(value)
-        case "Uri" => extractUri(value)
-        case x => BadDataProblem(s"Could not extract a primitive from an XmlElem because its attribute 'type' specifies an unknown data type '$x'. The element was: ${value.label}").failure
-      })
+    (value \@ "type") match {
+	    case "String" => extractString(value)
+	    case "Boolean" => extractBoolean(value)
+	    case "Byte" => extractByte(value)
+	    case "Short" => extractShort(value)
+	    case "Int" => extractInt(value)
+	    case "Long" => extractLong(value)
+	    case "BigInt" => extractBigInt(value)
+	    case "Float" => extractFloat(value)
+	    case "Double" => extractDouble(value)
+	    case "BigDecimal" => extractBigDecimal(value)
+	    case "DateTime" => extractDateTime(value)
+	    case "LocalDateTime" => extractLocalDateTime(value)
+	    case "Duration" => extractDuration(value)
+	    case "Uuid" => extractUuid(value)
+	    case "Uri" => extractUri(value)
+	    case x => BadDataProblem(s"Could not extract a primitive from an XmlElem because its attribute 'type' specifies an unknown data type '$x'. The element was: ${value.label}").failure
+      }
 
   private def extractString(value: XmlElem): AlmValidation[WarpPrimitive] = WarpString(unescapeString(value.text)).success
   private def extractBoolean(value: XmlElem): AlmValidation[WarpPrimitive] = value.extractBoolean.map(WarpBoolean(_))
