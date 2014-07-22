@@ -189,7 +189,7 @@ object BigDecimalWarpUnpacker extends RegisterableWarpUnpacker[BigDecimal] {
       case WarpShort(v) => BigDecimal(v).success
       case WarpInt(v) => BigDecimal(v).success
       case WarpDouble(v) => BigDecimal(v).success
-      case WarpFloat(v) => BigDecimal(v).success
+      case WarpFloat(v) => BigDecimal(v.toString).success
       case WarpString(v) => v.toDecimalAlm
       case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a BigDecimal""").failure
     }

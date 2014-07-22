@@ -187,7 +187,7 @@ trait WarpPrimitiveToBigDecimalConverter extends WarpPrimitiveConverter[BigDecim
       case WarpInt(value) => BigDecimal(value).success
       case WarpLong(value) => BigDecimal(value).success
       case WarpBigInt(value) => BigDecimal(value).success
-      case WarpFloat(value) => BigDecimal(value).success
+      case WarpFloat(value) => BigDecimal(value.toString).success
       case WarpDouble(value) => BigDecimal(value).success
       case WarpObject(wd, _) => 
        UnspecifiedProblem(s"""A WarpObject can not be a BigDecimal. The descriptor is ${wd.toString}""").failure
