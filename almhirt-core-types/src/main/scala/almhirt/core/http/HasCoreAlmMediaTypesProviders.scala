@@ -25,9 +25,9 @@ trait DelegatingCoreAlmMediaTypesProviders { self: HasCoreAlmMediaTypesProviders
 
 trait VendorBasedCoreAlmMediaTypesProviders { self: HasCoreAlmMediaTypesProviders =>
   implicit def vendorProvider: MediaTypeVendorProvider
-  override lazy val domainEventAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[DomainEvent]("DomainEvent").withGenericMarshalling
-  override lazy val executionStateAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[ExecutionState]("ExecutionState").withGenericMarshalling
-  override lazy val domainEventsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainEvent]]("DomainEvents").withGenericMarshalling
-  override lazy val domainCommandsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainCommand]]("DomainCommands").withGenericMarshalling
-  override lazy val executionStatesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[ExecutionState]]("ExecutionStates").withGenericMarshalling
+  override lazy val domainEventAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[DomainEvent]("DomainEvent").withGenericTargets
+  override lazy val executionStateAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[ExecutionState]("ExecutionState").withGenericTargets
+  override lazy val domainEventsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainEvent]]("DomainEvents").withGenericTargets
+  override lazy val domainCommandsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainCommand]]("DomainCommands").withGenericTargets
+  override lazy val executionStatesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[ExecutionState]]("ExecutionStates").withGenericTargets
 }
