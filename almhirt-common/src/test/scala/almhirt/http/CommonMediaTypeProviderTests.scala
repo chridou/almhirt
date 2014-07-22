@@ -9,7 +9,7 @@ class CommonMediaTypeProviderTests extends FunSuite with Matchers {
       override val vendorProvider = AlmhirtMediaTypeVendorProvider
     }
     val booleanMediaTypesProvider = provider.booleanAlmMediaTypesProvider
-    booleanMediaTypesProvider.marshallableMediaTypes should not be ('empty)
+    booleanMediaTypesProvider.targetMediaTypes should not be ('empty)
   }
 
   test("The delegating providers should supply a int media types provider") {
@@ -21,7 +21,7 @@ class CommonMediaTypeProviderTests extends FunSuite with Matchers {
     }
 
     val mediaTypesProvider = delagatingProvider.intAlmMediaTypesProvider
-    mediaTypesProvider.marshallableMediaTypes should not be ('empty)
+    mediaTypesProvider.targetMediaTypes should not be ('empty)
   }
 
   test("The int media types should return a msgpack media type for marshalling which is binary") {
@@ -33,7 +33,7 @@ class CommonMediaTypeProviderTests extends FunSuite with Matchers {
     }
 
     val mediaTypesProvider = delagatingProvider.intAlmMediaTypesProvider
-    val msgPackMediaType = mediaTypesProvider.findForMarshalling("msgpack").get
+    val msgPackMediaType = mediaTypesProvider.findForSerialization("msgpack").get
     msgPackMediaType.binary should equal(true)
   }
 
@@ -46,7 +46,7 @@ class CommonMediaTypeProviderTests extends FunSuite with Matchers {
     }
 
     val mediaTypesProvider = delagatingProvider.intAlmMediaTypesProvider
-    val msgPackMediaType = mediaTypesProvider.findForMarshalling("application", "msgpack").get
+    val msgPackMediaType = mediaTypesProvider.findForSerialization("application", "msgpack").get
     msgPackMediaType.binary should equal(true)
   }
 }

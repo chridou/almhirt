@@ -12,68 +12,42 @@ sealed trait WireRepresentation {
 final case class BinaryWire(value: Array[Byte]) extends WireRepresentation
 final case class TextWire(value: String) extends WireRepresentation
 
-trait CanSerializeToWire[-TIn] extends CanSerialize[TIn] with WorksWithWireRepresentation
-trait CanDeserializeFromWire[+TOut] extends CanDeserialize[TOut] with WorksWithWireRepresentation
+trait WireSerializer[T] {
+  def serializeTo(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[WireRepresentation]
 
-trait WireSerializer[T] extends CanSerializeToWire[T] with CanDeserializeFromWire[T] {
-  final def marshallTo(mediaType: AlmMediaType)(what: T, options: Map[String, Any] = Map.empty): AlmValidation[WireRepresentation] =
-    serialize(mediaType.contentFormat)(what, options).map(_._1)
-
-  final def marshallDefault(what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(WireRepresentation, AlmMediaType)] =
-    mp.defaultForMarshalling match {
-      case Some(mt) => marshallTo(mt)(what, options).map((_, mt))
+  final def serialize(what: T)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[(WireRepresentation, AlmMediaType)] =
+    mp.defaultForSerialization match {
+      case Some(mt) => serializeTo(what, mt).map((_, mt))
       case None => NoSuchElementProblem("No default media type defined").failure
     }
 
-  final def marshall(mediaType: AlmMediaType, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[WireRepresentation] =
-    if (mp.marshallableMediaTypes.contains(mediaType)) {
-      marshallTo(mediaType)(what, options)
+  final def serializeIfSupported(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[WireRepresentation] =
+    if (mp.targetMediaTypes.contains(mediaType)) {
+      serializeTo(what, mediaType)
     } else {
-      NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for marshalling.""").failure
+      NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for wire serialization.""").failure
     }
 
-  final def marshallToFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(WireRepresentation, AlmMediaType)] =
-    mp.getForMarshalling(format).flatMap(mt => marshallTo(mt)(what, options).map((_, mt)))
+  final def serializer(mediaType: AlmMediaType): SerializesToWire[T] =
+    new SerializesToWire[T] {
+      override def serialize(what: T)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[WireRepresentation] =
+        serializeTo(what, mediaType)
+    }
+}
 
-  final def marshallToTextFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(String, AlmMediaType)] =
-    mp.getForMarshalling(format).flatMap(mt =>
-      if (mt.binary) {
-        NoSuchElementProblem(s""""${mt.value}" is not a media type for textual wire transfer.""").failure
-      } else {
-        for {
-          marshalled <- marshallTo(mt)(what, options)
-          text <- marshalled match {
-            case TextWire(txt) => txt.success
-            case BinaryWire(_) => UnspecifiedProblem(s"""A crazy problem occured. A "text"("${mt.value}") media type serialized to binary!""").failure
-          }
-        } yield (text, mt)
-      })
+trait WireDeserializer[T] {
+  def deserializeFrom(mediaType: AlmMediaType, what: WireRepresentation)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T]
 
-  final def marshallToBinaryFormat(format: String, what: T, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(Array[Byte], AlmMediaType)] =
-    mp.getForMarshalling(format).flatMap(mt =>
-      if (!mt.binary) {
-        NoSuchElementProblem(s""""${mt.value}" is not a media type for binary wire transfer.""").failure
-      } else {
-        for {
-          marshalled <- marshallTo(mt)(what, options)
-          binary <- marshalled match {
-            case BinaryWire(bin) => bin.success
-            case TextWire(_) => UnspecifiedProblem(s"""A crazy problem occured. A "binary"("${mt.value}") media type serialized to text!""").failure
-          }
-        } yield (binary, mt)
-      })
-
-  final def unmarshallFrom(mediaType: AlmMediaType)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[T] =
-    deserialize(mediaType.contentFormat)(what, options)
-
-  final def unmarshall(mediaType: AlmMediaType, what: WireRepresentation, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[T] =
-    if (mp.unmarshallableMediaTypes.contains(mediaType)) {
-      unmarshallFrom(mediaType)(what, options)
+  final def deserialize(mediaType: AlmMediaType, what: WireRepresentation)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[T] =
+    if (mp.sourceMediaTypes.contains(mediaType)) {
+      deserializeFrom(mediaType, what)
     } else {
-      NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for unmarshalling.""").failure
+      NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for deserialization.""").failure
     }
 
-  final def unmarshallFromFormat(format: String, what: WireRepresentation, options: Map[String, Any] = Map.empty)(implicit mp: AlmMediaTypesProvider[T]): AlmValidation[(T, AlmMediaType)] =
-    mp.getForUnmarshalling(format).flatMap(mt => unmarshallFrom(mt)(what, options).map((_, mt)))
-
+  final def deserializer(mediaType: AlmMediaType): DeserializesFromWire[T] =
+    new DeserializesFromWire[T] {
+      def deserialize(what: WireRepresentation)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T] =
+        deserializeFrom(mediaType, what)
+    }
 }

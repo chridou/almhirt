@@ -4,99 +4,99 @@ import scalaz._, Scalaz._
 import almhirt.common._
 
 trait AlmMediaTypesProvider[T] {
-  def marshallableMediaTypes: Seq[AlmMediaType]
-  def unmarshallableMediaTypes: Seq[AlmMediaType]
+  def targetMediaTypes: Seq[AlmMediaType]
+  def sourceMediaTypes: Seq[AlmMediaType]
 }
 
 object AlmMediaTypesProvider {
   def apply[T](theMarshallableMediaTypes: Seq[AlmMediaType], theUnmarshallableMediaTypes: Seq[AlmMediaType]): AlmMediaTypesProvider[T] =
     new AlmMediaTypesProvider[T] {
-      val marshallableMediaTypes = theMarshallableMediaTypes
-      val unmarshallableMediaTypes = theUnmarshallableMediaTypes
+      val targetMediaTypes = theMarshallableMediaTypes
+      val sourceMediaTypes = theUnmarshallableMediaTypes
     }
 
   def registeredDefaults[T](content: String)(implicit mtvp: MediaTypeVendorProvider = AlmhirtMediaTypeVendorProvider): AlmMediaTypesProvider[T] = {
     val mediaTypes = createRegisteredDefaults(mtvp.vendor, content)
     new AlmMediaTypesProvider[T] {
-      val marshallableMediaTypes = mediaTypes
-      val unmarshallableMediaTypes = mediaTypes
+      val targetMediaTypes = mediaTypes
+      val sourceMediaTypes = mediaTypes
     }
   }
   
-  def findMediaTypeForMarshalling[T: AlmMediaTypesProvider](contentFormat: String) = {
+  def findMediaTypeForSerialization[T: AlmMediaTypesProvider](contentFormat: String) = {
     val mtp = implicitly[AlmMediaTypesProvider[T]]
-    mtp.findForMarshalling(contentFormat)
+    mtp.findForSerialization(contentFormat)
   }
 
-  def getMediaTypeForMarshalling[T: AlmMediaTypesProvider](contentFormat: String) = {
+  def getMediaTypeForSerialization[T: AlmMediaTypesProvider](contentFormat: String) = {
     val mtp = implicitly[AlmMediaTypesProvider[T]]
-    mtp.getForMarshalling(contentFormat)
+    mtp.getForSerialization(contentFormat)
   }
 
-  def findMediaTypeForMarshalling[T: AlmMediaTypesProvider](mainType: String, contentFormat: String) = {
+  def findMediaTypeForSerialization[T: AlmMediaTypesProvider](mainType: String, contentFormat: String) = {
     val mtp = implicitly[AlmMediaTypesProvider[T]]
-    mtp.findForMarshalling(mainType, contentFormat)
+    mtp.findForSerialization(mainType, contentFormat)
   }
 
-  def getMediaTypeForMarshalling[T: AlmMediaTypesProvider](mainType: String, contentFormat: String) = {
+  def getMediaTypeForSerialization[T: AlmMediaTypesProvider](mainType: String, contentFormat: String) = {
     val mtp = implicitly[AlmMediaTypesProvider[T]]
-    mtp.getForMarshalling(mainType, contentFormat)
+    mtp.getForSerialization(mainType, contentFormat)
   }
 
-  def findAppMediaTypeForMarshalling[T: AlmMediaTypesProvider](contentFormat: String) = {
+  def findAppMediaTypeForSerialization[T: AlmMediaTypesProvider](contentFormat: String) = {
     val mtp = implicitly[AlmMediaTypesProvider[T]]
-    mtp.findAppForMarshalling(contentFormat)
+    mtp.findAppForSerialization(contentFormat)
   }
 
-  def getAppMediaTypeForMarshalling[T: AlmMediaTypesProvider](contentFormat: String) = {
+  def getAppMediaTypeForSerialization[T: AlmMediaTypesProvider](contentFormat: String) = {
     val mtp = implicitly[AlmMediaTypesProvider[T]]
-    mtp.getAppForMarshalling(contentFormat)
+    mtp.getAppForSerialization(contentFormat)
   }
   
   implicit class AlmMediaTypesProviderOps[T](self: AlmMediaTypesProvider[T]) {
-    def withGenericMarshalling = new AlmMediaTypesProvider[T] {
-      val marshallableMediaTypes = self.marshallableMediaTypes ++ genericMarschallingAppendix
-      val unmarshallableMediaTypes = self.unmarshallableMediaTypes
+    def withGenericTargets = new AlmMediaTypesProvider[T] {
+      val targetMediaTypes = self.targetMediaTypes ++ genericSerializationAppendix
+      val sourceMediaTypes = self.sourceMediaTypes
     }
 
-    def getForMarshalling(contentFormat: String): AlmValidation[AlmMediaType] = {
-      self.marshallableMediaTypes.find(_.contentFormat == contentFormat) match {
+    def getForSerialization(contentFormat: String): AlmValidation[AlmMediaType] = {
+      self.targetMediaTypes.find(_.contentFormat == contentFormat) match {
         case Some(mt) => mt.success
         case None => NoSuchElementProblem(s"""No marshallable media type has a content format "$contentFormat".""").failure
       }
     }
 
     
-    def findForMarshalling(contentFormat: String): Option[AlmMediaType] =
-      getForMarshalling(contentFormat).fold(
+    def findForSerialization(contentFormat: String): Option[AlmMediaType] =
+      getForSerialization(contentFormat).fold(
         _ => None,
         succ => Some(succ))
 
-    def getForMarshalling(mainType: String, contentFormat: String): AlmValidation[AlmMediaType] = {
-      self.marshallableMediaTypes.find(mt => mt.mainType == mainType && mt.contentFormat == contentFormat) match {
+    def getForSerialization(mainType: String, contentFormat: String): AlmValidation[AlmMediaType] = {
+      self.targetMediaTypes.find(mt => mt.mainType == mainType && mt.contentFormat == contentFormat) match {
         case Some(mt) => mt.success
         case None => NoSuchElementProblem(s"""No media type in media range "$mainType" has a content format "$contentFormat".""").failure
       }
     }
 
-    def findForMarshalling(mainType: String, contentFormat: String): Option[AlmMediaType] =
-      getForMarshalling(mainType, contentFormat).fold(
+    def findForSerialization(mainType: String, contentFormat: String): Option[AlmMediaType] =
+      getForSerialization(mainType, contentFormat).fold(
         _ => None,
         succ => Some(succ))
 
         
-    def getForUnmarshalling(contentFormat: String): AlmValidation[AlmMediaType] = {
-      self.unmarshallableMediaTypes.find(_.contentFormat == contentFormat) match {
+    def getForDeserialization(contentFormat: String): AlmValidation[AlmMediaType] = {
+      self.sourceMediaTypes.find(_.contentFormat == contentFormat) match {
         case Some(mt) => mt.success
         case None => NoSuchElementProblem(s"""No unmarshallable media type has a content format "$contentFormat".""").failure
       }
     }
         
-    def getAppForMarshalling(contentFormat: String) = getForMarshalling("application", contentFormat)
-    def findAppForMarshalling(contentFormat: String) = findForMarshalling("application", contentFormat)
+    def getAppForSerialization(contentFormat: String) = getForSerialization("application", contentFormat)
+    def findAppForSerialization(contentFormat: String) = findForSerialization("application", contentFormat)
   
-    def defaultForMarshalling: Option[AlmMediaType] = self.marshallableMediaTypes.headOption
-    def defaultForUnmarshalling: Option[AlmMediaType] = self.unmarshallableMediaTypes.headOption
+    def defaultForSerialization: Option[AlmMediaType] = self.targetMediaTypes.headOption
+    def defaultForDeserialization: Option[AlmMediaType] = self.sourceMediaTypes.headOption
   }
 
   def createRegisteredDefaults(vendor: MediaTypeVendorPart, content: String): Seq[AlmMediaType] =
@@ -104,7 +104,7 @@ object AlmMediaTypesProvider {
       AlmMediaTypes.registeredJsonStructuredMedia(vendor, content),
       AlmMediaTypes.registeredXmlStructuredMedia(vendor, content))
 
-  val genericMarschallingAppendix = Seq(
+  val genericSerializationAppendix = Seq(
     AlmMediaTypes.`text/html`,
     AlmMediaTypes.`application/x-msgpack`,
     AlmMediaTypes.`application/json`,
