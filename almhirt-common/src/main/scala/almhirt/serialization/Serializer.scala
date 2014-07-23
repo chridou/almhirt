@@ -16,13 +16,11 @@ trait Deserializes[TData, +TOut] {
   def deserialize(what: TData)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[TOut]
 }
 
-trait SerializesToWire[-TIn] extends Serializes[TIn, WireRepresentation] {
-  def serialize(what: TIn)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[WireRepresentation]
-}
+trait SerializesToString[-TIn] extends Serializes[TIn, String]
+trait DeserializesFromString[+TOut] extends Deserializes[String, TOut]
 
-trait DeserializesFromWire[+TOut] extends Deserializes[WireRepresentation, TOut]{
-  def deserialize(what: WireRepresentation)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[TOut]
-}
+trait SerializesToBytes[-TIn] extends Serializes[TIn, Array[Byte]]
+trait DeserializesFromBytes[+TOut] extends Deserializes[Array[Byte], TOut]
 
 
 
