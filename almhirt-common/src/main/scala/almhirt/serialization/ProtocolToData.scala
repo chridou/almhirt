@@ -1,5 +1,5 @@
 package almhirt.serialization
 
-trait ProtocolToData[TPro] {
-  type TData
+trait SerializationProtocol {
+  type TCarrier
 }
