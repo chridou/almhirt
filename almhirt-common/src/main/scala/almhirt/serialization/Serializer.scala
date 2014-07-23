@@ -2,10 +2,10 @@ package almhirt.serialization
 
 import almhirt.common._
 
-trait SerializationParams
+class SerializationParams private ()
 
 object SerializationParams {
-  val empty = new SerializationParams {}
+  val empty = new SerializationParams()
 }
 
 trait Serializes[-TIn, TData] {
