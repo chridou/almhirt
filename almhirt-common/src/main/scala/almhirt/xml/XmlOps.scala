@@ -170,7 +170,7 @@ trait XmlOps0 extends Ops[Elem]{
   def \??(label: String) = funs.tryGetChild(self)(label).fold(_ => None, succ => succ)
   def elems = funs.allElems(self)
   
-  def \@(name: String): AlmValidation[String] = funs.getAttributeValue(self, name)
+  def \@!(name: String): AlmValidation[String] = funs.getAttributeValue(self, name)
   def \@?(name: String): Option[String] = funs.getOptionalAttributeValue(self, name)
 }
 
