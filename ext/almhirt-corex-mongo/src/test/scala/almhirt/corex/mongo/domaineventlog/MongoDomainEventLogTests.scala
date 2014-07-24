@@ -1,17 +1,17 @@
 package almhirt.corex.mongo.domaineventlog
 
-import akka.actor._
-import almhirt.common._
-import almhirt.almvalidation.kit._
-import almhirt.testkit._
-import almhirt.testkit.domaineventlog.DomainEventLogSpecTemplate
-import com.typesafe.config.ConfigFactory
-import reactivemongo.api.MongoDriver
-import almhirt.core.types._
-import reactivemongo.bson.BSONDocument
-import riftwarpx.mongo.BsonDocumentSerializer
-import com.typesafe.config.Config
-import scala.concurrent.duration.FiniteDuration
+//import akka.actor._
+//import almhirt.common._
+//import almhirt.almvalidation.kit._
+//import almhirt.testkit._
+//import almhirt.testkit.domaineventlog.DomainEventLogSpecTemplate
+//import com.typesafe.config.ConfigFactory
+//import reactivemongo.api.MongoDriver
+//import almhirt.core.types._
+//import reactivemongo.bson.BSONDocument
+//import riftwarpx.mongo.BsonDocumentSerializer
+//import com.typesafe.config.Config
+//import scala.concurrent.duration.FiniteDuration
 
 // Disabled because I don't know how to disable tagged tests in travis
 

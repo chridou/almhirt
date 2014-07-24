@@ -1,7 +1,8 @@
 package almhirt.testkit.components
 
 import org.scalatest._
-import akka.testkit.TestProbe
+import scala.concurrent.duration._
+import akka.testkit._
 import almhirt.testkit._
 import akka.actor._
 import akka.pattern._
@@ -82,7 +83,7 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
       useCommandEndpoint{ (endpoint, spy, tracker) =>
         val trackId = ccuad.getUniqueString
         val cmd = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(ccuad.getUuid)), "a").track(trackId)
-        val trackIdRes = endpoint.executeTracked(cmd)
+        val trackIdRes = endpoint.executeTracked(cmd).awaitResultOrEscalate(2.seconds.dilated)
         val res = spy.expectMsgPF(defaultDuration, "Waiting for a message containing the given command") {
           case Message(_, payload) => payload
         }
