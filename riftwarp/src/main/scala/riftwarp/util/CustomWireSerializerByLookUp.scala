@@ -3,12 +3,12 @@ package riftwarp.util
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.serialization._
+import almhirt.http.{ HttpSerializer, HttpDeserializer }
 import riftwarp._
 import riftwarp.std.RiftWarpFuns
 import scala.reflect.ClassTag
 
-trait CustomWireSerializerByLookUp[T] extends CustomWireSerializerTemplate[T] with WireSerializer[T] with RiftWarpFuns { self: HasRiftWarp =>
+trait CustomHttpSerializerByLookUp[T] extends CustomHttpSerializerTemplate[T] with RiftWarpFuns { self: HasRiftWarp =>
   def tag: ClassTag[TT]
 
   override protected def getDematerializer(channel: WarpChannel): AlmValidation[Dematerializer[Any]] = myRiftWarp.dematerializers.get(channel.channelDescriptor)

@@ -3,10 +3,10 @@ package riftwarp.util
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.serialization._
+import almhirt.http.{ HttpSerializer, HttpDeserializer }
 import riftwarp._
 
-trait CustomWireSerializer[T] extends CustomWireSerializerTemplate[T] with WireSerializer[T] {
+trait CustomHttpSerializer[T] extends CustomHttpSerializerTemplate[T] {
   
   def packer: AlmValidation[WarpPacker[TT]]
   def unpacker: AlmValidation[WarpUnpacker[TT]]
@@ -28,12 +28,12 @@ trait CustomWireSerializer[T] extends CustomWireSerializerTemplate[T] with WireS
     unpacker.flatMap(_(what)(unpackers))
 }
 
-trait FlatWireSerializer[T] { self : CustomWireSerializer[T] =>
+trait FlatHttpSerializer[T] { self : CustomHttpSerializer[T] =>
   def packers: WarpPackers = WarpPackers.empty
   def unpackers: WarpUnpackers = WarpUnpackers.empty
 }
 
-trait RiftWarpWireSerializer[T] { self : CustomWireSerializer[T] =>
+trait RiftWarpHttpSerializer[T] { self : CustomHttpSerializer[T] =>
   def riftwarp: RiftWarp
 
   override lazy val packers: WarpPackers = riftwarp.packers

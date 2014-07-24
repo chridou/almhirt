@@ -4,10 +4,11 @@ import scala.reflect.ClassTag
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.serialization._
+import almhirt.serialization.SerializationParams
+import almhirt.http._
 import riftwarp._
 
-trait CustomWireSerializerTemplate[T] extends WireSerializer[T] {
+trait CustomHttpSerializerTemplate[T] extends HttpSerializer[T] with HttpDeserializer[T] {
   type TT
 
   protected def packInner(what: TT): AlmValidation[WarpPackage]
@@ -18,42 +19,43 @@ trait CustomWireSerializerTemplate[T] extends WireSerializer[T] {
   protected def getStringRematerializer(channel: String): AlmValidation[Rematerializer[String]]
   protected def getBinaryRematerializer(channel: String): AlmValidation[Rematerializer[Array[Byte]]]
   
-  protected def serializeInternal(what: T, channel: String, pack: T => AlmValidation[WarpPackage]): AlmValidation[WireRepresentation] =
+  protected def serializeInternal(what: T, channel: String, pack: T => AlmValidation[WarpPackage]): AlmValidation[AlmHttpBody] =
     for {
       theChannel <- WarpChannels.getChannel(channel)
       dematerializer <- getDematerializer(theChannel)
       serialized <- pack(what).map(wc => dematerializer.dematerialize(wc, Map.empty))
-      typedSerialized <- theChannel.wireTransmission match {
-        case WireTransmissionAsBinary => serialized.castTo[Array[Byte]].map(BinaryWire)
-        case WireTransmissionAsText => serialized.castTo[String].map(TextWire)
-        case NoWireTransmission => UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
+      typedSerialized <- theChannel.HttpTransmission match {
+        case HttpTransmissionAsBinary => serialized.castTo[Array[Byte]].map(BinaryBody)
+        case HttpTransmissionAsText => serialized.castTo[String].map(TextBody)
+        case NoHttpTransmission => UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
       }
 
     } yield typedSerialized
 
-  protected def deserializeInternal(channel: String)(what: WireRepresentation, unpack: WarpPackage => AlmValidation[T]): AlmValidation[T] =
+  protected def deserializeInternal(channel: String)(what: AlmHttpBody, unpack: WarpPackage => AlmValidation[T]): AlmValidation[T] =
     for {
       theChannel <- WarpChannels.getChannel(channel)
       rematerialized <- what match {
-        case BinaryWire(bytes) if theChannel.wireTransmission == WireTransmissionAsBinary =>
+        case BinaryBody(bytes) if theChannel.HttpTransmission == HttpTransmissionAsBinary =>
           getBinaryRematerializer(theChannel.channelDescriptor).flatMap(_(bytes))
-        case TextWire(text) if theChannel.wireTransmission == WireTransmissionAsText =>
+        case TextBody(text) if theChannel.HttpTransmission == HttpTransmissionAsText =>
           getStringRematerializer(theChannel.channelDescriptor).flatMap(_(text))
         case _ =>
-          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" -> "${theChannel.wireTransmission}").""").failure
+          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" -> "${theChannel.HttpTransmission}").""").failure
       }
       unpacked <- unpack(rematerialized)
     } yield unpacked
 
-  override def serialize(channel: String)(what: T, options: Map[String, Any] = Map.empty): AlmValidation[(WireRepresentation, Option[String])] =
-    serializeInternal(what, channel, packOuter).map(x => (x, None))
+    
+  def serializeTo(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody] = 
+    serializeInternal(what, mediaType.contentFormat, packOuter)
 
-  override def deserialize(channel: String)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[T] =
-    deserializeInternal(channel)(what, unpackOuter)
+  def deserializeFrom(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T] =
+     deserializeInternal(mediaType.contentFormat)(what, unpackOuter)
 }
 
 
-trait SimpleWireSerializer[T] { self : CustomWireSerializerTemplate[T] =>
+trait SimpleHttpSerializer[T] { self : CustomHttpSerializerTemplate[T] =>
   type TT = T
 
   override protected def packOuter(in: T): AlmValidation[WarpPackage]  = packInner(in)

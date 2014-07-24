@@ -1,14 +1,14 @@
 package almhirt.corex.riftwarp.serializers
 
 import almhirt.core.types._
-import almhirt.core.types.serialization.HasCoreWireSerializers
+import almhirt.core.types.serialization.HasCoreHttpSerializers
 import riftwarp.HasRiftWarp
-import riftwarp.util.WarpWireSerializer
+import riftwarp.util.WarpHttpSerializer
 
-trait CoreWireSerializersByRiftWarp extends HasCoreWireSerializers { self: HasRiftWarp =>
-  implicit override val domainEventWireSerializer = WarpWireSerializer[DomainEvent](myRiftWarp)
-  implicit override val executionStateWireSerializer =  WarpWireSerializer[ExecutionState](myRiftWarp)
-  implicit override val domainEventsWireSerializer =  WarpWireSerializer.collection[DomainEvent](myRiftWarp)
-  implicit override val domainCommandsWireSerializer =  WarpWireSerializer.collection[DomainCommand](myRiftWarp)
-  implicit override val executionStatesWireSerializer =  WarpWireSerializer.collection[ExecutionState](myRiftWarp)
+trait CoreHttpSerializersByRiftWarp extends HasCoreHttpSerializers { self: HasRiftWarp =>
+  implicit override val domainEventHttpSerializer = WarpHttpSerializer[DomainEvent](myRiftWarp)
+  implicit override val executionStateHttpSerializer =  WarpHttpSerializer[ExecutionState](myRiftWarp)
+  implicit override val domainEventsHttpSerializer =  WarpHttpSerializer.collection[DomainEvent](myRiftWarp)
+  implicit override val domainCommandsHttpSerializer =  WarpHttpSerializer.collection[DomainCommand](myRiftWarp)
+  implicit override val executionStatesHttpSerializer =  WarpHttpSerializer.collection[ExecutionState](myRiftWarp)
 }

@@ -4,60 +4,65 @@ import scala.reflect.ClassTag
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
-import almhirt.serialization._
+import almhirt.http._
 import riftwarp._
+import almhirt.serialization.SerializationParams
 
-class WarpWireSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) extends WireSerializer[T] {
-  private def serializeWithRiftWarp(what: T, channel: String, options: Map[String, Any]): AlmValidation[(WireRepresentation, WarpDescriptor)] =
+class WarpHttpSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) extends HttpSerializer[T] with HttpDeserializer[T] {
+
+  def serializeTo(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody] = 
+    serializeInternal(what, mediaType.contentFormat, Map.empty)
+
+  def deserializeFrom(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T] =
+     deserializeInternal(mediaType.contentFormat, what, Map.empty)
+     
+  private def serializeInternal(what: T, channel: String, options: Map[String, Any]): AlmValidation[AlmHttpBody] =
     for {
       theChannel <- WarpChannels.getChannel(channel)
       serialized <- riftWarp.departure(theChannel.channelDescriptor, what, options)
-      typedSerialized <- theChannel.wireTransmission match {
-        case WireTransmissionAsBinary => serialized._1.castTo[Array[Byte]].map(BinaryWire)
-        case WireTransmissionAsText => serialized._1.castTo[String].map(TextWire)
-        case NoWireTransmission => UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
+      typedSerialized <- theChannel.HttpTransmission match {
+        case HttpTransmissionAsBinary => serialized._1.castTo[Array[Byte]].map(BinaryBody)
+        case HttpTransmissionAsText => serialized._1.castTo[String].map(TextBody)
+        case NoHttpTransmission => UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
       }
 
-    } yield (typedSerialized, serialized._2)
-
-  override def serialize(channel: String)(what: T, options: Map[String, Any] = Map.empty): AlmValidation[(WireRepresentation, Option[String])] =
-    serializeWithRiftWarp(what, channel, options).map(x => (x._1, Some(x._2.toParsableString())))
-
-  override def deserialize(channel: String)(what: WireRepresentation, options: Map[String, Any] = Map.empty): AlmValidation[T] =
+    } yield typedSerialized
+ 
+  private def deserializeInternal(channel: String, what: AlmHttpBody, options: Map[String, Any] = Map.empty): AlmValidation[T] =
     for {
       theChannel <- WarpChannels.getChannel(channel)
       result <- what match {
-        case BinaryWire(bytes) if theChannel.wireTransmission == WireTransmissionAsBinary =>
+        case BinaryBody(bytes) if theChannel.HttpTransmission == HttpTransmissionAsBinary =>
           riftWarp.arrival(channel, bytes, options).flatMap(_.castTo[T])
-        case TextWire(text) if theChannel.wireTransmission == WireTransmissionAsText =>
+        case TextBody(text) if theChannel.HttpTransmission == HttpTransmissionAsText =>
           riftWarp.arrival(channel, text, options).flatMap(_.castTo[T])
         case _ =>
-          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.wireTransmission}").""").failure
+          UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.HttpTransmission}").""").failure
       }
     } yield result
 }
 
-object WarpWireSerializer {
-  def apply[T](rw: RiftWarp)(implicit tag: ClassTag[T]): WarpWireSerializer[T] = new WarpWireSerializer[T](rw)
-  def command(rw: RiftWarp): WarpWireSerializer[Command] = new WarpWireSerializer[Command](rw)
-  def event(rw: RiftWarp): WarpWireSerializer[Event] = new WarpWireSerializer[Event](rw)
-  def problem(rw: RiftWarp): WarpWireSerializer[Problem] = new WarpWireSerializer[Problem](rw)
+object WarpHttpSerializer {
+  def apply[T](rw: RiftWarp)(implicit tag: ClassTag[T]): WarpHttpSerializer[T] = new WarpHttpSerializer[T](rw)
+  def command(rw: RiftWarp): WarpHttpSerializer[Command] = new WarpHttpSerializer[Command](rw)
+  def event(rw: RiftWarp): WarpHttpSerializer[Event] = new WarpHttpSerializer[Event](rw)
+  def problem(rw: RiftWarp): WarpHttpSerializer[Problem] = new WarpHttpSerializer[Problem](rw)
 
-  def collection[T](rw: RiftWarp)(implicit tagT: ClassTag[T]): WireSerializer[Seq[T]] = 
-    new CustomWireSerializerByLookUp[Seq[T]] with CollectionWireSerializer[T] with HasRiftWarp {
+  def collection[T](rw: RiftWarp)(implicit tagT: ClassTag[T]): HttpSerializer[Seq[T]] with HttpDeserializer[Seq[T]] = 
+    new CustomHttpSerializerByLookUp[Seq[T]] with CollectionHttpSerializer[T] with HasRiftWarp {
       val myRiftWarp = rw
       def tag: ClassTag[TT] = tagT
     }
   
-  def direct[T: WarpPacker: WarpUnpacker](rw: RiftWarp): WireSerializer[T] =
-    new CustomWireSerializer[T] with SimpleWireSerializer[T] with RiftWarpWireSerializer[T] {
+  def direct[T: WarpPacker: WarpUnpacker](rw: RiftWarp): HttpSerializer[T] with HttpDeserializer[T] =
+    new CustomHttpSerializer[T] with SimpleHttpSerializer[T] with RiftWarpHttpSerializer[T] {
       lazy val packer = implicitly[WarpPacker[T]].success
       lazy val unpacker = implicitly[WarpUnpacker[T]].success
       lazy val riftwarp = rw
     }
 
-  def collectionDirect[T: WarpPacker: WarpUnpacker](rw: RiftWarp): WireSerializer[Seq[T]] = 
-    new CustomWireSerializer[Seq[T]] with  CollectionWireSerializer[T] with RiftWarpWireSerializer[Seq[T]] {
+  def collectionDirect[T: WarpPacker: WarpUnpacker](rw: RiftWarp): HttpSerializer[Seq[T]] with HttpDeserializer[Seq[T]] = 
+    new CustomHttpSerializer[Seq[T]] with  CollectionHttpSerializer[T] with RiftWarpHttpSerializer[Seq[T]] {
       lazy val packer = implicitly[WarpPacker[T]].success
       lazy val unpacker = implicitly[WarpUnpacker[T]].success
       lazy val riftwarp = rw

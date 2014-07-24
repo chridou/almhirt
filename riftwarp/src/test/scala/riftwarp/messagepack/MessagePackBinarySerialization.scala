@@ -10,8 +10,6 @@ import riftwarp._
 import riftwarp.std._
 import riftwarp.std.kit._
 import riftwarp.std.default._
-import riftwarp.util.WarpSerializerToString
-import riftwarp.util.Serializers
 import scala.concurrent.duration.FiniteDuration
 import almhirt.io.BinaryWriter
 

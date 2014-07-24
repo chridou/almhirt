@@ -1,6 +1,6 @@
 package riftwarpx.mongo
 
-import almhirt.serialization.CanSerializeAndDeserialize
+import almhirt.serialization._
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -8,9 +8,9 @@ import reactivemongo.bson._
 import riftwarp._
 import scala.reflect.ClassTag
 
-trait BsonDocumentSerializer[T] {
-  def serialize(what: T): AlmValidation[BSONDocument]
-  def deserialize(what: BSONDocument): AlmValidation[T]
+trait BsonDocumentSerializer[T] extends Serializes[T, BSONDocument] with Deserializes[BSONDocument, T] {
+  def serialize(what: T)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[BSONDocument]
+  def deserialize(what: BSONDocument)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T]
   def toSerializationFunc = (what: T) => serialize(what)
   def toDeserializationFunc = (what: BSONDocument) => deserialize(what)
 }
@@ -18,7 +18,7 @@ trait BsonDocumentSerializer[T] {
 object BsonDocumentSerializer {
   def apply[T](idLabel: Option[String], riftWarp: RiftWarp)(implicit tag: ClassTag[T]): BsonDocumentSerializer[T] =
     new BsonDocumentSerializer[T] {
-      def serialize(what: T): AlmValidation[BSONDocument] =
+      def serialize(what: T)(implicit params: SerializationParams): AlmValidation[BSONDocument] =
         for {
           packer <- riftWarp.packers.getFor(what, None, None)
           packed <- packer.packBlind(what)(riftWarp.packers)
@@ -45,7 +45,7 @@ object BsonDocumentSerializer {
           }
         } yield res
 
-      def deserialize(what: BSONDocument): AlmValidation[T] =
+      def deserialize(what: BSONDocument)(implicit params: SerializationParams): AlmValidation[T] =
         for {
           rematerializedPackage <- FromBsonRematerializer.rematerialize(what, Map.empty)
           rematerializedObjectWithIdLabel <- rematerializedPackage match {

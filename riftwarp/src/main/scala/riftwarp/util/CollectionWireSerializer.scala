@@ -6,7 +6,7 @@ import almhirt.almvalidation.kit._
 import almhirt.serialization._
 import riftwarp._
 
-trait CollectionWireSerializer[T]{ self : CustomWireSerializerTemplate[Seq[T]] =>
+trait CollectionHttpSerializer[T]{ self : CustomHttpSerializerTemplate[Seq[T]] =>
   type TT = T
 
   override protected def packOuter(in: Seq[TT]): AlmValidation[WarpPackage] = {

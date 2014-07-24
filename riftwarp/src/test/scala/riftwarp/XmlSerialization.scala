@@ -11,8 +11,6 @@ import riftwarp.std._
 import riftwarp.std.kit._
 import riftwarp.std.default._
 import SerializationDefaults._
-import riftwarp.util.WarpSerializerToString
-import riftwarp.util.Serializers
 import almhirt.problem._
 
 class XmlSerialization extends FunSuite with Matchers {
@@ -194,60 +192,60 @@ class XmlSerialization extends FunSuite with Matchers {
     dematV.forceResult should equal((s"""<Value type="Uuid">${uuid.toString()}</Value>""", WarpDescriptor("UUID")))
   }
 
-  test("SerializerOnStrings should serialize a UUID") {
-    val serializer = new WarpSerializerToString[JUUID](RiftWarp(packers, unpackers))
-    val uuid = JUUID.randomUUID()
-    val resV = serializer.serialize("xml")(uuid)
-    resV.forceResult should equal((s"""<Value type="Uuid">${uuid.toString()}</Value>""", Some(WarpDescriptor("UUID").toParsableString())))
-  }
-
-  test("SerializerOnStrings should serialize a Boolean") {
-    val serializer = new WarpSerializerToString[Boolean](RiftWarp(packers, unpackers))
-    val resV = serializer.serialize("xml")(true)
-    resV.forceResult should equal((s"""<Value type="Boolean">true</Value>""", Some(WarpDescriptor("Boolean").toParsableString())))
-  }
-
-  test("SerializerOnStrings[String] should serialize and deserialze a String") {
-    val serializer = Serializers.createSpecificForStrings[String](RiftWarp(packers, unpackers))
-    val resV = serializer.serialize("xml")("hallo")
-    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
-    dematV.forceResult should equal("hallo")
-  }
-
-  test("SerializerOnStrings[Any] should serialize and deserialze a String") {
-    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
-    val resV = serializer.serialize("xml")("hallo")
-    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
-    dematV.forceResult should equal("hallo")
-  }
-
-  test("SerializerOnStrings[Any] should serialize and deserialze a Double") {
-    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
-    val resV = serializer.serialize("xml")(1.234)
-    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
-    dematV.forceResult should equal(1.234)
-  }
-
-  test("SerializerOnStrings[Any] should serialize and deserialze a SingleProblem") {
-    val prob = UnspecifiedProblem("Error", cause = Some(MultipleProblems(Vector(NoSuchElementProblem("Huhu!")))))
-    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
-    val resV = serializer.serialize("xml")(prob)
-    val demat = serializer.deserialize("xml")(resV.forceResult._1)
-    demat should equal(Success(prob))
-  }
-  
-  test("SerializerOnStrings[Any] should serialize and deserialze the PrimitiveListMAs") {
-    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
-    val resV = serializer.serialize("xml")(TestObjectA.pete.primitiveListMAs)
-    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
-    dematV.forceResult should equal(TestObjectA.pete.primitiveListMAs)
-  }
-
-  ignore("SerializerOnStrings[Any] should serialize and deserialze the pete") {
-    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
-    val resV = serializer.serialize("xml")(TestObjectA.pete)
-    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
-    dematV.forceResult should equal(TestObjectA.pete)
-  }
+//  test("SerializerOnStrings should serialize a UUID") {
+//    val serializer = new WarpSerializerToString[JUUID](RiftWarp(packers, unpackers))
+//    val uuid = JUUID.randomUUID()
+//    val resV = serializer.serialize("xml")(uuid)
+//    resV.forceResult should equal((s"""<Value type="Uuid">${uuid.toString()}</Value>""", Some(WarpDescriptor("UUID").toParsableString())))
+//  }
+//
+//  test("SerializerOnStrings should serialize a Boolean") {
+//    val serializer = new WarpSerializerToString[Boolean](RiftWarp(packers, unpackers))
+//    val resV = serializer.serialize("xml")(true)
+//    resV.forceResult should equal((s"""<Value type="Boolean">true</Value>""", Some(WarpDescriptor("Boolean").toParsableString())))
+//  }
+//
+//  test("SerializerOnStrings[String] should serialize and deserialze a String") {
+//    val serializer = Serializers.createSpecificForStrings[String](RiftWarp(packers, unpackers))
+//    val resV = serializer.serialize("xml")("hallo")
+//    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
+//    dematV.forceResult should equal("hallo")
+//  }
+//
+//  test("SerializerOnStrings[Any] should serialize and deserialze a String") {
+//    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
+//    val resV = serializer.serialize("xml")("hallo")
+//    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
+//    dematV.forceResult should equal("hallo")
+//  }
+//
+//  test("SerializerOnStrings[Any] should serialize and deserialze a Double") {
+//    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
+//    val resV = serializer.serialize("xml")(1.234)
+//    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
+//    dematV.forceResult should equal(1.234)
+//  }
+//
+//  test("SerializerOnStrings[Any] should serialize and deserialze a SingleProblem") {
+//    val prob = UnspecifiedProblem("Error", cause = Some(MultipleProblems(Vector(NoSuchElementProblem("Huhu!")))))
+//    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
+//    val resV = serializer.serialize("xml")(prob)
+//    val demat = serializer.deserialize("xml")(resV.forceResult._1)
+//    demat should equal(Success(prob))
+//  }
+//  
+//  test("SerializerOnStrings[Any] should serialize and deserialze the PrimitiveListMAs") {
+//    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
+//    val resV = serializer.serialize("xml")(TestObjectA.pete.primitiveListMAs)
+//    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
+//    dematV.forceResult should equal(TestObjectA.pete.primitiveListMAs)
+//  }
+//
+//  ignore("SerializerOnStrings[Any] should serialize and deserialze the pete") {
+//    val serializer = Serializers.createSpecificForStrings[Any](RiftWarp(packers, unpackers))
+//    val resV = serializer.serialize("xml")(TestObjectA.pete)
+//    val dematV = serializer.deserialize("xml")(resV.forceResult._1)
+//    dematV.forceResult should equal(TestObjectA.pete)
+//  }
 
 }
