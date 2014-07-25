@@ -2,10 +2,10 @@ package almhirt.httpx.spray.marshalling
 
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.http._
 import spray.http._
 import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling._
-import almhirt.serialization._
 import spray.http.HttpEntity.{ NonEmpty, Empty }
 
 trait ContentTypeBoundMarshallerFactory[T] {
@@ -15,7 +15,7 @@ trait ContentTypeBoundMarshallerFactory[T] {
   def baseMarshallerFactory: MarshallerFactory[T]
   def marshallingContentTypes: Seq[ContentType]
 
-  def marshaller(implicit serializer: CanSerializeToWire[T]): Marshaller[T] =
+  def marshaller(implicit serializer: HttpSerializer[T]): Marshaller[T] =
     baseMarshallerFactory.marshaller(serializer, marshallingContentTypes: _*)
 }
 
@@ -35,7 +35,7 @@ trait ContentTypeBoundUnmarshallerFactory[T] {
   def baseUnmarshallerFactory: UnmarshallerFactory[T]
   def unmarshallingContentTypes: Seq[ContentType]
 
-  def unmarshaller(implicit deserializer: CanDeserializeFromWire[T]): Unmarshaller[T] =
+  def unmarshaller(implicit deserializer: HttpDeserializer[T]): Unmarshaller[T] =
     baseUnmarshallerFactory.unmarshaller(deserializer, unmarshallingContentTypes: _*)
 }
 

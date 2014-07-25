@@ -22,7 +22,7 @@ object MarshallingContentTypesProvider {
   def apply[T: AlmMediaTypesProvider](implicit defaultEncoding: AlmCharacterEncoding): MarshallingContentTypesProvider[T] = {
     val mdt = implicitly[AlmMediaTypesProvider[T]]
     new MarshallingContentTypesProvider[T] {
-      val marshallingContentTypes = mdt.marshallableMediaTypes.toSprayContentTypes
+      val marshallingContentTypes = mdt.targetMediaTypes.toSprayContentTypes
     }
   }
 }
@@ -36,7 +36,7 @@ object UnmarshallingContentTypesProvider {
   def apply[T: AlmMediaTypesProvider](implicit defaultEncoding: AlmCharacterEncoding): UnmarshallingContentTypesProvider[T] = {
     val mdt = implicitly[AlmMediaTypesProvider[T]]
     new UnmarshallingContentTypesProvider[T] {
-      val unmarshallingContentTypes = mdt.unmarshallableMediaTypes.toSprayContentTypes
+      val unmarshallingContentTypes = mdt.sourceMediaTypes.toSprayContentTypes
     }
   }
 }
@@ -59,8 +59,8 @@ object FullContentTypeProvider {
   def apply[T: AlmMediaTypesProvider](implicit defaultEncoding: AlmCharacterEncoding): FullContentTypeProvider[T] = {
     val mdt = implicitly[AlmMediaTypesProvider[T]]
     new FullContentTypeProvider[T] {
-      val marshallingContentTypes = mdt.marshallableMediaTypes.toSprayContentTypes
-      val unmarshallingContentTypes = mdt.unmarshallableMediaTypes.toSprayContentTypes
+      val marshallingContentTypes = mdt.targetMediaTypes.toSprayContentTypes
+      val unmarshallingContentTypes = mdt.sourceMediaTypes.toSprayContentTypes
     }
   }
 

@@ -10,10 +10,10 @@ import almhirt.serialization.SerializationParams
 
 class WarpHttpSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) extends HttpSerializer[T] with HttpDeserializer[T] {
 
-  def serializeTo(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody] = 
+  def serialize(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody] = 
     serializeInternal(what, mediaType.contentFormat, Map.empty)
 
-  def deserializeFrom(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T] =
+  def deserialize(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T] =
      deserializeInternal(mediaType.contentFormat, what, Map.empty)
      
   private def serializeInternal(what: T, channel: String, options: Map[String, Any]): AlmValidation[AlmHttpBody] =

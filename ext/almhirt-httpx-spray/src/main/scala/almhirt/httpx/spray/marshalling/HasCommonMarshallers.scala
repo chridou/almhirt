@@ -1,6 +1,6 @@
 package almhirt.httpx.spray.marshalling
 
-import almhirt.serialization.HasCommonWireSerializers
+import almhirt.http.HasCommonHttpSerializers
 import spray.httpx.marshalling.Marshaller
 
 trait HasCommonMarshallers extends HasProblemMarshaller {
@@ -46,115 +46,115 @@ trait HasCommonMarshallers extends HasProblemMarshaller {
 }
 
 trait CommonMarshallerInstances { self: HasCommonMarshallers =>
-  def commonWireSerializers: HasCommonWireSerializers
+  def commonHttpSerializers: HasCommonHttpSerializers
   def commonContentTypeProviders: HasCommonContentTypeProviders
 
   override lazy val booleanMarshaller: Marshaller[Boolean] =
-    ContentTypeBoundMarshallerFactory[Boolean](commonContentTypeProviders.booleanContentTypeProvider, DefaultMarshallingInstances.BooleanMarshallingInst).marshaller(commonWireSerializers.booleanWireSerializer)
+    ContentTypeBoundMarshallerFactory[Boolean](commonContentTypeProviders.booleanContentTypeProvider, DefaultMarshallingInstances.BooleanMarshallingInst).marshaller(commonHttpSerializers.booleanHttpSerializer)
 
   override lazy val stringMarshaller: Marshaller[String] =
-    ContentTypeBoundMarshallerFactory[String](commonContentTypeProviders.stringContentTypeProvider, DefaultMarshallingInstances.StringMarshallingInst).marshaller(commonWireSerializers.stringWireSerializer)
+    ContentTypeBoundMarshallerFactory[String](commonContentTypeProviders.stringContentTypeProvider, DefaultMarshallingInstances.StringMarshallingInst).marshaller(commonHttpSerializers.stringHttpSerializer)
 
   override lazy val byteMarshaller: Marshaller[Byte] =
-    ContentTypeBoundMarshallerFactory[Byte](commonContentTypeProviders.byteContentTypeProvider, DefaultMarshallingInstances.ByteMarshallingInst).marshaller(commonWireSerializers.byteWireSerializer)
+    ContentTypeBoundMarshallerFactory[Byte](commonContentTypeProviders.byteContentTypeProvider, DefaultMarshallingInstances.ByteMarshallingInst).marshaller(commonHttpSerializers.byteHttpSerializer)
 
   override lazy val shortMarshaller: Marshaller[Short] =
-    ContentTypeBoundMarshallerFactory[Short](commonContentTypeProviders.shortContentTypeProvider, DefaultMarshallingInstances.ShortMarshallingInst).marshaller(commonWireSerializers.shortWireSerializer)
+    ContentTypeBoundMarshallerFactory[Short](commonContentTypeProviders.shortContentTypeProvider, DefaultMarshallingInstances.ShortMarshallingInst).marshaller(commonHttpSerializers.shortHttpSerializer)
 
   override lazy val intMarshaller: Marshaller[Int] =
-    ContentTypeBoundMarshallerFactory[Int](commonContentTypeProviders.intContentTypeProvider, DefaultMarshallingInstances.IntMarshallingInst).marshaller(commonWireSerializers.intWireSerializer)
+    ContentTypeBoundMarshallerFactory[Int](commonContentTypeProviders.intContentTypeProvider, DefaultMarshallingInstances.IntMarshallingInst).marshaller(commonHttpSerializers.intHttpSerializer)
 
   override lazy val longMarshaller: Marshaller[Long] =
-    ContentTypeBoundMarshallerFactory[Long](commonContentTypeProviders.longContentTypeProvider, DefaultMarshallingInstances.LongMarshallingInst).marshaller(commonWireSerializers.longWireSerializer)
+    ContentTypeBoundMarshallerFactory[Long](commonContentTypeProviders.longContentTypeProvider, DefaultMarshallingInstances.LongMarshallingInst).marshaller(commonHttpSerializers.longHttpSerializer)
 
   override lazy val bigIntMarshaller: Marshaller[BigInt] =
-    ContentTypeBoundMarshallerFactory[BigInt](commonContentTypeProviders.bigIntContentTypeProvider, DefaultMarshallingInstances.BigIntMarshallingInst).marshaller(commonWireSerializers.bigIntWireSerializer)
+    ContentTypeBoundMarshallerFactory[BigInt](commonContentTypeProviders.bigIntContentTypeProvider, DefaultMarshallingInstances.BigIntMarshallingInst).marshaller(commonHttpSerializers.bigIntHttpSerializer)
 
   override lazy val floatMarshaller: Marshaller[Float] =
-    ContentTypeBoundMarshallerFactory[Float](commonContentTypeProviders.floatContentTypeProvider, DefaultMarshallingInstances.FloatMarshallingInst).marshaller(commonWireSerializers.floatWireSerializer)
+    ContentTypeBoundMarshallerFactory[Float](commonContentTypeProviders.floatContentTypeProvider, DefaultMarshallingInstances.FloatMarshallingInst).marshaller(commonHttpSerializers.floatHttpSerializer)
 
   override lazy val doubleMarshaller: Marshaller[Double] =
-    ContentTypeBoundMarshallerFactory[Double](commonContentTypeProviders.doubleContentTypeProvider, DefaultMarshallingInstances.DoubleMarshallingInst).marshaller(commonWireSerializers.doubleWireSerializer)
+    ContentTypeBoundMarshallerFactory[Double](commonContentTypeProviders.doubleContentTypeProvider, DefaultMarshallingInstances.DoubleMarshallingInst).marshaller(commonHttpSerializers.doubleHttpSerializer)
 
   override lazy val bigDecimalMarshaller: Marshaller[BigDecimal] =
-    ContentTypeBoundMarshallerFactory[BigDecimal](commonContentTypeProviders.bigDecimalContentTypeProvider, DefaultMarshallingInstances.BigDecimalMarshallingInst).marshaller(commonWireSerializers.bigDecimalWireSerializer)
+    ContentTypeBoundMarshallerFactory[BigDecimal](commonContentTypeProviders.bigDecimalContentTypeProvider, DefaultMarshallingInstances.BigDecimalMarshallingInst).marshaller(commonHttpSerializers.bigDecimalHttpSerializer)
 
   override lazy val uriMarshaller: Marshaller[java.net.URI] =
-    ContentTypeBoundMarshallerFactory[java.net.URI](commonContentTypeProviders.uriContentTypeProvider, DefaultMarshallingInstances.UriMarshallingInst).marshaller(commonWireSerializers.uriWireSerializer)
+    ContentTypeBoundMarshallerFactory[java.net.URI](commonContentTypeProviders.uriContentTypeProvider, DefaultMarshallingInstances.UriMarshallingInst).marshaller(commonHttpSerializers.uriHttpSerializer)
 
   override lazy val uuidMarshaller: Marshaller[java.util.UUID] =
-    ContentTypeBoundMarshallerFactory[java.util.UUID](commonContentTypeProviders.uuidContentTypeProvider, DefaultMarshallingInstances.UuidMarshallingInst).marshaller(commonWireSerializers.uuidWireSerializer)
+    ContentTypeBoundMarshallerFactory[java.util.UUID](commonContentTypeProviders.uuidContentTypeProvider, DefaultMarshallingInstances.UuidMarshallingInst).marshaller(commonHttpSerializers.uuidHttpSerializer)
 
   override lazy val localDateTimeMarshaller: Marshaller[org.joda.time.LocalDateTime] =
-    ContentTypeBoundMarshallerFactory[org.joda.time.LocalDateTime](commonContentTypeProviders.localDateTimeContentTypeProvider, DefaultMarshallingInstances.LocalDateTimeMarshallingInst).marshaller(commonWireSerializers.localDateTimeWireSerializer)
+    ContentTypeBoundMarshallerFactory[org.joda.time.LocalDateTime](commonContentTypeProviders.localDateTimeContentTypeProvider, DefaultMarshallingInstances.LocalDateTimeMarshallingInst).marshaller(commonHttpSerializers.localDateTimeHttpSerializer)
 
   override lazy val dateTimeMarshaller: Marshaller[org.joda.time.DateTime] =
-    ContentTypeBoundMarshallerFactory[org.joda.time.DateTime](commonContentTypeProviders.dateTimeContentTypeProvider, DefaultMarshallingInstances.DateTimeMarshallingInst).marshaller(commonWireSerializers.dateTimeWireSerializer)
+    ContentTypeBoundMarshallerFactory[org.joda.time.DateTime](commonContentTypeProviders.dateTimeContentTypeProvider, DefaultMarshallingInstances.DateTimeMarshallingInst).marshaller(commonHttpSerializers.dateTimeHttpSerializer)
 
   override lazy val finiteDurationMarshaller: Marshaller[scala.concurrent.duration.FiniteDuration] =
-    ContentTypeBoundMarshallerFactory[scala.concurrent.duration.FiniteDuration](commonContentTypeProviders.finiteDurationTypeProvider, DefaultMarshallingInstances.DurationMarshallingInst).marshaller(commonWireSerializers.finiteDurationWireSerializer)
+    ContentTypeBoundMarshallerFactory[scala.concurrent.duration.FiniteDuration](commonContentTypeProviders.finiteDurationTypeProvider, DefaultMarshallingInstances.DurationMarshallingInst).marshaller(commonHttpSerializers.finiteDurationHttpSerializer)
 
   override lazy val booleansMarshaller: Marshaller[Seq[Boolean]] =
-    ContentTypeBoundMarshallerFactory[Seq[Boolean]](commonContentTypeProviders.booleansContentTypeProvider, DefaultMarshallingInstances.BooleansMarshallingInst).marshaller(commonWireSerializers.booleansWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[Boolean]](commonContentTypeProviders.booleansContentTypeProvider, DefaultMarshallingInstances.BooleansMarshallingInst).marshaller(commonHttpSerializers.booleansHttpSerializer)
 
   override lazy val stringsMarshaller: Marshaller[Seq[String]] =
-    ContentTypeBoundMarshallerFactory[Seq[String]](commonContentTypeProviders.stringsContentTypeProvider, DefaultMarshallingInstances.StringsMarshallingInst).marshaller(commonWireSerializers.stringsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[String]](commonContentTypeProviders.stringsContentTypeProvider, DefaultMarshallingInstances.StringsMarshallingInst).marshaller(commonHttpSerializers.stringsHttpSerializer)
 
   override lazy val bytesMarshaller: Marshaller[Seq[Byte]] =
-    ContentTypeBoundMarshallerFactory[Seq[Byte]](commonContentTypeProviders.bytesContentTypeProvider, DefaultMarshallingInstances.BytesMarshallingInst).marshaller(commonWireSerializers.bytesWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[Byte]](commonContentTypeProviders.bytesContentTypeProvider, DefaultMarshallingInstances.BytesMarshallingInst).marshaller(commonHttpSerializers.bytesHttpSerializer)
 
   override lazy val shortsMarshaller: Marshaller[Seq[Short]] =
-    ContentTypeBoundMarshallerFactory[Seq[Short]](commonContentTypeProviders.shortsContentTypeProvider, DefaultMarshallingInstances.ShortsMarshallingInst).marshaller(commonWireSerializers.shortsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[Short]](commonContentTypeProviders.shortsContentTypeProvider, DefaultMarshallingInstances.ShortsMarshallingInst).marshaller(commonHttpSerializers.shortsHttpSerializer)
 
   override lazy val intsMarshaller: Marshaller[Seq[Int]] =
-    ContentTypeBoundMarshallerFactory[Seq[Int]](commonContentTypeProviders.intsContentTypeProvider, DefaultMarshallingInstances.IntsMarshallingInst).marshaller(commonWireSerializers.intsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[Int]](commonContentTypeProviders.intsContentTypeProvider, DefaultMarshallingInstances.IntsMarshallingInst).marshaller(commonHttpSerializers.intsHttpSerializer)
 
   override lazy val longsMarshaller: Marshaller[Seq[Long]] =
-    ContentTypeBoundMarshallerFactory[Seq[Long]](commonContentTypeProviders.longsContentTypeProvider, DefaultMarshallingInstances.LongsMarshallingInst).marshaller(commonWireSerializers.longsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[Long]](commonContentTypeProviders.longsContentTypeProvider, DefaultMarshallingInstances.LongsMarshallingInst).marshaller(commonHttpSerializers.longsHttpSerializer)
 
   override lazy val bigIntsMarshaller: Marshaller[Seq[BigInt]] =
-    ContentTypeBoundMarshallerFactory[Seq[BigInt]](commonContentTypeProviders.bigIntsContentTypeProvider, DefaultMarshallingInstances.BigIntsMarshallingInst).marshaller(commonWireSerializers.bigIntsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[BigInt]](commonContentTypeProviders.bigIntsContentTypeProvider, DefaultMarshallingInstances.BigIntsMarshallingInst).marshaller(commonHttpSerializers.bigIntsHttpSerializer)
 
   override lazy val floatsMarshaller: Marshaller[Seq[Float]] =
-    ContentTypeBoundMarshallerFactory[Seq[Float]](commonContentTypeProviders.floatsContentTypeProvider, DefaultMarshallingInstances.FloatsMarshallingInst).marshaller(commonWireSerializers.floatsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[Float]](commonContentTypeProviders.floatsContentTypeProvider, DefaultMarshallingInstances.FloatsMarshallingInst).marshaller(commonHttpSerializers.floatsHttpSerializer)
 
   override lazy val doublesMarshaller: Marshaller[Seq[Double]] =
-    ContentTypeBoundMarshallerFactory[Seq[Double]](commonContentTypeProviders.doublesContentTypeProvider, DefaultMarshallingInstances.DoublesMarshallingInst).marshaller(commonWireSerializers.doublesWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[Double]](commonContentTypeProviders.doublesContentTypeProvider, DefaultMarshallingInstances.DoublesMarshallingInst).marshaller(commonHttpSerializers.doublesHttpSerializer)
 
   override lazy val bigDecimalsMarshaller: Marshaller[Seq[BigDecimal]] =
-    ContentTypeBoundMarshallerFactory[Seq[BigDecimal]](commonContentTypeProviders.bigDecimalsContentTypeProvider, DefaultMarshallingInstances.BigDecimalsMarshallingInst).marshaller(commonWireSerializers.bigDecimalsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[BigDecimal]](commonContentTypeProviders.bigDecimalsContentTypeProvider, DefaultMarshallingInstances.BigDecimalsMarshallingInst).marshaller(commonHttpSerializers.bigDecimalsHttpSerializer)
 
   override lazy val urisMarshaller: Marshaller[Seq[java.net.URI]] =
-    ContentTypeBoundMarshallerFactory[Seq[java.net.URI]](commonContentTypeProviders.urisContentTypeProvider, DefaultMarshallingInstances.UrisMarshallingInst).marshaller(commonWireSerializers.urisWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[java.net.URI]](commonContentTypeProviders.urisContentTypeProvider, DefaultMarshallingInstances.UrisMarshallingInst).marshaller(commonHttpSerializers.urisHttpSerializer)
 
   override lazy val uuidsMarshaller: Marshaller[Seq[java.util.UUID]] =
-    ContentTypeBoundMarshallerFactory[Seq[java.util.UUID]](commonContentTypeProviders.uuidsContentTypeProvider, DefaultMarshallingInstances.UuidsMarshallingInst).marshaller(commonWireSerializers.uuidsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[java.util.UUID]](commonContentTypeProviders.uuidsContentTypeProvider, DefaultMarshallingInstances.UuidsMarshallingInst).marshaller(commonHttpSerializers.uuidsHttpSerializer)
 
   override lazy val localDateTimesMarshaller: Marshaller[Seq[org.joda.time.LocalDateTime]] =
-    ContentTypeBoundMarshallerFactory[Seq[org.joda.time.LocalDateTime]](commonContentTypeProviders.localDateTimesContentTypeProvider, DefaultMarshallingInstances.LocalDateTimesMarshallingInst).marshaller(commonWireSerializers.localDateTimesWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[org.joda.time.LocalDateTime]](commonContentTypeProviders.localDateTimesContentTypeProvider, DefaultMarshallingInstances.LocalDateTimesMarshallingInst).marshaller(commonHttpSerializers.localDateTimesHttpSerializer)
 
   override lazy val dateTimesMarshaller: Marshaller[Seq[org.joda.time.DateTime]] =
-    ContentTypeBoundMarshallerFactory[Seq[org.joda.time.DateTime]](commonContentTypeProviders.dateTimesContentTypeProvider, DefaultMarshallingInstances.DateTimesMarshallingInst).marshaller(commonWireSerializers.dateTimesWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[org.joda.time.DateTime]](commonContentTypeProviders.dateTimesContentTypeProvider, DefaultMarshallingInstances.DateTimesMarshallingInst).marshaller(commonHttpSerializers.dateTimesHttpSerializer)
 
   override lazy val finiteDurationsMarshaller: Marshaller[Seq[scala.concurrent.duration.FiniteDuration]] =
-    ContentTypeBoundMarshallerFactory[Seq[scala.concurrent.duration.FiniteDuration]](commonContentTypeProviders.finiteDurationsContentTypeProvider, DefaultMarshallingInstances.DurationsMarshallingInst).marshaller(commonWireSerializers.finiteDurationsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[scala.concurrent.duration.FiniteDuration]](commonContentTypeProviders.finiteDurationsContentTypeProvider, DefaultMarshallingInstances.DurationsMarshallingInst).marshaller(commonHttpSerializers.finiteDurationsHttpSerializer)
 
   override lazy val eventMarshaller: Marshaller[almhirt.common.Event] =
-    ContentTypeBoundMarshallerFactory[almhirt.common.Event](commonContentTypeProviders.eventContentTypeProvider, DefaultMarshallingInstances.EventMarshallingInst).marshaller(commonWireSerializers.eventWireSerializer)
+    ContentTypeBoundMarshallerFactory[almhirt.common.Event](commonContentTypeProviders.eventContentTypeProvider, DefaultMarshallingInstances.EventMarshallingInst).marshaller(commonHttpSerializers.eventHttpSerializer)
 
   override lazy val commandMarshaller: Marshaller[almhirt.common.Command] =
-    ContentTypeBoundMarshallerFactory[almhirt.common.Command](commonContentTypeProviders.commandContentTypeProvider, DefaultMarshallingInstances.CommandMarshallingInst).marshaller(commonWireSerializers.commandWireSerializer)
+    ContentTypeBoundMarshallerFactory[almhirt.common.Command](commonContentTypeProviders.commandContentTypeProvider, DefaultMarshallingInstances.CommandMarshallingInst).marshaller(commonHttpSerializers.commandHttpSerializer)
 
   override lazy val problemMarshaller: Marshaller[almhirt.common.Problem] =
-    ContentTypeBoundMarshallerFactory[almhirt.common.Problem](commonContentTypeProviders.problemContentTypeProvider, DefaultMarshallingInstances.ProblemMarshallingInst).marshaller(commonWireSerializers.problemWireSerializer)
+    ContentTypeBoundMarshallerFactory[almhirt.common.Problem](commonContentTypeProviders.problemContentTypeProvider, DefaultMarshallingInstances.ProblemMarshallingInst).marshaller(commonHttpSerializers.problemHttpSerializer)
 
   override lazy val eventsMarshaller: Marshaller[Seq[almhirt.common.Event]] =
-    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Event]](commonContentTypeProviders.eventsContentTypeProvider, DefaultMarshallingInstances.EventsMarshallingInst).marshaller(commonWireSerializers.eventsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Event]](commonContentTypeProviders.eventsContentTypeProvider, DefaultMarshallingInstances.EventsMarshallingInst).marshaller(commonHttpSerializers.eventsHttpSerializer)
 
   override lazy val commandsMarshaller: Marshaller[Seq[almhirt.common.Command]] =
-    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Command]](commonContentTypeProviders.commandsContentTypeProvider, DefaultMarshallingInstances.CommandsMarshallingInst).marshaller(commonWireSerializers.commandsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Command]](commonContentTypeProviders.commandsContentTypeProvider, DefaultMarshallingInstances.CommandsMarshallingInst).marshaller(commonHttpSerializers.commandsHttpSerializer)
 
   override lazy val problemsMarshaller: Marshaller[Seq[almhirt.common.Problem]] =
-    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Problem]](commonContentTypeProviders.problemsContentTypeProvider, DefaultMarshallingInstances.ProblemsMarshallingInst).marshaller(commonWireSerializers.problemsWireSerializer)
+    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Problem]](commonContentTypeProviders.problemsContentTypeProvider, DefaultMarshallingInstances.ProblemsMarshallingInst).marshaller(commonHttpSerializers.problemsHttpSerializer)
 
 }

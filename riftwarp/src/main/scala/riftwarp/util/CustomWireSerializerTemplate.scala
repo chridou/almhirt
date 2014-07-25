@@ -47,10 +47,10 @@ trait CustomHttpSerializerTemplate[T] extends HttpSerializer[T] with HttpDeseria
     } yield unpacked
 
     
-  def serializeTo(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody] = 
+  override def serialize(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody] = 
     serializeInternal(what, mediaType.contentFormat, packOuter)
 
-  def deserializeFrom(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T] =
+  override def deserialize(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T] =
      deserializeInternal(mediaType.contentFormat)(what, unpackOuter)
 }
 

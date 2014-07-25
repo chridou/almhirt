@@ -6,7 +6,7 @@ import almhirt.common._
 import almhirt.http.HasCommonAlmMediaTypesProviders
 import almhirt.http.VendorBasedCommonAlmMediaTypesProviders
 import almhirt.http.AlmhirtMediaTypeVendorProvider
-import almhirt.serialization.WireSerializer
+import almhirt.http.HttpSerializer
 import almhirt.common.Event
 import almhirt.serialization._
 

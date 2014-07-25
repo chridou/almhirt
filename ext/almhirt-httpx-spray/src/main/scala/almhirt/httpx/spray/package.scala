@@ -52,4 +52,8 @@ package object spray {
     def toSprayContentTypes(implicit defaultEncoding: AlmCharacterEncoding): Seq[ContentType] = almMediaTypes2SprayContentTypes(self)
   }
 
+  implicit class SprayMediaTypeOps(self: MediaType) {
+    def toAlmMediaType: AlmMediaType = 
+      ???
+  }
 }

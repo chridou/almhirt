@@ -13,17 +13,17 @@ trait DeserializesFromHttp[+TOut] extends Deserializes[AlmHttpBody, TOut]{
 }
 
 trait HttpSerializer[T] {
-  def serializeTo(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody]
+  def serialize(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody]
 
-  final def serialize(what: T)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[(AlmHttpBody, AlmMediaType)] =
+  final def serializeToDefault(what: T)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[(AlmHttpBody, AlmMediaType)] =
     mp.defaultForSerialization match {
-      case Some(mt) => serializeTo(what, mt).map((_, mt))
+      case Some(mt) => serialize(what, mt).map((_, mt))
       case None => NoSuchElementProblem("No default media type defined").failure
     }
 
   final def serializeIfSupported(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[AlmHttpBody] =
     if (mp.targetMediaTypes.contains(mediaType)) {
-      serializeTo(what, mediaType)
+      serialize(what, mediaType)
     } else {
       NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for Http serialization.""").failure
     }
@@ -31,23 +31,17 @@ trait HttpSerializer[T] {
   final def serializer(mediaType: AlmMediaType): SerializesToHttp[T] =
     new SerializesToHttp[T] {
       override def serialize(what: T)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[AlmHttpBody] =
-        serializeTo(what, mediaType)
+        HttpSerializer.this.serialize(what, mediaType)
     }
 }
 
 trait HttpDeserializer[T] {
-  def deserializeFrom(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T]
+  def deserialize(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T]
 
-  final def deserialize(mediaType: AlmMediaType, what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[T] =
-    if (mp.sourceMediaTypes.contains(mediaType)) {
-      deserializeFrom(mediaType, what)
-    } else {
-      NoSuchElementProblem(s"""Media type "${mediaType.value}" is not supported for deserialization.""").failure
-    }
 
   final def deserializer(mediaType: AlmMediaType): DeserializesFromHttp[T] =
     new DeserializesFromHttp[T] {
       def deserialize(what: AlmHttpBody)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T] =
-        deserializeFrom(mediaType, what)
+        HttpDeserializer.this.deserialize(mediaType, what)
     }
 }
