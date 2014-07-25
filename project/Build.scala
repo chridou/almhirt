@@ -349,7 +349,7 @@ object AlmHirtBuild extends Build
       .aggregate(	common, 
 									httpxSpray, 
 									//httpxSprayClient, 
-									//httpxSprayService, 
+									httpxSprayService, 
 									coreTypes, 
 									coreFoundation, 
 									core, 
@@ -370,9 +370,9 @@ object AlmHirtBuild extends Build
 //  lazy val httpxSprayClient = httpxSprayClientProject(	name = "almhirt-httpx-spray-client",
 //                       			baseFile = file("./ext/almhirt-httpx-spray-client")) dependsOn(common, httpxSpray)
 //								
-//  lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
-//                       			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
-//								
+  lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
+                       			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
+								
   lazy val coreTypes = coreTypesProject(	name = "almhirt-core-types",
 	                       		baseFile = file("almhirt-core-types")) dependsOn(common % "compile; test->compile")
 
