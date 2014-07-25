@@ -12,7 +12,7 @@ object BuildSettings {
 
   val akkaVersion = "2.3.+"
   val scalatestVersion = "2.2.+"
-  val sprayVersion = "1.4.+"
+  val sprayVersion = "1.3.+"
   val reactiveMongoVersion = "0.10.5.akka23-SNAPSHOT"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
