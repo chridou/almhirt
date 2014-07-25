@@ -348,16 +348,16 @@ object AlmHirtBuild extends Build
       .settings(unidocSettings: _*)
       .aggregate(	common, 
 									httpxSpray, 
-									//httpxSprayClient, 
+									httpxSprayClient, 
 									httpxSprayService, 
 									coreTypes, 
 									coreFoundation, 
 									core, 
 									corexRiftwarp, 
 									mongoExtensions, 
-									//corexSprayBase, 
-									//corexSprayClient, 
-									//corexSprayService, 
+									corexSprayBase, 
+									corexSprayClient, 
+									corexSprayService, 
 									riftwarp, 
 									riftwarpHttpSpray, 
 									riftwarpMongoProject)	
@@ -367,9 +367,9 @@ object AlmHirtBuild extends Build
   lazy val httpxSpray = httpxSprayProject(	name = "almhirt-httpx-spray",
                        			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
 
-//  lazy val httpxSprayClient = httpxSprayClientProject(	name = "almhirt-httpx-spray-client",
-//                       			baseFile = file("./ext/almhirt-httpx-spray-client")) dependsOn(common, httpxSpray)
-//								
+  lazy val httpxSprayClient = httpxSprayClientProject(	name = "almhirt-httpx-spray-client",
+                       			baseFile = file("./ext/almhirt-httpx-spray-client")) dependsOn(common, httpxSpray)
+								
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
 								
@@ -391,14 +391,14 @@ object AlmHirtBuild extends Build
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
                        			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(core, riftwarp % "test->test", corexRiftwarp % "test->test", riftwarpMongoProject % "test")
 								
-//  lazy val corexSprayBase = corexSprayBaseProject(	name = "almhirt-corex-spray-base",
-//	                       				baseFile = file("./ext/almhirt-corex-spray-base")) dependsOn(common, httpxSpray, httpxSprayClient, httpxSprayService, coreTypes, riftwarp % "test->test", corexRiftwarp % "test->test")
+  lazy val corexSprayBase = corexSprayBaseProject(	name = "almhirt-corex-spray-base",
+	                       				baseFile = file("./ext/almhirt-corex-spray-base")) dependsOn(common, httpxSpray, httpxSprayClient, httpxSprayService, coreTypes, riftwarp % "test->test", corexRiftwarp % "test->test")
 
- // lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
-	//                       				baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, coreFoundation, corexSprayBase, httpxSprayClient, riftwarp % "test->test", corexRiftwarp % "test->test")
+  lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
+	                       				baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, coreFoundation, corexSprayBase, httpxSprayClient, riftwarp % "test->test", corexRiftwarp % "test->test")
 
- // lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
-//	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, corexSprayBase, httpxSprayService, core, riftwarp % "test", corexRiftwarp % "test")
+  lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
+	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, corexSprayBase, httpxSprayService, core, riftwarp % "test", corexRiftwarp % "test")
 										
   lazy val riftwarp = riftwarpProject(	name = "riftwarp",
                        			baseFile = file("riftwarp")) dependsOn(common)

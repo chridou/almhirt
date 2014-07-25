@@ -3,12 +3,11 @@ package almhirt.httpx.spray.client
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
 import almhirt.common._
-import almhirt.serialization.CanDeserializeFromWire
-import almhirt.serialization.CanSerializeToWire
+import almhirt.http.{ HttpSerializer, HttpDeserializer }
 import spray.http._
 import spray.client.pipelining._
 
-abstract class SingleTypeHttpPublisher[T](implicit serializer: CanSerializeToWire[T], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
+abstract class SingleTypeHttpPublisher[T](implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem]) extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
 
   override val pipeline = (sendReceive)
 
@@ -24,7 +23,7 @@ abstract class SingleTypeHttpPublisher[T](implicit serializer: CanSerializeToWir
   }
 }
 
-abstract class SingleTypeOneParamHttpQuery[PathSegment, U](implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
+abstract class SingleTypeOneParamHttpQuery[PathSegment, U](implicit deserializer: HttpDeserializer[U], problemDeserializer: HttpDeserializer[Problem]) extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
   override val pipeline = (sendReceive)
 
   def acceptAsSuccess: Set[StatusCode]
@@ -38,7 +37,7 @@ abstract class SingleTypeOneParamHttpQuery[PathSegment, U](implicit deserializer
   }
 }
 
-abstract class SingleTypeTwoParamHttpQuery[PathSegment1, PathSegment2, U](implicit deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
+abstract class SingleTypeTwoParamHttpQuery[PathSegment1, PathSegment2, U](implicit deserializer: HttpDeserializer[U], problemDeserializer: HttpDeserializer[Problem]) extends Actor with ActorLogging with HttpExternalConnector with AwaitingEntityResponse with HttpExternalQuery {
   override val pipeline = (sendReceive)
 
   def acceptAsSuccess: Set[StatusCode]
@@ -52,7 +51,7 @@ abstract class SingleTypeTwoParamHttpQuery[PathSegment1, PathSegment2, U](implic
   }
 }
 
-abstract class SingleTypeHttpConversation[T, U](implicit serializer: CanSerializeToWire[T], deserializer: CanDeserializeFromWire[U], problemDeserializer: CanDeserializeFromWire[Problem]) extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse with HttpExternalConversation {
+abstract class SingleTypeHttpConversation[T, U](implicit serializer: HttpSerializer[T], deserializer: HttpDeserializer[U], problemDeserializer: HttpDeserializer[Problem]) extends Actor with ActorLogging with HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse with HttpExternalConversation {
   def acceptAsSuccess: Set[StatusCode]
   def contentMediaType: MediaType
   def acceptMediaTypes: Seq[MediaType]

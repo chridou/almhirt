@@ -6,27 +6,26 @@ import scalaz._
 import scalaz.Scalaz._
 import almhirt.common._
 import almhirt.almfuture.all._
-import spray.http._
-import almhirt.serialization._
-import almhirt.problem.ProblemCause.prob2ProblemCause
-import spray.http.HttpEntity.apply
+import _root_.spray.http._
+import almhirt.http._
+import almhirt.httpx.spray._
 
 trait HttpExternalConnector {
   trait RequestSettings {
-    def targetEndpoint: spray.http.Uri
+    def targetEndpoint: Uri
     def acceptMediaTypes: Seq[MediaType]
     def method: HttpMethod
     def acceptAsSuccess: Set[StatusCode]
   }
 
   case class BasicRequestSettings(
-    targetEndpoint: spray.http.Uri,
+    targetEndpoint: Uri,
     acceptMediaTypes: Seq[MediaType],
     method: HttpMethod,
     acceptAsSuccess: Set[StatusCode]) extends RequestSettings
 
   case class EntityRequestSettings(
-    targetEndpoint: spray.http.Uri,
+    targetEndpoint: Uri,
     contentMediaType: MediaType,
     acceptMediaTypes: Seq[MediaType],
     method: HttpMethod,
@@ -45,18 +44,17 @@ trait HttpExternalConnector {
       succ => succ.success)
   }
 
-  def deserializeProblem(response: HttpResponse)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmValidation[Problem] =
+  def deserializeProblem(response: HttpResponse)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Problem] =
     response.entity.toOption match {
       case Some(body) =>
-        val mediaType = body.contentType.mediaType
-        if (mediaType == MediaTypes.`text/plain`)
+        val mediaType = body.contentType.mediaType.toAlmMediaType
+        if (mediaType == AlmMediaTypes.`text/plain`)
           UnspecifiedProblem(s"Received a text message on status code ${response.status}: ${body.asString}").failure
         else {
-          val channel = almhirt.httpx.spray.marshalling.Helper.extractChannel(body.contentType.mediaType)
-          if (mediaType.binary && channel != "json")
-            problemDeserializer.deserialize(channel)(BinaryWire(body.data.toByteArray), Map.empty)
+          if (mediaType.binary)
+            problemDeserializer.deserialize(mediaType, BinaryBody(body.data.toByteArray))
           else
-            problemDeserializer.deserialize(channel)(TextWire(body.data.asString), Map.empty)
+            problemDeserializer.deserialize(mediaType, TextBody(body.data.asString))
         }
       case None =>
         UnspecifiedProblem(s"""Event endpoint "XXXX" returned an empty response. Status code ${response.status}.""").failure
@@ -65,46 +63,45 @@ trait HttpExternalConnector {
 }
 
 trait RequestsWithEntity { self: HttpExternalConnector =>
-  def createEntityRequest[T: CanSerializeToWire](payload: T, settings: EntityRequestSettings): AlmValidation[HttpRequest] = {
-    val serializer = implicitly[CanSerializeToWire[T]]
+  def createEntityRequest[T: HttpSerializer](payload: T, settings: EntityRequestSettings): AlmValidation[HttpRequest] = {
+    val serializer = implicitly[HttpSerializer[T]]
     for {
-      channel <- almhirt.httpx.spray.marshalling.Helper.extractChannel(settings.contentMediaType).success
-      serialized <- serializer.serialize(channel)(payload, Map.empty)
+      serialized <- serializer.serialize(payload, settings.contentMediaType.toAlmMediaType)
     } yield HttpRequest(
       method = settings.method,
       uri = settings.targetEndpoint,
       headers = Nil,
       entity =
-        serialized._1 match {
-          case TextWire(data) => HttpEntity(ContentType(settings.contentMediaType), data)
-          case BinaryWire(data) => HttpEntity(ContentType(settings.contentMediaType), data)
+        serialized match {
+          case TextBody(data) => HttpEntity(ContentType(settings.contentMediaType), data)
+          case BinaryBody(data) => HttpEntity(ContentType(settings.contentMediaType), data)
         })
   }
 }
 
 trait AwaitingEntityResponse { self: HttpExternalConnector =>
-  def evaluateEntityResponse[T: CanDeserializeFromWire](response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmValidation[T] = {
+  def evaluateEntityResponse[T: HttpDeserializer](response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[T] = {
     if (acceptAsSuccess(response.status))
-      deserializeEntity(response)
+      deserializeEntity[T](response)
     else
       deserializeProblem(response).fold(
         fail => SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
         succ => succ.failure)
   }
 
-  def deserializeEntity[T: CanDeserializeFromWire](response: HttpResponse): AlmValidation[T] =
+  def deserializeEntity[T: HttpDeserializer](response: HttpResponse): AlmValidation[T] =
     (response.entity.toOption match {
       case Some(body) =>
-        val mediaType = body.contentType.mediaType
-        if (mediaType == MediaTypes.`text/plain`)
+        val mediaType = body.contentType.mediaType.toAlmMediaType
+        if (mediaType == AlmMediaTypes.`text/plain`)
           UnspecifiedProblem(s"Expected an entity but received a text message on status code ${response.status}: ${body.asString}").failure
         else {
-          val deserializer = implicitly[CanDeserializeFromWire[T]]
+          val deserializer = implicitly[HttpDeserializer[T]]
           val channel = almhirt.httpx.spray.marshalling.Helper.extractChannel(body.contentType.mediaType)
           if (mediaType.binary && channel != "json")
-            deserializer.deserialize(channel)(BinaryWire(body.data.toByteArray), Map.empty)
+            deserializer.deserialize(mediaType ,BinaryBody(body.data.toByteArray))
           else
-            deserializer.deserialize(channel)(TextWire(body.data.asString), Map.empty)
+            deserializer.deserialize(mediaType ,TextBody(body.data.asString))
         }
       case None =>
         UnspecifiedProblem(s"""Expected an entity from endpoint "XXXX" there was no content. Status code ${response.status}.""").failure
@@ -115,14 +112,14 @@ trait AwaitingEntityResponse { self: HttpExternalConnector =>
 }
 
 trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntity =>
-  def publishToExternalEndpoint[T: CanSerializeToWire](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(T, FiniteDuration)] =
+  def publishToExternalEndpoint[T: HttpSerializer](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmFuture[(T, FiniteDuration)] =
     for {
       request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
       resonseAndTime <- sendRequest(request)
       _ <- AlmFuture(evaluateAck(resonseAndTime._1, settings.acceptAsSuccess))(serializationExecutionContext)
     } yield (payload, resonseAndTime._2)
 
-  def evaluateAck(response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmValidation[HttpResponse] = {
+  def evaluateAck(response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[HttpResponse] = {
     if (acceptAsSuccess(response.status))
       response.success
     else
@@ -140,18 +137,18 @@ trait HttpExternalQuery { self: HttpExternalConnector with AwaitingEntityRespons
       headers = Nil,
       entity = HttpData.Empty)
 
-  def externalQuery[U: CanDeserializeFromWire](settings: RequestSettings)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(U, FiniteDuration)] =
+  def externalQuery[U: HttpDeserializer](settings: RequestSettings)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmFuture[(U, FiniteDuration)] =
     for {
       resonseAndTime <- sendRequest(createSimpleQueryRequest(settings))
-      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[CanDeserializeFromWire[U]], problemDeserializer))(serializationExecutionContext)
+      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[HttpDeserializer[U]], problemDeserializer))(serializationExecutionContext)
     } yield (entity, resonseAndTime._2)
 }
 
 trait HttpExternalConversation { self: HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse =>
-  def conversationWithExternalEndpoint[T: CanSerializeToWire, U: CanDeserializeFromWire](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: CanDeserializeFromWire[Problem]): AlmFuture[(U, FiniteDuration)] =
+  def conversationWithExternalEndpoint[T: HttpSerializer, U: HttpDeserializer](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmFuture[(U, FiniteDuration)] =
     for {
       request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
       resonseAndTime <- sendRequest(request)
-      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[CanDeserializeFromWire[U]], problemDeserializer))(serializationExecutionContext)
+      entity <- AlmFuture(evaluateEntityResponse(resonseAndTime._1, settings.acceptAsSuccess)(implicitly[HttpDeserializer[U]], problemDeserializer))(serializationExecutionContext)
     } yield (entity, resonseAndTime._2)
 }

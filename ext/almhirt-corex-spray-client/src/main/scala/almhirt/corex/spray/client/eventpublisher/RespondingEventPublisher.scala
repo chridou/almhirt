@@ -1,13 +1,15 @@
 package almhirt.corex.spray.client.eventpublisher
 
-import almhirt.common._
-import almhirt.core.Almhirt
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
+import almhirt.common._
+import almhirt.core.Almhirt
 import almhirt.serialization._
+import almhirt.http.{ HttpSerializer, HttpDeserializer}
 
-abstract class RespondingEventPublisher(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], myAlmhirt: Almhirt) extends HttpEventPublisher {
+
+abstract class RespondingEventPublisher(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], myAlmhirt: Almhirt) extends HttpEventPublisher {
   import RespondingEventPublisher._
 
   override def onProblem(event: Event, problem: Problem, respondTo: ActorRef) {

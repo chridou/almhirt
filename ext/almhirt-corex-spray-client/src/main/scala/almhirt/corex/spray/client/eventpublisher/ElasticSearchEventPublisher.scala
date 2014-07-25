@@ -8,6 +8,7 @@ import almhirt.common._
 import almhirt.configuration._
 import almhirt.almfuture.all._
 import almhirt.serialization._
+import almhirt.http.{ HttpSerializer, HttpDeserializer}
 import almhirt.core.Almhirt
 import spray.http._
 import spray.client.pipelining._
@@ -17,7 +18,7 @@ class ElasticSearchEventPublisher(
   host: String,
   index: String,
   fixedTypeName: Option[String],
-  ttl: FiniteDuration)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], myAlmhirt: Almhirt) extends HttpEventPublisher() {
+  ttl: FiniteDuration)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], myAlmhirt: Almhirt) extends HttpEventPublisher() {
 
   val uriprefix = s"""http://$host/$index"""
 
@@ -43,7 +44,7 @@ object ElasticSearchEventLog {
     host: String,
     index: String,
     fixedTypeName: Option[String],
-    ttl: FiniteDuration)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): Props =
+    ttl: FiniteDuration)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], theAlmhirt: Almhirt): Props =
     Props(new ElasticSearchEventPublisher(host, index, fixedTypeName, ttl))
 
   def propsRaw(
@@ -51,10 +52,10 @@ object ElasticSearchEventLog {
     index: String,
     fixedTypeName: Option[String],
     ttl: FiniteDuration,
-    mediaTypePrefix: String)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): Props =
+    mediaTypePrefix: String)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], theAlmhirt: Almhirt): Props =
     Props(new ElasticSearchEventPublisher(host, index, fixedTypeName, ttl))
 
-  def props(configSection: Config)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(configSection: Config)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], theAlmhirt: Almhirt): AlmValidation[Props] =
     for {
       host <- configSection.v[String]("host")
       index <- configSection.v[String]("index")
@@ -75,14 +76,14 @@ object ElasticSearchEventLog {
       propsRaw(host, index, fixedTypeName, ttl,mediaTypePrefix)
     }
 
-  def props(configPath: String)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(configPath: String)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], theAlmhirt: Almhirt): AlmValidation[Props] =
     theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
       props(configSection))
 
-  def props(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): AlmValidation[Props] =
+  def props(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], theAlmhirt: Almhirt): AlmValidation[Props] =
     props("almhirt.elastic-search-event-log")
 
-  def apply(configSection: Config)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): AlmValidation[ActorRef] =
+  def apply(configSection: Config)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], theAlmhirt: Almhirt): AlmValidation[ActorRef] =
     configSection.v[Boolean]("enabled").flatMap(enabled =>
       if (enabled)
         props(configSection).map(props =>
@@ -92,10 +93,10 @@ object ElasticSearchEventLog {
         theAlmhirt.actorSystem.actorOf(Props(new DisabledElasticSearchPublisher()), "elastic-search-event-log").success
       })
 
-  def apply(configPath: String)(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): AlmValidation[ActorRef] =
+  def apply(configPath: String)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], theAlmhirt: Almhirt): AlmValidation[ActorRef] =
     theAlmhirt.config.v[Config](configPath).flatMap(configSection => apply(configSection))
 
-  def apply()(implicit serializer: CanSerializeToWire[Event], problemDeserializer: CanDeserializeFromWire[Problem], theAlmhirt: Almhirt): AlmValidation[ActorRef] =
+  def apply()(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], theAlmhirt: Almhirt): AlmValidation[ActorRef] =
     apply("almhirt.elastic-search-event-log")
     
   private class DisabledElasticSearchPublisher extends Actor {
