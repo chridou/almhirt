@@ -310,22 +310,6 @@ trait RiftWarpMongoExtBuild {
   )
 }
 
-trait RiftWarpSprayJsonExtBuild {
-  import Dependencies._
-  import Resolvers._
-  def riftwarpSprayJsonExtProject(name: String, baseFile: java.io.File) = 
-  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  resolvers += sprayRepo,
-	  libraryDependencies += scala_reflect,
-	  libraryDependencies += jodatime,
-	  libraryDependencies += jodaconvert,
-	  libraryDependencies += apache_codecs,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += spray_json,
-	  libraryDependencies += scalatest
-  )
-}
-
 trait RiftWarpAutomaticBuild {
   import Dependencies._
   import Resolvers._
@@ -375,7 +359,7 @@ object AlmHirtBuild extends Build
 									//corexSprayClient, 
 									//corexSprayService, 
 									riftwarp, 
-									//riftwarpHttpSpray, 
+									riftwarpHttpSpray, 
 									riftwarpMongoProject)	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
@@ -422,11 +406,8 @@ object AlmHirtBuild extends Build
   lazy val riftwarpMongoProject = riftwarpMongoExtProject(	name = "riftwarpx-mongo",
                        			baseFile = file("./ext/riftwarpx-mongo")) dependsOn(common, riftwarp)
 
-//	lazy val riftwarpHttpSpray = riftwarpHttpSprayProject(	name = "riftwarpx-http-spray",
- //                      			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)
-								
- // lazy val riftwarpSprayProject = riftwarpSprayJsonExtProject(	name = "riftwarpx-sprayjson",
- //                      			baseFile = file("./ext/riftwarpx-sprayjson")) dependsOn(common, riftwarp % "compile->compile;test->test" )
+	lazy val riftwarpHttpSpray = riftwarpHttpSprayProject(	name = "riftwarpx-http-spray",
+                       			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)
 								
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
