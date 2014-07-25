@@ -6,7 +6,7 @@ import _root_.spray.http._
 import _root_.spray.httpx.marshalling.Marshaller
 import _root_.spray.httpx.unmarshalling.Unmarshaller
 import riftwarp._
-import riftwarp.util.WarpWireSerializer
+import riftwarp.util.WarpHttpSerializer
 
 package object spray {
 }

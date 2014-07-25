@@ -3,7 +3,7 @@ package riftwarpx.http.spray
 import spray.httpx.marshalling.Marshaller
 import almhirt.http.AlmMediaTypes
 import almhirt.httpx.spray.marshalling.{ MarshallerFactory, UnmarshallerFactory }
-import almhirt.serialization._
+import almhirt.http._
 import riftwarp._
 import spray.http.ContentType
 import spray.http.HttpEntity
@@ -33,17 +33,17 @@ object WarpPackageMarshalling {
     marshaller(riftWarp.dematerializers)
 
   def marshaller(dematerializers: Dematerializers): Marshaller[WarpPackage] =
-    marshaller(new WarpPackageWireSerializer(dematerializers))
+    marshaller(new WarpPackageHttpSerializer(dematerializers))
 
-  def marshaller(wireSerializer: CanSerializeToWire[WarpPackage]): Marshaller[WarpPackage] =
+  def marshaller(wireSerializer: HttpSerializer[WarpPackage]): Marshaller[WarpPackage] =
     new MarshallerFactory[WarpPackage] {}.marshaller(wireSerializer, sprayMarshallableContentTypeTypes: _*)
 
   def unmarshaller(riftWarp: RiftWarp): Unmarshaller[WarpPackage] =
     unmarshaller(riftWarp.rematerializers)
 
   def unmarshaller(rematerializers: Rematerializers): Unmarshaller[WarpPackage] =
-    unmarshaller(new WarpPackageWireDeserializer(rematerializers))
+    unmarshaller(new WarpPackageHttpDeserializer(rematerializers))
 
-  def unmarshaller(wireSerializer: CanDeserializeFromWire[WarpPackage]): Unmarshaller[WarpPackage] =
+  def unmarshaller(wireSerializer: HttpDeserializer[WarpPackage]): Unmarshaller[WarpPackage] =
     new UnmarshallerFactory[WarpPackage] {}.unmarshaller(wireSerializer, sprayUnmarshallableContentTypeTypes: _*)
 }
