@@ -4,7 +4,7 @@ import almhirt.common._
 import org.joda.time.LocalDateTime
 
 sealed trait ExecutionState {
-  def trackId: String
+  def ticket: TrackingTicket
   def metadata: Map[String, String]
   def timestamp: LocalDateTime
 }
@@ -24,38 +24,38 @@ object ExecutionState {
       executionStateOrderingTag(a) compareTo executionStateOrderingTag(b)
 }
 
-final case class ExecutionStarted(trackId: String, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionState
+final case class ExecutionStarted(ticket: TrackingTicket, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionState
 object ExecutionStarted {
-  def apply(trackId: String)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionStarted =
-    ExecutionStarted(trackId, ccuad.getUtcTimestamp, Map.empty)
-  def apply(trackId: String, metadata: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionStarted =
-    ExecutionStarted(trackId, ccuad.getUtcTimestamp, metadata)
+  def apply(ticket: TrackingTicket)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionStarted =
+    ExecutionStarted(ticket, ccuad.getUtcTimestamp, Map.empty)
+  def apply(ticket: TrackingTicket, metadata: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionStarted =
+    ExecutionStarted(ticket, ccuad.getUtcTimestamp, metadata)
 }
 
-final case class ExecutionInProcess(trackId: String, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionState
+final case class ExecutionInProcess(ticket: TrackingTicket, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionState
 object ExecutionInProcess {
-  def apply(trackId: String)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionInProcess =
-    ExecutionInProcess(trackId, ccuad.getUtcTimestamp, Map.empty)
-  def apply(trackId: String, metadata: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionInProcess =
-    ExecutionInProcess(trackId, ccuad.getUtcTimestamp, metadata)
+  def apply(ticket: TrackingTicket)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionInProcess =
+    ExecutionInProcess(ticket, ccuad.getUtcTimestamp, Map.empty)
+  def apply(ticket: TrackingTicket, metadata: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionInProcess =
+    ExecutionInProcess(ticket, ccuad.getUtcTimestamp, metadata)
 }
 
 sealed trait ExecutionFinishedState extends ExecutionState
 
-final case class ExecutionSuccessful(trackId: String, message: String, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionFinishedState
+final case class ExecutionSuccessful(ticket: TrackingTicket, message: String, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionFinishedState
 object ExecutionSuccessful {
-  def apply(trackId: String, message: String)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionSuccessful =
-    ExecutionSuccessful(trackId, message, ccuad.getUtcTimestamp, Map.empty)
-  def apply(trackId: String, message: String, metadata: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionSuccessful =
-    ExecutionSuccessful(trackId, message, ccuad.getUtcTimestamp, metadata)
+  def apply(ticket: TrackingTicket, message: String)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionSuccessful =
+    ExecutionSuccessful(ticket, message, ccuad.getUtcTimestamp, Map.empty)
+  def apply(ticket: TrackingTicket, message: String, metadata: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionSuccessful =
+    ExecutionSuccessful(ticket, message, ccuad.getUtcTimestamp, metadata)
 }
 
-case class ExecutionFailed(trackId: String, problem: Problem, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionFinishedState
+case class ExecutionFailed(ticket: TrackingTicket, problem: Problem, timestamp: LocalDateTime, metadata: Map[String, String]) extends ExecutionFinishedState
 object ExecutionFailed {
-  def apply(trackId: String, problem: Problem)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionFailed =
-    ExecutionFailed(trackId, problem, ccuad.getUtcTimestamp, Map.empty)
-  def apply(trackId: String, problem: Problem, metadata: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionFailed =
-    ExecutionFailed(trackId, problem, ccuad.getUtcTimestamp, metadata)
+  def apply(ticket: TrackingTicket, problem: Problem)(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionFailed =
+    ExecutionFailed(ticket, problem, ccuad.getUtcTimestamp, Map.empty)
+  def apply(ticket: TrackingTicket, problem: Problem, metadata: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): ExecutionFailed =
+    ExecutionFailed(ticket, problem, ccuad.getUtcTimestamp, metadata)
 }
 
 final case class ExecutionStateChanged(header: EventHeader, executionState: ExecutionState) extends Event {

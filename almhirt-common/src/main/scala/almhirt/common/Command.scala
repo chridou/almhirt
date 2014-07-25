@@ -6,7 +6,7 @@ import almhirt.common._
 
 trait CommandHeader {
   /** The events unique identifier */
-  def id: java.util.UUID
+  def id: CommandId
   /** The events timestamp of creation */
   def timestamp: LocalDateTime
   /**
@@ -17,22 +17,23 @@ trait CommandHeader {
   def changeMetadata(newMetadata: Map[String, String]): CommandHeader
 }
 
-object CommandHeader {
-  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime, metaData: Map[String, String]): CommandHeader = BasicCommandHeader(anId, aTimestamp, metaData)
-  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime): CommandHeader = BasicCommandHeader(anId, aTimestamp, Map.empty)
-  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = BasicCommandHeader(ccuad.getUuid, ccuad.getUtcTimestamp, Map.empty)
-  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = BasicCommandHeader(ccuad.getUuid, ccuad.getUtcTimestamp, metaData)
-  case class BasicCommandHeader(id: java.util.UUID, timestamp: LocalDateTime, metadata: Map[String, String]) extends CommandHeader {
-    override def changeMetadata(newMetadata: Map[String, String]): BasicCommandHeader =
+case class GenericCommandHeader(id: CommandId, timestamp: LocalDateTime, metadata: Map[String, String]) extends CommandHeader {
+  override def changeMetadata(newMetadata: Map[String, String]): GenericCommandHeader =
       this.copy(metadata = newMetadata)
-  }
+}
+
+object CommandHeader {
+  def apply(anId: CommandId, aTimestamp: LocalDateTime, metaData: Map[String, String]): CommandHeader = GenericCommandHeader(anId, aTimestamp, metaData)
+  def apply(anId: CommandId, aTimestamp: LocalDateTime): CommandHeader = GenericCommandHeader(anId, aTimestamp, Map.empty)
+  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = GenericCommandHeader(CommandId(ccuad.getUniqueString), ccuad.getUtcTimestamp, Map.empty)
+  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader = GenericCommandHeader(CommandId(ccuad.getUniqueString), ccuad.getUtcTimestamp, metaData)
 }
 
 trait Command {
   def header: CommandHeader
   def changeMetadata(newMetadata: Map[String, String]): Command
   def metadata = header.metadata
-  def commandId: java.util.UUID = header.id
+  def commandId: CommandId = header.id
 }
 
 object Command {

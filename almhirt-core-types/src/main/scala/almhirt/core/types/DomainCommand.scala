@@ -1,36 +1,35 @@
 package almhirt.core.types
 
-import java.util.{ UUID => JUUID }
 import scalaz._, Scalaz._
 import org.joda.time.LocalDateTime
 import almhirt.common._
 
 trait DomainCommandHeader extends CommandHeader {
-  def aggRef: AggregateRootRef
+  def aggId: AggregateRootId
+  def aggVersion: AggregateRootVersion
   override def changeMetadata(newMetadata: Map[String, String]): DomainCommandHeader
 }
 
-object DomainCommandHeader {
-  def apply(anId: JUUID, anAggregateRootRef: AggregateRootRef, aTimestamp: LocalDateTime, metaData: Map[String, String]): DomainCommandHeader = BasicDomainCommandHeader(anId, anAggregateRootRef, aTimestamp, metaData)
-  def apply(anId: JUUID, anAggregateRootRef: AggregateRootRef, aTimestamp: LocalDateTime): DomainCommandHeader = DomainCommandHeader(anId, anAggregateRootRef, aTimestamp, Map.empty)
-  def apply(anAggregateRootRef: AggregateRootRef)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRootRef, ccuad.getUtcTimestamp, Map.empty)
-  def apply(aggIdAndVersion: (JUUID, Long))(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader =
-    DomainCommandHeader(AggregateRootRef(aggIdAndVersion._1, aggIdAndVersion._2))
-  def apply(anAggregateRootRef: AggregateRootRef, metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = DomainCommandHeader(ccuad.getUuid, anAggregateRootRef, ccuad.getUtcTimestamp, metaData)
+case class GenericDomainCommandHeader(id: CommandId, aggId: AggregateRootId, aggVersion: AggregateRootVersion, timestamp: LocalDateTime, metadata: Map[String, String]) extends DomainCommandHeader {
+  override def changeMetadata(newMetadata: Map[String, String]): GenericDomainCommandHeader =
+    this.copy(metadata = newMetadata)
+}
 
-  case class BasicDomainCommandHeader(id: JUUID, aggRef: AggregateRootRef, timestamp: LocalDateTime, metadata: Map[String, String]) extends DomainCommandHeader {
-    override def changeMetadata(newMetadata: Map[String, String]): BasicDomainCommandHeader =
-      this.copy(metadata = newMetadata)
-  }
+object DomainCommandHeader {
+  def apply(anId: CommandId, aggIdAndVersion: (AggregateRootId, AggregateRootVersion), aTimestamp: LocalDateTime, metaData: Map[String, String]): DomainCommandHeader = GenericDomainCommandHeader(anId, aggIdAndVersion._1, aggIdAndVersion._2, aTimestamp, metaData)
+  def apply(aggIdAndVersion: (AggregateRootId, AggregateRootVersion))(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = DomainCommandHeader(CommandId(ccuad.getUniqueString), aggIdAndVersion, ccuad.getUtcTimestamp, Map.empty)
+  def apply(aggId: AggregateRootId, aggVersion: AggregateRootVersion)(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = DomainCommandHeader(aggId, aggVersion)
+  def apply(aggIdAndVersion: (AggregateRootId, AggregateRootVersion), metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): DomainCommandHeader = DomainCommandHeader(CommandId(ccuad.getUniqueString), aggIdAndVersion, ccuad.getUtcTimestamp, metaData)
+
 }
 
 trait DomainCommand extends Command {
   override def header: DomainCommandHeader
   override def changeMetadata(newMetadata: Map[String, String]): DomainCommand
   def creates: Boolean = this.isInstanceOf[CreatingDomainCommand]
-  def targettedAggregateRootRef: AggregateRootRef = header.aggRef
-  def targettedVersion: Long = header.aggRef.version
-  def targettedAggregateRootId: java.util.UUID = header.aggRef.id
+  def targettedAggregateRootRef: (AggregateRootId, AggregateRootVersion) = (header.aggId, header.aggVersion)
+  def targettedVersion: AggregateRootVersion = header.aggVersion
+  def targettedAggregateRootId: AggregateRootId = header.aggId
 }
 
 trait CreatingDomainCommand { self: DomainCommand => }

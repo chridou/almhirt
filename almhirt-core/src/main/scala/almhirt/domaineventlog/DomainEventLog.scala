@@ -2,15 +2,19 @@ package almhirt.domaineventlog
 
 import java.util.{ UUID => JUUID }
 import almhirt.common._
-import akka.actor.Actor
+import akka.actor._
 import almhirt.core.types._
-import almhirt.messaging.MessagePublisher
 import play.api.libs.iteratee.Enumerator
 
 object DomainEventLog {
   trait DomainEventLogMessage
+  trait DomainEventLogResponse
 
   final case class CommitDomainEvents(events: Seq[DomainEvent]) extends DomainEventLogMessage
+  sealed trait CommitDomainEventsResponse extends DomainEventLogResponse
+  case object DomainEventsCommitted extends CommitDomainEventsResponse
+  final case class CommitDomainEventsFailed(notCommited: Seq[JUUID]) extends CommitDomainEventsResponse
+  
   case object GetAllDomainEvents extends DomainEventLogMessage
   final case class GetDomainEvent(eventId: JUUID) extends DomainEventLogMessage
   final case class GetAllDomainEventsFor(aggId: JUUID) extends DomainEventLogMessage
@@ -20,55 +24,30 @@ object DomainEventLog {
   final case class GetDomainEventsFromTo(aggId: JUUID, fromVersion: Long, toVersion: Long) extends DomainEventLogMessage
   final case class GetDomainEventsFromUntil(aggId: JUUID, fromVersion: Long, untilVersion: Long) extends DomainEventLogMessage
 
-  sealed trait CommitDomainEventsResult extends DomainEventLogMessage
-  final case class CommittedDomainEvents(committed: Seq[DomainEvent]) extends CommitDomainEventsResult
-  final case class CommitDomainEventsFailed(problem: Problem) extends CommitDomainEventsResult
 
-  sealed trait SingleDomainEventQueryResult extends DomainEventLogMessage
-  final case class QueriedDomainEvent(eventId: JUUID, event: Option[DomainEvent]) extends SingleDomainEventQueryResult
-  final case class DomainEventQueryFailed(eventId: JUUID, problem: Problem) extends SingleDomainEventQueryResult
+  sealed trait GetDomainEventResponse extends DomainEventLogResponse
+  final case class FetchedDomainEvent(eventId: JUUID, event: Option[DomainEvent]) extends GetDomainEventResponse
+  final case class GetDomainEventFailed(eventId: JUUID, problem: Problem) extends GetDomainEventResponse
 
-  sealed trait FetchDomainEventsResult extends DomainEventLogMessage
-  final case class FetchedDomainEvents(enumerator: Enumerator[DomainEvent]) extends FetchDomainEventsResult
-  final case class FetchDomainEventsFailed(problem: Problem) extends FetchDomainEventsResult
-
-//  final case class FetchedDomainEventsBatch(
-//    events: Seq[DomainEvent]) extends FetchedDomainEvents
-
-
-//  final case class FetchedDomainEventsFailure(problem: Problem) extends FetchedDomainEvents
+  sealed trait GetManyDomainEventsResponse extends DomainEventLogResponse
+  final case class FetchedDomainEvents(enumerator: Enumerator[DomainEvent]) extends GetManyDomainEventsResponse
+  final case class GetDomainEventsFailed(problem: Problem) extends GetManyDomainEventsResponse
 
   object CommitFailed {
-    def unapply(what: CommitDomainEventsResult): Option[Problem] =
+    def unapply(what: CommitDomainEventsResponse): Boolean =
       what match {
-        case CommitDomainEventsFailed(p) => Some(p)
-        case _ => None
+        case CommitDomainEventsFailed(_) => true
+        case _ => false
       }
   }
 
-  object NothingCommitted {
-    def unapply(what: CommitDomainEventsResult): Boolean =
+  object Committed {
+    def unapply(what: CommitDomainEventsResponse): Boolean =
       what match {
-        case CommitDomainEventsFailed(p) => false
-        case CommittedDomainEvents(committed) => committed.isEmpty
+        case CommitDomainEventsFailed(_) => false
+        case _ => true
       }
   }
-
-  object DomainEventsSuccessfullyCommitted {
-    def unapply(what: CommitDomainEventsResult): Option[Seq[DomainEvent]] =
-      what match {
-        case CommitDomainEventsFailed(p) => None
-        case CommittedDomainEvents(committed) =>
-          if (committed.isEmpty)
-            None
-          else
-            Some(committed)
-      }
-  }
-}
-
-trait DomainEventLog { actor: Actor =>
-  def publishCommittedEvent(event: DomainEvent)
-
-  protected def receiveDomainEventLogMsg: Receive
+  
+  val logicalPath: String = "user/almhirt/storage/domaineventlog"
 }

@@ -1,23 +1,22 @@
 package almhirt.core.types
 
-import java.util.{ UUID => JUUID }
 import almhirt.common._
 
 trait CommandHandledEvent extends Event {
-  def commandId: JUUID
+  def commandId: CommandId
   override def changeMetadata(newMetaData: Map[String, String]): CommandHandledEvent
 }
 
-final case class CommandExecuted(header: EventHeader, commandId: JUUID) extends CommandHandledEvent {
+final case class CommandExecuted(header: EventHeader, commandId: CommandId) extends CommandHandledEvent {
   override def changeMetadata(newMetaData: Map[String, String]): CommandExecuted = copy(header = this.header.changeMetadata(newMetaData))
 }
 
-final case class CommandNotExecuted(header: EventHeader, commandId: JUUID, reason: Problem) extends CommandHandledEvent {
+final case class CommandNotExecuted(header: EventHeader, commandId: CommandId, reason: Problem) extends CommandHandledEvent {
   override def changeMetadata(newMetaData: Map[String, String]): CommandNotExecuted = copy(header = this.header.changeMetadata(newMetaData))
 }
 
 object CommandExecuted {
-  def apply(commandId: JUUID)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecuted =
+  def apply(commandId: CommandId)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecuted =
     CommandExecuted(EventHeader(), commandId)
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecuted =
     command match {
@@ -29,7 +28,7 @@ object CommandExecuted {
 }
 
 object CommandNotExecuted {
-  def apply(commandId: JUUID, reason: Problem)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandNotExecuted =
+  def apply(commandId: CommandId, reason: Problem)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandNotExecuted =
     CommandNotExecuted(EventHeader(), commandId, reason: Problem)
   def apply(command: Command, reason: Problem)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandNotExecuted =
     command match {

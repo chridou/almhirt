@@ -5,22 +5,23 @@ import almhirt.common._
 
 trait EventHeader {
   /** The events unique identifier */
-  def id: java.util.UUID
+  def id: EventId
   /** The events creation timestamp */
   def timestamp: LocalDateTime
   def metadata: Map[String, String]
   def changeMetadata(newMetaData: Map[String, String]): EventHeader
 }
 
+case class GenericEventHeader(id: EventId, timestamp: LocalDateTime, metadata: Map[String, String]) extends EventHeader {
+  override def changeMetadata(newMetadata: Map[String, String]): GenericEventHeader =
+    this.copy(metadata = newMetadata)
+}
+
 object EventHeader {
-  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime, metaData: Map[String, String]): EventHeader = BasicEventHeader(anId, aTimestamp, metaData)
-  def apply(anId: java.util.UUID, aTimestamp: LocalDateTime): EventHeader = BasicEventHeader(anId, aTimestamp, Map.empty)
-  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getUtcTimestamp, Map.empty)
-  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = BasicEventHeader(ccuad.getUuid, ccuad.getUtcTimestamp, metaData)
-  private case class BasicEventHeader(id: java.util.UUID, timestamp: LocalDateTime, metadata: Map[String, String]) extends EventHeader {
-    override def changeMetadata(newMetadata: Map[String, String]): EventHeader =
-      this.copy(metadata = newMetadata)
-  }
+  def apply(anId: EventId, aTimestamp: LocalDateTime, metaData: Map[String, String]): EventHeader = GenericEventHeader(anId, aTimestamp, metaData)
+  def apply(anId: EventId, aTimestamp: LocalDateTime): EventHeader = GenericEventHeader(anId, aTimestamp, Map.empty)
+  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = GenericEventHeader(EventId(ccuad.getUniqueString), ccuad.getUtcTimestamp, Map.empty)
+  def apply(metaData: Map[String, String])(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader = GenericEventHeader(EventId(ccuad.getUniqueString), ccuad.getUtcTimestamp, metaData)
 }
 
 trait Event {

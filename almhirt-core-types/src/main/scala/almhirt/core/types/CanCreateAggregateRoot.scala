@@ -19,51 +19,51 @@ import scala.annotation.tailrec
 import scalaz._, Scalaz._
 import almhirt.common._
 
-/** Functionality to create a new aggregate root */
-trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {
-  /** Applies the event and returns a new aggregate root from the event or a failure */
-  override final def applyEvent(event: Event) =
-    try {
-      creationHandler(event).success
-    } catch {
-      case err: MatchError => throw new UnhandledDomainEventException(event.header.id, event, s"""Could not create aggregate root with id "${event.header.id.toString()}" from domain event of type "${event.getClass().getName()}".""")
-      case err: Exception => throw err
-    }
-
-  override final def applyEvents(events: Iterable[Event]): DomainValidation[AR] = 
-    rebuildFromHistory(events)
-  
-  /** Creates a new aggregate root and applies all the events to it */
-  final def rebuildFromHistory(history: Iterable[Event]): DomainValidation[AR] = {
-    @tailrec
-    def buildEventSourced(ar: AR, events: Iterable[Event]): DomainValidation[AR] = {
-      if (events.isEmpty)
-        ar.success
-      else {
-        val nextEvent = events.head
-        if (!(nextEvent.isInstanceOf[DeletesAggregateRootEvent]))
-          ar.applyEvent(nextEvent) match {
-            case scalaz.Success(newState) =>
-              buildEventSourced(newState, events.tail)
-            case scalaz.Failure(prob) =>
-              prob.failure
-          }
-        else
-          AggregateRootDeletedProblem(nextEvent.header.aggRef.id).failure
-      }
-    }
-    
-    if (history.isEmpty)
-      EmptyCollectionProblem("At least one event is required to rebuild from history").failure
-    else
-      applyEvent(history.head) flatMap (freshAR => buildEventSourced(freshAR, history.drop(1)))
-  }
-
-  /** Creates an UpdateRecorder from the creating event */
-  final def create(event: Event): UpdateRecorder[AR, Event] =
-    applyEvent(event) fold (UpdateRecorder.reject(_), UpdateRecorder.accept(event, _))
-
-  /** The event passed to this handler must create a new aggregate root */
-  protected def creationHandler: PartialFunction[Event, AR]
-  
-}
+///** Functionality to create a new aggregate root */
+//trait CanCreateAggragateRoot[AR <: AggregateRoot[AR, Event], Event <: DomainEvent] extends CanHandleDomainEvent[AR, Event] {
+//  /** Applies the event and returns a new aggregate root from the event or a failure */
+//  override final def applyEvent(event: Event) =
+//    try {
+//      creationHandler(event).success
+//    } catch {
+//      case err: MatchError => throw new UnhandledDomainEventException(event.header.id, event, s"""Could not create aggregate root with id "${event.header.id.toString()}" from domain event of type "${event.getClass().getName()}".""")
+//      case err: Exception => throw err
+//    }
+//
+//  override final def applyEvents(events: Iterable[Event]): DomainValidation[AR] = 
+//    rebuildFromHistory(events)
+//  
+//  /** Creates a new aggregate root and applies all the events to it */
+//  final def rebuildFromHistory(history: Iterable[Event]): DomainValidation[AR] = {
+//    @tailrec
+//    def buildEventSourced(ar: AR, events: Iterable[Event]): DomainValidation[AR] = {
+//      if (events.isEmpty)
+//        ar.success
+//      else {
+//        val nextEvent = events.head
+//        if (!(nextEvent.isInstanceOf[DeletesAggregateRootEvent]))
+//          ar.applyEvent(nextEvent) match {
+//            case scalaz.Success(newState) =>
+//              buildEventSourced(newState, events.tail)
+//            case scalaz.Failure(prob) =>
+//              prob.failure
+//          }
+//        else
+//          AggregateRootDeletedProblem(nextEvent.header.aggRef.id).failure
+//      }
+//    }
+//    
+//    if (history.isEmpty)
+//      EmptyCollectionProblem("At least one event is required to rebuild from history").failure
+//    else
+//      applyEvent(history.head) flatMap (freshAR => buildEventSourced(freshAR, history.drop(1)))
+//  }
+//
+//  /** Creates an UpdateRecorder from the creating event */
+//  final def create(event: Event): UpdateRecorder[AR, Event] =
+//    applyEvent(event) fold (UpdateRecorder.reject(_), UpdateRecorder.accept(event, _))
+//
+//  /** The event passed to this handler must create a new aggregate root */
+//  protected def creationHandler: PartialFunction[Event, AR]
+//  
+//}
