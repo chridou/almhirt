@@ -12,7 +12,7 @@ object BuildSettings {
 
   val akkaVersion = "2.3.+"
   val scalatestVersion = "2.2.+"
-  val sprayVersion = "1.3.+"
+  val sprayVersion = "1.4.+"
   val reactiveMongoVersion = "0.10.5.akka23-SNAPSHOT"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
@@ -363,7 +363,7 @@ object AlmHirtBuild extends Build
 	  base = file("."))
       .settings(unidocSettings: _*)
       .aggregate(	common, 
-									//httpxSpray, 
+									httpxSpray, 
 									//httpxSprayClient, 
 									//httpxSprayService, 
 									coreTypes, 
@@ -380,9 +380,9 @@ object AlmHirtBuild extends Build
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
-//  lazy val httpxSpray = httpxSprayProject(	name = "almhirt-httpx-spray",
-//                       			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
-//
+  lazy val httpxSpray = httpxSprayProject(	name = "almhirt-httpx-spray",
+                       			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
+
 //  lazy val httpxSprayClient = httpxSprayClientProject(	name = "almhirt-httpx-spray-client",
 //                       			baseFile = file("./ext/almhirt-httpx-spray-client")) dependsOn(common, httpxSpray)
 //								
