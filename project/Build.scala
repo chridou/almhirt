@@ -54,16 +54,15 @@ object Dependencies {
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "provided"
 
 	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.+" % "provided"
-	lazy val play21   = "play" %% "play" % "2.1.+" % "provided"
-	lazy val play22   = "com.typesafe.play" %% "play" % "2.2.+" % "provided"
+	lazy val play23   = "play" %% "play" % "2.3.+" % "provided"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
+	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % "0.4" % "provided"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.+" 
 
 	lazy val spray_routing = "io.spray" %% "spray-routing" % BuildSettings.sprayVersion % "provided"
-	lazy val spray_json =  "io.spray" %%  "spray-json" % BuildSettings.sprayVersion
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
 	lazy val spray_client = "io.spray" %% "spray-client" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_httpx = "io.spray" %% "spray-httpx" % BuildSettings.sprayVersion % "provided"
@@ -161,6 +160,7 @@ trait CoreFoundationBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += akka_streams,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
