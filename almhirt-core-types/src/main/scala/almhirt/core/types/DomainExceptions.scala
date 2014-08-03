@@ -1,6 +1,7 @@
 package almhirt.core.types
 
 import almhirt.common._
+import almhirt.aggregates.AggregateRootId
 
 /** Used to indicate that an event couldn't be handled by an aggregate root's handler. 
  * This is a major problem as it indicates a software defect.

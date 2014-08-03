@@ -18,6 +18,8 @@ import scala.language.implicitConversions
 import java.util.UUID
 import org.joda.time.LocalDateTime
 import almhirt.common._
+import almhirt.aggregates.AggregateRootId
+import almhirt.aggregates.AggregateRootVersion
 
 /** These events can create or mutate an aggregate root in the dimension of time */
 trait DomainEvent extends Event {

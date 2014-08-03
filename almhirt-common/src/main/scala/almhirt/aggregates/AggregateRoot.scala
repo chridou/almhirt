@@ -12,10 +12,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package almhirt.core.types
+package almhirt.aggregates
 
-/** Marks an event that creates a new aggregate root */
-trait CreatesNewAggregateRootEvent
+import almhirt.common._
 
-/** Marks an event that deletes an aggregate root */
-trait DeletesAggregateRootEvent
+trait AggregateRoot {
+  def id: AggregateRootId
+  def version: AggregateRootVersion
+}
+

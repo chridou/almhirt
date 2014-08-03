@@ -1,8 +1,11 @@
 package almhirt.core.types
 
-import scalaz._, Scalaz._
+import scalaz._
+Scalaz._
 import org.joda.time.LocalDateTime
 import almhirt.common._
+import almhirt.aggregates.AggregateRootId
+import almhirt.aggregates.AggregateRootVersion
 
 trait DomainCommandHeader extends CommandHeader {
   def aggId: AggregateRootId
