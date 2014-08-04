@@ -10,6 +10,7 @@ trait Event {
 }
 
 trait DomainEvent extends Event
+
 trait AggregateEvent extends DomainEvent {
   def aggId: AggregateRootId
   def aggVersion: AggregateRootVersion

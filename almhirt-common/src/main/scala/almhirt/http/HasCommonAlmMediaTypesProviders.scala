@@ -1,5 +1,8 @@
 package almhirt.http
 
+import almhirt.common.{ DomainEvent, DomainCommand }
+import almhirt.tracking.ExecutionState
+
 trait HasCommonAlmMediaTypesProviders {
   implicit def booleanAlmMediaTypesProvider: AlmMediaTypesProvider[Boolean]
   implicit def stringAlmMediaTypesProvider: AlmMediaTypesProvider[String]
@@ -40,49 +43,12 @@ trait HasCommonAlmMediaTypesProviders {
   implicit def eventsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[almhirt.common.Event]]
   implicit def commandsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[almhirt.common.Command]]
   implicit def problemsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[almhirt.common.Problem]]
-}
-
-trait DelegatingCommonAlmMediaTypesProviders { self: HasCommonAlmMediaTypesProviders =>
-  def commmonAlmMediaTypesProviders: HasCommonAlmMediaTypesProviders
-  lazy val booleanAlmMediaTypesProvider = commmonAlmMediaTypesProviders.booleanAlmMediaTypesProvider
-  lazy val stringAlmMediaTypesProvider = commmonAlmMediaTypesProviders.stringAlmMediaTypesProvider
-  lazy val byteAlmMediaTypesProvider = commmonAlmMediaTypesProviders.byteAlmMediaTypesProvider
-  lazy val shortAlmMediaTypesProvider = commmonAlmMediaTypesProviders.shortAlmMediaTypesProvider
-  lazy val intAlmMediaTypesProvider = commmonAlmMediaTypesProviders.intAlmMediaTypesProvider
-  lazy val longAlmMediaTypesProvider = commmonAlmMediaTypesProviders.longAlmMediaTypesProvider
-  lazy val bigIntAlmMediaTypesProvider = commmonAlmMediaTypesProviders.bigIntAlmMediaTypesProvider
-  lazy val floatAlmMediaTypesProvider = commmonAlmMediaTypesProviders.floatAlmMediaTypesProvider
-  lazy val doubleAlmMediaTypesProvider = commmonAlmMediaTypesProviders.doubleAlmMediaTypesProvider
-  lazy val bigDecimalAlmMediaTypesProvider = commmonAlmMediaTypesProviders.bigDecimalAlmMediaTypesProvider
-  lazy val uriAlmMediaTypesProvider = commmonAlmMediaTypesProviders.uriAlmMediaTypesProvider
-  lazy val uuidAlmMediaTypesProvider = commmonAlmMediaTypesProviders.uuidAlmMediaTypesProvider
-  lazy val localDateTimeAlmMediaTypesProvider = commmonAlmMediaTypesProviders.localDateTimeAlmMediaTypesProvider
-  lazy val dateTimeAlmMediaTypesProvider = commmonAlmMediaTypesProviders.dateTimeAlmMediaTypesProvider
-  lazy val finiteDurationAlmMediaTypesProvider = commmonAlmMediaTypesProviders.finiteDurationAlmMediaTypesProvider
-
-  lazy val booleansAlmMediaTypesProvider = commmonAlmMediaTypesProviders.booleansAlmMediaTypesProvider
-  lazy val stringsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.stringsAlmMediaTypesProvider
-  lazy val bytesAlmMediaTypesProvider = commmonAlmMediaTypesProviders.bytesAlmMediaTypesProvider
-  lazy val shortsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.shortsAlmMediaTypesProvider
-  lazy val intsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.intsAlmMediaTypesProvider
-  lazy val longsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.longsAlmMediaTypesProvider
-  lazy val bigIntsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.bigIntsAlmMediaTypesProvider
-  lazy val floatsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.floatsAlmMediaTypesProvider
-  lazy val doublesAlmMediaTypesProvider = commmonAlmMediaTypesProviders.doublesAlmMediaTypesProvider
-  lazy val bigDecimalsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.bigDecimalsAlmMediaTypesProvider
-  lazy val urisAlmMediaTypesProvider = commmonAlmMediaTypesProviders.urisAlmMediaTypesProvider
-  lazy val uuidsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.uuidsAlmMediaTypesProvider
-  lazy val localDateTimesAlmMediaTypesProvider = commmonAlmMediaTypesProviders.localDateTimesAlmMediaTypesProvider
-  lazy val dateTimesAlmMediaTypesProvider = commmonAlmMediaTypesProviders.dateTimesAlmMediaTypesProvider
-  lazy val finiteDurationsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.finiteDurationsAlmMediaTypesProvider
-
-  lazy val eventAlmMediaTypesProvider = commmonAlmMediaTypesProviders.eventAlmMediaTypesProvider
-  lazy val commandAlmMediaTypesProvider = commmonAlmMediaTypesProviders.commandAlmMediaTypesProvider
-  lazy val problemAlmMediaTypesProvider = commmonAlmMediaTypesProviders.problemAlmMediaTypesProvider
-
-  lazy val eventsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.eventsAlmMediaTypesProvider
-  lazy val commandsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.commandsAlmMediaTypesProvider
-  lazy val problemsAlmMediaTypesProvider = commmonAlmMediaTypesProviders.problemsAlmMediaTypesProvider
+  
+  implicit def domainEventAlmMediaTypesProvider: AlmMediaTypesProvider[DomainEvent]
+  implicit def executionStateAlmMediaTypesProvider: AlmMediaTypesProvider[ExecutionState]
+  implicit def domainEventsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[DomainEvent]]
+  implicit def domainCommandsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[DomainCommand]]
+  implicit def executionStatesAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[ExecutionState]]
 }
 
 trait VendorBasedCommonAlmMediaTypesProviders { self : HasCommonAlmMediaTypesProviders =>
@@ -126,5 +92,11 @@ trait VendorBasedCommonAlmMediaTypesProviders { self : HasCommonAlmMediaTypesPro
   override lazy val eventsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[almhirt.common.Event]]("Events").withGenericTargets
   override lazy val commandsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[almhirt.common.Command]]("Commands").withGenericTargets
   override lazy val problemsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[almhirt.common.Problem]]("Problems").withGenericTargets
+
+  override lazy val domainEventAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[DomainEvent]("DomainEvent").withGenericTargets
+  override lazy val executionStateAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[ExecutionState]("ExecutionState").withGenericTargets
+  override lazy val domainEventsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainEvent]]("DomainEvents").withGenericTargets
+  override lazy val domainCommandsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainCommand]]("DomainCommands").withGenericTargets
+  override lazy val executionStatesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[ExecutionState]]("ExecutionStates").withGenericTargets
 
 }
