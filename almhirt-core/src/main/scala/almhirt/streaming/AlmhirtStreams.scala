@@ -8,8 +8,8 @@ import akka.stream.actor.ActorProducer
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import almhirt.common._
 
-trait CloseableChannels {
-  def closeChannels()
+trait CloseableStreams {
+  def closeStreams()
 }
 
 trait CanDispatchEvents {
@@ -20,22 +20,27 @@ trait CanDispatchCommands {
   def commandStreamConsumer: DemandingConsumer[Command]
 }
 
-trait AlmhirtChannels extends CanDispatchEvents with CanDispatchCommands {
+trait EventStreams {
   def eventStream: Producer[Event]
   def systemEventStream: Producer[SystemEvent]
   def domainEventStream: Producer[DomainEvent]
   def aggregateEventStream: Producer[AggregateEvent]
+}
+
+trait CommandStreams {
   def commandStream: Producer[Command]
   def systemCommandStream: Producer[SystemCommand]
   def domainCommandStream: Producer[DomainCommand]
   def aggregateCommandStream: Producer[AggregateCommand]
 }
 
-object AlmhirtChannels {
-  def apply()(implicit actorRefFactory: ActorRefFactory): AlmhirtChannels with CloseableChannels =
+trait AlmhirtStreams extends EventStreams with CommandStreams with CanDispatchEvents with CanDispatchCommands
+
+object AlmhirtStreams {
+  def apply()(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with CloseableStreams =
     apply("event-stream-consumer", "command-stream-consumer")
 
-  def apply(eventStreamConsumerName: String, commandStreamConsumerName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtChannels with CloseableChannels = {
+  def apply(eventStreamConsumerName: String, commandStreamConsumerName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with CloseableStreams = {
     val myEventStreamConsumer = actorRefFactory.actorOf(Props(new ActorDemandingConsumer[Event]), eventStreamConsumerName)
     val eventStreamProducer = ActorProducer[Event](myEventStreamConsumer)
 
@@ -78,7 +83,7 @@ object AlmhirtChannels {
     aggregateCommandsProducer.produceTo(new DevNullConsumer())
 
     
-    new AlmhirtChannels with CloseableChannels {
+    new AlmhirtStreams with CloseableStreams {
       val eventStreamConsumer: DemandingConsumer[Event] = DemandingConsumer[Event](myEventStreamConsumer)
       val eventStream: Producer[Event] = eventsProducer
       val systemEventStream: Producer[SystemEvent] = systemEventsProducer
@@ -89,7 +94,7 @@ object AlmhirtChannels {
       val systemCommandStream: Producer[SystemCommand] = systemCommandsProducer
       val domainCommandStream: Producer[DomainCommand] = domainCommandsProducer
       val aggregateCommandStream: Producer[AggregateCommand] = aggregateCommandsProducer
-      def closeChannels() { actorRefFactory.stop(myEventStreamConsumer); actorRefFactory.stop(myCommandStreamConsumer) }
+      def closeStreams() { actorRefFactory.stop(myEventStreamConsumer); actorRefFactory.stop(myCommandStreamConsumer) }
     }
   }
 }
