@@ -2,7 +2,7 @@ package almhirt.context
 
 import akka.actor._
 import almhirt.common._
-import almhirt.messaging.AlmhirtChannels
+import almhirt.streaming.AlmhirtChannels
 import com.typesafe.config._
 
 trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtChannels with HasExecutionContexts {

@@ -1,28 +1,23 @@
-package almhirt.messaging
+package almhirt.streaming
 
 import org.reactivestreams.api.{ Consumer, Producer }
-import almhirt.common._
-import org.reactivestreams.spi.Subscription
-import org.reactivestreams.spi.Subscriber
+import org.reactivestreams.spi.{ Subscription, Subscriber }
 import akka.stream.scaladsl.Flow
-import almhirt.common.EventId
-import almhirt.aggregates.AggregateRootId
-import almhirt.aggregates.AggregateRootVersion
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
 import akka.actor._
 import akka.stream.actor.ActorProducer
+import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import almhirt.common._
 
 trait CloseableChannels {
   def closeChannels()
 }
 
 trait CanDispatchEvents {
-  def eventStreamDispatcher: ActorRef
+  def eventStreamConsumer: DemandingConsumer[Event]
 }
 
 trait CanDispatchCommands {
-  def commandStreamDispatcher: ActorRef
+  def commandStreamConsumer: DemandingConsumer[Command]
 }
 
 trait AlmhirtChannels extends CanDispatchEvents with CanDispatchCommands {
@@ -38,14 +33,11 @@ trait AlmhirtChannels extends CanDispatchEvents with CanDispatchCommands {
 
 object AlmhirtChannels {
   def apply()(implicit actorRefFactory: ActorRefFactory): AlmhirtChannels with CloseableChannels =
-    apply("event-stream-consumer", "command-stream-dispatcher")
+    apply("event-stream-consumer", "command-stream-consumer")
 
-  def apply(eventStreamDispatcherName: String, commandStreamDispatcherName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtChannels with CloseableChannels = {
-    val ccuad = CanCreateUuidsAndDateTimes()
-
-    
-    val eventsStreamConsumer = actorRefFactory.actorOf(Props(new EventStreamConsumer()), eventStreamDispatcherName)
-    val eventStreamProducer = ActorProducer[Event](eventsStreamConsumer)
+  def apply(eventStreamConsumerName: String, commandStreamConsumerName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtChannels with CloseableChannels = {
+    val myEventStreamConsumer = actorRefFactory.actorOf(Props(new ActorDemandingConsumer[Event]), eventStreamConsumerName)
+    val eventStreamProducer = ActorProducer[Event](myEventStreamConsumer)
 
     val eventFlow = Flow.apply(eventStreamProducer)
 
@@ -65,8 +57,8 @@ object AlmhirtChannels {
     aggregateEventsProducer.produceTo(new DevNullConsumer())
     
 
-    val commandsStreamDispatcher = actorRefFactory.actorOf(Props(new CommandStreamDispatcher(10)), commandStreamDispatcherName)
-    val commandStreamProducer = ActorProducer[Command](commandsStreamDispatcher)
+    val myCommandStreamConsumer = actorRefFactory.actorOf(Props(new ActorDemandingConsumer[Command]), commandStreamConsumerName)
+    val commandStreamProducer = ActorProducer[Command](myCommandStreamConsumer)
 
     val commandFlow = Flow.apply(commandStreamProducer)
 
@@ -87,22 +79,22 @@ object AlmhirtChannels {
 
     
     new AlmhirtChannels with CloseableChannels {
-      val eventStreamDispatcher: ActorRef = eventsStreamConsumer
+      val eventStreamConsumer: DemandingConsumer[Event] = DemandingConsumer[Event](myEventStreamConsumer)
       val eventStream: Producer[Event] = eventsProducer
       val systemEventStream: Producer[SystemEvent] = systemEventsProducer
       val domainEventStream: Producer[DomainEvent] = domainEventsProducer
       val aggregateEventStream: Producer[AggregateEvent] = aggregateEventsProducer
-      val commandStreamDispatcher: ActorRef = commandsStreamDispatcher
+      val commandStreamConsumer: DemandingConsumer[Command] = DemandingConsumer[Command](myCommandStreamConsumer)
       val commandStream: Producer[Command] = commandsProducer
       val systemCommandStream: Producer[SystemCommand] = systemCommandsProducer
       val domainCommandStream: Producer[DomainCommand] = domainCommandsProducer
       val aggregateCommandStream: Producer[AggregateCommand] = aggregateCommandsProducer
-      def closeChannels() { actorRefFactory.stop(eventStreamDispatcher); actorRefFactory.stop(commandStreamDispatcher) }
+      def closeChannels() { actorRefFactory.stop(myEventStreamConsumer); actorRefFactory.stop(myCommandStreamConsumer) }
     }
   }
 }
 
-private[messaging] class DevNullConsumer[T]() extends Consumer[T] {
+private[streaming] class DevNullConsumer[T]() extends Consumer[T] {
   private[this] var sub: Option[Subscription] = None
 
   private def requestMore() = sub.map(_.requestMore(1))

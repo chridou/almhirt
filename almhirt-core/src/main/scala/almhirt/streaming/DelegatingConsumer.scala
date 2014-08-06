@@ -1,4 +1,4 @@
-package almhirt.messaging
+package almhirt.streaming
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -17,7 +17,7 @@ object DelegatingCommandConsumer {
     new DelegatingConsumer[T](delegateTo)
 }
 
-private[messaging] class DelegatingConsumer[T](delegateTo: ActorRef) extends Consumer[T] {
+private[streaming] class DelegatingConsumer[T](delegateTo: ActorRef) extends Consumer[T] {
   private[this] var sub: Option[Subscription] = None
 
   private def requestMore() = sub.map(_.requestMore(1))

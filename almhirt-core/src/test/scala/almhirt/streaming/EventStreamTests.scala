@@ -1,3 +1,4 @@
+package almhirt.streaming;
 //package almhirt.messaging
 //
 //import scala.language.postfixOps
