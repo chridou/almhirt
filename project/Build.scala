@@ -147,7 +147,7 @@ trait CoreBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += play2_iteratees,
-	  libraryDependencies += akka-streams,
+	  libraryDependencies += akka_streams,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
