@@ -340,9 +340,9 @@ object AlmHirtBuild extends Build
                        			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
 								
   lazy val core = coreProject(	name = "almhirt-core",
-		baseFile = file("almhirt-core")) dependsOn(	common % "compile; test->compile", 
+		baseFile = file("almhirt-core")) dependsOn(	common % "compile; test->compile"/*, 
 																								corexRiftwarp % "test",
-																								riftwarp % "test->test")
+																								riftwarp % "test->test"*/)
 
   lazy val corexRiftwarp = corexRiftWarpProject(	name = "almhirt-corex-riftwarp",
 	                       		baseFile = file("./ext/almhirt-corex-riftwarp")) dependsOn(common, riftwarp)

@@ -4,37 +4,40 @@ import java.util.{ UUID => JUUID }
 import org.joda.time.LocalDateTime
 import akka.actor._
 import almhirt.common._
+import play.api.libs.iteratee.Enumerator
 
 object EventLog {
   sealed trait EventLogMessage
 
   final case class LogEvent(event: Event) extends EventLogMessage
+  sealed trait LogEventResponse extends EventLogMessage { def eventId: EventId }
+  final case class EventLogged(eventId: EventId) extends EventLogMessage
+  final case class EventNotLogged(eventId: EventId, problem: Problem) extends EventLogMessage
 
-  final case class GetEvent(eventId: JUUID) extends EventLogMessage
-  case object GetAllEvents extends EventLogMessage
-  final case class GetEventsFrom(from: LocalDateTime) extends EventLogMessage
-  final case class GetEventsAfter(after: LocalDateTime) extends EventLogMessage
-  final case class GetEventsTo(to: LocalDateTime) extends EventLogMessage
-  final case class GetEventsUntil(until: LocalDateTime) extends EventLogMessage
-  final case class GetEventsFromTo(from: LocalDateTime, to: LocalDateTime) extends EventLogMessage
-  final case class GetEventsFromUntil(from: LocalDateTime, until: LocalDateTime) extends EventLogMessage
-  final case class GetEventsAfterTo(after: LocalDateTime, to: LocalDateTime) extends EventLogMessage
-  final case class GetEventsAfterUntil(after: LocalDateTime, until: LocalDateTime) extends EventLogMessage
+  final case class FindEvent(eventId: EventId) extends EventLogMessage
+  sealed trait FindEventResponse extends EventLogMessage 
+  final case class FoundEvent(eventId: EventId, event: Option[Event]) extends FindEventResponse
+  final case class FindEventFailed(eventId: EventId, problem: Problem) extends FindEventResponse
+  
+  
+  case object FetchAllEvents extends EventLogMessage
+  final case class FetchEventsFrom(from: LocalDateTime) extends EventLogMessage
+  final case class FetchEventsAfter(after: LocalDateTime) extends EventLogMessage
+  final case class FetchEventsTo(to: LocalDateTime) extends EventLogMessage
+  final case class FetchEventsUntil(until: LocalDateTime) extends EventLogMessage
+  final case class FetchEventsFromTo(from: LocalDateTime, to: LocalDateTime) extends EventLogMessage
+  final case class FetchEventsFromUntil(from: LocalDateTime, until: LocalDateTime) extends EventLogMessage
+  final case class FetchEventsAfterTo(after: LocalDateTime, to: LocalDateTime) extends EventLogMessage
+  final case class FetchEventsAfterUntil(after: LocalDateTime, until: LocalDateTime) extends EventLogMessage
 
-  sealed trait SingleEventQueryResult extends EventLogMessage
-  final case class QueriedEvent(eventId: JUUID, event: Option[Event]) extends SingleEventQueryResult
-  final case class EventQueryFailed(eventId: JUUID, problem: Problem) extends SingleEventQueryResult
 
-  sealed trait FetchedEvents extends EventLogMessage
+  sealed trait FetchEventsResponse extends EventLogMessage
+  final case class FetchedEvents(events: Enumerator[Event]) extends FetchEventsResponse
+  final case class FetchEventsFailed(problem: Problem) extends FetchEventsResponse
 
-  final case class FetchedEventsBatch(events: Seq[Event]) extends FetchedEvents
+  object EventLogCoordinates {
+	  val actorname = "event-log"
+	  val logicalPath: String = s"user/almhirt/storage/$actorname"
+  }
 
-  final case class FetchedEventsChunks() extends FetchedEvents
-
-  final case class FetchedEventsFailure(problem: Problem) extends FetchedEvents
-
-}
-
-trait EventLog { actor: Actor =>
-  protected def receiveEventLogMsg: Receive
 }
