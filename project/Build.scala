@@ -308,7 +308,6 @@ object AlmHirtBuild extends Build
 	with RiftWarpBuild 
 	with RiftWarpHttpSprayBuild
 	with RiftWarpMongoExtBuild 
-//	with RiftWarpSprayJsonExtBuild 
 	with RiftWarpAutomaticBuild {
   lazy val root = Project(
     id = "almhirt",
