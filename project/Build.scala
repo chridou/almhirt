@@ -54,7 +54,6 @@ object Dependencies {
 	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "provided"
 
 	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.+" % "provided"
-	lazy val play23   = "play" %% "play" % "2.3.+" % "provided"
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
@@ -148,6 +147,7 @@ trait CoreBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += play2_iteratees,
+	  libraryDependencies += akka-streams,
 	  libraryDependencies += akka_actor,
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
