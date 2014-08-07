@@ -7,14 +7,19 @@ import org.reactivestreams.spi.{ Subscription, Subscriber }
 import akka.actor._
 import almhirt.common._
 
+object DelegatingConsumer {
+  def apply[T](delegateTo: ActorRef): Consumer[T] =
+    new DelegatingConsumer[T](delegateTo)
+}
+
 object DelegatingEventConsumer {
   def apply[T <: Event](delegateTo: ActorRef): Consumer[T] =
-    new DelegatingConsumer[T](delegateTo)
+    DelegatingConsumer[T](delegateTo)
 }
 
 object DelegatingCommandConsumer {
   def apply[T <: Command](delegateTo: ActorRef): Consumer[T] =
-    new DelegatingConsumer[T](delegateTo)
+    DelegatingConsumer[T](delegateTo)
 }
 
 private[streaming] class DelegatingConsumer[T](delegateTo: ActorRef) extends Consumer[T] {
@@ -33,6 +38,10 @@ private[streaming] class DelegatingConsumer[T](delegateTo: ActorRef) extends Con
     }
 
     override def onComplete(): Unit = {
+      sub.foreach(s => {
+        s.cancel()
+        sub = None
+      })
     }
 
     override def onNext(element: T): Unit = {

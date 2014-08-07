@@ -2,7 +2,7 @@ package almhirt.streaming
 
 import org.reactivestreams.api.{ Consumer, Producer }
 import org.reactivestreams.spi.{ Subscription, Subscriber }
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Flow, Duct }
 import akka.actor._
 import akka.stream.actor.ActorProducer
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
@@ -13,11 +13,11 @@ trait CloseableStreams {
 }
 
 trait CanDispatchEvents {
-  def eventStreamConsumer: DemandingConsumer[Event]
+  def eventConsumer: SuppliesTrader[Event]
 }
 
 trait CanDispatchCommands {
-  def commandStreamConsumer: DemandingConsumer[Command]
+  def commandConsumer: SuppliesTrader[Command]
 }
 
 trait EventStreams {
@@ -38,63 +38,64 @@ trait AlmhirtStreams extends EventStreams with CommandStreams with CanDispatchEv
 
 object AlmhirtStreams {
   def apply()(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with CloseableStreams =
-    apply("event-stream-consumer", "command-stream-consumer")
+    apply("event-stream-input", "command-stream-input")
 
   def apply(eventStreamConsumerName: String, commandStreamConsumerName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with CloseableStreams = {
-    val myEventStreamConsumer = actorRefFactory.actorOf(Props(new ActorDemandingConsumer[Event]), eventStreamConsumerName)
-    val eventStreamProducer = ActorProducer[Event](myEventStreamConsumer)
 
-    val eventFlow = Flow.apply(eventStreamProducer)
+    val (eventConsumer, eventProducer) = Duct[Event].build(FlowMaterializer(MaterializerSettings()))
+    
+    val eventTransporterActor = actorRefFactory.actorOf(SuppliesTransporter.props(), eventStreamConsumerName) 
+    val (eventTransIn, eventTransOut)  = SuppliesTransporter[Event](eventTransporterActor)
+    eventTransOut.produceTo(eventConsumer)
+    
+    eventProducer.produceTo(new DevNullConsumer())
 
-    val eventsProducer: Producer[Event] = eventFlow.map(x => x).toProducer(FlowMaterializer(MaterializerSettings()))
-    eventsProducer.produceTo(new DevNullConsumer())
+    val systemEventFlow = Flow(eventProducer).collect { case e: SystemEvent => e }
+    val systemEventProducer: Producer[SystemEvent] = systemEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
+    systemEventProducer.produceTo(new DevNullConsumer())
 
-    val systemEventFlow = Flow(eventsProducer).collect { case e: SystemEvent => e }
-    val systemEventsProducer: Producer[SystemEvent] = systemEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    systemEventsProducer.produceTo(new DevNullConsumer())
+    val domainEventFlow = Flow(eventProducer).collect { case e: DomainEvent => e }
+    val domainEventProducer: Producer[DomainEvent] = domainEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
+    domainEventProducer.produceTo(new DevNullConsumer())
 
-    val domainEventFlow = Flow(eventsProducer).collect { case e: DomainEvent => e }
-    val domainEventsProducer: Producer[DomainEvent] = domainEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    domainEventsProducer.produceTo(new DevNullConsumer())
-
-    val aggregateEventFlow = Flow(eventsProducer).collect { case e: AggregateEvent => e }
-    val aggregateEventsProducer: Producer[AggregateEvent] = aggregateEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    aggregateEventsProducer.produceTo(new DevNullConsumer())
+    val aggregateEventFlow = Flow(eventProducer).collect { case e: AggregateEvent => e }
+    val aggregateEventProducer: Producer[AggregateEvent] = aggregateEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
+    aggregateEventProducer.produceTo(new DevNullConsumer())
     
 
-    val myCommandStreamConsumer = actorRefFactory.actorOf(Props(new ActorDemandingConsumer[Command]), commandStreamConsumerName)
-    val commandStreamProducer = ActorProducer[Command](myCommandStreamConsumer)
+    val (commandConsumer, commandProducer) = Duct[Command].build(FlowMaterializer(MaterializerSettings()))
 
-    val commandFlow = Flow.apply(commandStreamProducer)
+    val commandTransporterActor = actorRefFactory.actorOf(SuppliesTransporter.props(), commandStreamConsumerName) 
+    val (commandTransIn, commandTransOut)  = SuppliesTransporter[Command](commandTransporterActor)
+    commandTransOut.produceTo(commandConsumer)
 
-    val commandsProducer: Producer[Command] = commandFlow.map(x => x).toProducer(FlowMaterializer(MaterializerSettings()))
-    commandsProducer.produceTo(new DevNullConsumer())
+    commandProducer.produceTo(new DevNullConsumer())
 
-    val systemCommandFlow = Flow(commandsProducer).collect { case e: SystemCommand => e }
-    val systemCommandsProducer: Producer[SystemCommand] = systemCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    systemCommandsProducer.produceTo(new DevNullConsumer())
+    val systemCommandFlow = Flow(commandProducer).collect { case e: SystemCommand => e }
+    val systemCommandProducer: Producer[SystemCommand] = systemCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
+    systemCommandProducer.produceTo(new DevNullConsumer())
 
-    val domainCommandFlow = Flow(commandsProducer).collect { case e: DomainCommand => e }
-    val domainCommandsProducer: Producer[DomainCommand] = domainCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    domainCommandsProducer.produceTo(new DevNullConsumer())
+    val domainCommandFlow = Flow(commandProducer).collect { case e: DomainCommand => e }
+    val domainCommandProducer: Producer[DomainCommand] = domainCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
+    domainCommandProducer.produceTo(new DevNullConsumer())
 
-    val aggregateCommandFlow = Flow(commandsProducer).collect { case e: AggregateCommand => e }
-    val aggregateCommandsProducer: Producer[AggregateCommand] = aggregateCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    aggregateCommandsProducer.produceTo(new DevNullConsumer())
+    val aggregateCommandFlow = Flow(commandProducer).collect { case e: AggregateCommand => e }
+    val aggregateCommandProducer: Producer[AggregateCommand] = aggregateCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
+    aggregateCommandProducer.produceTo(new DevNullConsumer())
 
     
     new AlmhirtStreams with CloseableStreams {
-      val eventStreamConsumer: DemandingConsumer[Event] = DemandingConsumer[Event](myEventStreamConsumer)
-      val eventStream: Producer[Event] = eventsProducer
-      val systemEventStream: Producer[SystemEvent] = systemEventsProducer
-      val domainEventStream: Producer[DomainEvent] = domainEventsProducer
-      val aggregateEventStream: Producer[AggregateEvent] = aggregateEventsProducer
-      val commandStreamConsumer: DemandingConsumer[Command] = DemandingConsumer[Command](myCommandStreamConsumer)
-      val commandStream: Producer[Command] = commandsProducer
-      val systemCommandStream: Producer[SystemCommand] = systemCommandsProducer
-      val domainCommandStream: Producer[DomainCommand] = domainCommandsProducer
-      val aggregateCommandStream: Producer[AggregateCommand] = aggregateCommandsProducer
-      def closeStreams() { actorRefFactory.stop(myEventStreamConsumer); actorRefFactory.stop(myCommandStreamConsumer) }
+      val eventConsumer = eventTransIn
+      val eventStream = eventProducer
+      val systemEventStream = systemEventProducer
+      val domainEventStream = domainEventProducer
+      val aggregateEventStream = aggregateEventProducer
+      val commandConsumer = commandTransIn
+      val commandStream = commandProducer
+      val systemCommandStream = systemCommandProducer
+      val domainCommandStream = domainCommandProducer
+      val aggregateCommandStream = aggregateCommandProducer
+      def closeStreams() { actorRefFactory.stop(eventTransporterActor); actorRefFactory.stop(commandTransporterActor) }
     }
   }
 }
