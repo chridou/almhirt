@@ -15,7 +15,7 @@ trait ActorPostOffice[TElement] { self: Actor with ActorLogging =>
   
   val contractor = new SuppliesContractor[TElement] {
 	  def onProblem(problem: Problem) = {
-	    
+	    sys.error(problem.toString())
 	  }
 	  
 	  def onStockroom(stockroom: Stockroom[TElement])= {
