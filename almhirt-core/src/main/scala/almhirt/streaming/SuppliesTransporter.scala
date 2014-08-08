@@ -33,7 +33,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
     contractors: Set[SuppliesContractor[TElement]]): Receive = {
 
     case SignContract(contractor: SuppliesContractor[TElement]) =>
-      log.info(s"[SignContract(collecting)]:\n$offers\n$contractors")
+//      log.info(s"[SignContract(collecting)]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}")
       if (!contractors(contractor)) {
         contractor.onLoadingBay(loadingBay(contractor))
         context.become(collectingOffers(
@@ -44,9 +44,9 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case CancelContract(contractor: SuppliesContractor[TElement]) =>
-      log.info(s"[CancelContract(collecting)]:\n$offers\n$contractors")
+//      log.info(s"[CancelContract(collecting)]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}")
       if (contractors(contractor)) {
-        contractor.onContractExpired()
+        //        contractor.onContractExpired()
         context.become(collectingOffers(
           offers.filterNot(_ == contractor),
           contractors - contractor))
@@ -55,7 +55,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case OfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
-      log.info(s"[OfferSupplies(collecting)]:\n$offers\n$contractors")
+//      log.info(s"[OfferSupplies(collecting): $amount]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}")
       if (contractors(contractor)) {
         val newOffers = offers ++ Vector.fill(amount)(contractor)
         if (totalDemand > 0 && !newOffers.isEmpty) {
@@ -70,7 +70,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case LoadSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
-      log.info(s"[LoadSupplies(collecting)]:\n$offers\n$contractors")
+//      log.info(s"[LoadSupplies(collecting)]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}")
       if (contractors(contractor)) {
         contractor.onProblem(UnspecifiedProblem("[LoadSupplies(collecting)]: You have not been asked to load supplies! Are you too late?"))
       } else {
@@ -78,7 +78,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case Request(amount) =>
-      log.info(s"[Request(collecting)]:\n$offers\n$contractors")
+//      log.info(s"[Request(collecting): $amount]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}")
       if (!offers.isEmpty) {
         callForSupplies(offers, contractors)
       }
@@ -90,7 +90,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
     contractors: Set[SuppliesContractor[TElement]]): Receive = {
 
     case SignContract(contractor: SuppliesContractor[TElement]) =>
-      log.info(s"[SignContract(transporting)]:\n$offers\n$contractors")
+//      log.info(s"[SignContract(transporting)]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}\nPlan:$deliverySchedule")
       if (!contractors(contractor)) {
         contractor.onLoadingBay(loadingBay(contractor))
         context.become(transportingSupplies(
@@ -102,9 +102,9 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case CancelContract(contractor: SuppliesContractor[TElement]) =>
-      log.info(s"[CancelContract(transporting)]:\n$offers\n$contractors")
+//      log.info(s"[CancelContract(transporting)]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}\nPlan:$deliverySchedule")
       if (contractors(contractor)) {
-        contractor.onContractExpired()
+        //        contractor.onContractExpired()
         context.become(transportingSupplies(
           deliverySchedule - contractor,
           offers.filterNot(_ == contractor),
@@ -114,17 +114,21 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case OfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
-      log.info(s"[OfferSupplies(transporting)]:\n$offers\n$contractors")
+//      log.info(s"[OfferSupplies(transporting): $amount]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}\nPlan:$deliverySchedule")
       if (contractors(contractor)) {
         val newOffers = offers ++ Vector.fill(amount)(contractor)
         if (!deliverySchedule.isEmpty) {
+//          log.info(s"KeepDispatching: \nTotalDemand:$totalDemand\nNewOffers: ${newOffers.size}\nContractors:${contractors.size}\nPlan:$deliverySchedule")
           context.become(transportingSupplies(
             deliverySchedule,
             newOffers,
             contractors))
         } else if (totalDemand > 0 && !newOffers.isEmpty) {
+//          log.info(s"CallForSupplies: \nTotalDemand:$totalDemand\nNewOffers: ${newOffers.size}\nContractors:${contractors.size}\nPlan:$deliverySchedule")
           callForSupplies(newOffers, contractors)
         } else {
+//          log.info(s"GoCollect!: \nTotalDemand:$totalDemand\nNewOffers: ${newOffers.size}\nContractors:${contractors.size}\nPlan:$deliverySchedule")
+
           context.become(collectingOffers(
             newOffers,
             contractors))
@@ -134,7 +138,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case LoadSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
-      log.info(s"[LoadSupplies(transporting)]:\n$offers\n$contractors")
+//      log.info(s"[LoadSupplies(transporting): ${elements.size}]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}\nPlan:$deliverySchedule")
       deliverySchedule.get(contractor) match {
         case Some(amount) =>
           if (elements.size == amount) {
@@ -143,12 +147,13 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
             contractor.onProblem(UnspecifiedProblem("[LoadSupplies(transporting)]: You have loaded ${elements.size} elements instead of $amount. Elements have not been transported."))
           }
 
-          if (deliverySchedule.isEmpty) {
+          val newDeliverySchedule = deliverySchedule - contractor
+          if (newDeliverySchedule.isEmpty) {
             context.become(collectingOffers(
               offers,
               contractors))
           } else {
-            context.become(transportingSupplies(deliverySchedule - contractor, offers, contractors))
+            context.become(transportingSupplies(newDeliverySchedule, offers, contractors))
           }
 
         case None =>
@@ -156,7 +161,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case Request(amount) =>
-      log.info(s"[Request(transporting)]:\n$offers\n$contractors")
+//      log.info(s"[Request(transporting): $amount]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}\nPlan:$deliverySchedule")
       ()
 
   }
@@ -166,7 +171,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
   def callForSupplies(
     offers: Vector[SuppliesContractor[TElement]],
     contractors: Set[SuppliesContractor[TElement]]) {
-    log.info(s"[callForSupplies]:\n$offers\n$contractors")
+//    log.info(s"[callForSupplies]:\nTotalDemand:$totalDemand\nOffers: ${offers.size}\nContractors:${contractors.size}")
     if (totalDemand > 0) {
       val toLoad = offers.take(totalDemand)
       val rest = offers.drop(toLoad.size)
