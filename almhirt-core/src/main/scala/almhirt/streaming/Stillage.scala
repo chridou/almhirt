@@ -13,13 +13,13 @@ object Stillage {
 
 private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packagingSize: Int) extends Supplier[TElement] {
   def signContract(trader: SuppliesBroker[TElement]) {
-    var loadingBay: Option[LoadingBay[TElement]] = None
+    var stockroom: Option[Stockroom[TElement]] = None
 
     var notYetOffered = contents
     var offered: Vector[TElement] = Vector.empty
 
     def offer() {
-      loadingBay.foreach(bay => {
+      stockroom.foreach(bay => {
         val nextBatch = notYetOffered.take(packagingSize)
         notYetOffered = notYetOffered.drop(nextBatch.size)
         bay.offerSupplies(nextBatch.size)
@@ -34,13 +34,13 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
         problem.escalate()
       }
 
-      def onLoadingBay(theLoadingBay: LoadingBay[TElement]) {
-        loadingBay = Some(theLoadingBay)
+      def onStockroom(theStockroom: Stockroom[TElement]) {
+        stockroom = Some(theStockroom)
         offer()
       }
 
-      def onLoadSuppliesNow(amount: Int) {
-        loadingBay.foreach(bay => {
+      def onDeliverSuppliesNow(amount: Int) {
+        stockroom.foreach(bay => {
           val toLoad = offered.take(amount)
           bay.loadSupplies(toLoad)
           offered = offered.drop(amount)
@@ -50,7 +50,7 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
       }
 
       def onContractExpired() {
-        loadingBay = None
+        stockroom = None
       }
     })
   }

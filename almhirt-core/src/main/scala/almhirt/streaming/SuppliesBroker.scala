@@ -12,13 +12,13 @@ trait SuppliesBroker[TElement] {
 
 trait SuppliesContractor[TElement] {
   def onProblem(problem: Problem): Unit
-  def onLoadingBay(loadingBay: LoadingBay[TElement]): Unit
-  /** The contractor must load the specified amount immediately */
-  def onLoadSuppliesNow(amount: Int): Unit
+  def onStockroom(stockroom: Stockroom[TElement]): Unit
+  /** The contractor must deliver the specified amount immediately */
+  def onDeliverSuppliesNow(amount: Int): Unit
   def onContractExpired(): Unit
 }
 
-trait LoadingBay[TElement] {
+trait Stockroom[TElement] {
   def cancelContract(): Unit
   def offerSupplies(amount: Int): Unit
   def loadSupplies(elements: Seq[TElement]): Unit
@@ -30,6 +30,6 @@ private[almhirt] object InternalBrokerMessages {
   final case class SignContract(contractor: SuppliesContractor[_])
   final case class CancelContract(contractor: SuppliesContractor[_])
   final case class OfferSupplies(amount: Int, contractor: SuppliesContractor[_])
-  final case class LoadSupplies(elements: Seq[_], contractor: SuppliesContractor[_])
+  final case class DeliverSupplies(elements: Seq[_], contractor: SuppliesContractor[_])
 }
 

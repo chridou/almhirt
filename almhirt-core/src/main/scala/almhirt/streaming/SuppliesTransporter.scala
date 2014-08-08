@@ -22,10 +22,10 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
   import ActorProducer._
   import InternalBrokerMessages._
 
-  def loadingBay(forSuppliesContractor: SuppliesContractor[TElement]) = new LoadingBay[TElement] {
+  def stockroom(forSuppliesContractor: SuppliesContractor[TElement]) = new Stockroom[TElement] {
     def cancelContract() { self ! CancelContract(forSuppliesContractor) }
     def offerSupplies(amount: Int) { self ! OfferSupplies(amount, forSuppliesContractor) }
-    def loadSupplies(elements: Seq[TElement]) { self ! LoadSupplies(elements, forSuppliesContractor) }
+    def loadSupplies(elements: Seq[TElement]) { self ! DeliverSupplies(elements, forSuppliesContractor) }
   }
 
   def collectingOffers(
@@ -34,7 +34,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
 
     case SignContract(contractor: SuppliesContractor[TElement]) =>
       if (!contractors(contractor)) {
-        contractor.onLoadingBay(loadingBay(contractor))
+        contractor.onStockroom(stockroom(contractor))
         context.become(collectingOffers(
           offers,
           contractors + contractor))
@@ -66,7 +66,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         contractor.onProblem(UnspecifiedProblem("[OfferSupplies(collecting)]: You are not a contractor!"))
       }
 
-    case LoadSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
+    case DeliverSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
         contractor.onProblem(UnspecifiedProblem("[LoadSupplies(collecting)]: You have not been asked to load supplies! Are you too late?"))
       } else {
@@ -86,7 +86,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
 
     case SignContract(contractor: SuppliesContractor[TElement]) =>
       if (!contractors(contractor)) {
-        contractor.onLoadingBay(loadingBay(contractor))
+        contractor.onStockroom(stockroom(contractor))
         context.become(transportingSupplies(
           deliverySchedule,
           offers,
@@ -126,7 +126,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         contractor.onProblem(UnspecifiedProblem("[OfferSupplies(transporting)]: You are not a contractor!"))
       }
 
-    case LoadSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
+    case DeliverSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
       deliverySchedule.get(contractor) match {
         case Some(amount) =>
           if (elements.size == amount) {
@@ -165,7 +165,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         toLoad
           .groupBy(identity)
           .map { case (sup, sups) => (sup, sups.size) }
-      deliveryPlan.foreach { case (sup, amount) => sup.onLoadSuppliesNow(amount) }
+      deliveryPlan.foreach { case (sup, amount) => sup.onDeliverSuppliesNow(amount) }
       context.become(transportingSupplies(deliveryPlan, rest, contractors))
     }
   }
