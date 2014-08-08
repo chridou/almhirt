@@ -38,7 +38,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
     within(1 second) {
       streams.eventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectMsg(100 millis, event)
     }
   }
@@ -52,8 +52,8 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
     within(1 second) {
       streams.eventStream.produceTo(consumer)
-      Stillage(List[Event](event1)).supply(streams.eventConsumer)
-      Stillage(List[Event](event2)).supply(streams.eventConsumer)
+      Stillage(List[Event](event1)).signContract(streams.eventConsumer)
+      Stillage(List[Event](event2)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectMsg(100 millis, event1)
       consumerProbeEvent.expectMsg(100 millis, event2)
     }
@@ -70,7 +70,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     within(1 second) {
       streams.eventStream.produceTo(consumer1)
       streams.eventStream.produceTo(consumer2)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent1.expectMsg(100 millis, event)
       consumerProbeEvent2.expectMsg(100 millis, event)
     }
@@ -84,7 +84,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[SystemEvent](consumerProbeEvent.ref)
     within(1 second) {
       streams.systemEventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectNoMsg(100 millis)
     }
   }
@@ -97,7 +97,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[DomainEvent](consumerProbeEvent.ref)
     within(1 second) {
       streams.domainEventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectNoMsg(100 millis)
     }
   }
@@ -110,7 +110,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
     within(1 second) {
       streams.eventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectMsg(100 millis, event)
     }
   }
@@ -123,7 +123,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[SystemEvent](consumerProbeEvent.ref)
     within(1 second) {
       streams.systemEventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectMsg(100 millis, event)
     }
   }
@@ -136,7 +136,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[DomainEvent](consumerProbeEvent.ref)
     within(1 second) {
       streams.domainEventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectNoMsg(100 millis)
     }
   }
@@ -149,7 +149,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
     within(1 second) {
       streams.eventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectMsg(100 millis, event)
     }
   }
@@ -162,7 +162,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[SystemEvent](consumerProbeEvent.ref)
     within(1 second) {
       streams.systemEventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectNoMsg(100 millis)
     }
   }
@@ -175,7 +175,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val consumer = DelegatingEventConsumer[DomainEvent](consumerProbeEvent.ref)
     within(1 second) {
       streams.domainEventStream.produceTo(consumer)
-      Stillage(List[Event](event)).supply(streams.eventConsumer)
+      Stillage(List[Event](event)).signContract(streams.eventConsumer)
       consumerProbeEvent.expectMsg(100 millis, event)
     }
   }
@@ -191,7 +191,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     val start = Deadline.now
     within(6 seconds) {
       streams.eventStream.produceTo(consumer)
-      Stillage(events).supply(streams.eventConsumer)
+      Stillage(events).signContract(streams.eventConsumer)
       val res = probe2.receiveN(n, 5 seconds)
       info(s"Dispatched $n in ${start.lap.defaultUnitString}.")
       res should equal(events)
@@ -221,7 +221,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       streams.eventStream.produceTo(consumerEvent)
       streams.systemEventStream.produceTo(consumerSystemEvent)
       streams.domainEventStream.produceTo(consumerDomainEvent)
-      Stillage(events).supply(streams.eventConsumer)
+      Stillage(events).signContract(streams.eventConsumer)
       val resEvent = probeEvent.receiveN(n, 5 seconds)
       val resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
       val resDomainEvent = probeDomainEvent.receiveN(n / 3, 5 seconds)
@@ -261,7 +261,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       streams.eventStream.produceTo(consumerEvent)
       streams.systemEventStream.produceTo(consumerSystemEvent)
       streams.domainEventStream.produceTo(consumerDomainEvent)
-      parts.foreach(Stillage(_).supply(streams.eventConsumer))
+      parts.foreach(Stillage(_).signContract(streams.eventConsumer))
       resEvent = probeEvent.receiveN(n, 5 seconds)
       resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
       resDomainEvent = probeDomainEvent.receiveN(n / 3, 5 seconds)
@@ -300,7 +300,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       streams.eventStream.produceTo(consumerEvent)
       streams.systemEventStream.produceTo(consumerSystemEvent)
       streams.domainEventStream.produceTo(consumerDomainEvent)
-      parts.foreach(Stillage(_).supply(streams.eventConsumer))
+      parts.foreach(Stillage(_).signContract(streams.eventConsumer))
       resEvent = probeEvent.receiveN(n, 5 seconds)
       resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
       resDomainEvent = probeDomainEvent.receiveN(n / 3, 5 seconds)

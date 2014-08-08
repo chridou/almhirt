@@ -1,5 +1,5 @@
 package almhirt.streaming
 
 trait Supplier[TElement] {
-  def supply(trader: SuppliesTrader[TElement]) 
+  def signContract(trader: SuppliesBroker[TElement]) 
 }

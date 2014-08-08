@@ -6,10 +6,10 @@ import org.reactivestreams.api.Producer
 import almhirt.common._
 
 object SuppliesTransporter {
-  def apply[TElement](actor: ActorRef): (SuppliesTrader[TElement], Producer[TElement]) = {
-    (new SuppliesTrader[TElement] {
+  def apply[TElement](actor: ActorRef): (SuppliesBroker[TElement], Producer[TElement]) = {
+    (new SuppliesBroker[TElement] {
       def signContract(contractor: SuppliesContractor[TElement]) {
-        actor ! InternalTraderMessages.SignContract(contractor)
+        actor ! InternalBrokerMessages.SignContract(contractor)
       }
     },
       ActorProducer[TElement](actor))
@@ -20,7 +20,7 @@ object SuppliesTransporter {
 
 private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with ActorProducer[TElement] with ActorLogging {
   import ActorProducer._
-  import InternalTraderMessages._
+  import InternalBrokerMessages._
 
   def loadingBay(forSuppliesContractor: SuppliesContractor[TElement]) = new LoadingBay[TElement] {
     def cancelContract() { self ! CancelContract(forSuppliesContractor) }

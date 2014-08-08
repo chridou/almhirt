@@ -13,11 +13,11 @@ trait CloseableStreams {
 }
 
 trait CanDispatchEvents {
-  def eventConsumer: SuppliesTrader[Event]
+  def eventConsumer: SuppliesBroker[Event]
 }
 
 trait CanDispatchCommands {
-  def commandConsumer: SuppliesTrader[Command]
+  def commandConsumer: SuppliesBroker[Command]
 }
 
 trait EventStreams {

@@ -5,7 +5,7 @@ import akka.stream.actor.ActorProducer
 import org.reactivestreams.api.Producer
 import almhirt.common._
 
-trait SuppliesTrader[TElement] {
+trait SuppliesBroker[TElement] {
   def signContract(contractor: SuppliesContractor[TElement]): Unit
 }
 
@@ -25,7 +25,7 @@ trait LoadingBay[TElement] {
 
 }
 
-private[almhirt] object InternalTraderMessages {
+private[almhirt] object InternalBrokerMessages {
   import scala.language.existentials
   final case class SignContract(contractor: SuppliesContractor[_])
   final case class CancelContract(contractor: SuppliesContractor[_])
