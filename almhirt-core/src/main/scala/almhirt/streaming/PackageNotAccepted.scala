@@ -2,16 +2,16 @@ package almhirt.streaming
 
 import almhirt.tracking.TrackingTicket
 
-sealed trait PackageNotAccepted
+sealed trait DeliveryJobNotAccepted
 
-case object UntrackedPackageNotAccepted extends PackageNotAccepted
-final case class TrackedPackageNotAccepted(ticket: TrackingTicket) extends PackageNotAccepted
+case object UntrackedDeliveryJobNotAccepted extends DeliveryJobNotAccepted
+final case class TrackedDeliveryJobNotAccepted(ticket: TrackingTicket) extends DeliveryJobNotAccepted
 
-object PackageNotAccepted {
-  def apply(): PackageNotAccepted = UntrackedPackageNotAccepted
-  def apply(ticket: Option[TrackingTicket]): PackageNotAccepted =
+object DeliveryJobNotAccepted {
+  def apply(): DeliveryJobNotAccepted = UntrackedDeliveryJobNotAccepted
+  def apply(ticket: Option[TrackingTicket]): DeliveryJobNotAccepted =
     ticket match {
-      case Some(t) => TrackedPackageNotAccepted(t)
-      case None => UntrackedPackageNotAccepted
+      case Some(t) => TrackedDeliveryJobNotAccepted(t)
+      case None => UntrackedDeliveryJobNotAccepted
     }
 }

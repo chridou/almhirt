@@ -14,20 +14,17 @@ trait VillagePostOffice[TElement] extends PostOffice[TElement]
 class VillagePostOfficeStrategyFactory[TElement] extends PostOfficeStrategyFactory[TElement] {
   type MyStash = Vector[(Seq[TElement], Option[TrackingTicket], ActorRef)]
 
-  def create(stockroom: Stockroom[TElement], maxBufferSize: Int): PostOfficeStrategy[TElement] = {
+  def create(stockroom: Stockroom[TElement], maxPackageBufferSize: Int): PostOfficeStrategy[TElement] = {
     var myStash: MyStash = Vector.empty
-    var buffered: Int = 0
-
+ 
     new PostOfficeStrategy[TElement] {
       def stash(elements: Seq[TElement], ticket: Option[TrackingTicket], notify: ActorRef) = {
         if (!elements.isEmpty) {
-          val numElementsToAdd = elements.size
-          if (numElementsToAdd + buffered <= maxBufferSize) {
-            stockroom.offerSupplies(numElementsToAdd)
-            buffered = buffered + numElementsToAdd
+          if (myStash.size < maxPackageBufferSize) {
+            stockroom.offerSupplies(elements.size)
             myStash = myStash :+ (elements, ticket, notify)
           } else {
-            notify ! PackageNotAccepted(ticket)
+            notify ! DeliveryJobNotAccepted(ticket)
           }
         } else {
           notify ! DeliveryJobDone(ticket)
@@ -37,7 +34,6 @@ class VillagePostOfficeStrategyFactory[TElement] extends PostOfficeStrategyFacto
       def deliverToBroker(amount: Int) {
         val (rest, toDeliver, notifies) = deliverFromPackages(myStash, amount)
         stockroom.deliverSupplies(toDeliver)
-        buffered = buffered - toDeliver.size
         notifies()
         myStash = rest
       }

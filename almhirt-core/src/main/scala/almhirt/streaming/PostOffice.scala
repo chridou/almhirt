@@ -4,13 +4,15 @@ import akka.actor._
 import almhirt.common._
 import almhirt.tracking.TrackingTicket
 
+/** Intended to send small sequences of TElement where each Seq[TElement] is treated as an undivisible unit */
 trait PostOffice[TElement] {
-  def deliver(blister: Seq[TElement], notify: ActorRef)
-  def deliverTracked(blister: Seq[TElement], ticket: TrackingTicket, notify: ActorRef)
+  def deliver(elements: Seq[TElement], notify: ActorRef)
+  def deliverTracked(elements: Seq[TElement], ticket: TrackingTicket, notify: ActorRef)
 }
 
 trait PostOfficeStrategyFactory[TElement] {
-  def create(stockroom: Stockroom[TElement], maxBufferSize: Int): PostOfficeStrategy[TElement]
+  /** maxPackageBuffer is the number of Seq[TElements] that can be buffered */
+  def create(stockroom: Stockroom[TElement], maxPackageBufferSize: Int): PostOfficeStrategy[TElement]
 }
 
 /** Does not have to be thread safe. The PostOffice has to handle the strategy with care. */
