@@ -9,7 +9,7 @@ object SuppliesTransporter {
   def apply[TElement](actor: ActorRef): (SuppliesBroker[TElement], Producer[TElement]) = {
     (new SuppliesBroker[TElement] {
       def signContract(contractor: SuppliesContractor[TElement]) {
-        actor ! InternalBrokerMessages.SignContract(contractor)
+        actor ! InternalBrokerMessages.InternalSignContract(contractor)
       }
     },
       ActorProducer[TElement](actor))
@@ -23,16 +23,16 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
   import InternalBrokerMessages._
 
   def stockroom(forSuppliesContractor: SuppliesContractor[TElement]) = new Stockroom[TElement] {
-    def cancelContract() { self ! CancelContract(forSuppliesContractor) }
-    def offerSupplies(amount: Int) { self ! OfferSupplies(amount, forSuppliesContractor) }
-    def loadSupplies(elements: Seq[TElement]) { self ! DeliverSupplies(elements, forSuppliesContractor) }
+    def cancelContract() { self ! InternalCancelContract(forSuppliesContractor) }
+    def offerSupplies(amount: Int) { self ! InternalOfferSupplies(amount, forSuppliesContractor) }
+    def deliverSupplies(elements: Seq[TElement]) { self ! InternalDeliverSupplies(elements, forSuppliesContractor) }
   }
 
   def collectingOffers(
     offers: Vector[SuppliesContractor[TElement]],
     contractors: Set[SuppliesContractor[TElement]]): Receive = {
 
-    case SignContract(contractor: SuppliesContractor[TElement]) =>
+    case InternalSignContract(contractor: SuppliesContractor[TElement]) =>
       if (!contractors(contractor)) {
         contractor.onStockroom(stockroom(contractor))
         context.become(collectingOffers(
@@ -42,7 +42,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         contractor.onProblem(UnspecifiedProblem("[SignContract(collecting)]: You already a contractor!"))
       }
 
-    case CancelContract(contractor: SuppliesContractor[TElement]) =>
+    case InternalCancelContract(contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
         //        contractor.onContractExpired()
         context.become(collectingOffers(
@@ -52,7 +52,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         contractor.onProblem(UnspecifiedProblem("[CancelContract(collecting)]: You are not a contractor!"))
       }
 
-    case OfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
+    case InternalOfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
         val newOffers = offers ++ Vector.fill(amount)(contractor)
         if (totalDemand > 0 && !newOffers.isEmpty) {
@@ -66,7 +66,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         contractor.onProblem(UnspecifiedProblem("[OfferSupplies(collecting)]: You are not a contractor!"))
       }
 
-    case DeliverSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
+    case InternalDeliverSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
         contractor.onProblem(UnspecifiedProblem("[LoadSupplies(collecting)]: You have not been asked to load supplies! Are you too late?"))
       } else {
@@ -84,7 +84,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
     offers: Vector[SuppliesContractor[TElement]],
     contractors: Set[SuppliesContractor[TElement]]): Receive = {
 
-    case SignContract(contractor: SuppliesContractor[TElement]) =>
+    case InternalSignContract(contractor: SuppliesContractor[TElement]) =>
       if (!contractors(contractor)) {
         contractor.onStockroom(stockroom(contractor))
         context.become(transportingSupplies(
@@ -95,7 +95,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         contractor.onProblem(UnspecifiedProblem("[SignContract(transporting)]: You already a contractor!"))
       }
 
-    case CancelContract(contractor: SuppliesContractor[TElement]) =>
+    case InternalCancelContract(contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
         //        contractor.onContractExpired()
         context.become(transportingSupplies(
@@ -106,7 +106,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         contractor.onProblem(UnspecifiedProblem("[CancelContract(transporting)]: You are not a contractor!"))
       }
 
-    case OfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
+    case InternalOfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
         val newOffers = offers ++ Vector.fill(amount)(contractor)
         if (!deliverySchedule.isEmpty) {
@@ -126,7 +126,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
         contractor.onProblem(UnspecifiedProblem("[OfferSupplies(transporting)]: You are not a contractor!"))
       }
 
-    case DeliverSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
+    case InternalDeliverSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
       deliverySchedule.get(contractor) match {
         case Some(amount) =>
           if (elements.size == amount) {

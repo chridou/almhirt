@@ -21,15 +21,15 @@ trait SuppliesContractor[TElement] {
 trait Stockroom[TElement] {
   def cancelContract(): Unit
   def offerSupplies(amount: Int): Unit
-  def loadSupplies(elements: Seq[TElement]): Unit
+  def deliverSupplies(elements: Seq[TElement]): Unit
 
 }
 
 private[almhirt] object InternalBrokerMessages {
   import scala.language.existentials
-  final case class SignContract(contractor: SuppliesContractor[_])
-  final case class CancelContract(contractor: SuppliesContractor[_])
-  final case class OfferSupplies(amount: Int, contractor: SuppliesContractor[_])
-  final case class DeliverSupplies(elements: Seq[_], contractor: SuppliesContractor[_])
+  final case class InternalSignContract(contractor: SuppliesContractor[_])
+  final case class InternalCancelContract(contractor: SuppliesContractor[_])
+  final case class InternalOfferSupplies(amount: Int, contractor: SuppliesContractor[_])
+  final case class InternalDeliverSupplies(elements: Seq[_], contractor: SuppliesContractor[_])
 }
 

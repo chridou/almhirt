@@ -19,13 +19,13 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
     var offered: Vector[TElement] = Vector.empty
 
     def offer() {
-      stockroom.foreach(bay => {
+      stockroom.foreach(stockroom => {
         val nextBatch = notYetOffered.take(packagingSize)
         notYetOffered = notYetOffered.drop(nextBatch.size)
-        bay.offerSupplies(nextBatch.size)
+        stockroom.offerSupplies(nextBatch.size)
         offered = offered ++ nextBatch
         if (offered.isEmpty && notYetOffered.isEmpty)
-          bay.cancelContract()
+          stockroom.cancelContract()
       })
     }
 
@@ -40,9 +40,9 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
       }
 
       def onDeliverSuppliesNow(amount: Int) {
-        stockroom.foreach(bay => {
+        stockroom.foreach(stockroom => {
           val toLoad = offered.take(amount)
-          bay.loadSupplies(toLoad)
+          stockroom.deliverSupplies(toLoad)
           offered = offered.drop(amount)
         })
         if (offered.size < packagingSize)
