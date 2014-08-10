@@ -10,11 +10,12 @@ import almhirt.tracking.TrackingTicket
  *  DeliveryJobDone notifications will be sent in the same order as the packages came in.
  */
 object VillagePostOffice {
-  def props[TElement](theBroker: SuppliesBroker[TElement], theMaxPackageBufferSize: Int) = 
-    new ActorVillagePostOffice[TElement] with PostOfficeLoop[TElement] with Actor with ActorLogging {
-    val broker = theBroker
-    val maxPackageBufferSize = theMaxPackageBufferSize 
-  }
+  def props[TElement](theBroker: SuppliesBroker[TElement], theMaxPackageBufferSize: Int): Props =
+    Props(
+      new ActorVillagePostOffice[TElement] with PostOfficeLoop[TElement] with Actor with ActorLogging {
+        val broker = theBroker
+        val maxPackageBufferSize = theMaxPackageBufferSize
+      })
 }
 
 class VillagePostOfficeStrategyFactory[TElement] extends PostOfficeStrategyFactory[TElement] {
@@ -22,7 +23,7 @@ class VillagePostOfficeStrategyFactory[TElement] extends PostOfficeStrategyFacto
 
   final def create(stockroom: Stockroom[TElement], maxPackageBufferSize: Int): PostOfficeStrategy[TElement] = {
     var myStash: MyStash = Vector.empty
- 
+
     new PostOfficeStrategy[TElement] {
       def stash(elements: Seq[TElement], ticket: Option[TrackingTicket], notify: ActorRef) = {
         if (!elements.isEmpty) {

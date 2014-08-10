@@ -15,7 +15,7 @@ object SuppliesTransporter {
       ActorProducer[TElement](actor))
   }
 
-  def props(): Props = Props(new SuppliesTransporterImpl())
+  def props[TElement](): Props = Props(new SuppliesTransporterImpl[TElement]())
 }
 
 private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with ActorProducer[TElement] with ActorLogging {

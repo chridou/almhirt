@@ -145,11 +145,11 @@ trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
  *  
  */
 trait PostOfficeLoop[TElement] { me: ActorPostOffice[TElement] with Actor =>
-  private val myAfterInit: Receive = {
+  private val mySendLoop: Receive = {
     case PostOfficeInternal.InternalSendPackage(elements: Seq[TElement], ticket, toNotify) =>
       this.send(toNotify, ticket, elements)
   }
 
-  final override val afterInit = myAfterInit
+  final override val afterInit = mySendLoop
 
 }
