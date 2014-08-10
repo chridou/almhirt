@@ -9,12 +9,18 @@ import almhirt.tracking.TrackingTicket
  * 	Packages will be sent in the order they are received. After a package has been sent, a DeliveryJobDone is sent.
  *  DeliveryJobDone notifications will be sent in the same order as the packages came in.
  */
-trait VillagePostOffice[TElement] extends PostOffice[TElement]
+object VillagePostOffice {
+  def props[TElement](theBroker: SuppliesBroker[TElement], theMaxPackageBufferSize: Int) = 
+    new ActorVillagePostOffice[TElement] with PostOfficeLoop[TElement] with Actor with ActorLogging {
+    val broker = theBroker
+    val maxPackageBufferSize = theMaxPackageBufferSize 
+  }
+}
 
 class VillagePostOfficeStrategyFactory[TElement] extends PostOfficeStrategyFactory[TElement] {
-  type MyStash = Vector[(Seq[TElement], Option[TrackingTicket], ActorRef)]
+  private type MyStash = Vector[(Seq[TElement], Option[TrackingTicket], ActorRef)]
 
-  def create(stockroom: Stockroom[TElement], maxPackageBufferSize: Int): PostOfficeStrategy[TElement] = {
+  final def create(stockroom: Stockroom[TElement], maxPackageBufferSize: Int): PostOfficeStrategy[TElement] = {
     var myStash: MyStash = Vector.empty
  
     new PostOfficeStrategy[TElement] {
@@ -59,9 +65,9 @@ class VillagePostOfficeStrategyFactory[TElement] extends PostOfficeStrategyFacto
 }
 
 trait ActorVillagePostOffice[TElement] extends ActorPostOffice[TElement] { me: Actor with ActorLogging =>
-  def maxBufferSize: Int
+  def maxPackageBufferSize: Int
   protected final override def createStrategy(stockroom: Stockroom[TElement]) =
-    new VillagePostOfficeStrategyFactory[TElement]().create(stockroom, maxBufferSize)
+    new VillagePostOfficeStrategyFactory[TElement]().create(stockroom, maxPackageBufferSize)
 }
 
 

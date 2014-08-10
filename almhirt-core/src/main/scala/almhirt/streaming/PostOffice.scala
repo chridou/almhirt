@@ -3,11 +3,29 @@ package almhirt.streaming
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking.TrackingTicket
+import almhirt.tracking.TrackingTicket
 
 /** Intended to send small sequences of TElement where each Seq[TElement] is treated as an undivisible unit */
 trait PostOffice[TElement] {
-  def deliver(elements: Seq[TElement], notify: ActorRef)
-  def deliverTracked(elements: Seq[TElement], ticket: TrackingTicket, notify: ActorRef)
+  def deliver(elements: Seq[TElement], notify: ActorRef, ticket: Option[TrackingTicket])
+
+  final def deliverUntracked(notify: ActorRef, elements: TElement*) {
+    deliver(elements, notify, None)
+  }
+
+  final def deliverTracked(notify: ActorRef, ticket: TrackingTicket, elements: TElement*) {
+    deliver(elements, notify, Some(ticket))
+  }
+}
+
+object PostOffice {
+  def apply[TElement](actor: ActorRef): PostOffice[TElement] = {
+    new PostOffice[TElement] {
+      def deliver(elements: Seq[TElement], notify: ActorRef, ticket: Option[TrackingTicket]) {
+        actor ! PostOfficeInternal.InternalSendPackage(elements, ticket, notify)
+      }
+    }
+  }
 }
 
 trait PostOfficeStrategyFactory[TElement] {
@@ -27,11 +45,14 @@ private[almhirt] object PostOfficeInternal {
   final case class InternalDeliverSuppliesNow(amount: Int)
   final case class InternalOnProblem(problem: Problem)
   case object InternalContractExpired
+
+  final case class InternalSendPackage(elements: Seq[_], ticket: Option[TrackingTicket], toNotify: ActorRef)
 }
 
-/** Base trait for a PostOffice.
+/**
+ * Base trait for a PostOffice.
  *  Has the required logic to operate via a configurable strategy.
- *  
+ *
  *  _Users must not change state via context.become but use ActorPostOffice#become_
  */
 trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
@@ -66,16 +87,17 @@ trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
     }
   }
 
-  final protected def send(notify: ActorRef, elements: TElement*) {
-    if (stockroom != null)
-      strategy.stash(elements, None, notify)
-    else
-      sys.error("The post office is closed.")
+  final protected def sendUntracked(notify: ActorRef, elements: TElement*) {
+    send(notify, None, elements)
   }
 
   final protected def sendTracked(notify: ActorRef, ticket: TrackingTicket, elements: TElement*) {
+    send(notify, Some(ticket), elements)
+  }
+
+  final protected def send(notify: ActorRef, ticket: Option[TrackingTicket], elements: Seq[TElement]) {
     if (stockroom != null)
-      strategy.stash(elements, Some(ticket), notify)
+      strategy.stash(elements, ticket, notify)
     else
       sys.error("The post office is closed.")
   }
@@ -114,10 +136,20 @@ trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
   }
 
   final override def receive: Receive = initPostOffice()
-  
+
   /** This is the first user state that will be entered after initialization */
   def afterInit: Receive
+}
 
+/** Add this trait to a PostOffice to make it an actor that does nothing else then taking packages and notifying the sender. 
+ *  
+ */
+trait PostOfficeLoop[TElement] { me: ActorPostOffice[TElement] with Actor =>
+  private val myAfterInit: Receive = {
+    case PostOfficeInternal.InternalSendPackage(elements: Seq[TElement], ticket, toNotify) =>
+      this.send(toNotify, ticket, elements)
+  }
 
+  final override val afterInit = myAfterInit
 
 }
