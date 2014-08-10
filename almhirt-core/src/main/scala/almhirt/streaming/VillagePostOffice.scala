@@ -13,7 +13,7 @@ object VillagePostOffice {
   def props[TElement](theBroker: SuppliesBroker[TElement], theMaxPackageBufferSize: Int): Props =
     Props(
       new ActorVillagePostOffice[TElement] with PostOfficeLoop[TElement] with Actor with ActorLogging {
-        val broker = theBroker
+        def broker = theBroker
         val maxPackageBufferSize = theMaxPackageBufferSize
       })
 }

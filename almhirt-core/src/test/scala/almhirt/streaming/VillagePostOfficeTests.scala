@@ -20,19 +20,39 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)
+    producer.produceTo(consumer)
 
     val sample = "1" :: "2" :: "3" :: Nil
-    
+
     val probe = TestProbe()
     within(1 second) {
-      postOffice.deliverUntracked(probe.ref, sample:_*)
+      postOffice.deliverUntracked(probe.ref, sample: _*)
       probe.expectMsgType[DeliveryJobDone]
       val res = consumerProbe.receiveN(3)
       res should equal(sample)
     }
   }
 
+  val bigN = 10
+  val pSize = 3
+  it should s"dispatch a many packages($bigN) of the same size($pSize) package" in { fixture =>
+    val FixtureParam(postOffice, producer) = fixture
+    val consumerProbe = TestProbe()
+    val consumer = DelegatingConsumer[String](consumerProbe.ref)
+    producer.produceTo(consumer)
 
+    val samples = (1 to (bigN * 3)).map(_.toString).grouped(bigN)
+
+    val probe = TestProbe()
+    within(1 second) {
+      samples.foreach(sample => postOffice.deliverUntracked(probe.ref, sample: _*))
+      val acks = probe.receiveWhile(3 seconds){ case m: DeliveryJobDone => m }
+      acks should have size(bigN)
+      
+      val res = consumerProbe.receiveN(3)
+      res should equal("s")
+    }
+  }
   private val currentTestId = new java.util.concurrent.atomic.AtomicInteger(1)
   def nextTestId = currentTestId.getAndIncrement()
 
@@ -40,9 +60,9 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
 
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId
-    val transporterActor = system.actorOf(SuppliesTransporter.props[String](), s"sptr-$testId")
+    val transporterActor = system.actorOf(SuppliesTransporter.props[String](), s"transporter-$testId")
     val (broker, producer) = SuppliesTransporter[String](transporterActor)
-    val postOfficeActor = system.actorOf(VillagePostOffice.props[String](broker, 16), s"vpo-$testId")
+    val postOfficeActor = system.actorOf(VillagePostOffice.props[String](broker, 16), s"village-post-office-$testId")
     val postOffice = PostOffice[String](postOfficeActor)
     val fixture = FixtureParam(postOffice, producer)
     try {

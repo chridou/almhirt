@@ -44,7 +44,6 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
 
     case InternalCancelContract(contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
-        //        contractor.onContractExpired()
         context.become(collectingOffers(
           offers.filterNot(_ == contractor),
           contractors - contractor))
@@ -53,10 +52,10 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case InternalOfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
-      if (contractors(contractor)) {
+       if (contractors(contractor)) {
         val newOffers = offers ++ Vector.fill(amount)(contractor)
-        if (totalDemand > 0 && !newOffers.isEmpty) {
-          callForSupplies(newOffers, contractors)
+         if (totalDemand > 0 && !newOffers.isEmpty) {
+         callForSupplies(newOffers, contractors)
         } else {
           context.become(collectingOffers(
             newOffers,
@@ -74,7 +73,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case Request(amount) =>
-      if (!offers.isEmpty) {
+     if (!offers.isEmpty) {
         callForSupplies(offers, contractors)
       }
   }
@@ -97,7 +96,6 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
 
     case InternalCancelContract(contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
-        //        contractor.onContractExpired()
         context.become(transportingSupplies(
           deliverySchedule - contractor,
           offers.filterNot(_ == contractor),
@@ -149,8 +147,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case Request(amount) =>
-      ()
-
+     ()
   }
 
   def receive: Receive = collectingOffers(Vector.empty, Set.empty)
@@ -164,7 +161,8 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       val deliveryPlan =
         toLoad
           .groupBy(identity)
-          .map { case (sup, sups) => (sup, sups.size) }
+          .map { case (sup, sups) => (sup, sups.size) }      
+
       deliveryPlan.foreach { case (sup, amount) => sup.onDeliverSuppliesNow(amount) }
       context.become(transportingSupplies(deliveryPlan, rest, contractors))
     }

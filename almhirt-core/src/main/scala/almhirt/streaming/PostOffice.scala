@@ -64,12 +64,10 @@ trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
   protected def createStrategy(stockroom: Stockroom[TElement]): PostOfficeStrategy[TElement]
 
   private var stockroom: Stockroom[TElement] = null
-  private var internalHandlerAppendix: Receive = null
+  private var internalHandlerAppendix: Receive = internalUncontractedHandler
   private var strategy: PostOfficeStrategy[TElement] = null
-
-  broker.signContract(contractor)
-
-  def contractor = new SuppliesContractor[TElement] {
+  
+  broker.signContract(new SuppliesContractor[TElement] {
     def onProblem(problem: Problem) = {
       self ! InternalOnProblem(problem)
     }
@@ -85,7 +83,7 @@ trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
     def onContractExpired() = {
       self ! InternalContractExpired
     }
-  }
+  })
 
   final protected def sendUntracked(notify: ActorRef, elements: TElement*) {
     send(notify, None, elements)
@@ -100,6 +98,11 @@ trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
       strategy.stash(elements, ticket, notify)
     else
       sys.error("The post office is closed.")
+  }
+  
+  /** Users must change state only via this method! */
+  protected def become(handler: Receive, discardOld: Boolean = true) {
+    context.become(handler orElse internalHandlerAppendix, discardOld)
   }
 
   private def internalContractedHandler: Receive = {
@@ -122,11 +125,6 @@ trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
       sys.error("I don't have a contract that could have expired.")
   }
 
-  /** Users must change state only via this method! */
-  protected def become(handler: Receive, discardOld: Boolean = true) {
-    context.become(handler orElse internalHandlerAppendix, discardOld)
-  }
-
   private def initPostOffice(): Receive = {
     case InternalNewStockroom(stockroom: Stockroom[TElement]) =>
       this.stockroom = stockroom
@@ -147,7 +145,7 @@ trait ActorPostOffice[TElement] { me: Actor with ActorLogging =>
 trait PostOfficeLoop[TElement] { me: ActorPostOffice[TElement] with Actor =>
   private val mySendLoop: Receive = {
     case PostOfficeInternal.InternalSendPackage(elements: Seq[TElement], ticket, toNotify) =>
-      this.send(toNotify, ticket, elements)
+     this.send(toNotify, ticket, elements)
   }
 
   final override val afterInit = mySendLoop
