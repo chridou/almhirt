@@ -12,9 +12,23 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
   def this() = this(ActorSystem("VillagePostOfficeTests"))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
-  implicit val ccuad = CanCreateUuidsAndDateTimes()
+
+  val villageOfficeBufferSize = 16
 
   behavior of "The VillagePostOffice"
+
+  it should "dispatch an empty package" in { fixture =>
+    val FixtureParam(postOffice, producer) = fixture
+    val consumerProbe = TestProbe()
+    val consumer = DelegatingConsumer[String](consumerProbe.ref)
+    producer.produceTo(consumer)
+
+    val probe = TestProbe()
+    within(1 second) {
+      postOffice.deliverUntracked(probe.ref)
+      probe.expectMsgType[DeliveryJobDone]
+    }
+  }
 
   it should "dispatch a package" in { fixture =>
     val FixtureParam(postOffice, producer) = fixture
@@ -33,26 +47,96 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     }
   }
 
-  val bigN = 10
-  val pSize = 3
-  it should s"dispatch a many packages($bigN) of the same size($pSize) package" in { fixture =>
+  it should "dispatch 2 packages" in { fixture =>
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)
     producer.produceTo(consumer)
 
-    val samples = (1 to (bigN * 3)).map(_.toString).grouped(bigN)
+    val sample1 = "1" :: "2" :: "3" :: Nil
+    val sample2 = "4" :: "5" :: "6" :: Nil
 
     val probe = TestProbe()
     within(1 second) {
-      samples.foreach(sample => postOffice.deliverUntracked(probe.ref, sample: _*))
-      val acks = probe.receiveWhile(3 seconds){ case m: DeliveryJobDone => m }
-      acks should have size(bigN)
-      
-      val res = consumerProbe.receiveN(3)
-      res should equal("s")
+      postOffice.deliverUntracked(probe.ref, sample1: _*)
+      probe.expectMsgType[DeliveryJobDone]
+      postOffice.deliverUntracked(probe.ref, sample2: _*)
+      probe.expectMsgType[DeliveryJobDone]
+      val res = consumerProbe.receiveN(6)
+      res should equal(sample1 ++ sample2)
     }
   }
+
+  it should s"dispatch as many packages as the postoffice has space in its buffer($villageOfficeBufferSize) when waiting for each delivery" in { fixture =>
+    val FixtureParam(postOffice, producer) = fixture
+    val consumerProbe = TestProbe()
+    val consumer = DelegatingConsumer[String](consumerProbe.ref)
+    producer.produceTo(consumer)
+
+    val items = (1 to (villageOfficeBufferSize * 3)).map(_.toString)
+    val packages = items.grouped(3)
+
+    val probe = TestProbe()
+    val start = Deadline.now
+    within(1 second) {
+      packages.foreach { sample =>
+        postOffice.deliverUntracked(probe.ref, sample: _*)
+        probe.expectMsgType[DeliveryJobDone]
+      }
+      val res = consumerProbe.receiveN(villageOfficeBufferSize * 3)
+      info(s"Took ${start.lap.defaultUnitString}")
+      res should equal(items)
+    }
+  }
+
+  it should s"dispatch as many packages as the postoffice has space in its buffer($villageOfficeBufferSize)" in { fixture =>
+    val FixtureParam(postOffice, producer) = fixture
+    val consumerProbe = TestProbe()
+    val consumer = DelegatingConsumer[String](consumerProbe.ref)
+    producer.produceTo(consumer)
+
+    val items = (1 to (villageOfficeBufferSize * 3)).map(_.toString)
+    val packages = items.grouped(3)
+
+    val probe = TestProbe()
+    val start = Deadline.now
+    within(1 seconds) {
+      packages.foreach(sample => postOffice.deliverUntracked(probe.ref, sample: _*))
+      val acks = probe.receiveN(villageOfficeBufferSize)
+      info(s"${acks.size} delivery status messages received.")
+      acks.collect { case m: DeliveryJobDone => m } should have size (villageOfficeBufferSize)
+
+      val res = consumerProbe.receiveN(villageOfficeBufferSize * 3)
+      info(s"Took ${start.lap.defaultUnitString}")
+      res should equal(items)
+    }
+  }
+
+  val bigN = 1000
+  val pSize = 3
+  it should s"dispatch many packages($bigN) of the same size($pSize) when waiting for each delivery" in { fixture =>
+    val FixtureParam(postOffice, producer) = fixture
+    val consumerProbe = TestProbe()
+    val consumer = DelegatingConsumer[String](consumerProbe.ref)
+    producer.produceTo(consumer)
+
+    val items = (1 to (bigN * pSize)).map(_.toString)
+    val packages = items.grouped(pSize)
+
+    val probe = TestProbe()
+    val start = Deadline.now
+    within(3 seconds) {
+      packages.foreach { sample =>
+        postOffice.deliverUntracked(probe.ref, sample: _*)
+        probe.expectMsgType[DeliveryJobDone]
+      }
+
+      val res = consumerProbe.receiveN(bigN * pSize)
+      info(s"Took ${start.lap.defaultUnitString}")
+      res should equal(items)
+    }
+  }
+
   private val currentTestId = new java.util.concurrent.atomic.AtomicInteger(1)
   def nextTestId = currentTestId.getAndIncrement()
 
@@ -62,7 +146,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val testId = nextTestId
     val transporterActor = system.actorOf(SuppliesTransporter.props[String](), s"transporter-$testId")
     val (broker, producer) = SuppliesTransporter[String](transporterActor)
-    val postOfficeActor = system.actorOf(VillagePostOffice.props[String](broker, 16), s"village-post-office-$testId")
+    val postOfficeActor = system.actorOf(VillagePostOffice.props[String](broker, villageOfficeBufferSize), s"village-post-office-$testId")
     val postOffice = PostOffice[String](postOfficeActor)
     val fixture = FixtureParam(postOffice, producer)
     try {
@@ -78,5 +162,5 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
   override def afterAll() {
     TestKit.shutdownActorSystem(system)
   }
-
 }
+

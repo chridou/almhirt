@@ -15,6 +15,8 @@ object VillagePostOffice {
       new ActorVillagePostOffice[TElement] with PostOfficeLoop[TElement] with Actor with ActorLogging {
         def broker = theBroker
         val maxPackageBufferSize = theMaxPackageBufferSize
+        
+        override def preStart() { super.preStart() }
       })
 }
 

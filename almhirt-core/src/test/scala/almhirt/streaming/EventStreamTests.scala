@@ -193,7 +193,8 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       streams.eventStream.produceTo(consumer)
       Stillage(events).signContract(streams.eventConsumer)
       val res = probe2.receiveN(n, 5 seconds)
-      info(s"Dispatched $n in ${start.lap.defaultUnitString}.")
+      val time = start.lap
+      info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
       res should equal(events)
     }
   }
@@ -225,7 +226,8 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       val resEvent = probeEvent.receiveN(n, 5 seconds)
       val resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
       val resDomainEvent = probeDomainEvent.receiveN(n / 3, 5 seconds)
-      info(s"Dispatched $n in ${start.lap.defaultUnitString}.")
+      val time = start.lap
+      info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
       resEvent should equal(events)
       resSystemEvent should equal(events.collect { case m: SystemEvent => m })
       resDomainEvent should equal(events.collect { case m: DomainEvent => m })
@@ -265,7 +267,8 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       resEvent = probeEvent.receiveN(n, 5 seconds)
       resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
       resDomainEvent = probeDomainEvent.receiveN(n / 3, 5 seconds)
-      info(s"Dispatched $n in ${start.lap.defaultUnitString}.")
+      val time = start.lap
+      info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
     }
     resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.id) should equal(events)
     resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.id) should equal(events.collect { case m: SystemEvent => m })
@@ -304,13 +307,14 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       resEvent = probeEvent.receiveN(n, 5 seconds)
       resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
       resDomainEvent = probeDomainEvent.receiveN(n / 3, 5 seconds)
-      info(s"Dispatched $n in ${start.lap.defaultUnitString}.")
+      val time = start.lap
+      info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
     }
     resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.id) should equal(events)
     resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.id) should equal(events.collect { case m: SystemEvent => m })
     resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.id) should equal(events.collect { case m: DomainEvent => m })
   }
-  
+
   private val currentTestId = new java.util.concurrent.atomic.AtomicInteger(1)
   def nextTestId = currentTestId.getAndIncrement()
 
