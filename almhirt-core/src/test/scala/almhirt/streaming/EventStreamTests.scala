@@ -234,8 +234,8 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     }
   }
 
-  val nProducers = 10
-  it should s"dispatch many events(${nMsgBig * 3}) of different kinds from many($nProducers) producers on the matching streams" in { fixture =>
+  val nContractors = 10
+  it should s"dispatch many events(${nMsgBig * 3}) of different kinds from many($nContractors) contractors on the matching streams" in { fixture =>
     val FixtureParam(streams) = fixture
     val probeEvent = TestProbe()
     val probeSystemEvent = TestProbe()
@@ -250,7 +250,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       } else {
         TestDomainEvent(f"$i%07d")
       }: Event).toVector
-    val parts = events.grouped(n / nProducers)
+    val parts = events.grouped(n / nContractors)
     val consumerEvent = DelegatingEventConsumer[Event](probeEvent.ref)
     val consumerSystemEvent = DelegatingEventConsumer[SystemEvent](probeSystemEvent.ref)
     val consumerDomainEvent = DelegatingEventConsumer[DomainEvent](probeDomainEvent.ref)
@@ -275,7 +275,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.id) should equal(events.collect { case m: DomainEvent => m })
   }
 
-  it should s"dispatch many events(${nMsgBig * 3}) of different kinds from really many(${nProducers * 10}) producers on the matching streams" in { fixture =>
+  it should s"dispatch many events(${nMsgBig * 3}) of different kinds from really many(${nContractors * 10}) contractors on the matching streams" in { fixture =>
     val FixtureParam(streams) = fixture
     val probeEvent = TestProbe()
     val probeSystemEvent = TestProbe()
@@ -290,7 +290,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
       } else {
         TestDomainEvent(f"$i%07d")
       }: Event).toVector
-    val parts = events.grouped(n / (nProducers * 10))
+    val parts = events.grouped(n / (nContractors * 10))
     val consumerEvent = DelegatingEventConsumer[Event](probeEvent.ref)
     val consumerSystemEvent = DelegatingEventConsumer[SystemEvent](probeSystemEvent.ref)
     val consumerDomainEvent = DelegatingEventConsumer[DomainEvent](probeDomainEvent.ref)

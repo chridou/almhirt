@@ -10,7 +10,7 @@ import almhirt.tracking.TrackingTicket
  *  DeliveryJobDone notifications will be sent in the same order as the packages came in.
  */
 object VillagePostOffice {
-  def props[TElement](theBroker: SuppliesBroker[TElement], theMaxPackageBufferSize: Int): Props =
+  def props[TElement](theBroker: StreamBroker[TElement], theMaxPackageBufferSize: Int): Props =
     Props(
       new ActorVillagePostOffice[TElement] with PostOfficeLoop[TElement] with Actor with ActorLogging {
         def broker = theBroker

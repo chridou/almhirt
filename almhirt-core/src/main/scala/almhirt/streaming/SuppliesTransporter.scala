@@ -3,22 +3,26 @@ package almhirt.streaming
 import akka.actor._
 import akka.stream.actor.ActorProducer
 import org.reactivestreams.api.Producer
+import org.reactivestreams.spi.Subscriber
 import almhirt.common._
 
-object SuppliesTransporter {
-  def apply[TElement](actor: ActorRef): (SuppliesBroker[TElement], Producer[TElement]) = {
-    (new SuppliesBroker[TElement] {
+object StreamShipper {
+  def apply[TElement](actor: ActorRef): (StreamBroker[TElement], Producer[TElement]) = {
+    (new StreamBroker[TElement] {
       def signContract(contractor: SuppliesContractor[TElement]) {
         actor ! InternalBrokerMessages.InternalSignContract(contractor)
       }
-    },
-      ActorProducer[TElement](actor))
+
+      def getSubscriber(): Subscriber[TElement] = {
+        ???
+      }
+    }, ActorProducer[TElement](actor))
   }
 
-  def props[TElement](): Props = Props(new SuppliesTransporterImpl[TElement]())
+  def props[TElement](): Props = Props(new StreamShipperImpl[TElement]())
 }
 
-private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with ActorProducer[TElement] with ActorLogging {
+private[almhirt] class StreamShipperImpl[TElement] extends Actor with ActorProducer[TElement] with ActorLogging {
   import ActorProducer._
   import InternalBrokerMessages._
 
@@ -52,10 +56,10 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case InternalOfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
-       if (contractors(contractor)) {
+      if (contractors(contractor)) {
         val newOffers = offers ++ Vector.fill(amount)(contractor)
-         if (totalDemand > 0 && !newOffers.isEmpty) {
-         callForSupplies(newOffers, contractors)
+        if (totalDemand > 0 && !newOffers.isEmpty) {
+          callForSupplies(newOffers, contractors, totalDemand)
         } else {
           context.become(collectingOffers(
             newOffers,
@@ -73,8 +77,8 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case Request(amount) =>
-     if (!offers.isEmpty) {
-        callForSupplies(offers, contractors)
+      if (!offers.isEmpty) {
+        callForSupplies(offers, contractors, totalDemand)
       }
   }
 
@@ -113,7 +117,7 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
             newOffers,
             contractors))
         } else if (totalDemand > 0 && !newOffers.isEmpty) {
-          callForSupplies(newOffers, contractors)
+          callForSupplies(newOffers, contractors, totalDemand)
         } else {
 
           context.become(collectingOffers(
@@ -147,21 +151,22 @@ private[almhirt] class SuppliesTransporterImpl[TElement] extends Actor with Acto
       }
 
     case Request(amount) =>
-     ()
+      ()
   }
 
   def receive: Receive = collectingOffers(Vector.empty, Set.empty)
 
   def callForSupplies(
     offers: Vector[SuppliesContractor[TElement]],
-    contractors: Set[SuppliesContractor[TElement]]) {
+    contractors: Set[SuppliesContractor[TElement]],
+    demand: Int) {
     if (totalDemand > 0) {
-      val toLoad = offers.take(totalDemand)
+      val toLoad = offers.take(demand)
       val rest = offers.drop(toLoad.size)
       val deliveryPlan =
         toLoad
           .groupBy(identity)
-          .map { case (sup, sups) => (sup, sups.size) }      
+          .map { case (sup, sups) => (sup, sups.size) }
 
       deliveryPlan.foreach { case (sup, amount) => sup.onDeliverSuppliesNow(amount) }
       context.become(transportingSupplies(deliveryPlan, rest, contractors))

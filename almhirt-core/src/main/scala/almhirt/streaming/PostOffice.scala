@@ -61,7 +61,7 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging =>
 
   protected case object PostOfficeClosed
 
-  protected def broker: SuppliesBroker[TElement]
+  protected def broker: StreamBroker[TElement]
   protected def createStrategy(stockroom: Stockroom[TElement]): PostOfficeStrategy[TElement]
 
   /* May only be called from the Actor's dispatcher */

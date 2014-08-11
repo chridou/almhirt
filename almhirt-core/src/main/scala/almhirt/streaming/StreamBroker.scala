@@ -1,12 +1,12 @@
 package almhirt.streaming
 
-import akka.actor._
-import akka.stream.actor.ActorProducer
-import org.reactivestreams.api.Producer
+import org.reactivestreams.api.Consumer
+import org.reactivestreams.spi.Subscriber
 import almhirt.common._
 
-trait SuppliesBroker[TElement] {
+trait StreamBroker[TElement] extends Consumer[TElement]{
   def signContract(contractor: SuppliesContractor[TElement]): Unit
+  def getSubscriber(): Subscriber[TElement]
 }
 
 

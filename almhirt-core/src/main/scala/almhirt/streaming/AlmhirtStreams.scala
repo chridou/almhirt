@@ -13,11 +13,11 @@ trait CloseableStreams {
 }
 
 trait CanDispatchEvents {
-  def eventConsumer: SuppliesBroker[Event]
+  def eventConsumer: StreamBroker[Event]
 }
 
 trait CanDispatchCommands {
-  def commandConsumer: SuppliesBroker[Command]
+  def commandConsumer: StreamBroker[Command]
 }
 
 trait EventStreams {
@@ -44,8 +44,8 @@ object AlmhirtStreams {
 
     val (eventConsumer, eventProducer) = Duct[Event].build(FlowMaterializer(MaterializerSettings()))
     
-    val eventTransporterActor = actorRefFactory.actorOf(SuppliesTransporter.props(), eventStreamConsumerName) 
-    val (eventTransIn, eventTransOut)  = SuppliesTransporter[Event](eventTransporterActor)
+    val eventTransporterActor = actorRefFactory.actorOf(StreamShipper.props(), eventStreamConsumerName) 
+    val (eventTransIn, eventTransOut)  = StreamShipper[Event](eventTransporterActor)
     eventTransOut.produceTo(eventConsumer)
     
     eventProducer.produceTo(new DevNullConsumer())
@@ -65,8 +65,8 @@ object AlmhirtStreams {
 
     val (commandConsumer, commandProducer) = Duct[Command].build(FlowMaterializer(MaterializerSettings()))
 
-    val commandTransporterActor = actorRefFactory.actorOf(SuppliesTransporter.props(), commandStreamConsumerName) 
-    val (commandTransIn, commandTransOut)  = SuppliesTransporter[Command](commandTransporterActor)
+    val commandTransporterActor = actorRefFactory.actorOf(StreamShipper.props(), commandStreamConsumerName) 
+    val (commandTransIn, commandTransOut)  = StreamShipper[Command](commandTransporterActor)
     commandTransOut.produceTo(commandConsumer)
 
     commandProducer.produceTo(new DevNullConsumer())

@@ -47,8 +47,8 @@ class SequentialPostOfficeClientTests(_system: ActorSystem) extends TestKit(_sys
 
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId
-    val transporterActor = system.actorOf(SuppliesTransporter.props[String](), s"transporter-$testId")
-    val (broker, producer) = SuppliesTransporter[String](transporterActor)
+    val transporterActor = system.actorOf(StreamShipper.props[String](), s"transporter-$testId")
+    val (broker, producer) = StreamShipper[String](transporterActor)
     val postOfficeActor = system.actorOf(VillagePostOffice.props[String](broker, villageOfficeBufferSize), s"village-post-office-$testId")
     val postOffice = PostOffice[String](postOfficeActor)
     val fixture = FixtureParam(testId, postOffice, producer)

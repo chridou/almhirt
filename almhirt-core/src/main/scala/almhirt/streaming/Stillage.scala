@@ -2,7 +2,7 @@ package almhirt.streaming
 
 import almhirt.common._
 
-/** A Stillage is a Supplier that delivers its contents to a SuppliesBroker and the cancels the contract */
+/** A Stillage is a Supplier that delivers its contents to a StreamBroker and the cancels the contract */
 object Stillage {
   def apply[TElement](contents: Seq[TElement], packagingSize: Int): Supplier[TElement] =
     new StillageImpl(contents, packagingSize)
@@ -12,7 +12,7 @@ object Stillage {
 }
 
 private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packagingSize: Int) extends Supplier[TElement] {
-  def signContract(trader: SuppliesBroker[TElement]) {
+  def signContract(trader: StreamBroker[TElement]) {
     var stockroom: Option[Stockroom[TElement]] = None
 
     var notYetOffered = contents
