@@ -17,6 +17,7 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
 
     var notYetOffered = contents
     var offered: Vector[TElement] = Vector.empty
+    var toDeliverLeft = contents.size
 
     def offer() {
       stockroom.foreach(stockroom => {
@@ -24,8 +25,6 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
         notYetOffered = notYetOffered.drop(nextBatch.size)
         stockroom.offerSupplies(nextBatch.size)
         offered = offered ++ nextBatch
-        if (offered.isEmpty && notYetOffered.isEmpty)
-          stockroom.cancelContract()
       })
     }
 
@@ -44,9 +43,12 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
           val toLoad = offered.take(amount)
           stockroom.deliverSupplies(toLoad)
           offered = offered.drop(amount)
+          toDeliverLeft -= amount
+          if (!notYetOffered.isEmpty && offered.size < packagingSize)
+            offer()
+          if (toDeliverLeft == 0)
+            stockroom.cancelContract
         })
-        if (offered.size < packagingSize)
-          offer()
       }
 
       def onContractExpired() {

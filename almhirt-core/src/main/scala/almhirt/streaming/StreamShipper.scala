@@ -8,37 +8,38 @@ import almhirt.common._
 
 object StreamShipper {
   def apply[TElement](actor: ActorRef): (StreamBroker[TElement], Producer[TElement]) = {
+    val broker =
+      new StreamBroker[TElement] {
+        def signContract(contractor: SuppliesContractor[TElement]) {
+          actor ! InternalBrokerMessages.InternalSignContract(contractor)
+        }
 
-    (new StreamBroker[TElement] {
-      def signContract(contractor: SuppliesContractor[TElement]) {
-        actor ! InternalBrokerMessages.InternalSignContract(contractor)
-      }
+        def newConsumer(): Consumer[TElement] = {
+          import InternalBrokerMessages._
+          new Consumer[TElement] {
+            def getSubscriber(): Subscriber[TElement] = {
+              val subscriberId = java.util.UUID.randomUUID().toString()
+              new Subscriber[TElement] {
+                override def onError(cause: Throwable): Unit =
+                  actor ! InternalOnError(subscriberId, cause)
 
-      def newConsumer(): Consumer[TElement] = {
-        import InternalBrokerMessages._
-        new Consumer[TElement] {
-          def getSubscriber(): Subscriber[TElement] = {
-            val subscriberId = java.util.UUID.randomUUID().toString()
-            new Subscriber[TElement] {
-              override def onError(cause: Throwable): Unit =
-                actor ! InternalOnError(subscriberId, cause)
+                override def onSubscribe(subscription: Subscription): Unit = {
+                  actor ! InternalOnSubscribe(subscriberId, subscription)
+                }
 
-              override def onSubscribe(subscription: Subscription): Unit = {
-                actor ! InternalOnSubscribe(subscriberId, subscription)
-              }
+                override def onComplete(): Unit = {
+                  actor ! InternalOnComplete(subscriberId)
+                }
 
-              override def onComplete(): Unit = {
-                actor ! InternalOnComplete(subscriberId)
-              }
-
-              override def onNext(element: TElement): Unit = {
-                actor ! InternalOnNext(subscriberId, element)
+                override def onNext(element: TElement): Unit = {
+                  actor ! InternalOnNext(subscriberId, element)
+                }
               }
             }
           }
         }
       }
-    }, ActorProducer[TElement](actor))
+    (broker, ActorProducer[TElement](actor))
   }
 
   def props[TElement](): Props = Props(new StreamShipperImpl[TElement]())
@@ -72,8 +73,9 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       this.copy(subscriptions = this.subscriptions - subscriberId)
     }
 
-    def addToBuffer(subscriberId: String, element: TElement): SubscriptionsState =
+    def addToBuffer(subscriberId: String, element: TElement): SubscriptionsState = {
       this.copy(bufferedElements = this.bufferedElements :+ (subscriberId -> element))
+    }
 
     def takeElements(demand: Int): (Vector[(String, TElement)], SubscriptionsState) = {
       val taken = bufferedElements.take(demand)
@@ -86,6 +88,12 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
   }
 
+  private var totalToDispatch = 0L
+  private var totalDispatched = 0L
+  private var totalOffered = 0L
+  private var totalDemanded = 0L
+  private var totalDelivered = 0L
+
   def collectingOffers(
     offers: Vector[SuppliesContractor[TElement]],
     contractors: Set[SuppliesContractor[TElement]],
@@ -97,6 +105,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalOnNext(subscriberId, element) =>
       if (subscriptions.isSubscribed(subscriberId)) {
+        totalToDispatch += 1
         val newSubscriptions = subscriptions.addToBuffer(subscriberId, element.asInstanceOf[TElement])
         if (totalDemand > 0) {
           if (newSubscriptions.nothingBuffered && offers.isEmpty) {
@@ -143,8 +152,9 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalOfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
+        totalOffered += amount
         val newOffers = offers ++ Vector.fill(amount)(contractor)
-        if (totalDemand > 0 && (!newOffers.isEmpty || subscriptions.isAnyBuffered)) {
+        if (!newOffers.isEmpty || subscriptions.isAnyBuffered) {
           initiateDispatch(newOffers, contractors, totalDemand, subscriptions)
         } else {
           context.become(collectingOffers(
@@ -181,6 +191,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalOnNext(subscriberId, element) =>
       if (subscriptions.isSubscribed(subscriberId)) {
+        totalToDispatch += 1
         context.become(transportingSupplies(deliverySchedule, offers, contractors, subscriptions.addToBuffer(subscriberId, element.asInstanceOf[TElement])))
       } else {
         log.warning(s"OnNext from unknown subscription $subscriberId for element $element is ignored")
@@ -218,6 +229,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalOfferSupplies(amount: Int, contractor: SuppliesContractor[TElement]) =>
       if (contractors(contractor)) {
+        totalOffered += amount
         val newOffers = offers ++ Vector.fill(amount)(contractor)
         if (!deliverySchedule.isEmpty) {
           context.become(transportingSupplies(
@@ -225,14 +237,15 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
             newOffers,
             contractors,
             subscriptions))
-        } else if (totalDemand > 0 && (!newOffers.isEmpty || subscriptions.isAnyBuffered)) {
-          initiateDispatch(newOffers, contractors, totalDemand, subscriptions)
         } else {
-          context.become(collectingOffers(
-            newOffers,
-            contractors,
-            subscriptions))
+          sys.error("This must not happen!")
         }
+        //        } else if (!newOffers.isEmpty || subscriptions.isAnyBuffered) {
+        //          sys.error("This must not happen!")
+        //          initiateDispatch(newOffers, contractors, totalDemand, subscriptions)
+        //        } else {
+        //          sys.error("This must not happen!")
+        //        }
       } else {
         contractor.onProblem(UnspecifiedProblem("[OfferSupplies(transporting)]: You are not a contractor!"))
       }
@@ -240,19 +253,22 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     case InternalDeliverSupplies(elements: Seq[TElement], contractor: SuppliesContractor[TElement]) =>
       deliverySchedule.get(contractor) match {
         case Some(amount) =>
+          totalDelivered += elements.size
           if (elements.size == amount) {
             elements.foreach(onNext)
           } else {
-            contractor.onProblem(UnspecifiedProblem("[LoadSupplies(transporting)]: You have loaded ${elements.size} elements instead of $amount. Elements have not been transported."))
+            contractor.onProblem(UnspecifiedProblem("[LoadSupplies(transporting)]: You have delivered ${elements.size} elements instead of $amount. Elements have not been transported."))
           }
           val newDeliverySchedule = deliverySchedule - contractor
-          if (newDeliverySchedule.isEmpty) {
+          if (!newDeliverySchedule.isEmpty) {
+            context.become(transportingSupplies(newDeliverySchedule, offers, contractors, subscriptions))
+          } else if (!deliverySchedule.isEmpty || subscriptions.isAnyBuffered) {
+            initiateDispatch(offers, contractors, totalDemand, subscriptions)
+          } else {
             context.become(collectingOffers(
               offers,
               contractors,
               subscriptions))
-          } else {
-            context.become(transportingSupplies(newDeliverySchedule, offers, contractors, subscriptions))
           }
 
         case None =>
@@ -260,7 +276,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       }
 
     case Request(amount) =>
-      log.info(s"R: $amount, totalDEmand: $totalDemand")
+      log.warning(s"Received RequestMore while transporting: Amount: $amount, TotalDemand: $totalDemand")
       ()
   }
 
@@ -279,6 +295,11 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       } else {
         dispatchAndCallForSupplies(offers, contractors, demand, subscriptions)
       }
+    } else {
+      context.become(collectingOffers(
+        offers,
+        contractors,
+        subscriptions))
     }
   }
 
@@ -295,7 +316,11 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
           .groupBy(identity)
           .map { case (sup, sups) => (sup, sups.size) }
 
-      deliveryPlan.foreach { case (sup, amount) => sup.onDeliverSuppliesNow(amount) }
+      deliveryPlan.foreach {
+        case (contractor, amount) =>
+          contractor.onDeliverSuppliesNow(amount)
+          totalDemanded += amount
+      }
       context.become(transportingSupplies(deliveryPlan, rest, contractors, subscriptions))
     }
   }
@@ -310,6 +335,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         case (subscriberId, element) =>
           onNext(element)
           subscriptions.signalRequestMore(subscriberId, 1)
+          totalDispatched += 1
       }
       context.become(collectingOffers(Vector.empty, contractors, newSubscriptions))
     }
@@ -330,7 +356,11 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
             .groupBy(identity)
             .map { case (sup, sups) => (sup, sups.size) }
 
-        deliveryPlan.foreach { case (sup, amount) => sup.onDeliverSuppliesNow(amount) }
+        deliveryPlan.foreach {
+          case (contractor, amount) =>
+            contractor.onDeliverSuppliesNow(amount)
+            totalDemanded += amount
+        }
         context.become(transportingSupplies(deliveryPlan, rest, contractors, subscriptions))
       } else {
         val (toDispatch, newSubscriptions) = subscriptions.takeElements(demand)
@@ -338,6 +368,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
           case (subscriberId, element) =>
             onNext(element)
             subscriptions.signalRequestMore(subscriberId, 1)
+            totalDispatched += 1
         }
         context.become(collectingOffers(offers, contractors, newSubscriptions))
       }
@@ -350,7 +381,11 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
             .groupBy(identity)
             .map { case (sup, sups) => (sup, sups.size) }
 
-        deliveryPlan.foreach { case (sup, amount) => sup.onDeliverSuppliesNow(amount) }
+        deliveryPlan.foreach {
+          case (contractor, amount) =>
+            contractor.onDeliverSuppliesNow(amount)
+            totalDemanded += amount
+        }
         context.become(transportingSupplies(deliveryPlan, rest, contractors, subscriptions))
       } else {
         val (toDispatch, newSubscriptions) = subscriptions.takeElements(demand)
@@ -358,6 +393,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
           case (subscriberId, element) =>
             onNext(element)
             subscriptions.signalRequestMore(subscriberId, 1)
+            totalDispatched += 1
         }
         context.become(collectingOffers(offers, contractors, newSubscriptions))
       }
@@ -365,6 +401,12 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   }
 
   override def postStop() {
+    log.info(s"""	|
+    				|Total to dispatch: $totalToDispatch 
+    				|Total dispatched:  $totalDispatched
+    				|Total offered:     $totalOffered
+    				|Total demanded:    $totalDemanded
+    				|Total delivered:   $totalDelivered""".stripMargin)
   }
 }
 
