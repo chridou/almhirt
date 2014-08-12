@@ -13,11 +13,11 @@ trait CloseableStreams {
 }
 
 trait CanDispatchEvents {
-  def eventConsumer: StreamBroker[Event]
+  def eventBroker: StreamBroker[Event]
 }
 
 trait CanDispatchCommands {
-  def commandConsumer: StreamBroker[Command]
+  def commandBroker: StreamBroker[Command]
 }
 
 trait EventStreams {
@@ -42,11 +42,11 @@ object AlmhirtStreams {
 
   def apply(eventStreamConsumerName: String, commandStreamConsumerName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with CloseableStreams = {
 
-    val (eventConsumer, eventProducer) = Duct[Event].build(FlowMaterializer(MaterializerSettings()))
+    val (eventBroker, eventProducer) = Duct[Event].build(FlowMaterializer(MaterializerSettings()))
     
     val eventTransporterActor = actorRefFactory.actorOf(StreamShipper.props(), eventStreamConsumerName) 
     val (eventTransIn, eventTransOut)  = StreamShipper[Event](eventTransporterActor)
-    eventTransOut.produceTo(eventConsumer)
+    eventTransOut.produceTo(eventBroker)
     
     eventProducer.produceTo(new DevNullConsumer())
 
@@ -63,11 +63,11 @@ object AlmhirtStreams {
     aggregateEventProducer.produceTo(new DevNullConsumer())
     
 
-    val (commandConsumer, commandProducer) = Duct[Command].build(FlowMaterializer(MaterializerSettings()))
+    val (commandBroker, commandProducer) = Duct[Command].build(FlowMaterializer(MaterializerSettings()))
 
     val commandTransporterActor = actorRefFactory.actorOf(StreamShipper.props(), commandStreamConsumerName) 
     val (commandTransIn, commandTransOut)  = StreamShipper[Command](commandTransporterActor)
-    commandTransOut.produceTo(commandConsumer)
+    commandTransOut.produceTo(commandBroker)
 
     commandProducer.produceTo(new DevNullConsumer())
 
@@ -85,12 +85,12 @@ object AlmhirtStreams {
 
     
     new AlmhirtStreams with CloseableStreams {
-      val eventConsumer = eventTransIn
+      val eventBroker = eventTransIn
       val eventStream = eventProducer
       val systemEventStream = systemEventProducer
       val domainEventStream = domainEventProducer
       val aggregateEventStream = aggregateEventProducer
-      val commandConsumer = commandTransIn
+      val commandBroker = commandTransIn
       val commandStream = commandProducer
       val systemCommandStream = systemCommandProducer
       val domainCommandStream = domainCommandProducer
