@@ -72,9 +72,10 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   private case class InternalArBuildResult(ar: AggregateRootState[T])
   private case class InternalBuildArFailed(error: Throwable)
 
-  private case class Commit(newState: T, events: Seq[E])
-  private case class Rejected(problem: Problem)
-  private case object Unhandled
+  private sealed trait CommandResult
+  private case class Commit(newState: T, events: Seq[E]) extends CommandResult
+  private case class Rejected(problem: Problem) extends CommandResult
+  private case object Unhandled extends CommandResult
 
   private def receiveUninitialized: Receive = {
     case ExecuteCommand(command: AggregateCommand) =>
