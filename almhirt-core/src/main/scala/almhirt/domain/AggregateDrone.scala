@@ -45,7 +45,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
    * Call from within handle*Command to apply changes.
    *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
    */
-  protected def commit(newState: T, events: Seq[E]) { self ! Commit(newState, events) }
+  protected def commit(events: Seq[E]) { self ! Commit(events) }
   /**
    * Call from within handle*Command to reject a command.
    *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
@@ -73,7 +73,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   private case class InternalBuildArFailed(error: Throwable)
 
   private sealed trait CommandResult
-  private case class Commit(newState: T, events: Seq[E]) extends CommandResult
+  private case class Commit(events: Seq[E]) extends CommandResult
   private case class Rejected(problem: Problem) extends CommandResult
   private case object Unhandled extends CommandResult
 
@@ -163,14 +163,19 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   }
 
   private def receiveWaitingForCreatingCommandResult(command: AggregateCommand): Receive = {
-    case Commit(newState, events) =>
+    case Commit(events) =>
       if (events.isEmpty) {
         context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"A creating command must result in an event. No state changes."))
         context.become(receiveAcceptingCreatingCommand)
       } else {
-        state = newState
-        context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty))
-        aggregateEventLog ! CommitAggregateEvent(events.head)
+        events.foldLeft[AggregateRootState[T]](NeverExisted) { case (acc, cur) => applyLifecycleAgnostic(acc, cur) } match {
+          case Alive(ar) =>
+            state = ar
+            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty))
+            aggregateEventLog ! CommitAggregateEvent(events.head)
+          case Dead(id, version) =>
+            onError(AggregateRootDeletedException(command.aggId, s"""Aggregate root("${id.value}";"${version.value}" has been created as deleted."""), command)
+        }
       }
 
     case Rejected(problem) =>
@@ -183,14 +188,19 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   }
 
   private def receiveWaitingForMutatingCommandResult(command: AggregateCommand): Receive = {
-    case Commit(newState, events) =>
-      state = newState
+    case Commit(events) =>
       if (events.isEmpty) {
         context.parent ! CommandExecuted(command.id, events)
         context.become(receiveAcceptingMutatingCommand)
       } else {
-        context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty))
-        aggregateEventLog ! CommitAggregateEvent(events.head)
+        events.foldLeft[TouchedTheWorld[T]](Alive(state)) { case (acc, cur) => applyEventToTouchedTheWorld(acc, cur) } match {
+          case Alive(ar) =>
+            state = ar
+            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty))
+            aggregateEventLog ! CommitAggregateEvent(events.head)
+          case Dead(id, version) =>
+            onError(AggregateRootDeletedException(command.aggId, s"""Aggregate root("${id.value}";"${version.value}" has been created as deleted."""), command)
+        }
       }
 
     case Rejected(problem) =>

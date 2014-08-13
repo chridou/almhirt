@@ -18,11 +18,11 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
     agg match {
       case Alive(a) => applyEvent(a, event)
       case NeverExisted => Alive(fromEvent(event))
-      case d: Dead => d
+      case Dead(id, v) => throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
     }
   }
 
-  def applyEvents(agg: T, events: Iterable[E]): AggregateRootState[T] =
+  def applyEvents(agg: T, events: Iterable[E]): TouchedTheWorld[T] =
     events.foldLeft(Alive(agg): TouchedTheWorld[T]) {
       case (state, next) =>
         state match {
@@ -32,6 +32,13 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
             throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
         }
     }
+  
+  final  def applyEventToTouchedTheWorld(livingAgg: TouchedTheWorld[T], event: E): TouchedTheWorld[T] =
+    livingAgg match {
+      case Alive(a) => applyEvent(a, event)
+      case Dead(id, v) => throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
+    }
+
 
   def rebuildFromHistory(events: Iterable[E]): AggregateRootState[T] =
     if (events.isEmpty) {
