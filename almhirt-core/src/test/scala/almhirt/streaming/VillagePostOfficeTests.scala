@@ -9,7 +9,7 @@ import akka.testkit._
 import org.scalatest._
 
 class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with fixture.FlatSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("VillagePostOfficeTests"))
+  def this() = this(ActorSystem("VillagePostOfficeTests", almhirt.TestConfigs.logWarningConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
 
@@ -57,7 +57,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val sample2 = "4" :: "5" :: "6" :: Nil
 
     val probe = TestProbe()
-    within(1 second) {
+    within(3 second) {
       postOffice.deliverUntracked(probe.ref, sample1: _*)
       probe.expectMsgType[DeliveryJobDone]
       postOffice.deliverUntracked(probe.ref, sample2: _*)
@@ -112,8 +112,8 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     }
   }
 
-  val bigN = 1000
-  val pSize = 3
+  val bigN = 10000
+  val pSize = 30
   it should s"dispatch many packages($bigN) of the same size($pSize) when waiting for each delivery" in { fixture =>
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
@@ -125,7 +125,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
 
     val probe = TestProbe()
     val start = Deadline.now
-    within(3 seconds) {
+    within(10 seconds) {
       packages.foreach { sample =>
         postOffice.deliverUntracked(probe.ref, sample: _*)
         probe.expectMsgType[DeliveryJobDone]
@@ -144,14 +144,15 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
 
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId
-    val transporterActor = system.actorOf(StreamShipper.props[String](), s"transporter-$testId")
-    val (broker, producer) = StreamShipper[String](transporterActor)
+    val transporterActor = system.actorOf(StreamShipper.props[String](), s"shipper-$testId")
+    val (broker, producer, stopper) = StreamShipper[String](transporterActor)
     val postOfficeActor = system.actorOf(VillagePostOffice.props[String](broker, villageOfficeBufferSize), s"village-post-office-$testId")
     val postOffice = PostOffice[String](postOfficeActor)
     val fixture = FixtureParam(postOffice, producer)
     try {
       withFixture(test.toNoArgTest(fixture))
     } finally {
+      stopper.stop()
     }
   }
 

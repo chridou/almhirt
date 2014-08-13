@@ -10,7 +10,7 @@ import akka.testkit._
 import org.scalatest._
 
 class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("EventStreamTests"))
+  def this() = this(ActorSystem("EventStreamTests", almhirt.TestConfigs.logWarningConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
@@ -360,12 +360,13 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
 
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId
-    val streams = AlmhirtStreams(s"event-trader-$testId", s"command-trader-$testId")
+    info(s"Test $testId")
+    val streams = AlmhirtStreams(s"event-broker-$testId", s"command-broker-$testId")
     val fixture = FixtureParam(streams)
     try {
       withFixture(test.toNoArgTest(fixture))
     } finally {
-      streams.closeStreams()
+      streams.stop()
     }
   }
 
