@@ -8,145 +8,213 @@ import almhirt.streaming.PostOffice
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
 
-
-object AggregateDrone {
+private[almhirt] object AggregateDroneInternalMessages {
   sealed trait AggregateDroneMessage
-  
-  case object GetManagedAggregateRoot extends AggregateDroneMessage
-  sealed trait GetManagedAggregateRootResponse extends AggregateDroneMessage
-  final case class ManagedAggregateRoot(ar: AggregateRoot) extends GetManagedAggregateRootResponse
-  final case class AggregateRootDoesNotExist(id: AggregateRootId) extends GetManagedAggregateRootResponse
-  final case class GetManagedAggregateRootFailed(id: AggregateRootId, problem: Problem) extends GetManagedAggregateRootResponse
-  
+
   final case class ExecuteCommand(command: AggregateCommand) extends AggregateDroneMessage
   sealed trait ExecuteCommandResponse extends AggregateDroneMessage
-  final case class CommandAccepted(commandId: CommandId) extends ExecuteCommandResponse
-  final case class CommandNotAccepted(commandId: CommandId, problem: Option[Problem]) extends ExecuteCommandResponse
-  
-  sealed trait CommandExecutionResult extends AggregateDroneMessage
-  final case class CommandExecuted(commandId: CommandId) extends CommandExecutionResult
-  final case class CommandNotExecuted(commandId: CommandId, problem: Problem) extends CommandExecutionResult
+  final case class CommandExecuted(commandId: CommandId, committedEvents: Seq[AggregateEvent]) extends ExecuteCommandResponse
+  final case class CommandNotExecuted(commandId: CommandId, committedEvents: Seq[AggregateEvent], problem: Problem) extends ExecuteCommandResponse
+
+  object CommandNotExecuted {
+    def apply(commandId: CommandId, problem: Problem): CommandNotExecuted =
+      CommandNotExecuted(commandId, Seq.empty, problem)
+  }
 }
 
-private[domain] object DroneInternalMessages {
-}
-
-trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with BuildsAggregateRoot[T, E] => 
-  import AggregateDrone._
-  import DroneInternalMessages._
+/**
+ * Mix in this trait to create an Actor that manages command execution for an aggregate root and commits the resulting events.
+ *  The resulting Actor is intended to be used and managed by the AgrregateRootHive.
+ */
+trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with BuildsAggregateRoot[T, E] =>
+  import AggregateDroneInternalMessages._
   import almhirt.eventlog.AggregateEventLog._
 
-  def domainEventsPostOffice: PostOffice[DomainEvent]
+  //*************
+  // User API 
+  //*************
+
   def ahContext: AlmhirtContext
-  def id: AggregateRootId
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
+
+  def handleCreatingCommand(command: AggregateCommand)
+  def handleMutatingCommand(command: AggregateCommand, state: T)
+
+  /**
+   * Call from within handle*Command to apply changes.
+   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   */
+  protected def commit(newState: T, events: Seq[E]) { self ! Commit(newState, events) }
+  /**
+   * Call from within handle*Command to reject a command.
+   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   */
+  protected def reject(problem: Problem) { self ! Rejected(problem) }
+  /**
+   * Call from within handle*Command to signal that a command cannot be handled.
+   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   */
+  protected def unhandled() { self ! Unhandled }
+
+  /** Ends with termination */
+  protected def onError(ex: AggregateRootDroneException, command: AggregateCommand, commitedEvents: Seq[E] = Seq.empty) {
+    context.parent ! CommandNotExecuted(command.id, commitedEvents, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex)))
+    throw ex
+  }
+
+  //*************
+  //   Internal 
+  //*************
+
+  private var state: T = _
 
   private case class InternalArBuildResult(ar: AggregateRootState[T])
   private case class InternalBuildArFailed(error: Throwable)
 
-  private def receiveUninitialized: Receive = {
-    case GetManagedAggregateRoot =>
-      snapshotStorage match {
-        case None => 
-          context.become(receiveRebuildFromScratch(None, true))
-          aggregateEventLog ! GetAllAggregateEventsFor(id)
-        case _ => ???
-      }
+  private case class Commit(newState: T, events: Seq[E])
+  private case class Rejected(problem: Problem)
+  private case object Unhandled
 
-    case ExecuteCommand(command) =>
-      context.parent ! CommandAccepted(command.id)
+  private def receiveUninitialized: Receive = {
+    case ExecuteCommand(command: AggregateCommand) =>
       snapshotStorage match {
-        case None => 
-          context.become(receiveRebuildFromScratch(None, true))
-          aggregateEventLog ! GetAllAggregateEventsFor(id)
-        case _ => ???
+        case None =>
+          context.become(receiveRebuildFromScratch(command))
+          aggregateEventLog ! GetAllAggregateEventsFor(command.aggId)
+        case Some(snaphots) =>
+          ???
       }
   }
 
-  private def receiveRebuildFromScratch(delayedCommand: Option[AggregateCommand], queryPending: Boolean): Receive = {
-    case GetManagedAggregateRoot =>
-      context.become(receiveRebuildFromScratch(delayedCommand, true))
-
-    case ExecuteCommand(command) if delayedCommand.isEmpty =>
-      context.parent ! CommandAccepted(command.id)
-      context.become(receiveRebuildFromScratch(Some(command), queryPending))
- 
-    case ExecuteCommand(command) if delayedCommand.isDefined =>
-      context.parent ! CommandNotAccepted(command.id, None)
-      context.become(receiveRebuildFromScratch(Some(command), queryPending))
-      
+  private def receiveRebuildFromScratch(command: AggregateCommand): Receive = {
     case FetchedAggregateEvents(eventsEnumerator) =>
-      val iteratee: Iteratee[AggregateEvent, AggregateRootState[T]] = Iteratee.fold[AggregateEvent, AggregateRootState[T]](NeverExisted) { case (acc, event) => 
-        applyLifecycleAgnostic(acc, event.asInstanceOf[E])
+      val iteratee: Iteratee[AggregateEvent, AggregateRootState[T]] = Iteratee.fold[AggregateEvent, AggregateRootState[T]](NeverExisted) {
+        case (acc, event) =>
+          applyLifecycleAgnostic(acc, event.asInstanceOf[E])
       }(ahContext.futuresContext)
-      
-      eventsEnumerator.run(iteratee).onComplete{
-        case scala.util.Success(arState) => 
+
+      eventsEnumerator.run(iteratee).onComplete {
+        case scala.util.Success(arState) =>
           self ! InternalArBuildResult(arState)
         case scala.util.Failure(error) =>
           self ! InternalBuildArFailed(error)
       }(ahContext.futuresContext)
 
-    case InternalArBuildResult(arState) =>
-      arState match {
-        case NeverExisted =>
-          context.become(receiveDoesNotExist)
-          ???
-        case d: Dead =>
-          context.become(receiveDeleted)
-          ???
-        case Alive(ar) =>
-          context.become(receiveDeleted)
-          ???
-          
-      }
-      
-    case InternalBuildArFailed(error) =>
-      val problem = UnspecifiedProblem("An error has occured rebuilding the aggregate root.", cause = Some(error))
+      context.become(receiveEvaluateRebuildResult(command))
 
-      if(queryPending) context.parent ! GetManagedAggregateRootFailed(id, problem) 
-        
-      delayedCommand.foreach(cmd => context.parent ! CommandNotExecuted(cmd.id, problem))
-      
-      context.become(receiveError(problem))
-      
     case GetAggregateEventsFailed(problem) =>
-      if(queryPending) context.parent ! GetManagedAggregateRootFailed(id, problem) 
-        
-      delayedCommand.foreach(cmd => context.parent ! CommandNotExecuted(cmd.id, problem))
-      
-      context.become(receiveError(problem))
-      
+      onError(AggregateEventStoreFailedReadingException(command.aggId, "An error has occured fetching the aggregate root events:\n$problem"), command)
+
   }
-  
+
   private def receiveRebuildFromSnapshot(delayedCommand: Option[AggregateCommand], queryPending: Boolean): Receive = {
     case _ => ???
   }
-  
-  
-  
-  private def receiveDoesNotExist: Receive = {
-    case GetManagedAggregateRoot => 
-      context.parent ! AggregateRootDoesNotExist(id) 
+
+  private def receiveEvaluateRebuildResult(command: AggregateCommand): Receive = {
+    case InternalArBuildResult(arState) =>
+      arState match {
+        case NeverExisted =>
+          if (command.aggVersion.value != 0) {
+            context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version 0 for a not yet existing aggregate root. It targets ${command.aggVersion.value}."))
+            context.become(receiveAcceptingCreatingCommand)
+          } else {
+            handleCreatingCommand(command)
+            context.become(receiveWaitingForCreatingCommandResult(command))
+          }
+        case Alive(ar) =>
+          if (command.aggVersion != ar.version) {
+            context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version ${ar.version.value}. It targets ${command.aggVersion.value}."))
+            context.become(receiveAcceptingMutatingCommand)
+          } else {
+            handleMutatingCommand(command, ar)
+            context.become(receiveWaitingForMutatingCommandResult(command))
+          }
+        case Dead(id, version) =>
+          onError(AggregateRootDeletedException(command.aggId, s"""Aggregate root("${id.value}";"${version.value}" has been deleted."""), command)
+      }
+
+    case InternalBuildArFailed(error: Throwable) =>
+      onError(RebuildAggregateRootFailedException(command.aggId, "An error has occured rebuilding the aggregate root.", error), command)
   }
 
-  
-  private def receiveDeleted: Receive = {
-    case GetManagedAggregateRoot => 
-      context.parent ! AggregateRootDoesNotExist(id) 
+  private def receiveAcceptingCreatingCommand: Receive = {
+    case ExecuteCommand(command: AggregateCommand) =>
+      if (command.aggVersion.value != 0) {
+        context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version 0 for a not yet existing aggregate root. It targets ${command.aggVersion.value}."))
+        context.become(receiveAcceptingCreatingCommand)
+      } else {
+        handleCreatingCommand(command)
+        context.become(receiveWaitingForCreatingCommandResult(command))
+      }
   }
 
-  private def receiveError(problem: Problem): Receive = {
-    case GetManagedAggregateRoot => 
-      context.parent ! GetManagedAggregateRootFailed(id, problem) 
-      
-    case ExecuteCommand(command) =>
-      context.parent ! CommandNotAccepted(command.id, Some(problem))
-     
+  private def receiveAcceptingMutatingCommand: Receive = {
+    case ExecuteCommand(command: AggregateCommand) =>
+      if (command.aggVersion != state.version) {
+        context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version ${state.version.value}. It targets ${command.aggVersion.value}."))
+        context.become(receiveAcceptingMutatingCommand)
+      } else {
+        handleMutatingCommand(command, state)
+        context.become(receiveWaitingForMutatingCommandResult(command))
+      }
   }
 
- 
-  
+  private def receiveWaitingForCreatingCommandResult(command: AggregateCommand): Receive = {
+    case Commit(newState, events) =>
+      if (events.isEmpty) {
+        context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"A creating command must result in an event. No state changes."))
+        context.become(receiveAcceptingCreatingCommand)
+      } else {
+        state = newState
+        context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty))
+        aggregateEventLog ! CommitAggregateEvent(events.head)
+      }
+
+    case Rejected(problem) =>
+      context.parent ! CommandNotExecuted(command.id, problem)
+      context.become(receiveAcceptingCreatingCommand)
+
+    case Unhandled =>
+      context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"""Could not handle command of type "${command.getClass().getName()}"."""))
+      context.become(receiveAcceptingCreatingCommand)
+  }
+
+  private def receiveWaitingForMutatingCommandResult(command: AggregateCommand): Receive = {
+    case Commit(newState, events) =>
+      state = newState
+      if (events.isEmpty) {
+        context.parent ! CommandExecuted(command.id, events)
+        context.become(receiveAcceptingMutatingCommand)
+      } else {
+        context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty))
+        aggregateEventLog ! CommitAggregateEvent(events.head)
+      }
+
+    case Rejected(problem) =>
+      context.parent ! CommandNotExecuted(command.id, problem)
+      context.become(receiveAcceptingMutatingCommand)
+
+    case Unhandled =>
+      context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"""Could not handle command of type "${command.getClass().getName()}"."""))
+      context.become(receiveAcceptingMutatingCommand)
+  }
+
+  private def receiveCommitEvents(command: AggregateCommand, inFlight: E, rest: Seq[E], done: Seq[E]): Receive = {
+    case AggregateEventCommitted(id) =>
+      val newDone = done :+ inFlight
+      rest match {
+        case Seq() =>
+          context.parent ! CommandExecuted(command.id, newDone)
+          context.become(receiveAcceptingMutatingCommand)
+        case next +: newRest =>
+          aggregateEventLog ! CommitAggregateEvent(next)
+          context.become(receiveCommitEvents(command, next, newRest, newDone))
+      }
+    case AggregateEventNotCommitted(id, problem) =>
+      onError(AggregateEventStoreFailedWritingException(command.aggId, s"The aggregate event store failed writing:\n$problem"), command, done)
+  }
+
   def receive: Receive = receiveUninitialized
 }

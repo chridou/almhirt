@@ -271,9 +271,9 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
         }
-        resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.id) should equal(events)
-        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.id) should equal(events.collect { case m: SystemEvent => m })
-        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.id) should equal(events.collect { case m: DomainEvent => m })
+        resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.value) should equal(events)
+        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.value) should equal(events.collect { case m: SystemEvent => m })
+        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.value) should equal(events.collect { case m: DomainEvent => m })
       }
 
       s"dispatch many events(${nMsgBig * 3}) of different kinds from really many(${nContractors * 10}) contractors on the matching streams" in { fixture =>
@@ -311,9 +311,9 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
         }
-        resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.id) should equal(events)
-        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.id) should equal(events.collect { case m: SystemEvent => m })
-        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.id) should equal(events.collect { case m: DomainEvent => m })
+        resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.value) should equal(events)
+        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.value) should equal(events.collect { case m: SystemEvent => m })
+        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.value) should equal(events.collect { case m: DomainEvent => m })
       }
     }
     "accessed via a consumer" should {

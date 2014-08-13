@@ -1,3 +1,3 @@
 package almhirt.common
 
-final case class CommandId(id: String) extends AnyVal
+final case class CommandId(value: String) extends AnyVal
