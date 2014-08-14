@@ -9,9 +9,9 @@ class ExecutionStateTrackerRouter(numChildren: Int, childProps: Props) extends S
   import ExecutionStateTracker._
 
   override def receive: Receive = {
-    case m: ExecutionStateChanged => dispatch(m.executionState.trackId , m)
-    case m: GetExecutionStateFor => dispatch(m.trackId, m)
-    case m: SubscribeForFinishedState => dispatch(m.trackId, m)
-    case m: UnsubscribeForFinishedState => dispatch(m.trackId, m)
+    case m: ExecutionStateChanged ⇒ dispatch(m.executionState.trackId , m)
+    case m: GetExecutionStateFor ⇒ dispatch(m.trackId, m)
+    case m: SubscribeForFinishedState ⇒ dispatch(m.trackId, m)
+    case m: UnsubscribeForFinishedState ⇒ dispatch(m.trackId, m)
   }
 }

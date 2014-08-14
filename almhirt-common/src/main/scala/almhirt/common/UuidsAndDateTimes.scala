@@ -41,7 +41,7 @@ object CanCreateUuidsAndDateTimes {
   @inline
   def createUniqueString: String = {
     val builder = new StringBuilder()
-    almhirt.converters.BinaryConverter.uuidToBytes(java.util.UUID.randomUUID()).foreach(b => addByte(b, builder))
+    almhirt.converters.BinaryConverter.uuidToBytes(java.util.UUID.randomUUID()).foreach(b ⇒ addByte(b, builder))
     builder.toString
   }
 

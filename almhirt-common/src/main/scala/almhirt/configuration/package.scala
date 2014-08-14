@@ -13,8 +13,8 @@ package object configuration {
 
     def unsafeValue[T](path: String)(implicit configExtractor: ConfigExtractor[T]): Option[T] =
       configExtractor.tryGetValue(self, path).fold(
-        fail => None,
-        succ => succ)
+        fail ⇒ None,
+        succ ⇒ succ)
 
     final def v[T](path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[T] =
       value[T](path)(configExtractor)

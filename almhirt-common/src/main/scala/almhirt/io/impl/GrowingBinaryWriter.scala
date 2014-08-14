@@ -108,11 +108,11 @@ class GrowingBinaryWriter(initialCapacity: Int, maxSize: Int, maxIncrement: Int)
   override def spawnNew(capacity: Option[Int] = None): BinaryWriter = new GrowingBinaryWriter(initialCapacity, maxSize, maxIncrement)
 
   private def createCompleteArray(from: Vector[(Array[Byte], Int)]): Array[Byte] = {
-    val size = from.foldLeft(0) { case (acc, next) => acc + next._2 }
+    val size = from.foldLeft(0) { case (acc, next) ⇒ acc + next._2 }
     val target = Array.ofDim[Byte](size)
     var offset = 0
     from foreach {
-      case (arr, count) =>
+      case (arr, count) ⇒
         System.arraycopy(arr, 0, target, offset, count)
         offset += count
     }

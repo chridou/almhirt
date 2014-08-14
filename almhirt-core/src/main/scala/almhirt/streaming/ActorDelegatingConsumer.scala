@@ -33,7 +33,7 @@ private[almhirt] class ActorDelegatingConsumerImpl(delegateTo: Option[ActorRef],
   protected var received: Int = 0
 
   def receive: Receive = {
-    case ActorConsumer.OnNext(element: Any) =>
+    case ActorConsumer.OnNext(element: Any) ⇒
       delegateTo.foreach(_ ! element)
       received += 1
       if (received == bufferSize) {
@@ -41,7 +41,7 @@ private[almhirt] class ActorDelegatingConsumerImpl(delegateTo: Option[ActorRef],
         received = 0
       }
 
-    case ActorConsumer.OnComplete =>
+    case ActorConsumer.OnComplete ⇒
       context.stop(self)
   }
 

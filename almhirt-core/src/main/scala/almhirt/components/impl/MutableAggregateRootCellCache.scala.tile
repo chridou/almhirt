@@ -1,6 +1,6 @@
 package almhirt.components.impl
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
@@ -108,9 +108,9 @@ object MutableAggregateRootCellCache {
 }
 
 class MutableAggregateRootCellCache(
-  createCell: (JUUID, Class[_]) => ActorRef,
-  killCell: ActorRef => Unit,
-  requestUnbook: Long => Unit) {
+  createCell: (JUUID, Class[_]) ⇒ ActorRef,
+  killCell: ActorRef ⇒ Unit,
+  requestUnbook: Long ⇒ Unit) {
 
   import MutableAggregateRootCellCache._
 
@@ -129,15 +129,15 @@ class MutableAggregateRootCellCache(
   private var kills = 0L
   private var confirmedKills = 0L
 
-  def bookCell(arId: JUUID, arType: Class[_], onStrangeState: String => Unit): (BookingResult, MutableAggregateRootCellCache) = {
+  def bookCell(arId: JUUID, arType: Class[_], onStrangeState: String ⇒ Unit): (BookingResult, MutableAggregateRootCellCache) = {
     val bookingResult =
       if (!deathCertificatesStillDueById.contains(arId)) {
         val bookedCell =
           cellByArId.get(arId) match {
-            case Some(cell) =>
+            case Some(cell) ⇒
               updateLastAccessTimestamp(arId)
               cell
-            case None =>
+            case None ⇒
               val newCell = createCell(arId, arType)
               cellByArId += (arId -> newCell)
               uninitializedCells += (arId -> Deadline.now)
@@ -145,9 +145,9 @@ class MutableAggregateRootCellCache(
           }
         val handleId = nextHandleId
         bookingsByArId.get(arId) match {
-          case Some(bookings) =>
+          case Some(bookings) ⇒
             bookings += handleId
-          case None =>
+          case None ⇒
             bookingsByArId += (arId -> scala.collection.mutable.HashSet(handleId))
         }
         arIdByBookingId += (handleId -> arId)
@@ -163,11 +163,11 @@ class MutableAggregateRootCellCache(
     (bookingResult, this)
   }
 
-  def unbookCell(handleId: Long, onStrangeState: String => Unit): MutableAggregateRootCellCache = {
+  def unbookCell(handleId: Long, onStrangeState: String ⇒ Unit): MutableAggregateRootCellCache = {
     arIdByBookingId.get(handleId) match {
-      case Some(arId) =>
+      case Some(arId) ⇒
         bookingsByArId.get(arId) match {
-          case Some(bookings) =>
+          case Some(bookings) ⇒
             if (bookings.contains(handleId)) {
               updateLastAccessTimestamp(arId)
               bookings -= handleId
@@ -177,10 +177,10 @@ class MutableAggregateRootCellCache(
             }
             if (bookings.isEmpty)
               bookingsByArId -= arId
-          case None =>
+          case None ⇒
             onStrangeState(s"""Unbooking of handle id $handleId for AR $arId was requested but there were no bookings.""")
         }
-      case None =>
+      case None ⇒
         onStrangeState(s"""Unbooking of handle id $handleId was requested but there is no AR booked""")
     }
     this
@@ -208,10 +208,10 @@ class MutableAggregateRootCellCache(
       doesNotExistCells -= arId
       errorneousCells -= arId
       newCellState match {
-        case CellStateUninitialized => uninitializedCells += arId -> Deadline.now
-        case CellStateError(_) => errorneousCells += arId -> Deadline.now
-        case CellStateDoesNotExist => doesNotExistCells += arId -> Deadline.now
-        case CellStateLoaded => loadedCells += arId -> Deadline.now
+        case CellStateUninitialized ⇒ uninitializedCells += arId -> Deadline.now
+        case CellStateError(_) ⇒ errorneousCells += arId -> Deadline.now
+        case CellStateDoesNotExist ⇒ doesNotExistCells += arId -> Deadline.now
+        case CellStateLoaded ⇒ loadedCells += arId -> Deadline.now
       }
     }
     this
@@ -219,14 +219,14 @@ class MutableAggregateRootCellCache(
 
   private def getCandidatesByDeadline(from: scala.collection.mutable.HashMap[JUUID, Deadline], deadline: Deadline) = {
     from.filter {
-      case (id, timestamp) =>
+      case (id, timestamp) ⇒
         timestamp > deadline && !bookingsByArId.contains(id)
     }.map(_._1)
   }
 
   private def killCandidates(candidates: Iterable[JUUID], from: scala.collection.mutable.HashMap[JUUID, Deadline]) = {
     var myKills = 0L
-    candidates.foreach { candidateId =>
+    candidates.foreach { candidateId ⇒
       val cell = cellByArId(candidateId)
       killCell(cell)
       deathCertificatesStillDueById += candidateId -> cell
@@ -248,30 +248,30 @@ class MutableAggregateRootCellCache(
     val t0 = Deadline.now
 
     var dumpLoaded = 0L
-    maxInMemoryLifeTime.foreach { lt =>
+    maxInMemoryLifeTime.foreach { lt ⇒
       val deadline = t0 - lt
       val candidates = getCandidatesByDeadline(loadedCells, deadline)
-      candidates.map(cellByArId.get).flatten.foreach { x => x ! DropCachedAggregateRoot; dumpLoaded += 1L }
+      candidates.map(cellByArId.get).flatten.foreach { x ⇒ x ! DropCachedAggregateRoot; dumpLoaded += 1L }
       candidates.size
     }
 
     val t1 = Deadline.now
 
-    val killedDoesNotExist = maxDoesNotExistAge.map { lt =>
+    val killedDoesNotExist = maxDoesNotExistAge.map { lt ⇒
       val deadline = t0 - lt
       killExpired(doesNotExistCells, deadline)
     }.getOrElse(0L)
 
     val t2 = Deadline.now
 
-    val killedInErrorState = maxDoesNotExistAge.map { lt =>
+    val killedInErrorState = maxDoesNotExistAge.map { lt ⇒
       val deadline = t0 - lt
       killExpired(errorneousCells, deadline)
     }.getOrElse(0L)
 
     val t3 = Deadline.now
 
-    val killedUninitialized = maxUninitializedAge.map { lt =>
+    val killedUninitialized = maxUninitializedAge.map { lt ⇒
       val deadline = t0 - lt
       killExpired(uninitializedCells, deadline)
     }.getOrElse(0L)
@@ -291,13 +291,13 @@ class MutableAggregateRootCellCache(
         tTotal = t4 - t0))
   }
 
-  def confirmDeath(cell: ActorRef, onStrangeState: String => Unit) {
+  def confirmDeath(cell: ActorRef, onStrangeState: String ⇒ Unit) {
     deathCertificatesStillDueByCell.get(cell) match {
-      case Some(arId) =>
+      case Some(arId) ⇒
         deathCertificatesStillDueById -= arId
         deathCertificatesStillDueByCell -= cell
         confirmedKills += 1L
-      case None =>
+      case None ⇒
         onStrangeState(s"""Unexpected death confirmation: "${cell.path.toString()}"""")
     }
   }

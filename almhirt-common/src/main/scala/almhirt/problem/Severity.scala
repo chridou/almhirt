@@ -21,13 +21,13 @@ package almhirt.problem
 sealed trait Severity extends Ordered[Severity] {
   def and(other: Severity): Severity =
     (this, other) match {
-      case (Critical, _) => Critical
-      case (_, Critical) => Critical
-      case (Major, _) => Major
-      case (_, Major) => Major
-      case (Minor, _) => Minor
-      case (_, Minor) => Minor
-      case _ => Warning
+      case (Critical, _) ⇒ Critical
+      case (_, Critical) ⇒ Critical
+      case (Major, _) ⇒ Major
+      case (_, Major) ⇒ Major
+      case (Minor, _) ⇒ Minor
+      case (_, Minor) ⇒ Minor
+      case _ ⇒ Warning
     }
   /** Used for comparison */
   def level: Int
@@ -54,11 +54,11 @@ final case object Warning extends Severity {
 object Severity {
   def fromString(str: String): almhirt.common.AlmValidation[Severity] =
     str.toLowerCase() match {
-      case "noproblem" => scalaz.Success(Warning)
-      case "minor" => scalaz.Success(Minor)
-      case "major" => scalaz.Success(Major)
-      case "critical" => scalaz.Success(Critical)
-      case x => scalaz.Failure(problemtypes.ParsingProblem(""""$str" is not a severity"""))
+      case "noproblem" ⇒ scalaz.Success(Warning)
+      case "minor" ⇒ scalaz.Success(Minor)
+      case "major" ⇒ scalaz.Success(Major)
+      case "critical" ⇒ scalaz.Success(Critical)
+      case x ⇒ scalaz.Failure(problemtypes.ParsingProblem(""""$str" is not a severity"""))
     }
 }
 

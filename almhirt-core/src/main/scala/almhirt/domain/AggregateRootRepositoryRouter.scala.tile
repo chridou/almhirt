@@ -1,6 +1,6 @@
 package almhirt.domain
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import akka.actor._
 import almhirt.base._
 import almhirt.base.SelectorBasedRouter
@@ -10,14 +10,14 @@ class AggregateRootRepositoryRouter(numChildren: Int, childProps: Props) extends
   import DomainMessages._
 
 //  override def supervisorStrategy = OneForOneStrategy() {
-//    case _: CriticalAggregateRootCellSourceException => Escalate
-//    case _ => Restart
+//    case _: CriticalAggregateRootCellSourceException ⇒ Escalate
+//    case _ ⇒ Restart
 //  }
 
   override def receive: Receive = {
-    case m: GetAggregateRoot =>
+    case m: GetAggregateRoot ⇒
       dispatch(m.arId, m)
-    case m: UpdateAggregateRoot =>
+    case m: UpdateAggregateRoot ⇒
       dispatch(m.newState.id, m)
   }
 }

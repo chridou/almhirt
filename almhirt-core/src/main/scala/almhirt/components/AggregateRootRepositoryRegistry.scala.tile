@@ -16,7 +16,7 @@ object AggregateRootRepositoryRegistry {
 
   def apply(repos: Map[Class[_ <: AggregateRoot[_, _]], ActorRef]): AggregateRootRepositoryRegistry = {
     val newReg = AggregateRootRepositoryRegistry()
-    repos.toSeq.foreach(mapping => newReg.register(mapping._1, mapping._2))
+    repos.toSeq.foreach(mapping ⇒ newReg.register(mapping._1, mapping._2))
     newReg
   }
 

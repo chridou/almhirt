@@ -7,8 +7,8 @@ import almhirt.components.CriticalAggregateRootCellSourceException
 class GuardianStrategyConfigurator extends SupervisorStrategyConfigurator {
   def create(): SupervisorStrategy = {
     OneForOneStrategy() {
-      case _: CriticalAggregateRootCellSourceException => Escalate
-      case _ => Restart
+      case _: CriticalAggregateRootCellSourceException ⇒ Escalate
+      case _ ⇒ Restart
     }
   }
 }

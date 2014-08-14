@@ -17,7 +17,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
 
   behavior of "The VillagePostOffice"
 
-  it should "dispatch an empty package" in { fixture =>
+  it should "dispatch an empty package" in { fixture ⇒
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)
@@ -30,7 +30,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     }
   }
 
-  it should "dispatch a package" in { fixture =>
+  it should "dispatch a package" in { fixture ⇒
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)
@@ -47,7 +47,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     }
   }
 
-  it should "dispatch 2 packages" in { fixture =>
+  it should "dispatch 2 packages" in { fixture ⇒
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)
@@ -67,7 +67,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     }
   }
 
-  it should s"dispatch as many packages as the postoffice has space in its buffer($villageOfficeBufferSize) when waiting for each delivery" in { fixture =>
+  it should s"dispatch as many packages as the postoffice has space in its buffer($villageOfficeBufferSize) when waiting for each delivery" in { fixture ⇒
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)
@@ -79,7 +79,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val probe = TestProbe()
     val start = Deadline.now
     within(1 second) {
-      packages.foreach { sample =>
+      packages.foreach { sample ⇒
         postOffice.deliverUntracked(probe.ref, sample: _*)
         probe.expectMsgType[DeliveryJobDone]
       }
@@ -89,7 +89,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     }
   }
 
-  it should s"dispatch as many packages as the postoffice has space in its buffer($villageOfficeBufferSize)" in { fixture =>
+  it should s"dispatch as many packages as the postoffice has space in its buffer($villageOfficeBufferSize)" in { fixture ⇒
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)
@@ -101,10 +101,10 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val probe = TestProbe()
     val start = Deadline.now
     within(1 seconds) {
-      packages.foreach(sample => postOffice.deliverUntracked(probe.ref, sample: _*))
+      packages.foreach(sample ⇒ postOffice.deliverUntracked(probe.ref, sample: _*))
       val acks = probe.receiveN(villageOfficeBufferSize)
       info(s"${acks.size} delivery status messages received.")
-      acks.collect { case m: DeliveryJobDone => m } should have size (villageOfficeBufferSize)
+      acks.collect { case m: DeliveryJobDone ⇒ m } should have size (villageOfficeBufferSize)
 
       val res = consumerProbe.receiveN(villageOfficeBufferSize * 3)
       info(s"Took ${start.lap.defaultUnitString}")
@@ -114,7 +114,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
 
   val bigN = 10000
   val pSize = 30
-  it should s"dispatch many packages($bigN) of the same size($pSize) when waiting for each delivery" in { fixture =>
+  it should s"dispatch many packages($bigN) of the same size($pSize) when waiting for each delivery" in { fixture ⇒
     val FixtureParam(postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)
@@ -126,7 +126,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val probe = TestProbe()
     val start = Deadline.now
     within(10 seconds) {
-      packages.foreach { sample =>
+      packages.foreach { sample ⇒
         postOffice.deliverUntracked(probe.ref, sample: _*)
         probe.expectMsgType[DeliveryJobDone]
       }

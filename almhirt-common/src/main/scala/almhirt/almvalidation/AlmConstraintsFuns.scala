@@ -5,7 +5,7 @@ import almhirt.common._
 
 
 trait AlmConstraintsFuns {
-  def mustFulfill[T](toTest: T, pred: T => Boolean, msg: String): AlmValidation[T] =
+  def mustFulfill[T](toTest: T, pred: T ⇒ Boolean, msg: String): AlmValidation[T] =
     if(pred(toTest)) toTest.success else ConstraintViolatedProblem(msg).failure
   
   def mustBeTrue(toTest: Boolean): AlmValidation[Boolean] =
@@ -31,18 +31,18 @@ trait AlmConstraintsFuns {
     for {
       _ <- if (emptyOrWhiteSpace) toTest.success else notEmptyOrWhitespace(toTest)
       _ <- minLength match {
-        case Some(min) => if (min > toTest.length()) ConstraintViolatedProblem(s"min length is $min").failure else toTest.success
-        case None => toTest.success
+        case Some(min) ⇒ if (min > toTest.length()) ConstraintViolatedProblem(s"min length is $min").failure else toTest.success
+        case None ⇒ toTest.success
       }
       _ <- maxLength match {
-        case Some(max) => if (max < toTest.length()) ConstraintViolatedProblem(s"max length is $max").failure else toTest.success
-        case None => toTest.success
+        case Some(max) ⇒ if (max < toTest.length()) ConstraintViolatedProblem(s"max length is $max").failure else toTest.success
+        case None ⇒ toTest.success
       }
     } yield toTest
 
     
   def stringMustContain(toTest: String, mustBeContained: String): AlmValidation[String] =
-    mustFulfill[String](toTest, x => x.contains(mustBeContained), s""""$toTest" does not contain "$mustBeContained"""")
+    mustFulfill[String](toTest, x ⇒ x.contains(mustBeContained), s""""$toTest" does not contain "$mustBeContained"""")
 
   def stringMustHaveLength(toTest: String, l: Int): AlmValidation[String] =
     mustFulfill[String](toTest, _.length == l, s""""$toTest" does not have length $l""")
@@ -54,8 +54,8 @@ trait AlmConstraintsFuns {
     import scalaz.std._
     import ops._
     for {
-      _ <- option.cata(minimum)(x => if (x > toTest) ConstraintViolatedProblem(s"minimum is ${minimum.get}").failure else ().success, ().success)
-      _ <- option.cata(maximum)(x => if (x < toTest) ConstraintViolatedProblem(s"maximum is ${maximum.get}").failure else ().success, ().success)
+      _ <- option.cata(minimum)(x ⇒ if (x > toTest) ConstraintViolatedProblem(s"minimum is ${minimum.get}").failure else ().success, ().success)
+      _ <- option.cata(maximum)(x ⇒ if (x < toTest) ConstraintViolatedProblem(s"maximum is ${maximum.get}").failure else ().success, ().success)
     } yield toTest
   }
 
@@ -86,14 +86,14 @@ trait AlmConstraintsFuns {
   }
   
   def stringMustBeAllUpperCaseLetters(toTest: String): AlmValidation[String] = {
-    if(!toTest.forall(c => c.isLetter && c.isUpper))
+    if(!toTest.forall(c ⇒ c.isLetter && c.isUpper))
       ConstraintViolatedProblem(s"""All characters must be upper case letters but this is not the case for "$toTest"""").failure 
       else 
         toTest.success
   }
 
   def stringMustBeAllLowerCaseLetters(toTest: String): AlmValidation[String] = {
-    if(!toTest.forall(c => c.isLetter && c.isLower))
+    if(!toTest.forall(c ⇒ c.isLetter && c.isLower))
       ConstraintViolatedProblem(s"""All characters must be lower case letters but this is not the case for "$toTest"""").failure 
       else 
         toTest.success

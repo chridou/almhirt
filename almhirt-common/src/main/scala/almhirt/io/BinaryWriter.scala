@@ -9,7 +9,7 @@ import almhirt.io.impl.GrowingBinaryWriter
  *
  * Warning! Consider implementations to be mutable!
  */
-trait BinaryWriter { self =>
+trait BinaryWriter { self ⇒
   final def write[T: CanWriteIntoBinaryWriter](v: T) = implicitly[CanWriteIntoBinaryWriter[T]].writeInto(v, self)
   def writeByte(v: Byte): BinaryWriter
   def writeUnsignedByte(v: Int): BinaryWriter

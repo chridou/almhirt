@@ -17,9 +17,9 @@ package almhirt.problem
 sealed trait ProblemCategory{
   def and(other: ProblemCategory): ProblemCategory = 
     (this,other) match {
-    case(SystemProblem,_) => SystemProblem
-    case(_,SystemProblem) => SystemProblem
-    case _  => ApplicationProblem
+    case(SystemProblem,_) ⇒ SystemProblem
+    case(_,SystemProblem) ⇒ SystemProblem
+    case _  ⇒ ApplicationProblem
   }
 }
 
@@ -29,8 +29,8 @@ case object ApplicationProblem extends ProblemCategory
 object ProblemCategory {
   def fromString(str: String): almhirt.common.AlmValidation[ProblemCategory] =
     str.toLowerCase() match {
-      case "systemproblem" => scalaz.Success(SystemProblem)
-      case "applicationproblem" => scalaz.Success(ApplicationProblem)
-      case x => scalaz.Failure(problemtypes.ParsingProblem(s""""$str" is not a problem category"""))
+      case "systemproblem" ⇒ scalaz.Success(SystemProblem)
+      case "applicationproblem" ⇒ scalaz.Success(ApplicationProblem)
+      case x ⇒ scalaz.Failure(problemtypes.ParsingProblem(s""""$str" is not a problem category"""))
     }
 }

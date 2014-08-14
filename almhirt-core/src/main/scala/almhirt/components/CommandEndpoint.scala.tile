@@ -26,11 +26,11 @@ object CommandEndpoint {
     new CommandEndpointImpl(theAlmhirt.messageBus, tracker, theAlmhirt.getUniqueString)(theAlmhirt, theAlmhirt.futuresExecutor)
   def apply(publishTo: MessagePublisher, tracker: ActorRef)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext): CommandEndpoint =
     new CommandEndpointImpl(publishTo, tracker, ccuad.getUniqueString)
-  def apply(publishTo: MessagePublisher, tracker: ActorRef, getTrackingId: () => String)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext): CommandEndpoint =
+  def apply(publishTo: MessagePublisher, tracker: ActorRef, getTrackingId: () ⇒ String)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext): CommandEndpoint =
     new CommandEndpointImpl(publishTo, tracker, getTrackingId)
 }
 
-class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTrackingId: () => String)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext) extends CommandEndpoint {
+class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTrackingId: () ⇒ String)(implicit ccuad: CanCreateUuidsAndDateTimes, execContext: ExecutionContext) extends CommandEndpoint {
   override def execute(command: Command) {
     publishTo.publish(command)
   }
@@ -63,11 +63,11 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
   }
 
   override def executeDomainCommandSequence(commands: Seq[DomainCommand]): AlmFuture[Seq[DomainCommand]] = {
-    AlmFuture.completed(DomainCommandSequence.validatedCommandSequence(commands).andThenWhenSucceeded(succ => succ.foreach(publishTo.publish)))
+    AlmFuture.completed(DomainCommandSequence.validatedCommandSequence(commands).andThenWhenSucceeded(succ ⇒ succ.foreach(publishTo.publish)))
   }
 
   private def makeSequenceValidatedAndTrackable(commands: Seq[DomainCommand]): AlmValidation[Seq[DomainCommand]] = {
-    DomainCommandSequence.validatedCommandSequence(commands).flatMap { cs =>
+    DomainCommandSequence.validatedCommandSequence(commands).flatMap { cs ⇒
       val (head, tail) = (cs.head, cs.tail)
       if (head.canBeTrackedAsGroup) {
         commands.success
@@ -80,7 +80,7 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
 
   override def executeDomainCommandSequenceTracked(commands: Seq[DomainCommand]): AlmFuture[String] = {
     AlmFuture.completed {
-      makeSequenceValidatedAndTrackable(commands).flatMap { cs =>
+      makeSequenceValidatedAndTrackable(commands).flatMap { cs ⇒
         cs.foreach(publishTo.publish)
         unsafe { cs.head.getGroupTrackingId }
       }
@@ -88,9 +88,9 @@ class CommandEndpointImpl(publishTo: MessagePublisher, tracker: ActorRef, getTra
   }
 
   override def executeDomainCommandSequenceSync(commands: Seq[DomainCommand], atMost: scala.concurrent.duration.FiniteDuration): AlmFuture[ExecutionFinishedResultMessage] = {
-    makeSequenceValidatedAndTrackable(commands).flatMap(cs => unsafe { cs.head.getGroupTrackingId.map((_, cs)) }).fold(
-      fail => AlmFuture.failed(fail),
-      succ => {
+    makeSequenceValidatedAndTrackable(commands).flatMap(cs ⇒ unsafe { cs.head.getGroupTrackingId.map((_, cs)) }).fold(
+      fail ⇒ AlmFuture.failed(fail),
+      succ ⇒ {
         val resF = (tracker ? SubscribeForFinishedState(succ._1))(atMost).successfulAlmFuture[ExecutionFinishedResultMessage]
         succ._2.foreach(publishTo.publish)
         resF

@@ -47,17 +47,17 @@ object AlmhirtStreams {
     val eventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-dev-null")
     eventProducer.produceTo(ActorConsumer(eventDevNullConsumer))
 
-    val systemEventFlow = Flow(eventProducer).collect { case e: SystemEvent => e }
+    val systemEventFlow = Flow(eventProducer).collect { case e: SystemEvent ⇒ e }
     val systemEventProducer: Producer[SystemEvent] = systemEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
     val systemEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-system-dev-null")
     systemEventProducer.produceTo(ActorConsumer(systemEventDevNullConsumer))
 
-    val domainEventFlow = Flow(eventProducer).collect { case e: DomainEvent => e }
+    val domainEventFlow = Flow(eventProducer).collect { case e: DomainEvent ⇒ e }
     val domainEventProducer: Producer[DomainEvent] = domainEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
     val domainEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-domain-dev-null")
     domainEventProducer.produceTo(ActorConsumer(domainEventDevNullConsumer))
 
-    val aggregateEventFlow = Flow(eventProducer).collect { case e: AggregateEvent => e }
+    val aggregateEventFlow = Flow(eventProducer).collect { case e: AggregateEvent ⇒ e }
     val aggregateEventProducer: Producer[AggregateEvent] = aggregateEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
     val aggregateEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-aggregate-dev-null")
     aggregateEventProducer.produceTo(ActorConsumer(aggregateEventDevNullConsumer))
@@ -71,17 +71,17 @@ object AlmhirtStreams {
     val commandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-dev-null")
     commandProducer.produceTo(ActorConsumer(commandDevNullConsumer))
 
-    val systemCommandFlow = Flow(commandProducer).collect { case e: SystemCommand => e }
+    val systemCommandFlow = Flow(commandProducer).collect { case e: SystemCommand ⇒ e }
     val systemCommandProducer: Producer[SystemCommand] = systemCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
     val systemCommandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-system-dev-null")
     systemCommandProducer.produceTo(ActorConsumer(systemCommandDevNullConsumer))
 
-    val domainCommandFlow = Flow(commandProducer).collect { case e: DomainCommand => e }
+    val domainCommandFlow = Flow(commandProducer).collect { case e: DomainCommand ⇒ e }
     val domainCommandProducer: Producer[DomainCommand] = domainCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
     val domainCommandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-domain-dev-null")
     domainCommandProducer.produceTo(ActorConsumer(domainCommandDevNullConsumer))
 
-    val aggregateCommandFlow = Flow(commandProducer).collect { case e: AggregateCommand => e }
+    val aggregateCommandFlow = Flow(commandProducer).collect { case e: AggregateCommand ⇒ e }
     val aggregateCommandProducer: Producer[AggregateCommand] = aggregateCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
     val aggregateCommandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-aggregate-dev-null")
     aggregateCommandProducer.produceTo(ActorConsumer(aggregateCommandDevNullConsumer))

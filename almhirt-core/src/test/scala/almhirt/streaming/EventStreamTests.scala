@@ -32,7 +32,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
 
   "The AlmhirtStreams" when {
     "accessed via a contractor" should {
-      "dispatch an event on the event stream" in { fixture =>
+      "dispatch an event on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -45,7 +45,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "dispatch two events from two producers on the event stream" in { fixture =>
+      "dispatch two events from two producers on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -61,7 +61,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "dispatch an event to 2 consumers on the event stream" in { fixture =>
+      "dispatch an event to 2 consumers on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent1 = TestProbe()
         val consumerProbeEvent2 = TestProbe()
@@ -78,7 +78,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "NOT dispatch an event on the system event stream" in { fixture =>
+      "NOT dispatch an event on the system event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -91,7 +91,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "NOT dispatch an event on the domain event stream" in { fixture =>
+      "NOT dispatch an event on the domain event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -104,7 +104,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "dispatch a system event on the event stream" in { fixture =>
+      "dispatch a system event on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -117,7 +117,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "dispatch a system event on the system event stream" in { fixture =>
+      "dispatch a system event on the system event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -130,7 +130,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "NOT dispatch a system event on the domain event stream" in { fixture =>
+      "NOT dispatch a system event on the domain event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -143,7 +143,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "dispatch a domain event on the event stream" in { fixture =>
+      "dispatch a domain event on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -156,7 +156,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "NOT dispatch a domain event on the system event stream" in { fixture =>
+      "NOT dispatch a domain event on the system event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -169,7 +169,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "dispatch a domain event on the domain event stream" in { fixture =>
+      "dispatch a domain event on the domain event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -182,12 +182,12 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      s"dispatch many(${nMsgBig * 3}) events on the event stream" in { fixture =>
+      s"dispatch many(${nMsgBig * 3}) events on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val probe2 = TestProbe()
 
         val n = nMsgBig * 3
-        val events = (1 to n).map(i => TestEvent(i.toString): Event).toVector
+        val events = (1 to n).map(i ⇒ TestEvent(i.toString): Event).toVector
         val consumer = DelegatingEventConsumer[Event](probe2.ref)
         val start = Deadline.now
         within(6 seconds) {
@@ -200,14 +200,14 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      s"dispatch many events(${nMsgBig * 3}) of different kinds on the matching streams" in { fixture =>
+      s"dispatch many events(${nMsgBig * 3}) of different kinds on the matching streams" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val probeEvent = TestProbe()
         val probeSystemEvent = TestProbe()
         val probeDomainEvent = TestProbe()
 
         val n = nMsgBig * 3
-        val events = (1 to n).map(i =>
+        val events = (1 to n).map(i ⇒
           if (i % 3 == 0) {
             TestEvent(i.toString)
           } else if (i % 3 == 1) {
@@ -230,20 +230,20 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
           resEvent should equal(events)
-          resSystemEvent should equal(events.collect { case m: SystemEvent => m })
-          resDomainEvent should equal(events.collect { case m: DomainEvent => m })
+          resSystemEvent should equal(events.collect { case m: SystemEvent ⇒ m })
+          resDomainEvent should equal(events.collect { case m: DomainEvent ⇒ m })
         }
       }
 
       val nContractors = 10
-      s"dispatch many events(${nMsgBig * 3}) of different kinds from many($nContractors) contractors on the matching streams" in { fixture =>
+      s"dispatch many events(${nMsgBig * 3}) of different kinds from many($nContractors) contractors on the matching streams" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val probeEvent = TestProbe()
         val probeSystemEvent = TestProbe()
         val probeDomainEvent = TestProbe()
 
         val n = nMsgBig * 3
-        val events = (1 to n).map(i =>
+        val events = (1 to n).map(i ⇒
           if (i % 3 == 0) {
             TestEvent(f"$i%07d")
           } else if (i % 3 == 1) {
@@ -272,18 +272,18 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
         }
         resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.value) should equal(events)
-        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.value) should equal(events.collect { case m: SystemEvent => m })
-        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.value) should equal(events.collect { case m: DomainEvent => m })
+        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.value) should equal(events.collect { case m: SystemEvent ⇒ m })
+        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.value) should equal(events.collect { case m: DomainEvent ⇒ m })
       }
 
-      s"dispatch many events(${nMsgBig * 3}) of different kinds from really many(${nContractors * 10}) contractors on the matching streams" in { fixture =>
+      s"dispatch many events(${nMsgBig * 3}) of different kinds from really many(${nContractors * 10}) contractors on the matching streams" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val probeEvent = TestProbe()
         val probeSystemEvent = TestProbe()
         val probeDomainEvent = TestProbe()
 
         val n = nMsgBig * 3
-        val events = (1 to n).map(i =>
+        val events = (1 to n).map(i ⇒
           if (i % 3 == 0) {
             TestEvent(f"$i%07d")
           } else if (i % 3 == 1) {
@@ -312,13 +312,13 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
         }
         resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.value) should equal(events)
-        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.value) should equal(events.collect { case m: SystemEvent => m })
-        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.value) should equal(events.collect { case m: DomainEvent => m })
+        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.value) should equal(events.collect { case m: SystemEvent ⇒ m })
+        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.value) should equal(events.collect { case m: DomainEvent ⇒ m })
       }
     }
     "accessed via a consumer" should {
       val mat = FlowMaterializer(MaterializerSettings())
-      "dispatch an event on the event stream" in { fixture =>
+      "dispatch an event on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 
@@ -332,7 +332,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         }
       }
 
-      "dispatch two events from two producers on the event stream" in { fixture =>
+      "dispatch two events from two producers on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
         val consumerProbeEvent = TestProbe()
 

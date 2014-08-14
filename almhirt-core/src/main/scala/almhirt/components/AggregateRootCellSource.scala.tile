@@ -1,7 +1,7 @@
 package almhirt.components
 
 import scala.language.existentials
-import java.util.{UUID => JUUID}
+import java.util.{UUID ⇒ JUUID}
 import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
@@ -35,13 +35,13 @@ object AggregateRootCellSource {
      * 
      * A Loan-Pattern
      */
-    def onceWithCellSync[T](f: ActorRef => T) = {
+    def onceWithCellSync[T](f: ActorRef ⇒ T) = {
       try {
         val result = f(cell)
         release()
         result
       } catch {
-        case exn: Exception =>
+        case exn: Exception ⇒
           release()
           throw exn
       }
@@ -52,13 +52,13 @@ object AggregateRootCellSource {
      * 
      * A Loan-Pattern
      */
-    def onceWithCell[T](f: ActorRef => AlmFuture[T])(implicit execContext: ExecutionContext): AlmFuture[T] = {
+    def onceWithCell[T](f: ActorRef ⇒ AlmFuture[T])(implicit execContext: ExecutionContext): AlmFuture[T] = {
       import almhirt.almfuture.all._
-      f(cell) andThen (_ => release())
+      f(cell) andThen (_ ⇒ release())
     }
   }
   
-  def apply(cellPropsFactories: Class[_] => Option[(JUUID, AggregateRootCellStateSink) => Props], theAlmhirt: Almhirt, actorRefFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
+  def apply(cellPropsFactories: Class[_] ⇒ Option[(JUUID, AggregateRootCellStateSink) ⇒ Props], theAlmhirt: Almhirt, actorRefFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
     for {
       configSection <- theAlmhirt.config.v[Config]("almhirt.aggregate-root-cell-source")
       numActors <- configSection.v[Int]("number-of-actors")
@@ -72,10 +72,10 @@ object AggregateRootCellSource {
       }
     }
     
-  def apply(cellPropsFactories: Class[_] => Option[(JUUID, AggregateRootCellStateSink) => Props], theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
+  def apply(cellPropsFactories: Class[_] ⇒ Option[(JUUID, AggregateRootCellStateSink) ⇒ Props], theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
     apply(cellPropsFactories, theAlmhirt, theAlmhirt.actorSystem)
 }
 
-trait AggregateRootCellSource { actor: Actor =>
+trait AggregateRootCellSource { actor: Actor ⇒
   def receiveAggregateRootCellSourceMessage: Receive
 }

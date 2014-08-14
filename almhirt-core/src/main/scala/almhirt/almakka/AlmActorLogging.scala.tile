@@ -25,7 +25,7 @@ import almhirt.common.AlmFuture
  *
  * Log by calling the implicit on a [[almhirt.validation.AlmValidation]]
  */
-trait AlmActorLogging extends CanLogProblems { self: akka.actor.Actor =>
+trait AlmActorLogging extends CanLogProblems { self: akka.actor.Actor ⇒
   val log = Logging(context.system, this)
 
   override def logProblemAsDebug(prob: Problem) = log.debug(prob.withArg("actor", self.path).toString)

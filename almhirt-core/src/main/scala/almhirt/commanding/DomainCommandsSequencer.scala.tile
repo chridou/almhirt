@@ -12,7 +12,7 @@ object DomainCommandsSequencer {
   final case class DomainCommandsSequenceNotCreated(groupLabel: String, problem: Problem) extends DomainCommandsSequencerMessage
 }
 
-trait DomainCommandsSequencer { actor: Actor with ActorLogging =>
+trait DomainCommandsSequencer { actor: Actor with ActorLogging ⇒
   def receiveDomainCommandsSequencerMessage: Receive
 }
 

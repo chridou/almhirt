@@ -28,25 +28,25 @@ object SequentialPostOfficeDropper {
   def props[TElement](postOffice: PostOffice[TElement], packages: Seq[Seq[TElement]], settings: PostOfficeClientSettings): Props =
     Props(new SequentialPostOfficeClient with Actor with ActorLogging {
       def dropping(toProcess: Seq[Seq[TElement]]): Receive = {
-        case Start => 
+        case Start ⇒ 
           toProcess match {
-            case Seq() =>
+            case Seq() ⇒
               context.stop(self)
-            case next +: rest =>
+            case next +: rest ⇒
               context.become(dropping(rest))
               sendToPostOfficeUntracked(postOffice, next)(settings)
           }
           
-        case m: DeliveryJobDone => 
+        case m: DeliveryJobDone ⇒ 
            toProcess match {
-            case Seq() =>
+            case Seq() ⇒
               context.stop(self)
-            case next +: rest =>
+            case next +: rest ⇒
               context.become(dropping(rest))
               sendToPostOfficeUntracked(postOffice, next)(settings)
           }
  
-        case m: DeliveryJobNotAccepted =>
+        case m: DeliveryJobNotAccepted ⇒
           log.error("Finally failed with a delivery job.")
           context.stop(self)
            
@@ -62,7 +62,7 @@ object SequentialPostOfficeDropper {
   private case object Start
 }
 
-trait SequentialPostOfficeClient { me: Actor with ActorLogging =>
+trait SequentialPostOfficeClient { me: Actor with ActorLogging ⇒
 
   def sendToPostOfficeUntracked[TElement](postOffice: PostOffice[TElement], elements: Seq[TElement])(implicit settings: PostOfficeClientSettings) {
     sendToPostOffice(postOffice, elements, None)
@@ -73,17 +73,17 @@ trait SequentialPostOfficeClient { me: Actor with ActorLogging =>
   }
 
   def sendToPostOffice[TElement](postOffice: PostOffice[TElement], elements: Seq[TElement], ticket: Option[TrackingTicket])(implicit settings: PostOfficeClientSettings) {
-    val send = () => postOffice.deliver(elements, self, ticket)
+    val send = () ⇒ postOffice.deliver(elements, self, ticket)
     send()
     context.become(sending(1, settings, send), false)
   }
 
-  private def sending(attempt: Int, settings: PostOfficeClientSettings, resend: () => Unit): Receive = {
-    case m: DeliveryJobDone =>
+  private def sending(attempt: Int, settings: PostOfficeClientSettings, resend: () ⇒ Unit): Receive = {
+    case m: DeliveryJobDone ⇒
       context.unbecome()
       self ! m
 
-    case m: DeliveryJobNotAccepted =>
+    case m: DeliveryJobNotAccepted ⇒
       if (settings.warn(attempt)) {
         log.warning(s"A package has not been delivered after $attempt attempts.")
       }

@@ -18,7 +18,7 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
   with AggregateRootCellSourceSpecsOpsWithEventLog
   with FunSpecLike
   with BeforeAndAfterAll
-  with Matchers { self: CreatesCellSource with CreatesDomainEventLog =>
+  with Matchers { self: CreatesCellSource with CreatesDomainEventLog ⇒
   import almhirt.components.AggregateRootCellSource._
   import almhirt.domain.DomainMessages._
   import almhirt.domain.AggregateRootCell._
@@ -32,7 +32,7 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
   
   describe("AggregateRootCellSource") {
     it("should return an aggregate root cell for an aggregate root of type A") {
-      useCellSourceWithEventLog { (source, eventLog) =>
+      useCellSourceWithEventLog { (source, eventLog) ⇒
         val workflowF =
           (source ? GetCell(theAlmhirt.getUuid, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
         val res = workflowF.awaitResult(defaultDuration)
@@ -41,7 +41,7 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("should return an aggregate root cell for an aggregate root of type B") {
-      useCellSourceWithEventLog { (source, eventLog) =>
+      useCellSourceWithEventLog { (source, eventLog) ⇒
         val workflowF =
           (source ? GetCell(theAlmhirt.getUuid, classOf[AR2]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
         val res = workflowF.awaitResult(defaultDuration)
@@ -51,11 +51,11 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
 
     it("should allow updating an aggregate root of type A via the given cell") {
       val (ar, events) = AR1.fromScratch(theAlmhirt.getUuid, "a").result.forceResult
-      useCellSourceWithEventLog { (source, eventLog) =>
+      useCellSourceWithEventLog { (source, eventLog) ⇒
         val workflowF =
           for {
             cellResult1 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            updateRes <- cellResult1.cellHandle.onceWithCell { cell =>
+            updateRes <- cellResult1.cellHandle.onceWithCell { cell ⇒
               (cell ? UpdateAggregateRoot(ar, events))(defaultDuration).successfulAlmFuture[Any]
             }
           } yield updateRes
@@ -67,11 +67,11 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
 
     it("should allow updating an aggregate root of type B via the given cell") {
       val (ar, events) = AR2.fromScratch(theAlmhirt.getUuid).result.forceResult
-      useCellSourceWithEventLog { (source, eventLog) =>
+      useCellSourceWithEventLog { (source, eventLog) ⇒
         val workflowF =
           for {
             cellResult1 <- (source ? GetCell(ar.id, classOf[AR2]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            updateRes <- cellResult1.cellHandle.onceWithCell { cell =>
+            updateRes <- cellResult1.cellHandle.onceWithCell { cell ⇒
               (cell ? UpdateAggregateRoot(ar, events))(defaultDuration).successfulAlmFuture[Any]
             }
           } yield updateRes
@@ -83,19 +83,19 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
 
     it("should take an aggregate root of type A and give it back") {
       val (ar, events) = AR1.fromScratch(theAlmhirt.getUuid, "a").result.forceResult
-      useCellSourceWithEventLog { (source, eventLog) =>
+      useCellSourceWithEventLog { (source, eventLog) ⇒
         val workflowF =
           for {
-            cellResult1 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult].mapTimeoutMessage(m => s"A: $m")
-            _ <- cellResult1.cellHandle.onceWithCell { cell =>
-              (cell ? UpdateAggregateRoot(ar, events))(defaultDuration).successfulAlmFuture[Any].mapTimeoutMessage(m => s"B: $m")
+            cellResult1 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult].mapTimeoutMessage(m ⇒ s"A: $m")
+            _ <- cellResult1.cellHandle.onceWithCell { cell ⇒
+              (cell ? UpdateAggregateRoot(ar, events))(defaultDuration).successfulAlmFuture[Any].mapTimeoutMessage(m ⇒ s"B: $m")
             }
-            cellResult2 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult].mapTimeoutMessage(m => s"C: $m")
-            getResult <- cellResult2.cellHandle.onceWithCell { cell =>
-              (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any].mapTimeoutMessage(m => s"D: $m")
+            cellResult2 <- (source ? GetCell(ar.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult].mapTimeoutMessage(m ⇒ s"C: $m")
+            getResult <- cellResult2.cellHandle.onceWithCell { cell ⇒
+              (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any].mapTimeoutMessage(m ⇒ s"D: $m")
             }
           } yield getResult
-        val res = workflowF.mapTimeoutMessage(m => s"E: $m").awaitResult(defaultDuration)
+        val res = workflowF.mapTimeoutMessage(m ⇒ s"E: $m").awaitResult(defaultDuration)
 
         res should equal(scalaz.Success(RequestedAggregateRoot(ar)))
       }
@@ -103,15 +103,15 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
 
     it("should take an aggregate root of type B and give it back") {
       val (ar, events) = AR2.fromScratch(theAlmhirt.getUuid).result.forceResult
-      useCellSourceWithEventLog { (source, eventLog) =>
+      useCellSourceWithEventLog { (source, eventLog) ⇒
         val workflowF =
           for {
             cellResult1 <- (source ? GetCell(ar.id, classOf[AR2]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            _ <- cellResult1.cellHandle.onceWithCell { cell =>
+            _ <- cellResult1.cellHandle.onceWithCell { cell ⇒
               (cell ? UpdateAggregateRoot(ar, events))(defaultDuration).successfulAlmFuture[Any]
             }
             cellResult2 <- (source ? GetCell(ar.id, classOf[AR2]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            getResult <- cellResult2.cellHandle.onceWithCell { cell =>
+            getResult <- cellResult2.cellHandle.onceWithCell { cell ⇒
               (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
             }
           } yield getResult
@@ -124,23 +124,23 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
     it("should take an aggregate root of type A and B and give both back(sequenced GetCell->Action pairs)") {
       val (arA, eventsA) = AR1.fromScratch(theAlmhirt.getUuid, "a").result.forceResult
       val (arB, eventsB) = AR2.fromScratch(theAlmhirt.getUuid).result.forceResult
-      useCellSourceWithEventLog { (source, eventLog) =>
+      useCellSourceWithEventLog { (source, eventLog) ⇒
         val workflowF =
           for {
             cellResult1 <- (source ? GetCell(arA.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            _ <- cellResult1.cellHandle.onceWithCell { cell =>
+            _ <- cellResult1.cellHandle.onceWithCell { cell ⇒
               (cell ? UpdateAggregateRoot(arA, eventsA))(defaultDuration).successfulAlmFuture[Any]
             }
             cellResult2 <- (source ? GetCell(arB.id, classOf[AR2]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            _ <- cellResult2.cellHandle.onceWithCell { cell =>
+            _ <- cellResult2.cellHandle.onceWithCell { cell ⇒
               (cell ? UpdateAggregateRoot(arB, eventsB))(defaultDuration).successfulAlmFuture[Any]
             }
             cellResult3 <- (source ? GetCell(arA.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            getResultA <- cellResult3.cellHandle.onceWithCell { cell =>
+            getResultA <- cellResult3.cellHandle.onceWithCell { cell ⇒
               (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
             }
             cellResult4 <- (source ? GetCell(arB.id, classOf[AR2]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            getResultB <- cellResult4.cellHandle.onceWithCell { cell =>
+            getResultB <- cellResult4.cellHandle.onceWithCell { cell ⇒
               (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
             }
             sourceStats <- (source ? GetStats)(defaultDuration).successfulAlmFuture[AggregateRootCellSourceStats]
@@ -155,15 +155,15 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
     it("should take an aggregate root of type A and B and give both back(parallel)") {
       val (arA, eventsA) = AR1.fromScratch(theAlmhirt.getUuid, "a").result.forceResult
       val (arB, eventsB) = AR2.fromScratch(theAlmhirt.getUuid).result.forceResult
-      useCellSourceWithEventLog { (source, eventLog) =>
+      useCellSourceWithEventLog { (source, eventLog) ⇒
         val arAWorkFlow =
           for {
             cellResult1 <- (source ? GetCell(arA.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            _ <- cellResult1.cellHandle.onceWithCell { cell =>
+            _ <- cellResult1.cellHandle.onceWithCell { cell ⇒
               (cell ? UpdateAggregateRoot(arA, eventsA))(defaultDuration).successfulAlmFuture[Any]
             }
             cellResult2 <- (source ? GetCell(arA.id, classOf[AR1]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            getResultA <- cellResult2.cellHandle.onceWithCell { cell =>
+            getResultA <- cellResult2.cellHandle.onceWithCell { cell ⇒
               (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
             }
           } yield getResultA
@@ -171,25 +171,25 @@ abstract class AggregateRootCellSourceSpecsTemplate(theActorSystem: ActorSystem)
         val arBWorkFlow =
           for {
             cellResult1 <- (source ? GetCell(arB.id, classOf[AR2]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            _ <- cellResult1.cellHandle.onceWithCell { cell =>
+            _ <- cellResult1.cellHandle.onceWithCell { cell ⇒
               (cell ? UpdateAggregateRoot(arB, eventsB))(defaultDuration).successfulAlmFuture[Any]
             }
             cellResult2 <- (source ? GetCell(arB.id, classOf[AR2]))(defaultDuration).successfulAlmFuture[AggregateRootCellSourceResult]
-            getResultB <- cellResult2.cellHandle.onceWithCell { cell =>
+            getResultB <- cellResult2.cellHandle.onceWithCell { cell ⇒
               (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
             }
           } yield getResultB
 
-        val res = (arAWorkFlow.flatMap(resA => arBWorkFlow.map((resA, _)))).awaitResult(defaultDuration).forceResult
+        val res = (arAWorkFlow.flatMap(resA ⇒ arBWorkFlow.map((resA, _)))).awaitResult(defaultDuration).forceResult
         res._1 should equal((RequestedAggregateRoot(arA)))
         res._2 should equal((RequestedAggregateRoot(arB)))
       }
     }
 
     ignore("should should remove all cells that report that they do not exist(which they do when queried)") {
-//      useCellSourceWithEventLog { (source, eventLog) =>
+//      useCellSourceWithEventLog { (source, eventLog) ⇒
 //        val queriesF = for (x <- 1 to 100) yield {
-//          (source ? GetCell(theAlmhirt.getUuid, classOf[AR2]))(defaultDuration).mapTo[AggregateRootCellSourceResult].flatMap(x => x.cellHandle.onceWithCell { cell =>
+//          (source ? GetCell(theAlmhirt.getUuid, classOf[AR2]))(defaultDuration).mapTo[AggregateRootCellSourceResult].flatMap(x ⇒ x.cellHandle.onceWithCell { cell ⇒
 //            (cell ? GetManagedAggregateRoot)(defaultDuration).successfulAlmFuture[Any]
 //          }.underlying)
 //        }

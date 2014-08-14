@@ -15,7 +15,7 @@ trait AlmBooleanConstraints extends Ops[Boolean] {
    *  
    * @param cond Something that evaluates to true or false
    */
-  def mustBe(cond: => Boolean): AlmValidation[Boolean] =
+  def mustBe(cond: ⇒ Boolean): AlmValidation[Boolean] =
     if (cond == self)
       self.success
     else
@@ -28,7 +28,7 @@ trait AlmStringConstraints extends Ops[String] {
    * @param pred The predicate
    * @param createMessage Map the input of the Sting to an error message (or use the default)
    */
-  def mustFulfill(pred: String => Boolean, createMessage: String => String = str => s"""Predicate not met for value "$str""""): AlmValidation[String] =
+  def mustFulfill(pred: String ⇒ Boolean, createMessage: String ⇒ String = str ⇒ s"""Predicate not met for value "$str""""): AlmValidation[String] =
     if (pred(self)) self.success else ConstraintViolatedProblem(createMessage(self)).failure
 
   def notEmptyOrWhitespace(): AlmValidation[String] =
@@ -58,44 +58,44 @@ trait AlmStringConstraints extends Ops[String] {
 
 trait AlmOptionStringConstraints extends Ops[Option[String]] {
   def notEmptyOrWhitespace(): AlmValidation[Option[String]] =
-    onSome(x => funs.notEmptyOrWhitespace(x))
+    onSome(x ⇒ funs.notEmptyOrWhitespace(x))
 
   /** Completes with a [[almhirt.problem.problemtypes.ConstraintViolatedProblem]] if the predicate is not met for the option's value. 
    *  
    * @param pred The predicate
    * @param createMessage Map the input of the Sting to an error message (or use the default)
    */
-  def mustFulfill(pred: String => Boolean, createMessage: String => String = str => s"""Predicate not met for value "$str""""): AlmValidation[Option[String]] =
+  def mustFulfill(pred: String ⇒ Boolean, createMessage: String ⇒ String = str ⇒ s"""Predicate not met for value "$str""""): AlmValidation[Option[String]] =
     self match {
-      case Some(str) => if (pred(str)) self.success else ConstraintViolatedProblem(createMessage(str)).failure
-      case None => self.success
+      case Some(str) ⇒ if (pred(str)) self.success else ConstraintViolatedProblem(createMessage(str)).failure
+      case None ⇒ self.success
     }
 
   def constrainedTo(minLength: Option[Int], maxLength: Option[Int]): AlmValidation[Option[String]] =
-    onSome(x => funs.stringConstrained(x, minLength, maxLength, true))
+    onSome(x ⇒ funs.stringConstrained(x, minLength, maxLength, true))
 
   def minLength(minLength: Int): AlmValidation[Option[String]] =
-    onSome(x => funs.stringConstrained(x, Some(minLength), None, true))
+    onSome(x ⇒ funs.stringConstrained(x, Some(minLength), None, true))
 
   def maxLength(maxLength: Int): AlmValidation[Option[String]] =
-    onSome(x => funs.stringConstrained(x, None, Some(maxLength), true))
+    onSome(x ⇒ funs.stringConstrained(x, None, Some(maxLength), true))
 
   def minMaxLength(minLength: Int, maxLength: Int): AlmValidation[Option[String]] =
-    onSome(x => funs.stringConstrained(x, Some(minLength), Some(maxLength), true))
+    onSome(x ⇒ funs.stringConstrained(x, Some(minLength), Some(maxLength), true))
 
   def mustHaveLength(length: Int): AlmValidation[Option[String]] =
-    onSome(x => funs.stringMustHaveLength(x, length))
+    onSome(x ⇒ funs.stringMustHaveLength(x, length))
 
   def allUpperCase(): AlmValidation[Option[String]] =
-    onSome(x => funs.stringMustBeAllUpperCaseLetters(x))
+    onSome(x ⇒ funs.stringMustBeAllUpperCaseLetters(x))
 
   def allLowerCase(): AlmValidation[Option[String]] =
-    onSome(x => funs.stringMustBeAllLowerCaseLetters(x))
+    onSome(x ⇒ funs.stringMustBeAllLowerCaseLetters(x))
 
-  private def onSome(test: String => AlmValidation[String]): AlmValidation[Option[String]] =
+  private def onSome(test: String ⇒ AlmValidation[String]): AlmValidation[Option[String]] =
     self match {
-      case Some(str) => test(str).map(Some(_))
-      case None => self.success
+      case Some(str) ⇒ test(str).map(Some(_))
+      case None ⇒ self.success
     }
 
 }

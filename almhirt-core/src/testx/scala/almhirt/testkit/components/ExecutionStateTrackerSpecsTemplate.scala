@@ -21,7 +21,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
   with HasAlmhirt
   with FunSpecLike
   with BeforeAndAfterAll
-  with Matchers { self: CreatesExecutionTracker =>
+  with Matchers { self: CreatesExecutionTracker ⇒
 
   import ExecutionStateTracker._  
 
@@ -32,15 +32,15 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
   def sleepMillisAfterFireAndForget: Option[Int]
 
   protected def waitSomeTime() {
-    sleepMillisAfterFireAndForget.foreach(t => Thread.sleep(t))
+    sleepMillisAfterFireAndForget.foreach(t ⇒ Thread.sleep(t))
   }
   protected def waitSomeTime(times: Int) {
-    sleepMillisAfterFireAndForget.foreach(t => Thread.sleep(t*times))
+    sleepMillisAfterFireAndForget.foreach(t ⇒ Thread.sleep(t*times))
   }
   
   implicit def execContext = theAlmhirt.futuresExecutor
 
-  def useExecutionTracker[T](f: ActorRef => T): T = {
+  def useExecutionTracker[T](f: ActorRef ⇒ T): T = {
     val testId = nextTestId
     val (executionTracker, eventLogCleanUp) = createExecutionTracker(testId)
     try {
@@ -49,7 +49,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       eventLogCleanUp()
       res
     } catch {
-      case exn: Exception =>
+      case exn: Exception ⇒
         system.stop(executionTracker)
         eventLogCleanUp()
         throw exn
@@ -58,7 +58,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
   
   describe("An execution state tracker") {
     it("""should accept an ExecutionStateChanged(ExecutionStarted) and return the state when queried with its tracking id""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionStarted("a")
         tracker ! ExecutionStateChanged(state)
         waitSomeTime()
@@ -67,7 +67,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should accept an ExecutionStateChanged(ExecutionInProcess) and return the state when queried with its tracking id""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionInProcess("a")
         tracker ! ExecutionStateChanged(state)
         waitSomeTime()
@@ -76,7 +76,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should accept an ExecutionStateChanged(ExecutionSuccessful) and return the state when queried with its tracking id""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionSuccessful("did something", "a")
         tracker ! ExecutionStateChanged(state)
         waitSomeTime()
@@ -85,7 +85,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should accept an ExecutionStateChanged(ExecutionFailed) and return the state when queried with its tracking id""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         tracker ! ExecutionStateChanged(state)
         waitSomeTime()
@@ -94,23 +94,23 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return QueriedExecutionState(tracking-id, None) when no state exists with the given tracking id""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
         val res = (tracker ? GetExecutionStateFor("?"))(defaultDuration).successfulAlmFuture[QueriedExecutionState].awaitResultOrEscalate(defaultDuration)
         res should equal(QueriedExecutionState("?", None))
       }
     }
     it("""should return the correct states when there are many""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val states = for(n <- 1 to 10) yield ExecutionInProcess(n.toString)
         states foreach(tracker ! ExecutionStateChanged(_))
         waitSomeTime()
-        val futures = states map(state => (tracker ? GetExecutionStateFor(state.trackId))(defaultDuration).mapTo[QueriedExecutionState])
+        val futures = states map(state ⇒ (tracker ? GetExecutionStateFor(state.trackId))(defaultDuration).mapTo[QueriedExecutionState])
         val res = Await.result(Future.sequence(futures),defaultDuration)
         res.map(_.executionState).flatten should equal(states)
       }
     }
     it("""should return ExecutionStarted for "ExecutionStarted -> ExecutionStarted"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionStarted("a")
         tracker ! ExecutionStateChanged(state1)
@@ -121,7 +121,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionInProcess for "ExecutionStarted -> ExecutionInProcess"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionInProcess("a")
         tracker ! ExecutionStateChanged(state1)
@@ -132,7 +132,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionSuccessful for "ExecutionStarted -> ExecutionSuccessful"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionSuccessful("a", "ahh!")
         tracker ! ExecutionStateChanged(state1)
@@ -143,7 +143,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionFailed for "ExecutionStarted -> ExecutionFailed"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
         tracker ! ExecutionStateChanged(state1)
@@ -154,7 +154,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionSuccessful for "ExecutionInProcess -> ExecutionStarted"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionInProcess("a")
       	val state2 = ExecutionStarted("a")
         tracker ! ExecutionStateChanged(state1)
@@ -165,7 +165,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionSuccessful for "ExecutionSuccessful -> ExecutionStarted"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionSuccessful("a", "ahh!")
       	val state2 = ExecutionStarted("a")
         tracker ! ExecutionStateChanged(state1)
@@ -176,7 +176,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionSuccessful for "ExecutionSuccessful -> ExecutionInProcess"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionSuccessful("a", "ahh!")
       	val state2 = ExecutionInProcess("a")
         tracker ! ExecutionStateChanged(state1)
@@ -187,7 +187,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionSuccessful for "ExecutionSuccessful -> ExecutionFailed"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionSuccessful("a", "ahh!")
       	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
         tracker ! ExecutionStateChanged(state1)
@@ -198,7 +198,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionFailed for "ExecutionInProcess -> ExecutionFailed"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
         tracker ! ExecutionStateChanged(state1)
@@ -209,7 +209,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionFailed for "ExecutionFailed -> ExecutionStarted"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionFailed("a", UnspecifiedProblem("huh"))
       	val state2 = ExecutionStarted("a")
         tracker ! ExecutionStateChanged(state1)
@@ -220,7 +220,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionFailed for "ExecutionFailed -> ExecutionInProcess"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionFailed("a", UnspecifiedProblem("huh"))
       	val state2 = ExecutionInProcess("a")
         tracker ! ExecutionStateChanged(state1)
@@ -231,7 +231,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should return ExecutionFailed for "ExecutionFailed -> ExecutionSuccessful"""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionFailed("a", UnspecifiedProblem("huh"))
       	val state2 = ExecutionSuccessful("a", "ahh!")
         tracker ! ExecutionStateChanged(state1)
@@ -243,7 +243,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
     
     it("""should notify a subscriber for an already stored ExecutionSuccessful""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionSuccessful("a", "ahh!")
         tracker ! ExecutionStateChanged(state)
         waitSomeTime()
@@ -254,7 +254,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should notify a subscriber for an already stored ExecutionFailed""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         tracker ! ExecutionStateChanged(state)
         waitSomeTime()
@@ -265,7 +265,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should notify a subscriber as soon as an ExecutionSuccessful is recognized""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionSuccessful("a", "ahh!")
         val probe = TestProbe()
         probe.send(tracker, SubscribeForFinishedState("a"))
@@ -275,7 +275,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should notify a subscriber as soon as an ExecutionFailed is recognized""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe = TestProbe()
         probe.send(tracker, SubscribeForFinishedState("a"))
@@ -285,7 +285,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
  
     it("""should notify a subscriber only once""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe = TestProbe()
         probe.send(tracker, SubscribeForFinishedState("a"))
@@ -297,7 +297,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should be idempotent on subscriptions for the same tracking ticket""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe = TestProbe()
         probe.send(tracker, SubscribeForFinishedState("a"))
@@ -310,7 +310,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should notify on a transition to ExecutionSuccessful""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionSuccessful("a", "ahh!")
         val probe = TestProbe()
@@ -323,7 +323,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should notify on a transition to ExecutionFailed""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe = TestProbe()
@@ -336,7 +336,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should notify more than one subscriber subscribed to the same tracking id on a transition to an ExecutionFinishedState""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe1 = TestProbe()
@@ -351,7 +351,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
     
     it("""should notify more than one subscriber subscribed to different tracking ids on a transition to an ExecutionFinishedState""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1a = ExecutionStarted("a")
       	val state2a = ExecutionFailed("a", UnspecifiedProblem("huh"))
       	val state1b = ExecutionStarted("b")
@@ -370,7 +370,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should not notify a subscriber that was unsubscribed""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe1 = TestProbe()
@@ -383,7 +383,7 @@ abstract class ExecutionStateTrackerSpecsTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should notify one of 2 subscribers subscribed to the same tracking id on a transition to an ExecutionFinishedState when one unsubscribed prior to the transition""") {
-      useExecutionTracker { tracker =>
+      useExecutionTracker { tracker ⇒
       	val state1 = ExecutionStarted("a")
       	val state2 = ExecutionFailed("a", UnspecifiedProblem("huh"))
         val probe1 = TestProbe()

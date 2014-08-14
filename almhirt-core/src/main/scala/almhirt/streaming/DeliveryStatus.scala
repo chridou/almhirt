@@ -12,8 +12,8 @@ object DeliveryJobDone {
   def apply(): DeliveryJobDone = UntrackedDeliveryJobDone
   def apply(ticket: Option[TrackingTicket]): DeliveryJobDone =
     ticket match {
-      case Some(t) => TrackedDeliveryJobDone(t)
-      case None => UntrackedDeliveryJobDone
+      case Some(t) ⇒ TrackedDeliveryJobDone(t)
+      case None ⇒ UntrackedDeliveryJobDone
     }
 }
 
@@ -26,7 +26,7 @@ object DeliveryJobNotAccepted {
   def apply(): DeliveryJobNotAccepted = UntrackedDeliveryJobNotAccepted
   def apply(ticket: Option[TrackingTicket]): DeliveryJobNotAccepted =
     ticket match {
-      case Some(t) => TrackedDeliveryJobNotAccepted(t)
-      case None => UntrackedDeliveryJobNotAccepted
+      case Some(t) ⇒ TrackedDeliveryJobNotAccepted(t)
+      case None ⇒ UntrackedDeliveryJobNotAccepted
     }
 }

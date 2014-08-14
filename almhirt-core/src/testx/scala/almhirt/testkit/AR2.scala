@@ -30,8 +30,8 @@ case class AR2(ref: AggregateRootRef, theC: Option[Int], isDeleted: Boolean)
   with AggregateRootMutationHelpers[AR2, AR2Event] {
 
   protected override def handlers = {
-    case AR2CChanged(_, newC) => set((ar: AR2, v: Option[Int]) => ar.copy(theC = v), newC)
-    case AR2Deleted(_) => markDeleted((ar: AR2, b: Boolean) => ar.copy(isDeleted = b))
+    case AR2CChanged(_, newC) ⇒ set((ar: AR2, v: Option[Int]) ⇒ ar.copy(theC = v), newC)
+    case AR2Deleted(_) ⇒ markDeleted((ar: AR2, b: Boolean) ⇒ ar.copy(isDeleted = b))
   }
 
   def setC(newC: Int)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[AR2, AR2Event] =
@@ -48,7 +48,7 @@ case class AR2(ref: AggregateRootRef, theC: Option[Int], isDeleted: Boolean)
 
 object AR2 extends CanCreateAggragateRoot[AR2, AR2Event] {
   protected override def creationHandler: PartialFunction[AR2Event, AR2] = {
-    case AR2Created(header) =>
+    case AR2Created(header) ⇒
       AR2(header.aggRef.inc, None, false)
   }
 
@@ -62,19 +62,19 @@ object AR2 extends CanCreateAggragateRoot[AR2, AR2Event] {
       val executionContext = theAlmhirt.futuresExecutor
       val createAdder =
         CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR2ComCreateAR2, AR2Event, AR2](
-          command => AR2.fromScratch(command.targettedAggregateRootId).result,
+          command ⇒ AR2.fromScratch(command.targettedAggregateRootId).result,
           executionContext)
       val setCAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR2ComSetC, AR2Event, AR2](
-          (ar, command) => ar.setC(command.newC).result,
+          (ar, command) ⇒ ar.setC(command.newC).result,
           executionContext)
       val unssetCAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR2ComUnsetC, AR2Event, AR2](
-          (ar, command) => ar.unsetC.result,
+          (ar, command) ⇒ ar.unsetC.result,
           executionContext)
       val deleteAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR2ComDeleteAR2, AR2Event, AR2](
-          (ar, command) => ar.delete.result,
+          (ar, command) ⇒ ar.delete.result,
           executionContext)
 
       registry nextAdder createAdder nextAdder setCAdder nextAdder unssetCAdder nextAdder deleteAdder
@@ -83,7 +83,7 @@ object AR2 extends CanCreateAggragateRoot[AR2, AR2Event] {
 }
 
 object AR2Lenses {
-  val theCL: AR2 @> Option[Int] = Lens.lensu((a, b) => a.copy(theC = b), _.theC)
+  val theCL: AR2 @> Option[Int] = Lens.lensu((a, b) ⇒ a.copy(theC = b), _.theC)
 }
 
 trait AR2Command extends DomainCommand

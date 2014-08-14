@@ -1,6 +1,6 @@
 package almhirt.base
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import akka.actor._
 
 abstract class SelectorBasedRouter(val numChildren: Int, childProps: Props) extends Actor {
@@ -16,7 +16,7 @@ abstract class SelectorBasedRouter(val numChildren: Int, childProps: Props) exte
 
 }
 
-trait UuidBasedRouter { self : SelectorBasedRouter => 
+trait UuidBasedRouter { self : SelectorBasedRouter ⇒ 
   type TSelect = JUUID
 
   def numChildren: Int
@@ -24,7 +24,7 @@ trait UuidBasedRouter { self : SelectorBasedRouter =>
   override def select(selector: JUUID) = Math.abs(selector.hashCode()) % numChildren
 }
 
-trait LongBasedRouter { self : SelectorBasedRouter => 
+trait LongBasedRouter { self : SelectorBasedRouter ⇒ 
   type TSelect = Long
 
   def numChildren: Int
@@ -32,7 +32,7 @@ trait LongBasedRouter { self : SelectorBasedRouter =>
   override def select(selector: Long) = Math.abs(selector.hashCode()) % numChildren
 }
 
-trait StringBasedRouter { self : SelectorBasedRouter => 
+trait StringBasedRouter { self : SelectorBasedRouter ⇒ 
   type TSelect = String
 
   def numChildren: Int

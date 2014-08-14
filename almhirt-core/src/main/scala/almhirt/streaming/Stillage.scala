@@ -20,7 +20,7 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
     var toDeliverLeft = contents.size
 
     def offer() {
-      stockroom.foreach(stockroom => {
+      stockroom.foreach(stockroom ⇒ {
         val nextBatch = notYetOffered.take(packagingSize)
         notYetOffered = notYetOffered.drop(nextBatch.size)
         stockroom.offerSupplies(nextBatch.size)
@@ -39,7 +39,7 @@ private[almhirt] class StillageImpl[TElement](contents: Seq[TElement], packaging
       }
 
       def onDeliverSuppliesNow(amount: Int) {
-        stockroom.foreach(stockroom => {
+        stockroom.foreach(stockroom ⇒ {
           val toLoad = offered.take(amount)
           stockroom.deliverSupplies(toLoad)
           offered = offered.drop(amount)

@@ -1,6 +1,6 @@
 package almhirt.domain
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import akka.actor._
 import almhirt.common._
 import almhirt.core.types._
@@ -24,7 +24,7 @@ object AggregateRootCell {
   import almhirt.core.Almhirt
   import almhirt.messaging.MessagePublisher
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent ⇒ DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     cellStateReportingDelay: FiniteDuration,
     publisher: MessagePublisher,
@@ -33,8 +33,8 @@ object AggregateRootCell {
     getArWarnThreshold: FiniteDuration,
     updateArWarnThreshold: FiniteDuration,
     getArTimeout: FiniteDuration,
-    updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) => Props =
-    (arId: JUUID, reportCellStateSink: AggregateRootCellStateSink) =>
+    updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) ⇒ Props =
+    (arId: JUUID, reportCellStateSink: AggregateRootCellStateSink) ⇒
       Props(
         new impl.AggregateRootCellImpl[TAR, TEvent](
           arId,
@@ -51,14 +51,14 @@ object AggregateRootCell {
           updateArTimeout))
 
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent ⇒ DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     cellStateReportingDelay: FiniteDuration,
     theAlmhirt: Almhirt,
     getArWarnThreshold: FiniteDuration,
     updateArWarnThreshold: FiniteDuration,
     getArTimeout: FiniteDuration,
-    updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) => Props =
+    updateArTimeout: FiniteDuration): (JUUID, AggregateRootCellStateSink) ⇒ Props =
     propsFactoryRaw(
       createFreshAggregateRoot,
       theDomainEventLog,
@@ -72,10 +72,10 @@ object AggregateRootCell {
       updateArTimeout)
 
   def propsFactoryRaw[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent ⇒ DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     cellStateReportingDelay: FiniteDuration,
-    theAlmhirt: Almhirt): (JUUID, AggregateRootCellStateSink) => Props =
+    theAlmhirt: Almhirt): (JUUID, AggregateRootCellStateSink) ⇒ Props =
     propsFactoryRaw(
       createFreshAggregateRoot,
       theDomainEventLog,
@@ -91,10 +91,10 @@ object AggregateRootCell {
   import almhirt.configuration._
   import com.typesafe.config.Config
   def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent ⇒ DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     configSection: Config,
-    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) ⇒ Props] =
     for {
       cellStateReportingDelay <- configSection.v[FiniteDuration]("cell-state-reporting-delay")
       getArWarnThreshold <- configSection.v[FiniteDuration]("get-ar-warn-duration-threshold")
@@ -114,11 +114,11 @@ object AggregateRootCell {
       updateArTimeout)
 
   def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent ⇒ DomainValidation[TAR],
     theDomainEventLog: ActorRef,
     configPath: String,
-    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
-    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) ⇒ Props] =
+    theAlmhirt.config.v[Config](configPath).flatMap(configSection ⇒
       propsFactory(
         createFreshAggregateRoot,
         theDomainEventLog,
@@ -126,9 +126,9 @@ object AggregateRootCell {
         theAlmhirt))
 
   def propsFactory[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
-    createFreshAggregateRoot: TEvent => DomainValidation[TAR],
+    createFreshAggregateRoot: TEvent ⇒ DomainValidation[TAR],
     theDomainEventLog: ActorRef,
-    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) => Props] =
+    theAlmhirt: Almhirt): AlmValidation[(JUUID, AggregateRootCellStateSink) ⇒ Props] =
     propsFactory(
       createFreshAggregateRoot,
       theDomainEventLog,
@@ -137,14 +137,14 @@ object AggregateRootCell {
 
 }
 
-trait AggregateRootCell { actor: Actor =>
+trait AggregateRootCell { actor: Actor ⇒
   type Event <: DomainEvent
   type AR <: AggregateRoot[AR, Event]
 
   protected def receiveAggregateRootCellMsg: Receive
 }
 
-trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
+trait AggregateRootCellWithEventValidation { self: AggregateRootCell ⇒
   import scalaz.syntax.validation._
   import almhirt.almvalidation.kit._
   import AggregateRootCell._
@@ -165,26 +165,26 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
         tryGetPotentialUpdate(currentState, update.newState.asInstanceOf[AR], update.eventsToNewState.map(_.asInstanceOf[Event]), requestsUpdate)
       }
       potentialUpdateV.fold(
-        fail => {
+        fail ⇒ {
           requestsUpdate ! AggregateRootUpdateFailed(managedAggregateRooId, fail)
           getNextUpdateTask(currentState, tail)
         },
-        potentialUpdate =>
+        potentialUpdate ⇒
           potentialUpdate match {
-            case Some((newAr, newEvents, requestsNextUpdate)) =>
+            case Some((newAr, newEvents, requestsNextUpdate)) ⇒
               NextUpdateTask(newAr, newEvents, requestsNextUpdate, tail)
-            case None =>
+            case None ⇒
               getNextUpdateTask(currentState, tail)
           })
     }
 
   def tryGetPotentialUpdate(currentState: Option[AR], newState: AR, events: IndexedSeq[Event], requestsUpdate: ActorRef): Option[(AR, IndexedSeq[Event], ActorRef)] = {
     validateAggregateRootsAgainstEvents(currentState, newState, events).fold(
-      fail => {
+      fail ⇒ {
         requestsUpdate ! AggregateRootUpdateFailed(managedAggregateRooId, fail)
         None
       },
-      arAndEvents =>
+      arAndEvents ⇒
         Some(arAndEvents._1, arAndEvents._2, requestsUpdate))
   }
 
@@ -195,13 +195,13 @@ trait AggregateRootCellWithEventValidation { self: AggregateRootCell =>
       UnspecifiedProblem(s"""The potential new state has the id "${newState.id.toString()}" but the aggregate root managed by this cell has the id "${managedAggregateRooId.toString()}".""").failure
     else if (uncommittedEvents.exists(_.aggId != managedAggregateRooId))
       UnspecifiedProblem(s"""At least one domain event to be committed has an aggregate root id different from aggregate root managed by this cell: "${managedAggregateRooId.toString()}".""").failure
-    else if (uncommittedEvents.size > 1 && !uncommittedEvents.sliding(2).forall(elems => elems.tail.head.aggVersion - elems.head.aggVersion == 1))
+    else if (uncommittedEvents.size > 1 && !uncommittedEvents.sliding(2).forall(elems ⇒ elems.tail.head.aggVersion - elems.head.aggVersion == 1))
       UnspecifiedProblem(s"""The events to be committed for "${managedAggregateRooId.toString()}" do not have consecutive versions.""").failure
     else
       currentState match {
-        case Some(toMutate) =>
+        case Some(toMutate) ⇒
           validateforMutatedAggregateRoot(toMutate, newState, uncommittedEvents)
-        case None =>
+        case None ⇒
           validateForNewAggregateRoot(newState, uncommittedEvents)
       }
 

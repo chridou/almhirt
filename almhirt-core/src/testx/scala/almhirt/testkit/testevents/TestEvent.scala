@@ -63,7 +63,7 @@ object Serialization {
 
   def addTestEventSerializers(to: RiftWarp): RiftWarp = {
     List(TestEvent1WarpPackaging,
-      TestEvent2WarpPackaging, TestEvent3WarpPackaging).foreach { packaging =>
+      TestEvent2WarpPackaging, TestEvent3WarpPackaging).foreach { packaging ⇒
         to.packers.add(packaging)
         to.unpackers.add(packaging)
       }

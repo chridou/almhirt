@@ -61,34 +61,34 @@ object AlmMediaTypesProvider {
 
     def getForSerialization(contentFormat: String): AlmValidation[AlmMediaType] = {
       self.targetMediaTypes.find(_.contentFormat == contentFormat) match {
-        case Some(mt) => mt.success
-        case None => NoSuchElementProblem(s"""No marshallable media type has a content format "$contentFormat".""").failure
+        case Some(mt) ⇒ mt.success
+        case None ⇒ NoSuchElementProblem(s"""No marshallable media type has a content format "$contentFormat".""").failure
       }
     }
 
     
     def findForSerialization(contentFormat: String): Option[AlmMediaType] =
       getForSerialization(contentFormat).fold(
-        _ => None,
-        succ => Some(succ))
+        _ ⇒ None,
+        succ ⇒ Some(succ))
 
     def getForSerialization(mainType: String, contentFormat: String): AlmValidation[AlmMediaType] = {
-      self.targetMediaTypes.find(mt => mt.mainType == mainType && mt.contentFormat == contentFormat) match {
-        case Some(mt) => mt.success
-        case None => NoSuchElementProblem(s"""No media type in media range "$mainType" has a content format "$contentFormat".""").failure
+      self.targetMediaTypes.find(mt ⇒ mt.mainType == mainType && mt.contentFormat == contentFormat) match {
+        case Some(mt) ⇒ mt.success
+        case None ⇒ NoSuchElementProblem(s"""No media type in media range "$mainType" has a content format "$contentFormat".""").failure
       }
     }
 
     def findForSerialization(mainType: String, contentFormat: String): Option[AlmMediaType] =
       getForSerialization(mainType, contentFormat).fold(
-        _ => None,
-        succ => Some(succ))
+        _ ⇒ None,
+        succ ⇒ Some(succ))
 
         
     def getForDeserialization(contentFormat: String): AlmValidation[AlmMediaType] = {
       self.sourceMediaTypes.find(_.contentFormat == contentFormat) match {
-        case Some(mt) => mt.success
-        case None => NoSuchElementProblem(s"""No unmarshallable media type has a content format "$contentFormat".""").failure
+        case Some(mt) ⇒ mt.success
+        case None ⇒ NoSuchElementProblem(s"""No unmarshallable media type has a content format "$contentFormat".""").failure
       }
     }
         

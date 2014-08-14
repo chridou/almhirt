@@ -51,7 +51,7 @@ trait HasCommonAlmMediaTypesProviders {
   implicit def executionStatesAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[ExecutionState]]
 }
 
-trait VendorBasedCommonAlmMediaTypesProviders { self : HasCommonAlmMediaTypesProviders =>
+trait VendorBasedCommonAlmMediaTypesProviders { self : HasCommonAlmMediaTypesProviders ⇒
   implicit def vendorProvider: MediaTypeVendorProvider
   override lazy val booleanAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Boolean]("Boolean").withGenericTargets
   override lazy val stringAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[String]("String").withGenericTargets

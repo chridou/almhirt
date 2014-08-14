@@ -15,7 +15,7 @@ class AggregateRootRepositoryRegistryImpl extends AggregateRootRepositoryRegistr
 
   final override def get(arType: Class[_ <: AggregateRoot[_, _]]): AlmValidation[ActorRef] =
     repositories.get(arType) match {
-      case null => UnspecifiedProblem(s"""No repository found for "${arType.getName()}"""").failure
-      case repo => repo.success
+      case null ⇒ UnspecifiedProblem(s"""No repository found for "${arType.getName()}"""").failure
+      case repo ⇒ repo.success
     }
 }

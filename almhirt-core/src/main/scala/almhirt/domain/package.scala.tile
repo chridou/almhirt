@@ -19,5 +19,5 @@ import almhirt.core._
 import almhirt.common._
 
 package object domain {
-  type AggregateRootCellStateSink = AggregateRootCell.AggregateRootCellState => Unit
+  type AggregateRootCellStateSink = AggregateRootCell.AggregateRootCellState ⇒ Unit
 }

@@ -34,20 +34,20 @@ case class TestAr(ref: AggregateRootRef, theA: String, theB: Option[String], isD
   with AggregateRootMutationHelpers[TestAr, TestArEvent] {
 
   protected override def handlers = {
-    case AChanged(_, newA) => set((ar: TestAr, v: String) => ar.copy(theA = v), newA)
-    case BChanged(_, newB) => setL(TestArLenses.theBL, newB)
-    case TestArDeleted(_) => markDeleted((ar: TestAr, b: Boolean) => ar.copy(isDeleted = b))
+    case AChanged(_, newA) ⇒ set((ar: TestAr, v: String) ⇒ ar.copy(theA = v), newA)
+    case BChanged(_, newB) ⇒ setL(TestArLenses.theBL, newB)
+    case TestArDeleted(_) ⇒ markDeleted((ar: TestAr, b: Boolean) ⇒ ar.copy(isDeleted = b))
   }
 
   def changeA(newA: String)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestAr, TestArEvent] =
     newA.notEmptyAlm.fold(
-      fail => reject(fail),
-      succ => update(AChanged(ref, succ)))
+      fail ⇒ reject(fail),
+      succ ⇒ update(AChanged(ref, succ)))
 
   def changeB(newB: Option[String])(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestAr, TestArEvent] =
     newB.map(_.notEmptyAlm).validationOut.fold(
-      fail => reject(fail),
-      succ => update(BChanged(ref, succ)))
+      fail ⇒ reject(fail),
+      succ ⇒ update(BChanged(ref, succ)))
 
   def delete()(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[TestAr, TestArEvent] =
     update(TestArDeleted(ref))
@@ -57,7 +57,7 @@ case class TestAr(ref: AggregateRootRef, theA: String, theB: Option[String], isD
 
 object TestAr extends CanCreateAggragateRoot[TestAr, TestArEvent] {
   protected override def creationHandler: PartialFunction[TestArEvent, TestAr] = {
-    case TestArCreated(header, newA) =>
+    case TestArCreated(header, newA) ⇒
       TestAr(header.aggRef.inc, newA, None, false)
   }
 
@@ -67,7 +67,7 @@ object TestAr extends CanCreateAggragateRoot[TestAr, TestArEvent] {
 }
 
 object TestArLenses {
-  val theBL: TestAr @> Option[String] = Lens.lensu((a, b) => a.copy(theB = b), _.theB)
+  val theBL: TestAr @> Option[String] = Lens.lensu((a, b) ⇒ a.copy(theB = b), _.theB)
 }
 
 
@@ -102,19 +102,19 @@ object TestArCommanding {
       
       val createTestArAdder =
         CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[CreateTestAr, TestArEvent, TestAr](
-          command => TestAr.fromScratch(command.targettedAggregateRootId, command.newA).result,
+          command ⇒ TestAr.fromScratch(command.targettedAggregateRootId, command.newA).result,
           executionContext)
       val changeAAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[ChangeA, TestArEvent, TestAr](
-          (ar, command) => ar.changeA(command.newA).result,
+          (ar, command) ⇒ ar.changeA(command.newA).result,
           executionContext)
       val changeBAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[ChangeB, TestArEvent, TestAr](
-          (ar, command) => ar.changeB(command.newB).result,
+          (ar, command) ⇒ ar.changeB(command.newB).result,
           executionContext)
       val deleteTestArAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[DeleteTestAr, TestArEvent, TestAr](
-          (ar, command) => ar.delete.result,
+          (ar, command) ⇒ ar.delete.result,
           executionContext)
 
       registry nextAdder createTestArAdder nextAdder changeAAdder nextAdder changeBAdder nextAdder deleteTestArAdder

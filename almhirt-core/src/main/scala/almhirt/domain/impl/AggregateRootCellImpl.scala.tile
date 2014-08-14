@@ -1,6 +1,6 @@
 package almhirt.domain.impl
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import scala.concurrent._
 import scala.concurrent.duration._
 import org.joda.time.LocalDateTime
@@ -18,7 +18,7 @@ import almhirt.messaging.MessagePublisher
 import almhirt.common.CanCreateUuidsAndDateTimes
 import play.api.libs.iteratee._
 
-trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCellWithEventValidation { actor: Actor with ActorLogging =>
+trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCellWithEventValidation { actor: Actor with ActorLogging ⇒
   import AggregateRootCell._
   import DomainMessages._
   import almhirt.domaineventlog.DomainEventLog._
@@ -37,7 +37,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 
   protected implicit def ccuad: CanCreateUuidsAndDateTimes
 
-  protected def createFreshAggregateRoot: Event => DomainValidation[AR]
+  protected def createFreshAggregateRoot: Event ⇒ DomainValidation[AR]
 
   protected def getArWarnThreshold: FiniteDuration
   protected def getArTimeout: FiniteDuration
@@ -47,14 +47,14 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   private var lastReportingJob: Option[Cancellable] = None
 
   private def uninitializedState(alreadyInitializing: Boolean, pendingGetRequests: Vector[ActorRef], pendingUpdateRequests: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
-    case Initialize =>
+    case Initialize ⇒
       context.become(uninitializedState(true, pendingGetRequests, pendingUpdateRequests))
       fetchAR().onComplete(
-        fail => self ! InitializedWithFailure(fail),
-        succ => self ! Initialized(succ))
-    case Initialized(arOpt) =>
+        fail ⇒ self ! InitializedWithFailure(fail),
+        succ ⇒ self ! Initialized(succ))
+    case Initialized(arOpt) ⇒
       arOpt match {
-        case Some(ar) =>
+        case Some(ar) ⇒
           if (ar.isDeleted) {
             pendingGetRequests.foreach(_ ! DomainMessages.AggregateRootNotFound(managedAggregateRooId))
             pendingUpdateRequests.map(_._1).foreach(_ ! DomainMessages.AggregateRootUpdateFailed(
@@ -69,7 +69,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
               moveToUpdateState(None, Some(ar), pendingUpdateRequests)
             }
           }
-        case None =>
+        case None ⇒
           pendingGetRequests.foreach(_ ! DomainMessages.AggregateRootNotFound(managedAggregateRooId))
           if (pendingUpdateRequests.isEmpty) {
             moveToDoesNotExist
@@ -77,52 +77,52 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
             moveToUpdateState(None, None, pendingUpdateRequests)
           }
       }
-    case InitializedWithFailure(problem) =>
+    case InitializedWithFailure(problem) ⇒
       pendingGetRequests.foreach(_ ! DomainMessages.AggregateRootFetchFailed(managedAggregateRooId, problem))
       pendingUpdateRequests.map(_._1).foreach(_ ! DomainMessages.AggregateRootUpdateFailed(managedAggregateRooId, problem))
       log.error(s"""Could not initialize aggregate root "$managedAggregateRooId": ${problem.message}""")
       moveToErrorState(problem)
-    case GetManagedAggregateRoot =>
+    case GetManagedAggregateRoot ⇒
       context.become(uninitializedState(alreadyInitializing, pendingGetRequests :+ sender, pendingUpdateRequests))
       if (!alreadyInitializing)
         self ! Initialize
-    case uar: UpdateAggregateRoot =>
+    case uar: UpdateAggregateRoot ⇒
       context.become(uninitializedState(alreadyInitializing, pendingGetRequests, pendingUpdateRequests :+ (sender, uar)))
       if (!alreadyInitializing)
         self ! Initialize
-    case DropCachedAggregateRoot =>
+    case DropCachedAggregateRoot ⇒
       ()
-    case ReportCellState =>
+    case ReportCellState ⇒
       reportCellState(CellStateUninitialized)
   }
 
   def idleState(ar: AR, idleSince: LocalDateTime): Receive = {
-    case GetManagedAggregateRoot =>
+    case GetManagedAggregateRoot ⇒
       sender ! RequestedAggregateRoot(ar)
-    case uar: UpdateAggregateRoot =>
+    case uar: UpdateAggregateRoot ⇒
       moveToUpdateState(Some(ar), Some(ar), Vector((sender, uar)))
-    case DropCachedAggregateRoot =>
+    case DropCachedAggregateRoot ⇒
       moveToUninitialized
-    case ReportCellState =>
+    case ReportCellState ⇒
       reportCellState(CellStateLoaded)
   }
 
   def updateState(arOpt: Option[AR], pendingUpdateRequests: Vector[(ActorRef, UpdateAggregateRoot)]): Receive = {
-    case GetManagedAggregateRoot =>
+    case GetManagedAggregateRoot ⇒
       arOpt match {
-        case Some(ar) =>
+        case Some(ar) ⇒
           sender ! RequestedAggregateRoot(ar)
-        case None =>
+        case None ⇒
           sender ! AggregateRootNotFound(managedAggregateRooId)
 
       }
-    case uar: UpdateAggregateRoot =>
+    case uar: UpdateAggregateRoot ⇒
       context.become(updateState(arOpt, pendingUpdateRequests :+ (sender, uar)))
-    case UpdateAR =>
+    case UpdateAR ⇒
       updateAggregateRoot(arOpt, pendingUpdateRequests)
       context.become(updateState(arOpt, Vector.empty))
-    case SuccessfulUpdate(newStateOpt, successToNotify, rest) =>
-      successToNotify.foreach(n => n._1 ! AggregateRootUpdated(n._2))
+    case SuccessfulUpdate(newStateOpt, successToNotify, rest) ⇒
+      successToNotify.foreach(n ⇒ n._1 ! AggregateRootUpdated(n._2))
       val newPendingUpdates = rest ++ pendingUpdateRequests
       if (newStateOpt.isDefined && newStateOpt.get.isDeleted) {
         newPendingUpdates.map(_._1).foreach(_ ! AggregateRootUpdateFailed(
@@ -132,32 +132,32 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       } else {
         if (newPendingUpdates.isEmpty) {
           newStateOpt match {
-            case Some(newState) =>
+            case Some(newState) ⇒
               moveToIdleState(arOpt, newState)
-            case None =>
+            case None ⇒
               moveToDoesNotExist
           }
         } else {
           moveToUpdateState(arOpt, newStateOpt, newPendingUpdates)
         }
       }
-    case FailedUpdate(problem, rest) =>
+    case FailedUpdate(problem, rest) ⇒
       log.error(s"""Could not update aggregate root "$managedAggregateRooId": ${problem.message}""")
       (rest ++ pendingUpdateRequests.map(_._1)).foreach(_ ! DomainMessages.AggregateRootUpdateFailed(managedAggregateRooId, problem))
       moveToErrorState(problem)
-    case DropCachedAggregateRoot =>
+    case DropCachedAggregateRoot ⇒
       ()
-    case ReportCellState =>
+    case ReportCellState ⇒
       arOpt match {
-        case Some(ar) => reportCellState(CellStateLoaded)
-        case None => reportCellState(CellStateUninitialized)
+        case Some(ar) ⇒ reportCellState(CellStateLoaded)
+        case None ⇒ reportCellState(CellStateUninitialized)
       }
   }
 
   private def doesNotExistState(isDeleted: Boolean): Receive = {
-    case GetManagedAggregateRoot =>
+    case GetManagedAggregateRoot ⇒
       sender ! AggregateRootNotFound(managedAggregateRooId)
-    case uar: UpdateAggregateRoot =>
+    case uar: UpdateAggregateRoot ⇒
       if (isDeleted) {
         sender ! AggregateRootUpdateFailed(
           managedAggregateRooId,
@@ -165,22 +165,22 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
       } else {
         moveToUpdateState(None, None, Vector((sender, uar)))
       }
-    case ReportCellState =>
+    case ReportCellState ⇒
       reportCellState(CellStateDoesNotExist)
-    case DropCachedAggregateRoot =>
+    case DropCachedAggregateRoot ⇒
       ()
   }
 
   private def errorState(problem: Problem): Receive = {
-    case GetManagedAggregateRoot =>
+    case GetManagedAggregateRoot ⇒
       context.become(uninitializedState(false, Vector(sender), Vector.empty))
       self ! Initialize
-    case uar: UpdateAggregateRoot =>
+    case uar: UpdateAggregateRoot ⇒
       context.become(uninitializedState(false, Vector.empty, Vector((sender, uar))))
       self ! Initialize
-    case DropCachedAggregateRoot =>
+    case DropCachedAggregateRoot ⇒
       ()
-    case ReportCellState =>
+    case ReportCellState ⇒
       reportCellState(CellStateError(problem))
   }
 
@@ -189,70 +189,70 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   //  }
 
   //  val buildArIteratee = new Iteratee[DomainEvent, Option[AR]] {
-  //    def fold[B](folder: Step[DomainEvent, Option[AR]] => Future[B]): Future[B] = {
+  //    def fold[B](folder: Step[DomainEvent, Option[AR]] ⇒ Future[B]): Future[B] = {
   //      case 
   //  }
   //}
 
   //  private def arFolder(step: Step[DomainEvent,Option[AR]]):Future[Option[AR]] = step match {
-  //    case Step.Done(a, e) => future(a)
-  //    case Step.Cont(k) => future(None)
+  //    case Step.Done(a, e) ⇒ future(a)
+  //    case Step.Cont(k) ⇒ future(None)
   //  }
 
   def fetchAR(): AlmFuture[Option[AR]] = {
     val warnDeadline = Deadline.now
     (domainEventLog ? GetAllDomainEventsFor(managedAggregateRooId))(getArTimeout).successfulAlmFuture[FetchDomainEventsResult].flatMap {
-      case FetchedDomainEvents(enumerator) =>
+      case FetchedDomainEvents(enumerator) ⇒
         val iteratee: Iteratee[DomainEvent, Option[AR]] = Iteratee.fold[DomainEvent, Option[AR]](None) {
-          case (agg, nextEvent) =>
+          case (agg, nextEvent) ⇒
             val typedDomainEvent = nextEvent.asInstanceOf[Event]
             if (typedDomainEvent.isInstanceOf[CreatesNewAggregateRootEvent] && agg.isEmpty)
               Some(createFreshAggregateRoot(typedDomainEvent).resultOrEscalate)
             else if (agg.isDefined)
-              agg.map(x => x.applyEvent(typedDomainEvent).resultOrEscalate)
+              agg.map(x ⇒ x.applyEvent(typedDomainEvent).resultOrEscalate)
             else CollisionProblem(s"""There is no aggregate($managedAggregateRooId) root to apply the event ${nextEvent.getClass().getName()} to.""").escalate
         }
-        enumerator.onDoneEnumerating(() =>
-          warnDeadline.whenTooLate(getArWarnThreshold, elapsed =>
+        enumerator.onDoneEnumerating(() ⇒
+          warnDeadline.whenTooLate(getArWarnThreshold, elapsed ⇒
             log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than ${getArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString}).""")))
         val res = enumerator.run(iteratee)
         res.toSuccessfulAlmFuture
-      case FetchDomainEventsFailed(problem) =>
+      case FetchDomainEventsFailed(problem) ⇒
         AlmFuture.failed(problem)
-    }.mapTimeout(tp =>
+    }.mapTimeout(tp ⇒
       OperationTimedOutProblem(s"""The domain event log failed to deliver the events for "$managedAggregateRooId" within ${getArTimeout.defaultUnitString}.""", cause = Some(tp)))
   }
   
   def updateAggregateRoot(arOpt: Option[AR], pendingUpdates: Vector[(ActorRef, UpdateAggregateRoot)]): Unit = {
     AlmFuture { getNextUpdateTask(arOpt, pendingUpdates).success }.onComplete(
-      problem => {
+      problem ⇒ {
         self ! FailedUpdate(problem, pendingUpdates.map(_._1))
       },
-      task =>
+      task ⇒
         task match {
-          case NoUpdateTasks =>
+          case NoUpdateTasks ⇒
             self ! SuccessfulUpdate(arOpt, None, Vector.empty)
-          case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) =>
+          case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) ⇒
             val start = Deadline.now
             (domainEventLog ? CommitDomainEvents(nextUpdateEvents))(updateArTimeout).successfulAlmFuture[CommitDomainEventsResult].onComplete(
-              problem =>
+              problem ⇒
                 problem match {
-                  case OperationTimedOutProblem(p) =>
+                  case OperationTimedOutProblem(p) ⇒
                     val prob = OperationTimedOutProblem(s"""The domain event log failed to append the events for "$managedAggregateRooId" within ${updateArTimeout.defaultUnitString}.""", cause = Some(p))
                     self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
-                  case prob =>
+                  case prob ⇒
                     self ! FailedUpdate(prob, requestedNextUpdate +: rest.map(_._1))
                 },
-              succ => {
-                start.whenTooLate(updateArWarnThreshold, elapsed =>
+              succ ⇒ {
+                start.whenTooLate(updateArWarnThreshold, elapsed ⇒
                   log.warning(s"""Storing ${nextUpdateEvents.size} events for aggregate root $managedAggregateRooId took more than ${updateArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString})."""))
                 succ match {
-                  case CommitFailed(problem) =>
+                  case CommitFailed(problem) ⇒
                     self ! FailedUpdate(problem, requestedNextUpdate +: rest.map(_._1))
-                  case NothingCommitted() =>
+                  case NothingCommitted() ⇒
                     log.warning(s"""No events have been committed for $managedAggregateRooId""")
                     self ! SuccessfulUpdate(Some(nextUpdateState), None, rest)
-                  case DomainEventsSuccessfullyCommitted(committedEvents) =>
+                  case DomainEventsSuccessfullyCommitted(committedEvents) ⇒
                     self ! SuccessfulUpdate(Some(nextUpdateState), Some((requestedNextUpdate, nextUpdateState)), rest)
                 }
               })
@@ -262,10 +262,10 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 
   protected def cancelLastReportingJob() {
     lastReportingJob match {
-      case Some(job) =>
+      case Some(job) ⇒
         job.cancel
         lastReportingJob = None
-      case None =>
+      case None ⇒
         ()
     }
   }
@@ -334,7 +334,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
 
 class AggregateRootCellImpl[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](
   aggregateRooId: JUUID,
-  override val createFreshAggregateRoot: TEvent => DomainValidation[TAR],
+  override val createFreshAggregateRoot: TEvent ⇒ DomainValidation[TAR],
   theDomainEventLog: ActorRef,
   reportCellStateSink: AggregateRootCellStateSink,
   override val cellStateReportingDelay: FiniteDuration,

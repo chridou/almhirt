@@ -38,16 +38,16 @@ object ExecutionStateTracker {
       subscriptionsOkReportingThres <- configSection.v[Int]("subscriptions-ok-reporting-threshold")
       stateChangedMessageWarningDur <- configSection.v[FiniteDuration]("state-changed-message-warning-age")
       checkDurations <- if (checkSubscriptions) {
-        configSection.v[FiniteDuration]("check-subscriptions-interval").flatMap(interval =>
-          configSection.v[FiniteDuration]("check-subscriptions-warn-age-lvl1").flatMap(warnAge1 =>
-            configSection.v[FiniteDuration]("check-subscriptions-warn-age-lvl2").map(warnAge2 => Some((interval, warnAge1, warnAge2)))))
+        configSection.v[FiniteDuration]("check-subscriptions-interval").flatMap(interval ⇒
+          configSection.v[FiniteDuration]("check-subscriptions-warn-age-lvl1").flatMap(warnAge1 ⇒
+            configSection.v[FiniteDuration]("check-subscriptions-warn-age-lvl2").map(warnAge2 ⇒ Some((interval, warnAge1, warnAge2)))))
       } else {
         None.success
       }
       _ <- checkDurations match {
-        case Some((_, a, b)) if (a >= b) =>
+        case Some((_, a, b)) if (a >= b) ⇒
           ConstraintViolatedProblem(s""""ExecutionStateTracker: check-subscriptions-warn-age-lvl1" must be less than "check-subscriptions-warn-age-lvl2"(${a.defaultUnitString} >= ${b.defaultUnitString}).""").failure
-        case _ => ().success
+        case _ ⇒ ().success
       }
     } yield {
       if (debugMode)
@@ -56,12 +56,12 @@ object ExecutionStateTracker {
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-threshold" is $theCeanUpThreshold""")
       theAlmhirt.log.info(s"""ExecutionStateTracker: "clean-up-interval" is ${theCleanUpInterval.defaultUnitString}""")
       checkDurations match {
-        case Some((interval, t1, t2)) =>
+        case Some((interval, t1, t2)) ⇒
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions" is true""")
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-interval" is ${interval.defaultUnitString}""")
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-warn-age-lvl1" is ${t1.defaultUnitString}""")
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions-warn-age-lvl2" is ${t2.defaultUnitString}""")
-        case None =>
+        case None ⇒
           theAlmhirt.log.info(s"""ExecutionStateTracker: "check-subscriptions" is false""")
       }
       Props(new almhirt.components.impl.ExecutionTrackerTemplate with ExecutionStateTracker with Actor with ActorLogging {
@@ -118,7 +118,7 @@ object ExecutionStateTracker {
     }
 
   def apply(theAlmhirt: Almhirt, configPath: String, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] =
-    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
+    theAlmhirt.config.v[Config](configPath).flatMap(configSection ⇒
       apply(theAlmhirt, configSection, actorFactory: ActorRefFactory))
     
   def apply(theAlmhirt: Almhirt, actorFactory: ActorRefFactory): AlmValidation[(ActorRef, CloseHandle)] = apply(theAlmhirt, "almhirt.execution-state-tracker", actorFactory)
@@ -127,7 +127,7 @@ object ExecutionStateTracker {
 
 }
 
-trait ExecutionStateTracker { actor: Actor with ActorLogging =>
+trait ExecutionStateTracker { actor: Actor with ActorLogging ⇒
   def handleTrackingMessage: Receive
 }
 

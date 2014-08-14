@@ -1,6 +1,6 @@
 package almhirt.domain
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import scalaz.syntax.validation._
 import scala.concurrent.duration._
 import akka.actor._
@@ -13,7 +13,7 @@ import almhirt.almfuture.all._
 import almhirt.core.types._
 import scala.reflect.ClassTag
 
-trait AggregateRootRepository { actor: akka.actor.Actor =>
+trait AggregateRootRepository { actor: akka.actor.Actor ⇒
   type Event <: DomainEvent
   type AR <: AggregateRoot[AR, Event]
 
@@ -31,7 +31,7 @@ object AggregateRootRepository {
       new almhirt.domain.impl.AggregateRootRepositoryImpl[TAR, TEvent](theAlmhirt, cellCache, cellAskMaxDuration, cacheAskMaxDuration))
 
   def props[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, configPath: String, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[Props] =
-    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
+    theAlmhirt.config.v[Config](configPath).flatMap(configSection ⇒
       props[TAR, TEvent](cellCache, configSection, theAlmhirt))
 
   def props[TAR <: AggregateRoot[TAR, TEvent], TEvent <: DomainEvent](cellCache: ActorRef, theAlmhirt: Almhirt)(implicit tagAr: ClassTag[TAR], tagE: ClassTag[TEvent]): AlmValidation[Props] =
@@ -43,8 +43,8 @@ object AggregateRootRepository {
       useRouting <- configSection.v[Boolean]("use-routing")
       routingProperties <- if (useRouting) configSection.v[java.util.Properties]("routing-config").map(Some(_)) else None.success
       numActors <- routingProperties match {
-        case None => 1.success
-        case Some(props) =>
+        case None ⇒ 1.success
+        case Some(props) ⇒
           if (props.containsKey(tagAr.runtimeClass.getName()))
             props.getProperty(tagAr.runtimeClass.getName()).toIntAlm
           else

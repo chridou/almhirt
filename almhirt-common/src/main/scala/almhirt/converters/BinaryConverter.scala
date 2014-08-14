@@ -1,6 +1,6 @@
 package almhirt.converters
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import java.nio.ByteBuffer
 
 object BinaryConverter {

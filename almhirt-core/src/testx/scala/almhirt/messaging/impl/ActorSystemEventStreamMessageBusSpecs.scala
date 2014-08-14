@@ -19,7 +19,7 @@ class ActorSystemEventStreamMessageBusSpecs extends TestKit(ActorSystem("ActorSy
   class C() extends A
   case class D(content: String = "") extends A
 
-  val classifyD = Classifier.payloadPredicate[D](x => !x.content.isEmpty)
+  val classifyD = Classifier.payloadPredicate[D](x ⇒ !x.content.isEmpty)
 
   val (messagebus, _) = ActorSystemEventStreamMessageBus(this.system).awaitResult(defaultDuration).forceResult
   val channelA = messagebus.channel[A].awaitResult(maxMsgDuration).forceResult

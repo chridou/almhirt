@@ -58,7 +58,7 @@ private[almhirt] class ActorStillage[TElement](contents: Seq[TElement], packagin
   var stockroom: Option[Stockroom[TElement]] = None
 
   def offer() {
-    stockroom.foreach(stockroom => {
+    stockroom.foreach(stockroom ⇒ {
       val nextBatch = notYetOffered.take(packagingSize)
       notYetOffered = notYetOffered.drop(nextBatch.size)
       stockroom.offerSupplies(nextBatch.size)
@@ -67,21 +67,21 @@ private[almhirt] class ActorStillage[TElement](contents: Seq[TElement], packagin
   }
 
   def receive: Receive = {
-    case OnStockroom(theStockroom: Stockroom[TElement]) =>
+    case OnStockroom(theStockroom: Stockroom[TElement]) ⇒
       stockroom match {
-        case None =>
+        case None ⇒
           stockroom = Some(theStockroom)
           offer()
-        case _ =>
+        case _ ⇒
           sys.error("There is already a stockroom")
       }
 
-    case OnDeliverSuppliesNow(amount) =>
+    case OnDeliverSuppliesNow(amount) ⇒
       if(amount > offered.size) {
     	  sys.error("The demand my not exceed the offers!")
       }
       
-      stockroom.foreach(stockroom => {
+      stockroom.foreach(stockroom ⇒ {
         val toLoad = offered.take(amount)
         stockroom.deliverSupplies(toLoad)
         offered = offered.drop(amount)
@@ -92,11 +92,11 @@ private[almhirt] class ActorStillage[TElement](contents: Seq[TElement], packagin
           stockroom.cancelContract()
       })
 
-    case OnContractExpired =>
+    case OnContractExpired ⇒
       stockroom = None
       context.system.stop(self)
 
-    case OnProblem(problem) =>
+    case OnProblem(problem) ⇒
       problem.escalate()
 
   }

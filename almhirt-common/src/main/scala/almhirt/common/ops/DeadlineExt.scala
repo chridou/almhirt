@@ -6,7 +6,7 @@ trait DeadlineExt {
   implicit class DeadlineOps(self: Deadline) {
     def lap: FiniteDuration = Deadline.now - self
     def lapExceeds(dur: FiniteDuration): Boolean = (Deadline.now - self) > dur
-    def whenTooLate(limit: FiniteDuration, f: FiniteDuration => Unit) {
+    def whenTooLate(limit: FiniteDuration, f: FiniteDuration ⇒ Unit) {
       val dur = self.lap
       if (dur > limit) f(dur)
     }

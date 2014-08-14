@@ -19,7 +19,7 @@ class SequentialPostOfficeClientTests(_system: ActorSystem) extends TestKit(_sys
 
   val bigN = 30000
   val pSize = 3
-  it should s"dispatch many packages($bigN) of the same size($pSize) (${bigN * pSize} items)" in { fixture =>
+  it should s"dispatch many packages($bigN) of the same size($pSize) (${bigN * pSize} items)" in { fixture ⇒
     val FixtureParam(testId, postOffice, producer) = fixture
     val consumerProbe = TestProbe()
     val consumer = DelegatingConsumer[String](consumerProbe.ref)

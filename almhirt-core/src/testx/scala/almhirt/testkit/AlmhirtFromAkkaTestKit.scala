@@ -4,7 +4,7 @@ import almhirt.core._
 import almhirt.almvalidation.kit._
 import com.typesafe.config._
 
-trait AlmhirtFromAkkaTestKitWithoutConfiguration { self: AlmhirtTestKit =>
+trait AlmhirtFromAkkaTestKitWithoutConfiguration { self: AlmhirtTestKit ⇒
   private val almhirtAndCloseHandleF = Almhirt.notFromConfig(self.system).awaitResult(scala.concurrent.duration.Duration(5, "s"))
   private val almhirtAndCloseHandle = almhirtAndCloseHandleF.resultOrEscalate
 
@@ -12,7 +12,7 @@ trait AlmhirtFromAkkaTestKitWithoutConfiguration { self: AlmhirtTestKit =>
 }
 
 
-trait AlmhirtFromAkkaTestKitWithConfiguration { self: AlmhirtTestKit =>
+trait AlmhirtFromAkkaTestKitWithConfiguration { self: AlmhirtTestKit ⇒
   def config: Config
   private val almhirtAndCloseHandleF = Almhirt(self.system, config).awaitResult(scala.concurrent.duration.Duration(5, "s"))
   private val almhirtAndCloseHandle = almhirtAndCloseHandleF.resultOrEscalate

@@ -12,22 +12,22 @@ trait ConfigExtractor[T] {
 }
 
 object ConfigHelper {
-  def getFromConfigSafely[T](path: String, f: String => T)(implicit tag: ClassTag[T]): AlmValidation[T] =
+  def getFromConfigSafely[T](path: String, f: String ⇒ T)(implicit tag: ClassTag[T]): AlmValidation[T] =
     try {
       f(path).success
     } catch {
-      case exn: ConfigException.Missing =>
+      case exn: ConfigException.Missing ⇒
         NoSuchElementProblem(s"""No value found at "$path".""", args = Map("key" -> path)).failure
-      case exn: ConfigException.WrongType =>
+      case exn: ConfigException.WrongType ⇒
         BadDataProblem(s"""Value at "$path" can not be converted to a "${tag.runtimeClass.getName()}".""", args = Map("key" -> path)).failure
     }
-  def tryGetFromConfigSafely[T](path: String, f: String => T)(implicit tag: ClassTag[T]): AlmValidation[Option[T]] =
+  def tryGetFromConfigSafely[T](path: String, f: String ⇒ T)(implicit tag: ClassTag[T]): AlmValidation[Option[T]] =
     try {
       Some(f(path)).success
     } catch {
-      case exn: ConfigException.Missing =>
+      case exn: ConfigException.Missing ⇒
         None.success
-      case exn: ConfigException.WrongType =>
+      case exn: ConfigException.WrongType ⇒
         BadDataProblem(s"""Value at "$path" can not be converted to a "${tag.runtimeClass.getName()}".""", args = Map("key" -> path)).failure
     }
 }
@@ -69,99 +69,99 @@ trait ConfigDoubleExtractor extends ConfigExtractor[Double] {
 
 trait ConfigFiniteDurationMsExtractor extends ConfigExtractor[scala.concurrent.duration.FiniteDuration] {
   def getValue(config: Config, path: String): AlmValidation[scala.concurrent.duration.FiniteDuration] =
-    ConfigHelper.getFromConfigSafely(path, str => config.getDuration(str, scala.concurrent.duration.MILLISECONDS)).map(ms => scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS))
+    ConfigHelper.getFromConfigSafely(path, str ⇒ config.getDuration(str, scala.concurrent.duration.MILLISECONDS)).map(ms ⇒ scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS))
   def tryGetValue(config: Config, path: String): AlmValidation[Option[scala.concurrent.duration.FiniteDuration]] =
-    ConfigHelper.tryGetFromConfigSafely(path, str => config.getDuration(str, scala.concurrent.duration.MILLISECONDS)).map(msOpt => msOpt.map(scala.concurrent.duration.FiniteDuration.apply(_, scala.concurrent.duration.MILLISECONDS)))
+    ConfigHelper.tryGetFromConfigSafely(path, str ⇒ config.getDuration(str, scala.concurrent.duration.MILLISECONDS)).map(msOpt ⇒ msOpt.map(scala.concurrent.duration.FiniteDuration.apply(_, scala.concurrent.duration.MILLISECONDS)))
 }
 
 trait ConfigJodaDurationMsExtractor extends ConfigExtractor[org.joda.time.Duration] {
   def getValue(config: Config, path: String): AlmValidation[org.joda.time.Duration] =
-    ConfigHelper.getFromConfigSafely(path, str => config.getDuration(str, scala.concurrent.duration.MILLISECONDS)).map(ms => org.joda.time.Duration.millis(ms))
+    ConfigHelper.getFromConfigSafely(path, str ⇒ config.getDuration(str, scala.concurrent.duration.MILLISECONDS)).map(ms ⇒ org.joda.time.Duration.millis(ms))
   def tryGetValue(config: Config, path: String): AlmValidation[Option[org.joda.time.Duration]] =
-    ConfigHelper.tryGetFromConfigSafely(path, str => config.getDuration(str, scala.concurrent.duration.MILLISECONDS)).map(msOpt => msOpt.map(ms => org.joda.time.Duration.millis(ms)))
+    ConfigHelper.tryGetFromConfigSafely(path, str ⇒ config.getDuration(str, scala.concurrent.duration.MILLISECONDS)).map(msOpt ⇒ msOpt.map(ms ⇒ org.joda.time.Duration.millis(ms)))
 }
 
 trait ConfigUuidExtractor extends ConfigExtractor[java.util.UUID] {
   import almhirt.almvalidation.kit._
   def getValue(config: Config, path: String): AlmValidation[java.util.UUID] =
-    ConfigHelper.getFromConfigSafely(path, config.getString).flatMap(str => str.toUuidAlm)
+    ConfigHelper.getFromConfigSafely(path, config.getString).flatMap(str ⇒ str.toUuidAlm)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[java.util.UUID]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getString).flatMap(strOpt => strOpt.map(str => str.toUuidAlm).validationOut)
+    ConfigHelper.tryGetFromConfigSafely(path, config.getString).flatMap(strOpt ⇒ strOpt.map(str ⇒ str.toUuidAlm).validationOut)
 }
 
 trait ConfigUriExtractor extends ConfigExtractor[java.net.URI] {
   import almhirt.almvalidation.kit._
   def getValue(config: Config, path: String): AlmValidation[java.net.URI] =
-    ConfigHelper.getFromConfigSafely(path, config.getString).flatMap(str => str.toUriAlm)
+    ConfigHelper.getFromConfigSafely(path, config.getString).flatMap(str ⇒ str.toUriAlm)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[java.net.URI]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getString).flatMap(strOpt => strOpt.map(str => str.toUriAlm).validationOut)
+    ConfigHelper.tryGetFromConfigSafely(path, config.getString).flatMap(strOpt ⇒ strOpt.map(str ⇒ str.toUriAlm).validationOut)
 }
 
 trait ConfigStringListExtractor extends ConfigExtractor[List[String]] {
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[String]] =
-    ConfigHelper.getFromConfigSafely(path, config.getStringList).map(l => l.toList)
+    ConfigHelper.getFromConfigSafely(path, config.getStringList).map(l ⇒ l.toList)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[String]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).map(lOpt => lOpt.map(l => l.toList))
+    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).map(lOpt ⇒ lOpt.map(l ⇒ l.toList))
 }
 
 trait ConfigBooleanListExtractor extends ConfigExtractor[List[Boolean]] {
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[Boolean]] =
-    ConfigHelper.getFromConfigSafely(path, config.getBooleanList).map(l => l.map(_.booleanValue).toList)
+    ConfigHelper.getFromConfigSafely(path, config.getBooleanList).map(l ⇒ l.map(_.booleanValue).toList)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Boolean]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getBooleanList).map(lOpt => lOpt.map(l => l.map(_.booleanValue).toList))
+    ConfigHelper.tryGetFromConfigSafely(path, config.getBooleanList).map(lOpt ⇒ lOpt.map(l ⇒ l.map(_.booleanValue).toList))
 }
 
 trait ConfigIntListExtractor extends ConfigExtractor[List[Int]] {
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[Int]] =
-    ConfigHelper.getFromConfigSafely(path, config.getIntList).map(l => l.map(_.toInt).toList)
+    ConfigHelper.getFromConfigSafely(path, config.getIntList).map(l ⇒ l.map(_.toInt).toList)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Int]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getIntList).map(lOpt => lOpt.map(l => l.map(_.toInt).toList))
+    ConfigHelper.tryGetFromConfigSafely(path, config.getIntList).map(lOpt ⇒ lOpt.map(l ⇒ l.map(_.toInt).toList))
 }
 
 trait ConfigLongListExtractor extends ConfigExtractor[List[Long]] {
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[Long]] =
-    ConfigHelper.getFromConfigSafely(path, config.getLongList).map(l => l.map(_.toLong).toList)
+    ConfigHelper.getFromConfigSafely(path, config.getLongList).map(l ⇒ l.map(_.toLong).toList)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Long]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getLongList).map(lOpt => lOpt.map(l => l.map(_.toLong).toList))
+    ConfigHelper.tryGetFromConfigSafely(path, config.getLongList).map(lOpt ⇒ lOpt.map(l ⇒ l.map(_.toLong).toList))
 }
 
 trait ConfigDoubleListExtractor extends ConfigExtractor[List[Double]] {
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[Double]] =
-    ConfigHelper.getFromConfigSafely(path, config.getDoubleList).map(l => l.map(_.toDouble).toList)
+    ConfigHelper.getFromConfigSafely(path, config.getDoubleList).map(l ⇒ l.map(_.toDouble).toList)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Double]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getDoubleList).map(lOpt => lOpt.map(l => l.map(_.toDouble).toList))
+    ConfigHelper.tryGetFromConfigSafely(path, config.getDoubleList).map(lOpt ⇒ lOpt.map(l ⇒ l.map(_.toDouble).toList))
 }
 
 trait ConfigFiniteDurationListMsExtractor extends ConfigExtractor[List[scala.concurrent.duration.FiniteDuration]] {
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[scala.concurrent.duration.FiniteDuration]] =
-    ConfigHelper.getFromConfigSafely(path, str => config.getDurationList(str, scala.concurrent.duration.MILLISECONDS)).map(l => l.map(ms => scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS)).toList)
+    ConfigHelper.getFromConfigSafely(path, str ⇒ config.getDurationList(str, scala.concurrent.duration.MILLISECONDS)).map(l ⇒ l.map(ms ⇒ scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS)).toList)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[scala.concurrent.duration.FiniteDuration]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, str => config.getDurationList(str, scala.concurrent.duration.MILLISECONDS)).map(lOpt => lOpt.map(l => l.map(ms => scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS)).toList))
+    ConfigHelper.tryGetFromConfigSafely(path, str ⇒ config.getDurationList(str, scala.concurrent.duration.MILLISECONDS)).map(lOpt ⇒ lOpt.map(l ⇒ l.map(ms ⇒ scala.concurrent.duration.FiniteDuration.apply(ms, scala.concurrent.duration.MILLISECONDS)).toList))
 }
 
 trait ConfigJodaDurationListMsExtractor extends ConfigExtractor[List[org.joda.time.Duration]] {
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[org.joda.time.Duration]] =
-    ConfigHelper.getFromConfigSafely(path, str => config.getDurationList(str, scala.concurrent.duration.MILLISECONDS)).map(l => l.map(ms => org.joda.time.Duration.millis(ms)).toList)
+    ConfigHelper.getFromConfigSafely(path, str ⇒ config.getDurationList(str, scala.concurrent.duration.MILLISECONDS)).map(l ⇒ l.map(ms ⇒ org.joda.time.Duration.millis(ms)).toList)
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[org.joda.time.Duration]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, str => config.getDurationList(str, scala.concurrent.duration.MILLISECONDS)).map(lOpt => lOpt.map(l => l.map(ms => org.joda.time.Duration.millis(ms)).toList))
+    ConfigHelper.tryGetFromConfigSafely(path, str ⇒ config.getDurationList(str, scala.concurrent.duration.MILLISECONDS)).map(lOpt ⇒ lOpt.map(l ⇒ l.map(ms ⇒ org.joda.time.Duration.millis(ms)).toList))
 }
 
 trait ConfigUuidListExtractor extends ConfigExtractor[List[java.util.UUID]] {
   import almhirt.almvalidation.kit._
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[java.util.UUID]] =
-    ConfigHelper.getFromConfigSafely(path, config.getStringList).flatMap(l =>
-      l.toList.map(str =>
+    ConfigHelper.getFromConfigSafely(path, config.getStringList).flatMap(l ⇒
+      l.toList.map(str ⇒
         str.toUuidAlm.toAgg).sequence[AlmValidationAP, java.util.UUID])
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[java.util.UUID]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).flatMap(strLOpt => strLOpt.map(l => l.toList.map(str =>
+    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).flatMap(strLOpt ⇒ strLOpt.map(l ⇒ l.toList.map(str ⇒
       str.toUuidAlm.toAgg).sequence[AlmValidationAP, java.util.UUID]).validationOut)
 }
 
@@ -169,11 +169,11 @@ trait ConfigUriListExtractor extends ConfigExtractor[List[java.net.URI]] {
   import almhirt.almvalidation.kit._
   import scala.collection.JavaConversions._
   def getValue(config: Config, path: String): AlmValidation[List[java.net.URI]] =
-    ConfigHelper.getFromConfigSafely(path, config.getStringList).flatMap(l =>
-      l.toList.map(str =>
+    ConfigHelper.getFromConfigSafely(path, config.getStringList).flatMap(l ⇒
+      l.toList.map(str ⇒
         str.toUriAlm.toAgg).sequence[AlmValidationAP, java.net.URI])
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[java.net.URI]]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).flatMap(strLOpt => strLOpt.map(l => l.toList.map(str =>
+    ConfigHelper.tryGetFromConfigSafely(path, config.getStringList).flatMap(strLOpt ⇒ strLOpt.map(l ⇒ l.toList.map(str ⇒
       str.toUriAlm.toAgg).sequence[AlmValidationAP, java.net.URI]).validationOut)
 }
 
@@ -190,13 +190,13 @@ trait ConfigConfigListExtractor extends ConfigExtractor[List[Config]] {
   def getValue(config: Config, path: String): AlmValidation[List[Config]] =
     for {
       items <- ConfigHelper.getFromConfigSafely(path, config.getConfigList)
-      typed <- items.map(c => inTryCatch { c.asInstanceOf[Config] }.toAgg).toList.sequence
+      typed <- items.map(c ⇒ inTryCatch { c.asInstanceOf[Config] }.toAgg).toList.sequence
     } yield typed
 
   def tryGetValue(config: Config, path: String): AlmValidation[Option[List[Config]]] =
     unsafe {
-      ConfigHelper.tryGetFromConfigSafely(path, config.getConfigList).map(lOpt =>
-        lOpt.map(l => l.toList.map(cfg =>
+      ConfigHelper.tryGetFromConfigSafely(path, config.getConfigList).map(lOpt ⇒
+        lOpt.map(l ⇒ l.toList.map(cfg ⇒
           cfg.asInstanceOf[Config])))
     }
 }
@@ -206,13 +206,13 @@ trait ConfigJavaPropertiesExtractor extends ConfigExtractor[java.util.Properties
   import collection.JavaConversions._
 
   def getValue(config: Config, path: String): AlmValidation[Properties] =
-    ConfigHelper.getFromConfigSafely(path, config.getConfig).map(subConfig =>
+    ConfigHelper.getFromConfigSafely(path, config.getConfig).map(subConfig ⇒
       subConfig.entrySet()
-        .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
-        .foldLeft(new Properties)((acc, x) => { acc.setProperty(x._1, x._2); acc }))
+        .map(x ⇒ (x.getKey(), x.getValue().unwrapped().toString()))
+        .foldLeft(new Properties)((acc, x) ⇒ { acc.setProperty(x._1, x._2); acc }))
   def tryGetValue(config: Config, path: String): AlmValidation[Option[Properties]] =
-    ConfigHelper.tryGetFromConfigSafely(path, config.getConfig).map(_.map((subConfig =>
+    ConfigHelper.tryGetFromConfigSafely(path, config.getConfig).map(_.map((subConfig ⇒
       subConfig.entrySet()
-        .map(x => (x.getKey(), x.getValue().unwrapped().toString()))
-        .foldLeft(new Properties)((acc, x) => { acc.setProperty(x._1, x._2); acc }))))
+        .map(x ⇒ (x.getKey(), x.getValue().unwrapped().toString()))
+        .foldLeft(new Properties)((acc, x) ⇒ { acc.setProperty(x._1, x._2); acc }))))
 }

@@ -20,7 +20,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
   with HasAlmhirt
   with FunSpecLike
   with BeforeAndAfterAll
-  with Matchers { self: CreatesDomainEventLog =>
+  with Matchers { self: CreatesDomainEventLog ⇒
 
  override def afterAll() {
    shutdown
@@ -33,7 +33,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
   // Override in case your database needs some time after writing which is a bad thing......
   def sleepAfterInsert: Option[FiniteDuration] = None
 
-  def useDomainEventLog[T](f: ActorRef => T): T = {
+  def useDomainEventLog[T](f: ActorRef ⇒ T): T = {
     val testId = nextTestId
     val (domaineventlog, eventLogCleanUp) = createDomainEventLog(testId)
     try {
@@ -42,7 +42,7 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       eventLogCleanUp()
       res
     } catch {
-      case exn: Exception =>
+      case exn: Exception ⇒
         system.stop(domaineventlog)
         eventLogCleanUp()
         throw exn
@@ -50,22 +50,22 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
   }
 
   def sleepAfterInsertIfNeccessary(): AlmFuture[Unit] =
-    sleepAfterInsert match { case Some(dur) => AlmFuture.successful(Thread.sleep(dur.toMillis)) case None => AlmFuture.successful(()) }
+    sleepAfterInsert match { case Some(dur) ⇒ AlmFuture.successful(Thread.sleep(dur.toMillis)) case None ⇒ AlmFuture.successful(()) }
 
   import almhirt.domaineventlog.DomainEventLog._
 
   describe("A domain event log") {
     it("""should accept a "CommitDomainEvents" with 0 events and answer with a "CommittedDomainEvents" containing no committed events""", DbTest){
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val res = (eventlog ? CommitDomainEvents(Vector.empty))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
         res should equal(CommittedDomainEvents(IndexedSeq.empty))
       }
     }
 
     it("""should accept a "CommitDomainEvents" with 1 event and answer with a "CommittedDomainEvents" containing the committed event""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val event = AR1Created(DomainEventHeader(AggregateRootRef(theAlmhirt.getUuid)), "a")
         val res = (eventlog ? CommitDomainEvents(Vector(event)))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
         res should equal(CommittedDomainEvents(IndexedSeq(event)))
@@ -73,8 +73,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should accept a "CommitDomainEvents" with many events for one aggregate root and answer with a "CommittedDomainEvents" containing the committed events in the original order""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val events = createEvents(theAlmhirt.getUuid, 100)
         val res = (eventlog ? CommitDomainEvents(events))(defaultDuration).successfulAlmFuture[DomainEventLogMessage].awaitResultOrEscalate(defaultDuration)
         res should equal(CommittedDomainEvents(events))
@@ -82,8 +82,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should accept 3x "CommitDomainEvents" for 3 ARs with many events one aggregate root each and answer with a "CommittedDomainEvents" containing the committed events in the original order""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val events1 = createEvents(theAlmhirt.getUuid, 100)
         val events2 = createEvents(theAlmhirt.getUuid, 100)
         val events3 = createEvents(theAlmhirt.getUuid, 100)
@@ -102,8 +102,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should accept 3x "CommitDomainEvents" for 3 ARs with many events for one aggregate root each and when queried for each aggregate root the events should be returned in the original order""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val events1 = createEvents(theAlmhirt.getUuid, 100)
         val events2 = createEvents(theAlmhirt.getUuid, 100)
         val events3 = createEvents(theAlmhirt.getUuid, 100)
@@ -144,8 +144,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should accept a "CommitDomainEvents" with many events for one aggregate root which when queried for are returned in the order they were committed""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -160,8 +160,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetAllDomainEvents" return no events if the domain event log is empty""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val res =
           (for {
             enumerator <- (eventlog ? GetAllDomainEvents)(defaultDuration).successfulAlmFuture[FetchedDomainEvents].map(_.enumerator)
@@ -172,8 +172,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetAllDomainEvents" return all events in the correct order""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -189,8 +189,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetAllDomainEventsFor" return no events if the domain event log is empty""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val res =
           (for {
@@ -203,8 +203,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetAllDomainEventsFor" return all events in the correct order""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -220,8 +220,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFrom(0L)" return all events in the correct order""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -237,8 +237,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFrom(0L < x < maxVersion)" return all events starting from x to the end in the correct order""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -254,8 +254,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFrom(x = maxVersion)" return the last event""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -271,8 +271,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFrom(x > maxVersion)" return no events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -288,8 +288,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsTo(0L)" return the first event""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -305,8 +305,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsTo(x = maxVersion)" return all events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -322,8 +322,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsTo(x > maxVersion)" return all events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -339,8 +339,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsTo(0 < x < maxVersion)" return all events up to including version x""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -357,8 +357,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(0L)" return no events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -374,8 +374,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(1L)" return the first event (version 0)""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -392,8 +392,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(x = maxVersion)" return all events except the last""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -410,8 +410,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(x > maxVersion)" return all events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -427,8 +427,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsUntil(0 < x < maxVersion)" return all events up to version x excluding the one with version x""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -444,8 +444,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L, 0L)" return the first event""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -460,8 +460,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L, maxVersion)" return all events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -476,8 +476,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L, x < maxVersion)" return all events up to the one including with version = x""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -495,8 +495,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L,  x > maxVersion)" return all events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -512,8 +512,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(x < maxVersion,  maxVersion)" return all events from including x to the end""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -529,8 +529,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should when queried with "GetDomainEventsFromTo(x < maxVersion,  y < maxVersion)" return all events from including x to the one including y""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -547,8 +547,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should when queried with "GetDomainEventsFromTo(0L x < maxVersion,  y = x)" return the event with version x""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -566,8 +566,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromTo(0L x < maxVersion,  y < x)" return no events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -583,8 +583,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
 
     // ---
     it("""should when queried with "GetDomainEventsFromUntil(0L, 0L)" return no event""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -599,8 +599,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(0L, maxVersion)" return all events except the last""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -617,8 +617,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(0L, x < maxVersion)" return all events up to the one excluding version = x""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -636,8 +636,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(0L,  x > maxVersion)" return all events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -652,8 +652,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(x < maxVersion,  maxVersion)" return all events from including x to the end except the last one with maxVersion""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -669,8 +669,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(x < maxVersion,  y < maxVersion)" return all events from including x to the one excluding y""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -686,8 +686,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
       }
     }
     it("""should when queried with "GetDomainEventsFromUntil(0L x < maxVersion,  y = x)" return no event""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -702,8 +702,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEventsFromUntil(0L x < maxVersion,  y < x)" return no events""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -718,8 +718,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEvent(existing id)" reply with QueriedDomainEvent(Some(theEvent))""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val res =
@@ -733,8 +733,8 @@ abstract class DomainEventLogSpecTemplate(theActorSystem: ActorSystem)
     }
 
     it("""should when queried with "GetDomainEvent(nonexisting id)" reply with QueriedDomainEvent(None)""", DbTest) {
-      useDomainEventLog { eventlog =>
-        sleepBeforeEachTest.foreach(d => Thread.sleep(d.toMillis))
+      useDomainEventLog { eventlog ⇒
+        sleepBeforeEachTest.foreach(d ⇒ Thread.sleep(d.toMillis))
         val arId = theAlmhirt.getUuid
         val events = createEvents(arId, 100)
         val nonexistingid = theAlmhirt.getUuid

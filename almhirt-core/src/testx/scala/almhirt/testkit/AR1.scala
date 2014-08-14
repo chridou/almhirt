@@ -34,22 +34,22 @@ case class AR1(ref: AggregateRootRef, theA: String, theB: Option[String], isDele
   with AggregateRootMutationHelpers[AR1, AR1Event] {
 
   protected override def handlers = {
-    case AR1AChanged(_, newA) => set((ar: AR1, v: String) => ar.copy(theA = v), newA)
-    case AR1BChanged(_, newB) => setL(AR1Lenses.theBL, newB)
-    case AR1Deleted(_) => markDeleted((ar: AR1, b: Boolean) => ar.copy(isDeleted = b))
+    case AR1AChanged(_, newA) ⇒ set((ar: AR1, v: String) ⇒ ar.copy(theA = v), newA)
+    case AR1BChanged(_, newB) ⇒ setL(AR1Lenses.theBL, newB)
+    case AR1Deleted(_) ⇒ markDeleted((ar: AR1, b: Boolean) ⇒ ar.copy(isDeleted = b))
   }
 
   def changeA(newA: String)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[AR1, AR1Event] =
     newA.notEmptyAlm.fold(
-      fail => reject(fail),
-      succ => update(AR1AChanged(ref, succ)))
+      fail ⇒ reject(fail),
+      succ ⇒ update(AR1AChanged(ref, succ)))
 
   def changeB(newB: Option[String])(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[AR1, AR1Event] =
     newB.map(_.notEmptyAlm).validationOut.fold(
-      fail => {
+      fail ⇒ {
         reject(fail)
       },
-      succ => update(AR1BChanged(ref, succ)))
+      succ ⇒ update(AR1BChanged(ref, succ)))
 
   def delete()(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[AR1, AR1Event] =
     update(AR1Deleted(ref))
@@ -59,7 +59,7 @@ case class AR1(ref: AggregateRootRef, theA: String, theB: Option[String], isDele
 
 object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
   protected override def creationHandler: PartialFunction[AR1Event, AR1] = {
-    case AR1Created(header, newA) =>
+    case AR1Created(header, newA) ⇒
       AR1(header.aggRef.inc, newA, None, false)
   }
 
@@ -74,26 +74,26 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
 
       val createTestArAdder =
         CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComCreateAR1, AR1Event, AR1](
-          command =>
+          command ⇒
             {
               AR1.fromScratch(command.targettedAggregateRootId, command.newA).result
             },
           executionContext)
       val changeAAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComChangeA, AR1Event, AR1](
-          (ar, command) => {
+          (ar, command) ⇒ {
             ar.changeA(command.newA).result
           },
           executionContext)
       val changeBAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComChangeB, AR1Event, AR1](
-          (ar, command) => {
+          (ar, command) ⇒ {
             ar.changeB(command.newB).result
           },
           executionContext)
       val deleteTestArAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[AR1ComDeleteAR1, AR1Event, AR1](
-          (ar, command) => ar.delete.result,
+          (ar, command) ⇒ ar.delete.result,
           executionContext)
 
       registry nextAdder createTestArAdder nextAdder changeAAdder nextAdder changeBAdder nextAdder deleteTestArAdder
@@ -118,7 +118,7 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
           P("isDeleted", what.isDeleted)
 
       override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[AR1] =
-        withFastLookUp(from) { lu =>
+        withFastLookUp(from) { lu ⇒
           for {
             ref <- lu.getWith("ref", AggregateRootRefWarpPackaging)
             theA <- lu.getAs[String]("theA")
@@ -253,7 +253,7 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
     def addAr1Serializers(to: RiftWarp): RiftWarp = {
       List(AR1WarpPackaging,
         AR1CreatedWarpPackaging, AR1AChangedWarpPackaging, AR1BChangedWarpPackaging, AR1DeletedWarpPackaging, AR1UnhandableEventWarpPackaging,
-        AR1ComCreateAR1WarpPackaging, AR1ComChangeAWarpPackaging, AR1ComChangeBWarpPackaging, AR1ComDeleteAR1WarpPackaging, AR1ComUnregisteredCommandWarpPackaging).foreach { packaging =>
+        AR1ComCreateAR1WarpPackaging, AR1ComChangeAWarpPackaging, AR1ComChangeBWarpPackaging, AR1ComDeleteAR1WarpPackaging, AR1ComUnregisteredCommandWarpPackaging).foreach { packaging ⇒
           to.packers.add(packaging)
           to.unpackers.add(packaging)
         }
@@ -263,7 +263,7 @@ object AR1 extends CanCreateAggragateRoot[AR1, AR1Event] {
 }
 
 object AR1Lenses {
-  val theBL: AR1 @> Option[String] = Lens.lensu((a, b) => a.copy(theB = b), _.theB)
+  val theBL: AR1 @> Option[String] = Lens.lensu((a, b) ⇒ a.copy(theB = b), _.theB)
 }
 
 trait AR1Command extends DomainCommand

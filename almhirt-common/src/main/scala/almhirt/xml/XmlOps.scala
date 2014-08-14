@@ -14,7 +14,7 @@
 */
 package almhirt.xml
 
-import java.util.{UUID => JUUID}
+import java.util.{UUID ⇒ JUUID}
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.xml.{Node, NodeSeq, Elem}
@@ -159,15 +159,15 @@ trait XmlOps0 extends Ops[Elem]{
     funs.firstChildNodeMandatory(self, label)
   def firstChildNode: AlmValidation[Elem] = 
     funs.getFirstChildNode(self)
-  def mapOptionalFirstChild[T](label: String, compute: Elem => AlmValidation[T]): AlmValidation[Option[T]] =
+  def mapOptionalFirstChild[T](label: String, compute: Elem ⇒ AlmValidation[T]): AlmValidation[Option[T]] =
     funs.mapOptionalFirstChild(self, label, compute)
-  def flatMapOptionalFirstChild[T](label: String, compute: Elem => AlmValidation[Option[T]]): AlmValidation[Option[T]] =
+  def flatMapOptionalFirstChild[T](label: String, compute: Elem ⇒ AlmValidation[Option[T]]): AlmValidation[Option[T]] =
     funs.flatMapOptionalFirstChild(self, label, compute)
   def \\?(label: String) = funs.elems(self)(label)
-  def \\?(predicate: String => Boolean) = funs.allElems(self).filter(xml => predicate(xml.label))
+  def \\?(predicate: String ⇒ Boolean) = funs.allElems(self).filter(xml ⇒ predicate(xml.label))
   def \!(label: String) = funs.getChild(self)(label)
   def \?(label: String) = funs.tryGetChild(self)(label)
-  def \??(label: String) = funs.tryGetChild(self)(label).fold(_ => None, succ => succ)
+  def \??(label: String) = funs.tryGetChild(self)(label).fold(_ ⇒ None, succ ⇒ succ)
   def elems = funs.allElems(self)
   
   def \@!(name: String): AlmValidation[String] = funs.getAttributeValue(self, name)

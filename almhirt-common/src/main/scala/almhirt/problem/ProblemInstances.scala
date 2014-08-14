@@ -24,7 +24,7 @@ trait ProblemInstances {
   implicit def ToAggregateProblemSemiGroup: Monoid[AggregateProblem] =
     new Monoid[AggregateProblem] {
       override val zero = AggregateProblem.empty
-      override def append(a: AggregateProblem, b: => AggregateProblem): AggregateProblem = {
+      override def append(a: AggregateProblem, b: ⇒ AggregateProblem): AggregateProblem = {
         AggregateProblem(a.problems ++ b.problems)
       }
     }

@@ -79,13 +79,13 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
    * @param compute The function to execute async
    * @return The future async computation
    */
-  def continueAsync[U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
+  def continueAsync[U](compute: T ⇒ AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
     self fold (
-      prob => AlmFuture.failed(prob),
-      r => AlmFuture { compute(r) })
+      prob ⇒ AlmFuture.failed(prob),
+      r ⇒ AlmFuture { compute(r) })
 
   /** Same as [[almhirt.almfuture.AlmFutureOps2.continueAsync]] */
-  def |~>[U](compute: T => AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
+  def |~>[U](compute: T ⇒ AlmValidation[U])(implicit executionContext: ExecutionContext): AlmFuture[U] =
     continueAsync[U](compute)
 
   /**
@@ -93,14 +93,14 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
    *
    * @param action The side effect to execute async
    */
-  def doAsync(action: T => Unit)(implicit executionContext: ExecutionContext) {
+  def doAsync(action: T ⇒ Unit)(implicit executionContext: ExecutionContext) {
     self fold (
-      prob => (),
-      r => executionContext.execute(new Runnable { def run() = action(r) }))
+      prob ⇒ (),
+      r ⇒ executionContext.execute(new Runnable { def run() = action(r) }))
   }
 
   /** Same as [[almhirt.almfuture.AlmFutureOps2.doAsync]] */
-  def ~|(action: T => Unit)(implicit executionContext: ExecutionContext) {
+  def ~|(action: T ⇒ Unit)(implicit executionContext: ExecutionContext) {
     doAsync(action)
   }
 
@@ -111,18 +111,18 @@ trait AlmFutureOps2[T] extends Ops[AlmValidation[T]] {
    */
   def asCompleted: AlmFuture[T] =
     self fold (
-      prob => new AlmFuture(Future.successful(prob.failure)),
-      r => AlmFuture.successful(r))
+      prob ⇒ new AlmFuture(Future.successful(prob.failure)),
+      r ⇒ AlmFuture.successful(r))
 
   /**
    * In case of a success: Start the given future
    *
    * @param compute The computation which eventually returns a result
    */
-  def continueWithFuture[U](futureComputation: T => AlmFuture[U]): AlmFuture[U] =
+  def continueWithFuture[U](futureComputation: T ⇒ AlmFuture[U]): AlmFuture[U] =
     self fold (
-      prob => new AlmFuture(Future.successful((prob.failure))),
-      r => futureComputation(r))
+      prob ⇒ new AlmFuture(Future.successful((prob.failure))),
+      r ⇒ futureComputation(r))
 }
 
 trait AlmFutureOps3[T] extends Ops[Future[T]] {
@@ -138,33 +138,33 @@ trait AlmFutureOps3[T] extends Ops[Future[T]] {
 trait AlmFutureOps4[T] extends Ops[AlmFuture[Option[T]]] {
   def noneIsProblem(problem: Problem)(implicit executionContext: ExecutionContext): AlmFuture[T] =
     self.collectV {
-      case Some(x) => x.success
-      case None => problem.failure
+      case Some(x) ⇒ x.success
+      case None ⇒ problem.failure
     }
 
   def noneIsNotFoundProblem(msg: String)(implicit executionContext: ExecutionContext): AlmFuture[T] =
     self.collectV {
-      case Some(x) => x.success
-      case None => NotFoundProblem(msg).failure
+      case Some(x) ⇒ x.success
+      case None ⇒ NotFoundProblem(msg).failure
     }
 
   def noneIsMandatoryDataProblem(msg: String)(implicit executionContext: ExecutionContext): AlmFuture[T] =
     self.collectV {
-      case Some(x) => x.success
-      case None => MandatoryDataProblem(msg).failure
+      case Some(x) ⇒ x.success
+      case None ⇒ MandatoryDataProblem(msg).failure
     }
 
   def noneIsNoSuchElementProblem(msg: String)(implicit executionContext: ExecutionContext): AlmFuture[T] =
     self.collectV {
-      case Some(x) => x.success
-      case None => NoSuchElementProblem(msg).failure
+      case Some(x) ⇒ x.success
+      case None ⇒ NoSuchElementProblem(msg).failure
     }
 
 }
 
 trait AlmFutureOps5[T] extends Ops[AlmFuture[AlmFuture[T]]] {
   def flatten(implicit executionContext: ExecutionContext): AlmFuture[T] =
-    self.flatMap(x => x)
+    self.flatMap(x ⇒ x)
 }
 
 

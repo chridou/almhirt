@@ -16,27 +16,27 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
 
   final def applyLifecycleAgnostic(agg: AggregateRootState[T], event: E): AggregateRootState[T] = {
     agg match {
-      case Alive(a) => applyEvent(a, event)
-      case NeverExisted => Alive(fromEvent(event))
-      case Dead(id, v) => throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
+      case Alive(a) ⇒ applyEvent(a, event)
+      case NeverExisted ⇒ Alive(fromEvent(event))
+      case Dead(id, v) ⇒ throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
     }
   }
 
   def applyEvents(agg: T, events: Iterable[E]): TouchedTheWorld[T] =
     events.foldLeft(Alive(agg): TouchedTheWorld[T]) {
-      case (state, next) =>
+      case (state, next) ⇒
         state match {
-          case Alive(st) =>
+          case Alive(st) ⇒
             applyEvent(st, next)
-          case Dead(id, v) =>
+          case Dead(id, v) ⇒
             throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
         }
     }
   
   final  def applyEventToTouchedTheWorld(livingAgg: TouchedTheWorld[T], event: E): TouchedTheWorld[T] =
     livingAgg match {
-      case Alive(a) => applyEvent(a, event)
-      case Dead(id, v) => throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
+      case Alive(a) ⇒ applyEvent(a, event)
+      case Dead(id, v) ⇒ throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
     }
 
 
@@ -74,5 +74,5 @@ trait BuildsAggregetaRootFromEventHandlers[T <: AggregateRoot, E <: AggregateEve
   /**
    * The implementation must increase the version!
    */
-  def mutateHandler: (T, E) => TouchedTheWorld[T]
+  def mutateHandler: (T, E) ⇒ TouchedTheWorld[T]
 }

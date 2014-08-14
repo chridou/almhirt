@@ -17,7 +17,7 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
   extends AlmhirtTestKit(theActorSystem)
   with FunSpecLike
   with BeforeAndAfterAll
-  with Matchers { self: CreatesCommandEndpoint =>
+  with Matchers { self: CreatesCommandEndpoint ⇒
 
   implicit def execContext = theAlmhirt.futuresExecutor
 
@@ -28,7 +28,7 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
   val fixedUniqueString = "x"
   def fixedStringGen() = fixedUniqueString
   
-  def useCommandEndpoint[T](f: (CommandEndpoint, TestProbe, ActorRef) => T): T = {
+  def useCommandEndpoint[T](f: (CommandEndpoint, TestProbe, ActorRef) ⇒ T): T = {
     val testId = nextTestId
     val (endpoint, spy, tracker, cleanUp) = createCommandEndpoint(testId)
     try {
@@ -36,13 +36,13 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
       cleanUp()
       res
     } catch {
-      case exn: Exception =>
+      case exn: Exception ⇒
         cleanUp()
         throw exn
     }
   }
 
-  def useCommandEndpointAndTrackIdGen[T](genTrackId: () => String)(f: (CommandEndpoint, TestProbe, ActorRef) => T): T = {
+  def useCommandEndpointAndTrackIdGen[T](genTrackId: () ⇒ String)(f: (CommandEndpoint, TestProbe, ActorRef) ⇒ T): T = {
     val testId = nextTestId
     val (endpoint, spy, tracker, cleanUp) = createCommandEndpoint(testId, genTrackId)
     try {
@@ -50,7 +50,7 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
       cleanUp()
       res
     } catch {
-      case exn: Exception =>
+      case exn: Exception ⇒
         cleanUp()
         throw exn
     }
@@ -58,34 +58,34 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
   
   describe("A CommandEndpoint") {
     it("""should forward a command on "execute"""") {
-      useCommandEndpoint{ (endpoint, spy, tracker) =>
+      useCommandEndpoint{ (endpoint, spy, tracker) ⇒
         val cmd = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(ccuad.getUuid)), "a")
         endpoint.execute(cmd)
         val res = spy.expectMsgPF(defaultDuration, "Waiting for a message containing the given command") {
-          case Message(_, payload) => payload
+          case Message(_, payload) ⇒ payload
         }
         res should equal(cmd)
       }
     }
     
     it("""should forward a command and add a tracking id to it when it doesn't have one on "tracked"""") {
-      useCommandEndpoint{ (endpoint, spy, tracker) =>
+      useCommandEndpoint{ (endpoint, spy, tracker) ⇒
         val cmd = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(ccuad.getUuid)), "a")
         val trackIdRes = endpoint.executeTracked(cmd).awaitResultOrEscalate(theAlmhirt.durations.shortDuration)
         val res = spy.expectMsgPF(defaultDuration, "Waiting for a message containing the given command") {
-          case Message(_, payload) => payload
+          case Message(_, payload) ⇒ payload
         }
         res should equal(cmd.track(trackIdRes))
       }
     }
     
     it("""should forward a command and use the given tracking id on "tracked"""") {
-      useCommandEndpoint{ (endpoint, spy, tracker) =>
+      useCommandEndpoint{ (endpoint, spy, tracker) ⇒
         val trackId = ccuad.getUniqueString
         val cmd = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(ccuad.getUuid)), "a").track(trackId)
         val trackIdRes = endpoint.executeTracked(cmd).awaitResultOrEscalate(2.seconds.dilated)
         val res = spy.expectMsgPF(defaultDuration, "Waiting for a message containing the given command") {
-          case Message(_, payload) => payload
+          case Message(_, payload) ⇒ payload
         }
         res should equal(cmd)
         trackIdRes should equal(trackId)
@@ -93,7 +93,7 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
     }
     
     it("""should wait for a finished command and assign a tracking id when there is none on the command on "executeSync"""") {
-      useCommandEndpointAndTrackIdGen(fixedStringGen){ (endpoint, spy, tracker) =>
+      useCommandEndpointAndTrackIdGen(fixedStringGen){ (endpoint, spy, tracker) ⇒
         val cmd = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(ccuad.getUuid)), "a")
         val execState = ExecutionSuccessful(fixedUniqueString, "ahh!")
         val resF = endpoint.executeSync(cmd, defaultDuration)
@@ -104,7 +104,7 @@ abstract class CommandEndpointSpecsTemplate(theActorSystem: ActorSystem)
     }
     
     it("""should wait for a finished command and use a given tracking id on "executeSync"""") {
-      useCommandEndpointAndTrackIdGen(fixedStringGen){ (endpoint, spy, tracker) =>
+      useCommandEndpointAndTrackIdGen(fixedStringGen){ (endpoint, spy, tracker) ⇒
         val trackId = ccuad.getUniqueString
         val cmd = AR1ComCreateAR1(DomainCommandHeader(AggregateRootRef(ccuad.getUuid)), "a").track(trackId)
         val execState = ExecutionSuccessful(trackId, "ahh!")

@@ -6,14 +6,14 @@ import almhirt.core.types._
 
 final case class ExecutionStateEntry(currentState: ExecutionState, lastModified: LocalDateTime) {
   def isFinished: Boolean = currentState match {
-    case _: ExecutionFinishedState => true
-    case _ => false
+    case _: ExecutionFinishedState ⇒ true
+    case _ ⇒ false
   }
 
   def tryGetFinished: Option[ExecutionFinishedState] =
     currentState match {
-      case f: ExecutionFinishedState => Some(f)
-      case _ => None
+      case f: ExecutionFinishedState ⇒ Some(f)
+      case _ ⇒ None
     }
 }
 

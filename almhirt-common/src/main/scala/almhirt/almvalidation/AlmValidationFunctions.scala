@@ -26,128 +26,128 @@ trait AlmValidationFunctions {
   def successAlm[T](x: T): AlmValidation[T] = x.success[Problem]
 
   /** Evaluate an unsafe expression in a safe way */
-  def inTryCatch[T](a: => T): AlmValidation[T] = {
+  def inTryCatch[T](a: ⇒ T): AlmValidation[T] = {
     try {
       a.success[Problem]
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).failure
     }
   }
 
   /** Evaluate an unsafe expression in a safe way */
-  def inTryCatchM[T](a: => T)(message: String): AlmValidation[T] = {
+  def inTryCatchM[T](a: ⇒ T)(message: String): AlmValidation[T] = {
     try {
       a.success[Problem]
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(message).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(message).failure
     }
   }
 
   /** Evaluate an unsafe expression in a safe way */
-  def inTryCatchMM[T](a: => T)(createMessage: Throwable => String): AlmValidation[T] = {
+  def inTryCatchMM[T](a: ⇒ T)(createMessage: Throwable ⇒ String): AlmValidation[T] = {
     try {
       a.success[Problem]
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(createMessage(exn)).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(createMessage(exn)).failure
     }
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
-  def unsafe[T](a: => AlmValidation[T]): AlmValidation[T] = {
+  def unsafe[T](a: ⇒ AlmValidation[T]): AlmValidation[T] = {
     try {
       a
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).failure
     }
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
   @deprecated(message = "Use unsafe", since = "0.5.213")
-  def computeSafely[T](a: => AlmValidation[T]): AlmValidation[T] = {
+  def computeSafely[T](a: ⇒ AlmValidation[T]): AlmValidation[T] = {
     try {
       a
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).failure
     }
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
-  def unsafeM[T](a: => AlmValidation[T])(message: String): AlmValidation[T] = {
+  def unsafeM[T](a: ⇒ AlmValidation[T])(message: String): AlmValidation[T] = {
     try {
       a
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(message).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(message).failure
     }
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
   @deprecated(message = "Use unsafeM", since = "0.5.213")
-  def computeSafelyM[T](a: => AlmValidation[T])(message: String): AlmValidation[T] = {
+  def computeSafelyM[T](a: ⇒ AlmValidation[T])(message: String): AlmValidation[T] = {
     try {
       a
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(message).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(message).failure
     }
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
-  def unsafeMM[T](a: => AlmValidation[T])(createMessage: Throwable => String): AlmValidation[T] = {
+  def unsafeMM[T](a: ⇒ AlmValidation[T])(createMessage: Throwable ⇒ String): AlmValidation[T] = {
     try {
       a
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(createMessage(exn)).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(createMessage(exn)).failure
     }
   }
 
   /** Evaluate an unsafe expression that looks safe but might escalate or which you just don't trust */
   @deprecated(message = "Use unsafeMM", since = "0.5.213")
-  def computeSafelyMM[T](a: => AlmValidation[T])(createMessage: Throwable => String): AlmValidation[T] = {
+  def computeSafelyMM[T](a: ⇒ AlmValidation[T])(createMessage: Throwable ⇒ String): AlmValidation[T] = {
     try {
       a
     } catch {
-      case scala.util.control.NonFatal(exn) => launderException(exn).withMessage(createMessage(exn)).failure
+      case scala.util.control.NonFatal(exn) ⇒ launderException(exn).withMessage(createMessage(exn)).failure
     }
   }
 
   /** Abort a workflow with the given Problem if the value evaluated to false */
-  def mustBeTrue(cond: => Boolean, problem: => Problem): AlmValidation[Unit] =
+  def mustBeTrue(cond: ⇒ Boolean, problem: ⇒ Problem): AlmValidation[Unit] =
     if (cond) ().success else problem.failure[Unit]
 
   def noneIsNoSuchElement[T](v: Option[T]): AlmValidation[T] =
     v match {
-      case Some(that) => that.success
-      case None => NoSuchElementProblem("A value was required but None was supplied.").failure[T]
+      case Some(that) ⇒ that.success
+      case None ⇒ NoSuchElementProblem("A value was required but None was supplied.").failure[T]
     }
 
   def noneIsNotFound[T](v: Option[T]): AlmValidation[T] =
     v match {
-      case Some(v) => v.success
-      case None => NotFoundProblem("A value was expected but there was None").failure
+      case Some(v) ⇒ v.success
+      case None ⇒ NotFoundProblem("A value was expected but there was None").failure
     }
 
   def argumentIsMandatory[T](v: Option[T]): AlmValidation[T] =
     v match {
-      case Some(v) => v.success
-      case None => MandatoryDataProblem("A value was expected but there was None").failure
+      case Some(v) ⇒ v.success
+      case None ⇒ MandatoryDataProblem("A value was expected but there was None").failure
     }
 
   def argumentIsMandatoryM[T](v: Option[T], where: String): AlmValidation[T] =
     v match {
-      case Some(v) => v.success
-      case None => MandatoryDataProblem(s"""A value was expected at "$where" but there was None""").failure
+      case Some(v) ⇒ v.success
+      case None ⇒ MandatoryDataProblem(s"""A value was expected at "$where" but there was None""").failure
     }
   
   def getFromMap[K, V](key: K, map: Map[K, V]): AlmValidation[V] = {
     map.get(key) match {
-      case Some(v) => v.success
-      case None => NoSuchElementProblem(s"""Could not find a value for key "$key".""").failure
+      case Some(v) ⇒ v.success
+      case None ⇒ NoSuchElementProblem(s"""Could not find a value for key "$key".""").failure
     }
   }
 
-  def tryApply[K, V](key: K, f: K => Option[V]): AlmValidation[V] = {
+  def tryApply[K, V](key: K, f: K ⇒ Option[V]): AlmValidation[V] = {
     f(key) match {
-      case Some(v) => v.success
-      case None => NoSuchElementProblem(s"""Could not find a value for key "$key".""").failure
+      case Some(v) ⇒ v.success
+      case None ⇒ NoSuchElementProblem(s"""Could not find a value for key "$key".""").failure
     }
   }
 
@@ -159,8 +159,8 @@ trait AlmValidationFunctions {
     val builderR = cbf()
     val probs = scala.collection.mutable.ListBuffer[Problem]()
     m.asInstanceOf[Traversable[AlmValidation[R]]].foreach {
-      case scalaz.Success(x) => builderR += x
-      case scalaz.Failure(x) => probs += x
+      case scalaz.Success(x) ⇒ builderR += x
+      case scalaz.Failure(x) ⇒ probs += x
     }
     if (probs.isEmpty)
       builderR.result.success
@@ -172,8 +172,8 @@ trait AlmValidationFunctions {
     val builderR = cbfR()
     val builderP = cbfP()
     m.asInstanceOf[Traversable[AlmValidation[R]]].foreach {
-      case scalaz.Success(x) => builderR += x
-      case scalaz.Failure(x) => builderP += x
+      case scalaz.Success(x) ⇒ builderR += x
+      case scalaz.Failure(x) ⇒ builderP += x
     }
     (builderP.result, builderR.result)
   }

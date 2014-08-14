@@ -11,9 +11,9 @@ sealed trait ExecutionState {
 object ExecutionState {
   def executionStateOrderingTag(executionState: ExecutionState): Int =
     executionState match {
-      case st: ExecutionStarted => 1
-      case st: ExecutionInProcess => 2
-      case st: ExecutionFinishedState => 3
+      case st: ExecutionStarted ⇒ 1
+      case st: ExecutionInProcess ⇒ 2
+      case st: ExecutionFinishedState ⇒ 3
     }
 
   def compareExecutionState(a: ExecutionState, b: ExecutionState): Int =

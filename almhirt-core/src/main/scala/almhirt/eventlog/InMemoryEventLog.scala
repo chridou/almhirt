@@ -16,28 +16,28 @@ class InMemoryEventLog extends Actor with ActorLogging {
   private var eventLog = Vector.empty[Event]
 
   def receive: Receive = {
-    case LogEvent(event) =>
+    case LogEvent(event) ⇒
       eventLog = (eventLog :+ event).sortBy(_.timestamp)
       sender() ! EventLogged(event.id)
-    case FindEvent(eventId) =>
+    case FindEvent(eventId) ⇒
       sender() ! FoundEvent(eventId, eventLog.find(_.id == eventId))
-    case FetchAllEvents =>
+    case FetchAllEvents ⇒
       sender() ! FetchedEvents(Enumerator(eventLog: _*))
-    case FetchEventsFrom(from) =>
-      sender() ! FetchedEvents(Enumerator(eventLog.filter(event => event.timestamp.compareTo(from) >= 0): _*))
-    case FetchEventsAfter(after) =>
-      sender() ! FetchedEvents(Enumerator(eventLog.filter(event => event.timestamp.compareTo(after) > 0): _*))
-    case FetchEventsTo(to) =>
-      sender() ! FetchedEvents(Enumerator(eventLog.filter(event => event.timestamp.compareTo(to) <= 0): _*))
-    case FetchEventsUntil(until) =>
-      sender() ! FetchedEvents(Enumerator(eventLog.filter(event => event.timestamp.compareTo(until) < 0): _*))
-    case FetchEventsFromTo(from, to) =>
-      sender() ! FetchedEvents(Enumerator(eventLog.filter(event => event.timestamp.compareTo(from) >= 0 && event.timestamp.compareTo(to) <= 0): _*))
-    case FetchEventsFromUntil(from, until) =>
-      sender() ! FetchedEvents(Enumerator(eventLog.filter(event => event.timestamp.compareTo(from) >= 0 && event.timestamp.compareTo(until) < 0): _*))
-    case FetchEventsAfterTo(after, to) =>
-      sender() ! FetchedEvents(Enumerator(eventLog.filter(event => event.timestamp.compareTo(after) > 0 && event.timestamp.compareTo(to) <= 0): _*))
-    case FetchEventsAfterUntil(after, until) =>
-      sender() ! FetchedEvents(Enumerator(eventLog.filter(event => event.timestamp.compareTo(after) > 0 && event.timestamp.compareTo(until) < 0): _*))
+    case FetchEventsFrom(from) ⇒
+      sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0): _*))
+    case FetchEventsAfter(after) ⇒
+      sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0): _*))
+    case FetchEventsTo(to) ⇒
+      sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(to) <= 0): _*))
+    case FetchEventsUntil(until) ⇒
+      sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(until) < 0): _*))
+    case FetchEventsFromTo(from, to) ⇒
+      sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0 && event.timestamp.compareTo(to) <= 0): _*))
+    case FetchEventsFromUntil(from, until) ⇒
+      sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0 && event.timestamp.compareTo(until) < 0): _*))
+    case FetchEventsAfterTo(after, to) ⇒
+      sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0 && event.timestamp.compareTo(to) <= 0): _*))
+    case FetchEventsAfterUntil(after, until) ⇒
+      sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0 && event.timestamp.compareTo(until) < 0): _*))
   }
 }

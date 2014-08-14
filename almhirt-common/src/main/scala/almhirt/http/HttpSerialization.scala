@@ -17,8 +17,8 @@ trait HttpSerializer[T] {
 
   final def serializeToDefault(what: T)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[(AlmHttpBody, AlmMediaType)] =
     mp.defaultForSerialization match {
-      case Some(mt) => serialize(what, mt).map((_, mt))
-      case None => NoSuchElementProblem("No default media type defined").failure
+      case Some(mt) ⇒ serialize(what, mt).map((_, mt))
+      case None ⇒ NoSuchElementProblem("No default media type defined").failure
     }
 
   final def serializeIfSupported(what: T, mediaType: AlmMediaType)(implicit params: SerializationParams = SerializationParams.empty, mp: AlmMediaTypesProvider[T]): AlmValidation[AlmHttpBody] =

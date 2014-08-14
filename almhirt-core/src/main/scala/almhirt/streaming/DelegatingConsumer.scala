@@ -38,7 +38,7 @@ private[streaming] class DelegatingConsumer[T](delegateTo: ActorRef) extends Con
     }
 
     override def onComplete(): Unit = {
-      sub.foreach(s => {
+      sub.foreach(s ⇒ {
         s.cancel()
         sub = None
       })

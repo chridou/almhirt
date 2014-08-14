@@ -5,9 +5,9 @@ import scalaz._, Scalaz._
 sealed trait MediaTypeVendorPart {
   def value: Option[String] =
     this match {
-      case NoVendor => None
-      case UnspecifiedVendor => Some("vnd")
-      case SpecificVendor(vendor) => Some(s"vnd.$vendor")
+      case NoVendor ⇒ None
+      case UnspecifiedVendor ⇒ Some("vnd")
+      case SpecificVendor(vendor) ⇒ Some(s"vnd.$vendor")
     }
 }
 
@@ -19,13 +19,13 @@ sealed trait MediaContentPart {
   def content: String
   
   final def contentFormat = this match {
-    case RawContent(content) => content
-    case StructuredContent(_, format) => format
+    case RawContent(content) ⇒ content
+    case StructuredContent(_, format) ⇒ format
   }
   
   final def value: String = this match {
-    case RawContent(content) => content
-    case StructuredContent(content, format) => s"$content+$format"
+    case RawContent(content) ⇒ content
+    case StructuredContent(content, format) ⇒ s"$content+$format"
   }
 }
 /** e.g, "jpg", "json" */
@@ -130,10 +130,10 @@ object AlmMediaType {
     
   def applicationStructured(vendor: MediaTypeVendorPart, content: String, format: String) =
     format match {
-      case "json" => applicationTextual(vendor, content, format)
-      case "xml" => applicationTextual(vendor, content, format)
-      case "html" => applicationTextual(vendor, content, format)
-      case "msgpack" => applicationBinary(vendor, content, format)
-      case _ => throw new Exception(s""""$format" is an unknown media format.""")
+      case "json" ⇒ applicationTextual(vendor, content, format)
+      case "xml" ⇒ applicationTextual(vendor, content, format)
+      case "html" ⇒ applicationTextual(vendor, content, format)
+      case "msgpack" ⇒ applicationBinary(vendor, content, format)
+      case _ ⇒ throw new Exception(s""""$format" is an unknown media format.""")
     }
 }

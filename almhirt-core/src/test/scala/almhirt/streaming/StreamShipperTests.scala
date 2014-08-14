@@ -25,7 +25,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
   "The StreamShipper" when {
     import akka.stream.actor.ActorConsumer
     "accessed via consumers" should {
-      "dispatch an element on the stream from a single producer" in { fixture =>
+      "dispatch an element on the stream from a single producer" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -37,7 +37,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      "dispatch 2 elements on the stream from a single producer" in { fixture =>
+      "dispatch 2 elements on the stream from a single producer" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -50,7 +50,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch some($nMsgSome) elements on the stream from a single producer" in { fixture =>
+      s"dispatch some($nMsgSome) elements on the stream from a single producer" in { fixture ⇒
         val n = nMsgSome
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -67,7 +67,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many($nMsgBig) elements on the stream from a single producer" in { fixture =>
+      s"dispatch many($nMsgBig) elements on the stream from a single producer" in { fixture ⇒
         val n = nMsgBig
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -84,7 +84,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      "dispatch 2 elements on the stream from two producers" in { fixture =>
+      "dispatch 2 elements on the stream from two producers" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -98,7 +98,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch some(${2 * nMsgSome}) elements on the stream from two producers" in { fixture =>
+      s"dispatch some(${2 * nMsgSome}) elements on the stream from two producers" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -115,7 +115,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many(${2 * nMsgBig}) elements on the stream from two producers" in { fixture =>
+      s"dispatch many(${2 * nMsgBig}) elements on the stream from two producers" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -132,7 +132,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch some($nMsgSome) elements on the stream from $nMsgSomeProducers producers" in { fixture =>
+      s"dispatch some($nMsgSome) elements on the stream from $nMsgSomeProducers producers" in { fixture ⇒
         val n = nMsgSome
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -140,10 +140,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgSomeProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
         val start = Deadline.now
         within(1 second) {
-          groups.foreach(x => Flow(x._2).produceTo(mat, broker.newConsumer))
+          groups.foreach(x ⇒ Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -151,7 +151,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many($nMsgBig) elements on the stream from $nMsgSomeProducers producers" in { fixture =>
+      s"dispatch many($nMsgBig) elements on the stream from $nMsgSomeProducers producers" in { fixture ⇒
         val n = nMsgBig
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -159,10 +159,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgSomeProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
         val start = Deadline.now
         within(10 second) {
-          groups.foreach(x => Flow(x._2).produceTo(mat, broker.newConsumer))
+          groups.foreach(x ⇒ Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.seconds.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -170,7 +170,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many($nMsgBig) elements on the stream from $nMsgBigProducers producers" in { fixture =>
+      s"dispatch many($nMsgBig) elements on the stream from $nMsgBigProducers producers" in { fixture ⇒
         val n = nMsgBig
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -178,10 +178,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgBigProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgBigProducers)
         val start = Deadline.now
         within(10 second) {
-          groups.foreach(x => Flow(x._2).produceTo(mat, broker.newConsumer))
+          groups.foreach(x ⇒ Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.seconds.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -191,7 +191,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
     }
 
     "accessed via contractors" should {
-      "dispatch an element on the stream from a single contractor" in { fixture =>
+      "dispatch an element on the stream from a single contractor" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -203,7 +203,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      "dispatch 2 elements on the stream from a single contractor" in { fixture =>
+      "dispatch 2 elements on the stream from a single contractor" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -216,7 +216,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch some($nMsgSome) elements on the stream from a single contractor" in { fixture =>
+      s"dispatch some($nMsgSome) elements on the stream from a single contractor" in { fixture ⇒
         val n = nMsgSome
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -233,7 +233,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many($nMsgBig) elements on the stream from a single contractor" in { fixture =>
+      s"dispatch many($nMsgBig) elements on the stream from a single contractor" in { fixture ⇒
         val n = nMsgBig
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -250,7 +250,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      "dispatch 2 elements on the stream from two contractors" in { fixture =>
+      "dispatch 2 elements on the stream from two contractors" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -264,7 +264,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch some(${2 * nMsgSome}) elements on the stream from two contractors" in { fixture =>
+      s"dispatch some(${2 * nMsgSome}) elements on the stream from two contractors" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -281,7 +281,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many(${2 * nMsgBig}) elements on the stream from two contractors" in { fixture =>
+      s"dispatch many(${2 * nMsgBig}) elements on the stream from two contractors" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -298,7 +298,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch some($nMsgSome) elements on the stream from $nMsgSomeProducers contractors" in { fixture =>
+      s"dispatch some($nMsgSome) elements on the stream from $nMsgSomeProducers contractors" in { fixture ⇒
         val n = nMsgSome
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -306,10 +306,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgSomeProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
         val start = Deadline.now
         within(1 second) {
-          groups.foreach(x => ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker))
+          groups.foreach(x ⇒ ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker))
           val res = consumerProbeEvent.receiveN((n).toInt)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -317,7 +317,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many($nMsgBig) elements on the stream from $nMsgSomeProducers contractors" in { fixture =>
+      s"dispatch many($nMsgBig) elements on the stream from $nMsgSomeProducers contractors" in { fixture ⇒
         val n = nMsgBig
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -325,10 +325,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgSomeProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
         val start = Deadline.now
         within(10 second) {
-          groups.foreach(x => ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker))
+          groups.foreach(x ⇒ ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -336,7 +336,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many($nMsgBig) elements on the stream from $nMsgBigProducers contractors" in { fixture =>
+      s"dispatch many($nMsgBig) elements on the stream from $nMsgBigProducers contractors" in { fixture ⇒
         val n = nMsgBig
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -344,10 +344,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgBigProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgBigProducers)
         val start = Deadline.now
         within(10 second) {
-          groups.foreach(x => Stillage(x._2).signContract(broker))
+          groups.foreach(x ⇒ Stillage(x._2).signContract(broker))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -356,7 +356,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
       }
     }
     "accessed via consumers and contractors" should {
-      "dispatch 2 elements on the stream from a producer and a contractor" in { fixture =>
+      "dispatch 2 elements on the stream from a producer and a contractor" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -370,7 +370,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch some(${2 * nMsgSome}) elements on the stream from a producer and a contractor" in { fixture =>
+      s"dispatch some(${2 * nMsgSome}) elements on the stream from a producer and a contractor" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -387,7 +387,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many(${2 * nMsgBig}) elements on the stream from two contractors" in { fixture =>
+      s"dispatch many(${2 * nMsgBig}) elements on the stream from two contractors" in { fixture ⇒
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
@@ -404,7 +404,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch some($nMsgSome) elements on the stream from ${nMsgSomeProducers / 2} producers and ${nMsgSomeProducers / 2} contractors" in { fixture =>
+      s"dispatch some($nMsgSome) elements on the stream from ${nMsgSomeProducers / 2} producers and ${nMsgSomeProducers / 2} contractors" in { fixture ⇒
         val n = nMsgSome
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -412,10 +412,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgSomeProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
         val start = Deadline.now
         within(1 second) {
-          groups.foreach(x =>
+          groups.foreach(x ⇒
             if (x._1 % 2 == 0) {
               ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
             } else {
@@ -428,7 +428,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many($nMsgBig) elements on the stream from ${nMsgSomeProducers / 2} producers and ${nMsgSomeProducers / 2} contractors" in { fixture =>
+      s"dispatch many($nMsgBig) elements on the stream from ${nMsgSomeProducers / 2} producers and ${nMsgSomeProducers / 2} contractors" in { fixture ⇒
         val n = nMsgBig
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -436,10 +436,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgSomeProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
         val start = Deadline.now
         within(10 seconds) {
-          groups.foreach(x =>
+          groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
             else Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
@@ -449,7 +449,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         }
       }
 
-      s"dispatch many($nMsgBig) elements on the stream from ${nMsgBigProducers / 2} producers and ${nMsgBigProducers / 2} contractors" in { fixture =>
+      s"dispatch many($nMsgBig) elements on the stream from ${nMsgBigProducers / 2} producers and ${nMsgBigProducers / 2} contractors" in { fixture ⇒
         val n = nMsgBig
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -457,10 +457,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % nMsgBigProducers)
+        val groups = items.toSeq.groupBy(x ⇒ x % nMsgBigProducers)
         val start = Deadline.now
         within(10.seconds) {
-          groups.foreach(x =>
+          groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
             else Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
@@ -469,7 +469,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
           res.toSet should equal(Set(items: _*))
         }
       }
-      s"dispatch really many(${nMsgBig * 10}) elements on the stream from ${nMsgBigProducers * 10 / 2} producers and ${nMsgBigProducers * 10 / 2} contractors" in { fixture =>
+      s"dispatch really many(${nMsgBig * 10}) elements on the stream from ${nMsgBigProducers * 10 / 2} producers and ${nMsgBigProducers * 10 / 2} contractors" in { fixture ⇒
         val n = nMsgBig * 10
         val FixtureParam(testId, broker, streamOutput) = fixture
         val consumerProbeEvent = TestProbe()
@@ -477,10 +477,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % (nMsgBigProducers * 10))
+        val groups = items.toSeq.groupBy(x ⇒ x % (nMsgBigProducers * 10))
         val start = Deadline.now
         within(10.seconds) {
-          groups.foreach(x =>
+          groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
             else Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
@@ -489,7 +489,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
           res.toSet should equal(Set(items: _*))
         }
       }
-      s"dispatch many(${nMsgBig}) elements on the stream from ${nMsgBigProducers * 10 / 2} producers and ${nMsgBigProducers * 10 / 2} contractors starting at a random time" in { fixture =>
+      s"dispatch many(${nMsgBig}) elements on the stream from ${nMsgBigProducers * 10 / 2} producers and ${nMsgBigProducers * 10 / 2} contractors starting at a random time" in { fixture ⇒
         val n = nMsgBig
         val tmax = 1.seconds.dilated
         val rnd = scala.util.Random
@@ -499,10 +499,10 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
-        val groups = items.toSeq.groupBy(x => x % (nMsgBigProducers * 10))
+        val groups = items.toSeq.groupBy(x ⇒ x % (nMsgBigProducers * 10))
         val start = Deadline.now
         within(10.seconds) {
-          groups.foreach { x =>
+          groups.foreach { x ⇒
             val scale = (tmax.toMillis * rnd.nextDouble).millis
             if (x._1 % 2 == 0)
               system.scheduler.scheduleOnce(scale)(ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker))

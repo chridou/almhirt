@@ -26,10 +26,10 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * @param f Function that returns a new aggregate root. Usually a mutation of the one stored in this instance.
    * @return The [[almhirt.domain.UpdateRecorder]] with the old events and a mapped aggregate root
    */
-  def map[AAR <: AggregateRoot](f: AR => AAR): UpdateRecorder[Event, AAR] =
-    UpdateRecorder[Event, AAR] { events =>
+  def map[AAR <: AggregateRoot](f: AR ⇒ AAR): UpdateRecorder[Event, AAR] =
+    UpdateRecorder[Event, AAR] { events ⇒
       val (currentEvents, validation) = this(events)
-      validation fold (problem => (currentEvents, problem.failure), ar => (currentEvents, f(ar).success))
+      validation fold (problem ⇒ (currentEvents, problem.failure), ar ⇒ (currentEvents, f(ar).success))
     }
   /**
    * Creates a new Update from the Update returned by f.
@@ -39,13 +39,13 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * @param f Function that returns an Update which will be used to create the new Update(Write operation)
    * @return The [[almhirt.domain.UpdateRecorder]] with eventually updated events and the new AR state
    */
-  def flatMap[EEvent >: Event <: AggregateEvent, AAR <: AggregateRoot](f: AR => UpdateRecorder[EEvent, AAR]): UpdateRecorder[EEvent, AAR] =
-    UpdateRecorder[EEvent, AAR] { events =>
+  def flatMap[EEvent >: Event <: AggregateEvent, AAR <: AggregateRoot](f: AR ⇒ UpdateRecorder[EEvent, AAR]): UpdateRecorder[EEvent, AAR] =
+    UpdateRecorder[EEvent, AAR] { events ⇒
       val (currentEvents, validation) = this(events)
       validation fold (
-        problem =>
+        problem ⇒
           (currentEvents, problem.failure),
-        currentAggr => {
+        currentAggr ⇒ {
           val (updatedEvents, newAggr) = f(currentAggr)(currentEvents)
           (updatedEvents, newAggr)
         })
@@ -56,9 +56,9 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * @param onSuccessAction The action that triggers the side effect
    * @return This
    */
-  def onSuccess(onSuccessAction: (List[Event], AR) => Unit): UpdateRecorder[Event, AR] = {
+  def onSuccess(onSuccessAction: (List[Event], AR) ⇒ Unit): UpdateRecorder[Event, AR] = {
     val (events, validation) = apply(Nil)
-    validation onSuccess (ar => { onSuccessAction(events, ar) })
+    validation onSuccess (ar ⇒ { onSuccessAction(events, ar) })
     this
   }
   /**
@@ -98,7 +98,7 @@ object UpdateRecorder {
    *
    * @param f Function which takes a list of (previous) events and returns the new events with the result on the modified aggregate root
    */
-  def apply[Event <: AggregateEvent, AR <: AggregateRoot](f: List[Event] => (List[Event], AggregateValidation[AR])) =
+  def apply[Event <: AggregateEvent, AR <: AggregateRoot](f: List[Event] ⇒ (List[Event], AggregateValidation[AR])) =
     new UpdateRecorder[Event, AR] {
       def apply[EE >: Event](events: List[EE]) = f(events.asInstanceOf[List[Event]])
     }
@@ -108,7 +108,7 @@ object UpdateRecorder {
    * @param aggregate root The unmodified aggregate root
    */
   def startWith[Event <: AggregateEvent, AR <: AggregateRoot](ar: AR) =
-    UpdateRecorder[Event, AR](events => (events, ar.success))
+    UpdateRecorder[Event, AR](events ⇒ (events, ar.success))
   /**
    * Takes an event and the resulting Aggregate Root. The event is prepended to the previous events
    *
@@ -116,12 +116,12 @@ object UpdateRecorder {
    * @param result The state of the aggregate root corresponding to the event
    */
   def accept[Event <: AggregateEvent, AR <: AggregateRoot](event: Event, ar: AR) =
-    UpdateRecorder[Event, AR](events => (event :: events, ar.success))
+    UpdateRecorder[Event, AR](events ⇒ (event :: events, ar.success))
   /**
    * Takes an event and the resulting Aggregate Root. Previously written events are still contained
    *
    * @param error The problem causing this update to fail.
    */
   def reject[Event <: AggregateEvent, AR <: AggregateRoot](error: Problem) =
-    UpdateRecorder[Event, AR](events => (events, error.failure))
+    UpdateRecorder[Event, AR](events ⇒ (events, error.failure))
 }

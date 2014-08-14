@@ -40,7 +40,7 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   
   def handleThrowable(throwable: Throwable): Problem =
     throwable match {
-      case NonFatal(exn) => launderException(exn)
+      case NonFatal(exn) ⇒ launderException(exn)
     }
 
   implicit object DateTimeOrdering extends Ordering[org.joda.time.DateTime] {

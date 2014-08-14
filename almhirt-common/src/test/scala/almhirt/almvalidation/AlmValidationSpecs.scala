@@ -93,11 +93,11 @@ class AlmValidationSpecs extends FlatSpec with Matchers {
 
   """Two strings(A,B) parsed to ints and lifted to AggregateProblem validations in a "for comprehension"""" should
     """add to 5 when A="2" and B="3"""" in {
-      val res = parseIntAlm("2").toAgg flatMap (x => parseIntAlm("3").toAgg.map(_ + x))
+      val res = parseIntAlm("2").toAgg flatMap (x ⇒ parseIntAlm("3").toAgg.map(_ + x))
       res should equal(Success(5))
     }
   it should """be a Failure when A="x" and B="3"""" in {
-    val res = parseIntAlm("2").toAgg flatMap (_ => parseIntAlm("x").toAgg)
+    val res = parseIntAlm("2").toAgg flatMap (_ ⇒ parseIntAlm("x").toAgg)
     res.isFailure should be(true)
   }
 
@@ -105,13 +105,13 @@ class AlmValidationSpecs extends FlatSpec with Matchers {
     """add to 5 when A="2" and B="3"""" in {
       val a = "2".toIntAlm().toAgg
       val b = "3".toIntAlm().toAgg
-      val res = (a |@| b)((a, b) => a + b)
+      val res = (a |@| b)((a, b) ⇒ a + b)
       res should equal(Success(5))
     }
   it should """be a Failue when A="x" and B="3"""" in {
     val a = "x".toIntAlm().toAgg
     val b = "3".toIntAlm().toAgg
-    val res = (a |@| b)((a, b) => a + b)
+    val res = (a |@| b)((a, b) ⇒ a + b)
     res.isFailure should be(true)
   }
 

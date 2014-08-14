@@ -10,8 +10,8 @@ trait AlmFuturePipeToSupport {
   final class PipeableAlmFuture[T](val future: AlmFuture[T])(implicit executionContext: ExecutionContext) {
     def pipeTo(recipient: ActorRef)(implicit sender: ActorRef = Actor.noSender): AlmFuture[T] = {
       future onComplete (
-        problem => recipient ! Status.Failure(new EscalatedProblemException(problem)),
-        succ =>
+        problem ⇒ recipient ! Status.Failure(new EscalatedProblemException(problem)),
+        succ ⇒
           recipient ! succ)
       future
     }

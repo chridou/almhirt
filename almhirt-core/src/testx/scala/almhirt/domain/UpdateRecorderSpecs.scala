@@ -1,7 +1,7 @@
 package almhirt.domain
 
 import org.scalatest._
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import almhirt.almvalidation.kit._
 import almhirt.core.types._
 import almhirt.common._
@@ -48,21 +48,21 @@ class UpdateRecorderSpecs extends WordSpec with Matchers {
     }
     "mapping over an UR already containg an AR with version 1" should {
       "map to another AR with version 1 and the same id even though a property has been changed" in {
-        UpdateRecorder.startWith(testAr).map(ar => ar.copy(theB = Some("Bob"))).isAccepted should be(true)
+        UpdateRecorder.startWith(testAr).map(ar ⇒ ar.copy(theB = Some("Bob"))).isAccepted should be(true)
       }
       "not map to another AR with a different version and the same id" in {
-        UpdateRecorder.startWith(testAr).map(ar => ar.copy(ref = testAr.ref.copy(version = 2L))).isRejected should be(true)
+        UpdateRecorder.startWith(testAr).map(ar ⇒ ar.copy(ref = testAr.ref.copy(version = 2L))).isRejected should be(true)
       }
       "not map to another AR with the same version and a different id" in {
-        UpdateRecorder.startWith(testAr).map(ar => ar.copy(ref = testAr.ref.copy(id = JUUID.randomUUID))).isRejected should be(true)
+        UpdateRecorder.startWith(testAr).map(ar ⇒ ar.copy(ref = testAr.ref.copy(id = JUUID.randomUUID))).isRejected should be(true)
       }
       "not map to another AR with a different version and a different id" in {
-        UpdateRecorder.startWith(testAr).map(ar => ar.copy(ref = (JUUID.randomUUID(), 2L))).isRejected should be(true)
+        UpdateRecorder.startWith(testAr).map(ar ⇒ ar.copy(ref = (JUUID.randomUUID(), 2L))).isRejected should be(true)
       }
     }
     "flatMapping over an UR already containg an AR with version 1 and updating the AR with 1 event targeting version 1" should {
       "be accepted" in {
-        val rec = UpdateRecorder.startWith(testAr).flatMap { ar =>
+        val rec = UpdateRecorder.startWith(testAr).flatMap { ar ⇒
           val inner = ar.changeB(Some("b"))
           inner
         }

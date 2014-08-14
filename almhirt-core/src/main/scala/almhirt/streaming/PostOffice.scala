@@ -56,7 +56,7 @@ private[almhirt] object PostOfficeInternal {
  *
  *  _Users must not change state via context.become but use ActorPostOffice#become_
  */
-trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging =>
+trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
   import PostOfficeInternal._
 
   protected case object PostOfficeClosed
@@ -115,30 +115,30 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging =>
   }
 
   private def internalContractedHandler: Receive = {
-    case InternalDeliverSuppliesNow(amount) =>
+    case InternalDeliverSuppliesNow(amount) ⇒
       strategy.deliverToBroker(amount)
-    case InternalOnProblem(problem) =>
+    case InternalOnProblem(problem) ⇒
       sys.error(s"An error occured:\n$problem")
-    case InternalContractExpired =>
+    case InternalContractExpired ⇒
       stockroom = null
       self ! PostOfficeClosed
 
   }
 
   private def internalUncontractedHandler: Receive = {
-    case InternalDeliverSuppliesNow(amount) =>
+    case InternalDeliverSuppliesNow(amount) ⇒
       sys.error("I have been ordered to deliver supplies but I'm not contracted to any broker.")
-    case InternalOnProblem(problem) =>
+    case InternalOnProblem(problem) ⇒
       sys.error(s"I have been sent a problem but I'm not contracted to any broker. The problem is\n$problem")
-    case InternalContractExpired =>
+    case InternalContractExpired ⇒
       sys.error("I don't have a contract that could have expired.")
   }
 
   private def initPostOffice(): Receive = {
-    case InternalSignContract =>
+    case InternalSignContract ⇒
       signContract()
       
-    case InternalNewStockroom(stockroom: Stockroom[TElement]) =>
+    case InternalNewStockroom(stockroom: Stockroom[TElement]) ⇒
       this.stockroom = stockroom
       this.strategy = createStrategy(stockroom)
       internalHandlerAppendix = internalContractedHandler
@@ -160,9 +160,9 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging =>
  * Add this trait to a PostOffice to make it an actor that does nothing else then taking packages and notifying the sender.
  *
  */
-trait PostOfficeLoop[TElement] { me: ActorPostOffice[TElement] with Actor =>
+trait PostOfficeLoop[TElement] { me: ActorPostOffice[TElement] with Actor ⇒
   private val mySendLoop: Receive = {
-    case PostOfficeInternal.InternalSendPackage(elements: Seq[TElement], ticket, toNotify) =>
+    case PostOfficeInternal.InternalSendPackage(elements: Seq[TElement], ticket, toNotify) ⇒
       this.send(toNotify, ticket, elements)
   }
 

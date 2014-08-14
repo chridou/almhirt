@@ -11,7 +11,7 @@ import almhirt.messaging.MessagePublisher
 import almhirt.commanding.impl.CommandExecutorImpl
 import com.typesafe.config.Config
 
-trait CommandExecutor { actor: Actor with ActorLogging =>
+trait CommandExecutor { actor: Actor with ActorLogging ⇒
   def receiveCommandExecutorMessage: Receive
 }
 
@@ -40,7 +40,7 @@ object CommandExecutor {
     }
 
   def props(handlers: CommandHandlerRegistry, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt, configPath: String): AlmValidation[Props] =
-    theAlmhirt.config.v[Config](configPath).flatMap(configSection =>
+    theAlmhirt.config.v[Config](configPath).flatMap(configSection ⇒
       props(handlers, repositories, theAlmhirt, configSection))
 
   def props(handlers: CommandHandlerRegistry, repositories: AggregateRootRepositoryRegistry, theAlmhirt: Almhirt): AlmValidation[Props] =

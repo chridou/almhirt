@@ -24,7 +24,7 @@ object CommandHandlerRegistry {
       self.register(tag.runtimeClass, handler)
 
     def getDomainCommandHandler(command: DomainCommand): AlmValidation[DomainCommandHandler] =
-      self.get(command.getClass).flatMap(commandHandler =>
+      self.get(command.getClass).flatMap(commandHandler ⇒
         if (commandHandler.isInstanceOf[DomainCommandHandler])
           commandHandler.asInstanceOf[DomainCommandHandler].success
         else
@@ -32,7 +32,7 @@ object CommandHandlerRegistry {
 
     def getCreatingDomainCommandHandler(command: DomainCommand): AlmValidation[CreatingDomainCommandHandler] =
       if (command.creates) {
-        self.get(command.getClass).flatMap(commandHandler =>
+        self.get(command.getClass).flatMap(commandHandler ⇒
           if (commandHandler.isInstanceOf[CreatingDomainCommandHandler])
             commandHandler.asInstanceOf[CreatingDomainCommandHandler].success
           else
@@ -43,7 +43,7 @@ object CommandHandlerRegistry {
 
     def getMutatingDomainCommandHandler(command: DomainCommand): AlmValidation[MutatingDomainCommandHandler] =
       if (!command.creates) {
-        self.get(command.getClass).flatMap(commandHandler =>
+        self.get(command.getClass).flatMap(commandHandler ⇒
           if (commandHandler.isInstanceOf[MutatingDomainCommandHandler])
             commandHandler.asInstanceOf[MutatingDomainCommandHandler].success
           else
@@ -52,11 +52,11 @@ object CommandHandlerRegistry {
         UnspecifiedProblem(s""""${command.getClass.getName()}" is a creating command.""").failure
       }
 
-    def nextAdder(theAdder: CommandHandlerRegistry => CommandHandlerRegistry): CommandHandlerRegistry =
+    def nextAdder(theAdder: CommandHandlerRegistry ⇒ CommandHandlerRegistry): CommandHandlerRegistry =
       theAdder(self)
 
-    def registerWithAdders(theAdders: Iterable[CommandHandlerRegistry => CommandHandlerRegistry]): CommandHandlerRegistry =
-      theAdders.foldLeft(self) { (acc, cur) => acc nextAdder cur }
+    def registerWithAdders(theAdders: Iterable[CommandHandlerRegistry ⇒ CommandHandlerRegistry]): CommandHandlerRegistry =
+      theAdders.foldLeft(self) { (acc, cur) ⇒ acc nextAdder cur }
 
   }
 

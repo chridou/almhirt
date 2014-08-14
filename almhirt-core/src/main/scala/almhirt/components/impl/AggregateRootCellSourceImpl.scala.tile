@@ -1,6 +1,6 @@
 package almhirt.components.impl
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
 import almhirt.common._
@@ -10,7 +10,7 @@ import almhirt.core.Almhirt
 import almhirt.domain.AggregateRootCellStateSink
 import com.typesafe.config.Config
 
-class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID, AggregateRootCellStateSink) => Props], theAlmhirt: Almhirt)
+class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] ⇒ Option[(JUUID, AggregateRootCellStateSink) ⇒ Props], theAlmhirt: Almhirt)
   extends AggregateRootCellSourceTemplate with Actor with ActorLogging {
 
   val configSection = theAlmhirt.config.v[Config]("almhirt.aggregate-root-cell-source").resultOrEscalate
@@ -29,7 +29,7 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
     }
 
   override val maxCachedAggregateRootAge =
-    cacheControlHeartBeatInterval.flatMap { _ =>
+    cacheControlHeartBeatInterval.flatMap { _ ⇒
       if (configSection.v[Boolean]("remove-cached-aggregate-roots").resultOrEscalate) {
         val maxAge = configSection.v[FiniteDuration]("max-cached-aggregate-root-age").resultOrEscalate
         log.info(s"""max-cached-aggregate-root-age: ${maxAge.defaultUnitString}""")
@@ -41,7 +41,7 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
     }
 
   override val maxDoesNotExistAge =
-    cacheControlHeartBeatInterval.flatMap { _ =>
+    cacheControlHeartBeatInterval.flatMap { _ ⇒
       if (configSection.v[Boolean]("remove-does-not-exist-cells").resultOrEscalate) {
         val maxAge = configSection.v[FiniteDuration]("max-does-not-exist-age").resultOrEscalate
         log.info(s"""max-does-not-exist-age: ${maxAge.defaultUnitString}""")
@@ -53,7 +53,7 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
     }
 
   override val maxUninitializedAge =
-    cacheControlHeartBeatInterval.flatMap { _ =>
+    cacheControlHeartBeatInterval.flatMap { _ ⇒
       if (configSection.v[Boolean]("remove-uninitialized-cells").resultOrEscalate) {
         val maxAge = configSection.v[FiniteDuration]("max-uninitialized-age").resultOrEscalate
         log.info(s"""max-uninitialized-age: ${maxAge.defaultUnitString}""")
@@ -70,14 +70,14 @@ class AggregateRootCellSourceImpl(cellPropsFactories: Class[_] => Option[(JUUID,
   
   override protected def createProps(aggregateRootId: JUUID, forArType: Class[_], aggregateRootCellStateSink: AggregateRootCellStateSink): Props =
     cellPropsFactories(forArType) match {
-      case Some(factory) => factory(aggregateRootId, aggregateRootCellStateSink)
-      case None => throw new Exception(s"""No factory to create props for aggregate root of type "${forArType.getName()} found."""")
+      case Some(factory) ⇒ factory(aggregateRootId, aggregateRootCellStateSink)
+      case None ⇒ throw new Exception(s"""No factory to create props for aggregate root of type "${forArType.getName()} found."""")
     }
 
   override def receive: Receive = receiveAggregateRootCellSourceMessage
 
   override def preStart() {
-    cacheControlHeartBeatInterval.foreach(dur => context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
+    cacheControlHeartBeatInterval.foreach(dur ⇒ context.system.scheduler.scheduleOnce(dur)(requestCleanUp()))
   }
   
   override def preRestart(reason: Throwable, message: Option[Any]) {

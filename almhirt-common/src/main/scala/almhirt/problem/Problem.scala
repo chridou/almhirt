@@ -13,22 +13,22 @@ sealed trait SingleProblem extends Problem {
   def cause: Option[ProblemCause]
 
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
-    val indentation = (0 until (indentLevel*2)).map(_ => " ").mkString
+    val indentation = (0 until (indentLevel*2)).map(_ ⇒ " ").mkString
     val builder = new StringBuilder()
     builder.append(indentation+"Problem:\n")
     builder.append(indentation+"Type: %s\n".format(problemType))
     builder.append(indentation+"Message: %s\n".format(message))
     builder.append(indentation+"Arguments: %s\n".format(args))
     cause match {
-      case None =>
+      case None ⇒
         ()
-      case Some(CauseIsThrowable(HasAThrowable(exn))) =>
+      case Some(CauseIsThrowable(HasAThrowable(exn))) ⇒
         builder.append(indentation+"Caused by:\n")
         builder.append(indentation+"  Message: %s\n".format(exn.toString))
         builder.append(indentation+"  Stacktrace:\n%s\n".format(exn.getStackTraceString))
-      case Some(CauseIsThrowable(desc @ HasAThrowableDescribed(_, _, _, _))) =>
+      case Some(CauseIsThrowable(desc @ HasAThrowableDescribed(_, _, _, _))) ⇒
         builder.append(indentation+"  Description: %s\n".format(desc.toString))
-      case Some(CauseIsProblem(prob)) =>
+      case Some(CauseIsProblem(prob)) ⇒
         builder.append(indentation+"Caused by:")
         builder.append(prob.baseInfo(indentLevel+1))
     }
@@ -42,7 +42,7 @@ sealed trait SingleProblem extends Problem {
 sealed trait AggregateProblem extends Problem {
   def problems: Seq[Problem]
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
-    val indentation = (0 until (indentLevel*2)).map(_ => " ").mkString
+    val indentation = (0 until (indentLevel*2)).map(_ ⇒ " ").mkString
     val builder = new StringBuilder()
     builder.append(indentation+"Problem:\n")
     builder.append(indentation+"Type: %s\n".format(problemType))
@@ -50,7 +50,7 @@ sealed trait AggregateProblem extends Problem {
     builder.append(indentation+"Arguments: %s\n".format(args))
     builder.append(indentation+"Aggregated problems:\n")
     problems.zipWithIndex.foreach {
-      case (p, i) => {
+      case (p, i) ⇒ {
         builder.append(p.baseInfo(indentLevel+1))
       }
     }
@@ -73,8 +73,8 @@ object Problem {
   implicit class ProblemOps(self: Problem) {
     def withArg(name: String, value: Any): Problem =
       self match {
-        case sp: SingleProblem => SingleProblem.withArg(sp, name, value)
-        case ap: AggregateProblem => AggregateProblem.withArg(ap, name, value)
+        case sp: SingleProblem ⇒ SingleProblem.withArg(sp, name, value)
+        case ap: AggregateProblem ⇒ AggregateProblem.withArg(ap, name, value)
       }
 
     def withLabel(label: String): Problem = self.withArg("label", label)

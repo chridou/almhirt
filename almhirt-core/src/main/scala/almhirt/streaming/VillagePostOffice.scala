@@ -50,24 +50,24 @@ class VillagePostOfficeStrategyFactory[TElement] extends PostOfficeStrategyFacto
 
   }
 
-  private def deliverFromPackages(stash: MyStash, amount: Int): (MyStash, Seq[TElement], () => Unit) = {
+  private def deliverFromPackages(stash: MyStash, amount: Int): (MyStash, Seq[TElement], () ⇒ Unit) = {
     val (restOfPackage, ticket, notify) +: rest = stash
     val elementsToDeliver = restOfPackage.take(amount)
     val remainder = amount - elementsToDeliver.size
     val restOfPackageAferDelivery = restOfPackage.drop(elementsToDeliver.size)
     (restOfPackageAferDelivery, remainder) match {
-      case (Seq(), 0) =>
-        (rest, elementsToDeliver, () => notify ! DeliveryJobDone(ticket))
-      case (elementsLeft, 0) =>
-        ((elementsLeft, ticket, notify) +: rest, elementsToDeliver, () => ())
-      case (Seq(), _) =>
+      case (Seq(), 0) ⇒
+        (rest, elementsToDeliver, () ⇒ notify ! DeliveryJobDone(ticket))
+      case (elementsLeft, 0) ⇒
+        ((elementsLeft, ticket, notify) +: rest, elementsToDeliver, () ⇒ ())
+      case (Seq(), _) ⇒
         val (remainingStash, elements, notifies) = deliverFromPackages(rest, remainder)
-        (remainingStash, elementsToDeliver ++ elements, () => { notify ! DeliveryJobDone(ticket); notifies() })
+        (remainingStash, elementsToDeliver ++ elements, () ⇒ { notify ! DeliveryJobDone(ticket); notifies() })
     }
   }
 }
 
-trait ActorVillagePostOffice[TElement] extends ActorPostOffice[TElement] { me: Actor with ActorLogging =>
+trait ActorVillagePostOffice[TElement] extends ActorPostOffice[TElement] { me: Actor with ActorLogging ⇒
   def maxPackageBufferSize: Int
   protected final override def createStrategy(stockroom: Stockroom[TElement]) =
     new VillagePostOfficeStrategyFactory[TElement]().create(stockroom, maxPackageBufferSize)

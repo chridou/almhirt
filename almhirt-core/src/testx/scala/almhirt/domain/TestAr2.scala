@@ -29,8 +29,8 @@ case class AnotherTestAr(ref: AggregateRootRef, theC: Option[Int], isDeleted: Bo
   with AggregateRootMutationHelpers[AnotherTestAr, AnotherTestArEvent] {
 
   protected override def handlers = {
-    case CChanged(_, newC) => set((ar: AnotherTestAr, v: Option[Int]) => ar.copy(theC = v), newC)
-    case AnotherTestArDeleted(_) => markDeleted((ar: AnotherTestAr, b: Boolean) => ar.copy(isDeleted = b))
+    case CChanged(_, newC) ⇒ set((ar: AnotherTestAr, v: Option[Int]) ⇒ ar.copy(theC = v), newC)
+    case AnotherTestArDeleted(_) ⇒ markDeleted((ar: AnotherTestAr, b: Boolean) ⇒ ar.copy(isDeleted = b))
   }
 
   def setC(newC: Int)(implicit ccuad: CanCreateUuidsAndDateTimes): UpdateRecorder[AnotherTestAr, AnotherTestArEvent] =
@@ -47,7 +47,7 @@ case class AnotherTestAr(ref: AggregateRootRef, theC: Option[Int], isDeleted: Bo
 
 object AnotherTestAr extends CanCreateAggragateRoot[AnotherTestAr, AnotherTestArEvent] {
   protected override def creationHandler: PartialFunction[AnotherTestArEvent, AnotherTestAr] = {
-    case AnotherTestArCreated(header) =>
+    case AnotherTestArCreated(header) ⇒
       AnotherTestAr(header.aggRef.inc, None, false)
   }
 
@@ -57,7 +57,7 @@ object AnotherTestAr extends CanCreateAggragateRoot[AnotherTestAr, AnotherTestAr
 }
 
 object AnotherTestArLenses {
-  val theCL: AnotherTestAr @> Option[Int] = Lens.lensu((a, b) => a.copy(theC = b), _.theC)
+  val theCL: AnotherTestAr @> Option[Int] = Lens.lensu((a, b) ⇒ a.copy(theC = b), _.theC)
 }
 
 object AnotherTestArCommanding {
@@ -88,19 +88,19 @@ object AnotherTestArCommanding {
       val executionContext = theAlmhirt.futuresExecutor
       val createAdder =
         CreatingDomainCommandHandler.createRegistryAdderFromSyncFun[CreateAnotherTestAr, AnotherTestArEvent, AnotherTestAr](
-          command => AnotherTestAr.fromScratch(command.targettedAggregateRootId).result,
+          command ⇒ AnotherTestAr.fromScratch(command.targettedAggregateRootId).result,
           executionContext)
       val setCAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[SetC, AnotherTestArEvent, AnotherTestAr](
-          (ar, command) => ar.setC(command.newC).result,
+          (ar, command) ⇒ ar.setC(command.newC).result,
           executionContext)
       val unssetCAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[UnsetC, AnotherTestArEvent, AnotherTestAr](
-          (ar, command) => ar.unsetC.result,
+          (ar, command) ⇒ ar.unsetC.result,
           executionContext)
       val deleteAdder =
         MutatingDomainCommandHandler.createRegistryAdderFromSyncFun[DeleteAnotherTestAr, AnotherTestArEvent, AnotherTestAr](
-          (ar, command) => ar.delete.result,
+          (ar, command) ⇒ ar.delete.result,
           executionContext)
 
       registry nextAdder createAdder nextAdder setCAdder nextAdder unssetCAdder nextAdder deleteAdder
