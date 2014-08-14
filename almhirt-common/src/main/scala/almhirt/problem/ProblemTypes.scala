@@ -268,13 +268,4 @@ object problemtypes {
       SingleProblem(msg, NoSuchElementProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, NoSuchElementProblem)
   }
-
-  /**
-   * An expected element was not present in some kind of collection
-   */
-  case object AggregateRootDeletedProblem extends ProblemType {
-    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
-      SingleProblem(msg, AggregateRootDeletedProblem, args, cause)
-    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, AggregateRootDeletedProblem)
-  }
 }

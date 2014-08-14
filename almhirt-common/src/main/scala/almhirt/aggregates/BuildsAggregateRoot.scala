@@ -5,9 +5,10 @@ import almhirt.common._
 sealed trait AggregateRootState[+T <: AggregateRoot]
 sealed trait NotAliveState[+T <: AggregateRoot] extends AggregateRootState[T]
 sealed trait TouchedTheWorld[+T <: AggregateRoot] extends AggregateRootState[T]
+sealed trait DeadOrAlive[+T <: AggregateRoot] extends AggregateRootState[T]
 case object NeverExisted extends NotAliveState[Nothing]
-final case class Alive[T <: AggregateRoot](ar: T) extends TouchedTheWorld[T]
-final case class Dead(id: AggregateRootId, version: AggregateRootVersion) extends NotAliveState[Nothing] with TouchedTheWorld[Nothing]
+final case class Alive[T <: AggregateRoot](ar: T) extends TouchedTheWorld[T] with DeadOrAlive[T]
+final case class Dead(id: AggregateRootId, version: AggregateRootVersion) extends NotAliveState[Nothing] with TouchedTheWorld[Nothing] with DeadOrAlive[Nothing]
 
 trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
   def applyEvent(agg: T, event: E): TouchedTheWorld[T]
@@ -33,7 +34,7 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
         }
     }
   
-  final  def applyEventToTouchedTheWorld(livingAgg: TouchedTheWorld[T], event: E): TouchedTheWorld[T] =
+  final def applyEventToTouchedTheWorld(livingAgg: TouchedTheWorld[T], event: E): TouchedTheWorld[T] =
     livingAgg match {
       case Alive(a) ⇒ applyEvent(a, event)
       case Dead(id, v) ⇒ throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")

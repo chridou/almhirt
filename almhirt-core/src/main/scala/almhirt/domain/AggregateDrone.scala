@@ -77,8 +77,6 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   //   Internal 
   //*************
 
-  private var state: T = _
-
   private case class InternalArBuildResult(ar: AggregateRootState[T])
   private case class InternalBuildArFailed(error: Throwable)
 
@@ -117,10 +115,15 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
     case GetAggregateEventsFailed(problem) ⇒
       onError(AggregateEventStoreFailedReadingException(command.aggId, "An error has occured fetching the aggregate root events:\n$problem"), command)
 
+    case ExecuteCommand(command: AggregateCommand) ⇒
+      context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command with id ${command.id.value} is currently executued."))
   }
 
   private def receiveRebuildFromSnapshot(delayedCommand: Option[AggregateCommand], queryPending: Boolean): Receive = {
     case _ ⇒ ???
+
+    case ExecuteCommand(command: AggregateCommand) ⇒
+      context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command with id ${command.id.value} is currently executued."))
   }
 
   private def receiveEvaluateRebuildResult(command: AggregateCommand): Receive = {
@@ -128,7 +131,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       arState match {
         case NeverExisted ⇒
           if (command.aggVersion.value != 0) {
-            context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version 0 for a not yet existing aggregate root. It targets ${command.aggVersion.value}."))
+            context.parent ! CommandNotExecuted(command.id, ConstraintViolatedProblem(s"Command must target version 0 for a not yet existing aggregate root. It targets ${command.aggVersion.value}."))
             context.become(receiveAcceptingCreatingCommand)
           } else {
             handleCreatingCommand(DefaultConfirmationContext)(command)
@@ -137,23 +140,27 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
         case Alive(ar) ⇒
           if (command.aggVersion != ar.version) {
             context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version ${ar.version.value}. It targets ${command.aggVersion.value}."))
-            context.become(receiveAcceptingMutatingCommand)
+            context.become(receiveAcceptingMutatingCommand(ar))
           } else {
             handleMutatingCommand(DefaultConfirmationContext)(command, ar)
-            context.become(receiveWaitingForMutatingCommandResult(command))
+            context.become(receiveWaitingForMutatingCommandResult(command, ar))
           }
-        case Dead(id, version) ⇒
-          onError(AggregateRootDeletedException(command.aggId, s"""Aggregate root("${id.value}";"${version.value}" has been deleted."""), command)
+        case d: Dead ⇒
+          context.parent ! CommandNotExecuted(command.id, AggregateRootDeletedProblem(command.aggId))
+          context.become(receiveDead(d))
       }
 
     case InternalBuildArFailed(error: Throwable) ⇒
       onError(RebuildAggregateRootFailedException(command.aggId, "An error has occured rebuilding the aggregate root.", error), command)
+
+    case ExecuteCommand(command: AggregateCommand) ⇒
+      context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command with id ${command.id.value} is currently executued."))
   }
 
   private def receiveAcceptingCreatingCommand: Receive = {
     case ExecuteCommand(command: AggregateCommand) ⇒
       if (command.aggVersion.value != 0) {
-        context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version 0 for a not yet existing aggregate root. It targets ${command.aggVersion.value}."))
+        context.parent ! CommandNotExecuted(command.id, ConstraintViolatedProblem(s"Command must target version 0 for a not yet existing aggregate root. It targets ${command.aggVersion.value}."))
         context.become(receiveAcceptingCreatingCommand)
       } else {
         handleCreatingCommand(DefaultConfirmationContext)(command)
@@ -161,30 +168,31 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       }
   }
 
-  private def receiveAcceptingMutatingCommand: Receive = {
+  private def receiveAcceptingMutatingCommand(state: T): Receive = {
     case ExecuteCommand(command: AggregateCommand) ⇒
       if (command.aggVersion != state.version) {
-        context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version ${state.version.value}. It targets ${command.aggVersion.value}."))
-        context.become(receiveAcceptingMutatingCommand)
+        context.parent ! CommandNotExecuted(command.id, ConstraintViolatedProblem(s"Command must target version ${state.version.value}. It targets ${command.aggVersion.value}."))
+        context.become(receiveAcceptingMutatingCommand(state))
       } else {
         handleMutatingCommand(DefaultConfirmationContext)(command, state)
-        context.become(receiveWaitingForMutatingCommandResult(command))
+        context.become(receiveWaitingForMutatingCommandResult(command, state))
       }
   }
 
   private def receiveWaitingForCreatingCommandResult(command: AggregateCommand): Receive = {
     case Commit(events) ⇒
       if (events.isEmpty) {
-        context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"A creating command must result in an event. No state changes."))
+        context.parent ! CommandNotExecuted(command.id, IllegalOperationProblem(s"A creating command must result in at least one event."))
         context.become(receiveAcceptingCreatingCommand)
       } else {
         events.foldLeft[AggregateRootState[T]](NeverExisted) { case (acc, cur) ⇒ applyLifecycleAgnostic(acc, cur) } match {
-          case Alive(ar) ⇒
-            state = ar
-            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty))
+          case s: Alive[T] ⇒
+            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty, s))
             aggregateEventLog ! CommitAggregateEvent(events.head)
           case Dead(id, version) ⇒
             onError(AggregateRootDeletedException(command.aggId, s"""Aggregate root("${id.value}";"${version.value}" has been created as deleted."""), command)
+          case NeverExisted ⇒
+            onError(AggregateRootDeletedException(command.aggId, s"""Command did not result in an aggregate root."""), command)
         }
       }
 
@@ -195,18 +203,20 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
     case Unhandled ⇒
       context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"""Could not handle command of type "${command.getClass().getName()}"."""))
       context.become(receiveAcceptingCreatingCommand)
+
+    case ExecuteCommand(command: AggregateCommand) ⇒
+      context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command with id ${command.id.value} is currently executued."))
   }
 
-  private def receiveWaitingForMutatingCommandResult(command: AggregateCommand): Receive = {
+  private def receiveWaitingForMutatingCommandResult(command: AggregateCommand, state: T): Receive = {
     case Commit(events) ⇒
       if (events.isEmpty) {
         context.parent ! CommandExecuted(command.id, events)
-        context.become(receiveAcceptingMutatingCommand)
+        context.become(receiveAcceptingMutatingCommand(state))
       } else {
         events.foldLeft[TouchedTheWorld[T]](Alive(state)) { case (acc, cur) ⇒ applyEventToTouchedTheWorld(acc, cur) } match {
           case Alive(ar) ⇒
-            state = ar
-            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty))
+            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty, Alive(state)))
             aggregateEventLog ! CommitAggregateEvent(events.head)
           case Dead(id, version) ⇒
             onError(AggregateRootDeletedException(command.aggId, s"""Aggregate root("${id.value}";"${version.value}" has been created as deleted."""), command)
@@ -215,29 +225,42 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
 
     case Rejected(problem) ⇒
       context.parent ! CommandNotExecuted(command.id, problem)
-      context.become(receiveAcceptingMutatingCommand)
+      context.become(receiveAcceptingMutatingCommand(state))
 
     case Unhandled ⇒
       context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"""Could not handle command of type "${command.getClass().getName()}"."""))
-      context.become(receiveAcceptingMutatingCommand)
+      context.become(receiveAcceptingMutatingCommand(state))
+
+    case ExecuteCommand(command: AggregateCommand) ⇒
+      context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command with id ${command.id.value} is currently executued."))
   }
 
-  private def receiveCommitEvents(command: AggregateCommand, inFlight: E, rest: Seq[E], done: Seq[E]): Receive = {
+  private def receiveCommitEvents(command: AggregateCommand, inFlight: E, rest: Seq[E], done: Seq[E], state: DeadOrAlive[T]): Receive = {
     case AggregateEventCommitted(id) ⇒
       val newDone = done :+ inFlight
       rest match {
         case Seq() ⇒
           context.parent ! CommandExecuted(command.id, newDone)
-          context.become(receiveAcceptingMutatingCommand)
+          state match {
+            case Alive(ar) =>
+              context.become(receiveAcceptingMutatingCommand(ar))
+            case d: Dead =>
+              context.become(receiveDead(d))
+          }
         case next +: newRest ⇒
           aggregateEventLog ! CommitAggregateEvent(next)
-          context.become(receiveCommitEvents(command, next, newRest, newDone))
+          context.become(receiveCommitEvents(command, next, newRest, newDone, state))
       }
     case AggregateEventNotCommitted(id, problem) ⇒
       onError(AggregateEventStoreFailedWritingException(command.aggId, s"The aggregate event store failed writing:\n$problem"), command, done)
+
+    case ExecuteCommand(command: AggregateCommand) ⇒
+      context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command with id ${command.id.value} is currently executued."))
   }
-  private def receiveDead: Receive = {
-    case _ ⇒ ???
+
+  private def receiveDead(state: Dead): Receive = {
+    case ExecuteCommand(command: AggregateCommand) ⇒
+      context.parent ! CommandNotExecuted(command.id, AggregateRootDeletedProblem(command.aggId))
   }
 
   def receive: Receive = receiveUninitialized
