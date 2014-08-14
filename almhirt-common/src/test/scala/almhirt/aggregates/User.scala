@@ -36,3 +36,6 @@ trait BuildsUser extends BuildsAggregateRoot[User, UserEvent] {
         throw new UnhandledAggregateEventException(id, event)
     }
 }
+
+trait MutatesUser {
+  }
