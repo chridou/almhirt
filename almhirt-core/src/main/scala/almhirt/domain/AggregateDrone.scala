@@ -100,7 +100,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
     case FetchedAggregateEvents(eventsEnumerator) ⇒
       val iteratee: Iteratee[AggregateEvent, AggregateRootState[T]] = Iteratee.fold[AggregateEvent, AggregateRootState[T]](NeverExisted) {
         case (acc, event) ⇒
-          applyLifecycleAgnostic(acc, event.asInstanceOf[E])
+          applyEventLifecycleAgnostic(acc, event.asInstanceOf[E])
       }(ahContext.futuresContext)
 
       eventsEnumerator.run(iteratee).onComplete {
@@ -185,12 +185,10 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
         context.parent ! CommandNotExecuted(command.header, IllegalOperationProblem(s"A creating command must result in at least one event."))
         context.become(receiveAcceptingCreatingCommand)
       } else {
-        events.foldLeft[AggregateRootState[T]](NeverExisted) { case (acc, cur) ⇒ applyLifecycleAgnostic(acc, cur) } match {
-          case s: Alive[T] ⇒
-            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty, s))
+        events.foldLeft[AggregateRootState[T]](NeverExisted) { case (acc, cur) ⇒ applyEventLifecycleAgnostic(acc, cur) } match {
+          case postnatalis: Postnatalis[T] ⇒
+            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty, postnatalis))
             aggregateEventLog ! CommitAggregateEvent(events.head)
-          case Dead(id, version) ⇒
-            onError(AggregateRootDeletedException(command.aggId, s"""Aggregate root("${id.value}";"${version.value}" has been created as deleted."""), command)
           case NeverExisted ⇒
             onError(AggregateRootDeletedException(command.aggId, s"""Command did not result in an aggregate root."""), command)
         }
@@ -214,13 +212,9 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
         context.parent ! CommandExecuted(command.header, events)
         context.become(receiveAcceptingMutatingCommand(state))
       } else {
-        events.foldLeft[Postnatalis[T]](Alive(state)) { case (acc, cur) ⇒ applyPostnatalis(acc, cur) } match {
-          case Alive(ar) ⇒
-            context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty, Alive(state)))
-            aggregateEventLog ! CommitAggregateEvent(events.head)
-          case Dead(id, version) ⇒
-            onError(AggregateRootDeletedException(command.aggId, s"""Aggregate root("${id.value}";"${version.value}" has been created as deleted."""), command)
-        }
+        val postnatalis = events.foldLeft[Postnatalis[T]](Alive(state)) { case (acc, cur) ⇒ applyEventPostnatalis(acc, cur) }
+        context.become(receiveCommitEvents(command, events.head, events.tail, Seq.empty, postnatalis))
+        aggregateEventLog ! CommitAggregateEvent(events.head)
       }
 
     case Rejected(problem) ⇒
