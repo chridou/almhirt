@@ -99,5 +99,6 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val BusinessRuleViolatedProblem = almhirt.problem.problemtypes.BusinessRuleViolatedProblem
   val LocaleNotSupportedProblem = almhirt.problem.problemtypes.LocaleNotSupportedProblem
   val NoSuchElementProblem = almhirt.problem.problemtypes.NoSuchElementProblem
+  val AggregateRootDeletedProblem = almhirt.problem.problemtypes.AggregateRootDeletedProblem
 
 }

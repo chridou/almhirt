@@ -236,6 +236,9 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
     case AggregateEventNotCommitted(id, problem) ⇒
       onError(AggregateEventStoreFailedWritingException(command.aggId, s"The aggregate event store failed writing:\n$problem"), command, done)
   }
+  private def receiveDead: Receive = {
+    case _ ⇒ ???
+  }
 
   def receive: Receive = receiveUninitialized
 }
