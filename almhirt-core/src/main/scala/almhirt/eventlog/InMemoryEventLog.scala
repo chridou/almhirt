@@ -18,9 +18,9 @@ class InMemoryEventLog extends Actor with ActorLogging {
   def receive: Receive = {
     case LogEvent(event) ⇒
       eventLog = (eventLog :+ event).sortBy(_.timestamp)
-      sender() ! EventLogged(event.id)
+      sender() ! EventLogged(event.eventId)
     case FindEvent(eventId) ⇒
-      sender() ! FoundEvent(eventId, eventLog.find(_.id == eventId))
+      sender() ! FoundEvent(eventId, eventLog.find(_.eventId == eventId))
     case FetchAllEvents ⇒
       sender() ! FetchedEvents(Enumerator(eventLog: _*))
     case FetchEventsFrom(from) ⇒

@@ -15,17 +15,17 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  case class TestEvent(id: EventId, timestamp: org.joda.time.LocalDateTime) extends Event
+  case class TestEvent(header: EventHeader) extends Event
   object TestEvent {
-    def apply(id: String): TestEvent = TestEvent(EventId(id), ccuad.getUtcTimestamp)
+    def apply(id: String): TestEvent = TestEvent(EventHeader(EventId(id)))
   }
-  case class TestDomainEvent(id: EventId, timestamp: org.joda.time.LocalDateTime) extends DomainEvent
+  case class TestDomainEvent(header: EventHeader) extends DomainEvent
   object TestDomainEvent {
-    def apply(id: String): TestDomainEvent = TestDomainEvent(EventId(id), ccuad.getUtcTimestamp)
+    def apply(id: String): TestDomainEvent = TestDomainEvent(EventHeader(EventId(id)))
   }
-  case class TestSystemEvent(id: EventId, timestamp: org.joda.time.LocalDateTime) extends SystemEvent
+  case class TestSystemEvent(header: EventHeader) extends SystemEvent
   object TestSystemEvent {
-    def apply(id: String): TestSystemEvent = TestSystemEvent(EventId(id), ccuad.getUtcTimestamp)
+    def apply(id: String): TestSystemEvent = TestSystemEvent(EventHeader(EventId(id)))
   }
 
   val nMsgBig = 100000
@@ -271,9 +271,9 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
         }
-        resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.value) should equal(events)
-        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.value) should equal(events.collect { case m: SystemEvent ⇒ m })
-        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.value) should equal(events.collect { case m: DomainEvent ⇒ m })
+        resEvent.map(_.asInstanceOf[Event]).sortBy(_.eventId.value) should equal(events)
+        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.eventId.value) should equal(events.collect { case m: SystemEvent ⇒ m })
+        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.eventId.value) should equal(events.collect { case m: DomainEvent ⇒ m })
       }
 
       s"dispatch many events(${nMsgBig * 3}) of different kinds from really many(${nContractors * 10}) contractors on the matching streams" in { fixture ⇒
@@ -311,9 +311,9 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
         }
-        resEvent.map(_.asInstanceOf[Event]).sortBy(_.id.value) should equal(events)
-        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.id.value) should equal(events.collect { case m: SystemEvent ⇒ m })
-        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.id.value) should equal(events.collect { case m: DomainEvent ⇒ m })
+        resEvent.map(_.asInstanceOf[Event]).sortBy(_.eventId.value) should equal(events)
+        resSystemEvent.map(_.asInstanceOf[SystemEvent]).sortBy(_.eventId.value) should equal(events.collect { case m: SystemEvent ⇒ m })
+        resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.eventId.value) should equal(events.collect { case m: DomainEvent ⇒ m })
       }
     }
     "accessed via a consumer" should {

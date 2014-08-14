@@ -3,11 +3,19 @@ package almhirt.common
 import org.joda.time.LocalDateTime
 import almhirt.aggregates.{ AggregateRootId, AggregateRootVersion }
 
+case class CommandHeader(id: CommandId, timestamp: LocalDateTime)
+
+object CommandHeader {
+  def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader =
+    CommandHeader(CommandId(ccuad.getUniqueString), ccuad.getUtcTimestamp)
+  def apply(id: CommandId)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandHeader =
+    CommandHeader(id, ccuad.getUtcTimestamp)
+}
+
 trait Command {
-  /** The commands unique identifier */
-  def id: CommandId
-  /** The events timestamp of creation */
-  def timestamp: LocalDateTime
+  def header: CommandHeader
+  final def commandId: CommandId = header.id
+  final def timestamp: LocalDateTime = header.timestamp
 }
 
 trait DomainCommand extends Command

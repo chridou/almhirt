@@ -1,7 +1,6 @@
 package almhirt.http
 
 import almhirt.common.{ DomainEvent, DomainCommand }
-import almhirt.tracking.ExecutionState
 
 trait HasCommonHttpSerializers {
   implicit def booleanHttpSerializer: HttpSerializer[Boolean] with HttpDeserializer[Boolean]
@@ -45,9 +44,6 @@ trait HasCommonHttpSerializers {
   implicit def problemsHttpSerializer: HttpSerializer[Seq[almhirt.common.Problem]] with HttpDeserializer[Seq[almhirt.common.Problem]]
   
   def domainEventHttpSerializer: HttpSerializer[DomainEvent] with HttpDeserializer[DomainEvent]
-  implicit def executionStateHttpSerializer: HttpSerializer[ExecutionState] with HttpDeserializer[ExecutionState]
   implicit def domainEventsHttpSerializer: HttpSerializer[Seq[DomainEvent]] with HttpDeserializer[Seq[DomainEvent]]
   implicit def domainCommandsHttpSerializer: HttpSerializer[Seq[DomainCommand]] with HttpDeserializer[Seq[DomainCommand]]
-  implicit def executionStatesHttpSerializer: HttpSerializer[Seq[ExecutionState]] with HttpDeserializer[Seq[ExecutionState]]
-
 }

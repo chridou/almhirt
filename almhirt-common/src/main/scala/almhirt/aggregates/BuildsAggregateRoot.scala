@@ -2,16 +2,8 @@ package almhirt.aggregates
 
 import almhirt.common._
 
-sealed trait AggregateRootState[+T <: AggregateRoot]
-sealed trait NotAliveState[+T <: AggregateRoot] extends AggregateRootState[T]
-sealed trait TouchedTheWorld[+T <: AggregateRoot] extends AggregateRootState[T]
-sealed trait DeadOrAlive[+T <: AggregateRoot] extends AggregateRootState[T]
-case object NeverExisted extends NotAliveState[Nothing]
-final case class Alive[T <: AggregateRoot](ar: T) extends TouchedTheWorld[T] with DeadOrAlive[T]
-final case class Dead(id: AggregateRootId, version: AggregateRootVersion) extends NotAliveState[Nothing] with TouchedTheWorld[Nothing] with DeadOrAlive[Nothing]
-
 trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
-  def applyEvent(agg: T, event: E): TouchedTheWorld[T]
+  def applyEvent(agg: T, event: E): Postnatalis[T]
 
   def fromEvent(event: E): T
 
@@ -23,8 +15,8 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
     }
   }
 
-  def applyEvents(agg: T, events: Iterable[E]): TouchedTheWorld[T] =
-    events.foldLeft(Alive(agg): TouchedTheWorld[T]) {
+  def applyEvents(agg: T, events: Iterable[E]): Postnatalis[T] =
+    events.foldLeft(Alive(agg): Postnatalis[T]) {
       case (state, next) ⇒
         state match {
           case Alive(st) ⇒
@@ -33,13 +25,12 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
             throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
         }
     }
-  
-  final def applyEventToTouchedTheWorld(livingAgg: TouchedTheWorld[T], event: E): TouchedTheWorld[T] =
+
+  final def applyPostnatalis(livingAgg: Postnatalis[T], event: E): Postnatalis[T] =
     livingAgg match {
       case Alive(a) ⇒ applyEvent(a, event)
       case Dead(id, v) ⇒ throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
     }
-
 
   def rebuildFromHistory(events: Iterable[E]): AggregateRootState[T] =
     if (events.isEmpty) {
@@ -48,6 +39,20 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
       applyEvents(fromEvent(events.head), events.tail)
     }
 
+}
+
+trait BuildsAggregetaRootAntemortem[T <: AggregateRoot, E <: AggregateEvent] extends BuildsAggregateRoot[T, E] {
+  final def applyEvent(agg: T, event: E): Postnatalis[T] =
+    applyEventAntemortem(Alive(agg), event)
+
+  final def fromEvent(event: E): T =
+    applyLifecycleAgnostic(NeverExisted, event) match {
+      case Alive(a) ⇒ a
+      case NeverExisted ⇒ throw new Exception(s"An event must create an aggregate root.")
+      case Dead(id, v) ⇒ throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
+    }
+
+  def applyEventAntemortem(state: Antemortem[T], event: E): Postnatalis[T]
 }
 
 trait BuildsAggregetaRootFromEventHandlers[T <: AggregateRoot, E <: AggregateEvent] extends BuildsAggregateRoot[T, E] {
@@ -75,5 +80,5 @@ trait BuildsAggregetaRootFromEventHandlers[T <: AggregateRoot, E <: AggregateEve
   /**
    * The implementation must increase the version!
    */
-  def mutateHandler: (T, E) ⇒ TouchedTheWorld[T]
+  def mutateHandler: (T, E) ⇒ Postnatalis[T]
 }

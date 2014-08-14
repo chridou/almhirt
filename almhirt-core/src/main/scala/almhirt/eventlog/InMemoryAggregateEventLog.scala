@@ -19,11 +19,11 @@ class InMemoryAggregateEventLog extends Actor with ActorLogging {
   def receive: Receive = {
     case CommitAggregateEvent(event) ⇒
       domainEventLog = domainEventLog :+ event
-      sender() ! AggregateEventCommitted(event.id)
+      sender() ! AggregateEventCommitted(event.eventId)
     case GetAllAggregateEvents ⇒
       sender() ! FetchedAggregateEvents(Enumerator(domainEventLog: _*))
     case GetAggregateEvent(eventId) ⇒
-      sender() ! FetchedAggregateEvent(eventId, domainEventLog.find(_.id == eventId))
+      sender() ! FetchedAggregateEvent(eventId, domainEventLog.find(_.eventId == eventId))
     case GetAllAggregateEventsFor(aggId) ⇒
       sender() ! FetchedAggregateEvents(Enumerator(domainEventLog.filter(_.aggId == aggId): _*))
     case GetAggregateEventsFrom(aggId, fromVersion) ⇒

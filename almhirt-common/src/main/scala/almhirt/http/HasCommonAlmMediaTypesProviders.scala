@@ -1,7 +1,6 @@
 package almhirt.http
 
 import almhirt.common.{ DomainEvent, DomainCommand }
-import almhirt.tracking.ExecutionState
 
 trait HasCommonAlmMediaTypesProviders {
   implicit def booleanAlmMediaTypesProvider: AlmMediaTypesProvider[Boolean]
@@ -45,10 +44,8 @@ trait HasCommonAlmMediaTypesProviders {
   implicit def problemsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[almhirt.common.Problem]]
   
   implicit def domainEventAlmMediaTypesProvider: AlmMediaTypesProvider[DomainEvent]
-  implicit def executionStateAlmMediaTypesProvider: AlmMediaTypesProvider[ExecutionState]
   implicit def domainEventsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[DomainEvent]]
   implicit def domainCommandsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[DomainCommand]]
-  implicit def executionStatesAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[ExecutionState]]
 }
 
 trait VendorBasedCommonAlmMediaTypesProviders { self : HasCommonAlmMediaTypesProviders ⇒
@@ -94,9 +91,7 @@ trait VendorBasedCommonAlmMediaTypesProviders { self : HasCommonAlmMediaTypesPro
   override lazy val problemsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[almhirt.common.Problem]]("Problems").withGenericTargets
 
   override lazy val domainEventAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[DomainEvent]("DomainEvent").withGenericTargets
-  override lazy val executionStateAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[ExecutionState]("ExecutionState").withGenericTargets
   override lazy val domainEventsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainEvent]]("DomainEvents").withGenericTargets
   override lazy val domainCommandsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainCommand]]("DomainCommands").withGenericTargets
-  override lazy val executionStatesAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[ExecutionState]]("ExecutionStates").withGenericTargets
 
 }

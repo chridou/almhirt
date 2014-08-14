@@ -10,24 +10,24 @@ import almhirt.syntax.almvalidation._
  * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s
  * Writer monad.
  */
-trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
+trait FlatUpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
   /**
    * Apply the events to this Update and return a result
    *
    * @param events The events to process by the application to create the result
    * @return The current events and the resulting AR
    */
-  def apply[EE >: Event](events: List[EE]): (List[EE], PimpedAggregateValidation[AR])
+  def apply[EE >: Event](events: List[EE]): (List[EE], AggregateValidation[AR])
   /**
    * Creates a new Update with an aggregate root transformed by f and the same events as written to this instance.
    * It does not execute f if the current aggregate root is already a failure
    * Usually it makes no sense to call this method manually
    *
    * @param f Function that returns a new aggregate root. Usually a mutation of the one stored in this instance.
-   * @return The [[almhirt.domain.UpdateRecorder]] with the old events and a mapped aggregate root
+   * @return The [[almhirt.domain.FlatUpdateRecorder]] with the old events and a mapped aggregate root
    */
-  def map[AAR <: AggregateRoot](f: AggregateRootState[AR] ⇒ AggregateRootState[AAR]): UpdateRecorder[Event, AAR] =
-    UpdateRecorder[Event, AAR] { events ⇒
+  def map[AAR <: AggregateRoot](f: AR ⇒ AAR): FlatUpdateRecorder[Event, AAR] =
+    FlatUpdateRecorder[Event, AAR] { events ⇒
       val (currentEvents, validation) = this(events)
       validation fold (problem ⇒ (currentEvents, problem.failure), ar ⇒ (currentEvents, f(ar).success))
     }
@@ -37,10 +37,10 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * It does not execute f if the current aggregate root is already a failure
    *
    * @param f Function that returns an Update which will be used to create the new Update(Write operation)
-   * @return The [[almhirt.domain.UpdateRecorder]] with eventually updated events and the new AR state
+   * @return The [[almhirt.domain.FlatUpdateRecorder]] with eventually updated events and the new AR state
    */
-  def flatMap[EEvent >: Event <: AggregateEvent, AAR <: AggregateRoot](f: AggregateRootState[AR] ⇒ UpdateRecorder[EEvent, AAR]): UpdateRecorder[EEvent, AAR] =
-    UpdateRecorder[EEvent, AAR] { events ⇒
+  def flatMap[EEvent >: Event <: AggregateEvent, AAR <: AggregateRoot](f: AR ⇒ FlatUpdateRecorder[EEvent, AAR]): FlatUpdateRecorder[EEvent, AAR] =
+    FlatUpdateRecorder[EEvent, AAR] { events ⇒
       val (currentEvents, validation) = this(events)
       validation fold (
         problem ⇒
@@ -50,6 +50,17 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
           (updatedEvents, newAggr)
         })
     }
+  /**
+   * Execute a side effect in case of a success
+   *
+   * @param onSuccessAction The action that triggers the side effect
+   * @return This
+   */
+  def onSuccess(onSuccessAction: (List[Event], AR) ⇒ Unit): FlatUpdateRecorder[Event, AR] = {
+    val (events, validation) = apply(Nil)
+    validation onSuccess (ar ⇒ { onSuccessAction(events, ar) })
+    this
+  }
   /**
    * Check whether the current AR state is a success
    *
@@ -66,7 +77,7 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * The result of previous recordings
    * Returns the current aggregate root in a success or a failure
    */
-  def result(): PimpedAggregateValidation[AR] = {
+  def result(): AggregateValidation[AR] = {
     val (_, validation) = apply(Nil)
     validation
   }
@@ -75,20 +86,20 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
     val (events, _) = apply(Nil)
     events.reverse
   }
-  def recordings: AlmValidation[(AggregateRootState[AR], List[Event])] = {
+  def recordings: AlmValidation[(AR, List[Event])] = {
     val (events, validation) = apply(Nil)
     validation.map((_, events.reverse))
   }
 }
-object UpdateRecorder {
+object FlatUpdateRecorder {
   /**
    * Creates a new update.
    * The function f will be applied when the new Update's apply method is triggered.
    *
    * @param f Function which takes a list of (previous) events and returns the new events with the result on the modified aggregate root
    */
-  def apply[Event <: AggregateEvent, AR <: AggregateRoot](f: List[Event] ⇒ (List[Event], PimpedAggregateValidation[AR])) =
-    new UpdateRecorder[Event, AR] {
+  def apply[Event <: AggregateEvent, AR <: AggregateRoot](f: List[Event] ⇒ (List[Event], AggregateValidation[AR])) =
+    new FlatUpdateRecorder[Event, AR] {
       def apply[EE >: Event](events: List[EE]) = f(events.asInstanceOf[List[Event]])
     }
   /**
@@ -96,31 +107,21 @@ object UpdateRecorder {
    *
    * @param aggregate root The unmodified aggregate root
    */
-  def startWith[Event <: AggregateEvent, AR <: AggregateRoot](ar: AggregateRootState[AR]) =
-    UpdateRecorder[Event, AR](events ⇒ (events, ar.success))
-
-  def startAlive[Event <: AggregateEvent, AR <: AggregateRoot](ar: AR) =
-    UpdateRecorder[Event, AR](events ⇒ (events, Alive(ar).success))
-    
-  def startFresh[Event <: AggregateEvent, AR <: AggregateRoot]() =
-    UpdateRecorder[Event, AR](events ⇒ (events, NeverExisted.success))
- 
-  def startDead[Event <: AggregateEvent, AR <: AggregateRoot](d: Dead) =
-    UpdateRecorder[Event, AR](events ⇒ (events, d.success))
-    
-    /**
+  def startWith[Event <: AggregateEvent, AR <: AggregateRoot](ar: AR) =
+    FlatUpdateRecorder[Event, AR](events ⇒ (events, ar.success))
+  /**
    * Takes an event and the resulting Aggregate Root. The event is prepended to the previous events
    *
    * @param event The event resulting from an aggregate root operation
    * @param result The state of the aggregate root corresponding to the event
    */
-  def accept[Event <: AggregateEvent, AR <: AggregateRoot](event: Event, ar: AggregateRootState[AR]) =
-    UpdateRecorder[Event, AR](events ⇒ (event :: events, ar.success))
+  def accept[Event <: AggregateEvent, AR <: AggregateRoot](event: Event, ar: AR) =
+    FlatUpdateRecorder[Event, AR](events ⇒ (event :: events, ar.success))
   /**
    * Takes an event and the resulting Aggregate Root. Previously written events are still contained
    *
    * @param error The problem causing this update to fail.
    */
   def reject[Event <: AggregateEvent, AR <: AggregateRoot](error: Problem) =
-    UpdateRecorder[Event, AR](events ⇒ (events, error.failure))
+    FlatUpdateRecorder[Event, AR](events ⇒ (events, error.failure))
 }
