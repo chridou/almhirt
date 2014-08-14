@@ -56,20 +56,48 @@ class BuildsAggregateRootTests extends FlatSpec with Matchers {
     actual should equal(Dead("a", 2L))
   }
 
-  it should "applyevents" in {
-    ???
+  it should "return the aggregate for applyevents when there are no events" in {
+    val agg = User("a", 1L, "hans", "meier", Some(2))
+    applyEvents(User("a", 1L, "hans", "meier", Some(2)), Nil) should equal(Alive(agg))
   }
 
-  it should "applyEventPostnatalis" in {
-    ???
+  it should "return Alive(aggregate) for applyEventsPostnatalis when there are no events" in {
+    val agg = Alive(User("a", 1L, "hans", "meier", Some(2)))
+    applyEventsPostnatalis(agg, Nil) should equal(agg)
   }
 
-  it should "applyEventsPostnatalis" in {
-    ???
+  it should "return Dead for applyEventsPostnatalis when there are no events" in {
+    val agg = Dead("a", 1L)
+    applyEventsPostnatalis(agg, Nil) should equal(agg)
+  }
+  
+  it should "throw an exception for applyevents when an event follows dead state " in {
+    val event1 = UserDied(EventHeader(), "a", 1L)
+    val event2 = UserCreated(EventHeader(), arid("a"), arv(0L), "hans", "meier")
+    intercept[Exception] {
+      applyEvents(User("a", 1L, "hans", "meier", Some(2)), event1 :: event2 :: Nil)
+    }
   }
 
-  it should "applyEventLifecycleAgnostic" in {
-    ???
+  it should "throw an exception for applyEventPostnatalis when the state is dead" in {
+    val event = UserCreated(EventHeader(), arid("a"), arv(0L), "hans", "meier")
+    intercept[Exception] {
+      applyEventPostnatalis(Dead("a", 1L), event)
+    }
+  }
+
+  it should "throw an exception for applyEventPostnatalis when the state is dead and there are events" in {
+    val event = UserCreated(EventHeader(), arid("a"), arv(0L), "hans", "meier")
+    intercept[Exception] {
+      applyEventsPostnatalis(Dead("a", 1L), event :: Nil)
+    }
+  }
+
+  it should "throw an exception for applyEventLifecycleAgnostic when the state is dead" in {
+    val event = UserCreated(EventHeader(), arid("a"), arv(0L), "hans", "meier")
+    intercept[Exception] {
+      applyEventLifecycleAgnostic(Dead("a", 1L), event)
+    }
   }
 
 }
