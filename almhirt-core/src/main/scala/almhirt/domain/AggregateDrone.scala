@@ -22,20 +22,21 @@ private[almhirt] object AggregateDroneInternalMessages {
   }
 }
 
+/** Used to commit or reject the events resulting from a command */
 trait ConfirmationContext[E <: AggregateEvent] {
   /**
    * Call from within handle*Command to apply changes.
-   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   * Do not call multiple times from within command a handler.
    */
   def commit(events: Seq[E])
   /**
    * Call from within handle*Command to reject a command.
-   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   * Do not call multiple times from within command a handler.
    */
   def reject(problem: Problem)
   /**
    * Call from within handle*Command to signal that a command cannot be handled.
-   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   * Do not call multiple times from within command a handler.
    */
   def unhandled()
 }
@@ -59,7 +60,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   def handleCreatingCommand: ConfirmationContext[E] ⇒ AggregateCommand ⇒ Unit
   def handleMutatingCommand: ConfirmationContext[E] ⇒ (AggregateCommand, T) ⇒ Unit
 
-  private object DefaultConfirmationContext extends ConfirmationContext[E]{
+  private object DefaultConfirmationContext extends ConfirmationContext[E] {
     def commit(events: Seq[E]) { self ! Commit(events) }
     def reject(problem: Problem) { self ! Rejected(problem) }
     def unhandled() { self ! Unhandled }
