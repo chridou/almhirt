@@ -22,6 +22,24 @@ private[almhirt] object AggregateDroneInternalMessages {
   }
 }
 
+trait ConfirmationContext[E <: AggregateEvent] {
+  /**
+   * Call from within handle*Command to apply changes.
+   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   */
+  def commit(events: Seq[E])
+  /**
+   * Call from within handle*Command to reject a command.
+   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   */
+  def reject(problem: Problem)
+  /**
+   * Call from within handle*Command to signal that a command cannot be handled.
+   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
+   */
+  def unhandled()
+}
+
 /**
  * Mix in this trait to create an Actor that manages command execution for an aggregate root and commits the resulting events.
  *  The resulting Actor is intended to be used and managed by the AgrregateRootHive.
@@ -38,24 +56,15 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
 
-  def handleCreatingCommand(command: AggregateCommand)
-  def handleMutatingCommand(command: AggregateCommand, state: T)
+  def handleCreatingCommand: ConfirmationContext[E] => AggregateCommand => Unit
+  def handleMutatingCommand: ConfirmationContext[E] => (AggregateCommand, T) => Unit
 
-  /**
-   * Call from within handle*Command to apply changes.
-   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
-   */
-  protected def commit(events: Seq[E]) { self ! Commit(events) }
-  /**
-   * Call from within handle*Command to reject a command.
-   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
-   */
-  protected def reject(problem: Problem) { self ! Rejected(problem) }
-  /**
-   * Call from within handle*Command to signal that a command cannot be handled.
-   *  Do not cal any of commit, reject or unhandled multiple times from within a handler.
-   */
-  protected def unhandled() { self ! Unhandled }
+  private object DefaultConfirmationContext extends ConfirmationContext[E]{
+    def commit(events: Seq[E]) { self ! Commit(events) }
+    def reject(problem: Problem) { self ! Rejected(problem) }
+    def unhandled() { self ! Unhandled }
+
+  }
 
   /** Ends with termination */
   protected def onError(ex: AggregateRootDroneException, command: AggregateCommand, commitedEvents: Seq[E] = Seq.empty) {
@@ -121,7 +130,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
             context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version 0 for a not yet existing aggregate root. It targets ${command.aggVersion.value}."))
             context.become(receiveAcceptingCreatingCommand)
           } else {
-            handleCreatingCommand(command)
+            handleCreatingCommand(DefaultConfirmationContext)(command)
             context.become(receiveWaitingForCreatingCommandResult(command))
           }
         case Alive(ar) =>
@@ -129,7 +138,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
             context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version ${ar.version.value}. It targets ${command.aggVersion.value}."))
             context.become(receiveAcceptingMutatingCommand)
           } else {
-            handleMutatingCommand(command, ar)
+            handleMutatingCommand(DefaultConfirmationContext)(command, ar)
             context.become(receiveWaitingForMutatingCommandResult(command))
           }
         case Dead(id, version) =>
@@ -146,7 +155,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
         context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version 0 for a not yet existing aggregate root. It targets ${command.aggVersion.value}."))
         context.become(receiveAcceptingCreatingCommand)
       } else {
-        handleCreatingCommand(command)
+        handleCreatingCommand(DefaultConfirmationContext)(command)
         context.become(receiveWaitingForCreatingCommandResult(command))
       }
   }
@@ -157,7 +166,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
         context.parent ! CommandNotExecuted(command.id, UnspecifiedProblem(s"Command must target version ${state.version.value}. It targets ${command.aggVersion.value}."))
         context.become(receiveAcceptingMutatingCommand)
       } else {
-        handleMutatingCommand(command, state)
+        handleMutatingCommand(DefaultConfirmationContext)(command, state)
         context.become(receiveWaitingForMutatingCommandResult(command))
       }
   }
