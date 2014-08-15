@@ -10,14 +10,14 @@ import almhirt.syntax.almvalidation._
  * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s
  * Writer monad.
  */
-trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
+trait UpdateRecorder[+AR <: AggregateRoot, +Event <: AggregateEvent] {
   /**
    * Apply the events to this Update and return a result
    *
    * @param events The events to process by the application to create the result
    * @return The current events and the resulting AR
    */
-  def apply[EE >: Event](events: List[EE]): (List[EE], PimpedAggregateValidation[AR])
+  def apply[EE >: Event](events: List[EE]): (AggregateValidation[AR], List[EE])
   /**
    * Creates a new Update with an aggregate root transformed by f and the same events as written to this instance.
    * It does not execute f if the current aggregate root is already a failure
@@ -26,10 +26,10 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * @param f Function that returns a new aggregate root. Usually a mutation of the one stored in this instance.
    * @return The [[almhirt.domain.UpdateRecorder]] with the old events and a mapped aggregate root
    */
-  def map[AAR <: AggregateRoot](f: AggregateRootState[AR] ⇒ AggregateRootState[AAR]): UpdateRecorder[Event, AAR] =
-    UpdateRecorder[Event, AAR] { events ⇒
-      val (currentEvents, validation) = this(events)
-      validation fold (problem ⇒ (currentEvents, problem.failure), ar ⇒ (currentEvents, f(ar).success))
+  def map[AAR <: AggregateRoot](f: AggregateRootState[AR] ⇒ AggregateRootState[AAR]): UpdateRecorder[AAR, Event] =
+    UpdateRecorder[AAR, Event] { events ⇒
+      val (validation, currentEvents) = this(events)
+      validation fold (problem ⇒ (problem.failure, currentEvents), ar ⇒ (f(ar).success, currentEvents))
     }
   /**
    * Creates a new Update from the Update returned by f.
@@ -39,47 +39,49 @@ trait UpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * @param f Function that returns an Update which will be used to create the new Update(Write operation)
    * @return The [[almhirt.domain.UpdateRecorder]] with eventually updated events and the new AR state
    */
-  def flatMap[EEvent >: Event <: AggregateEvent, AAR <: AggregateRoot](f: AggregateRootState[AR] ⇒ UpdateRecorder[EEvent, AAR]): UpdateRecorder[EEvent, AAR] =
-    UpdateRecorder[EEvent, AAR] { events ⇒
-      val (currentEvents, validation) = this(events)
+  def flatMap[AAR <: AggregateRoot, EEvent >: Event <: AggregateEvent](f: AggregateRootState[AR] ⇒ UpdateRecorder[AAR, EEvent]): UpdateRecorder[AAR, EEvent] =
+    UpdateRecorder[AAR, EEvent] { events ⇒
+      val (validation, currentEvents) = this(events)
       validation fold (
         problem ⇒
-          (currentEvents, problem.failure),
+          (problem.failure, currentEvents),
         currentAggr ⇒ {
-          val (updatedEvents, newAggr) = f(currentAggr)(currentEvents)
-          (updatedEvents, newAggr)
+          val (newAggr, updatedEvents) = f(currentAggr)(currentEvents)
+          (newAggr, updatedEvents)
         })
     }
+  
   /**
    * Check whether the current AR state is a success
    *
    * @return True in case of a success
    */
-  def isAccepted() = apply(Nil)._2.isSuccess
+  def isAccepted() = apply(Nil)._1.isSuccess
   /**
    * Check whether the current AR state is a failure
    *
    * @return True in case of a failure
    */
-  def isRejected() = apply(Nil)._2.isFailure
+  def isRejected() = apply(Nil)._1.isFailure
   /**
    * The result of previous recordings
    * Returns the current aggregate root in a success or a failure
    */
-  def result(): PimpedAggregateValidation[AR] = {
-    val (_, validation) = apply(Nil)
+  def result(): AggregateValidation[AR] = {
+    val (validation, _) = apply(Nil)
     validation
   }
   /** Returns the recorded events in chronological order */
   def events(): List[Event] = {
-    val (events, _) = apply(Nil)
+    val (_, events) = apply(Nil)
     events.reverse
   }
   def recordings: AlmValidation[(AggregateRootState[AR], List[Event])] = {
-    val (events, validation) = apply(Nil)
+    val (validation, events) = apply(Nil)
     validation.map((_, events.reverse))
   }
 }
+
 object UpdateRecorder {
   /**
    * Creates a new update.
@@ -87,26 +89,19 @@ object UpdateRecorder {
    *
    * @param f Function which takes a list of (previous) events and returns the new events with the result on the modified aggregate root
    */
-  def apply[Event <: AggregateEvent, AR <: AggregateRoot](f: List[Event] ⇒ (List[Event], PimpedAggregateValidation[AR])) =
-    new UpdateRecorder[Event, AR] {
+  def apply[AR <: AggregateRoot, Event <: AggregateEvent](f: List[Event] ⇒ (AggregateValidation[AR], List[Event])) =
+    new UpdateRecorder[AR, Event] {
       def apply[EE >: Event](events: List[EE]) = f(events.asInstanceOf[List[Event]])
     }
-  /**
-   * Starts a new recording with a fresh aggregate root and no previous events
-   *
-   * @param aggregate root The unmodified aggregate root
-   */
-  def startWith[Event <: AggregateEvent, AR <: AggregateRoot](ar: AggregateRootState[AR]) =
-    UpdateRecorder[Event, AR](events ⇒ (events, ar.success))
 
-  def startAlive[Event <: AggregateEvent, AR <: AggregateRoot](ar: AR) =
-    UpdateRecorder[Event, AR](events ⇒ (events, Alive(ar).success))
+  def startAlive[AR <: AggregateRoot, Event <: AggregateEvent](ar: AR) =
+    UpdateRecorder[AR, Event](events ⇒ (Alive(ar).success, events))
     
-  def startFresh[Event <: AggregateEvent, AR <: AggregateRoot]() =
-    UpdateRecorder[Event, AR](events ⇒ (events, NeverExisted.success))
+  def startFresh[AR <: AggregateRoot, Event <: AggregateEvent]() =
+    UpdateRecorder[AR, Event](events ⇒ (NeverExisted.success, events))
  
-  def startDead[Event <: AggregateEvent, AR <: AggregateRoot](d: Dead) =
-    UpdateRecorder[Event, AR](events ⇒ (events, d.success))
+  def startDead[AR <: AggregateRoot, Event <: AggregateEvent](d: Dead) =
+    UpdateRecorder[AR, Event](events ⇒ (d.success, events))
     
     /**
    * Takes an event and the resulting Aggregate Root. The event is prepended to the previous events
@@ -114,13 +109,30 @@ object UpdateRecorder {
    * @param event The event resulting from an aggregate root operation
    * @param result The state of the aggregate root corresponding to the event
    */
-  def accept[Event <: AggregateEvent, AR <: AggregateRoot](event: Event, ar: AggregateRootState[AR]) =
-    UpdateRecorder[Event, AR](events ⇒ (event :: events, ar.success))
+  def accept[AR <: AggregateRoot, Event <: AggregateEvent](ar: AggregateRootState[AR], event: Event) =
+    UpdateRecorder[AR, Event](events ⇒ (ar.success, event :: events))
+
+  def acceptMany[AR <: AggregateRoot, Event <: AggregateEvent](ar: AggregateRootState[AR], newEvents: Seq[Event]) =
+    UpdateRecorder[AR, Event](events ⇒ (ar.success, newEvents.foldLeft(events){case (acc, event) => event :: acc}))
+    
   /**
    * Takes an event and the resulting Aggregate Root. Previously written events are still contained
    *
    * @param error The problem causing this update to fail.
    */
-  def reject[Event <: AggregateEvent, AR <: AggregateRoot](error: Problem) =
-    UpdateRecorder[Event, AR](events ⇒ (events, error.failure))
-}
+  def reject[AR <: AggregateRoot, Event <: AggregateEvent](error: Problem) =
+    UpdateRecorder[AR, Event](events ⇒ (error.failure, events))
+    
+  def record[AR <: AggregateRoot, Event <: AggregateEvent](v: AlmValidation[(AggregateRootState[AR], Event)])=
+    v.fold(fail => UpdateRecorder.reject(fail), succ => UpdateRecorder.accept(succ._1, succ._2))
+
+  def recordAlive[AR <: AggregateRoot, Event <: AggregateEvent](v: AlmValidation[(AR, Event)]) =
+    v.fold(fail => UpdateRecorder.reject(fail), succ => UpdateRecorder.accept(Alive(succ._1), succ._2))
+
+  def ifAlive[AR <: AggregateRoot, Event <: AggregateEvent](f: AR => UpdateRecorder[AR, Event]): AggregateRootState[AR] => UpdateRecorder[AR, Event] =
+    (state) => state match {
+      case NeverExisted => UpdateRecorder.reject(IllegalOperationProblem(s"There is no aggregate root."))
+      case Dead(id, v) => UpdateRecorder.reject(IllegalOperationProblem(s"The aggregate root with id ${id.value} and version ${v.value} is already dead."))
+      case Alive(ar) => f(ar)
+    }
+ }

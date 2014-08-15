@@ -24,7 +24,7 @@ class AggregateRootEventHandlerTests extends FlatSpec with Matchers {
 
   it should "modify an aggregate root" in {
     val event = UserAgeChanged(EventHeader(), "a", 1L, 2)
-    val actual = applyEvent(User("a", 0L, "hans", "meier", None), event)
+    val actual = applyEvent(User("a", 1L, "hans", "meier", None), event)
     actual should equal(Alive(User("a", 2L, "hans", "meier", Some(2))))
   }
 

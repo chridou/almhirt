@@ -17,7 +17,7 @@ trait FlatUpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * @param events The events to process by the application to create the result
    * @return The current events and the resulting AR
    */
-  def apply[EE >: Event](events: List[EE]): (List[EE], AggregateValidation[AR])
+  def apply[EE >: Event](events: List[EE]): (List[EE], FlatAggregateValidation[AR])
   /**
    * Creates a new Update with an aggregate root transformed by f and the same events as written to this instance.
    * It does not execute f if the current aggregate root is already a failure
@@ -77,7 +77,7 @@ trait FlatUpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * The result of previous recordings
    * Returns the current aggregate root in a success or a failure
    */
-  def result(): AggregateValidation[AR] = {
+  def result(): FlatAggregateValidation[AR] = {
     val (_, validation) = apply(Nil)
     validation
   }
@@ -98,7 +98,7 @@ object FlatUpdateRecorder {
    *
    * @param f Function which takes a list of (previous) events and returns the new events with the result on the modified aggregate root
    */
-  def apply[Event <: AggregateEvent, AR <: AggregateRoot](f: List[Event] ⇒ (List[Event], AggregateValidation[AR])) =
+  def apply[Event <: AggregateEvent, AR <: AggregateRoot](f: List[Event] ⇒ (List[Event], FlatAggregateValidation[AR])) =
     new FlatUpdateRecorder[Event, AR] {
       def apply[EE >: Event](events: List[EE]) = f(events.asInstanceOf[List[Event]])
     }
