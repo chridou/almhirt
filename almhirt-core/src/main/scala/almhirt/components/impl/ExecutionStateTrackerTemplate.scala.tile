@@ -37,7 +37,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   protected var numOldMessages = 0L
 
-  private var deadlinesBySubscriptions = Map.empty[ActorRef, Deadline]
+  private var deadlinesBySubscriptions = Map.empty[ActorRef, Mortuusline]
   private var trackingIdsBySubscription = Map.empty[ActorRef, String]
 
   private case object CleanUp
@@ -169,7 +169,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   private def addToSubscriptionsChecking(subscriber: ActorRef, trackId: String) {
     this.context.watch(subscriber)
-    deadlinesBySubscriptions = deadlinesBySubscriptions + (subscriber -> Deadline.now)
+    deadlinesBySubscriptions = deadlinesBySubscriptions + (subscriber -> Mortuusline.now)
     trackingIdsBySubscription = trackingIdsBySubscription + (subscriber -> trackId)
   }
 
@@ -233,7 +233,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
 
   }
 
-  private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Deadline], trackingIdsBySubscriptions: Map[ActorRef, String], subscriptions: Map[String, Set[ActorRef]]) {
+  private def checkSubscriptions(tracked: Map[String, ExecutionStateEntry], deadlinesBySubscriptions: Map[ActorRef, Mortuusline], trackingIdsBySubscriptions: Map[ActorRef, String], subscriptions: Map[String, Set[ActorRef]]) {
     checkSubscriptions.foreach {
       case (interval, thresholdLvl1, thresholdLvl2) ⇒
         numberCruncher.execute(new Runnable {
@@ -244,7 +244,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
             if (trackingIdsBySubscriptions.size != expectedNumberOfSubscriptions)
               log.warning(s"trackingIdsBySubscriptions should be $expectedNumberOfSubscriptions but is ${trackingIdsBySubscriptions.size}")
 
-            val start = Deadline.now
+            val start = Mortuusline.now
             val deadline1 = start - thresholdLvl1
             val deadline2 = start - thresholdLvl2
             val criticalSubscriptions1 = deadlinesBySubscriptions.filter(_._2 < deadline1)
@@ -285,7 +285,7 @@ trait ExecutionTrackerTemplate { actor: ExecutionStateTracker with Actor with Ac
   private def cleanUp(tracked: Map[String, ExecutionStateEntry], subscriptions: Map[String, Set[ActorRef]]): (Map[String, ExecutionStateEntry], Map[String, Set[ActorRef]]) = {
     val res =
       if (tracked.size >= cleanUpThreshold) {
-        val start = Deadline.now
+        val start = Mortuusline.now
         val entriesOrderedByAge = tracked.values.toVector.sortBy(_.lastModified)
         val numToDrop = tracked.size - targetSize
         val keep = entriesOrderedByAge.drop(numToDrop)

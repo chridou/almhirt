@@ -67,15 +67,15 @@ trait UserUpdater { self: UserEventHandler with AggregateRootUpdater[User, UserE
       .record
   }
 
-  // Composition using ifAlive from UpdateRecorder to meet the signature of UpdateRecorder.flatMap
+  // Composition using ifVivus from UpdateRecorder to meet the signature of UpdateRecorder.flatMap
   def changeFullName(user: User, surname: String, lastname: String): UpdateRecorder[User, UserEvent] = {
     for {
       a <- changeSurname(user, surname)
-      b <- UpdateRecorder.ifAlive(changeLastname(_: User, lastname))(a)
+      b <- UpdateRecorder.ifVivus(changeLastname(_: User, lastname))(a)
     } yield b
   }
 
-  // Composition with liftWith(like UpdateRecorder.isAlive) from trait AggregateRootUpdater
+  // Composition with liftWith(like UpdateRecorder.isVivus) from trait AggregateRootUpdater
   def changeFullNameAndAge(user: User, surname: String, lastname: String, age: Int): UpdateRecorder[User, UserEvent] = {
     import updaterimplicits._
     for {

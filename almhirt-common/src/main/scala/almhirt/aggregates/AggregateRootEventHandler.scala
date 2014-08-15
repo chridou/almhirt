@@ -15,26 +15,26 @@ trait AggregateRootEventHandler[T <: AggregateRoot, E <: AggregateEvent] {
   def applyEventAntemortem(state: Antemortem[T], event: E): Postnatalis[T]
 
   final def applyEvent(agg: T, event: E): Postnatalis[T] =
-    applyEventAntemortem(Alive(agg), event)
+    applyEventAntemortem(Vivus(agg), event)
 
   final def fromEvent(event: E): Postnatalis[T] =
-    applyEventAntemortem(NeverExisted, event)
+    applyEventAntemortem(Vacat, event)
 
   final def applyEvents(agg: T, events: Iterable[E]): Postnatalis[T] =
-    events.foldLeft(Alive(agg): Postnatalis[T]) {
+    events.foldLeft(Vivus(agg): Postnatalis[T]) {
       case (state, next) ⇒
         state match {
-          case Alive(st) ⇒
+          case Vivus(st) ⇒
             applyEvent(st, next)
-          case Dead(id, v) ⇒
+          case Mortuus(id, v) ⇒
             throw new Exception(s"Aggregate root with id ${id.value} and version ${v.value} is dead. No more events can be applied.")
         }
     }
   final def applyEventPostnatalis(agg: Postnatalis[T], event: E): Postnatalis[T] =
     agg match {
-      case Alive(a) ⇒
+      case Vivus(a) ⇒
         applyEvent(a, event)
-      case Dead(id, v) ⇒
+      case Mortuus(id, v) ⇒
         throw new Exception(s"Aggregate root with id ${id.value} and version ${v.value} is dead. No more events can be applied.")
     }
 
@@ -43,20 +43,20 @@ trait AggregateRootEventHandler[T <: AggregateRoot, E <: AggregateEvent] {
       agg
     } else {
       agg match {
-        case Alive(a) ⇒
+        case Vivus(a) ⇒
           applyEvents(a, events)
-        case Dead(id, v) ⇒
+        case Mortuus(id, v) ⇒
           throw new Exception(s"Aggregate root with id ${id.value} and version ${v.value} is dead. No more events can be applied.")
       }
     }
 
-  final def applyEventLifecycleAgnostic(agg: AggregateRootState[T], event: E): Postnatalis[T] = {
+  final def applyEventLifecycleAgnostic(agg: AggregateRootLifecycle[T], event: E): Postnatalis[T] = {
     agg match {
-      case Alive(a) ⇒
-        applyEvent(a, event)
-      case NeverExisted ⇒
+      case Vacat ⇒
         fromEvent(event)
-      case Dead(id, v) ⇒
+      case Vivus(a) ⇒
+        applyEvent(a, event)
+      case Mortuus(id, v) ⇒
         throw new Exception(s"Aggregate root with id ${id.value} and version ${v.value} is dead. No more events can be applied.")
     }
   }

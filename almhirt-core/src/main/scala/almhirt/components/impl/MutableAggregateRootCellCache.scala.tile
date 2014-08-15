@@ -118,10 +118,10 @@ class MutableAggregateRootCellCache(
   private val bookingsByArId = scala.collection.mutable.HashMap.empty[JUUID, scala.collection.mutable.HashSet[Long]]
   private val arIdByBookingId = scala.collection.mutable.HashMap.empty[Long, JUUID]
 
-  private val uninitializedCells = scala.collection.mutable.HashMap.empty[JUUID, Deadline]
-  private val loadedCells = scala.collection.mutable.HashMap.empty[JUUID, Deadline]
-  private val doesNotExistCells = scala.collection.mutable.HashMap.empty[JUUID, Deadline]
-  private val errorneousCells = scala.collection.mutable.HashMap.empty[JUUID, Deadline]
+  private val uninitializedCells = scala.collection.mutable.HashMap.empty[JUUID, Mortuusline]
+  private val loadedCells = scala.collection.mutable.HashMap.empty[JUUID, Mortuusline]
+  private val doesNotExistCells = scala.collection.mutable.HashMap.empty[JUUID, Mortuusline]
+  private val errorneousCells = scala.collection.mutable.HashMap.empty[JUUID, Mortuusline]
   private val deathCertificatesStillDueById = scala.collection.mutable.HashMap.empty[JUUID, ActorRef]
   private val deathCertificatesStillDueByCell = scala.collection.mutable.HashMap.empty[ActorRef, JUUID]
   private var nextHandleId = 1L
@@ -140,7 +140,7 @@ class MutableAggregateRootCellCache(
             case None ⇒
               val newCell = createCell(arId, arType)
               cellByArId += (arId -> newCell)
-              uninitializedCells += (arId -> Deadline.now)
+              uninitializedCells += (arId -> Mortuusline.now)
               newCell
           }
         val handleId = nextHandleId
@@ -188,7 +188,7 @@ class MutableAggregateRootCellCache(
 
   def updateLastAccessTimestamp(arId: JUUID) {
     if (cellByArId.contains(arId)) {
-      val t = Deadline.now
+      val t = Mortuusline.now
       if (loadedCells.contains(arId)) {
         loadedCells.update(arId, t)
       } else if (uninitializedCells.contains(arId)) {
@@ -208,23 +208,23 @@ class MutableAggregateRootCellCache(
       doesNotExistCells -= arId
       errorneousCells -= arId
       newCellState match {
-        case CellStateUninitialized ⇒ uninitializedCells += arId -> Deadline.now
-        case CellStateError(_) ⇒ errorneousCells += arId -> Deadline.now
-        case CellStateDoesNotExist ⇒ doesNotExistCells += arId -> Deadline.now
-        case CellStateLoaded ⇒ loadedCells += arId -> Deadline.now
+        case CellStateUninitialized ⇒ uninitializedCells += arId -> Mortuusline.now
+        case CellStateError(_) ⇒ errorneousCells += arId -> Mortuusline.now
+        case CellStateDoesNotExist ⇒ doesNotExistCells += arId -> Mortuusline.now
+        case CellStateLoaded ⇒ loadedCells += arId -> Mortuusline.now
       }
     }
     this
   }
 
-  private def getCandidatesByDeadline(from: scala.collection.mutable.HashMap[JUUID, Deadline], deadline: Deadline) = {
+  private def getCandidatesByMortuusline(from: scala.collection.mutable.HashMap[JUUID, Mortuusline], deadline: Mortuusline) = {
     from.filter {
       case (id, timestamp) ⇒
         timestamp > deadline && !bookingsByArId.contains(id)
     }.map(_._1)
   }
 
-  private def killCandidates(candidates: Iterable[JUUID], from: scala.collection.mutable.HashMap[JUUID, Deadline]) = {
+  private def killCandidates(candidates: Iterable[JUUID], from: scala.collection.mutable.HashMap[JUUID, Mortuusline]) = {
     var myKills = 0L
     candidates.foreach { candidateId ⇒
       val cell = cellByArId(candidateId)
@@ -239,44 +239,44 @@ class MutableAggregateRootCellCache(
     myKills
   }
 
-  private def killExpired(from: scala.collection.mutable.HashMap[JUUID, Deadline], deadLine: Deadline) = {
-    val candidates = getCandidatesByDeadline(from, deadLine)
+  private def killExpired(from: scala.collection.mutable.HashMap[JUUID, Mortuusline], deadLine: Mortuusline) = {
+    val candidates = getCandidatesByMortuusline(from, deadLine)
     killCandidates(candidates, from)
   }
 
   def cleanUp(maxDoesNotExistAge: Option[FiniteDuration], maxInMemoryLifeTime: Option[FiniteDuration], maxUninitializedAge: Option[FiniteDuration]): (MutableAggregateRootCellCache, MutableAggregateRootCellCacheCleanUpTimings) = {
-    val t0 = Deadline.now
+    val t0 = Mortuusline.now
 
     var dumpLoaded = 0L
     maxInMemoryLifeTime.foreach { lt ⇒
       val deadline = t0 - lt
-      val candidates = getCandidatesByDeadline(loadedCells, deadline)
+      val candidates = getCandidatesByMortuusline(loadedCells, deadline)
       candidates.map(cellByArId.get).flatten.foreach { x ⇒ x ! DropCachedAggregateRoot; dumpLoaded += 1L }
       candidates.size
     }
 
-    val t1 = Deadline.now
+    val t1 = Mortuusline.now
 
     val killedDoesNotExist = maxDoesNotExistAge.map { lt ⇒
       val deadline = t0 - lt
       killExpired(doesNotExistCells, deadline)
     }.getOrElse(0L)
 
-    val t2 = Deadline.now
+    val t2 = Mortuusline.now
 
     val killedInErrorState = maxDoesNotExistAge.map { lt ⇒
       val deadline = t0 - lt
       killExpired(errorneousCells, deadline)
     }.getOrElse(0L)
 
-    val t3 = Deadline.now
+    val t3 = Mortuusline.now
 
     val killedUninitialized = maxUninitializedAge.map { lt ⇒
       val deadline = t0 - lt
       killExpired(uninitializedCells, deadline)
     }.getOrElse(0L)
 
-    val t4 = Deadline.now
+    val t4 = Mortuusline.now
 
     (this,
       MutableAggregateRootCellCacheCleanUpTimings(
