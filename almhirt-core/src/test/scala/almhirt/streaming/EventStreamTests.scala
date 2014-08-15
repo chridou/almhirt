@@ -189,7 +189,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val n = nMsgBig * 3
         val events = (1 to n).map(i ⇒ TestEvent(i.toString): Event).toVector
         val consumer = DelegatingEventConsumer[Event](probe2.ref)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(6 seconds) {
           streams.eventStream.produceTo(consumer)
           Stillage(events).signContract(streams.eventBroker)
@@ -218,7 +218,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val consumerEvent = DelegatingEventConsumer[Event](probeEvent.ref)
         val consumerSystemEvent = DelegatingEventConsumer[SystemEvent](probeSystemEvent.ref)
         val consumerDomainEvent = DelegatingEventConsumer[DomainEvent](probeDomainEvent.ref)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(6 seconds) {
           streams.eventStream.produceTo(consumerEvent)
           streams.systemEventStream.produceTo(consumerSystemEvent)
@@ -259,7 +259,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         var resEvent: Seq[Any] = null
         var resSystemEvent: Seq[Any] = null
         var resDomainEvent: Seq[Any] = null
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(6 seconds) {
           streams.eventStream.produceTo(consumerEvent)
           streams.systemEventStream.produceTo(consumerSystemEvent)
@@ -299,7 +299,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         var resEvent: Seq[Any] = null
         var resSystemEvent: Seq[Any] = null
         var resDomainEvent: Seq[Any] = null
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(6 seconds) {
           streams.eventStream.produceTo(consumerEvent)
           streams.systemEventStream.produceTo(consumerSystemEvent)

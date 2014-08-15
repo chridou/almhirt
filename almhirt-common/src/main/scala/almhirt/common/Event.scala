@@ -10,8 +10,10 @@ case class EventHeader(id: EventId, timestamp: LocalDateTime, metadata: Map[Stri
 object EventHeader {
   def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader =
     EventHeader(EventId(ccuad.getUniqueString), ccuad.getUtcTimestamp, Map.empty)
+    
   def apply(id: EventId)(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader =
     EventHeader(id, ccuad.getUtcTimestamp, Map.empty)
+    
   def apply(id: EventId, timestamp: LocalDateTime): EventHeader =
     EventHeader(id, timestamp, Map.empty)
     

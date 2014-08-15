@@ -57,7 +57,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(1 second) {
           Flow(1L to n).produceTo(mat, broker.newConsumer)
           val res = consumerProbeEvent.receiveN(n.toInt)
@@ -74,7 +74,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 second) {
           Flow(1L to n).produceTo(mat, broker.newConsumer)
           val res = consumerProbeEvent.receiveN(n.toInt, 10.seconds.dilated)
@@ -104,7 +104,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(1 second) {
           Flow(1L to nMsgSome).produceTo(mat, broker.newConsumer)
           Flow((nMsgSome + 1L) to (2L * nMsgSome)).produceTo(mat, broker.newConsumer)
@@ -121,7 +121,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 seconds) {
           Flow(1L to nMsgBig).produceTo(mat, broker.newConsumer)
           Flow((nMsgBig + 1L) to (2L * nMsgBig)).produceTo(mat, broker.newConsumer)
@@ -141,7 +141,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(1 second) {
           groups.foreach(x ⇒ Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt)
@@ -160,7 +160,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 second) {
           groups.foreach(x ⇒ Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.seconds.dilated)
@@ -179,7 +179,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgBigProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 second) {
           groups.foreach(x ⇒ Flow(x._2).produceTo(mat, broker.newConsumer))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.seconds.dilated)
@@ -223,7 +223,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(1 second) {
           ActorStillage.create(1L to n, s"stillage-$testId").signContract(broker)
           val res = consumerProbeEvent.receiveN(n.toInt)
@@ -240,7 +240,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 second) {
           ActorStillage.create(1L to n, s"stillage-$testId").signContract(broker)
           val res = consumerProbeEvent.receiveN(n.toInt, 10.second.dilated)
@@ -270,7 +270,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(1 second) {
           ActorStillage.create(1L to nMsgSome, s"stillage-$testId-1").signContract(broker)
           ActorStillage.create((nMsgSome + 1L) to (2L * nMsgSome), s"stillage-$testId-2").signContract(broker)
@@ -287,7 +287,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 seconds) {
           ActorStillage.create(1L to nMsgBig, s"stillage-$testId-1").signContract(broker)
           ActorStillage.create((nMsgBig + 1L) to (2L * nMsgBig), s"stillage-$testId-2").signContract(broker)
@@ -307,7 +307,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(1 second) {
           groups.foreach(x ⇒ ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker))
           val res = consumerProbeEvent.receiveN((n).toInt)
@@ -326,7 +326,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 second) {
           groups.foreach(x ⇒ ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
@@ -345,7 +345,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgBigProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 second) {
           groups.foreach(x ⇒ Stillage(x._2).signContract(broker))
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
@@ -376,7 +376,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 seconds) {
           ActorStillage.create(1L to nMsgSome, s"stillage-$testId").signContract(broker)
           Flow((nMsgSome + 1L) to (2L * nMsgSome)).produceTo(mat, broker.newConsumer)
@@ -393,7 +393,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val actorDelegatingConsumer = system.actorOf(ActorDelegatingConsumer.props(consumerProbeEvent.ref, 32), s"actorconsumer_$testId")
         val streamConsumer = ActorConsumer[Long](actorDelegatingConsumer)
         streamOutput.produceTo(streamConsumer)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 seconds) {
           ActorStillage.create(1L to nMsgBig, s"stillage-$testId").signContract(broker)
           Flow((nMsgBig + 1L) to (2L * nMsgBig)).produceTo(mat, broker.newConsumer)
@@ -413,7 +413,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(1 second) {
           groups.foreach(x ⇒
             if (x._1 % 2 == 0) {
@@ -437,7 +437,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomeProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10 seconds) {
           groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
@@ -458,7 +458,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgBigProducers)
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10.seconds) {
           groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
@@ -478,7 +478,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % (nMsgBigProducers * 10))
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10.seconds) {
           groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
@@ -500,7 +500,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.produceTo(streamConsumer)
         val items = (1L to n)
         val groups = items.toSeq.groupBy(x ⇒ x % (nMsgBigProducers * 10))
-        val start = Mortuusline.now
+        val start = Deadline.now
         within(10.seconds) {
           groups.foreach { x ⇒
             val scale = (tmax.toMillis * rnd.nextDouble).millis

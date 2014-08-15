@@ -77,7 +77,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val packages = items.grouped(3)
 
     val probe = TestProbe()
-    val start = Mortuusline.now
+    val start = Deadline.now
     within(1 second) {
       packages.foreach { sample ⇒
         postOffice.deliverUntracked(probe.ref, sample: _*)
@@ -99,7 +99,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val packages = items.grouped(3)
 
     val probe = TestProbe()
-    val start = Mortuusline.now
+    val start = Deadline.now
     within(1 seconds) {
       packages.foreach(sample ⇒ postOffice.deliverUntracked(probe.ref, sample: _*))
       val acks = probe.receiveN(villageOfficeBufferSize)
@@ -124,7 +124,7 @@ class VillagePostOfficeTests(_system: ActorSystem) extends TestKit(_system) with
     val packages = items.grouped(pSize)
 
     val probe = TestProbe()
-    val start = Mortuusline.now
+    val start = Deadline.now
     within(10 seconds) {
       packages.foreach { sample ⇒
         postOffice.deliverUntracked(probe.ref, sample: _*)

@@ -29,12 +29,4 @@ trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateEvent] { self: Aggr
     eventOnSuccess.fold(
       fail => UpdateRecorder.reject(fail),
       event => UpdateRecorder.accept(this.fromEvent(event), event))
-
-  object updaterimplicits {
-    import scala.language.implicitConversions
-
-    //    implicit def lifter(f: T => UpdateRecorder[T, E]): AggregateRootLifecycle[T] => UpdateRecorder[T, E] =
-    //      ???
-  }
-
 }

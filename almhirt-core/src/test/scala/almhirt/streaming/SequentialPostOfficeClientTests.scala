@@ -30,7 +30,7 @@ class SequentialPostOfficeClientTests(_system: ActorSystem) extends TestKit(_sys
 
     val probe = TestProbe()
     val clientSettings = PostOfficeClientSettings(10, 10 millis, 10)
-    val start = Mortuusline.now
+    val start = Deadline.now
     within(3 seconds) {
       val dropper = system.actorOf(SequentialPostOfficeDropper.props(postOffice, packages.toSeq, clientSettings), s"dropper_$testId")
       val res = consumerProbe.receiveN(bigN * pSize)

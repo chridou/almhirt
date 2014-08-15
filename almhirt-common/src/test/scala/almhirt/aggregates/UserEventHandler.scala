@@ -2,7 +2,7 @@ package almhirt.aggregates
 
 import almhirt.common._
 
-trait UserEventHandler extends AggregateRootUpdater[User, UserEvent] with AggregateRootEventHandler[User, UserEvent] {
+trait UserEventHandler extends AggregateRootEventHandler[User, UserEvent] {
   implicit def ccuad: CanCreateUuidsAndDateTimes
   override def applyEventAntemortem(state: Antemortem[User], event: UserEvent): Postnatalis[User] =
     (state, event) match {

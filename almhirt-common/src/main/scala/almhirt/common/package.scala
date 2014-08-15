@@ -21,7 +21,7 @@ import scala.concurrent._
 import almhirt.problem._
 
 /** Classes and traits needed at other places*/
-package object common extends ops.MortuuslineExt with ops.FiniteDurationExt {
+package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   type AlmValidation[+α] = scalaz.Validation[almhirt.problem.Problem, α]
   type AlmValidationAP[+α] = scalaz.Validation[almhirt.problem.AggregateProblem, α]
 

@@ -5,14 +5,10 @@ import org.scalatest._
 import scalaz._, Scalaz._
 import almhirt.common._
 
-class AggregateRootEventHandlerTests extends FlatSpec with Matchers {
+class AggregateRootEventHandlerTests extends FlatSpec with Matchers with UserEventHandler {
   import aggregatesforthelazyones._
 
-  private object BuildsUserInstance extends UserEventHandler {
-    override implicit lazy val ccuad = CanCreateUuidsAndDateTimes()
-  }
-
-  import BuildsUserInstance._
+  implicit val ccuad = CanCreateUuidsAndDateTimes()
 
   behavior of "AggregateRootEventHandler"
 
@@ -70,7 +66,7 @@ class AggregateRootEventHandlerTests extends FlatSpec with Matchers {
     val agg = Mortuus("a", 1L)
     applyEventsPostnatalis(agg, Nil) should equal(agg)
   }
-  
+
   it should "throw an exception for applyevents when an event follows dead state " in {
     val event1 = UserDied(EventHeader(), "a", 1L)
     val event2 = UserCreated(EventHeader(), arid("a"), arv(0L), "hans", "meier")

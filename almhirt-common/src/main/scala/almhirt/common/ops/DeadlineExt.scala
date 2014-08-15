@@ -2,10 +2,10 @@ package almhirt.common.ops
 
 import scala.concurrent.duration._
 
-trait MortuuslineExt {
-  implicit class MortuuslineOps(self: Mortuusline) {
-    def lap: FiniteDuration = Mortuusline.now - self
-    def lapExceeds(dur: FiniteDuration): Boolean = (Mortuusline.now - self) > dur
+trait DeadlineExt {
+  implicit class DeadlineOps(self: Deadline) {
+    def lap: FiniteDuration = Deadline.now - self
+    def lapExceeds(dur: FiniteDuration): Boolean = (Deadline.now - self) > dur
     def whenTooLate(limit: FiniteDuration, f: FiniteDuration ⇒ Unit) {
       val dur = self.lap
       if (dur > limit) f(dur)

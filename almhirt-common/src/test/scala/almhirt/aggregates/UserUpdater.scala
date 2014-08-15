@@ -11,7 +11,7 @@ import almhirt.almvalidation.kit._
  *  registration....
  *  
  */
-trait UserUpdater { self: UserEventHandler with AggregateRootUpdater[User, UserEvent] =>
+trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEventHandler =>
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
   // Old school, everything manually
@@ -77,7 +77,6 @@ trait UserUpdater { self: UserEventHandler with AggregateRootUpdater[User, UserE
 
   // Composition with liftWith(like UpdateRecorder.isVivus) from trait AggregateRootUpdater
   def changeFullNameAndAge(user: User, surname: String, lastname: String, age: Int): UpdateRecorder[User, UserEvent] = {
-    import updaterimplicits._
     for {
       a <- changeFullName(user, surname, lastname)
       b <- (changeAge(_: User, 18)).liftWith(a)

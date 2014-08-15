@@ -200,7 +200,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
   //  }
 
   def fetchAR(): AlmFuture[Option[AR]] = {
-    val warnMortuusline = Mortuusline.now
+    val warnDeadline = Deadline.now
     (domainEventLog ? GetAllDomainEventsFor(managedAggregateRooId))(getArTimeout).successfulAlmFuture[FetchDomainEventsResult].flatMap {
       case FetchedDomainEvents(enumerator) ⇒
         val iteratee: Iteratee[DomainEvent, Option[AR]] = Iteratee.fold[DomainEvent, Option[AR]](None) {
@@ -213,7 +213,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
             else CollisionProblem(s"""There is no aggregate($managedAggregateRooId) root to apply the event ${nextEvent.getClass().getName()} to.""").escalate
         }
         enumerator.onDoneEnumerating(() ⇒
-          warnMortuusline.whenTooLate(getArWarnThreshold, elapsed ⇒
+          warnDeadline.whenTooLate(getArWarnThreshold, elapsed ⇒
             log.warning(s"""Fetching the events for aggregate root $managedAggregateRooId took more than ${getArWarnThreshold.defaultUnitString}(${elapsed.defaultUnitString}).""")))
         val res = enumerator.run(iteratee)
         res.toSuccessfulAlmFuture
@@ -233,7 +233,7 @@ trait AggregateRootCellTemplate extends AggregateRootCell with AggregateRootCell
           case NoUpdateTasks ⇒
             self ! SuccessfulUpdate(arOpt, None, Vector.empty)
           case NextUpdateTask(nextUpdateState, nextUpdateEvents, requestedNextUpdate, rest) ⇒
-            val start = Mortuusline.now
+            val start = Deadline.now
             (domainEventLog ? CommitDomainEvents(nextUpdateEvents))(updateArTimeout).successfulAlmFuture[CommitDomainEventsResult].onComplete(
               problem ⇒
                 problem match {
