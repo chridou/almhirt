@@ -12,8 +12,11 @@ private[almhirt] object AggregateDroneInternalMessages {
   sealed trait AggregateDroneMessage
 
   final case class ExecuteCommand(command: AggregateCommand) extends AggregateDroneMessage
-  sealed trait ExecuteCommandResponse extends AggregateDroneMessage
-  final case class CommandExecuted(commandHeader: CommandHeader, committedEvents: Seq[AggregateEvent]) extends ExecuteCommandResponse
+  sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
+    def commandHeader: CommandHeader
+    def committedEvents: Seq[AggregateEvent]
+  }
+  final case class CommandExecuted(commandHeader: CommandHeader, currentVersion: AggregateRootVersion, committedEvents: Seq[AggregateEvent]) extends ExecuteCommandResponse
   final case class CommandNotExecuted(commandHeader: CommandHeader, committedEvents: Seq[AggregateEvent], problem: Problem) extends ExecuteCommandResponse
 
   object CommandNotExecuted {
@@ -209,7 +212,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   private def receiveWaitingForMutatingCommandResult(command: AggregateCommand, state: T): Receive = {
     case Commit(events) ⇒
       if (events.isEmpty) {
-        context.parent ! CommandExecuted(command.header, events)
+        context.parent ! CommandExecuted(command.header, state.version, events)
         context.become(receiveAcceptingMutatingCommand(state))
       } else {
         val postnatalis = events.foldLeft[Postnatalis[T]](Alive(state)) { case (acc, cur) ⇒ applyEventPostnatalis(acc, cur) }
@@ -234,11 +237,12 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       val newDone = done :+ inFlight
       rest match {
         case Seq() ⇒
-          context.parent ! CommandExecuted(command.header, newDone)
           state match {
             case Alive(ar) =>
+              context.parent ! CommandExecuted(command.header, ar.version, newDone)
               context.become(receiveAcceptingMutatingCommand(ar))
             case d: Dead =>
+              context.parent ! CommandExecuted(command.header, d.version , newDone)
               context.become(receiveDead(d))
           }
         case next +: newRest ⇒

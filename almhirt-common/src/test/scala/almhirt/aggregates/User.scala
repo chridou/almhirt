@@ -19,19 +19,19 @@ trait BuildsUser extends BuildsAggregateRoot[User, UserEvent] {
   override def applyEventAntemortem(state: Antemortem[User], event: UserEvent): Postnatalis[User] =
     (state, event) match {
       case (NeverExisted, UserCreated(_, id, v, surname, lastname)) =>
-        Alive(User(id, v, surname, lastname, None))
+        Alive(User(id, v.inc, surname, lastname, None))
       case (NeverExisted, UserNotAccepted(_, id, v, surname, lastname)) =>
-        Dead(id, v)
+        Dead(id, v.inc)
       case (Alive(user), UserSurnameChanged(_, id, v, surname)) =>
-        Alive(user.copy(surname = surname, version = v))
+        Alive(user.copy(surname = surname, version = v.inc))
       case (Alive(user), UserLastnameChanged(_, id, v, lastname)) =>
-        Alive(user.copy(lastname = lastname, version = v))
+        Alive(user.copy(lastname = lastname, version = v.inc))
       case (Alive(user), UserAgeChanged(_, id, v, age)) =>
-        Alive(user.copy(age = Some(age), version = v))
+        Alive(user.copy(age = Some(age), version = v.inc))
       case (Alive(user), UserLeft(_, id, v)) =>
-        Dead(id, v)
+        Dead(id, v.inc)
       case (Alive(user), UserDied(_, id, v)) =>
-        Dead(id, v)
+        Dead(id, v.inc)
       case (_, AggregateEvent(_, id, version)) =>
         throw new UnhandledAggregateEventException(id, event)
     }
