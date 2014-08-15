@@ -208,5 +208,4 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
       rebuildFromTimeline(timeline)
     }
   }
-
 }
