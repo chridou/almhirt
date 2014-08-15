@@ -16,7 +16,7 @@ case class UserAgeChanged(header: EventHeader, aggId: AggregateRootId, aggVersio
 case class UserLeft(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserEvent
 case class UserDied(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserEvent
 
-trait UserEventHandler extends AggregateRootEventHandler[User, UserEvent] {
+trait UserEventHandler extends AggregateRootUpdater[User, UserEvent] with AggregateRootEventHandler[User, UserEvent] {
   implicit def ccuad: CanCreateUuidsAndDateTimes
   override def applyEventAntemortem(state: Antemortem[User], event: UserEvent): Postnatalis[User] =
     (state, event) match {
@@ -39,10 +39,10 @@ trait UserEventHandler extends AggregateRootEventHandler[User, UserEvent] {
     }
 }
 
-trait MutatesUser { self: UserEventHandler =>
+trait MutatesUser { self: UserEventHandler with AggregateRootUpdater[User, UserEvent] =>
   implicit def ccuad: CanCreateUuidsAndDateTimes
-  private type UR = UpdateRecorder[User, UserEvent]
-  def create(aggId: AggregateRootId, surname: String, lastname: String): UR = {
+  
+  def create(aggId: AggregateRootId, surname: String, lastname: String): UpdateRecorder[User, UserEvent] = {
     val res =
       for {
         sname <- surname.notEmptyOrWhitespace
@@ -53,7 +53,8 @@ trait MutatesUser { self: UserEventHandler =>
     res.record
   }
 
-  def doNotAccept(aggId: AggregateRootId, surname: String, lastname: String): UR = {
+  // Old school
+  def doNotAccept(aggId: AggregateRootId, surname: String, lastname: String): UpdateRecorder[User, UserEvent] = {
     val res =
       for {
         sname <- surname.notEmptyOrWhitespace
@@ -64,21 +65,54 @@ trait MutatesUser { self: UserEventHandler =>
     res.record
   }
 
-  def changeSurname(user: User, surname: String): UR = {
-    surname.notEmptyOrWhitespace
-      .map(sname => UserSurnameChanged(EventHeader(), user.id, user.version, sname))
-      .map(event => (applyEvent(user, event), event))
-      .record
-  }
-
-  def changeLastname(user: User, lastname: String): UR = {
+  // Change via the event handler
+  def changeLastname(user: User, lastname: String): UpdateRecorder[User, UserEvent] = {
     lastname.notEmptyOrWhitespace
       .map(lname => UserLastnameChanged(EventHeader(), user.id, user.version, lname))
       .map(event => (applyEvent(user, event), event))
       .record
   }
 
-  def changeFullname(user: User, surname: String, lastname: String): UR = {
-    changeSurname(user, surname).flatMap(UpdateRecorder.ifAlive(changeLastname(_, lastname)))
+  // Use the update function(from trait AggregateRootUpdater) which uses the handler
+  def changeSurname(user: User, surname: String): UpdateRecorder[User, UserEvent] = {
+    surname.notEmptyOrWhitespace
+      .map(sname => update(user, UserSurnameChanged(EventHeader(), user.id, user.version, sname)))
+      .record
   }
+  
+  // Update via the extension method imported by trait AggregateRootUpdater which uses the handler
+  def changeAge(user: User, age: Int): UpdateRecorder[User, UserEvent] = {
+    almhirt.almvalidation.funs.numericConstrainedToMin(age, 18)
+      .map(age => user.update(UserAgeChanged(EventHeader(), user.id, user.version, age)))
+      .record
+  }
+  
+  // Composition using ifAlive from UpdateRecorder to meet the signature of UpdateRecorder.flatMap
+  def changeFullName(user: User, surname: String, lastname: String): UpdateRecorder[User, UserEvent] = {
+    for {
+      a <- changeSurname(user, surname)
+      b <- UpdateRecorder.ifAlive(changeLastname(_: User, lastname))(a)
+    } yield b
+  }
+
+  // Composition with liftWith(like UpdateRecorder.isAlive) from trait AggregateRootUpdater
+  def changeFullNameAndAge(user: User, surname: String, lastname: String, age: Int): UpdateRecorder[User, UserEvent] = {
+    import updaterimplicits._
+    for {
+      a <- changeFullName(user, surname, lastname)
+      b <- (changeAge(_ : User, 18)).liftWith(a)
+    } yield b
+  }
+  
+  // classic
+  def leave(user: User): UpdateRecorder[User, UserEvent] = {
+    UpdateRecorder.accept(user.update(UserLeft(EventHeader(), user.id, user.version)))
+  }
+
+  // use the implicit extension "accept" on the aggragate provided via trait AggregateRootUpdater
+  def die(user: User): UpdateRecorder[User, UserEvent] = {
+    user accept UserDied(EventHeader(), user.id, user.version)
+  }
+
+  
 }

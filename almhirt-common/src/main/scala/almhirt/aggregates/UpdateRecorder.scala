@@ -112,6 +112,9 @@ object UpdateRecorder {
   def accept[AR <: AggregateRoot, Event <: AggregateEvent](ar: AggregateRootState[AR], event: Event) =
     UpdateRecorder[AR, Event](events ⇒ (ar.success, event :: events))
 
+  def accept[AR <: AggregateRoot, Event <: AggregateEvent](t : (AggregateRootState[AR], Event)) =
+    UpdateRecorder[AR, Event](events ⇒ (t._1.success, t._2 :: events))
+    
   def acceptMany[AR <: AggregateRoot, Event <: AggregateEvent](ar: AggregateRootState[AR], newEvents: Seq[Event]) =
     UpdateRecorder[AR, Event](events ⇒ (ar.success, newEvents.foldLeft(events){case (acc, event) => event :: acc}))
     
