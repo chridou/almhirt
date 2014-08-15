@@ -14,7 +14,7 @@ case class UserAgeChanged(header: EventHeader, aggId: AggregateRootId, aggVersio
 case class UserLeft(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserEvent
 case class UserDied(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserEvent
 
-trait BuildsUser extends BuildsAggregateRoot[User, UserEvent] {
+trait UserEventHandler extends AggregateRootEventHandler[User, UserEvent] {
   implicit def ccuad: CanCreateUuidsAndDateTimes
   override def applyEventAntemortem(state: Antemortem[User], event: UserEvent): Postnatalis[User] =
     (state, event) match {

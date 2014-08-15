@@ -2,7 +2,16 @@ package almhirt.aggregates
 
 import almhirt.common._
 
-trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
+/**
+ * Handles the [[AggregateEvents]]s for a specific type of [[AggregateRoot]].
+ * The [[AggregateRootEventHandler]] doesn't need to check for correct versions since
+ * events notify about something that has already happened and therefore an event can always be applied.
+ * As a result, it is up to the user not to mess with the timeline of an aggregate root.
+ * In case of an exception, you have a serious (consistency, programming) problem.
+ * Remember that each event must increase the version of the affected aggregate root by 1.
+ */
+trait AggregateRootEventHandler[T <: AggregateRoot, E <: AggregateEvent] {
+  /** Implement this method to make the handler complete. */
   def applyEventAntemortem(state: Antemortem[T], event: E): Postnatalis[T]
 
   final def applyEvent(agg: T, event: E): Postnatalis[T] =
@@ -21,14 +30,6 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
             throw new Exception(s"Aggregate root with id $id and version $v is dead. No more events can be applied.")
         }
     }
-
-  final def rebuildFromTimeline(events: Iterable[E]): AggregateRootState[T] =
-    if (events.isEmpty) {
-      NeverExisted
-    } else {
-      applyEventsPostnatalis(fromEvent(events.head), events.tail)
-    }
-
   final def applyEventPostnatalis(agg: Postnatalis[T], event: E): Postnatalis[T] =
     agg match {
       case Alive(a) ⇒ applyEvent(a, event)
@@ -53,5 +54,14 @@ trait BuildsAggregateRoot[T <: AggregateRoot, E <: AggregateEvent] {
     }
   }
 
+}
+
+trait RebuildsAggregateRootFromTimeline[T <: AggregateRoot, E <: AggregateEvent] { self: AggregateRootEventHandler[T, E] =>
+  final def rebuildFromTimeline(events: Iterable[E]): AggregateRootState[T] =
+    if (events.isEmpty) {
+      NeverExisted
+    } else {
+      applyEventsPostnatalis(fromEvent(events.head), events.tail)
+    }
 }
 

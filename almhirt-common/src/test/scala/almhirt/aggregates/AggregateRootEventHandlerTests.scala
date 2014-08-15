@@ -5,16 +5,16 @@ import org.scalatest._
 import scalaz._, Scalaz._
 import almhirt.common._
 
-class BuildsAggregateRootTests extends FlatSpec with Matchers {
+class AggregateRootEventHandlerTests extends FlatSpec with Matchers {
   import aggregatesforthelazyones._
 
-  private object BuildsUserInstance extends BuildsUser {
+  private object BuildsUserInstance extends UserEventHandler {
     override implicit lazy val ccuad = CanCreateUuidsAndDateTimes()
   }
 
   import BuildsUserInstance._
 
-  behavior of "BuildsAggregateRoot"
+  behavior of "AggregateRootEventHandler"
 
   it should "create an aggregate root" in {
     val event = UserCreated(EventHeader(), arid("a"), arv(0L), "hans", "meier")

@@ -48,7 +48,7 @@ trait ConfirmationContext[E <: AggregateEvent] {
  * Mix in this trait to create an Actor that manages command execution for an aggregate root and commits the resulting events.
  *  The resulting Actor is intended to be used and managed by the AgrregateRootHive.
  */
-trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with BuildsAggregateRoot[T, E] ⇒
+trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] ⇒
   import AggregateDroneInternalMessages._
   import almhirt.eventlog.AggregateEventLog._
 
