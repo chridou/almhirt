@@ -6,23 +6,24 @@ import almhirt.problem.ProblemCause
 
 trait CommandStatusChanged extends SystemEvent {
   def commandHeader: CommandHeader
-  def metadata: Map[String, String]
 }
 
-final case class CommandReceived(header: EventHeader, commandHeader: CommandHeader, metadata: Map[String, String]) extends CommandStatusChanged
-final case class CommandExecuted(header: EventHeader, commandHeader: CommandHeader, metadata: Map[String, String]) extends CommandStatusChanged
-final case class CommandNotExecuted(header: EventHeader, commandHeader: CommandHeader, cause: ProblemCause, metadata: Map[String, String]) extends CommandStatusChanged
+final case class CommandExecutionStarted(header: EventHeader, commandHeader: CommandHeader) extends CommandStatusChanged
+final case class CommandExecuted(header: EventHeader, commandHeader: CommandHeader) extends CommandStatusChanged
+final case class CommandNotExecuted(header: EventHeader, commandHeader: CommandHeader, cause: ProblemCause) extends CommandStatusChanged
 
-object CommandReceived {
-  def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandReceived =
-    CommandReceived(EventHeader(), command.header, Map.empty)
+
+object CommandExecutionStarted {
+  def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecutionStarted =
+    CommandExecutionStarted(EventHeader(), command.header)
 }
+
 object CommandExecuted {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecuted =
-    CommandExecuted(EventHeader(), command.header, Map.empty)
+    CommandExecuted(EventHeader(), command.header)
 }
 
 object CommandNotExecuted {
   def apply(command: Command, cause: ProblemCause)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandNotExecuted =
-    CommandNotExecuted(EventHeader(), command.header, cause, Map.empty)
+    CommandNotExecuted(EventHeader(), command.header, cause)
 }
