@@ -56,12 +56,3 @@ trait AggregateRootEventHandler[T <: AggregateRoot, E <: AggregateEvent] {
 
 }
 
-trait RebuildsAggregateRootFromTimeline[T <: AggregateRoot, E <: AggregateEvent] { self: AggregateRootEventHandler[T, E] =>
-  final def rebuildFromTimeline(events: Iterable[E]): AggregateRootState[T] =
-    if (events.isEmpty) {
-      NeverExisted
-    } else {
-      applyEventsPostnatalis(fromEvent(events.head), events.tail)
-    }
-}
-
