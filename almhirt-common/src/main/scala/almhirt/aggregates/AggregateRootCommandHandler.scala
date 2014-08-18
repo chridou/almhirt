@@ -5,6 +5,8 @@ import scalaz._, Scalaz._
 import almhirt.common._
 
 trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
+  def handleAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
+
   implicit class FutureFOps(self: AlmFuture[(AggregateRootLifecycle[T], Seq[E])]) {
     def asyncResult: AsyncCommandResult[T, E] =
       AsyncCommandResult(self)
@@ -67,6 +69,4 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
 
   protected def async(ur: => AlmFuture[UpdateRecorder[T, E]])(implicit executionContext: ExecutionContext) =
     ur.asyncResult
-
-  def handleAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
 }

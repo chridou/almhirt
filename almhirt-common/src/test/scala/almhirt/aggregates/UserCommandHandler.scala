@@ -4,13 +4,13 @@ import scala.concurrent.ExecutionContext
 import scalaz._, Scalaz._
 import almhirt.common._
 
-trait UserCommandHandler extends AggregateRootCommandHandler[User, UserEvent] { self: UserUpdater =>
+trait UserCommandHandler extends VersionCheckingAggregateRootCommandHandler[User, UserEvent] with AggregateRootCommandHandler[User, UserEvent] {self: UserUpdater =>
   implicit def futuresContext: ExecutionContext
 
   private def expensiveServiceCallForCreditCard(age: Int): AlmFuture[Boolean] =
     AlmFuture.compute(age >= 21)
 
-  def handleAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[User]): AggregateCommandResult[User, UserEvent] =
+  def handleValidatedAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[User]): AggregateCommandResult[User, UserEvent] =
     (agg, command) match {
       case (Vacat, CreateUser(_, aggId, aggVersion, surname, lastname)) =>
         create(aggId, surname, lastname).recordings.fold(
