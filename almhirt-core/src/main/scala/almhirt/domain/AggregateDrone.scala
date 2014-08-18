@@ -61,18 +61,21 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
 
+  def sendMessage(msg: AggregateDroneMessage) {
+    context.parent ! msg
+  }
+
   def handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateCommand, AggregateRootLifecycle[T]) ⇒ Unit
 
   private object DefaultConfirmationContext extends ConfirmationContext[E] {
     def commit(events: Seq[E]) { self ! Commit(events) }
     def reject(problem: Problem) { self ! Rejected(problem) }
     def unhandled() { self ! Unhandled }
-
   }
 
   /** Ends with termination */
   protected def onError(ex: AggregateRootDroneException, command: AggregateCommand, commitedEvents: Seq[E] = Seq.empty) {
-    context.parent ! CommandNotExecuted(command.header, commitedEvents, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex)))
+    sendMessage(CommandNotExecuted(command.header, commitedEvents, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
     throw ex
   }
 
@@ -119,14 +122,14 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       onError(AggregateEventStoreFailedReadingException(command.aggId, "An error has occured fetching the aggregate root events:\n$problem"), command)
 
     case ExecuteCommand(command: AggregateCommand) ⇒
-      context.parent ! CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executued."))
+      sendMessage(CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executued.")))
   }
 
   private def receiveRebuildFromSnapshot(delayedCommand: Option[AggregateCommand], queryPending: Boolean): Receive = {
     case _ ⇒ ()
 
     case ExecuteCommand(command: AggregateCommand) ⇒
-      context.parent ! CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executued."))
+      sendMessage(CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executued.")))
   }
 
   private def receiveEvaluateRebuildResult(command: AggregateCommand): Receive = {
@@ -138,7 +141,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       onError(RebuildAggregateRootFailedException(command.aggId, "An error has occured rebuilding the aggregate root.", error), command)
 
     case ExecuteCommand(command: AggregateCommand) ⇒
-      context.parent ! CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executued."))
+      sendMessage(CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executued.")))
   }
 
   private def receiveWaitingForCommandResult(command: AggregateCommand, persistedState: AggregateRootLifecycle[T]): Receive = {
@@ -148,7 +151,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
         case p: Postnatalis[T] => p.version
         case _ => AggregateRootVersion(0L)
       }
-      context.parent ! CommandExecuted(command.header, version, Seq.empty)
+      sendMessage(CommandExecuted(command.header, version, Seq.empty))
 
     case Commit(events) ⇒
       events.foldLeft[AggregateRootLifecycle[T]](persistedState) { case (acc, cur) ⇒ applyEventLifecycleAgnostic(acc, cur) } match {
@@ -160,15 +163,15 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       }
 
     case Rejected(problem) ⇒
-      context.parent ! CommandNotExecuted(command.header, problem)
+      sendMessage(CommandNotExecuted(command.header, problem))
       context.become(receiveAcceptingCommand(persistedState))
 
     case Unhandled ⇒
-      context.parent ! CommandNotExecuted(command.header, UnspecifiedProblem(s"""Could not handle command of type "${command.getClass().getName()}"."""))
+      sendMessage(CommandNotExecuted(command.header, UnspecifiedProblem(s"""Could not handle command of type "${command.getClass().getName()}".""")))
       context.become(receiveAcceptingCommand(persistedState))
 
     case ExecuteCommand(command: AggregateCommand) ⇒
-      context.parent ! CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executed."))
+      sendMessage(CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executed.")))
   }
 
   private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
@@ -183,7 +186,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       rest match {
         case Seq() ⇒
           context.become(receiveAcceptingCommand(unpersisted))
-          context.parent ! CommandExecuted(command.header, unpersisted.version, done)
+          sendMessage(CommandExecuted(command.header, unpersisted.version, done))
         case next +: newRest ⇒
           aggregateEventLog ! CommitAggregateEvent(next)
           context.become(receiveCommitEvents(command, next, newRest, newDone, unpersisted))
@@ -193,12 +196,12 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       onError(AggregateEventStoreFailedWritingException(command.aggId, s"The aggregate event store failed writing:\n$problem"), command, done)
 
     case ExecuteCommand(command: AggregateCommand) ⇒
-      context.parent ! CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executued."))
+      sendMessage(CommandNotExecuted(command.header, UnspecifiedProblem(s"Command ${command.header} is currently executued.")))
   }
 
   private def receiveMortuus(state: Mortuus): Receive = {
     case ExecuteCommand(command: AggregateCommand) ⇒
-      context.parent ! CommandNotExecuted(command.header, AggregateRootDeletedProblem(command.aggId))
+      sendMessage(CommandNotExecuted(command.header, AggregateRootDeletedProblem(command.aggId)))
   }
 
   def receive: Receive = receiveUninitialized
