@@ -3,7 +3,15 @@ package almhirt.aggregates
 import scalaz._, Scalaz._
 import almhirt.common._
 
+/** Mix in this trait to get a basic validation on incoming commands.
+ *  The overridden handler from [[AggregateRootCommandHandler]] calls the handler you have to provide.
+ *  Before calling your handler, the overridden handler will check whether versions and ids match and whether
+ *  the command can be handled due to the current lifecycle state of the aggregate root.
+ */
 trait VersionCheckingAggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] { self: AggregateRootCommandHandler[T, E] =>
+  /** Implement this handler to handle prevalidated commands */
+  def handleValidatedAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
+
   final override def handleAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E] =
     agg match {
       case Vacat =>
@@ -32,6 +40,4 @@ trait VersionCheckingAggregateRootCommandHandler[T <: AggregateRoot, E <: Aggreg
           }
         }
     }
-
-  def handleValidatedAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
 }
