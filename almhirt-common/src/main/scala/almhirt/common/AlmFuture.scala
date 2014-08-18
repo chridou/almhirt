@@ -99,7 +99,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     }
   
   final def withFilter(p: R ⇒ Boolean)(implicit executor: ExecutionContext): AlmFuture[R] = filter(p)(executor)
-  
+ 
   def fold[T](failure: Problem ⇒ T, success: R ⇒ T)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
     underlying.onComplete {

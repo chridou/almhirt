@@ -4,7 +4,6 @@ import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.syntax.almvalidation._
 
-
 /**
  * Records the events for aggregate root updates.
  * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s
@@ -50,7 +49,7 @@ trait UpdateRecorder[+AR <: AggregateRoot, +Event <: AggregateEvent] {
           (newAggr, updatedEvents)
         })
     }
-  
+
   /**
    * Check whether the current AR state is a success
    *
@@ -76,6 +75,7 @@ trait UpdateRecorder[+AR <: AggregateRoot, +Event <: AggregateEvent] {
     val (_, events) = apply(Nil)
     events.reverse
   }
+
   def recordings: AlmValidation[(AggregateRootLifecycle[AR], List[Event])] = {
     val (validation, events) = apply(Nil)
     validation.map((_, events.reverse))
@@ -96,14 +96,14 @@ object UpdateRecorder {
 
   def startVivus[AR <: AggregateRoot, Event <: AggregateEvent](ar: AR) =
     UpdateRecorder[AR, Event](events ⇒ (Vivus(ar).success, events))
-    
+
   def startFresh[AR <: AggregateRoot, Event <: AggregateEvent]() =
     UpdateRecorder[AR, Event](events ⇒ (Vacat.success, events))
- 
+
   def startMortuus[AR <: AggregateRoot, Event <: AggregateEvent](d: Mortuus) =
     UpdateRecorder[AR, Event](events ⇒ (d.success, events))
-    
-    /**
+
+  /**
    * Takes an event and the resulting Aggregate Root. The event is prepended to the previous events
    *
    * @param event The event resulting from an aggregate root operation
@@ -112,12 +112,12 @@ object UpdateRecorder {
   def accept[AR <: AggregateRoot, Event <: AggregateEvent](ar: AggregateRootLifecycle[AR], event: Event) =
     UpdateRecorder[AR, Event](events ⇒ (ar.success, event :: events))
 
-  def accept[AR <: AggregateRoot, Event <: AggregateEvent](t : (AggregateRootLifecycle[AR], Event)) =
+  def accept[AR <: AggregateRoot, Event <: AggregateEvent](t: (AggregateRootLifecycle[AR], Event)) =
     UpdateRecorder[AR, Event](events ⇒ (t._1.success, t._2 :: events))
-    
+
   def acceptMany[AR <: AggregateRoot, Event <: AggregateEvent](ar: AggregateRootLifecycle[AR], newEvents: Seq[Event]) =
-    UpdateRecorder[AR, Event](events ⇒ (ar.success, newEvents.foldLeft(events){case (acc, event) => event :: acc}))
-    
+    UpdateRecorder[AR, Event](events ⇒ (ar.success, newEvents.foldLeft(events) { case (acc, event) => event :: acc }))
+
   /**
    * Takes an event and the resulting Aggregate Root. Previously written events are still contained
    *
@@ -125,8 +125,8 @@ object UpdateRecorder {
    */
   def reject[AR <: AggregateRoot, Event <: AggregateEvent](error: Problem) =
     UpdateRecorder[AR, Event](events ⇒ (error.failure, events))
-    
-  def record[AR <: AggregateRoot, Event <: AggregateEvent](v: AlmValidation[(AggregateRootLifecycle[AR], Event)])=
+
+  def record[AR <: AggregateRoot, Event <: AggregateEvent](v: AlmValidation[(AggregateRootLifecycle[AR], Event)]) =
     v.fold(fail => UpdateRecorder.reject(fail), succ => UpdateRecorder.accept(succ._1, succ._2))
 
   def recordVivus[AR <: AggregateRoot, Event <: AggregateEvent](v: AlmValidation[(AR, Event)]) =
@@ -138,4 +138,4 @@ object UpdateRecorder {
       case Mortuus(id, v) => UpdateRecorder.reject(IllegalOperationProblem(s"The aggregate root with id ${id.value} and version ${v.value} is already dead."))
       case Vivus(ar) => f(ar)
     }
- }
+}

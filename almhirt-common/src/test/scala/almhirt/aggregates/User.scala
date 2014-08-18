@@ -14,4 +14,17 @@ case class UserAgeChanged(header: EventHeader, aggId: AggregateRootId, aggVersio
 case class UserLeft(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserEvent
 case class UserDied(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserEvent
 
+sealed trait UserCommand extends AggregateCommand
+case class CreateUser(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String, lastname: String) extends UserCommand
+case class RejectUser(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String, lastname: String) extends UserCommand
+case class ChangeUserSurname(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String) extends UserCommand
+case class ChangeUserLastname(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, lastname: String) extends UserCommand
+case class ChangeUserFullName(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String, lastname: String) extends UserCommand
+case class ChangeUserAge(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, age: Int) extends UserCommand
+case class ChangeUserAgeForCreditCard(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, age: Int) extends UserCommand
+case class ConfirmUserCancelled(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserCommand
+case class ConfirmUserDeath(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserCommand
+case class UserUow(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, commands: Seq[UserCommand]) extends UserCommand
+
+
 

@@ -1,5 +1,6 @@
 package almhirt.domain
 
+import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
 import almhirt.aggregates._
@@ -56,7 +57,7 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
   // User API 
   //*************
 
-  def ahContext: AlmhirtContext
+  def futuresContext: ExecutionContext
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
 
@@ -103,14 +104,14 @@ trait AggregateDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with A
       val iteratee: Iteratee[AggregateEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateEvent, AggregateRootLifecycle[T]](Vacat) {
         case (acc, event) ⇒
           applyEventLifecycleAgnostic(acc, event.asInstanceOf[E])
-      }(ahContext.futuresContext)
+      }(futuresContext)
 
       eventsEnumerator.run(iteratee).onComplete {
         case scala.util.Success(arState) ⇒
           self ! InternalArBuildResult(arState)
         case scala.util.Failure(error) ⇒
           self ! InternalBuildArFailed(error)
-      }(ahContext.futuresContext)
+      }(futuresContext)
 
       context.become(receiveEvaluateRebuildResult(command))
 
