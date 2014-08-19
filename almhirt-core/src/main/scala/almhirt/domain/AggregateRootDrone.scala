@@ -77,6 +77,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] { me: Actor wi
 
   /** Ends with termination */
   protected def onError(ex: AggregateRootDroneException, command: AggregateCommand, commitedEvents: Seq[E] = Seq.empty) {
+    log.error(s"Escalating! Something terrible happened:\n$ex")
     sendMessage(CommandNotExecuted(command.header, commitedEvents, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
     throw ex
   }
