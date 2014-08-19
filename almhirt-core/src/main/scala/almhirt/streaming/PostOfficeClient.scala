@@ -77,7 +77,20 @@ trait SequentialPostOfficeClient { me: Actor with ActorLogging ⇒
     send()
     context.become(sending(1, settings, send), false)
   }
+   def sendToPostOfficeUntrackedWithAppendix[TElement](postOffice: PostOffice[TElement], elements: Seq[TElement], appendix: Receive)(implicit settings: PostOfficeClientSettings) {
+    sendToPostOffice(postOffice, elements, None)
+  }
+ 
+  def sendToPostOfficeTrackedWithAppendix[TElement](postOffice: PostOffice[TElement], elements: Seq[TElement], ticket: TrackingTicket, appendix: Receive)(implicit settings: PostOfficeClientSettings) {
+    sendToPostOfficeWithAppendix(postOffice, elements, Some(ticket), appendix)
+  }
 
+  def sendToPostOfficeWithAppendix[TElement](postOffice: PostOffice[TElement], elements: Seq[TElement], ticket: Option[TrackingTicket], appendix: Receive)(implicit settings: PostOfficeClientSettings) {
+    val send = () ⇒ postOffice.deliver(elements, self, ticket)
+    send()
+    context.become(sending(1, settings, send) orElse appendix, false)
+  }
+  
   private def sending(attempt: Int, settings: PostOfficeClientSettings, resend: () ⇒ Unit): Receive = {
     case m: DeliveryJobDone ⇒
       context.unbecome()
