@@ -66,7 +66,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
   def eventsPostOffice: PostOffice[Event]
-  def commandStatusSink: CommandStatusChanged => Unit
+  def commandStatusSink: FireAndForgetSink[CommandStatusChanged]
   implicit def postOfficeSettings: PostOfficeClientSettings
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
@@ -189,6 +189,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
 
   private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
     case nextCommand: AggregateCommand ⇒
+      commandStatusSink(CommandExecutionStarted(nextCommand))
       handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
   }
@@ -198,8 +199,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
       val newDone = done :+ inFlight
       rest match {
         case Seq() ⇒
-          context.become(receiveAcceptingCommand(unpersisted))
-          sendCommandAccepted(currentCommand, unpersisted.version, done)
+          context.become(receiveWaitingForEventsDispatched(currentCommand, unpersisted, done))
+          sendToPostOfficeUntrackedWithAppendix(eventsPostOffice, done, rejectCommandAppendix(currentCommand))
         case next +: newRest ⇒
           aggregateEventLog ! CommitAggregateEvent(next)
           context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted))
@@ -212,6 +213,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
       rejectUnexpectedCommand(commandNotToExecute, currentCommand)
   }
 
+  private def receiveWaitingForEventsDispatched(currentCommand: AggregateCommand, persisted: Postnatalis[T], committedEvents: Seq[E]): Receive = {
+    case d: DeliveryJobDone =>
+      sendCommandAccepted(currentCommand, persisted.version, committedEvents)
+      context.become(receiveAcceptingCommand(persisted))
+    case d: DeliveryJobNotAccepted => 
+      onError(CouldNotDispatchAllAggregateEventsException(currentCommand), currentCommand, committedEvents)
+  }
+
   private def receiveMortuus(state: Mortuus): Receive = {
     case commandNotToExecute: AggregateCommand ⇒
       val prob = AggregateRootDeletedProblem(commandNotToExecute.aggId)
@@ -220,7 +229,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
   }
 
   def receive: Receive = receiveUninitialized
-  
+
   private def rejectUnexpectedCommand(commandNotToExecute: AggregateCommand, currentCommand: AggregateCommand) {
     val prob = UnspecifiedProblem(s"Command ${currentCommand.header} is currently executed.")
     sendMessage(CommandNotExecuted(commandNotToExecute.header, prob))
@@ -242,5 +251,4 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
       rejectUnexpectedCommand(commandNotToExecute, currentCommand)
   }
 
-  
 }

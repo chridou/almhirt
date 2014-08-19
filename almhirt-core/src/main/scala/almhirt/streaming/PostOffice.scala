@@ -3,7 +3,6 @@ package almhirt.streaming
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking.TrackingTicket
-import almhirt.tracking.TrackingTicket
 
 /** Intended to send small sequences of TElement where each Seq[TElement] is treated as an undivisible unit */
 trait PostOffice[TElement] {
@@ -26,6 +25,21 @@ object PostOffice {
       }
     }
   }
+  
+  def devNull[TElement]: PostOffice[TElement] = 
+    new PostOffice[TElement] {
+      def deliver(elements: Seq[TElement], notify: ActorRef, ticket: Option[TrackingTicket]) {
+        notify ! DeliveryJobDone(ticket)
+      }
+    }
+  
+  def faked[TElement](delegateTo: ActorRef): PostOffice[TElement] = 
+    new PostOffice[TElement] {
+      def deliver(elements: Seq[TElement], notify: ActorRef, ticket: Option[TrackingTicket]) {
+        notify ! DeliveryJobDone(ticket)
+        elements.foreach(delegateTo ! _)
+      }
+    }
 }
 
 trait PostOfficeStrategyFactory[TElement] {

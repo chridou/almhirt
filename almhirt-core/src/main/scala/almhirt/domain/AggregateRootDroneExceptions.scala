@@ -37,3 +37,14 @@ object RebuildAggregateRootFailedException {
     new RebuildAggregateRootFailedException(id, message, ex)
 }
 
+final class CouldNotDispatchAllAggregateEventsException private (id: AggregateRootId, commandId: almhirt.common.CommandId, message: String, ex: Throwable) extends AggregateRootDroneException(id, message, ex)
+import almhirt.common._
+object CouldNotDispatchAllAggregateEventsException {
+  def apply(command: AggregateCommand): CouldNotDispatchAllAggregateEventsException =
+    CouldNotDispatchAllAggregateEventsException(command , null)
+  def apply(command: AggregateCommand, ex: Throwable): CouldNotDispatchAllAggregateEventsException = {
+    val msg = s"Could not commit all events for command ${command.commandId.value} on aggregate ${command.aggId.value}."
+    new CouldNotDispatchAllAggregateEventsException(command.aggId, command.commandId, msg, ex)
+  }
+}
+
