@@ -79,7 +79,7 @@ trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEven
   def changeFullNameAndAge(user: User, surname: String, lastname: String, age: Int): UpdateRecorder[User, UserEvent] = {
     for {
       a <- changeFullName(user, surname, lastname)
-      b <- (changeAge(_: User, 18)).liftWith(a)
+      b <- (changeAge(_: User, age)).liftWith(a)
     } yield b
   }
 

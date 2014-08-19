@@ -199,8 +199,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
       val newDone = done :+ inFlight
       rest match {
         case Seq() ⇒
-          context.become(receiveWaitingForEventsDispatched(currentCommand, unpersisted, done))
-          sendToPostOfficeUntrackedWithAppendix(eventsPostOffice, done, rejectCommandAppendix(currentCommand))
+          context.become(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone))
+          sendToPostOfficeUntrackedWithAppendix(eventsPostOffice, newDone, rejectCommandAppendix(currentCommand))
         case next +: newRest ⇒
           aggregateEventLog ! CommitAggregateEvent(next)
           context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted))

@@ -25,6 +25,86 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
     }
   }
 
+  "The AggregateRootDrone" when {
+    import almhirt.eventlog.AggregateEventLog._
+    import AggregateRootDroneInternalMessages._
+    import almhirt.aggregates._
+    import almhirt.tracking._
+    import aggregatesforthelazyones._
+    "receiving valid commands" when {
+      "an aggregate root is created" should {
+        "emit the status events [CommandExecutionStarted, CommandSuccessfullyExecuted]" in { fixture =>
+          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            statusProbe.expectMsgAllClassOf[CommandStatusChanged](500 millis, classOf[CommandExecutionStarted], classOf[CommandSuccessfullyExecuted])
+          }
+        }
+        "emit the aggregate events [Created]" in { fixture =>
+          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            eventsProbe.expectMsgAllClassOf[AggregateEvent](500 millis, classOf[UserCreated])
+          }
+        }
+      }
+      "an aggregate root is created and modified" should {
+        "emit the status events [Start, Success, Start, Success]" in { fixture =>
+          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
+            statusProbe.expectMsgAllClassOf[CommandStatusChanged](500 millis, 
+                classOf[CommandExecutionStarted], classOf[CommandSuccessfullyExecuted],
+                classOf[CommandExecutionStarted], classOf[CommandSuccessfullyExecuted])
+          }
+        }
+        "emit the aggregate events [Created, Modified]" in { fixture =>
+          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
+            eventsProbe.expectMsgAllClassOf[AggregateEvent](500 millis, 
+                classOf[UserCreated],
+                classOf[UserAgeChanged])
+          }
+        }
+      }
+       "an aggregate root is created, modified and the deleted" should {
+        "emit the status events [Start, Success, Start, Success, Start, Success]" in { fixture =>
+          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
+            statusProbe.expectMsgAllClassOf[CommandStatusChanged](500 millis, 
+                classOf[CommandExecutionStarted], classOf[CommandSuccessfullyExecuted],
+                classOf[CommandExecutionStarted], classOf[CommandSuccessfullyExecuted],
+                classOf[CommandExecutionStarted], classOf[CommandSuccessfullyExecuted])
+          }
+        }
+        "emit the aggregate events [Created, Modified, Deleted]" in { fixture =>
+          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
+            eventsProbe.expectMsgAllClassOf[AggregateEvent](500 millis, 
+                classOf[UserCreated],
+                classOf[UserAgeChanged],
+                classOf[UserDied])
+          }
+        }
+      }
+   }
+  }
+
   private val currentTestId = new java.util.concurrent.atomic.AtomicInteger(1)
   def nextTestId = currentTestId.getAndIncrement()
 
