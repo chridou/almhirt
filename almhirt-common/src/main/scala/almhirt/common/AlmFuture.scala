@@ -36,12 +36,16 @@ import almhirt.problem.HasAThrowable
  */
 final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   import almhirt.almfuture.all._
+  
+  /** Map the contents to this Future to another content */
   def map[T](compute: R ⇒ T)(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](underlying.map(validation ⇒ validation map compute))
 
+  /** Map the underlying validation. A failure will cause the Future to fail */
   def mapV[T](compute: R ⇒ AlmValidation[T])(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](underlying.map { validation ⇒ validation flatMap compute })
 
+  /** Map the underlying Problem in case of a failure */
   def leftMap(withFailure: Problem ⇒ Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     val p = Promise[AlmValidation[R]]
     underlying.onComplete {
@@ -57,6 +61,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def mapFailure(withFailure: Problem ⇒ Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     leftMap(withFailure)
 
+  /** Map the underlying Problem in case it is a Timeout */
   def mapTimeout(withTimeout: Problem ⇒ Problem)(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     val p = Promise[AlmValidation[R]]
     underlying.onComplete {
@@ -76,6 +81,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
+  /** Change the message of a timeout */
   def mapTimeoutMessage(newMessage: String ⇒ String)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     new AlmFuture[R](underlying.map { validation ⇒
       validation leftMap {
@@ -93,6 +99,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
         r ⇒ compute(r).underlying)
     })
 
+  /** This has no real usage, but is necessary for for-comprehensions */
   def filter(pred: R ⇒ Boolean)(implicit executor: ExecutionContext): AlmFuture[R] =
     mapV {
       r ⇒ if (pred(r)) r.success else NoSuchElementProblem("AlmFuture.filter predicate is not satisfied").failure
@@ -100,6 +107,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   
   final def withFilter(p: R ⇒ Boolean)(implicit executor: ExecutionContext): AlmFuture[R] = filter(p)(executor)
  
+  /** Make the result or problem something else but stay in the future context */
   def fold[T](failure: Problem ⇒ T, success: R ⇒ T)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
     underlying.onComplete {
@@ -111,6 +119,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
+  /** Make the result or problem something else but stay in the future context */
   def foldV[T](failure: Problem ⇒ AlmValidation[T], success: R ⇒ AlmValidation[T])(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
     underlying.onComplete {
@@ -122,6 +131,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
+  /** Fold the content in the future context */
   def foldF[T](failure: Problem ⇒ AlmFuture[T], success: R ⇒ AlmFuture[T])(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
     underlying.onComplete {
