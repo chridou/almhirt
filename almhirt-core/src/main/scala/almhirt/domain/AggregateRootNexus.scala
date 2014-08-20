@@ -44,7 +44,7 @@ private[almhirt] trait AggregateRootNexusInternal { me: Actor with ActorLogging 
 
   def receiveRunning: Receive = {
     case Terminated(actor) =>
-      log.info(s"Hive ${actor.path.name} terminated")
+      log.info(s"Hive ${actor.path.name} terminated.")
   }
 
   def receive: Receive = receiveInitialize
