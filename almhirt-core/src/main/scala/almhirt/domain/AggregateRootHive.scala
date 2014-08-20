@@ -9,6 +9,8 @@ import almhirt.tracking._
 import org.reactivestreams.api.Producer
 import akka.stream.actor.ActorConsumer
 
+class HiveDescriptor(val value: String) extends AnyVal
+
 object AggregateRootHive {
   sealed trait CommandTimeoutSettings
   case object NoCommandTimeouts extends CommandTimeoutSettings
