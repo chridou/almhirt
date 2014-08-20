@@ -54,7 +54,10 @@ trait UserCommandHandler extends VersionCheckingAggregateRootCommandHandler[User
 
       case (aggState, UserUow(_, _, _, cmds)) =>
         chained(aggState, cmds)
-      
+
+      case (aggState, DoSomethingSilly(_, _, _, duration)) =>
+        AlmFuture.delayedSuccess(duration){ UpdateRecorder.noop(aggState)}.asyncResult
+        
       case (aggState, cmd) =>
         SyncCommandResult(IllegalOperationProblem(s"Could not handle command $cmd").failure)
     }

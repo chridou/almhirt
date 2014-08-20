@@ -25,6 +25,7 @@ case class ChangeUserAgeForCreditCard(header: CommandHeader, aggId: AggregateRoo
 case class ConfirmUserCancelled(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserCommand
 case class ConfirmUserDeath(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserCommand
 case class UserUow(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, commands: Seq[UserCommand]) extends UserCommand
+case class DoSomethingSilly(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, duration: scala.concurrent.duration.FiniteDuration) extends UserCommand
 
 
 

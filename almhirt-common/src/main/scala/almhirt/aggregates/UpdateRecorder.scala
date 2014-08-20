@@ -94,6 +94,9 @@ object UpdateRecorder {
       def apply[EE >: Event](events: List[EE]) = f(events.asInstanceOf[List[Event]])
     }
 
+  def noop[AR <: AggregateRoot, Event <: AggregateEvent](ar: AggregateRootLifecycle[AR]) =
+    UpdateRecorder[AR, Event](events ⇒ (ar.success, events))
+  
   def startVivus[AR <: AggregateRoot, Event <: AggregateEvent](ar: AR) =
     UpdateRecorder[AR, Event](events ⇒ (Vivus(ar).success, events))
 
