@@ -154,12 +154,11 @@ class AggregateRootHiveTests(_system: ActorSystem)
     val hiveProps = Props(
       new AggregateRootHive(
         buffersize = 10,
-        AggregateRootHive.CommandTimeouts(commandTimeout = (50 millis).dilated, checkForTimeoutsInterval = (100 millis).dilated),
+        AggregateRootHive.CommandTimeouts(commandTimeout = (100 millis).dilated, checkForTimeoutsInterval = (100 millis).dilated),
         droneFactory = droneFactory,
         commandStatusSink = cmdStatusSink)(AggregateRootHiveTests.this.ccuad, AggregateRootHiveTests.this.executionContext))
     val hiveActor = system.actorOf(hiveProps, s"hive-$testId-test")
     val hiveConsumer = akka.stream.actor.ActorConsumer[AggregateCommand](hiveActor)
-    hiveActor ! AggregateRootHiveInternals.Start
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, hiveConsumer, eventlogActor, eventsProbe, statusProbe)))

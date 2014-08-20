@@ -10,6 +10,7 @@ import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
 import almhirt.problem.{ CauseIsThrowable, CauseIsProblem, HasAThrowable }
 
+
 private[almhirt] object AggregateRootDroneInternalMessages {
   sealed trait AggregateDroneMessage
 

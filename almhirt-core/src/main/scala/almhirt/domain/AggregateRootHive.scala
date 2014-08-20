@@ -1,20 +1,13 @@
 package almhirt.domain
 
 import scala.language.postfixOps
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking._
-
 import org.reactivestreams.api.Producer
 import akka.stream.actor.ActorConsumer
-
-trait AggregateRootDroneFactory extends Function1[AggregateCommand, AlmValidation[Props]] {
-  final def apply(command: AggregateCommand): AlmValidation[Props] = propsForCommand(command)
-  def propsForCommand(command: AggregateCommand): AlmValidation[Props]
-}
 
 object AggregateRootHive {
   sealed trait CommandTimeoutSettings
@@ -34,10 +27,14 @@ class AggregateRootHive(
 
   override val requestStrategy = akka.stream.actor.ActorConsumer.ZeroRequestStrategy
 
+  override def preStart() {
+    super.preStart()
+    self ! AggregateRootHiveInternals.Start
+  }
+  
   override def postStop() {
     super.postStop()
     log.info(s"Received $numReceived commands. $numSucceeded succeeded, $numFailed failed, $numTimedOut timed out.")
-
   }
 }
 
