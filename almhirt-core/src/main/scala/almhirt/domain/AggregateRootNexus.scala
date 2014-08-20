@@ -10,7 +10,7 @@ import almhirt.almvalidation.kit._
 
 class AggregateRootNexus(
   override val aggregateCommandsProducer: Producer[AggregateCommand],
-  override val filters: Seq[(HiveDescriptor, AggregateCommand => HiveDescriptor)],
+  override val filters: Seq[(HiveDescriptor, AggregateCommand => Boolean)],
   override val hiveFactory: AggregateRootHiveFactory) extends Actor with ActorLogging with AggregateRootNexusInternal {
   
   override def preStart() {
@@ -30,11 +30,11 @@ private[almhirt] trait AggregateRootNexusInternal { me: Actor with ActorLogging 
   def hiveFactory: AggregateRootHiveFactory
 
   /**
-   * Each function must return the descriptor in the first element if the command is a match.
+   * Each function must return true, if the command is a match for the given [[HiveDescriptor]].
    * Remember that the [[AggregateRootHiveFactory]] must return a hive for each possible descriptor.
    * Do not design your filters in a way, that multiple hives may contain the same aggregate root!
    */
-  def filters: Seq[(HiveDescriptor, AggregateCommand => HiveDescriptor)]
+  def filters: Seq[(HiveDescriptor, AggregateCommand => Boolean)]
 
   def receiveInitialize: Receive = {
     case Start =>
@@ -57,7 +57,7 @@ private[almhirt] trait AggregateRootNexusInternal { me: Actor with ActorLogging 
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
         val consumer = ActorConsumer[AggregateCommand](actor)
-        Flow(aggregateCommandsProducer).filter(cmd => f(cmd) == descriptor).produceTo(mat, consumer)
+        Flow(aggregateCommandsProducer).filter(cmd => f(cmd)).produceTo(mat, consumer)
     }
   }
 }

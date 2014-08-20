@@ -11,6 +11,10 @@ import akka.stream.actor.ActorConsumer
 
 class HiveDescriptor(val value: String) extends AnyVal
 
+object HiveDescriptor {
+  def apply(value: String) = new HiveDescriptor(value)
+}
+
 object AggregateRootHive {
   sealed trait CommandTimeoutSettings
   case object NoCommandTimeouts extends CommandTimeoutSettings
