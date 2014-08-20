@@ -20,6 +20,8 @@ trait UserEventHandler extends AggregateRootEventHandler[User, UserEvent] {
         Mortuus(user.id, user.version.inc)
       case (Vivus(user), UserDied(_, _, _)) =>
         Mortuus(user.id, user.version.inc)
+      case (_, UserLetItCrash(_, _, _)) =>
+        throw new Exception("Boom!")
       case (_, AggregateEvent(_, id, version)) =>
         throw new UnhandledAggregateEventException(id, event)
     }
