@@ -5,14 +5,6 @@ import almhirt.aggregates.AggregateRootId
 
 abstract class AggregateRootDroneException(id: AggregateRootId, message: String, ex: Throwable) extends RuntimeException(message, ex)
 
-final class AggregateRootDeletedException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDroneException(id, message, ex)
-object AggregateRootDeletedException {
-  def apply(id: AggregateRootId, message: String): AggregateRootDeletedException =
-    new AggregateRootDeletedException(id, message, null)
-  def apply(id: AggregateRootId, message: String, ex: Throwable): AggregateRootDeletedException =
-    new AggregateRootDeletedException(id, message, ex)
-}
-
 final class AggregateEventStoreFailedReadingException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDroneException(id, message, ex)
 object AggregateEventStoreFailedReadingException {
   def apply(id: AggregateRootId, message: String): AggregateEventStoreFailedReadingException =

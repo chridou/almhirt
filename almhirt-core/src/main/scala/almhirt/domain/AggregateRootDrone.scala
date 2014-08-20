@@ -176,7 +176,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
           context.become(receiveCommitEvents(currentCommand, events.head, events.tail, Seq.empty, postnatalis))
           aggregateEventLog ! CommitAggregateEvent(events.head)
         case Vacat ⇒
-          onError(AggregateRootDeletedException(currentCommand.aggId, s"""Command did not result in an aggregate root."""), currentCommand)
+          val problem = ConstraintViolatedProblem(s"""Command with events did not result in Postnatalis. This might be an error in your command handler.""")
+          sendCommandFailed(currentCommand, problem)
+          context.become(receiveAcceptingCommand(persistedState))
       }
 
     case Rejected(problem) ⇒
@@ -221,7 +223,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
     case d: DeliveryJobDone =>
       sendCommandAccepted(currentCommand, persisted.version, committedEvents)
       context.become(receiveAcceptingCommand(persisted))
-    case d: DeliveryJobNotAccepted => 
+    case d: DeliveryJobNotAccepted =>
       onError(CouldNotDispatchAllAggregateEventsException(currentCommand), currentCommand, committedEvents)
   }
 
@@ -235,12 +237,16 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
   def receive: Receive = receiveUninitialized
 
   private def rejectUnexpectedCommand(commandNotToExecute: AggregateCommand, currentCommand: AggregateCommand) {
+    if (log.isDebugEnabled)
+      log.debug(s"Rejecting command ${commandNotToExecute.getClass().getName()}(${commandNotToExecute.header}) because currently I'm executing ${currentCommand.getClass().getName()}(${currentCommand.header}).")
     val prob = UnspecifiedProblem(s"Command ${currentCommand.header} is currently executed.")
     sendMessage(CommandNotExecuted(commandNotToExecute.header, prob))
     commandStatusSink(CommandFailed(currentCommand, CauseIsProblem(prob)))
   }
 
   private def sendCommandFailed(command: AggregateCommand, prob: Problem) {
+    if (log.isDebugEnabled)
+      log.debug(s"Command ${command.getClass().getName()}(${command.header}) failed:\n$prob")
     sendMessage(CommandNotExecuted(command.header, prob))
     commandStatusSink(CommandFailed(command, CauseIsProblem(prob)))
   }
