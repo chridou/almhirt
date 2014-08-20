@@ -17,17 +17,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
   def this() = this(ActorSystem("AggregateRootNexusTests", almhirt.TestConfigs.logInfoConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
-  implicit val ccuad = {
-    val currentId = new java.util.concurrent.atomic.AtomicInteger(1)
-    val dt = new LocalDateTime(0L)
-    new CanCreateUuidsAndDateTimes {
-      override def getUuid(): java.util.UUID = ???
-      override def getUniqueString(): String = s"id-${currentId.getAndIncrement()}"
-      override def getDateTime(): DateTime = ???
-      override def getUtcTimestamp(): LocalDateTime = dt
-      override def parseUuid(str: String): AlmValidation[java.util.UUID] = ???
-    }
-  }
+  implicit val ccuad = CanCreateUuidsAndDateTimes()
 
   "The AggregateRootNexus" when {
     import almhirt.eventlog.AggregateEventLog._
@@ -52,7 +42,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
 
     val rnd = new scala.util.Random()
     def createId(pre: Int): String = {
-      s"$pre-${Math.abs(rnd.nextInt())}"
+      s"$pre-${rnd.nextInt(100)}"
     }
 
     val mat = FlowMaterializer(MaterializerSettings())
@@ -138,7 +128,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
     val eventsProbe = TestProbe()
     val statusProbe = TestProbe()
     val cmdStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](elem => statusProbe.ref ! elem)
- 
+
     val droneProps: Props = Props(
       new Actor with ActorLogging with AggregateRootDrone[User, UserEvent] with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] with SequentialPostOfficeClient {
         def ccuad = AggregateRootNexusTests.this.ccuad
@@ -173,11 +163,12 @@ class AggregateRootNexusTests(_system: ActorSystem)
 
     val filters: Seq[(HiveDescriptor, AggregateCommand => Boolean)] =
       Seq(
-        (HiveDescriptor("A"), cmd => cmd.aggId.value.hashCode % 5 == 0),
-        (HiveDescriptor("B"), cmd => cmd.aggId.value.hashCode % 5 == 1),
-        (HiveDescriptor("C"), cmd => cmd.aggId.value.hashCode % 5 == 2),
-        (HiveDescriptor("D"), cmd => cmd.aggId.value.hashCode % 5 == 3),
-        (HiveDescriptor("E"), cmd => cmd.aggId.value.hashCode % 5 == 4))
+        (HiveDescriptor("0"), cmd => cmd.aggId.value.hashCode % 5 == 0),
+        (HiveDescriptor("1"), cmd => cmd.aggId.value.hashCode % 5 == 1),
+        (HiveDescriptor("2"), cmd => cmd.aggId.value.hashCode % 5 == 2),
+        (HiveDescriptor("3"), cmd => cmd.aggId.value.hashCode % 5 == 3),
+        (HiveDescriptor("4"), cmd => cmd.aggId.value.hashCode % 5 == 4))
+
 
     val (commandConsumer, commandProducer) = Duct[AggregateCommand].build(FlowMaterializer(MaterializerSettings()))
 
