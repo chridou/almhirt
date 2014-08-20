@@ -1,4 +1,4 @@
-package almhirt.streaming
+package almhirt.common
 
 trait FireAndForgetSink[TElement] extends Function1[TElement, Unit] {
   final def apply(element: TElement) { accept(element) }
@@ -9,7 +9,6 @@ object FireAndForgetSink {
   def devNull[TElement]: FireAndForgetSink[TElement] =
     new FireAndForgetSink[TElement] { def accept(element: TElement) {} }
 
-  def delegating[TElement](delegateTo: akka.actor.ActorRef): FireAndForgetSink[TElement] =
-    new FireAndForgetSink[TElement] { def accept(element: TElement) { delegateTo ! element } }
-
+  def delegating[TElement](onElement: TElement => Unit): FireAndForgetSink[TElement] =
+    new FireAndForgetSink[TElement] { def accept(element: TElement) { onElement(element) } }
 }

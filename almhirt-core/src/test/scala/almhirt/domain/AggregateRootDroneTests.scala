@@ -462,7 +462,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
   def withFixture(test: OneArgTest) = {
     import almhirt.aggregates._
     import almhirt.tracking.CommandStatusChanged
-    import almhirt.streaming.{ SequentialPostOfficeClient, FireAndForgetSink, PostOffice, PostOfficeClientSettings }
+    import almhirt.streaming.{ SequentialPostOfficeClient, PostOffice, PostOfficeClientSettings }
     val testId = nextTestId
     //info(s"Test $testId")
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()

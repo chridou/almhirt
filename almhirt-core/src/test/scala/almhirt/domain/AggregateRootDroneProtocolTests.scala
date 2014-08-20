@@ -227,7 +227,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
   def withFixture(test: OneArgTest) = {
     import almhirt.aggregates._
     import almhirt.tracking.CommandStatusChanged
-    import almhirt.streaming.{ SequentialPostOfficeClient, FireAndForgetSink, PostOffice, PostOfficeClientSettings }
+    import almhirt.streaming.{ SequentialPostOfficeClient, PostOffice, PostOfficeClientSettings }
     val testId = nextTestId
     //info(s"Test $testId")
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
@@ -241,7 +241,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
-        val commandStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](statusProbe.ref)
+        val commandStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](elem => statusProbe.ref ! elem)
         val postOfficeSettings = PostOfficeClientSettings(100, 1 second, 10)
         val eventsPostOffice = PostOffice.faked[Event](eventsProbe.ref)
 

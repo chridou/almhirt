@@ -5,7 +5,6 @@ import akka.actor._
 import almhirt.common._
 import almhirt.aggregates._
 import almhirt.tracking._
-import almhirt.context.AlmhirtContext
 import almhirt.streaming._
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
@@ -17,9 +16,14 @@ private[almhirt] object AggregateRootDroneInternalMessages {
   sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
     def commandHeader: CommandHeader
     def committedEvents: Seq[AggregateEvent]
+    def isSuccess: Boolean
   }
-  final case class CommandExecuted(commandHeader: CommandHeader, currentVersion: AggregateRootVersion, committedEvents: Seq[AggregateEvent]) extends ExecuteCommandResponse
-  final case class CommandNotExecuted(commandHeader: CommandHeader, committedEvents: Seq[AggregateEvent], problem: Problem) extends ExecuteCommandResponse
+  final case class CommandExecuted(commandHeader: CommandHeader, currentVersion: AggregateRootVersion, committedEvents: Seq[AggregateEvent]) extends ExecuteCommandResponse {
+    def isSuccess = true
+  }
+  final case class CommandNotExecuted(commandHeader: CommandHeader, committedEvents: Seq[AggregateEvent], problem: Problem) extends ExecuteCommandResponse {
+    def isSuccess = true
+  }
 
   object CommandNotExecuted {
     def apply(commandHeader: CommandHeader, problem: Problem): CommandNotExecuted =
