@@ -26,6 +26,7 @@ private[almhirt] object AggregateRootHiveInternals {
 }
 
 class AggregateRootHive(
+  override val hiveDescriptor: HiveDescriptor,
   override val buffersize: Int,
   override val initialCommandTimeout: AggregateRootHive.CommandTimeoutSettings,
   override val droneFactory: AggregateRootDroneFactory,
@@ -59,6 +60,7 @@ private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging w
       case _: Exception => Escalate
     }
 
+  def hiveDescriptor: HiveDescriptor
   def initialCommandTimeout: CommandTimeoutSettings
   def buffersize: Int
   def droneFactory: AggregateRootDroneFactory

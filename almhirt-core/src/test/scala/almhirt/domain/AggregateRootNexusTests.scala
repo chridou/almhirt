@@ -14,7 +14,7 @@ import org.scalatest._
 
 class AggregateRootNexusTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("AggregateRootNexusTests", almhirt.TestConfigs.logInfoConfig))
+  def this() = this(ActorSystem("AggregateRootNexusTests", almhirt.TestConfigs.logDebugConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
@@ -42,7 +42,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
 
     val rnd = new scala.util.Random()
     def createId(pre: Int): String = {
-      s"$pre-${rnd.nextInt(100)}"
+      s"$pre-${rnd.nextInt(10000)}"
     }
 
     val mat = FlowMaterializer(MaterializerSettings())
@@ -75,7 +75,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
           within(3 seconds) {
             Flow(ids.toStream.map(id => CreateUser(CommandHeader(), id, 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
-            assertStatusEvents(started = n, ok = n, failed = 0, statusProbe.receiveN(2 * n, 3 seconds))
+            assertStatusEvents(started = n, ok = n, failed = 0, statusProbe.receiveN(2 * n, 1.5 seconds))
           }
         }
       }
@@ -86,7 +86,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           val flow2 = Flow(ids.toStream.map(id => ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateCommand))
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).produceTo(mat, commandConsumer)
-            assertStatusEvents(started = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(4 * n, 3 second))
+            assertStatusEvents(started = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(4 * n, 1.5 seconds))
           }
         }
       }
@@ -98,7 +98,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           val flow3 = Flow(ids.toStream.map(id => ConfirmUserDeath(CommandHeader(), id, 2L): AggregateCommand))
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).concat(flow3.toProducer(mat)).produceTo(mat, commandConsumer)
-            assertStatusEvents(started = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(6 * n, 3 second))
+            assertStatusEvents(started = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(6 * n, 1.5 seconds))
           }
         }
       }
@@ -150,15 +150,16 @@ class AggregateRootNexusTests(_system: ActorSystem)
       }
     }
 
-    val hiveProps = Props(
+    def hiveProps(desc: HiveDescriptor) = Props(
       new AggregateRootHive(
+        desc,
         buffersize = 10,
         AggregateRootHive.CommandTimeouts(commandTimeout = (100 millis).dilated, checkForTimeoutsInterval = (100 millis).dilated),
         droneFactory = droneFactory,
         commandStatusSink = cmdStatusSink)(AggregateRootNexusTests.this.ccuad, AggregateRootNexusTests.this.executionContext))
 
     val hiveFactory = new AggregateRootHiveFactory {
-      def props(descriptor: HiveDescriptor): AlmValidation[Props] = hiveProps.success
+      def props(descriptor: HiveDescriptor): AlmValidation[Props] = hiveProps(descriptor).success
     }
 
     val filters: Seq[(HiveDescriptor, AggregateCommand => Boolean)] =

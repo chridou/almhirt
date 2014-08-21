@@ -153,6 +153,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
 
     val hiveProps = Props(
       new AggregateRootHive(
+        HiveDescriptor(s"hive-$testId"),
         buffersize = 10,
         AggregateRootHive.CommandTimeouts(commandTimeout = (100 millis).dilated, checkForTimeoutsInterval = (100 millis).dilated),
         droneFactory = droneFactory,
