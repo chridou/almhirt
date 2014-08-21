@@ -23,7 +23,7 @@ private[almhirt] object AggregateRootDroneInternalMessages {
     def isSuccess = true
   }
   final case class CommandNotExecuted(commandHeader: CommandHeader, committedEvents: Seq[AggregateEvent], problem: Problem) extends ExecuteCommandResponse {
-    def isSuccess = true
+    def isSuccess = false
   }
 
   object CommandNotExecuted {
@@ -238,9 +238,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
   def receive: Receive = receiveUninitialized
 
   private def rejectUnexpectedCommand(commandNotToExecute: AggregateCommand, currentCommand: AggregateCommand) {
+    val msg = s"""Rejecting command ${commandNotToExecute.getClass().getName()}(${commandNotToExecute.header}) because currently I'm executing ${currentCommand.getClass().getName()}(${currentCommand.header}). The aggregate root id is "${commandNotToExecute.aggId.value}"."""
     if (log.isDebugEnabled)
-      log.debug(s"Rejecting command ${commandNotToExecute.getClass().getName()}(${commandNotToExecute.header}) because currently I'm executing ${currentCommand.getClass().getName()}(${currentCommand.header}).")
-    val prob = UnspecifiedProblem(s"Command ${currentCommand.header} is currently executed.")
+      log.debug(msg)
+    val prob = CollisionProblem(msg)
     sendMessage(CommandNotExecuted(commandNotToExecute.header, prob))
     commandStatusSink(CommandFailed(currentCommand, CauseIsProblem(prob)))
   }

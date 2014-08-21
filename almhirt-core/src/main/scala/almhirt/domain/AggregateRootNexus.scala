@@ -3,7 +3,7 @@ package almhirt.domain
 import akka.actor._
 import org.reactivestreams.api.Producer
 import akka.stream.actor.ActorConsumer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Flow, Duct }
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -51,13 +51,15 @@ private[almhirt] trait AggregateRootNexusInternal { me: Actor with ActorLogging 
 
   private def createInitialHives() {
     val mat = FlowMaterializer(MaterializerSettings())
+    val (theConsumer, theProducer) = Duct[AggregateCommand].build(mat)
     filters.foreach {
       case (descriptor, f) =>
         val props = hiveFactory.props(descriptor).resultOrEscalate
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
         val consumer = ActorConsumer[AggregateCommand](actor)
-        Flow(aggregateCommandsProducer).filter(cmd => f(cmd)).produceTo(mat, consumer)
+        Flow(theProducer).filter(cmd => f(cmd)).produceTo(mat, consumer)
     }
+    aggregateCommandsProducer.produceTo(theConsumer)
   }
 }
