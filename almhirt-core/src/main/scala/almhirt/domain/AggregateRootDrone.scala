@@ -10,27 +10,20 @@ import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
 import almhirt.problem.{ CauseIsThrowable, CauseIsProblem, HasAThrowable }
 
-
 private[almhirt] object AggregateRootDroneInternalMessages {
   sealed trait AggregateDroneMessage
 
   sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
     def commandHeader: CommandHeader
-    def committedEvents: Seq[AggregateEvent]
     def isSuccess: Boolean
   }
-  final case class CommandExecuted(commandHeader: CommandHeader, currentVersion: AggregateRootVersion, committedEvents: Seq[AggregateEvent]) extends ExecuteCommandResponse {
+  final case class CommandExecuted(commandHeader: CommandHeader) extends ExecuteCommandResponse {
     def isSuccess = true
   }
-  final case class CommandNotExecuted(commandHeader: CommandHeader, committedEvents: Seq[AggregateEvent], problem: Problem) extends ExecuteCommandResponse {
+  final case class CommandNotExecuted(commandHeader: CommandHeader, problem: Problem) extends ExecuteCommandResponse {
     def isSuccess = false
   }
-
-  object CommandNotExecuted {
-    def apply(commandHeader: CommandHeader, problem: Problem): CommandNotExecuted =
-      CommandNotExecuted(commandHeader, Seq.empty, problem)
-  }
-}
+ }
 
 /** Used to commit or reject the events resulting from a command */
 trait ConfirmationContext[E <: AggregateEvent] {
@@ -90,7 +83,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
   /** Ends with termination */
   protected final def onError(ex: AggregateRootDroneException, currentCommand: AggregateCommand, commitedEvents: Seq[E] = Seq.empty) {
     log.error(s"Escalating! Something terrible happened:\n$ex")
-    sendMessage(CommandNotExecuted(currentCommand.header, commitedEvents, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
+    sendMessage(CommandNotExecuted(currentCommand.header, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
     val status = CommandFailed(currentCommand, CauseIsThrowable(HasAThrowable(ex)))
     commandStatusSink(status)
     throw ex
@@ -169,7 +162,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
         case p: Postnatalis[T] => p.version
         case _ => AggregateRootVersion(0L)
       }
-      sendCommandAccepted(currentCommand, version, Seq.empty)
+      sendCommandAccepted(currentCommand)
 
     case Commit(events) ⇒
       events.foldLeft[AggregateRootLifecycle[T]](persistedState) { case (acc, cur) ⇒ applyEventLifecycleAgnostic(acc, cur) } match {
@@ -222,28 +215,23 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
 
   private def receiveWaitingForEventsDispatched(currentCommand: AggregateCommand, persisted: Postnatalis[T], committedEvents: Seq[E]): Receive = {
     case d: DeliveryJobDone =>
-      sendCommandAccepted(currentCommand, persisted.version, committedEvents)
+      sendCommandAccepted(currentCommand)
       context.become(receiveAcceptingCommand(persisted))
+      
     case d: DeliveryJobNotAccepted =>
       onError(CouldNotDispatchAllAggregateEventsException(currentCommand), currentCommand, committedEvents)
   }
 
   private def receiveMortuus(state: Mortuus): Receive = {
     case commandNotToExecute: AggregateCommand ⇒
-      val prob = AggregateRootDeletedProblem(commandNotToExecute.aggId)
-      sendMessage(CommandNotExecuted(commandNotToExecute.header, prob))
-      commandStatusSink(CommandFailed(commandNotToExecute, CauseIsProblem(prob)))
+      sendCommandFailed(commandNotToExecute, AggregateRootDeletedProblem(commandNotToExecute.aggId))
   }
 
   def receive: Receive = receiveUninitialized
 
   private def rejectUnexpectedCommand(commandNotToExecute: AggregateCommand, currentCommand: AggregateCommand) {
     val msg = s"""Rejecting command ${commandNotToExecute.getClass().getName()}(${commandNotToExecute.header}) because currently I'm executing ${currentCommand.getClass().getName()}(${currentCommand.header}). The aggregate root id is "${commandNotToExecute.aggId.value}"."""
-    if (log.isDebugEnabled)
-      log.debug(msg)
-    val prob = CollisionProblem(msg)
-    sendMessage(CommandNotExecuted(commandNotToExecute.header, prob))
-    commandStatusSink(CommandFailed(currentCommand, CauseIsProblem(prob)))
+    sendCommandFailed(commandNotToExecute, CollisionProblem(msg))
   }
 
   private def sendCommandFailed(command: AggregateCommand, prob: Problem) {
@@ -253,8 +241,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
     commandStatusSink(CommandFailed(command, CauseIsProblem(prob)))
   }
 
-  private def sendCommandAccepted(command: AggregateCommand, version: AggregateRootVersion, events: Seq[E]) {
-    sendMessage(CommandExecuted(command.header, version, events))
+  private def sendCommandAccepted(command: AggregateCommand) {
+    sendMessage(CommandExecuted(command.header))
     commandStatusSink(CommandSuccessfullyExecuted(command))
   }
 

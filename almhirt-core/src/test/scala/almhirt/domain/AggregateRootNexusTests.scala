@@ -71,7 +71,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
 //          }
 //        }
 //      }
-      val n = 10
+      val n = 1000
       val ids = (1 to n).map(createId).toVector
 //      s"$n aggregate roots are created" should {
 //        s"emit the status events [Start(a), Executed(a)] $n times" in { fixture =>

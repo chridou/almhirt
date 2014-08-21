@@ -216,6 +216,16 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           }
         }
       }
+//      "a command is sent while another is still processed" should {
+//        "emit the status events [CommandFailed] for that command." in { fixture =>
+//          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
+//          within(1 second) {
+//            droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
+//            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
+//            statusProbe.expectMsgType[CommandFailed](500 millis)
+//          }
+//        }
+//      }
     }
   }
 
