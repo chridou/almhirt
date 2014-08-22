@@ -71,7 +71,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           }
         }
       }
-      val nn = 3000
+      val nn = 2000
       val ids = (1 to nn).map(createId).toVector
       val n = ids.size
       s"$n aggregate roots are created" should {
