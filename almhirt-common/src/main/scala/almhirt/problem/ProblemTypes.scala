@@ -10,9 +10,9 @@ object problemtypes {
   }
 
   case object MultipleProblems extends ProblemType {
-    def apply(problems: Seq[Problem], args: Map[String, Any] = Map.empty): AggregateProblem =
-      AggregateProblem(problems, args)
-    def unapply(problem: AggregateProblem): Option[AggregateProblem] = Some(problem)
+    def apply(problems: Seq[Problem], args: Map[String, Any] = Map.empty): AggregatedProblem =
+      AggregatedProblem(problems, args)
+    def unapply(problem: AggregatedProblem): Option[AggregatedProblem] = Some(problem)
   }
 
   case object ExceptionCaughtProblem extends ProblemType {

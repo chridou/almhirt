@@ -25,7 +25,7 @@ sealed trait SingleProblem extends Problem {
       case Some(CauseIsThrowable(HasAThrowable(exn))) ⇒
         builder.append(indentation+"Caused by:\n")
         builder.append(indentation+"  Message: %s\n".format(exn.toString))
-        builder.append(indentation+"  Stacktrace:\n%s\n".format(exn.getStackTraceString))
+        builder.append(indentation+"  Stacktrace:\n%s\n".format(exn.getStackTrace.mkString("\n")))
       case Some(CauseIsThrowable(desc @ HasAThrowableDescribed(_, _, _, _))) ⇒
         builder.append(indentation+"  Description: %s\n".format(desc.toString))
       case Some(CauseIsProblem(prob)) ⇒
@@ -39,7 +39,7 @@ sealed trait SingleProblem extends Problem {
 
 }
 
-sealed trait AggregateProblem extends Problem {
+sealed trait AggregatedProblem extends Problem {
   def problems: Seq[Problem]
   override private[problem] def baseInfo(indentLevel: Int): StringBuilder = {
     val indentation = (0 until (indentLevel*2)).map(_ ⇒ " ").mkString
@@ -74,7 +74,7 @@ object Problem {
     def withArg(name: String, value: Any): Problem =
       self match {
         case sp: SingleProblem ⇒ SingleProblem.withArg(sp, name, value)
-        case ap: AggregateProblem ⇒ AggregateProblem.withArg(ap, name, value)
+        case ap: AggregatedProblem ⇒ AggregatedProblem.withArg(ap, name, value)
       }
 
     def withLabel(label: String): Problem = self.withArg("label", label)
@@ -118,28 +118,28 @@ object SingleProblem {
   }
 }
 
-object AggregateProblem {
-  def apply(problems: Seq[Problem], args: Map[String, Any] = Map.empty): AggregateProblem =
+object AggregatedProblem {
+  def apply(problems: Seq[Problem], args: Map[String, Any] = Map.empty): AggregatedProblem =
     new AggregateProblemImpl(args, problems)
 
   val empty = apply(Seq.empty, Map.empty)
 
-  def unapply(problem: AggregateProblem): Option[(String, ProblemType, Map[String, Any], Seq[Problem])] =
+  def unapply(problem: AggregatedProblem): Option[(String, ProblemType, Map[String, Any], Seq[Problem])] =
     Some(problem.message, problem.problemType, problem.args, problem.problems)
 
   case class AggregateProblemImpl(
     args: Map[String, Any],
-    problems: Seq[Problem]) extends AggregateProblem {
+    problems: Seq[Problem]) extends AggregatedProblem {
     override val problemType = problemtypes.MultipleProblems
     override val message = "One or more problems occured"
   }
 
-    def withArg(prob: AggregateProblem, name: String, value: Any): AggregateProblem = prob.asInstanceOf[AggregateProblemImpl].copy(args = prob.args + (name -> value))
-    def add(prob: AggregateProblem, problem: Problem): AggregateProblem = prob.asInstanceOf[AggregateProblemImpl].copy(problems = prob.problems :+ problem)
+    def withArg(prob: AggregatedProblem, name: String, value: Any): AggregatedProblem = prob.asInstanceOf[AggregateProblemImpl].copy(args = prob.args + (name -> value))
+    def add(prob: AggregatedProblem, problem: Problem): AggregatedProblem = prob.asInstanceOf[AggregateProblemImpl].copy(problems = prob.problems :+ problem)
   
-  implicit class AggregateProblemOps(self: AggregateProblem) {
-    def withArg(name: String, value: Any): AggregateProblem = AggregateProblem.withArg(self, name: String, value: Any)
-    def add(problem: Problem): AggregateProblem = AggregateProblem.add(self, problem: Problem)
+  implicit class AggregateProblemOps(self: AggregatedProblem) {
+    def withArg(name: String, value: Any): AggregatedProblem = AggregatedProblem.withArg(self, name: String, value: Any)
+    def add(problem: Problem): AggregatedProblem = AggregatedProblem.add(self, problem: Problem)
   }
 
 }

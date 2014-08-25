@@ -3,9 +3,9 @@ package almhirt.domain
 import java.lang.RuntimeException
 import almhirt.aggregates.AggregateRootId
 
-abstract class AggregateRootDroneException(id: AggregateRootId, message: String, ex: Throwable) extends RuntimeException(message, ex)
+abstract class AggregateRootDomainException(id: AggregateRootId, message: String, ex: Throwable) extends RuntimeException(message, ex)
 
-final class AggregateEventStoreFailedReadingException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDroneException(id, message, ex)
+final class AggregateEventStoreFailedReadingException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDomainException(id, message, ex)
 object AggregateEventStoreFailedReadingException {
   def apply(id: AggregateRootId, message: String): AggregateEventStoreFailedReadingException =
     new AggregateEventStoreFailedReadingException(id, message, null)
@@ -13,7 +13,7 @@ object AggregateEventStoreFailedReadingException {
     new AggregateEventStoreFailedReadingException(id, message, ex)
 }
 
-final class AggregateEventStoreFailedWritingException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDroneException(id, message, ex)
+final class AggregateEventStoreFailedWritingException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDomainException(id, message, ex)
 object AggregateEventStoreFailedWritingException {
   def apply(id: AggregateRootId, message: String): AggregateEventStoreFailedWritingException =
     new AggregateEventStoreFailedWritingException(id, message, null)
@@ -21,7 +21,7 @@ object AggregateEventStoreFailedWritingException {
     new AggregateEventStoreFailedWritingException(id, message, ex)
 }
 
-final class RebuildAggregateRootFailedException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDroneException(id, message, ex)
+final class RebuildAggregateRootFailedException private (id: AggregateRootId, message: String, ex: Throwable) extends AggregateRootDomainException(id, message, ex)
 object RebuildAggregateRootFailedException {
   def apply(id: AggregateRootId, message: String): RebuildAggregateRootFailedException =
     new RebuildAggregateRootFailedException(id, message, null)
@@ -29,7 +29,7 @@ object RebuildAggregateRootFailedException {
     new RebuildAggregateRootFailedException(id, message, ex)
 }
 
-final class CouldNotDispatchAllAggregateEventsException private (id: AggregateRootId, commandId: almhirt.common.CommandId, message: String, ex: Throwable) extends AggregateRootDroneException(id, message, ex)
+final class CouldNotDispatchAllAggregateEventsException private (id: AggregateRootId, commandId: almhirt.common.CommandId, message: String, ex: Throwable) extends AggregateRootDomainException(id, message, ex)
 import almhirt.common._
 object CouldNotDispatchAllAggregateEventsException {
   def apply(command: AggregateCommand): CouldNotDispatchAllAggregateEventsException =

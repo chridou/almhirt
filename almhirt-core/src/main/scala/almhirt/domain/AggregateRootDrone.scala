@@ -81,7 +81,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
   }
 
   /** Ends with termination */
-  protected final def onError(ex: AggregateRootDroneException, currentCommand: AggregateCommand, commitedEvents: Seq[E] = Seq.empty) {
+  protected final def onError(ex: AggregateRootDomainException, currentCommand: AggregateCommand, commitedEvents: Seq[E] = Seq.empty) {
     log.error(s"Escalating! Something terrible happened:\n$ex")
     sendMessage(CommandNotExecuted(currentCommand.header, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
     val status = CommandFailed(currentCommand, CauseIsThrowable(HasAThrowable(ex)))

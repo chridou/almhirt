@@ -24,15 +24,15 @@ import almhirt.common._
 trait ProblemOps0 extends Ops[NonEmptyList[Problem]] {
   import inst._
 
-  def aggregate(): AggregateProblem = {
-     AggregateProblem(problems = self.list)
+  def aggregate(): AggregatedProblem = {
+     AggregatedProblem(problems = self.list)
   }
 }
 
 trait ProblemOps1[T <: Problem] extends Ops[T] {
 
-  def toAggregate: AggregateProblem =
-    AggregateProblem(problems = self :: Nil)
+  def toAggregate: AggregatedProblem =
+    AggregatedProblem(problems = self :: Nil)
 }
 
 trait ToProblemOps {

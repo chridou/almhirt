@@ -1,0 +1,167 @@
+package almhirt.domain
+
+import scala.concurrent.ExecutionContext
+import akka.actor._
+import almhirt.common._
+import almhirt.aggregates._
+import play.api.libs.iteratee.{ Enumerator, Iteratee }
+import almhirt.common.AggregateEvent
+
+object AggregateRootDirectView {
+  sealed trait AggregateRootDirectViewMessage
+
+  case object GetAggregateRootView extends AggregateRootDirectViewMessage
+
+  final case class ApplyEvent(event: AggregateEvent) extends AggregateRootDirectViewMessage
+  
+}
+
+abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateEvent](
+  override val aggregateRootId: AggregateRootId,
+  override val aggregateEventLog: ActorRef,
+  override val snapshotStorage: Option[ActorRef],
+  override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) => Unit,
+  override val onDispatchFailure: (Problem, ActorRef) => Unit)(implicit override val futuresContext: ExecutionContext) extends Actor with ActorLogging with AggregateRootDirectViewImpl[T, E] { me: AggregateRootEventHandler[T, E] =>
+
+  override def receive: Receive = me.receiveUninitialized
+}
+
+private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] =>
+  import almhirt.eventlog.AggregateEventLog._
+  import AggregateRootDirectView._
+
+  def futuresContext: ExecutionContext
+  def aggregateEventLog: ActorRef
+  def snapshotStorage: Option[ActorRef]
+  def aggregateRootId: AggregateRootId
+
+  /**
+   * Implement this to communicate the current state to the outside world.
+   *  Each request to this Actor will be responded with either a success or a failure.
+   *  In this case it is a success.
+   */
+  def onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) => Unit
+  /**
+   * Implement this to communicate a failure to the outside world.
+   *  Each request to this Actor will be responded with either a success or a failure.
+   *  In this case it is a failure.
+   */
+  def onDispatchFailure: (Problem, ActorRef) => Unit
+
+  private case class InternalEventlogArBuildResult(ar: AggregateRootLifecycle[T])
+  private case class InternalEventlogBuildArFailed(error: Throwable)
+
+  protected def receiveUninitialized: Receive = {
+    case GetAggregateRootView =>
+      snapshotStorage match {
+        case None ⇒
+          updateFromEventlog(Vacat, Vector(sender()))
+        case Some(snaphots) ⇒
+          ???
+      }
+    case ApplyEvent(event) =>
+      snapshotStorage match {
+        case None ⇒
+          updateFromEventlog(Vacat, Vector.empty)
+        case Some(snaphots) ⇒
+          ???
+      }
+  }
+
+  private def receiveRebuildFromEventlog(currentState: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
+    case FetchedAggregateEvents(eventsEnumerator) ⇒
+      val iteratee: Iteratee[AggregateEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateEvent, AggregateRootLifecycle[T]](currentState) {
+        case (acc, event) ⇒
+          applyEventLifecycleAgnostic(acc, event.asInstanceOf[E])
+      }(futuresContext)
+
+      eventsEnumerator.run(iteratee).onComplete {
+        case scala.util.Success(arState) ⇒
+          self ! InternalEventlogArBuildResult(arState)
+        case scala.util.Failure(error) ⇒
+          self ! InternalEventlogBuildArFailed(error)
+      }(futuresContext)
+
+      context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents))
+
+    case GetAggregateEventsFailed(problem) ⇒
+      onError(AggregateEventStoreFailedReadingException(aggregateRootId, "An error has occured fetching the aggregate root events:\n$problem"), enqueuedRequests)
+
+    case ApplyEvent(event) =>
+      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.asInstanceOf[E]))
+
+    case GetAggregateRootView =>
+      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents))
+  }
+
+  private def receiveRebuildFromSnapshot(enqueuedRequests: Vector[ActorRef]): Receive = {
+    case _ ⇒ ()
+  }
+
+  private def receiveEvaluateEventlogRebuildResult(enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
+    case InternalEventlogArBuildResult(arState) ⇒
+      val toApply = enqueuedEvents.filter(_.aggVersion >= arState.version)
+      if (toApply.isEmpty) {
+        dispatchState(arState, enqueuedRequests: _*)
+        context.become(receiveServe(arState))
+      } else {
+        if (toApply.head.aggVersion == arState.version) {
+          val newState = toApply.foldLeft(arState) { case (state, nextEvent) => applyEventLifecycleAgnostic(state, nextEvent) }
+          dispatchState(newState, enqueuedRequests: _*)
+          context.become(receiveServe(newState))
+        } else {
+          updateFromEventlog(arState, enqueuedRequests)
+        }
+      }
+
+    case InternalEventlogBuildArFailed(error: Throwable) ⇒
+      onError(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured rebuilding the aggregate root.", error), enqueuedRequests)
+
+    case ApplyEvent(event) =>
+      context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents :+ event.asInstanceOf[E]))
+
+    case GetAggregateRootView =>
+      context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests :+ sender(), enqueuedEvents))
+  }
+
+  private def receiveServe(currentState: AggregateRootLifecycle[T]): Receive = {
+    case GetAggregateRootView =>
+      dispatchState(currentState, sender)
+
+    case ApplyEvent(event) =>
+      currentState match {
+        case s: Antemortem[T] =>
+          if (event.aggVersion == s.version) {
+            context.become(receiveServe(applyEventAntemortem(s, event.asInstanceOf[E])))
+          } else {
+            updateFromEventlog(currentState, Vector.empty)
+          }
+        case Mortuus(id, v) =>
+          onError(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."), Vector.empty)
+      }
+  }
+
+  /** Ends with termination */
+  private def onError(ex: AggregateRootDomainException, enqueuedRequests: Vector[ActorRef]) {
+    log.error(s"Escalating! Something terrible happened:\n$ex")
+    val problem = UnspecifiedProblem(s"""Escalating! Something terrible happened: "${ex.getMessage}"""", cause = Some(ex))
+    enqueuedRequests.foreach(receiver => onDispatchFailure(problem, receiver))
+    throw ex
+  }
+
+  private def updateFromEventlog(state: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef]) {
+    state match {
+      case Vacat =>
+        aggregateEventLog ! GetAllAggregateEventsFor(aggregateRootId)
+      case Vivus(ar) =>
+        aggregateEventLog ! GetAggregateEventsFrom(aggregateRootId, ar.version)
+      case Mortuus(id, v) =>
+        onError(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."), enqueuedRequests)
+    }
+    context.become(receiveRebuildFromEventlog(state, enqueuedRequests, Vector.empty))
+  }
+
+  private def dispatchState(currentState: AggregateRootLifecycle[T], to: ActorRef*) {
+    to.foreach(receiver => onDispatchSuccess(currentState, receiver))
+  }
+}

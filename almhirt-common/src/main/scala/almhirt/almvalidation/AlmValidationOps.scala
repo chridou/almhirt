@@ -205,8 +205,8 @@ trait AlmValidationOps9[T] extends Ops[AlmValidation[T]] {
   def toAgg(msg: String): AlmValidationAP[T] =
     self fold (
       prob ⇒
-        if (prob.isInstanceOf[AggregateProblem])
-          prob.asInstanceOf[AggregateProblem].failure
+        if (prob.isInstanceOf[AggregatedProblem])
+          prob.asInstanceOf[AggregatedProblem].failure
         else
           MultipleProblems(List(prob)).failure,
       _.success)
@@ -249,7 +249,7 @@ trait AlmValidationOps12B[R, M[_] <: Traversable[_]] extends Ops[M[AlmValidation
   import almhirt.almvalidation.funs
 
   /** Aggregates all Problems into a single AggregateProblem or contains the results  */
-  def aggregateProblems(implicit cbf: CanBuildFrom[M[R], R, M[R]]): Validation[AggregateProblem, M[R]] = 
+  def aggregateProblems(implicit cbf: CanBuildFrom[M[R], R, M[R]]): Validation[AggregatedProblem, M[R]] = 
     funs.aggregateProblems(self)
 
   def splitValidations(implicit cbfR: CanBuildFrom[M[R], R, M[R]], cbfP: CanBuildFrom[M[Problem], Problem, M[Problem]]): (M[Problem], M[R]) = 

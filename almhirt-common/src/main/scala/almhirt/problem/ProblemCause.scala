@@ -32,7 +32,7 @@ object HasAThrowableDescribed {
     HasAThrowableDescribed(
       exn.getClass().getName(),
       exn.getMessage(),
-      exn.getStackTraceString,
+      exn.getStackTrace.mkString("\n"),
       if (exn.getCause() != null) Some(HasAThrowableDescribed(exn.getCause())) else None)
 }
 

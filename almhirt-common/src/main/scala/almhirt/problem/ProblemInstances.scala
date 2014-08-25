@@ -21,11 +21,11 @@ import scalaz.Show
 import scalaz.Monoid
 
 trait ProblemInstances {
-  implicit def ToAggregateProblemSemiGroup: Monoid[AggregateProblem] =
-    new Monoid[AggregateProblem] {
-      override val zero = AggregateProblem.empty
-      override def append(a: AggregateProblem, b: ⇒ AggregateProblem): AggregateProblem = {
-        AggregateProblem(a.problems ++ b.problems)
+  implicit def ToAggregateProblemSemiGroup: Monoid[AggregatedProblem] =
+    new Monoid[AggregatedProblem] {
+      override val zero = AggregatedProblem.empty
+      override def append(a: AggregatedProblem, b: ⇒ AggregatedProblem): AggregatedProblem = {
+        AggregatedProblem(a.problems ++ b.problems)
       }
     }
 }

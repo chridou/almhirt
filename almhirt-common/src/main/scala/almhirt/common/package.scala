@@ -23,11 +23,11 @@ import almhirt.problem._
 /** Classes and traits needed at other places*/
 package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   type AlmValidation[+α] = scalaz.Validation[almhirt.problem.Problem, α]
-  type AlmValidationAP[+α] = scalaz.Validation[almhirt.problem.AggregateProblem, α]
+  type AlmValidationAP[+α] = scalaz.Validation[almhirt.problem.AggregatedProblem, α]
 
   type Problem = almhirt.problem.Problem
   type SingleProblem = almhirt.problem.SingleProblem
-  type AggregateProblem = almhirt.problem.AggregateProblem
+  type AggregatedProblem = almhirt.problem.AggregatedProblem
   
   implicit def stdF2AlmF[T](f: Future[T])(implicit execCtx: ExecutionContext): AlmFuture[T] = 
     new AlmFuture[T](f.map(scalaz.Success(_)))
