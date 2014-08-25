@@ -57,8 +57,8 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
           within(1 second) {
             Flow(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).produceTo(mat, commandConsumer)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
       }
@@ -77,7 +77,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
       s"$n aggregate roots are created" should {
         s"emit the status events [Start(a), Executed(a)] $n times" in { fixture =>
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          within(2 seconds) {
+          within(3 seconds) {
             Flow((1 to n).toSeq.map(id => CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
             assertStatusEvents(started = n, ok = n, failed = 0, statusProbe.receiveN(2 * n, 2 seconds))
           }
@@ -88,7 +88,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
           val flow1 = Flow((1 to n).toSeq.map(id => CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
           val flow2 = Flow((1 to n).toSeq.map(id => ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
-          within(2 seconds) {
+          within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).produceTo(mat, commandConsumer)
             assertStatusEvents(started = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(4 * n, 2 second))
           }
@@ -100,7 +100,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val flow1 = Flow((1 to n).toSeq.map(id => CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
           val flow2 = Flow((1 to n).toSeq.map(id => ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
           val flow3 = Flow((1 to n).toSeq.map(id => ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateCommand))
-          within(2 seconds) {
+          within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).concat(flow3.toProducer(mat)).produceTo(mat, commandConsumer)
             assertStatusEvents(started = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(6 * n, 2 second))
           }

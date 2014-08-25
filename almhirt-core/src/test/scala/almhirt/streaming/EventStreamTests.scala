@@ -56,8 +56,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           streams.eventStream.produceTo(consumer)
           Stillage(List[Event](event1)).signContract(streams.eventBroker)
           Stillage(List[Event](event2)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectMsg(100 millis, event1)
-          consumerProbeEvent.expectMsg(100 millis, event2)
+          consumerProbeEvent.expectMsgAllOf(100 millis, event1, event2)
         }
       }
 

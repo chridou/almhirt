@@ -77,19 +77,23 @@ private[almhirt] class ActorStillage[TElement](contents: Seq[TElement], packagin
       }
 
     case OnDeliverSuppliesNow(amount) ⇒
-      if(amount > offered.size) {
-    	  sys.error("The demand my not exceed the offers!")
+      if (amount > offered.size) {
+        sys.error("The demand may not exceed my offers!")
       }
-      
+
       stockroom.foreach(stockroom ⇒ {
         val toLoad = offered.take(amount)
         stockroom.deliverSupplies(toLoad)
         offered = offered.drop(amount)
         toDeliverLeft -= amount
-        if (!notYetOffered.isEmpty && offered.size < packagingSize)
+
+        if (!notYetOffered.isEmpty && offered.size < packagingSize) {
           offer()
-        if (toDeliverLeft == 0)
+        }
+
+        if (toDeliverLeft == 0) {
           stockroom.cancelContract()
+        }
       })
 
     case OnContractExpired ⇒
@@ -111,6 +115,6 @@ private[almhirt] class ActorStillage[TElement](contents: Seq[TElement], packagin
     if (!notYetOffered.isEmpty)
       log.warning(s"There are still ${notYetOffered.size} elements of ${contents.size} left that have not been offered.")
     if (!offered.isEmpty)
-      log.warning(s"There are still ${offered.size} offered elements of ${contents.size} left that have not been delivered. That makes a total of ${notYetOffered.size+offered.size} elements that have not been delivered.")
+      log.warning(s"There are still ${offered.size} offered elements of ${contents.size} left that have not been delivered. That makes a total of ${notYetOffered.size + offered.size} elements that have not been delivered.")
   }
 }

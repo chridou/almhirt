@@ -123,6 +123,9 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
       }
 
       def onContractExpired() = {
+        if(log.isDebugEnabled)
+          log.debug("My contract expired")
+          
         self ! InternalContractExpired
       }
     })
@@ -135,7 +138,10 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
       sys.error(s"An error occured:\n$problem")
     case InternalContractExpired ⇒
       stockroom = null
+      internalHandlerAppendix = internalUncontractedHandler
       self ! PostOfficeClosed
+    case InternalSignContract ⇒
+      sys.error("I am already contracted.")
 
   }
 
@@ -146,7 +152,9 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
       sys.error(s"I have been sent a problem but I'm not contracted to any broker. The problem is\n$problem")
     case InternalContractExpired ⇒
       sys.error("I don't have a contract that could have expired.")
-  }
+     case InternalSignContract ⇒
+      sys.error("I cannot be recontracted.")
+ }
 
   private def initPostOffice(): Receive = {
     case InternalSignContract ⇒

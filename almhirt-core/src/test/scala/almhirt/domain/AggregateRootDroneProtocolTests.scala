@@ -37,15 +37,15 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
         "emit the aggregate events [Created]" in { fixture =>
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-            eventsProbe.expectMsgType[UserCreated](500 millis)
+            eventsProbe.expectMsgType[UserCreated]
           }
         }
       }
@@ -56,10 +56,10 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
         "emit the aggregate events [Created, Modified]" in { fixture =>
@@ -68,8 +68,8 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
-            eventsProbe.expectMsgType[UserCreated](500 millis)
-            eventsProbe.expectMsgType[UserAgeChanged](500 millis)
+            eventsProbe.expectMsgType[UserCreated]
+            eventsProbe.expectMsgType[UserAgeChanged]
           }
         }
       }
@@ -82,12 +82,12 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
         "emit the aggregate events [Created, Modified, Deleted]" in { fixture =>
@@ -98,9 +98,9 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
-            eventsProbe.expectMsgType[UserCreated](500 millis)
-            eventsProbe.expectMsgType[UserAgeChanged](500 millis)
-            eventsProbe.expectMsgType[UserDied](500 millis)
+            eventsProbe.expectMsgType[UserCreated]
+            eventsProbe.expectMsgType[UserAgeChanged]
+            eventsProbe.expectMsgType[UserDied]
           }
         }
       }
@@ -109,8 +109,8 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 0L, Seq.empty))
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
         "emit NO aggregate events" in { fixture =>
@@ -132,14 +132,14 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 2L, Seq.empty))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
         "emit the aggregate events [Created, Modified, Deleted]" in { fixture =>
@@ -152,9 +152,9 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 2L, Seq.empty))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
-            eventsProbe.expectMsgType[UserCreated](500 millis)
-            eventsProbe.expectMsgType[UserAgeChanged](500 millis)
-            eventsProbe.expectMsgType[UserDied](500 millis)
+            eventsProbe.expectMsgType[UserCreated]
+            eventsProbe.expectMsgType[UserAgeChanged]
+            eventsProbe.expectMsgType[UserDied]
           }
         }
       }
@@ -166,8 +166,8 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandFailed](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandFailed]
           }
         }
         "emit NO events" in { fixture =>
@@ -189,14 +189,14 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.send(droneActor, ChangeUserFullName(CommandHeader(), "a", 1L, "fritz", "weller"))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 3L))
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandFailed](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandFailed]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
         "emit the aggregate events [Created, Modified(x2), Deleted]" in { fixture =>
@@ -209,10 +209,10 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.send(droneActor, ChangeUserFullName(CommandHeader(), "a", 1L, "fritz", "weller"))
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 3L))
-            eventsProbe.expectMsgType[UserCreated](500 millis)
-            eventsProbe.expectMsgType[UserSurnameChanged](500 millis)
-            eventsProbe.expectMsgType[UserLastnameChanged](500 millis)
-            eventsProbe.expectMsgType[UserDied](500 millis)
+            eventsProbe.expectMsgType[UserCreated]
+            eventsProbe.expectMsgType[UserSurnameChanged]
+            eventsProbe.expectMsgType[UserLastnameChanged]
+            eventsProbe.expectMsgType[UserDied]
           }
         }
       }

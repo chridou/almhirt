@@ -31,9 +31,9 @@ class SequentialPostOfficeClientTests(_system: ActorSystem) extends TestKit(_sys
     val probe = TestProbe()
     val clientSettings = PostOfficeClientSettings(10, 10 millis, 10)
     val start = Deadline.now
-    within(3 seconds) {
+    within(10 seconds) {
       val dropper = system.actorOf(SequentialPostOfficeDropper.props(postOffice, packages.toSeq, clientSettings), s"dropper_$testId")
-      val res = consumerProbe.receiveN(bigN * pSize)
+      val res = consumerProbe.receiveN(bigN * pSize, 9 seconds)
       val time = start.lap
       info(s"Took ${time.defaultUnitString}. (${(bigN * pSize * 1000).toDouble / time.toMillis}/s)")
       res should equal(items)

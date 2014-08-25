@@ -53,21 +53,21 @@ class AggregateRootNexusTests(_system: ActorSystem)
       "an aggregate root is created" should {
         "should emit the status events [Start, Executed]" in { fixture =>
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          within(1 second) {
+          within(2 seconds) {
             Flow(CreateUser(CommandHeader(), createId(1), 0L, "hans", "meier") :: Nil).produceTo(mat, commandConsumer)
-            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted](500 millis)
+            statusProbe.expectMsgType[CommandExecutionStarted]
+            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
       }
       "2 aggregate roots are created" should {
         "emit the status events [Start(a), Executed(a)] and [Start(b), Executed(b)]" in { fixture =>
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          within(1 second) {
+          within(2 seconds) {
             Flow(List(
               CreateUser(CommandHeader(), createId(1), 0L, "hans", "meier"),
               CreateUser(CommandHeader(), createId(2), 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
-            assertStatusEvents(started = 2, ok = 2, failed = 0, statusProbe.receiveN(4, 1 second))
+            assertStatusEvents(started = 2, ok = 2, failed = 0, statusProbe.receiveN(4, 3 seconds))
           }
         }
       }
@@ -77,9 +77,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
       s"$n aggregate roots are created" should {
         s"emit the status events [Start(a), Executed(a)] $n times" in { fixture =>
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          within(2 seconds) {
+          within(3 seconds) {
             Flow(ids.toStream.map(id => CreateUser(CommandHeader(), id, 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
-            assertStatusEvents(started = n, ok = n, failed = 0, statusProbe.receiveN(2 * n, 1.5 seconds))
+            assertStatusEvents(started = n, ok = n, failed = 0, statusProbe.receiveN(2 * n, 3 seconds))
           }
         }
       }
@@ -88,9 +88,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
           val flow1 = Flow(ids.toStream.map(id => CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateCommand))
           val flow2 = Flow(ids.toStream.map(id => ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateCommand))
-          within(2 seconds) {
+          within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).produceTo(mat, commandConsumer)
-            assertStatusEvents(started = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(4 * n, 1.5 seconds))
+            assertStatusEvents(started = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(4 * n, 3 seconds))
           }
         }
       }
@@ -100,9 +100,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
           val flow1 = Flow(ids.toStream.map(id => CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateCommand))
           val flow2 = Flow(ids.toStream.map(id => ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateCommand))
           val flow3 = Flow(ids.toStream.map(id => ConfirmUserDeath(CommandHeader(), id, 2L): AggregateCommand))
-          within(2 seconds) {
+          within(3 seconds) {
             flow1.concat(flow2.concat(flow3.toProducer(mat)).toProducer(mat)).produceTo(mat, commandConsumer)
-            assertStatusEvents(started = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(6 * n, 1.5 seconds))
+            assertStatusEvents(started = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(6 * n, 3 seconds))
           }
         }
       }

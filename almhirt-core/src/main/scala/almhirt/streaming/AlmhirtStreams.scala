@@ -38,11 +38,11 @@ object AlmhirtStreams {
 
   def apply(eventStreamConsumerName: String, commandStreamConsumerName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with Stoppable = {
 
-    val (eventBroker, eventProducer) = Duct[Event].build(FlowMaterializer(MaterializerSettings()))
+    val (eventConsumer, eventProducer) = Duct[Event].build(FlowMaterializer(MaterializerSettings()))
 
-    val eventTransporterActor = actorRefFactory.actorOf(StreamShipper.props(), eventStreamConsumerName)
-    val (eventTransIn, eventTransOut, stopEventShipper) = StreamShipper[Event](eventTransporterActor)
-    eventTransOut.produceTo(eventBroker)
+    val eventShipperActor = actorRefFactory.actorOf(StreamShipper.props(), eventStreamConsumerName)
+    val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
+    eventShipperOut.produceTo(eventConsumer)
 
     val eventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-dev-null")
     eventProducer.produceTo(ActorConsumer(eventDevNullConsumer))
@@ -62,11 +62,11 @@ object AlmhirtStreams {
     val aggregateEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-aggregate-dev-null")
     aggregateEventProducer.produceTo(ActorConsumer(aggregateEventDevNullConsumer))
 
-    val (commandBroker, commandProducer) = Duct[Command].build(FlowMaterializer(MaterializerSettings()))
+    val (commandConsumer, commandProducer) = Duct[Command].build(FlowMaterializer(MaterializerSettings()))
 
-    val commandTransporterActor = actorRefFactory.actorOf(StreamShipper.props(), commandStreamConsumerName)
-    val (commandTransIn, commandTransOut, stopCommandShipper) = StreamShipper[Command](commandTransporterActor)
-    commandTransOut.produceTo(commandBroker)
+    val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), commandStreamConsumerName)
+    val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
+    commandShipperOut.produceTo(commandConsumer)
 
     val commandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-dev-null")
     commandProducer.produceTo(ActorConsumer(commandDevNullConsumer))
@@ -87,12 +87,12 @@ object AlmhirtStreams {
     aggregateCommandProducer.produceTo(ActorConsumer(aggregateCommandDevNullConsumer))
 
     new AlmhirtStreams with Stoppable {
-      val eventBroker = eventTransIn
+      val eventBroker = eventShipperIn
       val eventStream = eventProducer
       val systemEventStream = systemEventProducer
       val domainEventStream = domainEventProducer
       val aggregateEventStream = aggregateEventProducer
-      val commandBroker = commandTransIn
+      val commandBroker = commandShipperIn
       val commandStream = commandProducer
       val systemCommandStream = systemCommandProducer
       val domainCommandStream = domainCommandProducer

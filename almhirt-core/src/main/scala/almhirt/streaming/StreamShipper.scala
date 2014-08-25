@@ -120,6 +120,8 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       }
 
     case InternalOnComplete(subscriberId) ⇒
+      if (log.isDebugEnabled)
+        log.debug(s"Producer to consumer $subscriberId completed.")
       val newSubscriptions = subscriptions.removeSubscription(subscriberId)
       context.become(collectingOffers(offers, contractors, newSubscriptions))
 
@@ -167,6 +169,11 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     case Request(amount) ⇒
       chooseNextAction(offers, contractors, subscriptions)
 
+    case Cancel ⇒
+      if (log.isDebugEnabled)
+        log.debug("The downstream was cancelled. Stopping.")
+      stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
+
     case StopStreaming ⇒
       stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
   }
@@ -192,7 +199,9 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       }
 
     case InternalOnComplete(subscriberId) ⇒
-      if (deliverySchedule.isEmpty) sys.error("This must not happen!InternalOnComplete")
+      if (log.isDebugEnabled)
+        log.debug(s"Producer to consumer $subscriberId completed.")
+      if (deliverySchedule.isEmpty) sys.error(s"This must not happen! InternalOnComplete($subscriberId)")
       context.become(transportingSupplies(deliverySchedule, offers, contractors, subscriptions.removeSubscription(subscriberId)))
 
     case InternalOnError(subscriberId, error) ⇒
@@ -280,6 +289,11 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case StopStreaming ⇒
       stop(deliverySchedule, offers, contractors, subscriptions, "transporting")
+
+    case Cancel ⇒
+      if (log.isDebugEnabled)
+        log.debug("The downstream was cancelled. Stopping.")
+      stop(Map.empty, offers, contractors, subscriptions, "transporting")
   }
 
   def receive: Receive = collectingOffers(Vector.empty, Set.empty, SubscriptionsState(Map.empty, Vector.empty))
@@ -291,14 +305,18 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     subscriptions: SubscriptionsState,
     stateMessagePart: String) {
 
-    contractors.foreach(_.onContractExpired())
-    subscriptions.subscriptions.foreach { case (_, s) ⇒ s.cancel() }
-
-    if (!contractors.isEmpty)
-      log.warning(s"${contractors.size} contractors still contracted.")
+    if (!subscriptions.subscriptions.isEmpty) {
+      log.warning(s"Cancelling ${subscriptions.subscriptions.size} subscription(s) which were still present on stop.")
+      subscriptions.subscriptions.foreach { case (_, s) ⇒ s.cancel() }
+    }
 
     if (!deliverySchedule.isEmpty)
-      log.warning(s"There deliveries pending. I was $stateMessagePart. Remaining demand: $totalDemand.")
+      log.warning(s"There are deliveries pending. I was $stateMessagePart. Remaining demand: $totalDemand.")
+
+    if (!contractors.isEmpty) {
+      log.warning(s"Cancelling ${contractors.size} contract(s) which were still present on stop.")
+      contractors.foreach(_.onContractExpired())
+    }
 
     if (!offers.isEmpty)
       log.warning(s"There are ${offers.size} offers left. I was $stateMessagePart. Remaining demand: $totalDemand. Number of contractors: ${contractors.size}.")
@@ -398,11 +416,11 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
           totalDispatched += 1
       }
       val remainingDemand = demand - toDispatch.size
-      if(remainingDemand > 0) {
+      if (remainingDemand > 0) {
         chooseNextAction(offers, contractors, newSubscriptions)
       } else {
-       context.become(collectingOffers(offers, contractors, newSubscriptions))
-     }
+        context.become(collectingOffers(offers, contractors, newSubscriptions))
+      }
     }
   }
 
