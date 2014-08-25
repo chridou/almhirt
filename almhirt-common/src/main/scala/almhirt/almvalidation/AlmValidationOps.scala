@@ -69,8 +69,8 @@ trait AlmValidationOps0 extends Ops[String] {
     parseUriAlm(self)
   def notEmptyAlm(): AlmValidation[String] =
     notEmpty(self)
-    
-   /** Parses each item of the string separated by sep with parser */
+
+  /** Parses each item of the string separated by sep with parser */
   def parseToManyAlm[A, M[_] <: Traversable[_]](parse: String ⇒ AlmValidation[A], sep: String = ";")(implicit cbf: CanBuildFrom[Seq[A], A, M[A]]): AlmValidation[M[A]] = {
     import almhirt.almvalidation.funs
     funs.parseToManyAlm(self, parse, sep)
@@ -122,7 +122,7 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
 
   def onSuccess(sideEffect: T ⇒ Unit): Unit =
     self fold (_ ⇒ (), sideEffect)
-  
+
   @deprecated(message = "Use onSuccess", since = "0.5.213")
   def successEffect(sideEffect: T ⇒ Unit): Unit =
     self fold (_ ⇒ (), sideEffect)
@@ -133,7 +133,7 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   @deprecated(message = "Use onComplete", since = "0.5.213")
   def effect(failEffect: P ⇒ Unit, sucessEffect: T ⇒ Unit): Unit =
     self fold (failEffect, sucessEffect)
-  
+
   def recover(v: ⇒ T): Validation[P, T] =
     self.fold(prob ⇒ v.success[P], _ ⇒ self)
 
@@ -151,8 +151,8 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
     self fold (failEffect, _ ⇒ ())
     self
   }
-  
-    /** Never use in production code! */
+
+  /** Never use in production code! */
   def forceResult(): T =
     self fold (prob ⇒ throw ResultForcedFromValidationException(prob), v ⇒ v)
 
@@ -163,10 +163,15 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   /**
    *  Escalate a problem.
    *  Call if you need a result and you don't no how to recover from a failure.
-   *  A failure will throw an [[almhirt.common.EscalatedProblemException]] exception.
+   *  A failure will throw a corresponding ecxeption or an [[almhirt.common.EscalatedProblemException]] exception.
    */
   def resultOrEscalate(): T =
-    self fold (prob ⇒ throw new EscalatedProblemException(prob), v ⇒ v)
+    self fold (prob ⇒ {
+      prob match {
+        case _ => throw new EscalatedProblemException(prob)
+      }
+
+    }, v ⇒ v)
 
   /** Returns a problem in a Some */
   def toProblemOption(): Option[Problem] =
@@ -193,7 +198,7 @@ trait AlmValidationOps7[T] extends Ops[Option[T]] {
 
   def mandatoryM(where: String): AlmValidation[T] =
     funs.argumentIsMandatoryM(self, where)
-    
+
   def noneIsNotFound(): AlmValidation[T] =
     funs.noneIsNotFound(self)
 
@@ -249,10 +254,10 @@ trait AlmValidationOps12B[R, M[_] <: Traversable[_]] extends Ops[M[AlmValidation
   import almhirt.almvalidation.funs
 
   /** Aggregates all Problems into a single AggregateProblem or contains the results  */
-  def aggregateProblems(implicit cbf: CanBuildFrom[M[R], R, M[R]]): Validation[AggregatedProblem, M[R]] = 
+  def aggregateProblems(implicit cbf: CanBuildFrom[M[R], R, M[R]]): Validation[AggregatedProblem, M[R]] =
     funs.aggregateProblems(self)
 
-  def splitValidations(implicit cbfR: CanBuildFrom[M[R], R, M[R]], cbfP: CanBuildFrom[M[Problem], Problem, M[Problem]]): (M[Problem], M[R]) = 
+  def splitValidations(implicit cbfR: CanBuildFrom[M[R], R, M[R]], cbfP: CanBuildFrom[M[Problem], Problem, M[Problem]]): (M[Problem], M[R]) =
     funs.splitValidations(self)
 
 }
@@ -293,7 +298,7 @@ trait ToAlmValidationOps {
   implicit def FromAlmValidationToAlmValidationOps9[T](a: AlmValidation[T]): AlmValidationOps9[T] = new AlmValidationOps9[T] { def self = a }
   implicit def FromValidationToAlmValidationOps10[T](a: Validation[Throwable, T]): AlmValidationOps10[T] = new AlmValidationOps10[T] { def self = a }
   implicit def FromEitherThrowableToAlmValidationOps11[T](a: Either[Throwable, T]): AlmValidationOps11[T] = new AlmValidationOps11[T] { def self = a }
- // implicit def FromListValidationToAlmValidationOps12A[R](a: List[AlmValidation[R]]): AlmValidationOps12A[R] = new AlmValidationOps12A[R] { def self = a }
+  // implicit def FromListValidationToAlmValidationOps12A[R](a: List[AlmValidation[R]]): AlmValidationOps12A[R] = new AlmValidationOps12A[R] { def self = a }
   implicit def FromListValidationToAlmValidationOps12B[R, M[_] <: Traversable[_]](a: M[AlmValidation[R]]): AlmValidationOps12B[R, M] = new AlmValidationOps12B[R, M] { def self = a }
   implicit def FromAnyToAlmValidationOps13(a: Any): AlmValidationOps13 = new AlmValidationOps13 { def self = a }
   implicit def FromAnyToAlmValidationOps14(a: AlmValidation[Boolean]): AlmValidationOps14 = new AlmValidationOps14 { def self = a }

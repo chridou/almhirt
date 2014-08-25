@@ -1,9 +1,11 @@
 package almhirt.domain
 
 import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 import akka.actor._
 import almhirt.common._
 import almhirt.aggregates._
+import almhirt.almvalidation.kit._
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import almhirt.common.AggregateEvent
 
@@ -21,7 +23,7 @@ abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateEvent](
   override val aggregateEventLog: ActorRef,
   override val snapshotStorage: Option[ActorRef],
   override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) => Unit,
-  override val onDispatchFailure: (Problem, ActorRef) => Unit)(implicit override val futuresContext: ExecutionContext) extends Actor with ActorLogging with AggregateRootDirectViewImpl[T, E] { me: AggregateRootEventHandler[T, E] =>
+  override val onDispatchFailure: (Problem, ActorRef) => Unit)(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootDirectViewImpl[T, E] { me: AggregateRootEventHandler[T, E] =>
 
   override def receive: Receive = me.receiveUninitialized
 }
@@ -34,6 +36,7 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
   def aggregateRootId: AggregateRootId
+  implicit def eventTag: ClassTag[E]
 
   /**
    * Implement this to communicate the current state to the outside world.
@@ -72,7 +75,7 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
     case FetchedAggregateEvents(eventsEnumerator) ⇒
       val iteratee: Iteratee[AggregateEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateEvent, AggregateRootLifecycle[T]](currentState) {
         case (acc, event) ⇒
-          applyEventLifecycleAgnostic(acc, event.asInstanceOf[E])
+          applyEventLifecycleAgnostic(acc, event.specific[E])
       }(futuresContext)
 
       eventsEnumerator.run(iteratee).onComplete {
@@ -85,10 +88,10 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents))
 
     case GetAggregateEventsFailed(problem) ⇒
-      onError(AggregateEventStoreFailedReadingException(aggregateRootId, "An error has occured fetching the aggregate root events:\n$problem"), enqueuedRequests)
+      onError(enqueuedRequests)(AggregateEventStoreFailedReadingException(aggregateRootId, "An error has occured fetching the aggregate root events:\n$problem"))
 
     case ApplyEvent(event) =>
-      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.asInstanceOf[E]))
+      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests))))
 
     case GetAggregateRootView =>
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents))
@@ -115,10 +118,10 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
       }
 
     case InternalEventlogBuildArFailed(error: Throwable) ⇒
-      onError(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured rebuilding the aggregate root.", error), enqueuedRequests)
+      onError(enqueuedRequests)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured rebuilding the aggregate root.", error))
 
     case ApplyEvent(event) =>
-      context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents :+ event.asInstanceOf[E]))
+      context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests))))
 
     case GetAggregateRootView =>
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests :+ sender(), enqueuedEvents))
@@ -132,17 +135,17 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
       currentState match {
         case s: Antemortem[T] =>
           if (event.aggVersion == s.version) {
-            context.become(receiveServe(applyEventAntemortem(s, event.asInstanceOf[E])))
+            context.become(receiveServe(applyEventAntemortem(s, event.specificWithHandler[E](onError(Vector.empty)))))
           } else {
             updateFromEventlog(currentState, Vector.empty)
           }
         case Mortuus(id, v) =>
-          onError(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."), Vector.empty)
+          onError(Vector.empty)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
       }
   }
 
   /** Ends with termination */
-  private def onError(ex: AggregateRootDomainException, enqueuedRequests: Vector[ActorRef]) {
+  private def onError(enqueuedRequests: Vector[ActorRef])(ex: AggregateRootDomainException): Nothing = {
     log.error(s"Escalating! Something terrible happened:\n$ex")
     val problem = UnspecifiedProblem(s"""Escalating! Something terrible happened: "${ex.getMessage}"""", cause = Some(ex))
     enqueuedRequests.foreach(receiver => onDispatchFailure(problem, receiver))
@@ -156,7 +159,7 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
       case Vivus(ar) =>
         aggregateEventLog ! GetAggregateEventsFrom(aggregateRootId, ar.version)
       case Mortuus(id, v) =>
-        onError(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."), enqueuedRequests)
+        onError(enqueuedRequests)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
     }
     context.become(receiveRebuildFromEventlog(state, enqueuedRequests, Vector.empty))
   }
