@@ -10,7 +10,7 @@ import almhirt.syntax.almvalidation._
  * Use flatMap to record events on successfully updated [[almhirt.domain.AggregateRoot]]s
  * Writer monad.
  */
-trait FlatUpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
+trait FlatUpdateRecorder[+Event <: AggregateRootEvent, +AR <: AggregateRoot] {
   /**
    * Apply the events to this Update and return a result
    *
@@ -39,7 +39,7 @@ trait FlatUpdateRecorder[+Event <: AggregateEvent, +AR <: AggregateRoot] {
    * @param f Function that returns an Update which will be used to create the new Update(Write operation)
    * @return The [[almhirt.domain.FlatUpdateRecorder]] with eventually updated events and the new AR state
    */
-  def flatMap[EEvent >: Event <: AggregateEvent, AAR <: AggregateRoot](f: AR ⇒ FlatUpdateRecorder[EEvent, AAR]): FlatUpdateRecorder[EEvent, AAR] =
+  def flatMap[EEvent >: Event <: AggregateRootEvent, AAR <: AggregateRoot](f: AR ⇒ FlatUpdateRecorder[EEvent, AAR]): FlatUpdateRecorder[EEvent, AAR] =
     FlatUpdateRecorder[EEvent, AAR] { events ⇒
       val (currentEvents, validation) = this(events)
       validation fold (
@@ -98,7 +98,7 @@ object FlatUpdateRecorder {
    *
    * @param f Function which takes a list of (previous) events and returns the new events with the result on the modified aggregate root
    */
-  def apply[Event <: AggregateEvent, AR <: AggregateRoot](f: List[Event] ⇒ (List[Event], FlatAggregateValidation[AR])) =
+  def apply[Event <: AggregateRootEvent, AR <: AggregateRoot](f: List[Event] ⇒ (List[Event], FlatAggregateValidation[AR])) =
     new FlatUpdateRecorder[Event, AR] {
       def apply[EE >: Event](events: List[EE]) = f(events.asInstanceOf[List[Event]])
     }
@@ -107,7 +107,7 @@ object FlatUpdateRecorder {
    *
    * @param aggregate root The unmodified aggregate root
    */
-  def startWith[Event <: AggregateEvent, AR <: AggregateRoot](ar: AR) =
+  def startWith[Event <: AggregateRootEvent, AR <: AggregateRoot](ar: AR) =
     FlatUpdateRecorder[Event, AR](events ⇒ (events, ar.success))
   /**
    * Takes an event and the resulting Aggregate Root. The event is prepended to the previous events
@@ -115,13 +115,13 @@ object FlatUpdateRecorder {
    * @param event The event resulting from an aggregate root operation
    * @param result The state of the aggregate root corresponding to the event
    */
-  def accept[Event <: AggregateEvent, AR <: AggregateRoot](event: Event, ar: AR) =
+  def accept[Event <: AggregateRootEvent, AR <: AggregateRoot](event: Event, ar: AR) =
     FlatUpdateRecorder[Event, AR](events ⇒ (event :: events, ar.success))
   /**
    * Takes an event and the resulting Aggregate Root. Previously written events are still contained
    *
    * @param error The problem causing this update to fail.
    */
-  def reject[Event <: AggregateEvent, AR <: AggregateRoot](error: Problem) =
+  def reject[Event <: AggregateRootEvent, AR <: AggregateRoot](error: Problem) =
     FlatUpdateRecorder[Event, AR](events ⇒ (events, error.failure))
 }

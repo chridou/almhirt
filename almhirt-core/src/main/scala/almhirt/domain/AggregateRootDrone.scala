@@ -26,7 +26,7 @@ private[almhirt] object AggregateRootDroneInternalMessages {
  }
 
 /** Used to commit or reject the events resulting from a command */
-trait ConfirmationContext[E <: AggregateEvent] {
+trait ConfirmationContext[E <: AggregateRootEvent] {
   /**
    * Call from within handle*Command to apply changes.
    * Do not call multiple times from within command a handler.
@@ -51,7 +51,7 @@ trait ConfirmationContext[E <: AggregateEvent] {
  *  Simply send an [[AggregateCommand]] to the drone to have it executed.
  *  The drone can only execute on command at a time.
  */
-trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
+trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
   me: Actor with ActorLogging with AggregateRootEventHandler[T, E] with SequentialPostOfficeClient ⇒
   import AggregateRootDroneInternalMessages._
   import almhirt.eventlog.AggregateEventLog._
@@ -115,7 +115,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
 
   private def receiveRebuildFromScratch(currentCommand: AggregateCommand): Receive = {
     case FetchedAggregateEvents(eventsEnumerator) ⇒
-      val iteratee: Iteratee[AggregateEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateEvent, AggregateRootLifecycle[T]](Vacat) {
+      val iteratee: Iteratee[AggregateRootEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateRootEvent, AggregateRootLifecycle[T]](Vacat) {
         case (acc, event) ⇒
           applyEventLifecycleAgnostic(acc, event.asInstanceOf[E])
       }(futuresContext)

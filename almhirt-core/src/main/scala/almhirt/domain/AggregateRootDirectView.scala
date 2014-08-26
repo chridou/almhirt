@@ -7,12 +7,12 @@ import almhirt.common._
 import almhirt.aggregates._
 import almhirt.almvalidation.kit._
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
-import almhirt.common.AggregateEvent
+import almhirt.common.AggregateRootEvent
 
-final case class ApplyAggregateEvent(event: AggregateEvent)
+final case class ApplyAggregateEvent(event: AggregateRootEvent)
 case object GetAggregateRootProjection
 
-abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateEvent](
+abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateRootEvent](
   override val aggregateRootId: AggregateRootId,
   override val aggregateEventLog: ActorRef,
   override val snapshotStorage: Option[ActorRef],
@@ -22,7 +22,7 @@ abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateEvent](
   override def receive: Receive = me.receiveUninitialized
 }
 
-private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] ⇒
+private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: AggregateRootEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] ⇒
   import almhirt.eventlog.AggregateEventLog._
 
   def futuresContext: ExecutionContext
@@ -68,7 +68,7 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
 
   private def receiveRebuildFromEventlog(currentState: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
     case FetchedAggregateEvents(eventsEnumerator) ⇒
-      val iteratee: Iteratee[AggregateEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateEvent, AggregateRootLifecycle[T]](currentState) {
+      val iteratee: Iteratee[AggregateRootEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateRootEvent, AggregateRootLifecycle[T]](currentState) {
         case (acc, event) ⇒
           applyEventLifecycleAgnostic(acc, event.specific[E])
       }(futuresContext)

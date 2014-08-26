@@ -8,7 +8,7 @@ import almhirt.common._
  *  Before calling your handler, the overridden handler will check whether versions and ids match and whether
  *  the command can be handled due to the current lifecycle state of the aggregate root.
  */
-trait VersionCheckingAggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] { self: AggregateRootCommandHandler[T, E] ⇒
+trait VersionCheckingAggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] { self: AggregateRootCommandHandler[T, E] ⇒
   /** Implement this handler to handle prevalidated commands */
   def handleValidatedAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
 

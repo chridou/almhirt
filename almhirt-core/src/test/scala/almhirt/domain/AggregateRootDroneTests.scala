@@ -48,8 +48,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAllAggregateEventsFor("a"))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
           }
         }
@@ -73,8 +73,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAllAggregateEventsFor("a"))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(
               UserCreated(EventHeader(), "a", 0, "hans", "meier"),
               UserAgeChanged(EventHeader(), "a", 1, 22)))
@@ -104,8 +104,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAllAggregateEventsFor("a"))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(
               UserCreated(EventHeader(), "a", 0, "hans", "meier"),
               UserAgeChanged(EventHeader(), "a", 1, 22),
@@ -128,8 +128,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAllAggregateEventsFor("a"))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserNotAccepted(EventHeader(), "a", 0, "hans", "meier")))
           }
         }
@@ -153,8 +153,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAllAggregateEventsFor("a"))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
           }
         }
@@ -184,8 +184,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 2))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserLastnameChanged(EventHeader(), "a", 2, "müller")))
           }
         }
@@ -207,8 +207,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 2))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserDied(EventHeader(), "a", 2)))
           }
         }
@@ -231,8 +231,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAllAggregateEventsFor("a"))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
           }
         }
@@ -251,8 +251,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAllAggregateEventsFor("a"))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
           }
         }
@@ -282,8 +282,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 2))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
           }
         }
@@ -305,8 +305,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 2))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
           }
         }
@@ -331,8 +331,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 2))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserLastnameChanged(EventHeader(), "a", 2, "müller")))
           }
         }
@@ -364,8 +364,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 3))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
           }
         }
@@ -387,8 +387,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 3))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
           }
         }
@@ -410,8 +410,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 3))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
           }
         }
@@ -433,8 +433,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
             probe.send(eventlog, GetAggregateEventsFrom("a", 3))
             val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
-            val iteratee = Iteratee.fold[AggregateEvent, Vector[AggregateEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
-            val events: Vector[AggregateEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
+            val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
+            val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
           }
         }

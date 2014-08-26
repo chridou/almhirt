@@ -7,7 +7,7 @@ import almhirt.common._
  * Mix in this trait if you want to update your aggregate roots using an [[AggregateRootEventHandler]].
  *  This can be useful in a command handler.
  */
-trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateEvent] { self: AggregateRootEventHandler[T, E] ⇒
+trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateRootEvent] { self: AggregateRootEventHandler[T, E] ⇒
   /** Use the event handler to update the existing aggregate root */
   def update(agg: T, event: E): (AggregateRootLifecycle[T], E) =
     (this.applyEvent(agg, event), event)

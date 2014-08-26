@@ -32,7 +32,7 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
   case class UserState(state: AggregateRootLifecycle[User]) extends UserTestRsp
   case class ViewFailure(problem: Problem) extends UserTestRsp
 
-  case class NotAUserEvent(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends AggregateEvent
+  case class NotAUserEvent(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends AggregateRootEvent
 
   "An AggregateRootDirectView" when {
     import aggregatesforthelazyones._
@@ -195,7 +195,7 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
         }
       }
       "the eventlog is corrupted(wrong type of event)" should {
-        "deliver a potentially corrupted aggregate root" in { fixture ⇒
+        "fail to aggregate root" in { fixture ⇒
           val FixtureParam(testId, directView, drone, eventlog, eventBroker, statusProbe) = fixture
           val probe = TestProbe()
           within(1 second) {
@@ -206,7 +206,7 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
             probe.send(directView, GetAggregateRootProjection)
             val ViewFailure(UnspecifiedProblem(p)) = probe.expectMsgType[ViewFailure]
             val Some(CauseIsThrowable(HasAThrowable(exn))) = p.cause 
-            exn should be(RebuildAggregateRootFailedException)
+            exn.isInstanceOf[RebuildAggregateRootFailedException] should be(true)
           }
         }
       }

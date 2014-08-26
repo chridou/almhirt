@@ -4,7 +4,7 @@ import almhirt.common._
 
 case class User(id: AggregateRootId, version: AggregateRootVersion, surname: String, lastname: String, age: Option[Int]) extends AggregateRoot
 
-sealed trait UserEvent extends AggregateEvent
+sealed trait UserEvent extends AggregateRootEvent
 
 case class UserCreated(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String, lastname: String) extends UserEvent
 case class UserNotAccepted(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String, lastname: String) extends UserEvent

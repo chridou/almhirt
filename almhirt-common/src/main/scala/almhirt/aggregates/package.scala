@@ -7,28 +7,28 @@ package object aggregates {
   type FlatAggregateValidation[+αρ <: AggregateRoot] = Validation[Problem, αρ]
   type AggregateValidation[+αρ <: AggregateRoot] = Validation[Problem, AggregateRootLifecycle[αρ]]
 
-  implicit class UpdateRecorderValidationStateSingleOps[AR <: AggregateRoot, E <: AggregateEvent](self: AlmValidation[(AggregateRootLifecycle[AR], E)]) {
+  implicit class UpdateRecorderValidationStateSingleOps[AR <: AggregateRoot, E <: AggregateRootEvent](self: AlmValidation[(AggregateRootLifecycle[AR], E)]) {
     /** Make this validation an [[UpdateRecorder]] */
     def record: UpdateRecorder[AR, E] = self.fold(
       fail ⇒ UpdateRecorder.reject(fail),
       succ ⇒ UpdateRecorder.accept(succ._1, succ._2))
   }
 
-  implicit class UpdateRecorderValidationStateMultiOps[AR <: AggregateRoot, E <: AggregateEvent](self: AlmValidation[(AggregateRootLifecycle[AR], Seq[E])]) {
+  implicit class UpdateRecorderValidationStateMultiOps[AR <: AggregateRoot, E <: AggregateRootEvent](self: AlmValidation[(AggregateRootLifecycle[AR], Seq[E])]) {
     /** Make this validation an [[UpdateRecorder]] containing some events that lead to the state.*/
     def record: UpdateRecorder[AR, E] = self.fold(
       fail ⇒ UpdateRecorder.reject(fail),
       succ ⇒ UpdateRecorder.acceptMany(succ._1, succ._2))
   }
 
-  implicit class UpdateRecorderValidationVivusSingleOps[AR <: AggregateRoot, E <: AggregateEvent](self: AlmValidation[(AR, E)]) {
+  implicit class UpdateRecorderValidationVivusSingleOps[AR <: AggregateRoot, E <: AggregateRootEvent](self: AlmValidation[(AR, E)]) {
     /** Make this validation that might contain an existing aggregate root an [[UpdateRecorder]].*/
     def record: UpdateRecorder[AR, E] = self.fold(
       fail ⇒ UpdateRecorder.reject(fail),
       succ ⇒ UpdateRecorder.accept(Vivus(succ._1), succ._2))
   }
 
-  implicit class UpdateRecorderValidationVivusMultiOps[AR <: AggregateRoot, E <: AggregateEvent](self: AlmValidation[(AR, Seq[E])]) {
+  implicit class UpdateRecorderValidationVivusMultiOps[AR <: AggregateRoot, E <: AggregateRootEvent](self: AlmValidation[(AR, Seq[E])]) {
     /**
      * Make this validation that might contain an existing aggregate root an [[UpdateRecorder]]
      * containing some events that lead to the state.

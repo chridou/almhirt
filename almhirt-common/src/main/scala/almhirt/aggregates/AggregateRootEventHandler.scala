@@ -14,7 +14,7 @@ import almhirt.common._
  * If you don't trust your components, you can mix in [[VersionCheckingAggregateRootCommandHandler]] to have
  * the versions and ids checked.
  */
-trait AggregateRootEventHandler[T <: AggregateRoot, E <: AggregateEvent] {
+trait AggregateRootEventHandler[T <: AggregateRoot, E <: AggregateRootEvent] {
   /** Implement this method to make the handler complete. */
   def applyEventAntemortem(state: Antemortem[T], event: E): Postnatalis[T]
 

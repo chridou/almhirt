@@ -23,7 +23,7 @@ trait EventStreams {
   def eventStream: Producer[Event]
   def systemEventStream: Producer[SystemEvent]
   def domainEventStream: Producer[DomainEvent]
-  def aggregateEventStream: Producer[AggregateEvent]
+  def aggregateEventStream: Producer[AggregateRootEvent]
 }
 
 trait CommandStreams {
@@ -83,8 +83,8 @@ object AlmhirtStreams {
     val domainEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-domain-dev-null")
     domainEventProducer.produceTo(ActorConsumer(domainEventDevNullConsumer))
 
-    val aggregateEventFlow = Flow(eventProducer).collect { case e: AggregateEvent ⇒ e }
-    val aggregateEventProducer: Producer[AggregateEvent] = aggregateEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
+    val aggregateEventFlow = Flow(eventProducer).collect { case e: AggregateRootEvent ⇒ e }
+    val aggregateEventProducer: Producer[AggregateRootEvent] = aggregateEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
     val aggregateEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-aggregate-dev-null")
     aggregateEventProducer.produceTo(ActorConsumer(aggregateEventDevNullConsumer))
 

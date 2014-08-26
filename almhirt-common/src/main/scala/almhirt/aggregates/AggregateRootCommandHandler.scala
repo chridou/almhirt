@@ -8,7 +8,7 @@ import almhirt.common._
  * Mix in this trait to get helpers for handling commands on Aggregate roots.
  *  This trait doesn't validate the command in any way.
  */
-trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
+trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] {
   /** This method has to be overridden with your logic to handle commands. */
   def handleAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
 
@@ -18,7 +18,7 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
       AsyncCommandResult(self)
   }
 
-  implicit class UpdateRecorderOps[T <: AggregateRoot, E <: AggregateEvent](self: UpdateRecorder[T, E]) {
+  implicit class UpdateRecorderOps[T <: AggregateRoot, E <: AggregateRootEvent](self: UpdateRecorder[T, E]) {
     /** Turn the [[UpdateRecorder]] into an [[AggregateCommandResult]] */
     def syncResult: SyncCommandResult[T, E] =
       self.recordings.fold(

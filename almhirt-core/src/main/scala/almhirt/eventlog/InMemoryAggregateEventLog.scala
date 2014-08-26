@@ -14,7 +14,7 @@ object InMemoryAggregateEventLog {
 class InMemoryAggregateEventLog extends Actor with ActorLogging {
   import AggregateEventLog._
 
-  private var domainEventLog = Vector.empty[AggregateEvent]
+  private var domainEventLog = Vector.empty[AggregateRootEvent]
 
   def receive: Receive = {
     case CommitAggregateEvent(event) ⇒

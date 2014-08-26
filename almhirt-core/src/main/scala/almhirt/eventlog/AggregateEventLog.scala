@@ -10,7 +10,7 @@ object AggregateEventLog {
   trait AggregateEventLogMessage
   trait AggregateEventLogResponse
 
-  final case class CommitAggregateEvent(event: AggregateEvent) extends AggregateEventLogMessage
+  final case class CommitAggregateEvent(event: AggregateRootEvent) extends AggregateEventLogMessage
   sealed trait CommitAggregateEventResponse extends AggregateEventLogResponse
   final case class AggregateEventCommitted(id: EventId) extends CommitAggregateEventResponse
   final case class AggregateEventNotCommitted(id: EventId, problem: Problem) extends CommitAggregateEventResponse
@@ -23,13 +23,13 @@ object AggregateEventLog {
   final case class GetAggregateEventsFromTo(aggId: AggregateRootId, fromVersion: AggregateRootVersion, toVersion: AggregateRootVersion) extends AggregateEventLogMessage
   final case class GetAggregateEventsFromUntil(aggId: AggregateRootId, fromVersion: AggregateRootVersion, untilVersion: AggregateRootVersion) extends AggregateEventLogMessage
   sealed trait GetManyAggregateEventsResponse extends AggregateEventLogResponse
-  final case class FetchedAggregateEvents(enumerator: Enumerator[AggregateEvent]) extends GetManyAggregateEventsResponse
+  final case class FetchedAggregateEvents(enumerator: Enumerator[AggregateRootEvent]) extends GetManyAggregateEventsResponse
   final case class GetAggregateEventsFailed(problem: Problem) extends GetManyAggregateEventsResponse
 
 
   final case class GetAggregateEvent(eventId: EventId) extends AggregateEventLogMessage
   sealed trait GetAggregateEventResponse extends AggregateEventLogResponse
-  final case class FetchedAggregateEvent(eventId: EventId, event: Option[AggregateEvent]) extends GetAggregateEventResponse
+  final case class FetchedAggregateEvent(eventId: EventId, event: Option[AggregateRootEvent]) extends GetAggregateEventResponse
   final case class GetAggregateEventFailed(eventId: EventId, problem: Problem) extends GetAggregateEventResponse
    
   object AggreagteEventLogCoordinates {

@@ -31,15 +31,15 @@ trait Event {
 
 trait DomainEvent extends Event
 
-trait AggregateEvent extends DomainEvent {
+trait AggregateRootEvent extends DomainEvent {
   def aggId: AggregateRootId
   def aggVersion: AggregateRootVersion
 }
 
-object AggregateEvent {
+object AggregateRootEvent {
   def unapply(d: Event): Option[(EventHeader, AggregateRootId, AggregateRootVersion)] =
     d match {
-      case d: AggregateEvent ⇒
+      case d: AggregateRootEvent ⇒
         Some(d.header, d.aggId, d.aggVersion)
       case _ ⇒ None
     }
