@@ -43,10 +43,10 @@ object CouldNotDispatchAllAggregateEventsException {
 final class WrongAggregateEventTypeException private (id: AggregateRootId, eventId: EventId, message: String, ex: Throwable) extends AggregateRootDomainException(id, message, ex)
 import almhirt.common._
 object WrongAggregateEventTypeException {
-  def apply(event: AggregateEvent): WrongAggregateEventTypeException =
-    WrongAggregateEventTypeException(event , null)
-  def apply(event: AggregateEvent, ex: Throwable): WrongAggregateEventTypeException = {
-    val msg = s"""Could not cast aggregate event of type "${event.getClass().getName()}" with id "${event.eventId.value}" on aggregate ${event.aggId} to the required type."""
+  def apply(event: AggregateEvent, tag: scala.reflect.ClassTag[_ <: AggregateEvent]): WrongAggregateEventTypeException =
+    WrongAggregateEventTypeException(event, tag, null)
+  def apply(event: AggregateEvent, tag: scala.reflect.ClassTag[_ <: AggregateEvent], ex: Throwable): WrongAggregateEventTypeException = {
+    val msg = s"""Could not cast aggregate event of type "${event.getClass().getName()}" with id "${event.eventId.value}" on aggregate ${event.aggId} to the required type "${tag.runtimeClass}"."""
     new WrongAggregateEventTypeException(event.aggId, event.eventId, msg, ex)
   }
 }

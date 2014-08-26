@@ -20,12 +20,12 @@ package object domain {
   implicit class AggregateEventOps(self: AggregateEvent) {
     def specific[E <: AggregateEvent](implicit tag: scala.reflect.ClassTag[E]): E = {
       almhirt.almvalidation.funs.almCast[E](self).fold(
-        fail ⇒ throw WrongAggregateEventTypeException(self),
+        fail ⇒ throw WrongAggregateEventTypeException(self, tag),
         succ ⇒ succ)
     }
     def specificWithHandler[E <: AggregateEvent](f: AggregateRootDomainException ⇒ Nothing)(implicit tag: scala.reflect.ClassTag[E]): E = {
       almhirt.almvalidation.funs.almCast[E](self).fold(
-        fail ⇒ f(WrongAggregateEventTypeException(self)),
+        fail ⇒ f(WrongAggregateEventTypeException(self, tag)),
         succ ⇒ succ)
     }
   }

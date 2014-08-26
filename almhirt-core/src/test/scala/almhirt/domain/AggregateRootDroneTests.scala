@@ -475,7 +475,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
         val commandStatusSink = FireAndForgetSink.devNull[CommandStatusChanged]
-        val postOfficeSettings = PostOfficeClientSettings(100, 1 second, 10)
+        val postOfficeSettings = PostOfficeClientSettings(100, 50 millis, 10)
         val eventsPostOffice = PostOffice.devNull[Event]
 
         override def sendMessage(msg: AggregateRootDroneInternalMessages.AggregateDroneMessage) {

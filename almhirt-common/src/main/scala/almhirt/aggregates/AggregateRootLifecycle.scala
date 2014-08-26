@@ -25,3 +25,23 @@ final case class Vivus[T <: AggregateRoot](ar: T) extends Postnatalis[T] with An
 }
 /** The aggregate root does not exists anymore. */
 final case class Mortuus(id: AggregateRootId, version: AggregateRootVersion) extends Postnatalis[Nothing] with Transcendentia[Nothing]
+
+object AggregateRootLifecycle {
+  implicit class LifecycleOps[T <: AggregateRoot](self: AggregateRootLifecycle[T]) {
+    import scalaz._, Scalaz._
+    import almhirt.common._
+
+    def toOption: Option[T] =
+      self match {
+        case Vivus(ar) => Some(ar)
+        case _ => None
+      }
+
+    def toAggregateRoot: AlmValidation[T] =
+      self match {
+        case Vivus(ar) => ar.success
+        case Vacat => NotFoundProblem("The aggregate root does not exist.").failure
+        case Mortuus(id, v) => AggregateRootDeletedProblem(id).failure
+      }
+  }
+}

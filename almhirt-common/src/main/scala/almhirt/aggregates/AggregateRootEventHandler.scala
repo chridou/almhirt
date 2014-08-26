@@ -5,10 +5,14 @@ import almhirt.common._
 /**
  * Handles the [[AggregateEvents]]s for a specific type of [[AggregateRoot]].
  * The [[AggregateRootEventHandler]] doesn't need to check for correct versions since
- * events notify about something that has already happened and therefore an event can always be applied.
+ * events notify about something that has already happened and therefore an event can always be applied unless 
+ * the events are unordered, have gaps or are received more than once.
  * As a result, it is up to the user not to mess with the timeline of an aggregate root.
  * In case of an exception, you have a serious (consistency, programming) problem.
  * Remember that each event must increase the version of the affected aggregate root by 1.
+ * 
+ * If you don't trust your components, you can mix in [[VersionCheckingAggregateRootCommandHandler]] to have
+ * the versions and ids checked.
  */
 trait AggregateRootEventHandler[T <: AggregateRoot, E <: AggregateEvent] {
   /** Implement this method to make the handler complete. */

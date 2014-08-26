@@ -1,12 +1,15 @@
 package almhirt.streaming
 
+import scala.concurrent.duration._
+import akka.actor._
+import akka.pattern._
+import akka.stream.scaladsl.{ Flow, Duct }
 import org.reactivestreams.api.{ Consumer, Producer }
 import org.reactivestreams.spi.{ Subscription, Subscriber }
-import akka.stream.scaladsl.{ Flow, Duct }
-import akka.actor._
 import akka.stream.actor.{ ActorProducer, ActorConsumer }
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import almhirt.common._
+import almhirt.almfuture.all._
 
 trait CanDispatchEvents {
   def eventBroker: StreamBroker[Event]
@@ -35,6 +38,29 @@ trait AlmhirtStreams extends EventStreams with CommandStreams with CanDispatchEv
 object AlmhirtStreams {
   def apply()(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with Stoppable =
     apply("event-stream-input", "command-stream-input")
+
+  def supervised(supervisorName: String, maxDur: FiniteDuration = 2.seconds)(implicit actorRefFactory: ActorRefFactory): AlmFuture[(AlmhirtStreams, Stoppable)] = {
+    implicit val ctx = actorRefFactory.dispatcher
+    val supervisorProps = Props(new Actor {
+      val streams = apply("event-stream", "command-stream")(this.context)
+
+      def receive: Receive = {
+        case StopStreaming =>
+          streams.stop()
+        case "get_streams" =>
+          sender() ! streams
+      }
+    })
+    val supervisor = actorRefFactory.actorOf(supervisorProps, supervisorName)
+    (supervisor ? "get_streams")(maxDur).successfulAlmFuture[AlmhirtStreams].map { streams =>
+      val stop = new Stoppable {
+        def stop() {
+          supervisor ! StopStreaming
+        }
+      }
+      (streams, stop)
+    }
+  }
 
   def apply(eventStreamConsumerName: String, commandStreamConsumerName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with Stoppable = {
 

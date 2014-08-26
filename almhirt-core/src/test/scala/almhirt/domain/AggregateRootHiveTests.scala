@@ -77,10 +77,12 @@ class AggregateRootHiveTests(_system: ActorSystem)
       s"$n aggregate roots are created" should {
         s"emit the status events [Start(a), Executed(a)] $n times" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val start = Deadline.now
           within(3 seconds) {
             Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
             assertStatusEvents(started = n, ok = n, failed = 0, statusProbe.receiveN(2 * n, 2 seconds))
           }
+          info(s"Took ${start.lap.defaultUnitString}")
         }
       }
       s"$n aggregate roots are created and then updated" should {
@@ -88,10 +90,12 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
           val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
           val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
+          val start = Deadline.now
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).produceTo(mat, commandConsumer)
             assertStatusEvents(started = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(4 * n, 2 second))
           }
+          info(s"Took ${start.lap.defaultUnitString}")
         }
       }
       s"$n aggregate roots are created, updated and then deleted" should {
@@ -100,10 +104,12 @@ class AggregateRootHiveTests(_system: ActorSystem)
           val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
           val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
           val flow3 = Flow((1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateCommand))
+          val start = Deadline.now
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).concat(flow3.toProducer(mat)).produceTo(mat, commandConsumer)
             assertStatusEvents(started = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(6 * n, 2 second))
           }
+          info(s"Took ${start.lap.defaultUnitString}")
         }
       }
     }
@@ -137,7 +143,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
         val commandStatusSink = cmdStatusSink
-        val postOfficeSettings = PostOfficeClientSettings(100, (1 second).dilated, 10)
+        val postOfficeSettings = PostOfficeClientSettings(100, (50 millis).dilated, 10)
         val eventsPostOffice = PostOffice.faked[Event](eventsProbe.ref)
       })
 
@@ -155,7 +161,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
       new AggregateRootHive(
         HiveDescriptor(s"hive-$testId"),
         buffersize = 10,
-        AggregateRootHive.CommandTimeouts(commandTimeout = (100 millis).dilated, checkForTimeoutsInterval = (100 millis).dilated),
+        AggregateRootHive.CommandTimeouts(commandTimeout = (1 second).dilated, checkForTimeoutsInterval = (100 millis).dilated),
         droneFactory = droneFactory,
         commandStatusSink = cmdStatusSink)(AggregateRootHiveTests.this.ccuad, AggregateRootHiveTests.this.executionContext))
     val hiveActor = system.actorOf(hiveProps, s"hive-$testId-test")

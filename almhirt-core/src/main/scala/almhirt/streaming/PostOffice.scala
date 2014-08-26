@@ -25,15 +25,15 @@ object PostOffice {
       }
     }
   }
-  
-  def devNull[TElement]: PostOffice[TElement] = 
+
+  def devNull[TElement]: PostOffice[TElement] =
     new PostOffice[TElement] {
       def deliver(elements: Seq[TElement], notify: ActorRef, ticket: Option[TrackingTicket]) {
         notify ! DeliveryJobDone(ticket)
       }
     }
-  
-  def faked[TElement](delegateTo: ActorRef): PostOffice[TElement] = 
+
+  def faked[TElement](delegateTo: ActorRef): PostOffice[TElement] =
     new PostOffice[TElement] {
       def deliver(elements: Seq[TElement], notify: ActorRef, ticket: Option[TrackingTicket]) {
         notify ! DeliveryJobDone(ticket)
@@ -70,7 +70,7 @@ private[almhirt] object PostOfficeInternal {
  *
  *  _Users must not change state via context.become but use ActorPostOffice#become_
  */
-trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
+trait ActorPostOffice[TElement] extends Actor { me: ActorLogging ⇒
   import PostOfficeInternal._
 
   protected case object PostOfficeClosed
@@ -96,7 +96,7 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
       log.warning("Tried to send a package without a stockroom. May the contract has no been signe yet. Rejecting.")
       notify ! DeliveryJobNotAccepted(ticket)
     }
-      
+
   }
 
   /** Users must change state only via this method! */
@@ -123,10 +123,10 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
       }
 
       def onContractExpired() = {
-        if(log.isDebugEnabled)
-          log.debug("My contract expired")
-          
         self ! InternalContractExpired
+
+        if (log.isDebugEnabled)
+          log.debug("My contract expired")
       }
     })
   }
@@ -152,14 +152,14 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
       sys.error(s"I have been sent a problem but I'm not contracted to any broker. The problem is\n$problem")
     case InternalContractExpired ⇒
       sys.error("I don't have a contract that could have expired.")
-     case InternalSignContract ⇒
+    case InternalSignContract ⇒
       sys.error("I cannot be recontracted.")
- }
+  }
 
   private def initPostOffice(): Receive = {
     case InternalSignContract ⇒
       signContract()
-      
+
     case InternalNewStockroom(stockroom: Stockroom[TElement]) ⇒
       this.stockroom = stockroom
       this.strategy = createStrategy(stockroom)
@@ -171,7 +171,7 @@ trait ActorPostOffice[TElement] extends Actor{ me: ActorLogging ⇒
 
   /** This is the first user state that will be entered after initialization */
   def afterInit: Receive
-  
+
   override def preStart {
     self ! InternalSignContract
     super.preStart

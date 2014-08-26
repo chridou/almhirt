@@ -9,14 +9,8 @@ import almhirt.almvalidation.kit._
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import almhirt.common.AggregateEvent
 
-object AggregateRootDirectView {
-  sealed trait AggregateRootDirectViewMessage
-
-  case object GetAggregateRootView extends AggregateRootDirectViewMessage
-
-  final case class ApplyEvent(event: AggregateEvent) extends AggregateRootDirectViewMessage
-  
-}
+final case class ApplyAggregateEvent(event: AggregateEvent)
+case object GetAggregateRootProjection
 
 abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateEvent](
   override val aggregateRootId: AggregateRootId,
@@ -30,7 +24,6 @@ abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateEvent](
 
 private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] ⇒
   import almhirt.eventlog.AggregateEventLog._
-  import AggregateRootDirectView._
 
   def futuresContext: ExecutionContext
   def aggregateEventLog: ActorRef
@@ -55,14 +48,16 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
   private case class InternalEventlogBuildArFailed(error: Throwable)
 
   protected def receiveUninitialized: Receive = {
-    case GetAggregateRootView ⇒
+    case GetAggregateRootProjection ⇒
+      logDebug(s"[receiveUninitialized]: Request for aggregate root. Intializing from eventlog.")
       snapshotStorage match {
         case None ⇒
           updateFromEventlog(Vacat, Vector(sender()))
         case Some(snaphots) ⇒
           ???
       }
-    case ApplyEvent(event) ⇒
+    case ApplyAggregateEvent(event) ⇒
+      logDebug(s"[receiveUninitialized]: Intializing from eventlog. Dropping event $event")
       snapshotStorage match {
         case None ⇒
           updateFromEventlog(Vacat, Vector.empty)
@@ -90,10 +85,10 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
     case GetAggregateEventsFailed(problem) ⇒
       onError(enqueuedRequests)(AggregateEventStoreFailedReadingException(aggregateRootId, "An error has occured fetching the aggregate root events:\n$problem"))
 
-    case ApplyEvent(event) ⇒
+    case ApplyAggregateEvent(event) ⇒
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests))))
 
-    case GetAggregateRootView ⇒
+    case GetAggregateRootProjection ⇒
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents))
   }
 
@@ -109,10 +104,12 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
         context.become(receiveServe(arState))
       } else {
         if (toApply.head.aggVersion == arState.version) {
+          logDebug(s"[receiveEvaluateEventlogRebuildResult]: Applying ${toApply.size} enqueued events.")
           val newState = toApply.foldLeft(arState) { case (state, nextEvent) ⇒ applyEventLifecycleAgnostic(state, nextEvent) }
           dispatchState(newState, enqueuedRequests: _*)
           context.become(receiveServe(newState))
         } else {
+          logDebug(s"[receiveEvaluateEventlogRebuildResult]: Version gap. Updating from eventlog.")
           updateFromEventlog(arState, enqueuedRequests)
         }
       }
@@ -120,23 +117,25 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
     case InternalEventlogBuildArFailed(error: Throwable) ⇒
       onError(enqueuedRequests)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured rebuilding the aggregate root.", error))
 
-    case ApplyEvent(event) ⇒
+    case ApplyAggregateEvent(event) ⇒
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests))))
 
-    case GetAggregateRootView ⇒
+    case GetAggregateRootProjection ⇒
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests :+ sender(), enqueuedEvents))
   }
 
   private def receiveServe(currentState: AggregateRootLifecycle[T]): Receive = {
-    case GetAggregateRootView ⇒
+    case GetAggregateRootProjection ⇒
       dispatchState(currentState, sender)
 
-    case ApplyEvent(event) ⇒
+    case ApplyAggregateEvent(event) ⇒
       currentState match {
         case s: Antemortem[T] ⇒
           if (event.aggVersion == s.version) {
+            logDebug(s"[receiveServe]: Applying event $event")
             context.become(receiveServe(applyEventAntemortem(s, event.specificWithHandler[E](onError(Vector.empty)))))
           } else {
+            logDebug(s"[receiveServe]: Version mismatch. $event causes updating from eventlog.")
             updateFromEventlog(currentState, Vector.empty)
           }
         case Mortuus(id, v) ⇒
@@ -150,6 +149,11 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
     val problem = UnspecifiedProblem(s"""Escalating! Something terrible happened: "${ex.getMessage}"""", cause = Some(ex))
     enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(problem, receiver))
     throw ex
+  }
+
+  final def logDebug(msg: => String) {
+    if (log.isDebugEnabled)
+      log.debug(msg)
   }
 
   private def updateFromEventlog(state: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef]) {
