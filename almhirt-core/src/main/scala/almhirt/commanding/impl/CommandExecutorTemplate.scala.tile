@@ -39,7 +39,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
 
   private var countersSumOld = 0L
 
-  private case object CommandFailed
+  private case object CommandExecutionFailed
 
   override def receiveCommandExecutorMessage: Receive = {
     case cmd: Command ⇒
@@ -51,7 +51,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
       executeDomainCommandSequence(domainCommandSequence)
     case DomainCommandsSequencer.DomainCommandsSequenceNotCreated(grouplabel: String, problem: Problem) ⇒
       throw new Exception(problem.message)
-    case CommandFailed ⇒
+    case CommandExecutionFailed ⇒
       commandsFailed += 1
   }
 
@@ -297,7 +297,7 @@ trait CommandExecutorTemplate { actor: CommandExecutor with Actor with ActorLogg
     trackingId.foreach { id ⇒
       messagePublisher.publish(ExecutionStateChanged(ExecutionFailed(id, problem)))
     }
-    self ! CommandFailed
+    self ! CommandExecutionFailed
   }
 
   private def handleFailure(cmd: Command, problem: Problem) {

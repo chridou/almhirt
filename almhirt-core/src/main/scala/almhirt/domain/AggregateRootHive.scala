@@ -153,7 +153,7 @@ private[almhirt] trait AggregateRootHiveSkeleton { me: Actor with ActorLogging w
       numTimedOutInternal += reallyTimedOutNow.size
       if (!reallyTimedOutNow.isEmpty) {
         reallyTimedOutNow.foreach { timedOut ⇒
-          commandStatusSink(CommandFailed(
+          commandStatusSink(CommandExecutionFailed(
             EventHeader(),
             timedOut._2._2,
             OperationTimedOutProblem(s"The command timed out by ${timedOut._2._1.defaultUnitString}.")))

@@ -9,7 +9,7 @@ trait CommandStatusChanged extends SystemEvent {
 }
 
 final case class CommandSuccessfullyExecuted(header: EventHeader, commandHeader: CommandHeader) extends CommandStatusChanged
-final case class CommandFailed(header: EventHeader, commandHeader: CommandHeader, cause: ProblemCause) extends CommandStatusChanged
+final case class CommandExecutionFailed(header: EventHeader, commandHeader: CommandHeader, cause: ProblemCause) extends CommandStatusChanged
 
 object CommandSuccessfullyExecuted {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandSuccessfullyExecuted =
@@ -21,12 +21,12 @@ object CommandSuccessfullyExecuted {
     }
 }
 
-object CommandFailed {
-  def apply(command: Command, cause: ProblemCause)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandFailed =
+object CommandExecutionFailed {
+  def apply(command: Command, cause: ProblemCause)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecutionFailed =
     command match {
       case cmd: AggregateRootCommand ⇒
-        CommandFailed(EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), command.header, cause)
+        CommandExecutionFailed(EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), command.header, cause)
       case cmd ⇒
-        CommandFailed(EventHeader(), command.header, cause)
+        CommandExecutionFailed(EventHeader(), command.header, cause)
     }
 }

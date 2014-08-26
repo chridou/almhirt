@@ -35,12 +35,12 @@ class AggregateRootHiveTests(_system: ActorSystem)
     import aggregatesforthelazyones._
     import almhirt.tracking._
 
-    def splitStatusEvents(events: Seq[Any]): (Seq[CommandSuccessfullyExecuted], Seq[CommandFailed]) =
-      events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandSuccessfullyExecuted](), Seq[CommandFailed]())) {
+    def splitStatusEvents(events: Seq[Any]): (Seq[CommandSuccessfullyExecuted], Seq[CommandExecutionFailed]) =
+      events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandSuccessfullyExecuted](), Seq[CommandExecutionFailed]())) {
         case ((a, b), cur) ⇒
           cur match {
              case x: CommandSuccessfullyExecuted ⇒ (a:+ x, b)
-            case x: CommandFailed ⇒ (a, b :+ x)
+            case x: CommandExecutionFailed ⇒ (a, b :+ x)
           }
       }
 

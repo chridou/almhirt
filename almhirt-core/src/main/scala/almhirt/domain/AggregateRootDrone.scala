@@ -69,7 +69,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
   protected final def onError(ex: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E] = Seq.empty) {
     log.error(s"Escalating! Something terrible happened:\n$ex")
     sendMessage(CommandNotExecuted(currentCommand.header, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
-    val status = CommandFailed(currentCommand, CauseIsThrowable(HasAThrowable(ex)))
+    val status = CommandExecutionFailed(currentCommand, CauseIsThrowable(HasAThrowable(ex)))
     commandStatusSink(status)
     throw ex
   }
@@ -221,7 +221,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
     if (log.isDebugEnabled)
       log.debug(s"Command ${command.getClass().getName()}(${command.header}) failed:\n$prob")
     sendMessage(CommandNotExecuted(command.header, prob))
-    commandStatusSink(CommandFailed(command, CauseIsProblem(prob)))
+    commandStatusSink(CommandExecutionFailed(command, CauseIsProblem(prob)))
   }
 
   private def sendCommandAccepted(command: AggregateRootCommand) {

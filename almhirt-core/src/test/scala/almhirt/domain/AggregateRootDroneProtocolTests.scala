@@ -151,11 +151,11 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
     }
     "receiving invalid commands" when {
       "a non existing aggregate root is modified" should {
-        "emit the status events [CommandExecutionStarted, CommandFailed]" in { fixture ⇒
+        "emit the status events [CommandExecutionStarted, CommandExecutionFailed]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
-            statusProbe.expectMsgType[CommandFailed]
+            statusProbe.expectMsgType[CommandExecutionFailed]
           }
         }
         "emit NO events" in { fixture ⇒
@@ -178,7 +178,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             droneProbe.expectMsgType[CommandExecuted]
             droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 3L))
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
-            statusProbe.expectMsgType[CommandFailed]
+            statusProbe.expectMsgType[CommandExecutionFailed]
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
@@ -201,12 +201,12 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         }
       }
 //      "a command is sent while another is still processed" should {
-//        "emit the status events [CommandFailed] for that command." in { fixture ⇒
+//        "emit the status events [CommandExecutionFailed] for that command." in { fixture ⇒
 //          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
 //          within(1 second) {
 //            droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
 //            statusProbe.expectMsgType[CommandExecutionStarted](500 millis)
-//            statusProbe.expectMsgType[CommandFailed](500 millis)
+//            statusProbe.expectMsgType[CommandExecutionFailed](500 millis)
 //          }
 //        }
 //      }
