@@ -13,7 +13,7 @@ import almhirt.almvalidation.kit._
 class AggregateRootNexus(
   override val aggregateCommandsProducer: Producer[AggregateRootCommand],
   override val hiveSelector: HiveSelector,
-  override val hiveFactory: AggregateRootHiveFactory) extends Actor with ActorLogging with AggregateRootNexusInternal {
+  override val hiveFactory: AggregateRootHiveFactory) extends Actor with ActorLogging with AggregateRootNexusSkeleton {
   
   override def preStart() {
     super.preStart()
@@ -25,7 +25,7 @@ private[almhirt] object AggregateRootNexusInternal {
   case object Start
 }
 
-private[almhirt] trait AggregateRootNexusInternal { me: Actor with ActorLogging ⇒
+private[almhirt] trait AggregateRootNexusSkeleton { me: Actor with ActorLogging ⇒
   import AggregateRootNexusInternal._
 
   def aggregateCommandsProducer: Producer[AggregateRootCommand]

@@ -10,21 +10,6 @@ import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
 import almhirt.problem.{ CauseIsThrowable, CauseIsProblem, HasAThrowable }
 
-private[almhirt] object AggregateRootDroneInternalMessages {
-  sealed trait AggregateDroneMessage
-
-  sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
-    def commandHeader: CommandHeader
-    def isSuccess: Boolean
-  }
-  final case class CommandExecuted(commandHeader: CommandHeader) extends ExecuteCommandResponse {
-    def isSuccess = true
-  }
-  final case class CommandNotExecuted(commandHeader: CommandHeader, problem: Problem) extends ExecuteCommandResponse {
-    def isSuccess = false
-  }
- }
-
 /** Used to commit or reject the events resulting from a command */
 trait ConfirmationContext[E <: AggregateRootEvent] {
   /**
@@ -250,5 +235,20 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
     case commandNotToExecute: AggregateRootCommand ⇒
       rejectUnexpectedCommand(commandNotToExecute, currentCommand)
   }
-
 }
+
+private[almhirt] object AggregateRootDroneInternalMessages {
+  sealed trait AggregateDroneMessage
+
+  sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
+    def commandHeader: CommandHeader
+    def isSuccess: Boolean
+  }
+  final case class CommandExecuted(commandHeader: CommandHeader) extends ExecuteCommandResponse {
+    def isSuccess = true
+  }
+  final case class CommandNotExecuted(commandHeader: CommandHeader, problem: Problem) extends ExecuteCommandResponse {
+    def isSuccess = false
+  }
+ }
+

@@ -30,7 +30,7 @@ class AggregateRootHive(
   override val buffersize: Int,
   override val initialCommandTimeout: AggregateRootHive.CommandTimeoutSettings,
   override val droneFactory: AggregateRootDroneFactory,
-  override val commandStatusSink: FireAndForgetSink[CommandStatusChanged])(implicit override val ccuad: CanCreateUuidsAndDateTimes, override val futuresContext: ExecutionContext) extends Actor with ActorLogging with ActorConsumer with AggregateRootHiveInternal {
+  override val commandStatusSink: FireAndForgetSink[CommandStatusChanged])(implicit override val ccuad: CanCreateUuidsAndDateTimes, override val futuresContext: ExecutionContext) extends Actor with ActorLogging with ActorConsumer with AggregateRootHiveSkeleton {
 
   override val requestStrategy = akka.stream.actor.ActorConsumer.ZeroRequestStrategy
 
@@ -45,7 +45,7 @@ class AggregateRootHive(
   }
 }
 
-private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging with ActorConsumer ⇒
+private[almhirt] trait AggregateRootHiveSkeleton { me: Actor with ActorLogging with ActorConsumer ⇒
   import AggregateRootHive._
   import AggregateRootHiveInternals._
 
