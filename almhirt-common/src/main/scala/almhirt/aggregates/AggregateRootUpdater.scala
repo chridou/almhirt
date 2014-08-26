@@ -7,7 +7,7 @@ import almhirt.common._
  * Mix in this trait if you want to update your aggregate roots using an [[AggregateRootEventHandler]].
  *  This can be useful in a command handler.
  */
-trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateEvent] { self: AggregateRootEventHandler[T, E] =>
+trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateEvent] { self: AggregateRootEventHandler[T, E] ⇒
   /** Use the event handler to update the existing aggregate root */
   def update(agg: T, event: E): (AggregateRootLifecycle[T], E) =
     (this.applyEvent(agg, event), event)
@@ -27,10 +27,10 @@ trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateEvent] { self: Aggr
      * Otherwise the [[UpdateRecorder]] will be rejected.
      * A successful result will apply the changes via the contained event.
      */
-    def recordUpdate(eventOnSuccess: => AlmValidation[E]): UpdateRecorder[T, E] =
+    def recordUpdate(eventOnSuccess: ⇒ AlmValidation[E]): UpdateRecorder[T, E] =
       eventOnSuccess.fold(
-        fail => UpdateRecorder.reject(fail),
-        event => self accept event)
+        fail ⇒ UpdateRecorder.reject(fail),
+        event ⇒ self accept event)
   }
 
   /**
@@ -39,8 +39,8 @@ trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateEvent] { self: Aggr
    * [[AggregatRootLifecycle]] so most of it's operation act on that.
    * This is especially useful when you need to call [[UpdateRecorder#flatMap]].
    */
-  protected implicit class Lifter(self: T => UpdateRecorder[T, E]) {
-    def lift: AggregateRootLifecycle[T] => UpdateRecorder[T, E] =
+  protected implicit class Lifter(self: T ⇒ UpdateRecorder[T, E]) {
+    def lift: AggregateRootLifecycle[T] ⇒ UpdateRecorder[T, E] =
       UpdateRecorder.ifVivus(self)
 
     def liftWith(state: AggregateRootLifecycle[T]): UpdateRecorder[T, E] =
@@ -48,8 +48,8 @@ trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateEvent] { self: Aggr
   }
 
   /** Create an AR and record the event with it */
-  def recordCreate(eventOnSuccess: => AlmValidation[E]): UpdateRecorder[T, E] =
+  def recordCreate(eventOnSuccess: ⇒ AlmValidation[E]): UpdateRecorder[T, E] =
     eventOnSuccess.fold(
-      fail => UpdateRecorder.reject(fail),
-      event => UpdateRecorder.accept(this.fromEvent(event), event))
+      fail ⇒ UpdateRecorder.reject(fail),
+      event ⇒ UpdateRecorder.accept(this.fromEvent(event), event))
 }

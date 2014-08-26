@@ -28,7 +28,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
     val (ar, events) = create("a", "hans", "meier").recordings.forceResult
 
     inside(ar) {
-      case Vivus(User(id, version, surname, lastname, age)) =>
+      case Vivus(User(id, version, surname, lastname, age)) ⇒
         id should equal(arid("a"))
         version should equal(arv(1))
         surname should equal("hans")
@@ -48,7 +48,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
       } yield b).recordings.forceResult
 
     inside(ar) {
-      case Vivus(User(id, version, surname, lastname, age)) =>
+      case Vivus(User(id, version, surname, lastname, age)) ⇒
         id should equal(arid("a"))
         version should equal(arv(2))
         surname should equal("hans")
@@ -69,7 +69,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
       } yield c).recordings.forceResult
 
     inside(ar) {
-      case Mortuus(id, version) =>
+      case Mortuus(id, version) ⇒
         id should equal(arid("a"))
         version should equal(arv(3))
     }
@@ -91,7 +91,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
       } yield d).recordings.forceResult
 
     inside(ar) {
-      case Mortuus(id, version) =>
+      case Mortuus(id, version) ⇒
         id should equal(arid("a"))
         version should equal(arv(5))
     }
@@ -109,7 +109,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
     val (ar, events) = doNotAccept("a", "hans", "meier").recordings.forceResult
 
     inside(ar) {
-      case Mortuus(id, version) =>
+      case Mortuus(id, version) ⇒
         id should equal(arid("a"))
         version should equal(arv(1))
     }
@@ -163,7 +163,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
       } yield a).events
 
     inside(rebuildFromTimeline(timeline)) {
-      case Vivus(User(id, version, surname, lastname, age)) =>
+      case Vivus(User(id, version, surname, lastname, age)) ⇒
         id should equal(arid("a"))
         version should equal(arv(2))
         surname should equal("hans")
@@ -181,7 +181,7 @@ class UpdateRecorderWithUpdaterTests extends FlatSpec with Matchers with Inside
       } yield c).recordings.forceResult
 
     inside(ar) {
-      case Vivus(User(id, version, surname, lastname, age)) =>
+      case Vivus(User(id, version, surname, lastname, age)) ⇒
         id should equal(arid("a"))
         version should equal(arv(1))
         surname should equal("hans")

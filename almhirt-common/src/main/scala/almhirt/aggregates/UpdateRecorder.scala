@@ -119,7 +119,7 @@ object UpdateRecorder {
     UpdateRecorder[AR, Event](events ⇒ (t._1.success, t._2 :: events))
 
   def acceptMany[AR <: AggregateRoot, Event <: AggregateEvent](ar: AggregateRootLifecycle[AR], newEvents: Seq[Event]) =
-    UpdateRecorder[AR, Event](events ⇒ (ar.success, newEvents.foldLeft(events) { case (acc, event) => event :: acc }))
+    UpdateRecorder[AR, Event](events ⇒ (ar.success, newEvents.foldLeft(events) { case (acc, event) ⇒ event :: acc }))
 
   /**
    * Takes an event and the resulting Aggregate Root. Previously written events are still contained
@@ -130,15 +130,15 @@ object UpdateRecorder {
     UpdateRecorder[AR, Event](events ⇒ (error.failure, events))
 
   def record[AR <: AggregateRoot, Event <: AggregateEvent](v: AlmValidation[(AggregateRootLifecycle[AR], Event)]) =
-    v.fold(fail => UpdateRecorder.reject(fail), succ => UpdateRecorder.accept(succ._1, succ._2))
+    v.fold(fail ⇒ UpdateRecorder.reject(fail), succ ⇒ UpdateRecorder.accept(succ._1, succ._2))
 
   def recordVivus[AR <: AggregateRoot, Event <: AggregateEvent](v: AlmValidation[(AR, Event)]) =
-    v.fold(fail => UpdateRecorder.reject(fail), succ => UpdateRecorder.accept(Vivus(succ._1), succ._2))
+    v.fold(fail ⇒ UpdateRecorder.reject(fail), succ ⇒ UpdateRecorder.accept(Vivus(succ._1), succ._2))
 
-  def ifVivus[AR <: AggregateRoot, Event <: AggregateEvent](f: AR => UpdateRecorder[AR, Event]): AggregateRootLifecycle[AR] => UpdateRecorder[AR, Event] =
-    (state) => state match {
-      case Vacat => UpdateRecorder.reject(IllegalOperationProblem(s"There is no aggregate root."))
-      case Mortuus(id, v) => UpdateRecorder.reject(IllegalOperationProblem(s"The aggregate root with id ${id.value} and version ${v.value} is already dead."))
-      case Vivus(ar) => f(ar)
+  def ifVivus[AR <: AggregateRoot, Event <: AggregateEvent](f: AR ⇒ UpdateRecorder[AR, Event]): AggregateRootLifecycle[AR] ⇒ UpdateRecorder[AR, Event] =
+    (state) ⇒ state match {
+      case Vacat ⇒ UpdateRecorder.reject(IllegalOperationProblem(s"There is no aggregate root."))
+      case Mortuus(id, v) ⇒ UpdateRecorder.reject(IllegalOperationProblem(s"The aggregate root with id ${id.value} and version ${v.value} is already dead."))
+      case Vivus(ar) ⇒ f(ar)
     }
 }

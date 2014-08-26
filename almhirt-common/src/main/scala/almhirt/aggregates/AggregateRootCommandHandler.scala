@@ -22,8 +22,8 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
     /** Turn the [[UpdateRecorder]] into an [[AggregateCommandResult]] */
     def syncResult: SyncCommandResult[T, E] =
       self.recordings.fold(
-        fail => SyncCommandResult[T, E](fail.failure),
-        succ => SyncCommandResult[T, E](succ.success))
+        fail ⇒ SyncCommandResult[T, E](fail.failure),
+        succ ⇒ SyncCommandResult[T, E](succ.success))
   }
 
   implicit class FutureFUROps(self: AlmFuture[UpdateRecorder[T, E]]) {
@@ -39,14 +39,14 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
      */
     def prependEvents(events: Seq[E])(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
       self match {
-        case SyncCommandResult(res) =>
+        case SyncCommandResult(res) ⇒
           res.fold(
-            fail => SyncCommandResult(fail.failure),
-            succ => SyncCommandResult((succ._1, events ++ succ._2).success))
-        case AsyncCommandResult(resF) =>
+            fail ⇒ SyncCommandResult(fail.failure),
+            succ ⇒ SyncCommandResult((succ._1, events ++ succ._2).success))
+        case AsyncCommandResult(resF) ⇒
           AsyncCommandResult(resF.foldV(
-            fail => fail.failure,
-            succ => (succ._1, events ++ succ._2).success))
+            fail ⇒ fail.failure,
+            succ ⇒ (succ._1, events ++ succ._2).success))
       }
 
     /**
@@ -55,19 +55,19 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
      */
     def andThen(nextCommand: AggregateCommand)(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
       self match {
-        case SyncCommandResult(res) =>
+        case SyncCommandResult(res) ⇒
           res.fold(
-            fail => SyncCommandResult(fail.failure),
-            succ => {
+            fail ⇒ SyncCommandResult(fail.failure),
+            succ ⇒ {
               val (currentState, eventsSoFar) = succ
               handleAggregateCommand(nextCommand, currentState).prependEvents(eventsSoFar)
             })
-        case AsyncCommandResult(resF) =>
+        case AsyncCommandResult(resF) ⇒
           AsyncCommandResult(resF.flatMap {
-            case (currentState, eventsSoFar) =>
+            case (currentState, eventsSoFar) ⇒
               handleAggregateCommand(nextCommand, currentState).prependEvents(eventsSoFar) match {
-                case SyncCommandResult(res) => AlmFuture.completed(res)
-                case AsyncCommandResult(resF) => resF
+                case SyncCommandResult(res) ⇒ AlmFuture.completed(res)
+                case AsyncCommandResult(resF) ⇒ resF
               }
           })
       }
@@ -79,12 +79,12 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
    */
   protected def chained(initialState: AggregateRootLifecycle[T], commands: Seq[AggregateCommand])(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
     commands.foldLeft(SyncCommandResult((initialState, Seq[E]()).success): AggregateCommandResult[T, E]) {
-      case (acc, cur) =>
+      case (acc, cur) ⇒
         acc.andThen(cur)
     }
 
   /** Turn a block that ends in an [[UpdateRecorder]] into an [[AggregateCommandResult]] */
-  protected def sync(ur: => UpdateRecorder[T, E]) =
+  protected def sync(ur: ⇒ UpdateRecorder[T, E]) =
     ur.syncResult
 
   /**
@@ -93,13 +93,13 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateEvent] {
    * Use this for handlers that perform a cpu bound operation to not
    * stress the thread the handler is called on.
    */
-  protected def asyncCompute(ur: => UpdateRecorder[T, E])(implicit executionContext: ExecutionContext) =
+  protected def asyncCompute(ur: ⇒ UpdateRecorder[T, E])(implicit executionContext: ExecutionContext) =
     AlmFuture.compute(ur).asyncResult
 
   /**
    * Turn a block that ends in an AlmFuture of an [[UpdateRecorder]] into an [[AggregateCommandResult]]
    *  Use this for handlers that call external services.
    */
-  protected def async(ur: => AlmFuture[UpdateRecorder[T, E]])(implicit executionContext: ExecutionContext) =
+  protected def async(ur: ⇒ AlmFuture[UpdateRecorder[T, E]])(implicit executionContext: ExecutionContext) =
     ur.asyncResult
 }

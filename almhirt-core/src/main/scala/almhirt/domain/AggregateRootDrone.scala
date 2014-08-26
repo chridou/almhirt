@@ -159,8 +159,8 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
     case Commit(events) if events.isEmpty ⇒
       context.become(receiveAcceptingCommand(persistedState))
       val version = persistedState match {
-        case p: Postnatalis[T] => p.version
-        case _ => AggregateRootVersion(0L)
+        case p: Postnatalis[T] ⇒ p.version
+        case _ ⇒ AggregateRootVersion(0L)
       }
       sendCommandAccepted(currentCommand)
 
@@ -214,11 +214,11 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateEvent] {
   }
 
   private def receiveWaitingForEventsDispatched(currentCommand: AggregateCommand, persisted: Postnatalis[T], committedEvents: Seq[E]): Receive = {
-    case d: DeliveryJobDone =>
+    case d: DeliveryJobDone ⇒
       sendCommandAccepted(currentCommand)
       context.become(receiveAcceptingCommand(persisted))
       
-    case d: DeliveryJobNotAccepted =>
+    case d: DeliveryJobNotAccepted ⇒
       onError(CouldNotDispatchAllAggregateEventsException(currentCommand), currentCommand, committedEvents)
   }
 

@@ -11,7 +11,7 @@ import almhirt.almvalidation.kit._
  *  registration....
  *  
  */
-trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEventHandler =>
+trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEventHandler ⇒
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
   // Old school, everything manually
@@ -48,22 +48,22 @@ trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEven
   // Change via the event handler
   def appendSurname(user: User, anotherSurname: String): UpdateRecorder[User, UserEvent] = {
     anotherSurname.notEmptyOrWhitespace
-      .map(sname => UserSurnameChanged(EventHeader(), user.id, user.version, s"${user.surname} $sname"))
-      .map(event => (applyEvent(user, event), event))
+      .map(sname ⇒ UserSurnameChanged(EventHeader(), user.id, user.version, s"${user.surname} $sname"))
+      .map(event ⇒ (applyEvent(user, event), event))
       .record
   }
 
   // Use the update function(from trait AggregateRootUpdater) which uses the handler
   def changeSurname(user: User, surname: String): UpdateRecorder[User, UserEvent] = {
     surname.notEmptyOrWhitespace
-      .map(sname => update(user, UserSurnameChanged(EventHeader(), user.id, user.version, sname)))
+      .map(sname ⇒ update(user, UserSurnameChanged(EventHeader(), user.id, user.version, sname)))
       .record
   }
 
   // Update via the extension method imported by trait AggregateRootUpdater which uses the handler
   def changeAge(user: User, age: Int): UpdateRecorder[User, UserEvent] = {
     almhirt.almvalidation.funs.numericConstrainedToMin(age, 18)
-      .map(age => user.update(UserAgeChanged(EventHeader(), user.id, user.version, age)))
+      .map(age ⇒ user.update(UserAgeChanged(EventHeader(), user.id, user.version, age)))
       .record
   }
 

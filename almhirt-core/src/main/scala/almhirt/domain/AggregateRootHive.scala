@@ -45,7 +45,7 @@ class AggregateRootHive(
   }
 }
 
-private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging with ActorConsumer =>
+private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging with ActorConsumer ⇒
   import AggregateRootHive._
   import AggregateRootHiveInternals._
 
@@ -54,10 +54,10 @@ private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging w
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: AggregateEventStoreFailedReadingException => Restart
-      case _: RebuildAggregateRootFailedException => Restart
-      case _: CouldNotDispatchAllAggregateEventsException => Restart
-      case _: Exception => Escalate
+      case _: AggregateEventStoreFailedReadingException ⇒ Restart
+      case _: RebuildAggregateRootFailedException ⇒ Restart
+      case _: CouldNotDispatchAllAggregateEventsException ⇒ Restart
+      case _: Exception ⇒ Escalate
     }
 
   def hiveDescriptor: HiveDescriptor
@@ -83,8 +83,8 @@ private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging w
 
   private def initiateCommandTimeoutChecking(settings: CommandTimeoutSettings) {
     settings match {
-      case NoCommandTimeouts => ()
-      case CommandTimeouts(commandTimeout, checkForTimeoutsInterval) =>
+      case NoCommandTimeouts ⇒ ()
+      case CommandTimeouts(commandTimeout, checkForTimeoutsInterval) ⇒
         context.system.scheduler.scheduleOnce(checkForTimeoutsInterval, self, CheckForTimeouts(commandTimeout))
 
     }
@@ -92,7 +92,7 @@ private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging w
 
   private[this] var commandTimeout: CommandTimeoutSettings = NoCommandTimeouts
   def receiveInitialize: Receive = {
-    case Start =>
+    case Start ⇒
       commandTimeout = initialCommandTimeout
       request(buffersize)
       initiateCommandTimeoutChecking(commandTimeout)
@@ -100,24 +100,24 @@ private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging w
   }
 
   def receiveRunning(executing: Map[CommandId, (Deadline, CommandHeader)]): Receive = {
-    case ActorConsumer.OnNext(aggregateCommand: AggregateCommand) =>
+    case ActorConsumer.OnNext(aggregateCommand: AggregateCommand) ⇒
       numReceivedInternal += 1
       context.child(aggregateCommand.aggId.value) match {
-        case Some(drone) =>
+        case Some(drone) ⇒
           drone ! aggregateCommand
-        case None =>
+        case None ⇒
           droneFactory(aggregateCommand) match {
-            case scalaz.Success(props) =>
+            case scalaz.Success(props) ⇒
               val drone = context.actorOf(props, aggregateCommand.aggId.value)
               //context watch drone
               drone ! aggregateCommand
-            case scalaz.Failure(problem) =>
+            case scalaz.Failure(problem) ⇒
               throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
           }
       }
       context.become(receiveRunning(executing + (aggregateCommand.commandId -> (Deadline.now, aggregateCommand.header))))
 
-    case rsp: AggregateRootDroneInternalMessages.ExecuteCommandResponse =>
+    case rsp: AggregateRootDroneInternalMessages.ExecuteCommandResponse ⇒
       if (executing.contains(rsp.commandHeader.id)) {
         if (rsp.isSuccess) {
           numSucceededInternal += 1
@@ -130,29 +130,29 @@ private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging w
         log.warning(s"Received a command response for command ${rsp.commandHeader} which I don't know. It might have timed out some time ago.")
       }
 
-    case ActorConsumer.OnNext(something) =>
+    case ActorConsumer.OnNext(something) ⇒
       log.warning(s"Received something I cannot handle: $something")
       request(1)
 
-    case ActorConsumer.OnComplete =>
+    case ActorConsumer.OnComplete ⇒
       if (log.isDebugEnabled)
         log.debug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed, $numTimedOut timed out.")
 
-    case CheckForTimeouts(commandTimeout) =>
+    case CheckForTimeouts(commandTimeout) ⇒
       AlmFuture.compute {
         val deadline = Deadline.now - commandTimeout
         val now = Deadline.now
         val timedOut = executing
           .filter(_._2._1 < deadline)
-          .map { case (id, (born, header)) => (id, (now - born, header)) }
+          .map { case (id, (born, header)) ⇒ (id, (now - born, header)) }
         self ! TimedOutCommands(timedOut)
       }
 
-    case TimedOutCommands(timedOut) =>
-      val reallyTimedOutNow = executing.keySet.foldLeft(timedOut) { case (acc, cur) => acc - cur }
+    case TimedOutCommands(timedOut) ⇒
+      val reallyTimedOutNow = executing.keySet.foldLeft(timedOut) { case (acc, cur) ⇒ acc - cur }
       numTimedOutInternal += reallyTimedOutNow.size
       if (!reallyTimedOutNow.isEmpty) {
-        reallyTimedOutNow.foreach { timedOut =>
+        reallyTimedOutNow.foreach { timedOut ⇒
           commandStatusSink(CommandFailed(
             EventHeader(),
             timedOut._2._2,
@@ -162,7 +162,7 @@ private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging w
             log.debug(s"Command ${timedOut._1} timed out after ${timedOut._2._1.defaultUnitString}.")
         }
         log.warning(s"${reallyTimedOutNow.size} commands timed out.")
-        val newExecuting = reallyTimedOutNow.foldLeft(executing) { case (acc, cur) => acc - cur._1 }
+        val newExecuting = reallyTimedOutNow.foldLeft(executing) { case (acc, cur) ⇒ acc - cur._1 }
         request(reallyTimedOutNow.size)
         context.become(receiveRunning(newExecuting))
       }

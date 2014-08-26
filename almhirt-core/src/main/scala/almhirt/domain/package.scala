@@ -15,18 +15,18 @@ package object domain {
    *  
    *  Be careful when using hashcodes for selecting hives. They can be negative.
    */
-  type HiveSelector = Seq[(HiveDescriptor, AggregateCommand => Boolean)]
+  type HiveSelector = Seq[(HiveDescriptor, AggregateCommand ⇒ Boolean)]
   
   implicit class AggregateEventOps(self: AggregateEvent) {
     def specific[E <: AggregateEvent](implicit tag: scala.reflect.ClassTag[E]): E = {
       almhirt.almvalidation.funs.almCast[E](self).fold(
-        fail => throw WrongAggregateEventTypeException(self),
-        succ => succ)
+        fail ⇒ throw WrongAggregateEventTypeException(self),
+        succ ⇒ succ)
     }
-    def specificWithHandler[E <: AggregateEvent](f: AggregateRootDomainException => Nothing)(implicit tag: scala.reflect.ClassTag[E]): E = {
+    def specificWithHandler[E <: AggregateEvent](f: AggregateRootDomainException ⇒ Nothing)(implicit tag: scala.reflect.ClassTag[E]): E = {
       almhirt.almvalidation.funs.almCast[E](self).fold(
-        fail => f(WrongAggregateEventTypeException(self)),
-        succ => succ)
+        fail ⇒ f(WrongAggregateEventTypeException(self)),
+        succ ⇒ succ)
     }
   }
 }

@@ -168,7 +168,7 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   def resultOrEscalate(): T =
     self fold (prob ⇒ {
       prob match {
-        case _ => throw new EscalatedProblemException(prob)
+        case _ ⇒ throw new EscalatedProblemException(prob)
       }
 
     }, v ⇒ v)

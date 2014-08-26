@@ -36,12 +36,12 @@ class AggregateRootHiveTests(_system: ActorSystem)
     import almhirt.tracking._
 
     def splitStatusEvents(events: Seq[Any]): (Seq[CommandExecutionStarted], Seq[CommandSuccessfullyExecuted], Seq[CommandFailed]) =
-      events.collect { case x: CommandStatusChanged => x }.foldLeft((Seq[CommandExecutionStarted](), Seq[CommandSuccessfullyExecuted](), Seq[CommandFailed]())) {
-        case ((a, b, c), cur) =>
+      events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandExecutionStarted](), Seq[CommandSuccessfullyExecuted](), Seq[CommandFailed]())) {
+        case ((a, b, c), cur) ⇒
           cur match {
-            case x: CommandExecutionStarted => (a :+ x, b, c)
-            case x: CommandSuccessfullyExecuted => (a, b :+ x, c)
-            case x: CommandFailed => (a, b, c :+ x)
+            case x: CommandExecutionStarted ⇒ (a :+ x, b, c)
+            case x: CommandSuccessfullyExecuted ⇒ (a, b :+ x, c)
+            case x: CommandFailed ⇒ (a, b, c :+ x)
           }
       }
 
@@ -53,7 +53,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
     val mat = FlowMaterializer(MaterializerSettings())
     "receiving valid commands" when {
       "an aggregate root is created" should {
-        "should emit the status events [Start, Executed]" in { fixture =>
+        "should emit the status events [Start, Executed]" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
           within(1 second) {
             Flow(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).produceTo(mat, commandConsumer)
@@ -63,7 +63,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
         }
       }
       "2 aggregate roots are created" should {
-        "emit the status events [Start(a), Executed(a)] and [Start(b), Executed(b)]" in { fixture =>
+        "emit the status events [Start(a), Executed(a)] and [Start(b), Executed(b)]" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
           within(1 second) {
             Flow(List(
@@ -75,19 +75,19 @@ class AggregateRootHiveTests(_system: ActorSystem)
       }
       val n = 1000
       s"$n aggregate roots are created" should {
-        s"emit the status events [Start(a), Executed(a)] $n times" in { fixture =>
+        s"emit the status events [Start(a), Executed(a)] $n times" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
           within(3 seconds) {
-            Flow((1 to n).toSeq.map(id => CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
+            Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
             assertStatusEvents(started = n, ok = n, failed = 0, statusProbe.receiveN(2 * n, 2 seconds))
           }
         }
       }
       s"$n aggregate roots are created and then updated" should {
-        s"emit the status events ([Start(a), Executed(a)]x2) $n times" in { fixture =>
+        s"emit the status events ([Start(a), Executed(a)]x2) $n times" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          val flow1 = Flow((1 to n).toSeq.map(id => CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id => ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
+          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
+          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).produceTo(mat, commandConsumer)
             assertStatusEvents(started = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(4 * n, 2 second))
@@ -95,11 +95,11 @@ class AggregateRootHiveTests(_system: ActorSystem)
         }
       }
       s"$n aggregate roots are created, updated and then deleted" should {
-        s"emit the status events ([Start(a), Executed(a)]x3) $n times" in { fixture =>
+        s"emit the status events ([Start(a), Executed(a)]x3) $n times" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          val flow1 = Flow((1 to n).toSeq.map(id => CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id => ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
-          val flow3 = Flow((1 to n).toSeq.map(id => ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateCommand))
+          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
+          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
+          val flow3 = Flow((1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateCommand))
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).concat(flow3.toProducer(mat)).produceTo(mat, commandConsumer)
             assertStatusEvents(started = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(6 * n, 2 second))
@@ -129,7 +129,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
     val eventsProbe = TestProbe()
     val statusProbe = TestProbe()
-    val cmdStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](elem => statusProbe.ref ! elem)
+    val cmdStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](elem ⇒ statusProbe.ref ! elem)
     val droneProps: Props = Props(
       new Actor with ActorLogging with AggregateRootDrone[User, UserEvent] with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] with SequentialPostOfficeClient {
         def ccuad = AggregateRootHiveTests.this.ccuad
@@ -145,8 +145,8 @@ class AggregateRootHiveTests(_system: ActorSystem)
       import scalaz._, Scalaz._
       def propsForCommand(command: AggregateCommand): AlmValidation[Props] = {
         command match {
-          case c: UserCommand => droneProps.success
-          case x => NoSuchElementProblem(s"I don't have props for command $x").failure
+          case c: UserCommand ⇒ droneProps.success
+          case x ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }
     }

@@ -39,9 +39,9 @@ trait AggregateEvent extends DomainEvent {
 object AggregateEvent {
   def unapply(d: Event): Option[(EventHeader, AggregateRootId, AggregateRootVersion)] =
     d match {
-      case d: AggregateEvent =>
+      case d: AggregateEvent ⇒
         Some(d.header, d.aggId, d.aggVersion)
-      case _ => None
+      case _ ⇒ None
     }
 }
 

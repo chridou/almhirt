@@ -22,13 +22,13 @@ abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateEvent](
   override val aggregateRootId: AggregateRootId,
   override val aggregateEventLog: ActorRef,
   override val snapshotStorage: Option[ActorRef],
-  override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) => Unit,
-  override val onDispatchFailure: (Problem, ActorRef) => Unit)(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootDirectViewImpl[T, E] { me: AggregateRootEventHandler[T, E] =>
+  override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) ⇒ Unit,
+  override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit)(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootDirectViewImpl[T, E] { me: AggregateRootEventHandler[T, E] ⇒
 
   override def receive: Receive = me.receiveUninitialized
 }
 
-private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] =>
+private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: AggregateEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] ⇒
   import almhirt.eventlog.AggregateEventLog._
   import AggregateRootDirectView._
 
@@ -43,26 +43,26 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
    *  Each request to this Actor will be responded with either a success or a failure.
    *  In this case it is a success.
    */
-  def onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) => Unit
+  def onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) ⇒ Unit
   /**
    * Implement this to communicate a failure to the outside world.
    *  Each request to this Actor will be responded with either a success or a failure.
    *  In this case it is a failure.
    */
-  def onDispatchFailure: (Problem, ActorRef) => Unit
+  def onDispatchFailure: (Problem, ActorRef) ⇒ Unit
 
   private case class InternalEventlogArBuildResult(ar: AggregateRootLifecycle[T])
   private case class InternalEventlogBuildArFailed(error: Throwable)
 
   protected def receiveUninitialized: Receive = {
-    case GetAggregateRootView =>
+    case GetAggregateRootView ⇒
       snapshotStorage match {
         case None ⇒
           updateFromEventlog(Vacat, Vector(sender()))
         case Some(snaphots) ⇒
           ???
       }
-    case ApplyEvent(event) =>
+    case ApplyEvent(event) ⇒
       snapshotStorage match {
         case None ⇒
           updateFromEventlog(Vacat, Vector.empty)
@@ -90,10 +90,10 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
     case GetAggregateEventsFailed(problem) ⇒
       onError(enqueuedRequests)(AggregateEventStoreFailedReadingException(aggregateRootId, "An error has occured fetching the aggregate root events:\n$problem"))
 
-    case ApplyEvent(event) =>
+    case ApplyEvent(event) ⇒
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests))))
 
-    case GetAggregateRootView =>
+    case GetAggregateRootView ⇒
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents))
   }
 
@@ -109,7 +109,7 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
         context.become(receiveServe(arState))
       } else {
         if (toApply.head.aggVersion == arState.version) {
-          val newState = toApply.foldLeft(arState) { case (state, nextEvent) => applyEventLifecycleAgnostic(state, nextEvent) }
+          val newState = toApply.foldLeft(arState) { case (state, nextEvent) ⇒ applyEventLifecycleAgnostic(state, nextEvent) }
           dispatchState(newState, enqueuedRequests: _*)
           context.become(receiveServe(newState))
         } else {
@@ -120,26 +120,26 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
     case InternalEventlogBuildArFailed(error: Throwable) ⇒
       onError(enqueuedRequests)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured rebuilding the aggregate root.", error))
 
-    case ApplyEvent(event) =>
+    case ApplyEvent(event) ⇒
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests))))
 
-    case GetAggregateRootView =>
+    case GetAggregateRootView ⇒
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests :+ sender(), enqueuedEvents))
   }
 
   private def receiveServe(currentState: AggregateRootLifecycle[T]): Receive = {
-    case GetAggregateRootView =>
+    case GetAggregateRootView ⇒
       dispatchState(currentState, sender)
 
-    case ApplyEvent(event) =>
+    case ApplyEvent(event) ⇒
       currentState match {
-        case s: Antemortem[T] =>
+        case s: Antemortem[T] ⇒
           if (event.aggVersion == s.version) {
             context.become(receiveServe(applyEventAntemortem(s, event.specificWithHandler[E](onError(Vector.empty)))))
           } else {
             updateFromEventlog(currentState, Vector.empty)
           }
-        case Mortuus(id, v) =>
+        case Mortuus(id, v) ⇒
           onError(Vector.empty)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
       }
   }
@@ -148,23 +148,23 @@ private[almhirt] trait AggregateRootDirectViewImpl[T <: AggregateRoot, E <: Aggr
   private def onError(enqueuedRequests: Vector[ActorRef])(ex: AggregateRootDomainException): Nothing = {
     log.error(s"Escalating! Something terrible happened:\n$ex")
     val problem = UnspecifiedProblem(s"""Escalating! Something terrible happened: "${ex.getMessage}"""", cause = Some(ex))
-    enqueuedRequests.foreach(receiver => onDispatchFailure(problem, receiver))
+    enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(problem, receiver))
     throw ex
   }
 
   private def updateFromEventlog(state: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef]) {
     state match {
-      case Vacat =>
+      case Vacat ⇒
         aggregateEventLog ! GetAllAggregateEventsFor(aggregateRootId)
-      case Vivus(ar) =>
+      case Vivus(ar) ⇒
         aggregateEventLog ! GetAggregateEventsFrom(aggregateRootId, ar.version)
-      case Mortuus(id, v) =>
+      case Mortuus(id, v) ⇒
         onError(enqueuedRequests)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
     }
     context.become(receiveRebuildFromEventlog(state, enqueuedRequests, Vector.empty))
   }
 
   private def dispatchState(currentState: AggregateRootLifecycle[T], to: ActorRef*) {
-    to.foreach(receiver => onDispatchSuccess(currentState, receiver))
+    to.foreach(receiver ⇒ onDispatchSuccess(currentState, receiver))
   }
 }

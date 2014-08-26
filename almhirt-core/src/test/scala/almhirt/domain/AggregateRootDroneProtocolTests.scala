@@ -33,7 +33,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
     import aggregatesforthelazyones._
     "receiving valid commands" when {
       "an aggregate root is created" should {
-        "emit the status events [CommandExecutionStarted, CommandSuccessfullyExecuted]" in { fixture =>
+        "emit the status events [CommandExecutionStarted, CommandSuccessfullyExecuted]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -41,7 +41,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
-        "emit the aggregate events [Created]" in { fixture =>
+        "emit the aggregate events [Created]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -50,7 +50,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         }
       }
       "an aggregate root is created and modified" should {
-        "emit the status events [Start, Success, Start, Success]" in { fixture =>
+        "emit the status events [Start, Success, Start, Success]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -62,7 +62,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
-        "emit the aggregate events [Created, Modified]" in { fixture =>
+        "emit the aggregate events [Created, Modified]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -74,7 +74,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         }
       }
       "an aggregate root is created, modified and then deleted" should {
-        "emit the status events [Start, Success, Start, Success, Start, Success]" in { fixture =>
+        "emit the status events [Start, Success, Start, Success, Start, Success]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -90,7 +90,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
-        "emit the aggregate events [Created, Modified, Deleted]" in { fixture =>
+        "emit the aggregate events [Created, Modified, Deleted]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -105,7 +105,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         }
       }
       "a command does nothing" should {
-        "emit the status events [Start, Success]" in { fixture =>
+        "emit the status events [Start, Success]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 0L, Seq.empty))
@@ -113,7 +113,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
-        "emit NO aggregate events" in { fixture =>
+        "emit NO aggregate events" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 0L, Seq.empty))
@@ -122,7 +122,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         }
       }
       "an aggregate root is created, *Nothing*, modified and then deleted" should {
-        "emit the status events [Start, Success, Start, Success, Start, Success, Start, Success]" in { fixture =>
+        "emit the status events [Start, Success, Start, Success, Start, Success, Start, Success]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -142,7 +142,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
-        "emit the aggregate events [Created, Modified, Deleted]" in { fixture =>
+        "emit the aggregate events [Created, Modified, Deleted]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -162,7 +162,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
     }
     "receiving invalid commands" when {
       "a non existing aggregate root is modified" should {
-        "emit the status events [CommandExecutionStarted, CommandFailed]" in { fixture =>
+        "emit the status events [CommandExecutionStarted, CommandFailed]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
@@ -170,7 +170,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             statusProbe.expectMsgType[CommandFailed]
           }
         }
-        "emit NO events" in { fixture =>
+        "emit NO events" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
@@ -179,7 +179,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         }
       }
       "an aggregate root is created, modified(wrong version), modified(creates 2 events) and then deleted" should {
-        "emit the status events [Start, Success, Start, Failed, Start, Success, Start, Success]" in { fixture =>
+        "emit the status events [Start, Success, Start, Failed, Start, Success, Start, Success]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -199,7 +199,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
           }
         }
-        "emit the aggregate events [Created, Modified(x2), Deleted]" in { fixture =>
+        "emit the aggregate events [Created, Modified(x2), Deleted]" in { fixture ⇒
           val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
           within(1 second) {
             droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
@@ -217,7 +217,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         }
       }
 //      "a command is sent while another is still processed" should {
-//        "emit the status events [CommandFailed] for that command." in { fixture =>
+//        "emit the status events [CommandFailed] for that command." in { fixture ⇒
 //          val FixtureParam(testId, droneActor, droneProbe, eventsProbe, statusProbe) = fixture
 //          within(1 second) {
 //            droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
@@ -251,7 +251,7 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
-        val commandStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](elem => statusProbe.ref ! elem)
+        val commandStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](elem ⇒ statusProbe.ref ! elem)
         val postOfficeSettings = PostOfficeClientSettings(100, 1 second, 10)
         val eventsPostOffice = PostOffice.faked[Event](eventsProbe.ref)
 
