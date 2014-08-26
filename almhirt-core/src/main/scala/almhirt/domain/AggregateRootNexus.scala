@@ -11,7 +11,7 @@ import almhirt.almvalidation.kit._
 
 
 class AggregateRootNexus(
-  override val aggregateCommandsProducer: Producer[AggregateCommand],
+  override val aggregateCommandsProducer: Producer[AggregateRootCommand],
   override val hiveSelector: HiveSelector,
   override val hiveFactory: AggregateRootHiveFactory) extends Actor with ActorLogging with AggregateRootNexusInternal {
   
@@ -28,7 +28,7 @@ private[almhirt] object AggregateRootNexusInternal {
 private[almhirt] trait AggregateRootNexusInternal { me: Actor with ActorLogging ⇒
   import AggregateRootNexusInternal._
 
-  def aggregateCommandsProducer: Producer[AggregateCommand]
+  def aggregateCommandsProducer: Producer[AggregateRootCommand]
   def hiveFactory: AggregateRootHiveFactory
 
   /**
@@ -53,13 +53,13 @@ private[almhirt] trait AggregateRootNexusInternal { me: Actor with ActorLogging 
 
   private def createInitialHives() {
     val mat = FlowMaterializer(MaterializerSettings())
-    val (theConsumer, theProducer) = Duct[AggregateCommand].build(mat)
+    val (theConsumer, theProducer) = Duct[AggregateRootCommand].build(mat)
     hiveSelector.foreach {
       case (descriptor, f) ⇒
         val props = hiveFactory.props(descriptor).resultOrEscalate
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
-        val consumer = ActorConsumer[AggregateCommand](actor)
+        val consumer = ActorConsumer[AggregateRootCommand](actor)
         Flow(theProducer).filter(cmd ⇒ f(cmd)).produceTo(mat, consumer)
     }
     aggregateCommandsProducer.produceTo(theConsumer)

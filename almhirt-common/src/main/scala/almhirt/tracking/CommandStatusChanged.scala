@@ -15,7 +15,7 @@ final case class CommandFailed(header: EventHeader, commandHeader: CommandHeader
 object CommandExecutionStarted {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecutionStarted =
     command match {
-      case cmd: AggregateCommand ⇒
+      case cmd: AggregateRootCommand ⇒
         CommandExecutionStarted(EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), command.header)
       case cmd ⇒
         CommandExecutionStarted(EventHeader(), command.header)
@@ -25,7 +25,7 @@ object CommandExecutionStarted {
 object CommandSuccessfullyExecuted {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandSuccessfullyExecuted =
     command match {
-      case cmd: AggregateCommand ⇒
+      case cmd: AggregateRootCommand ⇒
         CommandSuccessfullyExecuted(EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), command.header)
       case cmd ⇒
         CommandSuccessfullyExecuted(EventHeader(), command.header)
@@ -35,7 +35,7 @@ object CommandSuccessfullyExecuted {
 object CommandFailed {
   def apply(command: Command, cause: ProblemCause)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandFailed =
     command match {
-      case cmd: AggregateCommand ⇒
+      case cmd: AggregateRootCommand ⇒
         CommandFailed(EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), command.header, cause)
       case cmd ⇒
         CommandFailed(EventHeader(), command.header, cause)

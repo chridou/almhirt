@@ -10,7 +10,7 @@ import almhirt.common._
  */
 trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] {
   /** This method has to be overridden with your logic to handle commands. */
-  def handleAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
+  def handleAggregateCommand(command: AggregateRootCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
 
   implicit class FutureFOps(self: AlmFuture[(AggregateRootLifecycle[T], Seq[E])]) {
     /** Turn the AlmFuture of (AggregateRootLifecycle[T], Seq[E]) into an [[AggregateCommandResult]] */
@@ -53,7 +53,7 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] {
      * Execute the next result and combine it's result with this result.
      *  Do that if and only if the current [[AggregateCommandResult]] is not a failure.
      */
-    def andThen(nextCommand: AggregateCommand)(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
+    def andThen(nextCommand: AggregateRootCommand)(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
       self match {
         case SyncCommandResult(res) ⇒
           res.fold(
@@ -77,7 +77,7 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] {
    * Execute the given commands on the initial state as long as none of the commands results in a failure.
    * If any command results in a failure the whole operation is a failure.
    */
-  protected def chained(initialState: AggregateRootLifecycle[T], commands: Seq[AggregateCommand])(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
+  protected def chained(initialState: AggregateRootLifecycle[T], commands: Seq[AggregateRootCommand])(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
     commands.foldLeft(SyncCommandResult((initialState, Seq[E]()).success): AggregateCommandResult[T, E]) {
       case (acc, cur) ⇒
         acc.andThen(cur)

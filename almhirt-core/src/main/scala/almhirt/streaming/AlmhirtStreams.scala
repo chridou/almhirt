@@ -30,7 +30,7 @@ trait CommandStreams {
   def commandStream: Producer[Command]
   def systemCommandStream: Producer[SystemCommand]
   def domainCommandStream: Producer[DomainCommand]
-  def aggregateCommandStream: Producer[AggregateCommand]
+  def aggregateCommandStream: Producer[AggregateRootCommand]
 }
 
 trait AlmhirtStreams extends EventStreams with CommandStreams with CanDispatchEvents with CanDispatchCommands
@@ -107,8 +107,8 @@ object AlmhirtStreams {
     val domainCommandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-domain-dev-null")
     domainCommandProducer.produceTo(ActorConsumer(domainCommandDevNullConsumer))
 
-    val aggregateCommandFlow = Flow(commandProducer).collect { case e: AggregateCommand ⇒ e }
-    val aggregateCommandProducer: Producer[AggregateCommand] = aggregateCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
+    val aggregateCommandFlow = Flow(commandProducer).collect { case e: AggregateRootCommand ⇒ e }
+    val aggregateCommandProducer: Producer[AggregateRootCommand] = aggregateCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
     val aggregateCommandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-aggregate-dev-null")
     aggregateCommandProducer.produceTo(ActorConsumer(aggregateCommandDevNullConsumer))
 

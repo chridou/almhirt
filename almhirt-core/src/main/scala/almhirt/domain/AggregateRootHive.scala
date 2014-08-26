@@ -100,7 +100,7 @@ private[almhirt] trait AggregateRootHiveInternal { me: Actor with ActorLogging w
   }
 
   def receiveRunning(executing: Map[CommandId, (Deadline, CommandHeader)]): Receive = {
-    case ActorConsumer.OnNext(aggregateCommand: AggregateCommand) ⇒
+    case ActorConsumer.OnNext(aggregateCommand: AggregateRootCommand) ⇒
       numReceivedInternal += 1
       context.child(aggregateCommand.aggId.value) match {
         case Some(drone) ⇒

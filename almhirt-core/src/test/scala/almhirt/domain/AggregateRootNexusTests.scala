@@ -88,8 +88,8 @@ class AggregateRootNexusTests(_system: ActorSystem)
       s"$n aggregate roots are created and then updated" should {
         s"emit the status events ([Start(a), Executed(a)]x2) $n times" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          val flow1 = Flow(ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateCommand))
-          val flow2 = Flow(ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateCommand))
+          val flow1 = Flow(ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateRootCommand))
+          val flow2 = Flow(ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateRootCommand))
           val start = Deadline.now
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).produceTo(mat, commandConsumer)
@@ -101,9 +101,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
       s"$n aggregate roots are created, updated and then deleted" should {
         s"emit the status events ([Start(a), Executed(a)]x3) $n times" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          val flow1 = Flow(ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateCommand))
-          val flow2 = Flow(ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateCommand))
-          val flow3 = Flow(ids.toStream.map(id ⇒ ConfirmUserDeath(CommandHeader(), id, 2L): AggregateCommand))
+          val flow1 = Flow(ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateRootCommand))
+          val flow2 = Flow(ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateRootCommand))
+          val flow3 = Flow(ids.toStream.map(id ⇒ ConfirmUserDeath(CommandHeader(), id, 2L): AggregateRootCommand))
           val start = Deadline.now
           within(3 seconds) {
             flow1.concat(flow2.concat(flow3.toProducer(mat)).toProducer(mat)).produceTo(mat, commandConsumer)
@@ -120,7 +120,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
 
   case class FixtureParam(
     testId: Int,
-    commandConsumer: Consumer[AggregateCommand],
+    commandConsumer: Consumer[AggregateRootCommand],
     eventlog: ActorRef,
     eventsProbe: TestProbe,
     statusProbe: TestProbe)
@@ -152,7 +152,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
 
     val droneFactory = new AggregateRootDroneFactory {
       import scalaz._, Scalaz._
-      def propsForCommand(command: AggregateCommand): AlmValidation[Props] = {
+      def propsForCommand(command: AggregateRootCommand): AlmValidation[Props] = {
         command match {
           case c: UserCommand ⇒ droneProps.success
           case x ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
@@ -172,7 +172,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
       def props(descriptor: HiveDescriptor): AlmValidation[Props] = hiveProps(descriptor).success
     }
 
-    val hiveSelector: Seq[(HiveDescriptor, AggregateCommand ⇒ Boolean)] =
+    val hiveSelector: Seq[(HiveDescriptor, AggregateRootCommand ⇒ Boolean)] =
       Seq(
         (HiveDescriptor("0"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 0),
         (HiveDescriptor("1"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 1),
@@ -180,7 +180,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         (HiveDescriptor("3"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 3),
         (HiveDescriptor("4"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 4))
 
-    val (commandConsumer, commandProducer) = Duct[AggregateCommand].build(FlowMaterializer(MaterializerSettings()))
+    val (commandConsumer, commandProducer) = Duct[AggregateRootCommand].build(FlowMaterializer(MaterializerSettings()))
 
     val nexusProps = Props(new AggregateRootNexus(commandProducer, hiveSelector, hiveFactory))
     val nexusActor = system.actorOf(nexusProps, s"nexus-$testId")

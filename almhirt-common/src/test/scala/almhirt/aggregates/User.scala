@@ -15,7 +15,7 @@ case class UserLeft(header: EventHeader, aggId: AggregateRootId, aggVersion: Agg
 case class UserDied(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserEvent
 case class UserLetItCrash(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends UserEvent
 
-sealed trait UserCommand extends AggregateCommand
+sealed trait UserCommand extends AggregateRootCommand
 case class CreateUser(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String, lastname: String) extends UserCommand
 case class RejectUser(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String, lastname: String) extends UserCommand
 case class ChangeUserSurname(header: CommandHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion, surname: String) extends UserCommand

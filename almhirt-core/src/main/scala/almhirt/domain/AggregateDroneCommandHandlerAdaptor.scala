@@ -7,7 +7,7 @@ import almhirt.aggregates._
  *  [[AggregateRootDrone]] to make it use the mixed in [[almhirt.aggregates.AggregateRootCommandHandler]].
  */
 trait AggregateRootDroneCommandHandlerAdaptor[T <: AggregateRoot, E <: AggregateRootEvent] { self: AggregateRootDrone[T, E] with AggregateRootCommandHandler[T, E] ⇒
-  final override val handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateCommand, AggregateRootLifecycle[T]) ⇒ Unit =
+  final override val handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateRootCommand, AggregateRootLifecycle[T]) ⇒ Unit =
     (ctx) ⇒ (currentState, nextCommand) ⇒ {
       this.handleAggregateCommand(currentState, nextCommand).onComplete {
         ctx.reject

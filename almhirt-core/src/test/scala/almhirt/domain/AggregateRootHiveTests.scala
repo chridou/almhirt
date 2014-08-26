@@ -88,8 +88,8 @@ class AggregateRootHiveTests(_system: ActorSystem)
       s"$n aggregate roots are created and then updated" should {
         s"emit the status events ([Start(a), Executed(a)]x2) $n times" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
+          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
+          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
           val start = Deadline.now
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).produceTo(mat, commandConsumer)
@@ -101,9 +101,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
       s"$n aggregate roots are created, updated and then deleted" should {
         s"emit the status events ([Start(a), Executed(a)]x3) $n times" in { fixture ⇒
           val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
-          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateCommand))
-          val flow3 = Flow((1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateCommand))
+          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
+          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
+          val flow3 = Flow((1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
           val start = Deadline.now
           within(3 seconds) {
             flow1.concat(flow2.toProducer(mat)).concat(flow3.toProducer(mat)).produceTo(mat, commandConsumer)
@@ -120,7 +120,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
 
   case class FixtureParam(
     testId: Int,
-    hiveConsumer: Consumer[AggregateCommand],
+    hiveConsumer: Consumer[AggregateRootCommand],
     eventlog: ActorRef,
     eventsProbe: TestProbe,
     statusProbe: TestProbe)
@@ -149,7 +149,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
 
     val droneFactory = new AggregateRootDroneFactory {
       import scalaz._, Scalaz._
-      def propsForCommand(command: AggregateCommand): AlmValidation[Props] = {
+      def propsForCommand(command: AggregateRootCommand): AlmValidation[Props] = {
         command match {
           case c: UserCommand ⇒ droneProps.success
           case x ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
@@ -165,7 +165,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
         droneFactory = droneFactory,
         commandStatusSink = cmdStatusSink)(AggregateRootHiveTests.this.ccuad, AggregateRootHiveTests.this.executionContext))
     val hiveActor = system.actorOf(hiveProps, s"hive-$testId-test")
-    val hiveConsumer = akka.stream.actor.ActorConsumer[AggregateCommand](hiveActor)
+    val hiveConsumer = akka.stream.actor.ActorConsumer[AggregateRootCommand](hiveActor)
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, hiveConsumer, eventlogActor, eventsProbe, statusProbe)))

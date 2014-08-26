@@ -26,7 +26,8 @@ trait Command {
 }
 
 trait DomainCommand extends Command
-trait AggregateCommand extends DomainCommand {
+
+trait AggregateRootCommand extends DomainCommand {
   def aggId: AggregateRootId
   def aggVersion: AggregateRootVersion
 }

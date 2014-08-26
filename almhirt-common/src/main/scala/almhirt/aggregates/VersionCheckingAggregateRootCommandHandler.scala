@@ -10,9 +10,9 @@ import almhirt.common._
  */
 trait VersionCheckingAggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] { self: AggregateRootCommandHandler[T, E] ⇒
   /** Implement this handler to handle prevalidated commands */
-  def handleValidatedAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
+  def handleValidatedAggregateCommand(command: AggregateRootCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
 
-  final override def handleAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E] =
+  final override def handleAggregateCommand(command: AggregateRootCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E] =
     agg match {
       case Vacat ⇒
         if (command.aggVersion != AggregateRootVersion(0L))

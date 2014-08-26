@@ -10,7 +10,7 @@ trait UserCommandHandler extends VersionCheckingAggregateRootCommandHandler[User
   private def expensiveServiceCallForCreditCard(age: Int): AlmFuture[Boolean] =
     AlmFuture.compute(age >= 21)
 
-  def handleValidatedAggregateCommand(command: AggregateCommand, agg: AggregateRootLifecycle[User]): AggregateCommandResult[User, UserEvent] =
+  def handleValidatedAggregateCommand(command: AggregateRootCommand, agg: AggregateRootLifecycle[User]): AggregateCommandResult[User, UserEvent] =
     (agg, command) match {
       case (Vacat, CreateUser(_, aggId, aggVersion, surname, lastname)) ⇒
         create(aggId, surname, lastname).recordings.fold(
