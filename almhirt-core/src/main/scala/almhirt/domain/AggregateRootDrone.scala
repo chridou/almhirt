@@ -88,7 +88,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
 
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
-      commandStatusSink(CommandExecutionStarted(firstCommand))
       snapshotStorage match {
         case None ⇒
           context.become(receiveRebuildFromScratch(firstCommand))
@@ -174,7 +173,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
 
   private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
     case nextCommand: AggregateRootCommand ⇒
-      commandStatusSink(CommandExecutionStarted(nextCommand))
       handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
   }

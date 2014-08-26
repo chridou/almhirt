@@ -1,10 +1,8 @@
 package almhirt.domain
 
 import scala.language.postfixOps
-
 import akka.testkit._
 import org.scalatest._
-
 import org.joda.time.{ DateTime, LocalDateTime, DateTimeZone }
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -17,6 +15,7 @@ import almhirt.aggregates._
 import almhirt.aggregates.UserEventHandler
 import almhirt.streaming.StreamBroker
 import almhirt.problem.{ CauseIsThrowable, HasAThrowable }
+import almhirt.tracking.CommandStatusChanged
 
 class AggregateRootDirectViewTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -55,7 +54,7 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
             probe.send(directView, GetAggregateRootProjection)
             probe.expectMsg(UserState(Vacat))
             probe.send(drone, CreateUser(CommandHeader(), theId, 0L, "hans", "meier"))
-            statusProbe.receiveN(2)
+            statusProbe.receiveN(1)
 
             probe.expectNoMsg(100 millis)
             probe.send(directView, GetAggregateRootProjection)
@@ -71,9 +70,9 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
             probe.send(directView, GetAggregateRootProjection)
             probe.expectMsg(UserState(Vacat))
             probe.send(drone, CreateUser(CommandHeader(), theId, 0L, "hans", "meier"))
-            statusProbe.receiveN(2)
+            statusProbe.expectMsgType[CommandStatusChanged]
             probe.send(drone, ChangeUserAgeForCreditCard(CommandHeader(), theId, 1L, 22))
-            statusProbe.receiveN(2)
+             statusProbe.expectMsgType[CommandStatusChanged]
 
             probe.expectNoMsg(100 millis)
             probe.send(directView, GetAggregateRootProjection)
@@ -89,11 +88,11 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
             probe.send(directView, GetAggregateRootProjection)
             probe.expectMsg(UserState(Vacat))
             probe.send(drone, CreateUser(CommandHeader(), theId, 0L, "hans", "meier"))
-            statusProbe.receiveN(2)
+            statusProbe.expectMsgType[CommandStatusChanged]
             probe.send(drone, ChangeUserAgeForCreditCard(CommandHeader(), theId, 1L, 22))
-            statusProbe.receiveN(2)
+            statusProbe.expectMsgType[CommandStatusChanged]
             probe.send(drone, ConfirmUserDeath(CommandHeader(), theId, 2L))
-            statusProbe.receiveN(2)
+            statusProbe.expectMsgType[CommandStatusChanged]
 
             probe.expectNoMsg(100 millis)
             probe.send(directView, GetAggregateRootProjection)
