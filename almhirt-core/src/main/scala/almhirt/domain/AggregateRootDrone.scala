@@ -36,10 +36,12 @@ trait ConfirmationContext[E <: AggregateRootEvent] {
  *  Simply send an [[AggregateRootCommand]] to the drone to have it executed.
  *  The drone can only execute on command at a time.
  */
-trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
-  me: Actor with ActorLogging with AggregateRootEventHandler[T, E] with SequentialPostOfficeClient ⇒
+trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends Actor {
+  me: ActorLogging with AggregateRootEventHandler[T, E] with StateChangingActorContractor[Event] ⇒
   import AggregateRootDroneInternalMessages._
   import almhirt.eventlog.AggregateEventLog._
+
+  type TPayload = Any
 
   //*************
   // User API 
@@ -48,9 +50,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
   def futuresContext: ExecutionContext
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
-  def eventsPostOffice: PostOffice[Event]
-  def commandStatusSink: FireAndForgetSink[CommandStatusChanged]
-  implicit def postOfficeSettings: PostOfficeClientSettings
+  def eventsBroker: StreamBroker[Event]
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
   def sendMessage(msg: AggregateDroneMessage) {
@@ -63,15 +63,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
     def commit(events: Seq[E]) { self ! Commit(events) }
     def reject(problem: Problem) { self ! Rejected(problem) }
     def unhandled() { self ! Unhandled }
-  }
-
-  /** Ends with termination */
-  protected final def onError(ex: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E] = Seq.empty) {
-    log.error(s"Escalating! Something terrible happened:\n$ex")
-    sendMessage(CommandNotExecuted(currentCommand.header, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
-    val status = CommandExecutionFailed(currentCommand, CauseIsThrowable(HasAThrowable(ex)))
-    commandStatusSink(status)
-    throw ex
   }
 
   //*************
@@ -88,13 +79,29 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
 
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
+      signContractAndThen(eventsBroker, initialPayload = Some(Seq.empty)) {
+        case unexpectedCommand: AggregateRootCommand =>
+          sendMessage(Busy(unexpectedCommand))
+      }(receiveWaitForContract(firstCommand))
+  }
+
+  private def receiveWaitForContract(currentCommand: AggregateRootCommand): Receive = {
+    case ReadyForDeliveries(Some(collectedCommands)) ⇒
       snapshotStorage match {
         case None ⇒
-          context.become(receiveRebuildFromScratch(firstCommand))
-          aggregateEventLog ! GetAllAggregateEventsFor(firstCommand.aggId)
+          context.become(receiveRebuildFromScratch(currentCommand))
+          aggregateEventLog ! GetAllAggregateEventsFor(currentCommand.aggId)
         case Some(snaphots) ⇒
           ???
       }
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+  }
+  
+  private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
+    case nextCommand: AggregateRootCommand ⇒
+      handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
+      context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
   }
 
   private def receiveRebuildFromScratch(currentCommand: AggregateRootCommand): Receive = {
@@ -114,17 +121,17 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
       context.become(receiveEvaluateRebuildResult(currentCommand))
 
     case GetAggregateEventsFailed(problem) ⇒
-      onError(AggregateEventStoreFailedReadingException(currentCommand.aggId, "An error has occured fetching the aggregate root events:\n$problem"), currentCommand)
+      onError(AggregateEventStoreFailedReadingException(currentCommand.aggId, "An error has occured fetching the aggregate root events:\n$problem"), currentCommand, Seq.empty)
 
-    case commandNotToExecute: AggregateRootCommand ⇒
-      rejectUnexpectedCommand(commandNotToExecute, currentCommand)
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
   }
 
   private def receiveRebuildFromSnapshot(currentCommand: AggregateRootCommand): Receive = {
     case _ ⇒ ()
 
-    case commandNotToExecute: AggregateRootCommand ⇒
-      sendMessage(CommandNotExecuted(commandNotToExecute.header, UnspecifiedProblem(s"Command ${currentCommand.header} is currently executued.")))
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
   }
 
   private def receiveEvaluateRebuildResult(currentCommand: AggregateRootCommand): Receive = {
@@ -133,20 +140,15 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
       handleAggregateCommand(DefaultConfirmationContext)(currentCommand, arState)
 
     case InternalBuildArFailed(error: Throwable) ⇒
-      onError(RebuildAggregateRootFailedException(currentCommand.aggId, "An error has occured rebuilding the aggregate root.", error), currentCommand)
+      onError(RebuildAggregateRootFailedException(currentCommand.aggId, "An error has occured rebuilding the aggregate root.", error), currentCommand, Seq.empty)
 
-    case commandNotToExecute: AggregateRootCommand ⇒
-      rejectUnexpectedCommand(commandNotToExecute, currentCommand)
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
   }
 
   private def receiveWaitingForCommandResult(currentCommand: AggregateRootCommand, persistedState: AggregateRootLifecycle[T]): Receive = {
     case Commit(events) if events.isEmpty ⇒
-      context.become(receiveAcceptingCommand(persistedState))
-      val version = persistedState match {
-        case p: Postnatalis[T] ⇒ p.version
-        case _ ⇒ AggregateRootVersion(0L)
-      }
-      sendCommandAccepted(currentCommand)
+      handleCommandExecuted(persistedState, currentCommand)
 
     case Commit(events) ⇒
       events.foldLeft[AggregateRootLifecycle[T]](persistedState) { case (acc, cur) ⇒ applyEventLifecycleAgnostic(acc, cur) } match {
@@ -155,35 +157,29 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
           aggregateEventLog ! CommitAggregateEvent(events.head)
         case Vacat ⇒
           val problem = ConstraintViolatedProblem(s"""Command with events did not result in Postnatalis. This might be an error in your command handler.""")
-          sendCommandFailed(currentCommand, problem)
-          context.become(receiveAcceptingCommand(persistedState))
+          handleCommandFailed(persistedState, currentCommand, problem)
       }
 
     case Rejected(problem) ⇒
-      sendCommandFailed(currentCommand, problem)
-      context.become(receiveAcceptingCommand(persistedState))
+      handleCommandFailed(persistedState, currentCommand, problem)
 
     case Unhandled ⇒
-      sendCommandFailed(currentCommand, UnspecifiedProblem(s"""Could not handle command of type "${currentCommand.getClass().getName()}"."""))
-      context.become(receiveAcceptingCommand(persistedState))
+      handleCommandFailed(persistedState, currentCommand, UnspecifiedProblem(s"""Could not handle command of type "${currentCommand.getClass().getName()}"."""))
 
-    case commandNotToExecute: AggregateRootCommand ⇒
-      rejectUnexpectedCommand(commandNotToExecute, currentCommand)
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
   }
 
-  private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
-    case nextCommand: AggregateRootCommand ⇒
-      handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
-      context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
-  }
 
   private def receiveCommitEvents(currentCommand: AggregateRootCommand, inFlight: E, rest: Seq[E], done: Seq[E], unpersisted: Postnatalis[T]): Receive = {
     case AggregateEventCommitted(id) ⇒
       val newDone = done :+ inFlight
       rest match {
         case Seq() ⇒
-          context.become(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone))
-          sendToPostOfficeUntrackedWithAppendix(eventsPostOffice, newDone, rejectCommandAppendix(currentCommand))
+          this.offerAndThen(newDone, None) {
+            case unexpectedCommand: AggregateRootCommand =>
+              sendMessage(Busy(unexpectedCommand))
+          }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone))
         case next +: newRest ⇒
           aggregateEventLog ! CommitAggregateEvent(next)
           context.become(receiveCommitEvents(currentCommand, next, newRest, newDone, unpersisted))
@@ -192,46 +188,71 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] {
     case AggregateEventNotCommitted(id, problem) ⇒
       onError(AggregateEventStoreFailedWritingException(currentCommand.aggId, s"The aggregate event store failed writing:\n$problem"), currentCommand, done)
 
-    case commandNotToExecute: AggregateRootCommand ⇒
-      rejectUnexpectedCommand(commandNotToExecute, currentCommand)
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
   }
 
   private def receiveWaitingForEventsDispatched(currentCommand: AggregateRootCommand, persisted: Postnatalis[T], committedEvents: Seq[E]): Receive = {
-    case d: DeliveryJobDone ⇒
-      sendCommandAccepted(currentCommand)
-      context.become(receiveAcceptingCommand(persisted))
-      
-    case d: DeliveryJobNotAccepted ⇒
+    case DeliveryResult(d: DeliveryJobDone, payload) ⇒
+      handleCommandExecuted(persisted, currentCommand)
+
+    case DeliveryResult(DeliveryJobFailed(problem, _), payload) ⇒
       onError(CouldNotDispatchAllAggregateEventsException(currentCommand), currentCommand, committedEvents)
+
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(CommandNotExecuted(unexpectedCommand, UnspecifiedProblem(s"Command ${currentCommand.header} is currently executed.")))
+      context.become(receiveWaitingForEventsDispatched(currentCommand, persisted, committedEvents))
   }
 
   private def receiveMortuus(state: Mortuus): Receive = {
     case commandNotToExecute: AggregateRootCommand ⇒
-      sendCommandFailed(commandNotToExecute, AggregateRootDeletedProblem(commandNotToExecute.aggId))
+      handleCommandFailed(state, commandNotToExecute, AggregateRootDeletedProblem(commandNotToExecute.aggId))
   }
-
+  
   def receive: Receive = receiveUninitialized
 
-  private def rejectUnexpectedCommand(commandNotToExecute: AggregateRootCommand, currentCommand: AggregateRootCommand) {
-    val msg = s"""Rejecting command ${commandNotToExecute.getClass().getName()}(${commandNotToExecute.header}) because currently I'm executing ${currentCommand.getClass().getName()}(${currentCommand.header}). The aggregate root id is "${commandNotToExecute.aggId.value}"."""
-    sendCommandFailed(commandNotToExecute, CollisionProblem(msg))
+  /** Ends with termination */
+  private def onError(ex: AggregateRootDomainException, currentCommand: AggregateRootCommand, commitedEvents: Seq[E]) {
+    log.error(s"Escalating! Something terrible happened:\n$ex")
+    sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${ex.getMessage}". Escalating.""", cause = Some(ex))))
+    throw ex
   }
 
-  private def sendCommandFailed(command: AggregateRootCommand, prob: Problem) {
+  private def toExecutionFailedByRejectionEvent(commandNotToExecute: AggregateRootCommand, currentCommand: AggregateRootCommand): CommandStatusChanged = {
+    val msg = s"""Rejecting command ${commandNotToExecute.getClass().getName()}(${commandNotToExecute.header}) because currently I'm executing ${currentCommand.getClass().getName()}(${currentCommand.header}). The aggregate root id is "${commandNotToExecute.aggId.value}"."""
+    CommandExecutionFailed(commandNotToExecute, CollisionProblem(msg))
+  }
+
+  private def handleCommandFailed(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand, prob: Problem) {
     if (log.isDebugEnabled)
       log.debug(s"Command ${command.getClass().getName()}(${command.header}) failed:\n$prob")
-    sendMessage(CommandNotExecuted(command.header, prob))
-    commandStatusSink(CommandExecutionFailed(command, CauseIsProblem(prob)))
+    sendMessage(CommandNotExecuted(command, prob))
+    context.become(receiveAcceptingCommand(persistedState))
   }
 
-  private def sendCommandAccepted(command: AggregateRootCommand) {
-    sendMessage(CommandExecuted(command.header))
-    commandStatusSink(CommandSuccessfullyExecuted(command))
+  private def handleCommandExecuted(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
+    sendMessage(CommandExecuted(command))
+    context.become(receiveAcceptingCommand(persistedState))
+  }
+  
+  override def preStart() {
+    super.preStart()
+    signContract(eventsBroker, None)()
   }
 
-  private def rejectCommandAppendix(currentCommand: AggregateRootCommand): Receive = {
-    case commandNotToExecute: AggregateRootCommand ⇒
-      rejectUnexpectedCommand(commandNotToExecute, currentCommand)
+  override def preRestart(reason: Throwable, message: Option[Any]) {
+    super.preRestart(reason, message)
+    cancelContract()
+  }
+
+  override def postRestart(reason: Throwable, message: Option[Any]) {
+    super.postRestart(reason)
+    signContract(eventsBroker, None)()
+  }
+
+  override def postStop() {
+    super.postStop()
+    cancelContract()
   }
 }
 
@@ -242,11 +263,16 @@ private[almhirt] object AggregateRootDroneInternalMessages {
     def commandHeader: CommandHeader
     def isSuccess: Boolean
   }
-  final case class CommandExecuted(commandHeader: CommandHeader) extends ExecuteCommandResponse {
+  final case class CommandExecuted(command: AggregateRootCommand) extends ExecuteCommandResponse {
     def isSuccess = true
   }
-  final case class CommandNotExecuted(commandHeader: CommandHeader, problem: Problem) extends ExecuteCommandResponse {
+  final case class CommandNotExecuted(command: AggregateRootCommand, problem: Problem) extends ExecuteCommandResponse {
     def isSuccess = false
   }
- }
+
+  final case class Busy(commandHeader: AggregateRootCommand) extends ExecuteCommandResponse {
+    def isSuccess = false
+  }
+  
+}
 

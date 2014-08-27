@@ -1,5 +1,6 @@
 package almhirt.common
 
+import scalaz._, Scalaz._
 import org.joda.time.LocalDateTime
 import almhirt.aggregates.{ AggregateRootId, AggregateRootVersion }
 
@@ -16,6 +17,11 @@ object CommandHeader {
   implicit class CommandHeaderOps(self: CommandHeader) {
     def withMetadata(metadata: Map[String, String]): CommandHeader =
       self.copy(metadata = metadata)
+    def makeTrackable: CommandHeader =
+      self.copy(metadata = self.metadata + ("trackable" -> "true"))
+      
+    def isTrackable: Boolean = 
+      self.metadata.get("trackable").map(_.toLowerCase() == "true") | false
   }
 }
 
@@ -23,6 +29,13 @@ trait Command {
   def header: CommandHeader
   final def commandId: CommandId = header.id
   final def timestamp: LocalDateTime = header.timestamp
+}
+
+object Command {
+ implicit class CommandOps(self: Command) {
+    def isTrackable: Boolean = 
+      self.header.isTrackable
+  }
 }
 
 trait DomainCommand extends Command
