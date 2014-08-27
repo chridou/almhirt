@@ -36,8 +36,8 @@ trait ConfirmationContext[E <: AggregateRootEvent] {
  *  Simply send an [[AggregateRootCommand]] to the drone to have it executed.
  *  The drone can only execute on command at a time.
  */
-trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends Actor {
-  me: ActorLogging with AggregateRootEventHandler[T, E] with StateChangingActorContractor[Event] ⇒
+trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends StateChangingActorContractor[Event] {
+  me: ActorLogging with AggregateRootEventHandler[T, E]  ⇒
   import AggregateRootDroneInternalMessages._
   import almhirt.eventlog.AggregateEventLog._
 
@@ -235,19 +235,9 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends Ac
     context.become(receiveAcceptingCommand(persistedState))
   }
   
-  override def preStart() {
-    super.preStart()
-    signContract(eventsBroker, None)()
-  }
-
   override def preRestart(reason: Throwable, message: Option[Any]) {
     super.preRestart(reason, message)
     cancelContract()
-  }
-
-  override def postRestart(reason: Throwable, message: Option[Any]) {
-    super.postRestart(reason)
-    signContract(eventsBroker, None)()
   }
 
   override def postStop() {
@@ -260,7 +250,7 @@ private[almhirt] object AggregateRootDroneInternalMessages {
   sealed trait AggregateDroneMessage
 
   sealed trait ExecuteCommandResponse extends AggregateDroneMessage {
-    def commandHeader: CommandHeader
+    def command: Command
     def isSuccess: Boolean
   }
   final case class CommandExecuted(command: AggregateRootCommand) extends ExecuteCommandResponse {
@@ -270,7 +260,7 @@ private[almhirt] object AggregateRootDroneInternalMessages {
     def isSuccess = false
   }
 
-  final case class Busy(commandHeader: AggregateRootCommand) extends ExecuteCommandResponse {
+  final case class Busy(command: AggregateRootCommand) extends ExecuteCommandResponse {
     def isSuccess = false
   }
   

@@ -139,8 +139,8 @@ private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]
     log.info(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 
-  override def postRestart(reason: Throwable, message: Option[Any]) {
-    super.preRestart(reason, message)
+  override def postRestart(reason: Throwable) {
+    super.postRestart(reason)
     signContract(eventsBroker)
   }
 

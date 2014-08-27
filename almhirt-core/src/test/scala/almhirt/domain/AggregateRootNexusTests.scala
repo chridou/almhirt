@@ -9,6 +9,10 @@ import akka.actor._
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import akka.stream.scaladsl.Flow
 import almhirt.common._
+import almhirt.streaming._
+import akka.stream.scaladsl.Flow
+import akka.stream._
+
 import akka.testkit._
 import org.scalatest._
 
@@ -33,11 +37,11 @@ class AggregateRootNexusTests(_system: ActorSystem)
     import aggregatesforthelazyones._
     import almhirt.tracking._
 
-   def splitStatusEvents(events: Seq[Any]): (Seq[CommandSuccessfullyExecuted], Seq[CommandExecutionFailed]) =
+    def splitStatusEvents(events: Seq[Any]): (Seq[CommandSuccessfullyExecuted], Seq[CommandExecutionFailed]) =
       events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandSuccessfullyExecuted](), Seq[CommandExecutionFailed]())) {
         case ((a, b), cur) ⇒
           cur match {
-             case x: CommandSuccessfullyExecuted ⇒ (a:+ x, b)
+            case x: CommandSuccessfullyExecuted ⇒ (a :+ x, b)
             case x: CommandExecutionFailed ⇒ (a, b :+ x)
           }
       }
@@ -51,7 +55,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
     "receiving valid commands" when {
       "an aggregate root is created" should {
         "should emit the status events [Executed]" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           within(2 seconds) {
             Flow(CreateUser(CommandHeader(), createId(1), 0L, "hans", "meier") :: Nil).produceTo(mat, commandConsumer)
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
@@ -60,7 +66,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
       }
       "2 aggregate roots are created" should {
         "emit the status events [Executed(a)] and [Executed(b)]" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           within(2 seconds) {
             Flow(List(
               CreateUser(CommandHeader(), createId(1), 0L, "hans", "meier"),
@@ -74,7 +82,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
       val n = ids.size
       s"$n aggregate roots are created" should {
         s"emit the status events [Executed(a)] $n times" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           within(3 seconds) {
             Flow(ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
@@ -85,7 +95,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
       }
       s"$n aggregate roots are created and then updated" should {
         s"emit the status events ([Executed(a)]x2) $n times" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           val flow1 = Flow(ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateRootCommand))
           val flow2 = Flow(ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateRootCommand))
           val start = Deadline.now
@@ -98,7 +110,9 @@ class AggregateRootNexusTests(_system: ActorSystem)
       }
       s"$n aggregate roots are created, updated and then deleted" should {
         s"emit the status events ([Executed(a)]x3) $n times" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           val flow1 = Flow(ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateRootCommand))
           val flow2 = Flow(ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateRootCommand))
           val flow3 = Flow(ids.toStream.map(id ⇒ ConfirmUserDeath(CommandHeader(), id, 2L): AggregateRootCommand))
@@ -120,32 +134,26 @@ class AggregateRootNexusTests(_system: ActorSystem)
     testId: Int,
     commandConsumer: Consumer[AggregateRootCommand],
     eventlog: ActorRef,
-    eventsProbe: TestProbe,
-    statusProbe: TestProbe)
+    streams: AlmhirtStreams)
 
   def withFixture(test: OneArgTest) = {
     import scalaz._, Scalaz._
     import akka.stream.scaladsl.Duct
     import almhirt.aggregates._
-    import almhirt.tracking.CommandStatusChanged
-    import almhirt.streaming.{ SequentialPostOfficeClient, PostOffice, PostOfficeClientSettings }
+
     val testId = nextTestId
     //info(s"Test $testId")
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
-    val eventsProbe = TestProbe()
-    val statusProbe = TestProbe()
-    val cmdStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](elem ⇒ statusProbe.ref ! elem)
 
+    val (streams, stopStreams) = AlmhirtStreams.supervised(s"streams-$testId", 1 second).awaitResultOrEscalate(1 second)
     val droneProps: Props = Props(
-      new Actor with ActorLogging with AggregateRootDrone[User, UserEvent] with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] with SequentialPostOfficeClient {
+      new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] {
         def ccuad = AggregateRootNexusTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
-        val commandStatusSink = cmdStatusSink
-        val postOfficeSettings = PostOfficeClientSettings(100, (50 millis).dilated, 10)
-        val eventsPostOffice = PostOffice.faked[Event](eventsProbe.ref)
+        val eventsBroker: StreamBroker[Event] = streams.eventBroker
       })
 
     val droneFactory = new AggregateRootDroneFactory {
@@ -162,9 +170,8 @@ class AggregateRootNexusTests(_system: ActorSystem)
       new AggregateRootHive(
         desc,
         buffersize = 10,
-        AggregateRootHive.CommandTimeouts(commandTimeout = (1 second).dilated, checkForTimeoutsInterval = (100 millis).dilated),
         droneFactory = droneFactory,
-        commandStatusSink = cmdStatusSink)(AggregateRootNexusTests.this.ccuad, AggregateRootNexusTests.this.executionContext))
+        streams.eventBroker)(AggregateRootNexusTests.this.ccuad, AggregateRootNexusTests.this.executionContext))
 
     val hiveFactory = new AggregateRootHiveFactory {
       def props(descriptor: HiveDescriptor): AlmValidation[Props] = hiveProps(descriptor).success
@@ -183,10 +190,11 @@ class AggregateRootNexusTests(_system: ActorSystem)
     val nexusProps = Props(new AggregateRootNexus(commandProducer, hiveSelector, hiveFactory))
     val nexusActor = system.actorOf(nexusProps, s"nexus-$testId")
     try {
-      withFixture(test.toNoArgTest(FixtureParam(testId, commandConsumer, eventlogActor, eventsProbe, statusProbe)))
+      withFixture(test.toNoArgTest(FixtureParam(testId, commandConsumer, eventlogActor, streams)))
     } finally {
       system.stop(nexusActor)
       system.stop(eventlogActor)
+      stopStreams.stop()
     }
   }
 

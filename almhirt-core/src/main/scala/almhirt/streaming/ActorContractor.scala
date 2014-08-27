@@ -11,8 +11,8 @@ import almhirt.common._
  *  There can be at most one contract with a broker at any time.
  */
 trait ActorContractor[TElement] extends Actor {
-  final case class OnBrokerProblem(problem: Problem)
-  final case class OnDeliverSuppliesNow(amount: Int)
+  case class OnBrokerProblem(problem: Problem)
+  case class OnDeliverSuppliesNow(amount: Int)
   case object OnContractExpired
 
   protected case object ReadyForDeliveries

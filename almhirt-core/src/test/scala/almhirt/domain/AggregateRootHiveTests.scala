@@ -6,15 +6,20 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import org.reactivestreams.api.Consumer
 import akka.actor._
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.stream.scaladsl.Flow
 import almhirt.common._
+import almhirt.streaming._
+import akka.stream.scaladsl.Flow
+import akka.stream._
+import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import akka.testkit._
 import org.scalatest._
+import almhirt.common.SystemEvent
 
 class AggregateRootHiveTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AggregateRootHiveTests", almhirt.TestConfigs.logDebugConfig))
+
+  val mat = FlowMaterializer(MaterializerSettings())
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {
@@ -39,7 +44,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
       events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandSuccessfullyExecuted](), Seq[CommandExecutionFailed]())) {
         case ((a, b), cur) ⇒
           cur match {
-             case x: CommandSuccessfullyExecuted ⇒ (a:+ x, b)
+            case x: CommandSuccessfullyExecuted ⇒ (a :+ x, b)
             case x: CommandExecutionFailed ⇒ (a, b :+ x)
           }
       }
@@ -49,11 +54,12 @@ class AggregateRootHiveTests(_system: ActorSystem)
       (o.size, f.size) should equal((ok, failed))
     }
 
-    val mat = FlowMaterializer(MaterializerSettings())
     "receiving valid commands" when {
       "an aggregate root is created" should {
         "should emit the status events [Executed]" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           within(1 second) {
             Flow(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).produceTo(mat, commandConsumer)
             statusProbe.expectMsgType[CommandSuccessfullyExecuted]
@@ -62,7 +68,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
       }
       "2 aggregate roots are created" should {
         "emit the status events [Executed(a)] and [Executed(b)]" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           within(1 second) {
             Flow(List(
               CreateUser(CommandHeader(), "a", 0L, "hans", "meier"),
@@ -74,7 +82,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
       val n = 1000
       s"$n aggregate roots are created" should {
         s"emit the status events [Executed(a)] $n times" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           within(3 seconds) {
             Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).produceTo(mat, commandConsumer)
@@ -85,7 +95,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
       }
       s"$n aggregate roots are created and then updated" should {
         s"emit the status events ([Executed(a)]x2) $n times" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
           val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
           val start = Deadline.now
@@ -98,7 +110,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
       }
       s"$n aggregate roots are created, updated and then deleted" should {
         s"emit the status events ([Executed(a)]x3) $n times" in { fixture ⇒
-          val FixtureParam(testId, commandConsumer, eventlog, eventsProbe, statusProbe) = fixture
+          val FixtureParam(testId, commandConsumer, eventlog, streams) = fixture
+          val statusProbe = TestProbe()
+          Flow(streams.systemEventStream).produceTo(mat, DelegatingConsumer[SystemEvent](statusProbe.ref))
           val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
           val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
           val flow3 = Flow((1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
@@ -120,29 +134,26 @@ class AggregateRootHiveTests(_system: ActorSystem)
     testId: Int,
     hiveConsumer: Consumer[AggregateRootCommand],
     eventlog: ActorRef,
-    eventsProbe: TestProbe,
-    statusProbe: TestProbe)
+    streams: AlmhirtStreams)
 
   def withFixture(test: OneArgTest) = {
     import almhirt.aggregates._
     import almhirt.tracking.CommandStatusChanged
-    import almhirt.streaming.{ SequentialPostOfficeClient, PostOffice, PostOfficeClientSettings }
     val testId = nextTestId
     //info(s"Test $testId")
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
-    val eventsProbe = TestProbe()
-    val statusProbe = TestProbe()
-    val cmdStatusSink = FireAndForgetSink.delegating[CommandStatusChanged](elem ⇒ statusProbe.ref ! elem)
+
+    val (streams, stopStreams) = AlmhirtStreams.supervised(s"streams-$testId", 1 second).awaitResultOrEscalate(1 second)
+
     val droneProps: Props = Props(
-      new Actor with ActorLogging with AggregateRootDrone[User, UserEvent] with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] with SequentialPostOfficeClient {
+      new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] {
         def ccuad = AggregateRootHiveTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
-        val commandStatusSink = cmdStatusSink
-        val postOfficeSettings = PostOfficeClientSettings(100, (50 millis).dilated, 10)
-        val eventsPostOffice = PostOffice.faked[Event](eventsProbe.ref)
+        val eventsBroker: StreamBroker[Event] = streams.eventBroker
+
       })
 
     val droneFactory = new AggregateRootDroneFactory {
@@ -159,17 +170,17 @@ class AggregateRootHiveTests(_system: ActorSystem)
       new AggregateRootHive(
         HiveDescriptor(s"hive-$testId"),
         buffersize = 10,
-        AggregateRootHive.CommandTimeouts(commandTimeout = (1 second).dilated, checkForTimeoutsInterval = (100 millis).dilated),
         droneFactory = droneFactory,
-        commandStatusSink = cmdStatusSink)(AggregateRootHiveTests.this.ccuad, AggregateRootHiveTests.this.executionContext))
+        streams.eventBroker)(AggregateRootHiveTests.this.ccuad, AggregateRootHiveTests.this.executionContext))
     val hiveActor = system.actorOf(hiveProps, s"hive-$testId-test")
     val hiveConsumer = akka.stream.actor.ActorConsumer[AggregateRootCommand](hiveActor)
 
     try {
-      withFixture(test.toNoArgTest(FixtureParam(testId, hiveConsumer, eventlogActor, eventsProbe, statusProbe)))
+      withFixture(test.toNoArgTest(FixtureParam(testId, hiveConsumer, eventlogActor, streams)))
     } finally {
       system.stop(hiveActor)
       system.stop(eventlogActor)
+      stopStreams.stop()
     }
   }
 

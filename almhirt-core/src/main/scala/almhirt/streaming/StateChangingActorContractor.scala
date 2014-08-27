@@ -10,7 +10,7 @@ import almhirt.common._
  *
  *  There can be at most one contract with a broker at any time.
  */
-trait StateChangingActorContractor[TElement] { me: Actor =>
+trait StateChangingActorContractor[TElement] extends Actor {
   import InternalContractorMessages._
 
   protected type TPayload

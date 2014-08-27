@@ -462,26 +462,26 @@ class AggregateRootDroneTests(_system: ActorSystem)
   def withFixture(test: OneArgTest) = {
     import almhirt.aggregates._
     import almhirt.tracking.CommandStatusChanged
-    import almhirt.streaming.{ SequentialPostOfficeClient, PostOffice, PostOfficeClientSettings }
+    import almhirt.streaming._
+
     val testId = nextTestId
     //info(s"Test $testId")
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
+    val (streams, stopStreams) = AlmhirtStreams.supervised(s"streams-$testId", 1 second).awaitResultOrEscalate(1 second)
+
     val testProbe = TestProbe()
     val droneProps: Props = Props(
-      new Actor with ActorLogging with AggregateRootDrone[User, UserEvent] with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] with SequentialPostOfficeClient {
+      new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] {
         def ccuad = AggregateRootDroneTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
-        val commandStatusSink = FireAndForgetSink.devNull[CommandStatusChanged]
-        val postOfficeSettings = PostOfficeClientSettings(100, 50 millis, 10)
-        val eventsPostOffice = PostOffice.devNull[Event]
-
+        val eventsBroker: StreamBroker[Event] = streams.eventBroker
+  
         override def sendMessage(msg: AggregateRootDroneInternalMessages.AggregateDroneMessage) {
           testProbe.ref ! msg
         }
-
       })
 
     val droneActor: ActorRef = system.actorOf(droneProps, s"drone-$testId")
@@ -490,6 +490,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
     } finally {
       system.stop(droneActor)
       system.stop(eventlogActor)
+      stopStreams.stop()
     }
   }
 
