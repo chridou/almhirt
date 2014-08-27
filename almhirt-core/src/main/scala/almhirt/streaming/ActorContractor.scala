@@ -21,7 +21,7 @@ trait ActorContractor[TElement] { me: Actor =>
    * Sign a contract with a broker. The contract will be confirmed by sending a #ReadyForDeliveries
    *  to the state the actor was in when calling this method.
    *
-   *  This method will enter a new state and a handler for messages you are expecting while waiting
+   *  This method will enter a new state(Receive)  and a handler for messages you are expecting while waiting
    *  to be contracted can be added via appendix. You may not change the actor's state in the appendix.
    *
    *  Calling this method while already contracted is a serious offense and will result in an exception.
@@ -57,7 +57,7 @@ trait ActorContractor[TElement] { me: Actor =>
    * Offer items to the broker you have previously signed a contract with. The delivery confirmed by sending a [[DeliveryStatus]]
    *  to the state the actor was in when calling this method.
    *
-   *  This method will enter a new state and a handler for messages you are expecting while waiting
+   *  This method will enter a new state(Receive) and a handler for messages you are expecting while waiting
    *  to for the delivery to be fulfilled can be added via appendix. You may not change the actor's state in the appendix.
    *
    *  Calling this method while already delivering items or not having signed a contract results in a [[DeliveryJobFailed]].
