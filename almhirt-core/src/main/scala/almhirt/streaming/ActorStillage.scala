@@ -6,9 +6,9 @@ import akka.actor._
 object ActorStillage {
   def apply[TElement](actor: ActorRef): Supplier[TElement] =
     new Supplier[TElement] {
-      def signContract(trader: StreamBroker[TElement]) = {
-        import InternalActorStillageMessages._
-        trader.signContract(new SuppliesContractor[TElement] {
+      def signContract(broker: StreamBroker[TElement]) = {
+        import InternalContractorMessages._
+        broker.signContract(new SuppliesContractor[TElement] {
           def onProblem(problem: Problem) {
             actor ! OnProblem(problem)
           }
@@ -42,7 +42,7 @@ object ActorStillage {
 
 }
 
-private[almhirt] object InternalActorStillageMessages {
+private[almhirt] object InternalContractorMessages {
   import scala.language.existentials
   final case class OnProblem(problem: Problem)
   final case class OnStockroom(theStockroom: Stockroom[_])
@@ -51,7 +51,7 @@ private[almhirt] object InternalActorStillageMessages {
 }
 
 private[almhirt] class ActorStillage[TElement](contents: Seq[TElement], packagingSize: Int) extends Actor with ActorLogging {
-  import InternalActorStillageMessages._
+  import InternalContractorMessages._
   var notYetOffered = contents
   var offered: Vector[TElement] = Vector.empty
   var toDeliverLeft = contents.size
