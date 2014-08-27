@@ -27,6 +27,7 @@ object DeliveryJobDone {
 }
 
 sealed trait DeliveryJobFailed extends DeliveryStatus { def problem: Problem }
+
 final case class UntrackedDeliveryJobFailed(problem: Problem ) extends DeliveryJobFailed
 final case class TrackedDeliveryJobFailed(problem: Problem, ticket: TrackingTicket) extends DeliveryJobFailed
 

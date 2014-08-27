@@ -13,9 +13,11 @@ import almhirt.common._
 trait ActorContractor[TElement] { me: Actor =>
   import InternalContractorMessages._
 
-  protected case object ReadyForDeliveries
+  protected type TPayload
 
-  private var stockroom: Option[Stockroom[TElement]] = None
+  protected case class ReadyForDeliveries(payLoad: Option[TPayload])
+
+  case class DeliveryResult(deliveryStatus: DeliveryStatus, payLoad: Option[TPayload])
 
   /**
    * Sign a contract with a broker. The contract will be confirmed by sending a #ReadyForDeliveries
@@ -27,52 +29,67 @@ trait ActorContractor[TElement] { me: Actor =>
    *  Calling this method while already contracted is a serious offense and will result in an exception.
    *  You can check whether there is a contract vial #contracted.
    */
-  protected def signContract(broker: StreamBroker[TElement], appendix: Receive = Actor.emptyBehavior) {
-    stockroom match {
-      case None =>
-        broker.signContract(new SuppliesContractor[TElement] {
-          def onProblem(problem: Problem) {
-            self ! OnProblem(problem)
-          }
-
-          def onStockroom(theStockroom: Stockroom[TElement]) {
-            self ! OnStockroom(theStockroom)
-          }
-
-          def onDeliverSuppliesNow(amount: Int) {
-            self ! OnDeliverSuppliesNow(amount)
-          }
-
-          def onContractExpired() {
-            self ! OnContractExpired
-          }
-        })
-        context.become(receiveWaitForStockroom orElse appendix, true)
-      case Some(_) =>
-        throw new Exception("We are already contracted. You cannot sign more than one contract.")
-    }
+  protected def signContract(broker: StreamBroker[TElement], appendix: Receive = Actor.emptyBehavior, initialPayLoad: Option[TPayload] = None) {
+    enterSignContract(broker, None, appendix, initialPayLoad)
   }
 
   /**
-   * Offer items to the broker you have previously signed a contract with. The delivery confirmed by sending a [[DeliveryStatus]]
+   * Sign a contract with a broker. The contract will be confirmed by sending a #ReadyForDeliveries
+   *  to the state specified by nextState.
+   *
+   *  This method will enter a new state(Receive)  and a handler for messages you are expecting while waiting
+   *  to be contracted can be added via appendix. You may not change the actor's state in the appendix.
+   *
+   *  Calling this method while already contracted is a serious offense and will result in an exception.
+   *  You can check whether there is a contract vial #contracted.
+   */
+  protected def signContractAndThen(broker: StreamBroker[TElement], appendix: Receive = Actor.emptyBehavior, initialPayLoad: Option[TPayload] = None)(nextState: Receive) {
+    enterSignContract(broker, Some(nextState), appendix, initialPayLoad)
+  }
+
+   /**
+   * Offer items to the broker you have previously signed a contract with. The delivery confirmed by sending a [[DeliveryResult]]
    *  to the state the actor was in when calling this method.
    *
    *  This method will enter a new state(Receive) and a handler for messages you are expecting while waiting
    *  to for the delivery to be fulfilled can be added via appendix. You may not change the actor's state in the appendix.
    *
-   *  Calling this method while already delivering items or not having signed a contract results in a [[DeliveryJobFailed]].
+   *  You must not call this method from within the appendix. If you need to offer items while already delivering, call [[#offerMore]]
+   *
+   *  Do not cancel the contract while delivering.
    */
-  protected def offer(items: Seq[TElement], appendix: Receive = Actor.emptyBehavior) {
+  protected def offer(items: Seq[TElement], appendix: Receive = Actor.emptyBehavior, initialPayLoad: Option[TPayload] = None) {
+    enterDelivery(items, None, appendix, initialPayLoad)
+  }
+
+  /**
+   * Offer items to the broker you have previously signed a contract with. The delivery confirmed by sending a [[DeliveryResult]]
+   *  to the state specified by andThen.
+   *
+   *  This method will enter a new state(Receive) and a handler for messages you are expecting while waiting
+   *  to for the delivery to be fulfilled can be added via appendix. You may not change the actor's state in the appendix.
+   *
+   *  You must not call this method from within the appendix. If you need to offer items while already delivering, call [[#offerMore]]
+   *
+   *  Do not cancel the contract while delivering.
+   */
+  protected def offerAndThen(items: Seq[TElement], appendix: Receive = Actor.emptyBehavior, initialPayLoad: Option[TPayload] = None)(nextState: Receive) {
+    enterDelivery(items, Some(nextState), appendix, initialPayLoad)
+  }
+  /**
+   * Offer items to the broker while already delivering. The items will be added to the current job.
+   * Offering more while not delivering will result in an exception.
+   */
+  protected def offerMore(items: Seq[TElement]) {
     stockroom match {
       case Some(sr) =>
-        if (items.isEmpty) {
-          self ! DeliveryJobDone()
-        } else if (!toDeliverInCurrentJob.isEmpty) {
-          self ! DeliveryJobFailed(IllegalOperationProblem("There is already a delivery job running. Please wait for completion until issueing another job."))
+        if (!toDeliverInCurrentJob.isEmpty) {
+          if (!items.isEmpty) {
+            sr.offerSupplies(items.size)
+            toDeliverInCurrentJob = toDeliverInCurrentJob ++ items
+          }
         } else {
-          sr.offerSupplies(items.size)
-          toDeliverInCurrentJob = items
-          context.become(receiveWaitForDelivery orElse appendix, true)
+          throw new Exception("You must not call offerMore when there is no delivery job running!")
         }
       case None =>
         self ! DeliveryJobFailed(IllegalOperationProblem("No contract signed. Please sign a contract with your favorite local broker."))
@@ -92,11 +109,69 @@ trait ActorContractor[TElement] { me: Actor =>
    */
   protected def contracted: Boolean = stockroom.isDefined
 
+  protected def payload: Option[TPayload] = payloadInternal
+  protected def setPayload(payload: TPayload) { payloadInternal = Some(payload) }
+  protected def modPayload(f: TPayload => TPayload) { payload.map(f) }
+  
+  private var stockroom: Option[Stockroom[TElement]] = None
+  private var payloadInternal: Option[TPayload] = None
+  private var nextState: Option[Receive] = None
+  
+  private def enterDelivery(items: Seq[TElement], nextState: Option[Receive], appendix: Receive, initialPayLoad: Option[TPayload]) {
+    stockroom match {
+      case Some(sr) =>
+        if (items.isEmpty) {
+          self ! DeliveryResult(DeliveryJobDone(), initialPayLoad)
+        } else if (!toDeliverInCurrentJob.isEmpty) {
+          self ! DeliveryResult(DeliveryJobFailed(IllegalOperationProblem("There is already a delivery job running. Please wait for completion until issueing another job.")), initialPayLoad)
+        } else {
+          sr.offerSupplies(items.size)
+          toDeliverInCurrentJob = items
+          this.nextState = nextState
+          context.become(receiveWaitForDelivery orElse appendix, true)
+        }
+      case None =>
+        self ! DeliveryResult(DeliveryJobFailed(IllegalOperationProblem("No contract signed. Please sign a contract with your favorite local broker.")), initialPayLoad)
+    }
+  }
+
+  private def enterSignContract(broker: StreamBroker[TElement], nextState: Option[Receive], appendix: Receive, initialPayLoad: Option[TPayload]) {
+    stockroom match {
+      case None =>
+        broker.signContract(new SuppliesContractor[TElement] {
+          def onProblem(problem: Problem) {
+            self ! OnProblem(problem)
+          }
+
+          def onStockroom(theStockroom: Stockroom[TElement]) {
+            self ! OnStockroom(theStockroom)
+          }
+
+          def onDeliverSuppliesNow(amount: Int) {
+            self ! OnDeliverSuppliesNow(amount)
+          }
+
+          def onContractExpired() {
+            self ! OnContractExpired
+          }
+        })
+        this.nextState = nextState
+        context.become(receiveWaitForStockroom orElse appendix, true)
+      case Some(_) =>
+        throw new Exception("We are already contracted. You cannot sign more than one contract.")
+    }
+  }
+
+ 
   private def receiveWaitForStockroom: Receive = {
     case OnStockroom(theStockroom: Stockroom[TElement]) =>
       this.stockroom = Some(theStockroom)
-      self ! ReadyForDeliveries
       context.unbecome()
+      nextState.foreach(nx => context.become(nx))
+      nextState = None
+      val p = payloadInternal
+      payloadInternal = None
+      self ! ReadyForDeliveries(p)
   }
 
   var toDeliverInCurrentJob: Seq[TElement] = Seq.empty
@@ -108,7 +183,11 @@ trait ActorContractor[TElement] { me: Actor =>
       toDeliverInCurrentJob = rest
       if (toDeliverInCurrentJob.isEmpty) {
         context.unbecome()
-        self ! DeliveryJobDone()
+        nextState.foreach(nx => context.become(nx))
+        nextState = None
+        val p = payloadInternal
+        payloadInternal = None
+        self ! DeliveryResult(DeliveryJobDone(), p)
       }
   }
 }
