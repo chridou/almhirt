@@ -16,9 +16,9 @@ import almhirt.streaming._
 import akka.testkit._
 import org.scalatest._
 
-class AggregateRootDirectViewTests(_system: ActorSystem)
+class AggregateRootUnprojectedViewTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("AggregateRootDirectViewTests", almhirt.TestConfigs.logWarningConfig))
+  def this() = this(ActorSystem("AggregateRootUnprojectedViewTests", almhirt.TestConfigs.logWarningConfig))
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
@@ -32,7 +32,7 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
 
   case class NotAUserEvent(header: EventHeader, aggId: AggregateRootId, aggVersion: AggregateRootVersion) extends AggregateRootEvent
 
-  "An AggregateRootDirectView" when {
+  "An AggregateRootUnprojectedView" when {
     import aggregatesforthelazyones._
     import AggregateRootDroneInternalMessages._
     import almhirt.eventlog.AggregateEventLog._
@@ -236,7 +236,7 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
 
     val droneProps: Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] {
-        def ccuad = AggregateRootDirectViewTests.this.ccuad
+        def ccuad = AggregateRootUnprojectedViewTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
@@ -248,7 +248,7 @@ class AggregateRootDirectViewTests(_system: ActorSystem)
 
     val droneActor = system.actorOf(droneProps, s"drone-$testId")
 
-    val viewProps = Props(new AggregateRootDirectView[User, UserEvent](
+    val viewProps = Props(new AggregateRootUnprojectedView[User, UserEvent](
       theId, eventlogActor, None,
       (lc, receiver) => receiver ! UserState(lc),
       (prob, receiver) => receiver ! ViewFailure(prob)) with UserEventHandler)

@@ -12,17 +12,18 @@ import almhirt.common.AggregateRootEvent
 final case class ApplyAggregateEvent(event: AggregateRootEvent)
 case object GetAggregateRootProjection
 
-abstract class AggregateRootDirectView[T <: AggregateRoot, E <: AggregateRootEvent](
+/** View an unprojected aggregate root that is updated vial the aggregate event log or aggregate events as they come in */ 
+abstract class AggregateRootUnprojectedView[T <: AggregateRoot, E <: AggregateRootEvent](
   override val aggregateRootId: AggregateRootId,
   override val aggregateEventLog: ActorRef,
   override val snapshotStorage: Option[ActorRef],
   override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) ⇒ Unit,
-  override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit)(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootDirectViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
+  override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit)(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
 
   override def receive: Receive = me.receiveUninitialized
 }
 
-private[almhirt] trait AggregateRootDirectViewSkeleton[T <: AggregateRoot, E <: AggregateRootEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] ⇒
+private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, E <: AggregateRootEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] ⇒
   import almhirt.eventlog.AggregateEventLog._
 
   def futuresContext: ExecutionContext
