@@ -24,16 +24,18 @@ private[almhirt] object AggregateRootHiveInternals {
 
 class AggregateRootHive(
   override val hiveDescriptor: HiveDescriptor,
-  override val buffersize: Int,
+  override val commandBuffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
-  override val eventsBroker: StreamBroker[Event])(implicit override val ccuad: CanCreateUuidsAndDateTimes, override val futuresContext: ExecutionContext)
+  override val eventsBroker: StreamBroker[Event],
+  enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit override val ccuad: CanCreateUuidsAndDateTimes, override val futuresContext: ExecutionContext)
   extends ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
 
   override val requestStrategy = ZeroRequestStrategy
+  override val enqueudEventsThrottlingThreshold = commandBuffersize * enqueudEventsThrottlingThresholdFactor
 
 }
 
-private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]{ me: ActorLogging with ActorSubscriber ⇒
+private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] { me: ActorLogging with ActorSubscriber ⇒
   import AggregateRootHive._
   import AggregateRootHiveInternals._
 
@@ -49,10 +51,11 @@ private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]
     }
 
   def hiveDescriptor: HiveDescriptor
-  def buffersize: Int
+  def commandBuffersize: Int
   def droneFactory: AggregateRootDroneFactory
   implicit def futuresContext: ExecutionContext
   def eventsBroker: StreamBroker[Event]
+  def enqueudEventsThrottlingThreshold: Int
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
   private var numReceivedInternal = 0
@@ -65,35 +68,70 @@ private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]
 
   def receiveInitialize: Receive = {
     case ReadyForDeliveries ⇒
-      request(buffersize)
-      context.become(receiveRunning(Vector.empty))
+      requestCommands()
+      context.become(receiveRunning())
   }
 
-  def receiveRunning(bufferedEvents: Vector[Event]): Receive = {
+
+  private var remainingRequestCapacity: Int = commandBuffersize
+  private var bufferedEvents: Vector[Event] = Vector.empty
+
+  private def requestCommands() {
+    if(bufferedEvents.size > enqueudEventsThrottlingThreshold) {
+      log.warning(s"to many events: ${bufferedEvents .size}")
+    }
+    if (remainingRequestCapacity > 0 && bufferedEvents.size <= enqueudEventsThrottlingThreshold) {
+      request(remainingRequestCapacity)
+      remainingRequestCapacity = 0
+    }
+  }
+
+  private def receivedCommandResponse() {
+    remainingRequestCapacity = remainingRequestCapacity + 1
+  }
+
+  private def receivedInvalidCommand() {
+    remainingRequestCapacity = remainingRequestCapacity + 1
+  }
+
+  private def enqueueEvent(event: Event) {
+    bufferedEvents = bufferedEvents :+ event
+    offer(1)
+  }
+
+  private def deliverEvents(amount: Int) {
+    val toDeliver = bufferedEvents.take(amount)
+    val rest = bufferedEvents.drop(toDeliver.size)
+    deliver(toDeliver)
+    bufferedEvents = rest
+  }
+
+  def receiveRunning(): Receive = {
     case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
       numReceivedInternal += 1
-      context.child(aggregateCommand.aggId.value) match {
+      val drone = context.child(aggregateCommand.aggId.value) match {
         case Some(drone) ⇒
-          drone ! aggregateCommand
+          drone
         case None ⇒
           droneFactory(aggregateCommand) match {
             case scalaz.Success(props) ⇒
-              val drone = context.actorOf(props, aggregateCommand.aggId.value)
-              //context watch drone
-              drone ! aggregateCommand
+              context.actorOf(props, aggregateCommand.aggId.value)
+            //context watch drone
             case scalaz.Failure(problem) ⇒
               throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
           }
       }
-      context.become(receiveRunning(bufferedEvents))
+      drone ! aggregateCommand
+      enqueueEvent(CommandExecutionInitiated(aggregateCommand))
+
 
     case rsp: AggregateRootDroneInternalMessages.ExecuteCommandResponse ⇒
+      receivedCommandResponse()
       if (rsp.isSuccess) {
         numSucceededInternal += 1
       } else {
         numFailedInternal += 1
       }
-      offer(1)
       val event: Event = rsp match {
         case AggregateRootDroneInternalMessages.CommandExecuted(command) =>
           CommandSuccessfullyExecuted(command)
@@ -102,18 +140,16 @@ private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]
         case AggregateRootDroneInternalMessages.Busy(command) =>
           CommandExecutionFailed(command, CollisionProblem("Command can not be executed since another command is being executed."))
       }
-      context.become(receiveRunning(bufferedEvents :+ event))
+      enqueueEvent(event)
+      requestCommands()
 
     case OnDeliverSuppliesNow(amount) =>
-      val toDeliverNow = bufferedEvents.take(amount)
-      val rest = bufferedEvents.drop(toDeliverNow.size)
-      deliver(toDeliverNow)
-      request(toDeliverNow.size)
-      context.become(receiveRunning(rest))
+      deliverEvents(amount)
+      requestCommands()
 
     case ActorSubscriberMessage.OnNext(something) ⇒
       log.warning(s"Received something I cannot handle: $something")
-      request(1)
+      receivedInvalidCommand()
 
     case ActorSubscriberMessage.OnComplete ⇒
       if (log.isDebugEnabled)
@@ -127,7 +163,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]
   }
 
   override def receive: Receive = receiveInitialize
-  
+
   override def preStart() {
     super.preStart()
     signContract(eventsBroker)
@@ -149,5 +185,5 @@ private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]
     cancelContract()
     log.info(s"Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
-  
+
 }
