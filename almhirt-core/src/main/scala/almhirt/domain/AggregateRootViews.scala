@@ -82,9 +82,9 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
     case ActorSubscriberMessage.OnNext(event: AggregateRootEvent) =>
       event.castTo[E].fold(
         fail => {
-          // This can happen quite often...
-          if (log.isDebugEnabled)
-            log.debug(s"Received unproccessable aggregate event:\n$fail")
+          // This can happen quite often depending on the producer ...
+          if (log.isWarningEnabled)
+            log.warning(s"Received unproccessable aggregate event:\n$fail")
           request(1)
         },
         aggregateEvent => {
