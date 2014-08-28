@@ -15,6 +15,8 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
+  implicit val mat = FlowMaterializer(MaterializerSettings())
+
   case class TestEvent(header: EventHeader) extends Event
   object TestEvent {
     def apply(id: String): TestEvent = TestEvent(EventHeader(EventId(id)))
@@ -34,150 +36,150 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
     "accessed via a contractor" should {
       "dispatch an event on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestEvent("a")
-        val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.eventStream.produceTo(consumer)
+          streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectMsg(100 millis, event)
+          subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
 
       "dispatch two events from two producers on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event1 = TestEvent("a")
         val event2 = TestEvent("b")
-        val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.eventStream.produceTo(consumer)
+          streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event1)).signContract(streams.eventBroker)
           Stillage(List[Event](event2)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectMsgAllOf(100 millis, event1, event2)
+          subscriberProbeEvent.expectMsgAllOf(100 millis, event1, event2)
         }
       }
 
-      "dispatch an event to 2 consumers on the event stream" in { fixture ⇒
+      "dispatch an event to 2 subscribers on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent1 = TestProbe()
-        val consumerProbeEvent2 = TestProbe()
+        val subscriberProbeEvent1 = TestProbe()
+        val subscriberProbeEvent2 = TestProbe()
 
         val event = TestEvent("a")
-        val consumer1 = DelegatingEventConsumer[Event](consumerProbeEvent1.ref)
-        val consumer2 = DelegatingEventConsumer[Event](consumerProbeEvent2.ref)
+        val subscriber1 = DelegatingEventSubscriber[Event](subscriberProbeEvent1.ref)
+        val subscriber2 = DelegatingEventSubscriber[Event](subscriberProbeEvent2.ref)
         within(1 second) {
-          streams.eventStream.produceTo(consumer1)
-          streams.eventStream.produceTo(consumer2)
+          streams.eventStream.subscribe(subscriber1)
+          streams.eventStream.subscribe(subscriber2)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent1.expectMsg(100 millis, event)
-          consumerProbeEvent2.expectMsg(100 millis, event)
+          subscriberProbeEvent1.expectMsg(100 millis, event)
+          subscriberProbeEvent2.expectMsg(100 millis, event)
         }
       }
 
       "NOT dispatch an event on the system event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestEvent("a")
-        val consumer = DelegatingEventConsumer[SystemEvent](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[SystemEvent](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.systemEventStream.produceTo(consumer)
+          streams.systemEventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectNoMsg(100 millis)
+          subscriberProbeEvent.expectNoMsg(100 millis)
         }
       }
 
       "NOT dispatch an event on the domain event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestEvent("a")
-        val consumer = DelegatingEventConsumer[DomainEvent](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[DomainEvent](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.domainEventStream.produceTo(consumer)
+          streams.domainEventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectNoMsg(100 millis)
+          subscriberProbeEvent.expectNoMsg(100 millis)
         }
       }
 
       "dispatch a system event on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestSystemEvent("a")
-        val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.eventStream.produceTo(consumer)
+          streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectMsg(100 millis, event)
+          subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
 
       "dispatch a system event on the system event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestSystemEvent("a")
-        val consumer = DelegatingEventConsumer[SystemEvent](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[SystemEvent](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.systemEventStream.produceTo(consumer)
+          streams.systemEventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectMsg(100 millis, event)
+          subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
 
       "NOT dispatch a system event on the domain event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestSystemEvent("a")
-        val consumer = DelegatingEventConsumer[DomainEvent](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[DomainEvent](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.domainEventStream.produceTo(consumer)
+          streams.domainEventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectNoMsg(100 millis)
+          subscriberProbeEvent.expectNoMsg(100 millis)
         }
       }
 
       "dispatch a domain event on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestDomainEvent("a")
-        val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.eventStream.produceTo(consumer)
+          streams.eventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectMsg(100 millis, event)
+          subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
 
       "NOT dispatch a domain event on the system event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestDomainEvent("a")
-        val consumer = DelegatingEventConsumer[SystemEvent](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[SystemEvent](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.systemEventStream.produceTo(consumer)
+          streams.systemEventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectNoMsg(100 millis)
+          subscriberProbeEvent.expectNoMsg(100 millis)
         }
       }
 
       "dispatch a domain event on the domain event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestDomainEvent("a")
-        val consumer = DelegatingEventConsumer[DomainEvent](consumerProbeEvent.ref)
+        val subscriber = DelegatingEventSubscriber[DomainEvent](subscriberProbeEvent.ref)
         within(1 second) {
-          streams.domainEventStream.produceTo(consumer)
+          streams.domainEventStream.subscribe(subscriber)
           Stillage(List[Event](event)).signContract(streams.eventBroker)
-          consumerProbeEvent.expectMsg(100 millis, event)
+          subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
 
@@ -187,10 +189,10 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
 
         val n = nMsgBig * 3
         val events = (1 to n).map(i ⇒ TestEvent(i.toString): Event).toVector
-        val consumer = DelegatingEventConsumer[Event](probe2.ref)
+        val subscriber = DelegatingEventSubscriber[Event](probe2.ref)
         val start = Deadline.now
         within(6 seconds) {
-          streams.eventStream.produceTo(consumer)
+          streams.eventStream.subscribe(subscriber)
           Stillage(events).signContract(streams.eventBroker)
           val res = probe2.receiveN(n, 5 seconds)
           val time = start.lap
@@ -214,14 +216,14 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
           } else {
             TestDomainEvent(i.toString)
           }: Event).toVector
-        val consumerEvent = DelegatingEventConsumer[Event](probeEvent.ref)
-        val consumerSystemEvent = DelegatingEventConsumer[SystemEvent](probeSystemEvent.ref)
-        val consumerDomainEvent = DelegatingEventConsumer[DomainEvent](probeDomainEvent.ref)
+        val subscriberEvent = DelegatingEventSubscriber[Event](probeEvent.ref)
+        val subscriberSystemEvent = DelegatingEventSubscriber[SystemEvent](probeSystemEvent.ref)
+        val subscriberDomainEvent = DelegatingEventSubscriber[DomainEvent](probeDomainEvent.ref)
         val start = Deadline.now
         within(6 seconds) {
-          streams.eventStream.produceTo(consumerEvent)
-          streams.systemEventStream.produceTo(consumerSystemEvent)
-          streams.domainEventStream.produceTo(consumerDomainEvent)
+          streams.eventStream.subscribe(subscriberEvent)
+          streams.systemEventStream.subscribe(subscriberSystemEvent)
+          streams.domainEventStream.subscribe(subscriberDomainEvent)
           Stillage(events).signContract(streams.eventBroker)
           val resEvent = probeEvent.receiveN(n, 5 seconds)
           val resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
@@ -251,18 +253,18 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
             TestDomainEvent(f"$i%07d")
           }: Event).toVector
         val parts = events.grouped(n / nContractors)
-        val consumerEvent = DelegatingEventConsumer[Event](probeEvent.ref)
-        val consumerSystemEvent = DelegatingEventConsumer[SystemEvent](probeSystemEvent.ref)
-        val consumerDomainEvent = DelegatingEventConsumer[DomainEvent](probeDomainEvent.ref)
+        val subscriberEvent = DelegatingEventSubscriber[Event](probeEvent.ref)
+        val subscriberSystemEvent = DelegatingEventSubscriber[SystemEvent](probeSystemEvent.ref)
+        val subscriberDomainEvent = DelegatingEventSubscriber[DomainEvent](probeDomainEvent.ref)
 
         var resEvent: Seq[Any] = null
         var resSystemEvent: Seq[Any] = null
         var resDomainEvent: Seq[Any] = null
         val start = Deadline.now
         within(6 seconds) {
-          streams.eventStream.produceTo(consumerEvent)
-          streams.systemEventStream.produceTo(consumerSystemEvent)
-          streams.domainEventStream.produceTo(consumerDomainEvent)
+          streams.eventStream.subscribe(subscriberEvent)
+          streams.systemEventStream.subscribe(subscriberSystemEvent)
+          streams.domainEventStream.subscribe(subscriberDomainEvent)
           parts.foreach(Stillage(_).signContract(streams.eventBroker))
           resEvent = probeEvent.receiveN(n, 5 seconds)
           resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
@@ -291,18 +293,18 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
             TestDomainEvent(f"$i%07d")
           }: Event).toVector
         val parts = events.grouped(n / (nContractors * 10))
-        val consumerEvent = DelegatingEventConsumer[Event](probeEvent.ref)
-        val consumerSystemEvent = DelegatingEventConsumer[SystemEvent](probeSystemEvent.ref)
-        val consumerDomainEvent = DelegatingEventConsumer[DomainEvent](probeDomainEvent.ref)
+        val subscriberEvent = DelegatingEventSubscriber[Event](probeEvent.ref)
+        val subscriberSystemEvent = DelegatingEventSubscriber[SystemEvent](probeSystemEvent.ref)
+        val subscriberDomainEvent = DelegatingEventSubscriber[DomainEvent](probeDomainEvent.ref)
 
         var resEvent: Seq[Any] = null
         var resSystemEvent: Seq[Any] = null
         var resDomainEvent: Seq[Any] = null
         val start = Deadline.now
         within(6 seconds) {
-          streams.eventStream.produceTo(consumerEvent)
-          streams.systemEventStream.produceTo(consumerSystemEvent)
-          streams.domainEventStream.produceTo(consumerDomainEvent)
+          streams.eventStream.subscribe(subscriberEvent)
+          streams.systemEventStream.subscribe(subscriberSystemEvent)
+          streams.domainEventStream.subscribe(subscriberDomainEvent)
           parts.foreach(Stillage(_).signContract(streams.eventBroker))
           resEvent = probeEvent.receiveN(n, 5 seconds)
           resSystemEvent = probeSystemEvent.receiveN(n / 3, 5 seconds)
@@ -315,37 +317,36 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         resDomainEvent.map(_.asInstanceOf[DomainEvent]).sortBy(_.eventId.value) should equal(events.collect { case m: DomainEvent ⇒ m })
       }
     }
-    "accessed via a consumer" should {
-      val mat = FlowMaterializer(MaterializerSettings())
+    "accessed via a subscriber" should {
       "dispatch an event on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event = TestEvent("a")
-        val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
-        val streamConsumer = streams.eventBroker.newConsumer
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
+        val streamSubscriber = streams.eventBroker.newSubscriber
         within(1 second) {
-          streams.eventStream.produceTo(streamConsumer)
-          Flow(List[Event](event)).produceTo(mat, consumer)
-          consumerProbeEvent.expectMsg(100 millis, event)
+          streams.eventStream.subscribe(streamSubscriber)
+          Flow(List[Event](event)).produceTo(subscriber)
+          subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
 
       "dispatch two events from two producers on the event stream" in { fixture ⇒
         val FixtureParam(streams) = fixture
-        val consumerProbeEvent = TestProbe()
+        val subscriberProbeEvent = TestProbe()
 
         val event1 = TestEvent("a")
         val event2 = TestEvent("b")
-        val consumer = DelegatingEventConsumer[Event](consumerProbeEvent.ref)
-        val streamConsumer1 = streams.eventBroker.newConsumer
-        val streamConsumer2 = streams.eventBroker.newConsumer
+        val subscriber = DelegatingEventSubscriber[Event](subscriberProbeEvent.ref)
+        val streamSubscriber1 = streams.eventBroker.newSubscriber
+        val streamSubscriber2 = streams.eventBroker.newSubscriber
         within(1 second) {
-          streams.eventStream.produceTo(consumer)
-          Flow(List[Event](event1)).produceTo(mat, streamConsumer1)
-          consumerProbeEvent.expectMsg(100 millis, event1)
-          Flow(List[Event](event2)).produceTo(mat, streamConsumer2)
-          consumerProbeEvent.expectMsg(100 millis, event2)
+          streams.eventStream.subscribe(subscriber)
+          Flow(List[Event](event1)).produceTo(streamSubscriber1)
+          subscriberProbeEvent.expectMsg(100 millis, event1)
+          Flow(List[Event](event2)).produceTo(streamSubscriber2)
+          subscriberProbeEvent.expectMsg(100 millis, event2)
         }
       }
 

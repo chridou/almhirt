@@ -25,28 +25,24 @@ private[streaming] class DelegatingSubscriber[T](delegateTo: ActorRef) extends S
   private[this] var sub: Option[Subscription] = None
 
   private def requestMore() = sub.map(_.request(1))
+  override def onError(cause: Throwable): Unit =
+    scala.sys.error(cause.getMessage)
 
-  override def getSubscriber: Subscriber[T] = new Subscriber[T] {
+  override def onSubscribe(subscription: Subscription): Unit = {
+    sub = Some(subscription)
+    requestMore()
+  }
 
-    override def onError(cause: Throwable): Unit =
-      scala.sys.error(cause.getMessage)
+  override def onComplete(): Unit = {
+    sub.foreach(s ⇒ {
+      s.cancel()
+      sub = None
+    })
+  }
 
-    override def onSubscribe(subscription: Subscription): Unit = {
-      sub = Some(subscription)
-      requestMore()
-    }
-
-    override def onComplete(): Unit = {
-      sub.foreach(s ⇒ {
-        s.cancel()
-        sub = None
-      })
-    }
-
-    override def onNext(element: T): Unit = {
-      delegateTo ! element
-      requestMore()
-    }
+  override def onNext(element: T): Unit = {
+    delegateTo ! element
+    requestMore()
   }
 }
 

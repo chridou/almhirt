@@ -15,25 +15,21 @@ object StreamShipper {
 
         def newSubscriber(): Subscriber[TElement] = {
           import InternalBrokerMessages._
+          val subscriberId = java.util.UUID.randomUUID().toString()
           new Subscriber[TElement] {
-            def getSubscriber(): Subscriber[TElement] = {
-              val subscriberId = java.util.UUID.randomUUID().toString()
-              new Subscriber[TElement] {
-                override def onError(cause: Throwable): Unit =
-                  actor ! InternalOnError(subscriberId, cause)
+            override def onError(cause: Throwable): Unit =
+              actor ! InternalOnError(subscriberId, cause)
 
-                override def onSubscribe(subscription: Subscription): Unit = {
-                  actor ! InternalOnSubscribe(subscriberId, subscription)
-                }
+            override def onSubscribe(subscription: Subscription): Unit = {
+              actor ! InternalOnSubscribe(subscriberId, subscription)
+            }
 
-                override def onComplete(): Unit = {
-                  actor ! InternalOnComplete(subscriberId)
-                }
+            override def onComplete(): Unit = {
+              actor ! InternalOnComplete(subscriberId)
+            }
 
-                override def onNext(element: TElement): Unit = {
-                  actor ! InternalOnNext(subscriberId, element)
-                }
-              }
+            override def onNext(element: TElement): Unit = {
+              actor ! InternalOnNext(subscriberId, element)
             }
           }
         }

@@ -63,7 +63,7 @@ object AlmhirtStreams {
 
   def apply(eventStreamSubscriberName: String, commandStreamSubscriberName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with Stoppable = {
     implicit val mat = FlowMaterializer(MaterializerSettings())
-    
+
     val (eventSubscriber, eventPublisher) = Duct[Event].build()
 
     val eventShipperActor = actorRefFactory.actorOf(StreamShipper.props(), eventStreamSubscriberName)
@@ -144,21 +144,18 @@ private[streaming] class DevNullSubscriber[T]() extends Subscriber[T] {
 
   private def requestMore() = sub.map(_.request(1))
 
-  override def getSubscriber: Subscriber[T] = new Subscriber[T] {
+  override def onError(cause: Throwable): Unit =
+    scala.sys.error(cause.getMessage)
 
-    override def onError(cause: Throwable): Unit =
-      scala.sys.error(cause.getMessage)
+  override def onSubscribe(subscription: Subscription): Unit = {
+    sub = Some(subscription)
+    requestMore()
+  }
 
-    override def onSubscribe(subscription: Subscription): Unit = {
-      sub = Some(subscription)
-      requestMore()
-    }
+  override def onComplete(): Unit = {
+  }
 
-    override def onComplete(): Unit = {
-    }
-
-    override def onNext(element: T): Unit = {
-      requestMore()
-    }
+  override def onNext(element: T): Unit = {
+    requestMore()
   }
 }
