@@ -79,14 +79,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
-      signContractAndThen(eventsBroker, initialPayload = Some(Seq.empty)) {
+     signContractAndThen(eventsBroker, initialPayload = Some(Seq.empty)) {
         case unexpectedCommand: AggregateRootCommand =>
           sendMessage(Busy(unexpectedCommand))
       }(receiveWaitForContract(firstCommand))
   }
 
   private def receiveWaitForContract(currentCommand: AggregateRootCommand): Receive = {
-    case ReadyForDeliveries(Some(collectedCommands)) ⇒
+    case ReadyForDeliveries(_) ⇒
       snapshotStorage match {
         case None ⇒
           context.become(receiveRebuildFromScratch(currentCommand))
@@ -128,10 +128,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   }
 
   private def receiveRebuildFromSnapshot(currentCommand: AggregateRootCommand): Receive = {
-    case _ ⇒ ()
-
-    case unexpectedCommand: AggregateRootCommand ⇒
-      sendMessage(Busy(unexpectedCommand))
+    case _ ⇒ ???
   }
 
   private def receiveEvaluateRebuildResult(currentCommand: AggregateRootCommand): Receive = {

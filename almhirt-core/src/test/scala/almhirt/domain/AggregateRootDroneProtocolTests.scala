@@ -49,101 +49,101 @@ class AggregateRootDroneProtocolTests(_system: ActorSystem)
           }
         }
       }
-//      "an aggregate root is created and modified" should {
-//        "emit the aggregate events [Created, Modified]" in { fixture ⇒
-//          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
-//          val eventsProbe = TestProbe()
-//          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
-//          within(1 second) {
-//            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-//            droneProbe.expectMsgType[CommandExecuted]
-//            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
-//            eventsProbe.expectMsgType[UserCreated]
-//            eventsProbe.expectMsgType[UserAgeChanged]
-//          }
-//        }
-//      }
-//      "an aggregate root is created, modified and then deleted" should {
-//        "emit the aggregate events [Created, Modified, Deleted]" in { fixture ⇒
-//          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
-//          val eventsProbe = TestProbe()
-//          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
-//          within(1 second) {
-//            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-//            droneProbe.expectMsgType[CommandExecuted]
-//            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
-//            droneProbe.expectMsgType[CommandExecuted]
-//            droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
-//            eventsProbe.expectMsgType[UserCreated]
-//            eventsProbe.expectMsgType[UserAgeChanged]
-//            eventsProbe.expectMsgType[UserDied]
-//          }
-//        }
-//      }
-//      "a command does nothing" should {
-//        "emit NO aggregate events" in { fixture ⇒
-//          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
-//          val eventsProbe = TestProbe()
-//          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
-//          within(1 second) {
-//            droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 0L, Seq.empty))
-//            eventsProbe.expectNoMsg(500 millis)
-//          }
-//        }
-//      }
-//      "an aggregate root is created, *Nothing*, modified and then deleted" should {
-//        "emit the aggregate events [Created, Modified, Deleted]" in { fixture ⇒
-//          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
-//          val eventsProbe = TestProbe()
-//          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
-//          within(1 second) {
-//            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-//            droneProbe.expectMsgType[CommandExecuted]
-//            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
-//            droneProbe.expectMsgType[CommandExecuted]
-//            droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 2L, Seq.empty))
-//            droneProbe.expectMsgType[CommandExecuted]
-//            droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
-//            eventsProbe.expectMsgType[UserCreated]
-//            eventsProbe.expectMsgType[UserAgeChanged]
-//            eventsProbe.expectMsgType[UserDied]
-//          }
-//        }
-//      }
-//
-//    }
-//    "receiving invalid commands" when {
-//      "a non existing aggregate root is modified" should {
-//        "emit NO events" in { fixture ⇒
-//          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
-//          val eventsProbe = TestProbe()
-//          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
-//          within(1 second) {
-//            droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
-//            eventsProbe.expectNoMsg(500 millis)
-//          }
-//        }
-//      }
-//      "an aggregate root is created, modified(wrong version), modified(creates 2 events) and then deleted" should {
-//        "emit the aggregate events [Created, Modified(x2), Deleted]" in { fixture ⇒
-//          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
-//          val eventsProbe = TestProbe()
-//          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
-//          within(1 second) {
-//            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
-//            droneProbe.expectMsgType[CommandExecuted]
-//            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 7L, 22))
-//            droneProbe.expectMsgType[CommandNotExecuted]
-//            droneProbe.send(droneActor, ChangeUserFullName(CommandHeader(), "a", 1L, "fritz", "weller"))
-//            droneProbe.expectMsgType[CommandExecuted]
-//            droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 3L))
-//            eventsProbe.expectMsgType[UserCreated]
-//            eventsProbe.expectMsgType[UserSurnameChanged]
-//            eventsProbe.expectMsgType[UserLastnameChanged]
-//            eventsProbe.expectMsgType[UserDied]
-//          }
-//        }
-//      }
+      "an aggregate root is created and modified" should {
+        "emit the aggregate events [Created, Modified]" in { fixture ⇒
+          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
+          val eventsProbe = TestProbe()
+          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
+            eventsProbe.expectMsgType[UserCreated]
+            eventsProbe.expectMsgType[UserAgeChanged]
+          }
+        }
+      }
+      "an aggregate root is created, modified and then deleted" should {
+        "emit the aggregate events [Created, Modified, Deleted]" in { fixture ⇒
+          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
+          val eventsProbe = TestProbe()
+          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
+            eventsProbe.expectMsgType[UserCreated]
+            eventsProbe.expectMsgType[UserAgeChanged]
+            eventsProbe.expectMsgType[UserDied]
+          }
+        }
+      }
+      "a command does nothing" should {
+        "emit NO aggregate events" in { fixture ⇒
+          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
+          val eventsProbe = TestProbe()
+          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
+          within(1 second) {
+            droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 0L, Seq.empty))
+            eventsProbe.expectNoMsg(500 millis)
+          }
+        }
+      }
+      "an aggregate root is created, *Nothing*, modified and then deleted" should {
+        "emit the aggregate events [Created, Modified, Deleted]" in { fixture ⇒
+          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
+          val eventsProbe = TestProbe()
+          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, UserUow(CommandHeader(), "a", 2L, Seq.empty))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 2L))
+            eventsProbe.expectMsgType[UserCreated]
+            eventsProbe.expectMsgType[UserAgeChanged]
+            eventsProbe.expectMsgType[UserDied]
+          }
+        }
+      }
+
+    }
+    "receiving invalid commands" when {
+      "a non existing aggregate root is modified" should {
+        "emit NO events" in { fixture ⇒
+          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
+          val eventsProbe = TestProbe()
+          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
+          within(1 second) {
+            droneProbe.send(droneActor, ChangeUserLastname(CommandHeader(), "a", 0L, "meier"))
+            eventsProbe.expectNoMsg(500 millis)
+          }
+        }
+      }
+      "an aggregate root is created, modified(wrong version), modified(creates 2 events) and then deleted" should {
+        "emit the aggregate events [Created, Modified(x2), Deleted]" in { fixture ⇒
+          val FixtureParam(testId, droneActor, droneProbe, streams) = fixture
+          val eventsProbe = TestProbe()
+          Flow(streams.aggregateEventStream).produceTo(mat, DelegatingConsumer[AggregateRootEvent](eventsProbe.ref))
+          within(1 second) {
+            droneProbe.send(droneActor, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ChangeUserAgeForCreditCard(CommandHeader(), "a", 7L, 22))
+            droneProbe.expectMsgType[CommandNotExecuted]
+            droneProbe.send(droneActor, ChangeUserFullName(CommandHeader(), "a", 1L, "fritz", "weller"))
+            droneProbe.expectMsgType[CommandExecuted]
+            droneProbe.send(droneActor, ConfirmUserDeath(CommandHeader(), "a", 3L))
+            eventsProbe.expectMsgType[UserCreated]
+            eventsProbe.expectMsgType[UserSurnameChanged]
+            eventsProbe.expectMsgType[UserLastnameChanged]
+            eventsProbe.expectMsgType[UserDied]
+          }
+        }
+      }
     }
   }
 

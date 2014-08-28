@@ -17,7 +17,7 @@ import almhirt.common.SystemEvent
 
 class AggregateRootHiveTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
-  def this() = this(ActorSystem("AggregateRootHiveTests", almhirt.TestConfigs.logDebugConfig))
+  def this() = this(ActorSystem("AggregateRootHiveTests", almhirt.TestConfigs.logWarningConfig))
 
   val mat = FlowMaterializer(MaterializerSettings())
 
