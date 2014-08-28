@@ -1,7 +1,6 @@
 package almhirt.domain
 
 import scala.language.postfixOps
-
 import scala.concurrent.duration._
 import scalaz._, Scalaz._
 import akka.actor._
@@ -9,6 +8,33 @@ import almhirt.common._
 import almhirt.aggregates._
 import almhirt.almvalidation.kit._
 import akka.stream.actor._
+import org.reactivestreams.Publisher
+
+object AggregateRootViews {
+  def props[E <: AggregateRootEvent](getViewProps: AggregateRootId => Props, eventBufferSize: Int)(implicit eventTag: scala.reflect.ClassTag[E]): Props =
+    Props(new AggregateRootViews[E](getViewProps, eventBufferSize))
+
+  import akka.stream.FlowMaterializer
+  import akka.stream.scaladsl.Flow
+  def subscribeTo[E <: AggregateRootEvent](
+    publisher: Publisher[AggregateRootEvent],
+    views: ActorRef)(
+      implicit actorRefFactory: ActorRefFactory,
+      mat: FlowMaterializer,
+      tag: scala.reflect.ClassTag[E]) {
+    Flow(publisher).filter(p => tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).produceTo(ActorSubscriber[AggregateRootEvent](views))
+  }
+
+  def connectedActor[E <: AggregateRootEvent](publisher: Publisher[AggregateRootEvent])(getViewProps: AggregateRootId => Props, eventBufferSize: Int, name: String)(
+    implicit actorRefFactory: ActorRefFactory,
+    mat: FlowMaterializer,
+    tag: scala.reflect.ClassTag[E]): ActorRef = {
+    val props = AggregateRootViews.props(getViewProps, eventBufferSize)
+    val views = actorRefFactory.actorOf(props, name)
+    subscribeTo(publisher, views)
+    views
+  }
+}
 
 /**
  * Manages views on an aggregate root, where there is one actor view on a single aggregate root.
@@ -18,9 +44,13 @@ import akka.stream.actor._
  *  On [[AggregateRootViewMessages.ApplyAggregateEvent]] an [[AggregateRootViewMessages.AggregateEventHandled]] is expected.
  *  On [[AggregateRootViewMessages.GetAggregateRootProjection]] the view must send a custom result to the sender of [[GetAggregateRootProjection]].
  *
- *  The Actor is an ActorSubscriber that requests [[AggregateRootViewMessages.AggregateRootEvents]].
+ *  The Actor is an ActorSubscriber that requests [[AggregateRootEvents]].
  */
-private[almhirt] trait AggregateRootViewsSkeleton[T, E <: AggregateRootEvent] extends ActorSubscriber with ActorLogging {
+class AggregateRootViews[E <: AggregateRootEvent](
+  override val getViewProps: AggregateRootId => Props,
+  override val eventBufferSize: Int)(implicit override val eventTag: scala.reflect.ClassTag[E]) extends AggregateRootViewsSkeleton[E]
+
+private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends ActorSubscriber with ActorLogging {
   import AggregateRootViewMessages._
 
   import akka.actor.OneForOneStrategy
