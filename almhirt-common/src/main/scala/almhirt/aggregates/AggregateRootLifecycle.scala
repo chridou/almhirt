@@ -45,3 +45,13 @@ object AggregateRootLifecycle {
       }
   }
 }
+
+object Postnatalis {
+  def unapply(p: Postnatalis[_ <: AggregateRoot]): Option[(AggregateRootId, AggregateRootVersion)] =
+    Some((p.id, p.version))
+}
+
+object VivusRef {
+  def unapply(v: Vivus[_ <: AggregateRoot]): Option[(AggregateRootId, AggregateRootVersion)] =
+    Some((v.id, v.version))
+}

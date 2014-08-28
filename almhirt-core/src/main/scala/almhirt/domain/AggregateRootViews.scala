@@ -31,7 +31,7 @@ object AggregateRootViews {
     tag: scala.reflect.ClassTag[E]): ActorRef = {
     val props = AggregateRootViews.props(getViewProps, eventBufferSize)
     val views = actorRefFactory.actorOf(props, name)
-    subscribeTo(publisher, views)
+    subscribeTo[E](publisher, views)
     views
   }
 }
@@ -63,6 +63,8 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   def getViewProps: AggregateRootId => Props
   implicit def eventTag: scala.reflect.ClassTag[E]
   def eventBufferSize: Int
+  
+  log.error(s"${eventTag.runtimeClass}")
 
   final override val requestStrategy = ZeroRequestStrategy
 

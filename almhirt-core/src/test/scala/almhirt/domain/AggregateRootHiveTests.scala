@@ -38,7 +38,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
     override def toString(): String =
       s"(initiated: $initiated, executed: $executed, failed: $failed)"
   }
-  
+
+  info("These tests have timing issues since one can not really tell, whether commands overlap unless effort is taken to prevent this.")
+
   "The AggregateRootHive" when {
     import almhirt.eventlog.AggregateEventLog._
     import almhirt.aggregates._
