@@ -2,30 +2,29 @@ package almhirt.streaming
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import org.reactivestreams.api.{ Consumer }
-import org.reactivestreams.spi.{ Subscription, Subscriber }
+import org.reactivestreams.{ Subscriber, Subscription }
 import akka.actor._
 import almhirt.common._
 
-object DelegatingConsumer {
-  def apply[T](delegateTo: ActorRef): Consumer[T] =
-    new DelegatingConsumer[T](delegateTo)
+object DelegatingSubscriber {
+  def apply[T](delegateTo: ActorRef): Subscriber[T] =
+    new DelegatingSubscriber[T](delegateTo)
 }
 
-object DelegatingEventConsumer {
-  def apply[T <: Event](delegateTo: ActorRef): Consumer[T] =
-    DelegatingConsumer[T](delegateTo)
+object DelegatingEventSubscriber {
+  def apply[T <: Event](delegateTo: ActorRef): Subscriber[T] =
+    DelegatingSubscriber[T](delegateTo)
 }
 
-object DelegatingCommandConsumer {
-  def apply[T <: Command](delegateTo: ActorRef): Consumer[T] =
-    DelegatingConsumer[T](delegateTo)
+object DelegatingCommandSubscriber {
+  def apply[T <: Command](delegateTo: ActorRef): Subscriber[T] =
+    DelegatingSubscriber[T](delegateTo)
 }
 
-private[streaming] class DelegatingConsumer[T](delegateTo: ActorRef) extends Consumer[T] {
+private[streaming] class DelegatingSubscriber[T](delegateTo: ActorRef) extends Subscriber[T] {
   private[this] var sub: Option[Subscription] = None
 
-  private def requestMore() = sub.map(_.requestMore(1))
+  private def requestMore() = sub.map(_.request(1))
 
   override def getSubscriber: Subscriber[T] = new Subscriber[T] {
 

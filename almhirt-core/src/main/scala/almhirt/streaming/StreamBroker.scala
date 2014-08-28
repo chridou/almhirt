@@ -1,12 +1,11 @@
 package almhirt.streaming
 
-import org.reactivestreams.api.Consumer
-import org.reactivestreams.spi.{ Subscriber, Subscription }
+import org.reactivestreams.{ Subscriber, Subscription }
 import almhirt.common._
 
 trait StreamBroker[TElement]{
   def signContract(contractor: SuppliesContractor[TElement]): Unit
-  def newConsumer(): Consumer[TElement]
+  def newSubscriber(): Subscriber[TElement]
 }
 
 

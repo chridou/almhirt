@@ -4,9 +4,8 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.pattern._
 import akka.stream.scaladsl.{ Flow, Duct }
-import org.reactivestreams.api.{ Consumer, Producer }
-import org.reactivestreams.spi.{ Subscription, Subscriber }
-import akka.stream.actor.{ ActorProducer, ActorConsumer }
+import org.reactivestreams.{ Subscriber, Subscription, Publisher }
+import akka.stream.actor.{ ActorPublisher, ActorSubscriber }
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import almhirt.common._
 import almhirt.almfuture.all._
@@ -20,17 +19,17 @@ trait CanDispatchCommands {
 }
 
 trait EventStreams {
-  def eventStream: Producer[Event]
-  def systemEventStream: Producer[SystemEvent]
-  def domainEventStream: Producer[DomainEvent]
-  def aggregateEventStream: Producer[AggregateRootEvent]
+  def eventStream: Publisher[Event]
+  def systemEventStream: Publisher[SystemEvent]
+  def domainEventStream: Publisher[DomainEvent]
+  def aggregateEventStream: Publisher[AggregateRootEvent]
 }
 
 trait CommandStreams {
-  def commandStream: Producer[Command]
-  def systemCommandStream: Producer[SystemCommand]
-  def domainCommandStream: Producer[DomainCommand]
-  def aggregateCommandStream: Producer[AggregateRootCommand]
+  def commandStream: Publisher[Command]
+  def systemCommandStream: Publisher[SystemCommand]
+  def domainCommandStream: Publisher[DomainCommand]
+  def aggregateCommandStream: Publisher[AggregateRootCommand]
 }
 
 trait AlmhirtStreams extends EventStreams with CommandStreams with CanDispatchEvents with CanDispatchCommands
@@ -62,87 +61,88 @@ object AlmhirtStreams {
     }
   }
 
-  def apply(eventStreamConsumerName: String, commandStreamConsumerName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with Stoppable = {
+  def apply(eventStreamSubscriberName: String, commandStreamSubscriberName: String)(implicit actorRefFactory: ActorRefFactory): AlmhirtStreams with Stoppable = {
+    implicit val mat = FlowMaterializer(MaterializerSettings())
+    
+    val (eventSubscriber, eventPublisher) = Duct[Event].build()
 
-    val (eventConsumer, eventProducer) = Duct[Event].build(FlowMaterializer(MaterializerSettings()))
-
-    val eventShipperActor = actorRefFactory.actorOf(StreamShipper.props(), eventStreamConsumerName)
+    val eventShipperActor = actorRefFactory.actorOf(StreamShipper.props(), eventStreamSubscriberName)
     val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
-    eventShipperOut.produceTo(eventConsumer)
+    eventShipperOut.subscribe(eventSubscriber)
 
-    val eventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-dev-null")
-    eventProducer.produceTo(ActorConsumer(eventDevNullConsumer))
+    val eventDevNullSubscriber = ActorDevNullSubscriber.create(s"$eventStreamSubscriberName-dev-null")
+    eventPublisher.subscribe(ActorSubscriber(eventDevNullSubscriber))
 
-    val systemEventFlow = Flow(eventProducer).collect { case e: SystemEvent ⇒ e }
-    val systemEventProducer: Producer[SystemEvent] = systemEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    val systemEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-system-dev-null")
-    systemEventProducer.produceTo(ActorConsumer(systemEventDevNullConsumer))
+    val systemEventFlow = Flow(eventPublisher).collect { case e: SystemEvent ⇒ e }
+    val systemEventPublisher: Publisher[SystemEvent] = systemEventFlow.toPublisher()
+    val systemEventDevNullSubscriber = ActorDevNullSubscriber.create(s"$eventStreamSubscriberName-system-dev-null")
+    systemEventPublisher.subscribe(ActorSubscriber(systemEventDevNullSubscriber))
 
-    val domainEventFlow = Flow(eventProducer).collect { case e: DomainEvent ⇒ e }
-    val domainEventProducer: Producer[DomainEvent] = domainEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    val domainEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-domain-dev-null")
-    domainEventProducer.produceTo(ActorConsumer(domainEventDevNullConsumer))
+    val domainEventFlow = Flow(eventPublisher).collect { case e: DomainEvent ⇒ e }
+    val domainEventPublisher: Publisher[DomainEvent] = domainEventFlow.toPublisher()
+    val domainEventDevNullSubscriber = ActorDevNullSubscriber.create(s"$eventStreamSubscriberName-domain-dev-null")
+    domainEventPublisher.subscribe(ActorSubscriber(domainEventDevNullSubscriber))
 
-    val aggregateEventFlow = Flow(eventProducer).collect { case e: AggregateRootEvent ⇒ e }
-    val aggregateEventProducer: Producer[AggregateRootEvent] = aggregateEventFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    val aggregateEventDevNullConsumer = ActorDevNullConsumer.create(s"$eventStreamConsumerName-aggregate-dev-null")
-    aggregateEventProducer.produceTo(ActorConsumer(aggregateEventDevNullConsumer))
+    val aggregateEventFlow = Flow(eventPublisher).collect { case e: AggregateRootEvent ⇒ e }
+    val aggregateEventPublisher: Publisher[AggregateRootEvent] = aggregateEventFlow.toPublisher()
+    val aggregateEventDevNullSubscriber = ActorDevNullSubscriber.create(s"$eventStreamSubscriberName-aggregate-dev-null")
+    aggregateEventPublisher.subscribe(ActorSubscriber(aggregateEventDevNullSubscriber))
 
-    val (commandConsumer, commandProducer) = Duct[Command].build(FlowMaterializer(MaterializerSettings()))
+    val (commandSubscriber, commandPublisher) = Duct[Command].build()
 
-    val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), commandStreamConsumerName)
+    val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), commandStreamSubscriberName)
     val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
-    commandShipperOut.produceTo(commandConsumer)
+    commandShipperOut.subscribe(commandSubscriber)
 
-    val commandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-dev-null")
-    commandProducer.produceTo(ActorConsumer(commandDevNullConsumer))
+    val commandDevNullSubscriber = ActorDevNullSubscriber.create(s"$commandStreamSubscriberName-dev-null")
+    commandPublisher.subscribe(ActorSubscriber(commandDevNullSubscriber))
 
-    val systemCommandFlow = Flow(commandProducer).collect { case e: SystemCommand ⇒ e }
-    val systemCommandProducer: Producer[SystemCommand] = systemCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    val systemCommandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-system-dev-null")
-    systemCommandProducer.produceTo(ActorConsumer(systemCommandDevNullConsumer))
+    val systemCommandFlow = Flow(commandPublisher).collect { case e: SystemCommand ⇒ e }
+    val systemCommandPublisher: Publisher[SystemCommand] = systemCommandFlow.toPublisher()
+    val systemCommandDevNullSubscriber = ActorDevNullSubscriber.create(s"$commandStreamSubscriberName-system-dev-null")
+    systemCommandPublisher.subscribe(ActorSubscriber(systemCommandDevNullSubscriber))
 
-    val domainCommandFlow = Flow(commandProducer).collect { case e: DomainCommand ⇒ e }
-    val domainCommandProducer: Producer[DomainCommand] = domainCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    val domainCommandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-domain-dev-null")
-    domainCommandProducer.produceTo(ActorConsumer(domainCommandDevNullConsumer))
+    val domainCommandFlow = Flow(commandPublisher).collect { case e: DomainCommand ⇒ e }
+    val domainCommandPublisher: Publisher[DomainCommand] = domainCommandFlow.toPublisher()
+    val domainCommandDevNullSubscriber = ActorDevNullSubscriber.create(s"$commandStreamSubscriberName-domain-dev-null")
+    domainCommandPublisher.subscribe(ActorSubscriber(domainCommandDevNullSubscriber))
 
-    val aggregateCommandFlow = Flow(commandProducer).collect { case e: AggregateRootCommand ⇒ e }
-    val aggregateCommandProducer: Producer[AggregateRootCommand] = aggregateCommandFlow.toProducer(FlowMaterializer(MaterializerSettings()))
-    val aggregateCommandDevNullConsumer = ActorDevNullConsumer.create(s"$commandStreamConsumerName-aggregate-dev-null")
-    aggregateCommandProducer.produceTo(ActorConsumer(aggregateCommandDevNullConsumer))
+    val aggregateCommandFlow = Flow(commandPublisher).collect { case e: AggregateRootCommand ⇒ e }
+    val aggregateCommandPublisher: Publisher[AggregateRootCommand] = aggregateCommandFlow.toPublisher()
+    val aggregateCommandDevNullSubscriber = ActorDevNullSubscriber.create(s"$commandStreamSubscriberName-aggregate-dev-null")
+    aggregateCommandPublisher.subscribe(ActorSubscriber(aggregateCommandDevNullSubscriber))
 
     new AlmhirtStreams with Stoppable {
       val eventBroker = eventShipperIn
-      val eventStream = eventProducer
-      val systemEventStream = systemEventProducer
-      val domainEventStream = domainEventProducer
-      val aggregateEventStream = aggregateEventProducer
+      val eventStream = eventPublisher
+      val systemEventStream = systemEventPublisher
+      val domainEventStream = domainEventPublisher
+      val aggregateEventStream = aggregateEventPublisher
       val commandBroker = commandShipperIn
-      val commandStream = commandProducer
-      val systemCommandStream = systemCommandProducer
-      val domainCommandStream = domainCommandProducer
-      val aggregateCommandStream = aggregateCommandProducer
+      val commandStream = commandPublisher
+      val systemCommandStream = systemCommandPublisher
+      val domainCommandStream = domainCommandPublisher
+      val aggregateCommandStream = aggregateCommandPublisher
       def stop() {
         stopEventShipper.stop()
         stopCommandShipper.stop()
-        actorRefFactory.stop(eventDevNullConsumer)
-        actorRefFactory.stop(systemEventDevNullConsumer)
-        actorRefFactory.stop(domainEventDevNullConsumer)
-        actorRefFactory.stop(aggregateEventDevNullConsumer)
-        actorRefFactory.stop(commandDevNullConsumer)
-        actorRefFactory.stop(systemCommandDevNullConsumer)
-        actorRefFactory.stop(domainCommandDevNullConsumer)
-        actorRefFactory.stop(aggregateCommandDevNullConsumer)
+        actorRefFactory.stop(eventDevNullSubscriber)
+        actorRefFactory.stop(systemEventDevNullSubscriber)
+        actorRefFactory.stop(domainEventDevNullSubscriber)
+        actorRefFactory.stop(aggregateEventDevNullSubscriber)
+        actorRefFactory.stop(commandDevNullSubscriber)
+        actorRefFactory.stop(systemCommandDevNullSubscriber)
+        actorRefFactory.stop(domainCommandDevNullSubscriber)
+        actorRefFactory.stop(aggregateCommandDevNullSubscriber)
       }
     }
   }
 }
 
-private[streaming] class DevNullConsumer[T]() extends Consumer[T] {
+private[streaming] class DevNullSubscriber[T]() extends Subscriber[T] {
   private[this] var sub: Option[Subscription] = None
 
-  private def requestMore() = sub.map(_.requestMore(1))
+  private def requestMore() = sub.map(_.request(1))
 
   override def getSubscriber: Subscriber[T] = new Subscriber[T] {
 

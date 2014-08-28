@@ -6,8 +6,8 @@ import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking._
-import org.reactivestreams.api.Producer
-import akka.stream.actor.ActorConsumer
+import org.reactivestreams.{ Publisher }
+import akka.stream.actor.{ ActorSubscriber, ActorSubscriberMessage, ZeroRequestStrategy }
 import almhirt.streaming._
 
 class HiveDescriptor(val value: String) extends AnyVal
@@ -27,13 +27,13 @@ class AggregateRootHive(
   override val buffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
   override val eventsBroker: StreamBroker[Event])(implicit override val ccuad: CanCreateUuidsAndDateTimes, override val futuresContext: ExecutionContext)
-  extends ActorContractor[Event] with ActorLogging with ActorConsumer with AggregateRootHiveSkeleton {
+  extends ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
 
-  override val requestStrategy = akka.stream.actor.ActorConsumer.ZeroRequestStrategy
+  override val requestStrategy = ZeroRequestStrategy
 
 }
 
-private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]{ me: ActorLogging with ActorConsumer ⇒
+private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]{ me: ActorLogging with ActorSubscriber ⇒
   import AggregateRootHive._
   import AggregateRootHiveInternals._
 
@@ -70,7 +70,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]
   }
 
   def receiveRunning(bufferedEvents: Vector[Event]): Receive = {
-    case ActorConsumer.OnNext(aggregateCommand: AggregateRootCommand) ⇒
+    case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
       numReceivedInternal += 1
       context.child(aggregateCommand.aggId.value) match {
         case Some(drone) ⇒
@@ -111,11 +111,11 @@ private[almhirt] trait AggregateRootHiveSkeleton extends  ActorContractor[Event]
       request(toDeliverNow.size)
       context.become(receiveRunning(rest))
 
-    case ActorConsumer.OnNext(something) ⇒
+    case ActorSubscriberMessage.OnNext(something) ⇒
       log.warning(s"Received something I cannot handle: $something")
       request(1)
 
-    case ActorConsumer.OnComplete ⇒
+    case ActorSubscriberMessage.OnComplete ⇒
       if (log.isDebugEnabled)
         log.debug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
 

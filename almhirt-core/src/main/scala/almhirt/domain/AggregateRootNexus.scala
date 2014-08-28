@@ -1,8 +1,8 @@
 package almhirt.domain
 
 import akka.actor._
-import org.reactivestreams.api.Producer
-import akka.stream.actor.ActorConsumer
+import org.reactivestreams.Publisher
+import akka.stream.actor.ActorSubscriber
 import akka.stream.scaladsl.{ Flow, Duct }
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import almhirt.common._
@@ -11,7 +11,7 @@ import almhirt.almvalidation.kit._
 
 
 class AggregateRootNexus(
-  override val aggregateCommandsProducer: Producer[AggregateRootCommand],
+  override val aggregateCommandsPublisher: Publisher[AggregateRootCommand],
   override val hiveSelector: HiveSelector,
   override val hiveFactory: AggregateRootHiveFactory) extends Actor with ActorLogging with AggregateRootNexusSkeleton {
   
@@ -28,7 +28,7 @@ private[almhirt] object AggregateRootNexusInternal {
 private[almhirt] trait AggregateRootNexusSkeleton { me: Actor with ActorLogging ⇒
   import AggregateRootNexusInternal._
 
-  def aggregateCommandsProducer: Producer[AggregateRootCommand]
+  def aggregateCommandsPublisher: Publisher[AggregateRootCommand]
   def hiveFactory: AggregateRootHiveFactory
 
   /**
@@ -52,16 +52,16 @@ private[almhirt] trait AggregateRootNexusSkeleton { me: Actor with ActorLogging 
   def receive: Receive = receiveInitialize
 
   private def createInitialHives() {
-    val mat = FlowMaterializer(MaterializerSettings())
-    val (theConsumer, theProducer) = Duct[AggregateRootCommand].build(mat)
+    implicit val mat = FlowMaterializer(MaterializerSettings())
+    val (theSubscriber, thePublisher) = Duct[AggregateRootCommand].build()
     hiveSelector.foreach {
       case (descriptor, f) ⇒
         val props = hiveFactory.props(descriptor).resultOrEscalate
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
-        val consumer = ActorConsumer[AggregateRootCommand](actor)
-        Flow(theProducer).filter(cmd ⇒ f(cmd)).produceTo(mat, consumer)
+        val consumer = ActorSubscriber[AggregateRootCommand](actor)
+        Flow(thePublisher).filter(cmd ⇒ f(cmd)).produceTo(consumer)
     }
-    aggregateCommandsProducer.produceTo(theConsumer)
+    aggregateCommandsPublisher.subscribe(theSubscriber)
   }
 }

@@ -1,22 +1,21 @@
 package almhirt.streaming
 
 import akka.actor._
-import org.reactivestreams.api.{ Producer, Consumer }
-import org.reactivestreams.spi.{ Subscriber, Subscription }
-import akka.stream.actor.ActorProducer
+import org.reactivestreams.{ Subscriber, Subscription, Publisher }
+import akka.stream.actor._
 import almhirt.common._
 
 object StreamShipper {
-  def apply[TElement](actor: ActorRef): (StreamBroker[TElement], Producer[TElement], Stoppable) = {
+  def apply[TElement](actor: ActorRef): (StreamBroker[TElement], Publisher[TElement], Stoppable) = {
     val broker =
       new StreamBroker[TElement] {
         def signContract(contractor: SuppliesContractor[TElement]) {
           actor ! InternalBrokerMessages.InternalSignContract(contractor)
         }
 
-        def newConsumer(): Consumer[TElement] = {
+        def newSubscriber(): Subscriber[TElement] = {
           import InternalBrokerMessages._
-          new Consumer[TElement] {
+          new Subscriber[TElement] {
             def getSubscriber(): Subscriber[TElement] = {
               val subscriberId = java.util.UUID.randomUUID().toString()
               new Subscriber[TElement] {
@@ -39,15 +38,15 @@ object StreamShipper {
           }
         }
       }
-    (broker, ActorProducer[TElement](actor), new Stoppable { def stop() { actor ! StopStreaming } })
+    (broker, ActorPublisher[TElement](actor), new Stoppable { def stop() { actor ! StopStreaming } })
   }
 
   def props[TElement](): Props = Props(new StreamShipperImpl[TElement]())
 }
 
 /** This is a very naive implementation to get started! */
-private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int) extends Actor with ActorProducer[TElement] with ActorLogging {
-  import ActorProducer._
+private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int) extends Actor with ActorPublisher[TElement] with ActorLogging {
+  import ActorPublisher._
   import InternalBrokerMessages._
 
   def this() = this(16)
@@ -83,7 +82,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     }
 
     def signalRequestMore(subscriberId: String, amount: Int) {
-      subscriptions.get(subscriberId).foreach(_.requestMore(amount))
+      subscriptions.get(subscriberId).foreach(_.request(amount))
     }
 
   }
@@ -100,7 +99,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
     subscriptions: SubscriptionsState): Receive = {
 
     case InternalOnSubscribe(subscriberId, subscription) ⇒
-      subscription.requestMore(buffersizePerSubscriber)
+      subscription.request(buffersizePerSubscriber)
       context.become(collectingOffers(offers, contractors, subscriptions.addSubscription(subscriberId, subscription)))
 
     case InternalOnNext(subscriberId, untypedElem) ⇒
@@ -121,7 +120,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalOnComplete(subscriberId) ⇒
       if (log.isDebugEnabled)
-        log.debug(s"Producer to consumer $subscriberId completed.")
+        log.debug(s"Publisher to consumer $subscriberId completed.")
       val newSubscriptions = subscriptions.removeSubscription(subscriberId)
       context.become(collectingOffers(offers, contractors, newSubscriptions))
 
@@ -166,10 +165,10 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
         contractor.onProblem(UnspecifiedProblem("[LoadSupplies(collecting)]: You are not a contractor!"))
       }
 
-    case Request(amount) ⇒
+    case ActorPublisherMessage.Request(amount) ⇒
       chooseNextAction(offers, contractors, subscriptions)
 
-    case Cancel ⇒
+    case ActorPublisherMessage.Cancel ⇒
       if (log.isDebugEnabled)
         log.debug("The downstream was cancelled. Stopping.")
       stop(Map.empty, offers, contractors, subscriptions, "collecting offers")
@@ -186,7 +185,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalOnSubscribe(subscriberId, subscription) ⇒
       if (deliverySchedule.isEmpty) sys.error("This must not happen!InternalOnSubscribe")
-      subscription.requestMore(buffersizePerSubscriber)
+      subscription.request(buffersizePerSubscriber)
       context.become(transportingSupplies(deliverySchedule, offers, contractors, subscriptions.addSubscription(subscriberId, subscription)))
 
     case InternalOnNext(subscriberId, element) ⇒
@@ -200,7 +199,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
     case InternalOnComplete(subscriberId) ⇒
       if (log.isDebugEnabled)
-        log.debug(s"Producer to consumer $subscriberId completed.")
+        log.debug(s"Publisher to consumer $subscriberId completed.")
       if (deliverySchedule.isEmpty) sys.error(s"This must not happen! InternalOnComplete($subscriberId)")
       context.become(transportingSupplies(deliverySchedule, offers, contractors, subscriptions.removeSubscription(subscriberId)))
 
@@ -283,14 +282,14 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
           log.warning(s"Got ${elements.size} elements from contractor $contractor who is not in the delivery schedule.")
       }
 
-    case Request(amount) ⇒
+    case ActorPublisherMessage.Request(amount) ⇒
       if (deliverySchedule.isEmpty)
         chooseNextAction(offers, contractors, subscriptions)
 
     case StopStreaming ⇒
       stop(deliverySchedule, offers, contractors, subscriptions, "transporting")
 
-    case Cancel ⇒
+    case ActorPublisherMessage.Cancel ⇒
       if (log.isDebugEnabled)
         log.debug("The downstream was cancelled. Stopping.")
       stop(Map.empty, offers, contractors, subscriptions, "transporting")

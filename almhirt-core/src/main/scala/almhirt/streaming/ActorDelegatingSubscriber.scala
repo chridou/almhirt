@@ -1,22 +1,22 @@
 package almhirt.streaming
 
 import akka.actor._
-import akka.stream.actor.ActorConsumer
+import akka.stream.actor._
 
-object ActorDelegatingConsumer {
+object ActorDelegatingSubscriber {
   def props(delegateTo: ActorRef, bufferSize: Int): Props =
-    Props(new ActorDelegatingConsumerImpl(Some(delegateTo), bufferSize))
+    Props(new ActorDelegatingSubscriberImpl(Some(delegateTo), bufferSize))
 
   def props(delegateTo: ActorRef): Props =
     props(delegateTo, 16)
 }
 
-object ActorDevNullConsumer {
+object ActorDevNullSubscriber {
   def props(bufferSize: Int): Props =
-    Props(new ActorDelegatingConsumerImpl(None, bufferSize))
+    Props(new ActorDelegatingSubscriberImpl(None, bufferSize))
     
   def props(): Props =
-    Props(new ActorDelegatingConsumerImpl(None, 16))
+    Props(new ActorDelegatingSubscriberImpl(None, 16))
     
   def create(bufferSize: Int, actorname: String)(implicit system: ActorRefFactory): ActorRef =
     system.actorOf(props(bufferSize), actorname)
@@ -26,14 +26,14 @@ object ActorDevNullConsumer {
     
 }
 
-private[almhirt] class ActorDelegatingConsumerImpl(delegateTo: Option[ActorRef], bufferSize: Int) extends ActorConsumer {
+private[almhirt] class ActorDelegatingSubscriberImpl(delegateTo: Option[ActorRef], bufferSize: Int) extends ActorSubscriber {
 
-  protected def requestStrategy: ActorConsumer.RequestStrategy = ActorConsumer.ZeroRequestStrategy
+  protected def requestStrategy: RequestStrategy = ZeroRequestStrategy
 
   protected var received: Int = 0
 
   def receive: Receive = {
-    case ActorConsumer.OnNext(element: Any) ⇒
+    case ActorSubscriberMessage.OnNext(element: Any) ⇒
       delegateTo.foreach(_ ! element)
       received += 1
       if (received == bufferSize) {
@@ -41,7 +41,7 @@ private[almhirt] class ActorDelegatingConsumerImpl(delegateTo: Option[ActorRef],
         received = 0
       }
 
-    case ActorConsumer.OnComplete ⇒
+    case ActorSubscriberMessage.OnComplete ⇒
       context.stop(self)
   }
 
