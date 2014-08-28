@@ -42,7 +42,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             probe.expectMsg(UserState(Vacat))
           }
         }
@@ -50,12 +50,12 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             probe.expectMsg(UserState(Vacat))
             probe.send(drone, CreateUser(CommandHeader(), theId, 0L, "hans", "meier"))
 
             probe.expectNoMsg(100 millis)
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val UserState(Vivus(state)) = probe.expectMsgType[UserState]
             state.version should equal(arv(1))
             state.id should equal(theId)
@@ -65,7 +65,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             probe.expectMsg(UserState(Vacat))
             probe.send(drone, CreateUser(CommandHeader(), theId, 0L, "hans", "meier"))
             droneProbe.expectMsgType[AggregateRootDroneInternalMessages.ExecuteCommandResponse]
@@ -73,7 +73,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             droneProbe.expectMsgType[AggregateRootDroneInternalMessages.ExecuteCommandResponse]
 
             probe.expectNoMsg(100 millis)
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val UserState(Vivus(state)) = probe.expectMsgType[UserState]
             state.version should equal(arv(2))
             state.id should equal(theId)
@@ -83,7 +83,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             probe.expectMsg(UserState(Vacat))
             probe.send(drone, CreateUser(CommandHeader(), theId, 0L, "hans", "meier"))
             droneProbe.expectMsgType[AggregateRootDroneInternalMessages.ExecuteCommandResponse]
@@ -93,7 +93,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             droneProbe.expectMsgType[AggregateRootDroneInternalMessages.ExecuteCommandResponse]
 
             probe.expectNoMsg(100 millis)
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val UserState(Mortuus(id, v)) = probe.expectMsgType[UserState]
             v should equal(arv(3))
             id should equal(theId)
@@ -111,7 +111,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             flow.produceTo(eventsSubscriber)
 
             probe.expectNoMsg(100 millis)
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val userState = probe.expectMsgType[UserState]
             userState should equal(UserState(Vacat))
           }
@@ -120,7 +120,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             probe.expectMsgType[UserState]
 
             val flow = Flow(List[Event](
@@ -131,7 +131,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             flow.produceTo(eventsSubscriber)
 
             probe.expectNoMsg(100 millis)
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val UserState(Mortuus(id, v)) = probe.expectMsgType[UserState]
             v should equal(arv(3))
             id should equal(theId)
@@ -148,7 +148,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             probe.receiveN(2)
 
             probe.expectNoMsg(100 millis)
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val UserState(Vivus(state)) = probe.expectMsgType[UserState]
             state.version should equal(arv(2))
             state.id should equal(theId)
@@ -166,7 +166,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             probe.receiveN(3)
 
             probe.expectNoMsg(100 millis)
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val UserState(Mortuus(id, version)) = probe.expectMsgType[UserState]
             version should equal(arv(3))
             id should equal(theId)
@@ -184,7 +184,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             probe.send(eventlog, CommitAggregateEvent(UserLastnameChanged(EventHeader(), theId, 7L, "müller")))
             probe.receiveN(2)
 
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val UserState(Vivus(ar)) = probe.expectMsgType[UserState]
             ar.version should equal(arv(2))
             ar.id should equal(theId)
@@ -200,7 +200,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             probe.send(eventlog, CommitAggregateEvent(NotAUserEvent(EventHeader(), theId, 1L)))
             probe.receiveN(2)
 
-            probe.send(directView, GetAggregateRootProjection)
+            probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             val ViewFailure(UnspecifiedProblem(p)) = probe.expectMsgType[ViewFailure]
             val Some(CauseIsThrowable(HasAThrowable(exn))) = p.cause
             exn.isInstanceOf[RebuildAggregateRootFailedException] should be(true)
@@ -241,7 +241,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
-       override def sendMessage(msg: AggregateRootDroneInternalMessages.AggregateDroneMessage) {
+        override def sendMessage(msg: AggregateRootDroneInternalMessages.AggregateDroneMessage) {
           droneProbe.ref ! msg
         }
       })
@@ -251,11 +251,14 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
     val viewProps = Props(new AggregateRootUnprojectedView[User, UserEvent](
       theId, eventlogActor, None,
       (lc, receiver) => receiver ! UserState(lc),
-      (prob, receiver) => receiver ! ViewFailure(prob)) with UserEventHandler)
+      (prob, receiver) => receiver ! ViewFailure(prob)) with UserEventHandler {
+      override def confirmAggregateEventHandled() {
+      }
+    })
 
     val viewActor = system.actorOf(viewProps, s"view-$testId")
 
-    Flow(streams.aggregateEventStream).foreach(event => viewActor ! ApplyAggregateEvent(event))
+    Flow(streams.aggregateEventStream).foreach(event => viewActor ! AggregateRootViewMessages.ApplyAggregateEvent(event))
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, viewActor, droneActor, droneProbe, eventlogActor, streams)))
