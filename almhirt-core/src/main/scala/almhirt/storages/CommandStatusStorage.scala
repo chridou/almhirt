@@ -1,12 +1,13 @@
 package almhirt.storages
 
 import org.joda.time.LocalDateTime
+import akka.actor._
 import almhirt.common._
 import almhirt.tracking.CommandStatus
 
 object CommandStatusStorage {
   final case class CommandStatusDocument(commandId: CommandId, timestamp: LocalDateTime, status: CommandStatus)
-  
+
   sealed trait CommandStatusStorageMessage
 
   final case class StoreCommandStatus(status: CommandStatusDocument) extends CommandStatusStorageMessage
@@ -18,4 +19,32 @@ object CommandStatusStorage {
   sealed trait FetchCommandStatusResult extends CommandStatusStorageMessage
   final case class CommandStatusFetched(status: CommandStatusDocument) extends FetchCommandStatusResult
   final case class CommandStatusNotFetched(commandId: CommandId, problem: Problem) extends FetchCommandStatusResult
+}
+
+object InMemoryCommandStatusStorage {
+  def props(maxEntries: Int): Props = Props(new AStupidInMemoryCommandStatusStorage(maxEntries))
+}
+
+private[almhirt] class AStupidInMemoryCommandStatusStorage(maxEntries: Int) extends Actor {
+  import CommandStatusStorage._
+
+  private[this] var entries: Vector[CommandStatusDocument] = Vector.empty
+
+  override def receive: Receive = {
+    case StoreCommandStatus(status) =>
+      if (entries.size < maxEntries) {
+        entries = entries :+ status
+      } else {
+        entries = entries.tail :+ status
+      }
+      sender() ! CommandStatusStored(status.commandId)
+
+    case FetchCommandStatus(commandId) =>
+      entries.find(_.commandId == commandId) match {
+        case Some(status) =>
+          sender() ! CommandStatusFetched(status)
+        case None =>
+          sender() ! CommandStatusNotFetched(commandId, NotFoundProblem(s"""No status for command "${commandId.value}"."""))
+      }
+  }
 }
