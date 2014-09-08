@@ -4,27 +4,29 @@ import org.joda.time.LocalDateTime
 import almhirt.common._
 import almhirt.problem.ProblemCause
 
-final case class CommandStatusChanged (
+final case class CommandStatusChanged(
   header: EventHeader,
   commandHeader: CommandHeader,
-  status: CommandStatus
-) extends SystemEvent
+  status: CommandStatus) extends SystemEvent
 
-//final case class CommandExecutionInitiated(header: EventHeader, commandHeader: CommandHeader) extends CommandStatusChanged
+object CommandStatusChanged {
+  def apply(commandHeader: CommandHeader, status: CommandStatus)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandStatusChanged =
+    CommandStatusChanged(EventHeader(), commandHeader, status)
+}
 
 object CommandExecutionInitiated {
   def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandStatusChanged =
     command match {
       case cmd: AggregateRootCommand ⇒
         CommandStatusChanged(
-            EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), 
-            command.header,
-            CommandStatus.Initiated)
+          EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")),
+          command.header,
+          CommandStatus.Initiated)
       case cmd ⇒
         CommandStatusChanged(
-            EventHeader(), 
-            command.header,
-            CommandStatus.Initiated)
+          EventHeader(),
+          command.header,
+          CommandStatus.Initiated)
     }
 }
 
@@ -33,14 +35,14 @@ object CommandSuccessfullyExecuted {
     command match {
       case cmd: AggregateRootCommand ⇒
         CommandStatusChanged(
-            EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), 
-            command.header,
-            CommandStatus.Executed)
+          EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")),
+          command.header,
+          CommandStatus.Executed)
       case cmd ⇒
         CommandStatusChanged(
-            EventHeader(), 
-            command.header,
-            CommandStatus.Executed)
+          EventHeader(),
+          command.header,
+          CommandStatus.Executed)
     }
 }
 
@@ -49,13 +51,13 @@ object CommandExecutionFailed {
     command match {
       case cmd: AggregateRootCommand ⇒
         CommandStatusChanged(
-            EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), 
-            command.header, 
-            CommandStatus.NotExecuted(cause))
+          EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")),
+          command.header,
+          CommandStatus.NotExecuted(cause))
       case cmd ⇒
         CommandStatusChanged(
-            EventHeader(), 
-            command.header, 
-            CommandStatus.NotExecuted(cause))
+          EventHeader(),
+          command.header,
+          CommandStatus.NotExecuted(cause))
     }
 }
