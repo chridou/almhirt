@@ -36,6 +36,7 @@ object CommandStatusTracker {
 private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration) extends ActorSubscriber with ActorLogging {
   import CommandStatusTracker._
   import almhirt.storages._
+  
   override val requestStrategy = ZeroRequestStrategy
 
   implicit val executionContext: ExecutionContext = context.dispatcher
