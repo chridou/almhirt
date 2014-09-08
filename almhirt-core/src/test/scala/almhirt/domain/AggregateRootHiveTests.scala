@@ -1,19 +1,21 @@
 package almhirt.domain
 
 import scala.language.postfixOps
+
 import org.joda.time.{ DateTime, LocalDateTime, DateTimeZone }
 import scala.concurrent._
 import scala.concurrent.duration._
-import org.reactivestreams.Subscriber
 import akka.actor._
 import almhirt.common._
+
+import org.reactivestreams.Subscriber
 import almhirt.streaming._
 import akka.stream.scaladsl.Flow
 import akka.stream._
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
+
 import akka.testkit._
 import org.scalatest._
-import almhirt.common.SystemEvent
 
 class AggregateRootHiveTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -51,9 +53,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
       events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandStatusChanged](), Seq[CommandStatusChanged](), Seq[CommandStatusChanged]())) {
         case ((a, b, c), cur) ⇒
           cur match {
-            case x @ CommandStatusChanged(_,_, CommandStatus.Initiated) ⇒ (a :+ x, b, c)
-            case x @ CommandStatusChanged(_,_, CommandStatus.Executed) ⇒ (a, b :+ x, c)
-            case x @ CommandStatusChanged(_,_, CommandStatus.NotExecuted(_)) ⇒ (a, b, c :+ x)
+            case x @ CommandStatusChanged(_, _, CommandStatus.Initiated) ⇒ (a :+ x, b, c)
+            case x @ CommandStatusChanged(_, _, CommandStatus.Executed) ⇒ (a, b :+ x, c)
+            case x @ CommandStatusChanged(_, _, CommandStatus.NotExecuted(_)) ⇒ (a, b, c :+ x)
           }
       }
 
