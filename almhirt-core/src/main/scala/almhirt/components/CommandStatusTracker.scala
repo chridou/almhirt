@@ -21,27 +21,25 @@ object CommandStatusTracker {
     def apply(commandId: CommandId, callback: TrackerResult => Unit, deadline: Deadline): TrackCommand =
       TrackCommand(commandId: CommandId, res => callback(mapResult(res)), deadline: Deadline)
   }
-  
+
   sealed trait TrackerResult
-  case object TrackerExecutued extends TrackerResult
-  final case class TrackerNotExecutued(cause: almhirt.problem.ProblemCause) extends TrackerResult
-  case object TrackerTimeout extends TrackerResult
-  final case class TrackerError(prob: Problem) extends TrackerResult
-  
+  case object TrackedExecutued extends TrackerResult
+  final case class TrackedNotExecutued(cause: almhirt.problem.ProblemCause) extends TrackerResult
+  case object TrackedTimeout extends TrackerResult
+  final case class TrackedError(prob: Problem) extends TrackerResult
+
   private def mapResult(res: AlmValidation[CommandStatus.CommandResult]): TrackerResult =
     res.fold(
       fail =>
         fail match {
-          case OperationTimedOutProblem(_) => TrackerTimeout
-          case _ => TrackerError(fail)
+          case OperationTimedOutProblem(_) => TrackedTimeout
+          case _ => TrackedError(fail)
         },
       succ => succ match {
-        case CommandStatus.Executed => TrackerExecutued
-        case CommandStatus.NotExecuted(cause) => TrackerNotExecutued(cause)
+        case CommandStatus.Executed => TrackedExecutued
+        case CommandStatus.NotExecuted(cause) => TrackedNotExecutued(cause)
       })
 
-  
-  
   def apply(statusTracker: ActorRef): Subscriber[CommandStatusChanged] =
     ActorSubscriber[CommandStatusChanged](statusTracker)
 
@@ -61,7 +59,7 @@ object CommandStatusTracker {
 private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration) extends ActorSubscriber with ActorLogging {
   import CommandStatusTracker._
   import almhirt.storages._
-  
+
   override val requestStrategy = ZeroRequestStrategy
 
   implicit val executionContext: ExecutionContext = context.dispatcher
@@ -115,8 +113,8 @@ private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheA
           trackingSubscriptions.get(next.commandHeader.id).foreach { entries =>
             AlmFuture.compute(entries.foreach(_._2.callback(r.success)))
             trackingSubscriptions = trackingSubscriptions - next.commandHeader.id
-            addStatusToCache(next.commandHeader.id, r)
           }
+          addStatusToCache(next.commandHeader.id, r)
         case _ =>
           ()
       }

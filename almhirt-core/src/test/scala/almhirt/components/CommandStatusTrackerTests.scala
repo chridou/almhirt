@@ -40,8 +40,8 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val probe = TestProbe()
           Flow(createEvent("a", CommandStatus.Executed) :: Nil).produceTo(eventSubscriber)
           Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res , (600.millis.dilated).fromNow)
-          probe.expectMsg(TrackerExecutued)
+          tracker ! TrackCommandMapped("a", res => probe.ref ! res , (100.millis.dilated).fromNow)
+          probe.expectMsg(TrackedExecutued)
         }
       }
       "a failure status is received and then a matching subscription" should {
@@ -51,8 +51,8 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val status = CommandStatus.NotExecuted(UnspecifiedProblem(""))
           Flow(createEvent("a", status) :: Nil).produceTo(eventSubscriber)
           Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res , (600.millis.dilated).fromNow)
-          probe.expectMsg(TrackerNotExecutued(status.cause))
+          tracker ! TrackCommandMapped("a", res => probe.ref ! res , (100.millis.dilated).fromNow)
+          probe.expectMsg(TrackedNotExecutued(status.cause))
         }
       }
     }
