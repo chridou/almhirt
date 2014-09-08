@@ -19,6 +19,10 @@ object CommandStatusStorage {
   final case class CommandStatusNotFetched(commandId: CommandId, problem: Problem) extends FetchCommandStatusResult
 }
 
+object DevNullCommandStatusStorage {
+  def props: Props = InMemoryCommandStatusStorage.props(0)
+}
+
 object InMemoryCommandStatusStorage {
   def props(maxEntries: Int): Props = Props(new AStupidInMemoryCommandStatusStorage(maxEntries))
 }
@@ -30,10 +34,12 @@ private[almhirt] class AStupidInMemoryCommandStatusStorage(maxEntries: Int) exte
 
   override def receive: Receive = {
     case StoreCommandStatus(status) =>
-      if (entries.size < maxEntries) {
-        entries = entries :+ status
-      } else {
-        entries = entries.tail :+ status
+      if (maxEntries > 0) {
+        if (entries.size < maxEntries) {
+          entries = entries :+ status
+        } else {
+          entries = entries.tail :+ status
+        }
       }
       sender() ! CommandStatusStored(status.commandId)
 
