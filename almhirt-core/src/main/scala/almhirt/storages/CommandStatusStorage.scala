@@ -3,11 +3,9 @@ package almhirt.storages
 import org.joda.time.LocalDateTime
 import akka.actor._
 import almhirt.common._
-import almhirt.tracking.CommandStatus
+import almhirt.tracking.{ CommandStatus, CommandStatusDocument }
 
 object CommandStatusStorage {
-  final case class CommandStatusDocument(commandId: CommandId, timestamp: LocalDateTime, status: CommandStatus)
-
   sealed trait CommandStatusStorageMessage
 
   final case class StoreCommandStatus(status: CommandStatusDocument) extends CommandStatusStorageMessage
