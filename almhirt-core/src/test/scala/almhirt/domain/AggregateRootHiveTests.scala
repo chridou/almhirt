@@ -47,13 +47,13 @@ class AggregateRootHiveTests(_system: ActorSystem)
     import aggregatesforthelazyones._
     import almhirt.tracking._
 
-    def splitStatusEvents(events: Seq[Any]): (Seq[CommandExecutionInitiated], Seq[CommandSuccessfullyExecuted], Seq[CommandExecutionFailed]) =
-      events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandExecutionInitiated](), Seq[CommandSuccessfullyExecuted](), Seq[CommandExecutionFailed]())) {
+    def splitStatusEvents(events: Seq[Any]): (Seq[CommandStatusChanged], Seq[CommandStatusChanged], Seq[CommandStatusChanged]) =
+      events.collect { case x: CommandStatusChanged ⇒ x }.foldLeft((Seq[CommandStatusChanged](), Seq[CommandStatusChanged](), Seq[CommandStatusChanged]())) {
         case ((a, b, c), cur) ⇒
           cur match {
-            case x: CommandExecutionInitiated ⇒ (a :+ x, b, c)
-            case x: CommandSuccessfullyExecuted ⇒ (a, b :+ x, c)
-            case x: CommandExecutionFailed ⇒ (a, b, c :+ x)
+            case x @ CommandStatusChanged(_,_, CommandStatus.Initiated) ⇒ (a :+ x, b, c)
+            case x @ CommandStatusChanged(_,_, CommandStatus.Executed) ⇒ (a, b :+ x, c)
+            case x @ CommandStatusChanged(_,_, CommandStatus.NotExecuted(_)) ⇒ (a, b, c :+ x)
           }
       }
 
@@ -70,8 +70,8 @@ class AggregateRootHiveTests(_system: ActorSystem)
           Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           within(1 second) {
             Flow(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).produceTo(commandSubscriber)
-            statusProbe.expectMsgType[CommandExecutionInitiated]
-            statusProbe.expectMsgType[CommandSuccessfullyExecuted]
+            statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Initiated)
+            statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Executed)
           }
         }
       }

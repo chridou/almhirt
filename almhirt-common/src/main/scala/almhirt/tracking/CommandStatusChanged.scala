@@ -4,42 +4,58 @@ import org.joda.time.LocalDateTime
 import almhirt.common._
 import almhirt.problem.ProblemCause
 
-trait CommandStatusChanged extends SystemEvent {
-  def commandHeader: CommandHeader
-}
+final case class CommandStatusChanged (
+  header: EventHeader,
+  commandHeader: CommandHeader,
+  status: CommandStatus
+) extends SystemEvent
 
-final case class CommandExecutionInitiated(header: EventHeader, commandHeader: CommandHeader) extends CommandStatusChanged
+//final case class CommandExecutionInitiated(header: EventHeader, commandHeader: CommandHeader) extends CommandStatusChanged
 
 object CommandExecutionInitiated {
-  def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecutionInitiated =
+  def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandStatusChanged =
     command match {
       case cmd: AggregateRootCommand ⇒
-        CommandExecutionInitiated(EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), command.header)
+        CommandStatusChanged(
+            EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), 
+            command.header,
+            CommandStatus.Initiated)
       case cmd ⇒
-        CommandExecutionInitiated(EventHeader(), command.header)
+        CommandStatusChanged(
+            EventHeader(), 
+            command.header,
+            CommandStatus.Initiated)
     }
 }
 
-sealed trait ComandExecutionResultChanged extends CommandStatusChanged
-final case class CommandSuccessfullyExecuted(header: EventHeader, commandHeader: CommandHeader) extends ComandExecutionResultChanged
-final case class CommandExecutionFailed(header: EventHeader, commandHeader: CommandHeader, cause: ProblemCause) extends ComandExecutionResultChanged
-
 object CommandSuccessfullyExecuted {
-  def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandSuccessfullyExecuted =
+  def apply(command: Command)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandStatusChanged =
     command match {
       case cmd: AggregateRootCommand ⇒
-        CommandSuccessfullyExecuted(EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), command.header)
+        CommandStatusChanged(
+            EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), 
+            command.header,
+            CommandStatus.Executed)
       case cmd ⇒
-        CommandSuccessfullyExecuted(EventHeader(), command.header)
+        CommandStatusChanged(
+            EventHeader(), 
+            command.header,
+            CommandStatus.Executed)
     }
 }
 
 object CommandExecutionFailed {
-  def apply(command: Command, cause: ProblemCause)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandExecutionFailed =
+  def apply(command: Command, cause: ProblemCause)(implicit ccuad: CanCreateUuidsAndDateTimes): CommandStatusChanged =
     command match {
       case cmd: AggregateRootCommand ⇒
-        CommandExecutionFailed(EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), command.header, cause)
+        CommandStatusChanged(
+            EventHeader().withMetadata(Map("aggregate-id" -> s"${cmd.aggId.value}", "aggregate-version" -> s"${cmd.aggVersion.value}")), 
+            command.header, 
+            CommandStatus.NotExecuted(cause))
       case cmd ⇒
-        CommandExecutionFailed(EventHeader(), command.header, cause)
+        CommandStatusChanged(
+            EventHeader(), 
+            command.header, 
+            CommandStatus.NotExecuted(cause))
     }
 }
