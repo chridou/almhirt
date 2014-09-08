@@ -1,6 +1,6 @@
 package almhirt.components
 
-import scala.language.implicitConversions 
+import scala.language.implicitConversions
 import scala.language.postfixOps
 
 import scala.concurrent.duration._
@@ -27,9 +27,10 @@ class CommandStatusTrackerTests(_system: ActorSystem)
 
   def createEvent(commandId: CommandId, status: CommandStatus): CommandStatusChanged =
     CommandStatusChanged(CommandHeader(commandId, ccuad.getUtcTimestamp), status)
-  
-  implicit def str2CommandId(str: String): CommandId = CommandId(str)  
-    
+
+
+  implicit def str2CommandId(str: String): CommandId = CommandId(str)
+
   "The CommandStatusTracker" when {
     import CommandStatusTracker._
     "receiving events that notify about command results" when {
@@ -39,8 +40,8 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val probe = TestProbe()
           Flow(createEvent("a", CommandStatus.Executed) :: Nil).produceTo(eventSubscriber)
           Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommand("a", res => probe.ref ! (res.forceResult), (100.millis.dilated).fromNow)
-          probe.expectMsg(CommandStatus.NotExecuted)
+          tracker ! TrackCommandMapped("a", res => probe.ref ! res , (600.millis.dilated).fromNow)
+          probe.expectMsg(TrackerExecutued)
         }
       }
       "a failure status is received and then a matching subscription" should {
@@ -50,8 +51,8 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val status = CommandStatus.NotExecuted(UnspecifiedProblem(""))
           Flow(createEvent("a", status) :: Nil).produceTo(eventSubscriber)
           Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommand("a", res => probe.ref ! (res.forceResult), (100.millis.dilated).fromNow)
-          probe.expectMsg(status)
+          tracker ! TrackCommandMapped("a", res => probe.ref ! res , (600.millis.dilated).fromNow)
+          probe.expectMsg(TrackerNotExecutued(status.cause))
         }
       }
     }

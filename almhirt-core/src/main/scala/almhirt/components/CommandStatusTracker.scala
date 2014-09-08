@@ -17,6 +17,31 @@ object CommandStatusTracker {
 
   final case class TrackCommand(commandId: CommandId, callback: AlmValidation[CommandStatus.CommandResult] => Unit, deadline: Deadline)
 
+  object TrackCommandMapped {
+    def apply(commandId: CommandId, callback: TrackerResult => Unit, deadline: Deadline): TrackCommand =
+      TrackCommand(commandId: CommandId, res => callback(mapResult(res)), deadline: Deadline)
+  }
+  
+  sealed trait TrackerResult
+  case object TrackerExecutued extends TrackerResult
+  final case class TrackerNotExecutued(cause: almhirt.problem.ProblemCause) extends TrackerResult
+  case object TrackerTimeout extends TrackerResult
+  final case class TrackerError(prob: Problem) extends TrackerResult
+  
+  private def mapResult(res: AlmValidation[CommandStatus.CommandResult]): TrackerResult =
+    res.fold(
+      fail =>
+        fail match {
+          case OperationTimedOutProblem(_) => TrackerTimeout
+          case _ => TrackerError(fail)
+        },
+      succ => succ match {
+        case CommandStatus.Executed => TrackerExecutued
+        case CommandStatus.NotExecuted(cause) => TrackerNotExecutued(cause)
+      })
+
+  
+  
   def apply(statusTracker: ActorRef): Subscriber[CommandStatusChanged] =
     ActorSubscriber[CommandStatusChanged](statusTracker)
 
