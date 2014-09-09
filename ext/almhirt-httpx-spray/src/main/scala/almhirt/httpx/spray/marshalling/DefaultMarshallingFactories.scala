@@ -37,6 +37,7 @@ object DurationsMarshalling extends MarshallingFactory[Seq[scala.concurrent.dura
 object EventMarshalling extends MarshallingFactory[Event]
 object CommandMarshalling extends MarshallingFactory[Command]
 object ProblemMarshalling extends MarshallingFactory[almhirt.common.Problem]
+object CommandResponseMarshalling extends MarshallingFactory[almhirt.tracking.CommandResponse]
 
 object EventsMarshalling extends MarshallingFactory[Seq[Event]]
 object CommandsMarshalling extends MarshallingFactory[Seq[Command]]

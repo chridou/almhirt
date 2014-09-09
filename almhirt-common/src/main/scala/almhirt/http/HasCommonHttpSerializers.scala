@@ -38,12 +38,9 @@ trait HasCommonHttpSerializers {
   implicit def eventHttpSerializer: HttpSerializer[almhirt.common.Event] with HttpDeserializer[almhirt.common.Event]
   implicit def commandHttpSerializer: HttpSerializer[almhirt.common.Command] with HttpDeserializer[almhirt.common.Command]
   implicit def problemHttpSerializer: HttpSerializer[almhirt.common.Problem] with HttpDeserializer[almhirt.common.Problem]
+  implicit def commandResponseHttpSerializer: HttpSerializer[almhirt.tracking.CommandResponse] with HttpDeserializer[almhirt.tracking.CommandResponse]
 
   implicit def eventsHttpSerializer: HttpSerializer[Seq[almhirt.common.Event]] with HttpDeserializer[Seq[almhirt.common.Event]]
   implicit def commandsHttpSerializer: HttpSerializer[Seq[almhirt.common.Command]] with HttpDeserializer[Seq[almhirt.common.Command]]
   implicit def problemsHttpSerializer: HttpSerializer[Seq[almhirt.common.Problem]] with HttpDeserializer[Seq[almhirt.common.Problem]]
-  
-  def domainEventHttpSerializer: HttpSerializer[DomainEvent] with HttpDeserializer[DomainEvent]
-  implicit def domainEventsHttpSerializer: HttpSerializer[Seq[DomainEvent]] with HttpDeserializer[Seq[DomainEvent]]
-  implicit def domainCommandsHttpSerializer: HttpSerializer[Seq[DomainCommand]] with HttpDeserializer[Seq[DomainCommand]]
 }

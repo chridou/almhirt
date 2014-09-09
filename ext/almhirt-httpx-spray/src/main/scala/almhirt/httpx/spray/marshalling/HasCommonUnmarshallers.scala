@@ -39,6 +39,7 @@ trait HasCommonUnmarshallers {
   implicit def eventUnmarshaller: Unmarshaller[almhirt.common.Event]
   implicit def commandUnmarshaller: Unmarshaller[almhirt.common.Command]
   implicit def problemUnmarshaller: Unmarshaller[almhirt.common.Problem]
+  implicit def commandResponseUnmarshaller: Unmarshaller[almhirt.tracking.CommandResponse]
 
   implicit def eventsUnmarshaller: Unmarshaller[Seq[almhirt.common.Event]]
   implicit def commandsUnmarshaller: Unmarshaller[Seq[almhirt.common.Command]]
@@ -150,6 +151,8 @@ trait CommonUnmarshallerInstances {self : HasCommonUnmarshallers =>
   override lazy val  problemUnmarshaller: Unmarshaller[almhirt.common.Problem] = 
     ContentTypeBoundUnmarshallerFactory[almhirt.common.Problem](commonContentTypeProviders.problemContentTypeProvider, DefaultMarshallingInstances.ProblemMarshallingInst).unmarshaller(commonHttpSerializers.problemHttpSerializer)
 
+ override lazy val  commandResponseUnmarshaller: Unmarshaller[almhirt.tracking.CommandResponse] = 
+    ContentTypeBoundUnmarshallerFactory[almhirt.tracking.CommandResponse](commonContentTypeProviders.commandResponseContentTypeProvider, DefaultMarshallingInstances.CommandResponseMarshallingInst).unmarshaller(commonHttpSerializers.commandResponseHttpSerializer)
 
   override lazy val  eventsUnmarshaller: Unmarshaller[Seq[almhirt.common.Event]] = 
     ContentTypeBoundUnmarshallerFactory[Seq[almhirt.common.Event]](commonContentTypeProviders.eventsContentTypeProvider, DefaultMarshallingInstances.EventsMarshallingInst).unmarshaller(commonHttpSerializers.eventsHttpSerializer)

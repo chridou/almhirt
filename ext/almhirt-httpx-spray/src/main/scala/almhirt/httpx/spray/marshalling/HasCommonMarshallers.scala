@@ -39,6 +39,7 @@ trait HasCommonMarshallers extends HasProblemMarshaller {
   implicit def eventMarshaller: Marshaller[almhirt.common.Event]
   implicit def commandMarshaller: Marshaller[almhirt.common.Command]
   implicit def problemMarshaller: Marshaller[almhirt.common.Problem]
+  implicit def commandResponseMarshaller: Marshaller[almhirt.tracking.CommandResponse]
 
   implicit def eventsMarshaller: Marshaller[Seq[almhirt.common.Event]]
   implicit def commandsMarshaller: Marshaller[Seq[almhirt.common.Command]]
@@ -148,6 +149,9 @@ trait CommonMarshallerInstances { self: HasCommonMarshallers =>
   override lazy val problemMarshaller: Marshaller[almhirt.common.Problem] =
     ContentTypeBoundMarshallerFactory[almhirt.common.Problem](commonContentTypeProviders.problemContentTypeProvider, DefaultMarshallingInstances.ProblemMarshallingInst).marshaller(commonHttpSerializers.problemHttpSerializer)
 
+  override lazy val commandResponseMarshaller: Marshaller[almhirt.tracking.CommandResponse] =
+    ContentTypeBoundMarshallerFactory[almhirt.tracking.CommandResponse](commonContentTypeProviders.commandResponseContentTypeProvider, DefaultMarshallingInstances.CommandResponseMarshallingInst).marshaller(commonHttpSerializers.commandResponseHttpSerializer)
+
   override lazy val eventsMarshaller: Marshaller[Seq[almhirt.common.Event]] =
     ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Event]](commonContentTypeProviders.eventsContentTypeProvider, DefaultMarshallingInstances.EventsMarshallingInst).marshaller(commonHttpSerializers.eventsHttpSerializer)
 
@@ -157,4 +161,5 @@ trait CommonMarshallerInstances { self: HasCommonMarshallers =>
   override lazy val problemsMarshaller: Marshaller[Seq[almhirt.common.Problem]] =
     ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Problem]](commonContentTypeProviders.problemsContentTypeProvider, DefaultMarshallingInstances.ProblemsMarshallingInst).marshaller(commonHttpSerializers.problemsHttpSerializer)
 
+    
 }

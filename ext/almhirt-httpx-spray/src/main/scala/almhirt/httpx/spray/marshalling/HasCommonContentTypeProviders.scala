@@ -39,6 +39,7 @@ trait HasCommonContentTypeProviders {
   implicit def eventContentTypeProvider: FullContentTypeProvider[almhirt.common.Event]
   implicit def commandContentTypeProvider: FullContentTypeProvider[almhirt.common.Command]
   implicit def problemContentTypeProvider: FullContentTypeProvider[almhirt.common.Problem]
+  implicit def commandResponseContentTypeProvider: FullContentTypeProvider[almhirt.tracking.CommandResponse]
 
   implicit def eventsContentTypeProvider: FullContentTypeProvider[Seq[almhirt.common.Event]]
   implicit def commandsContentTypeProvider: FullContentTypeProvider[Seq[almhirt.common.Command]]
@@ -81,6 +82,7 @@ trait EmptyCommonContentTypeProviders extends HasCommonContentTypeProviders {
   override val eventContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.Event]
   override val commandContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.Command]
   override val problemContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.Problem]
+  override val commandResponseContentTypeProvider = FullContentTypeProvider.empty[almhirt.tracking.CommandResponse]
 
   override val eventsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.Event]]
   override val commandsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.Command]]
@@ -123,6 +125,7 @@ trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProvi
   override lazy val eventContentTypeProvider = FullContentTypeProvider[almhirt.common.Event]
   override lazy val commandContentTypeProvider = FullContentTypeProvider[almhirt.common.Command]
   override lazy val problemContentTypeProvider = FullContentTypeProvider[almhirt.common.Problem]
+  override lazy val commandResponseContentTypeProvider = FullContentTypeProvider[almhirt.tracking.CommandResponse]
 
   override lazy val eventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Event]]
   override lazy val commandsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Command]]
@@ -167,6 +170,7 @@ trait DelegatingCommonContentTypeProvidersFromMediaTypes extends HasCommonConten
   override lazy val eventContentTypeProvider = FullContentTypeProvider[almhirt.common.Event](hasCommonAlmMediaTypesProviders.eventAlmMediaTypesProvider, defaultEncoding)
   override lazy val commandContentTypeProvider = FullContentTypeProvider[almhirt.common.Command](hasCommonAlmMediaTypesProviders.commandAlmMediaTypesProvider, defaultEncoding)
   override lazy val problemContentTypeProvider = FullContentTypeProvider[almhirt.common.Problem](hasCommonAlmMediaTypesProviders.problemAlmMediaTypesProvider, defaultEncoding)
+  override lazy val commandResponseContentTypeProvider = FullContentTypeProvider[almhirt.tracking.CommandResponse](hasCommonAlmMediaTypesProviders.commandResponseAlmMediaTypesProvider, defaultEncoding)
 
   override lazy val eventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Event]](hasCommonAlmMediaTypesProviders.eventsAlmMediaTypesProvider, defaultEncoding)
   override lazy val commandsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Command]](hasCommonAlmMediaTypesProviders.commandsAlmMediaTypesProvider, defaultEncoding)

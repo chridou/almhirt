@@ -38,14 +38,12 @@ trait HasCommonAlmMediaTypesProviders {
   implicit def eventAlmMediaTypesProvider: AlmMediaTypesProvider[almhirt.common.Event]
   implicit def commandAlmMediaTypesProvider: AlmMediaTypesProvider[almhirt.common.Command]
   implicit def problemAlmMediaTypesProvider: AlmMediaTypesProvider[almhirt.common.Problem]
+  implicit def commandResponseAlmMediaTypesProvider: AlmMediaTypesProvider[almhirt.tracking.CommandResponse]
 
   implicit def eventsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[almhirt.common.Event]]
   implicit def commandsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[almhirt.common.Command]]
   implicit def problemsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[almhirt.common.Problem]]
   
-  implicit def domainEventAlmMediaTypesProvider: AlmMediaTypesProvider[DomainEvent]
-  implicit def domainEventsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[DomainEvent]]
-  implicit def domainCommandsAlmMediaTypesProvider: AlmMediaTypesProvider[Seq[DomainCommand]]
 }
 
 trait VendorBasedCommonAlmMediaTypesProviders { self : HasCommonAlmMediaTypesProviders ⇒
@@ -85,13 +83,10 @@ trait VendorBasedCommonAlmMediaTypesProviders { self : HasCommonAlmMediaTypesPro
   override lazy val eventAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[almhirt.common.Event]("Event").withGenericTargets
   override lazy val commandAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[almhirt.common.Command]("Command").withGenericTargets
   override lazy val problemAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[almhirt.common.Problem]("Problem").withGenericTargets
+  override lazy val commandResponseAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[almhirt.tracking.CommandResponse]("CommandResponse").withGenericTargets
 
   override lazy val eventsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[almhirt.common.Event]]("Events").withGenericTargets
   override lazy val commandsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[almhirt.common.Command]]("Commands").withGenericTargets
   override lazy val problemsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[almhirt.common.Problem]]("Problems").withGenericTargets
-
-  override lazy val domainEventAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[DomainEvent]("DomainEvent").withGenericTargets
-  override lazy val domainEventsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainEvent]]("DomainEvents").withGenericTargets
-  override lazy val domainCommandsAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[Seq[DomainCommand]]("DomainCommands").withGenericTargets
 
 }
