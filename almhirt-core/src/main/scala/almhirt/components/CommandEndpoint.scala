@@ -13,7 +13,7 @@ object CommandEndpoint {
 
   sealed trait CommandResponse extends CommandEndpointMessage
   final case class CommandAccepted(id: CommandId) extends CommandResponse
-  final case class CommandNotAccepted(id: CommandId) extends CommandResponse
+  final case class CommandNotAccepted(id: CommandId, reason: String) extends CommandResponse
 
   sealed trait TrackedCommandResponse extends CommandResponse
   final case class TrackedCommandResult(id: CommandId, status: CommandStatus) extends TrackedCommandResponse
@@ -51,7 +51,19 @@ private[almhirt] class CommandEndpointImpl(commandStatusTracker: ActorRef, maxTr
         }
         onNext(cmd)
       } else {
-        sender() ! CommandNotAccepted(cmd.commandId)
+        val msg =
+          if (!isCanceled) {
+            "Command processing was shut down."
+          } else if (isErrorEmitted) {
+            "Command processing is broken."
+          } else if (!isActive) {
+            "Command processing is not yet ready."
+          } else if (totalDemand == 0) {
+            "No demand. Try again later."
+          } else {
+            "No reason."
+          }
+        sender() ! CommandNotAccepted(cmd.commandId, msg)
       }
   }
 
