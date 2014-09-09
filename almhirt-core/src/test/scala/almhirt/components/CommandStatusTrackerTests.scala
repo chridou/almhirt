@@ -40,8 +40,7 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val FixtureParam(testId, tracker, eventSubscriber) = fixture
           val probe = TestProbe()
           Flow(createEvent("a", CommandStatus.Executed) :: Nil).produceTo(eventSubscriber)
-          Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          system.scheduler.scheduleOnce(100.millis.dilated)(tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow))
           probe.expectMsg(TrackedExecutued)
         }
       }
@@ -51,7 +50,7 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val probe = TestProbe()
           val status = CommandStatus.NotExecuted(UnspecifiedProblem(""))
           Flow(createEvent("a", status) :: Nil).produceTo(eventSubscriber)
-          Thread.sleep(100.millis.dilated.toMillis)
+          system.scheduler.scheduleOnce(100.millis.dilated)(tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow))
           tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
           probe.expectMsg(TrackedNotExecutued(status.cause))
         }
@@ -139,9 +138,10 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val FixtureParam(testId, tracker, eventSubscriber) = fixture
           val probe = TestProbe()
           Flow(createEvent("a", CommandStatus.Executed) :: Nil).produceTo(eventSubscriber)
-          Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          system.scheduler.scheduleOnce(100.millis.dilated) {
+            tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+            tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          }
           probe.expectMsg(TrackedExecutued)
           probe.expectMsg(TrackedExecutued)
         }
@@ -152,9 +152,10 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val probe = TestProbe()
           val status = CommandStatus.NotExecuted(UnspecifiedProblem(""))
           Flow(createEvent("a", status) :: Nil).produceTo(eventSubscriber)
-          Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          system.scheduler.scheduleOnce(100.millis.dilated) {
+            tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+            tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          }
           probe.expectMsg(TrackedNotExecutued(status.cause))
           probe.expectMsg(TrackedNotExecutued(status.cause))
         }
@@ -164,9 +165,10 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val FixtureParam(testId, tracker, eventSubscriber) = fixture
           val probe = TestProbe()
           Flow(createEvent("a", CommandStatus.Executed) :: Nil).produceTo(eventSubscriber)
-          Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommandMapped("b", res => probe.ref ! res, (100.millis.dilated).fromNow)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          system.scheduler.scheduleOnce(100.millis.dilated) {
+            tracker ! TrackCommandMapped("b", res => probe.ref ! res, (100.millis.dilated).fromNow)
+            tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          }
           probe.expectMsg(TrackedExecutued)
           probe.expectMsg(TrackedTimeout)
         }
@@ -177,11 +179,36 @@ class CommandStatusTrackerTests(_system: ActorSystem)
           val probe = TestProbe()
           val status = CommandStatus.NotExecuted(UnspecifiedProblem(""))
           Flow(createEvent("a", status) :: Nil).produceTo(eventSubscriber)
-          Thread.sleep(100.millis.dilated.toMillis)
-          tracker ! TrackCommandMapped("b", res => probe.ref ! res, (100.millis.dilated).fromNow)
-          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          system.scheduler.scheduleOnce(100.millis.dilated) {
+            tracker ! TrackCommandMapped("b", res => probe.ref ! res, (100.millis.dilated).fromNow)
+            tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          }
           probe.expectMsg(TrackedNotExecutued(status.cause))
           probe.expectMsg(TrackedTimeout)
+        }
+      }
+    }
+    "receiving a single status between 2 subscriptions" when {
+      """a status is received and none of the subscriptions timed out""" should {
+        """notify the subscribers with the status""" in { fixture =>
+          val FixtureParam(testId, tracker, eventSubscriber) = fixture
+          val probe = TestProbe()
+          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (500.millis.dilated).fromNow)
+          system.scheduler.scheduleOnce(200.millis.dilated)(Flow(createEvent("a", CommandStatus.Executed) :: Nil).produceTo(eventSubscriber))
+          system.scheduler.scheduleOnce(300.millis.dilated)(tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow))
+          probe.expectMsg(TrackedExecutued)
+          probe.expectMsg(TrackedExecutued)
+        }
+      }
+      """a status is received and the first subscription already timed out""" should {
+        """notify one subscriber with the status and the other with a timeout""" in { fixture =>
+          val FixtureParam(testId, tracker, eventSubscriber) = fixture
+          val probe = TestProbe()
+          tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow)
+          system.scheduler.scheduleOnce(trackerTimeoutScanInterval + 100.millis.dilated)(Flow(createEvent("a", CommandStatus.Executed) :: Nil).produceTo(eventSubscriber))
+          system.scheduler.scheduleOnce(trackerTimeoutScanInterval + 200.millis.dilated)(tracker ! TrackCommandMapped("a", res => probe.ref ! res, (100.millis.dilated).fromNow))
+          probe.expectMsg(TrackedTimeout)
+          probe.expectMsg(TrackedExecutued)
         }
       }
     }
@@ -193,6 +220,47 @@ class CommandStatusTrackerTests(_system: ActorSystem)
         (1 to n).foreach(i => tracker ! TrackCommandMapped(s"$i", res => probe.ref ! res, (100.millis.dilated).fromNow))
         val count = probe.receiveN(n).collect { case TrackedTimeout => 1 }.sum
         count should equal(n)
+      }
+    }
+    "receiving many status events and many subscriptions" when {
+      "the subscriptions are reveived before the events" should {
+        """notify each subscriber""" in { fixture =>
+          val n = 100
+          val FixtureParam(testId, tracker, eventSubscriber) = fixture
+          val probe = TestProbe()
+          (1 to n).foreach(i => tracker ! TrackCommandMapped(s"$i", res => probe.ref ! res, (500.millis.dilated).fromNow))
+          Flow((1 to n).map(i => createEvent(s"$i", CommandStatus.Executed))).produceTo(eventSubscriber)
+          val count = probe.receiveN(n).collect { case TrackedExecutued => 1 }.sum
+          count should equal(n)
+        }
+      }
+      "the events are reveived before the subscriptions" should {
+        """notify each subscriber""" in { fixture =>
+          val n = 100
+          val FixtureParam(testId, tracker, eventSubscriber) = fixture
+          val probe = TestProbe()
+          Flow((1 to n).map(i => createEvent(s"$i", CommandStatus.Executed))).produceTo(eventSubscriber)
+          system.scheduler.scheduleOnce(200.millis.dilated) {
+            (1 to n).foreach(i => tracker ! TrackCommandMapped(s"$i", res => probe.ref ! res, (100.millis.dilated).fromNow))
+          }
+          val count = probe.receiveN(n).collect { case TrackedExecutued => 1 }.sum
+          count should equal(n)
+        }
+      }
+      "the events and subscriptions have no specific order" should {
+        """notify each subscriber""" in { fixture =>
+          val n = 1000
+          val FixtureParam(testId, tracker, eventSubscriber) = fixture
+          val probe = TestProbe()
+          Flow((1 to n).map(i => createEvent(s"$i", CommandStatus.Executed))).produceTo(eventSubscriber)
+          val deadline = (500.millis.dilated).fromNow
+          (1 to n).foreach(i => tracker ! TrackCommandMapped(s"$i", res => probe.ref ! res, deadline))
+          val tracked = probe.receiveN(n)
+          val executed = tracked.collect { case TrackedExecutued => 1 }.sum
+          val timedout = tracked.collect { case TrackedTimeout => 1 }.sum
+          timedout should equal(0)
+          executed should equal(n)
+        }
       }
     }
   }
@@ -211,7 +279,7 @@ class CommandStatusTrackerTests(_system: ActorSystem)
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
-    val trackerProps = CommandStatusTracker.props(5, 8, trackerTimeoutScanInterval)
+    val trackerProps = CommandStatusTracker.props(100, 110, trackerTimeoutScanInterval)
     val trackerActor = system.actorOf(trackerProps, s"tracker-$testId")
 
     val trackerSubscriber = CommandStatusTracker.systemEventSubscriber(trackerActor)
