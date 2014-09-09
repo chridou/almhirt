@@ -9,7 +9,6 @@ import almhirt.common._
 import almhirt.configuration._
 import almhirt.almfuture.all._
 import almhirt.serialization._
-import almhirt.core.Almhirt
 import almhirt.http.{ HttpSerializer, HttpDeserializer}
 import spray.http._
 import spray.client.pipelining._

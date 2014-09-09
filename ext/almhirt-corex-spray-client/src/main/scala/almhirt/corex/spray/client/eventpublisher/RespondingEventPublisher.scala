@@ -4,12 +4,12 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
 import almhirt.common._
-import almhirt.core.Almhirt
 import almhirt.serialization._
 import almhirt.http.{ HttpSerializer, HttpDeserializer}
+import almhirt.context.HasExecutionContexts
 
 
-abstract class RespondingEventPublisher(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], myAlmhirt: Almhirt) extends HttpEventPublisher {
+abstract class RespondingEventPublisher(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts) extends HttpEventPublisher {
   import RespondingEventPublisher._
 
   override def onProblem(event: Event, problem: Problem, respondTo: ActorRef) {
