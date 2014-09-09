@@ -60,6 +60,9 @@ private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheA
   import CommandStatusTracker._
   import almhirt.storages._
 
+  if(targetCacheSize < 1) throw new Exception(s"targetCacheSize($targetCacheSize) must be grater than zero.")
+  if(shrinkCacheAt < targetCacheSize) throw new Exception(s"shrinkCacheAt($targetCacheSize) must at least targetCacheSize($targetCacheSize).")
+  
   override val requestStrategy = ZeroRequestStrategy
 
   implicit val executionContext: ExecutionContext = context.dispatcher
@@ -70,7 +73,7 @@ private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheA
   private case class RemoveTimedOut(timedOut: Map[CommandId, Set[Long]])
 
   private[this] var currentId = 0L
-  private def nextId: Long = {
+  private[this] def nextId: Long = {
     currentId = currentId + 1L
     currentId
   }
@@ -81,7 +84,7 @@ private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheA
   private[this] var cachedStatusLookUp: Map[CommandId, CommandStatus.CommandResult] = Map.empty
   private[this] var cachedStatusSeq: Vector[CommandId] = Vector.empty
 
-  private[this] val shrinkSize = shrinkCacheAt - targetCacheSize
+  private[this] val shrinkSize = (shrinkCacheAt - targetCacheSize) + 1
 
   private def addStatusToCache(id: CommandId, status: CommandStatus.CommandResult) {
     if (cachedStatusSeq.size == shrinkCacheAt) {
