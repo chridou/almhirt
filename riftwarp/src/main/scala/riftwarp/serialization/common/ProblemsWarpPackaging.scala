@@ -33,20 +33,20 @@ object SingleProblemPackaging extends WarpPacker[SingleProblem] with Registerabl
 
 }
 
-object AggregateProblemPackaging extends WarpPacker[AggregateProblem] with RegisterableWarpPacker with RegisterableWarpUnpacker[AggregateProblem] {
-  override val warpDescriptor = WarpDescriptor(classOf[AggregateProblem].getSimpleName())
-  override val alternativeWarpDescriptors = WarpDescriptor(classOf[AggregateProblem]) :: WarpDescriptor(classOf[AggregateProblem.AggregateProblemImpl]) :: Nil
-  override def pack(what: AggregateProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
+object AggregatedProblemPackaging extends WarpPacker[AggregatedProblem] with RegisterableWarpPacker with RegisterableWarpUnpacker[AggregatedProblem] {
+  override val warpDescriptor = WarpDescriptor(classOf[AggregatedProblem].getSimpleName())
+  override val alternativeWarpDescriptors = WarpDescriptor(classOf[AggregatedProblem]) :: WarpDescriptor(classOf[AggregatedProblem.AggregateProblemImpl]) :: Nil
+  override def pack(what: AggregatedProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     this.warpDescriptor ~>
       MLookUpForgiving[String, Any]("args", what.args) ~>
       CWith("problems", what.problems, ProblemPackaging)
 
-  override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[AggregateProblem] =
+  override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[AggregatedProblem] =
     withFastLookUp(from) { lu =>
       for {
         args <- lu.getAssocs[String]("args").map(_.toMap)
         problems <- lu.getManyWith("problems", ProblemPackaging)
-      } yield AggregateProblem(problems, args)
+      } yield AggregatedProblem(problems, args)
     }
 }
 
@@ -56,10 +56,10 @@ object ProblemPackaging extends WarpPacker[Problem] with RegisterableWarpPacker 
   override def pack(what: Problem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     what match {
       case sp: SingleProblem => SingleProblemPackaging(sp)
-      case ap: AggregateProblem => AggregateProblemPackaging(ap)
+      case ap: AggregatedProblem => AggregatedProblemPackaging(ap)
     }
 
-  override val unpackers = SingleProblemPackaging :: AggregateProblemPackaging :: Nil
+  override val unpackers = SingleProblemPackaging :: AggregatedProblemPackaging :: Nil
 }
 
 object ProblemTypes {

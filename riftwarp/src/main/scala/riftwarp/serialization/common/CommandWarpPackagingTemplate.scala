@@ -11,12 +11,11 @@ import riftwarp.std.WarpObjectLookUp
 
 
 object CommandHeaderWarpPackaging extends WarpPacker[CommandHeader] with RegisterableWarpPacker with RegisterableWarpUnpacker[CommandHeader] {
-import almhirt.common.CommandHeader.BasicCommandHeader
   val warpDescriptor = WarpDescriptor("CommandHeader")
-  val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandHeader]) :: WarpDescriptor(classOf[BasicCommandHeader]) :: Nil
+  val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandHeader]) :: WarpDescriptor(classOf[CommandHeader]) :: Nil
   override def pack(what: CommandHeader)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     this.warpDescriptor ~>
-      P("id", what.id) ~>
+      P("id", what.id.value ) ~>
       P("timestamp", what.timestamp) ~>
       MP("metadata", what.metadata)
   }
@@ -24,10 +23,10 @@ import almhirt.common.CommandHeader.BasicCommandHeader
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandHeader] =
     withFastLookUp(from) { lookup =>
       for {
-        id <- lookup.getAs[JUUID]("id")
+        id <- lookup.getAs[String]("id")
         timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
-      } yield CommandHeader(id, timestamp, metadata)
+      } yield CommandHeader(CommandId(id), timestamp, metadata)
     }
 
 }

@@ -15,7 +15,7 @@ object EventHeaderWarpPackaging extends WarpPacker[EventHeader] with Registerabl
   val alternativeWarpDescriptors = WarpDescriptor(classOf[EventHeader]) :: Nil
   override def pack(what: EventHeader)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     this.warpDescriptor ~>
-      P("id", what.id) ~>
+      P("id", what.id.value) ~>
       P("timestamp", what.timestamp) ~>
       MP("metadata", what.metadata)
   }
@@ -23,10 +23,10 @@ object EventHeaderWarpPackaging extends WarpPacker[EventHeader] with Registerabl
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[EventHeader] =
     withFastLookUp(from) { lookup =>
       for {
-        id <- lookup.getAs[JUUID]("id")
+        id <- lookup.getAs[String]("id")
         timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
-      } yield EventHeader(id, timestamp, metadata)
+      } yield EventHeader(EventId(id), timestamp, metadata)
     }
 
 }
