@@ -36,7 +36,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
   "An AggregateRootViews" when {
     import aggregatesforthelazyones._
     import AggregateRootDroneInternalMessages._
-    val n = 1000
+    val n = 500
     "aggregate roots exists before querying them" when {
       s"$n aggregate roots are created" should {
         s"deliver $n aggregate roots with version 1" in { fixture ⇒

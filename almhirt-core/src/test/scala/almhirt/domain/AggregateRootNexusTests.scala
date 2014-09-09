@@ -85,7 +85,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           }
         }
       }
-      val nn = 2000
+      val nn = 1000
       val ids = (1 to nn).map(createId).toVector
       val n = ids.size
       s"$n aggregate roots are created" should {
@@ -134,7 +134,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
             info(s"Dispatched ${n} commands in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
           }
         }
-        val bigN = 5000
+        val bigN = 2500
         s"$bigN aggregate roots are created, updated and then deleted" should {
           s"emit the status events ([Initiated, Executed]x3) $bigN times" in { fixture ⇒
             val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
