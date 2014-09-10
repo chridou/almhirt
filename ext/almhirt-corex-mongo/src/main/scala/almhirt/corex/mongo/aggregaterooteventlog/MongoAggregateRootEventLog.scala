@@ -19,10 +19,23 @@ import com.typesafe.config.Config
 import play.api.libs.iteratee._
 
 object MongoAggregateRootEventLog {
-
+  def props(
+    db: DB with DBMetaCommands,
+    collectionName: String,
+    serializeAggregateRootEvent: AggregateRootEvent => AlmValidation[BSONDocument],
+    deserializeAggregateRootEvent: BSONDocument => AlmValidation[AggregateRootEvent],
+    writeWarnThreshold: FiniteDuration,
+    readWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts): Props =
+    Props(new MongoAggregateRootEventLogImpl(
+      db,
+      collectionName,
+      serializeAggregateRootEvent,
+      deserializeAggregateRootEvent,
+      writeWarnThreshold,
+      readWarnThreshold))
 }
 
-private[almhirt] class MongoAggregateRootEventLog(
+private[almhirt] class MongoAggregateRootEventLogImpl(
   db: DB with DBMetaCommands,
   collectionName: String,
   serializeAggregateRootEvent: AggregateRootEvent => AlmValidation[BSONDocument],
