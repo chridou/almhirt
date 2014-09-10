@@ -113,6 +113,7 @@ trait HttpxSprayClientBuild {
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += akka_streams,
 	  libraryDependencies += spray_httpx,
 	  libraryDependencies += spray_client,
 	  libraryDependencies += typesafe_config,
@@ -172,22 +173,6 @@ trait CorexMongoBuild {
 		exclude("ch.qos.logback", "logback-classic"),
  	  libraryDependencies += scalatest
   )
-}
-
-trait CorexSprayClientBuild {
-  import Dependencies._
-  import Resolvers._
-  def corexSprayClientProject(name: String, baseFile: java.io.File) = {
- 	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
-	  resolvers += sprayRepo,
-	  libraryDependencies += scalaz,
-	  libraryDependencies += akka_actor,
-	  libraryDependencies += spray_client,
-	  libraryDependencies += spray_httpx,
-	  libraryDependencies += spray_testkit,
-	  libraryDependencies += scalatest
-	  )
-	  }
 }
 
 trait CorexSprayServiceBuild {
@@ -275,7 +260,6 @@ object AlmHirtBuild extends Build
 	with HttpxSprayServiceBuild
 	with CoreBuild 
 	with CorexMongoBuild 
-	with CorexSprayClientBuild 
 	with CorexSprayServiceBuild 
 	with RiftWarpBuild 
 	with RiftWarpHttpSprayBuild
@@ -292,7 +276,6 @@ object AlmHirtBuild extends Build
 									httpxSprayService, 
 									core, 
 									mongoExtensions, 
-									corexSprayClient, 
 									corexSprayService, 
 									riftwarp, 
 									riftwarpHttpSpray, 
@@ -317,9 +300,6 @@ object AlmHirtBuild extends Build
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
                        			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(core, riftwarp % "test->test", riftwarpMongoProject % "test")
 								
-  lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
-	                       				baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, core, httpxSprayClient, riftwarp % "test->test")
-
   lazy val corexSprayService = corexSprayServiceProject(	name = "almhirt-corex-spray-service",
 	                       				baseFile = file("./ext/almhirt-corex-spray-service")) dependsOn(common, httpxSprayService, core, riftwarp % "test")
 										
