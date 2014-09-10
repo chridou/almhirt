@@ -42,13 +42,17 @@ private[almhirt] class EventLogWriterImpl(val eventLog: ActorRef, writeAggregate
       if (activeEvent.map(_.eventId == id) | false) {
         request(1)
         context.become(running(activeEvent = None))
+      } else {
+        log.warning(s"Received event logged for event '${id.value}' which is not the active event.")
       }
 
     case EventLog.EventNotLogged(id, problem) =>
-      log.error(s"Could not log event '${id.value}':\n$problem")
       if (activeEvent.map(_.eventId == id) | false) {
+        log.error(s"Could not log event '${id.value}':\n$problem")
         request(1)
         context.become(running(activeEvent = None))
+      } else {
+        log.error(s"Received event not logged for event '${id.value}' which is not the active event:\n$problem")
       }
 
     case PotentialTimeout(eventId) =>
@@ -56,6 +60,8 @@ private[almhirt] class EventLogWriterImpl(val eventLog: ActorRef, writeAggregate
         log.warning(s"Writing event '${eventId.value}' timed out. It might have been written or not...")
         request(1)
         context.become(running(activeEvent = None))
+      } else {
+        log.warning(s"Received timeout for event '${eventId.value}' which is not the active event.")
       }
 
     case ActorSubscriberMessage.OnNext(unprocessable) =>
