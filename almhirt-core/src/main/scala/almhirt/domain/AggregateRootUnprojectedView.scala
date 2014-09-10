@@ -10,8 +10,8 @@ import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import almhirt.common.AggregateRootEvent
 
 object AggregateRootViewMessages {
-  final case class ApplyAggregateEvent(event: AggregateRootEvent)
-  case object AggregateEventHandled
+  final case class ApplyAggregateRootEvent(event: AggregateRootEvent)
+  case object AggregateRootEventHandled
   case object GetAggregateRootProjection
   final case class GetAggregateRootProjectionFor(id: AggregateRootId)
 
@@ -27,13 +27,13 @@ abstract class AggregateRootUnprojectedView[T <: AggregateRoot, E <: AggregateRo
 
   override def receive: Receive = me.receiveUninitialized
 
-  override def confirmAggregateEventHandled() {
-    context.parent ! AggregateRootViewMessages.AggregateEventHandled
+  override def confirmAggregateRootEventHandled() {
+    context.parent ! AggregateRootViewMessages.AggregateRootEventHandled
   }
 }
 
 private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, E <: AggregateRootEvent] { me: Actor with ActorLogging with AggregateRootEventHandler[T, E] ⇒
-  import almhirt.eventlog.AggregateEventLog._
+  import almhirt.eventlog.AggregateRootEventLog._
   import AggregateRootViewMessages._
 
   def futuresContext: ExecutionContext
@@ -42,7 +42,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   def aggregateRootId: AggregateRootId
   implicit def eventTag: ClassTag[E]
 
-  def confirmAggregateEventHandled()
+  def confirmAggregateRootEventHandled()
 
   /**
    * Implement this to communicate the current state to the outside world.
@@ -69,9 +69,9 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
         case Some(snaphots) ⇒
           ???
       }
-    case ApplyAggregateEvent(event) ⇒
+    case ApplyAggregateRootEvent(event) ⇒
       logDebug(s"[receiveUninitialized]: Intializing from eventlog. Dropping event $event")
-      confirmAggregateEventHandled()
+      confirmAggregateRootEventHandled()
       snapshotStorage match {
         case None ⇒
           updateFromEventlog(Vacat, Vector.empty)
@@ -81,7 +81,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   }
 
   private def receiveRebuildFromEventlog(currentState: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
-    case FetchedAggregateEvents(eventsEnumerator) ⇒
+    case FetchedAggregateRootEvents(eventsEnumerator) ⇒
       val iteratee: Iteratee[AggregateRootEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateRootEvent, AggregateRootLifecycle[T]](currentState) {
         case (acc, event) ⇒
           applyEventLifecycleAgnostic(acc, event.specific[E])
@@ -96,10 +96,10 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents))
 
-    case GetAggregateEventsFailed(problem) ⇒
-      onError(enqueuedRequests, enqueuedEvents.size)(AggregateEventStoreFailedReadingException(aggregateRootId, "An error has occured fetching the aggregate root events:\n$problem"))
+    case GetAggregateRootEventsFailed(problem) ⇒
+      onError(enqueuedRequests, enqueuedEvents.size)(AggregateRootEventStoreFailedReadingException(aggregateRootId, "An error has occured fetching the aggregate root events:\n$problem"))
 
-    case ApplyAggregateEvent(event) ⇒
+    case ApplyAggregateRootEvent(event) ⇒
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests, enqueuedEvents.size + 1))))
 
     case GetAggregateRootProjection ⇒
@@ -112,7 +112,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
   private def receiveEvaluateEventlogRebuildResult(enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
     case InternalEventlogArBuildResult(arState) ⇒
-      enqueuedEvents.foreach(_ => confirmAggregateEventHandled())
+      enqueuedEvents.foreach(_ => confirmAggregateRootEventHandled())
       val toApply = enqueuedEvents.filter(_.aggVersion >= arState.version)
       if (toApply.isEmpty) {
         dispatchState(arState, enqueuedRequests: _*)
@@ -132,7 +132,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
     case InternalEventlogBuildArFailed(error: Throwable) ⇒
       onError(enqueuedRequests, enqueuedEvents.size)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured rebuilding the aggregate root.", error))
 
-    case ApplyAggregateEvent(event) ⇒
+    case ApplyAggregateRootEvent(event) ⇒
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests, enqueuedEvents.size + 1))))
 
     case GetAggregateRootProjection ⇒
@@ -143,15 +143,15 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
     case GetAggregateRootProjection ⇒
       dispatchState(currentState, sender)
 
-    case ApplyAggregateEvent(event) ⇒
+    case ApplyAggregateRootEvent(event) ⇒
       currentState match {
         case s: Antemortem[T] ⇒
           if (event.aggVersion == s.version) {
-            confirmAggregateEventHandled()
+            confirmAggregateRootEventHandled()
             logDebug(s"[receiveServe]: Applying event $event")
             context.become(receiveServe(applyEventAntemortem(s, event.specificWithHandler[E](onError(Vector.empty, 0)))))
           } else {
-            confirmAggregateEventHandled()
+            confirmAggregateRootEventHandled()
             logDebug(s"[receiveServe]: Version mismatch. $event causes updating from eventlog.")
             updateFromEventlog(currentState, Vector.empty)
           }
@@ -163,7 +163,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   /** Ends with termination */
   private def onError(enqueuedRequests: Vector[ActorRef], eventsStillToConfirm: Int)(ex: AggregateRootDomainException): Nothing = {
     log.error(s"Escalating! Something terrible happened:\n$ex")
-    (1 to eventsStillToConfirm).foreach(_ => confirmAggregateEventHandled())
+    (1 to eventsStillToConfirm).foreach(_ => confirmAggregateRootEventHandled())
     val problem = UnspecifiedProblem(s"""Escalating! Something terrible happened: "${ex.getMessage}"""", cause = Some(ex))
     enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(problem, receiver))
     throw ex
@@ -177,9 +177,9 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   private def updateFromEventlog(state: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef]) {
     state match {
       case Vacat ⇒
-        aggregateEventLog ! GetAllAggregateEventsFor(aggregateRootId)
+        aggregateEventLog ! GetAllAggregateRootEventsFor(aggregateRootId)
       case Vivus(ar) ⇒
-        aggregateEventLog ! GetAggregateEventsFrom(aggregateRootId, ar.version)
+        aggregateEventLog ! GetAggregateRootEventsFrom(aggregateRootId, ar.version)
       case Mortuus(id, v) ⇒
         onError(enqueuedRequests, 0)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
     }

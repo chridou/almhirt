@@ -44,7 +44,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
   info("These tests have timing issues since one can not really tell, whether commands overlap unless effort is taken to prevent this.")
 
   "The AggregateRootHive" when {
-    import almhirt.eventlog.AggregateEventLog._
+    import almhirt.eventlog.AggregateRootEventLog._
     import almhirt.aggregates._
     import aggregatesforthelazyones._
     import almhirt.tracking._
@@ -173,7 +173,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
     import almhirt.tracking.CommandStatusChanged
     val testId = nextTestId
     //info(s"Test $testId")
-    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
+    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
     val (streams, stopStreams) = AlmhirtStreams.supervised(s"streams-$testId", 1 second).awaitResultOrEscalate(1 second)

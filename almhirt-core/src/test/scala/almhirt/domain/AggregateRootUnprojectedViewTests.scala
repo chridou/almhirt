@@ -35,7 +35,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
   "An AggregateRootUnprojectedView" when {
     import aggregatesforthelazyones._
     import AggregateRootDroneInternalMessages._
-    import almhirt.eventlog.AggregateEventLog._
+    import almhirt.eventlog.AggregateRootEventLog._
     "receiving valid events" when {
       "no aggregate root exists" should {
         "not deliver an aggregate root" in { fixture ⇒
@@ -143,8 +143,8 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(eventlog, CommitAggregateEvent(UserCreated(EventHeader(), theId, 0L, "hans", "meier")))
-            probe.send(eventlog, CommitAggregateEvent(UserLastnameChanged(EventHeader(), theId, 1L, "müller")))
+            probe.send(eventlog, CommitAggregateRootEvent(UserCreated(EventHeader(), theId, 0L, "hans", "meier")))
+            probe.send(eventlog, CommitAggregateRootEvent(UserLastnameChanged(EventHeader(), theId, 1L, "müller")))
             probe.receiveN(2)
 
             probe.expectNoMsg(100 millis)
@@ -160,9 +160,9 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(eventlog, CommitAggregateEvent(UserCreated(EventHeader(), theId, 0L, "hans", "meier")))
-            probe.send(eventlog, CommitAggregateEvent(UserLastnameChanged(EventHeader(), theId, 1L, "müller")))
-            probe.send(eventlog, CommitAggregateEvent(UserDied(EventHeader(), theId, 2L)))
+            probe.send(eventlog, CommitAggregateRootEvent(UserCreated(EventHeader(), theId, 0L, "hans", "meier")))
+            probe.send(eventlog, CommitAggregateRootEvent(UserLastnameChanged(EventHeader(), theId, 1L, "müller")))
+            probe.send(eventlog, CommitAggregateRootEvent(UserDied(EventHeader(), theId, 2L)))
             probe.receiveN(3)
 
             probe.expectNoMsg(100 millis)
@@ -180,8 +180,8 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(eventlog, CommitAggregateEvent(UserCreated(EventHeader(), theId, 0L, "hans", "meier")))
-            probe.send(eventlog, CommitAggregateEvent(UserLastnameChanged(EventHeader(), theId, 7L, "müller")))
+            probe.send(eventlog, CommitAggregateRootEvent(UserCreated(EventHeader(), theId, 0L, "hans", "meier")))
+            probe.send(eventlog, CommitAggregateRootEvent(UserLastnameChanged(EventHeader(), theId, 7L, "müller")))
             probe.receiveN(2)
 
             probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
@@ -196,8 +196,8 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            probe.send(eventlog, CommitAggregateEvent(UserCreated(EventHeader(), theId, 0L, "hans", "meier")))
-            probe.send(eventlog, CommitAggregateEvent(NotAUserEvent(EventHeader(), theId, 1L)))
+            probe.send(eventlog, CommitAggregateRootEvent(UserCreated(EventHeader(), theId, 0L, "hans", "meier")))
+            probe.send(eventlog, CommitAggregateRootEvent(NotAUserEvent(EventHeader(), theId, 1L)))
             probe.receiveN(2)
 
             probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
@@ -228,7 +228,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
 
     val testId = nextTestId
     info(s"Test $testId")
-    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
+    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
     val droneProbe = TestProbe()
 
@@ -252,13 +252,13 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
       theId, eventlogActor, None,
       (lc, receiver) => receiver ! UserState(lc),
       (prob, receiver) => receiver ! ViewFailure(prob)) with UserEventHandler {
-      override def confirmAggregateEventHandled() {
+      override def confirmAggregateRootEventHandled() {
       }
     })
 
     val viewActor = system.actorOf(viewProps, s"view-$testId")
 
-    Flow(streams.aggregateEventStream).foreach(event => viewActor ! AggregateRootViewMessages.ApplyAggregateEvent(event))
+    Flow(streams.aggregateEventStream).foreach(event => viewActor ! AggregateRootViewMessages.ApplyAggregateRootEvent(event))
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, viewActor, droneActor, droneProbe, eventlogActor, streams)))

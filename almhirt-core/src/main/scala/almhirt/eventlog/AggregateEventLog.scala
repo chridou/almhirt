@@ -6,33 +6,33 @@ import play.api.libs.iteratee.Enumerator
 import almhirt.aggregates.AggregateRootId
 import almhirt.aggregates.AggregateRootVersion
 
-object AggregateEventLog {
-  trait AggregateEventLogMessage
-  trait AggregateEventLogResponse
+object AggregateRootEventLog {
+  trait AggregateRootEventLogMessage
+  trait AggregateRootEventLogResponse
 
-  final case class CommitAggregateEvent(event: AggregateRootEvent) extends AggregateEventLogMessage
-  sealed trait CommitAggregateEventResponse extends AggregateEventLogResponse
-  final case class AggregateEventCommitted(id: EventId) extends CommitAggregateEventResponse
-  final case class AggregateEventNotCommitted(id: EventId, problem: Problem) extends CommitAggregateEventResponse
+  final case class CommitAggregateRootEvent(event: AggregateRootEvent) extends AggregateRootEventLogMessage
+  sealed trait CommitAggregateRootEventResponse extends AggregateRootEventLogResponse
+  final case class AggregateRootEventCommitted(id: EventId) extends CommitAggregateRootEventResponse
+  final case class AggregateRootEventNotCommitted(id: EventId, problem: Problem) extends CommitAggregateRootEventResponse
   
-  case object GetAllAggregateEvents extends AggregateEventLogMessage
-  final case class GetAllAggregateEventsFor(aggId: AggregateRootId) extends AggregateEventLogMessage
-  final case class GetAggregateEventsFrom(aggId: AggregateRootId, fromVersion: AggregateRootVersion) extends AggregateEventLogMessage
-  final case class GetAggregateEventsTo(aggId: AggregateRootId, toVersion: AggregateRootVersion) extends AggregateEventLogMessage
-  final case class GetAggregateEventsUntil(aggId: AggregateRootId, untilVersion: AggregateRootVersion) extends AggregateEventLogMessage
-  final case class GetAggregateEventsFromTo(aggId: AggregateRootId, fromVersion: AggregateRootVersion, toVersion: AggregateRootVersion) extends AggregateEventLogMessage
-  final case class GetAggregateEventsFromUntil(aggId: AggregateRootId, fromVersion: AggregateRootVersion, untilVersion: AggregateRootVersion) extends AggregateEventLogMessage
-  sealed trait GetManyAggregateEventsResponse extends AggregateEventLogResponse
-  final case class FetchedAggregateEvents(enumerator: Enumerator[AggregateRootEvent]) extends GetManyAggregateEventsResponse
-  final case class GetAggregateEventsFailed(problem: Problem) extends GetManyAggregateEventsResponse
+  case object GetAllAggregateRootEvents extends AggregateRootEventLogMessage
+  final case class GetAllAggregateRootEventsFor(aggId: AggregateRootId) extends AggregateRootEventLogMessage
+  final case class GetAggregateRootEventsFrom(aggId: AggregateRootId, fromVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
+  final case class GetAggregateRootEventsTo(aggId: AggregateRootId, toVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
+  final case class GetAggregateRootEventsUntil(aggId: AggregateRootId, untilVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
+  final case class GetAggregateRootEventsFromTo(aggId: AggregateRootId, fromVersion: AggregateRootVersion, toVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
+  final case class GetAggregateRootEventsFromUntil(aggId: AggregateRootId, fromVersion: AggregateRootVersion, untilVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
+  sealed trait GetManyAggregateRootEventsResponse extends AggregateRootEventLogResponse
+  final case class FetchedAggregateRootEvents(enumerator: Enumerator[AggregateRootEvent]) extends GetManyAggregateRootEventsResponse
+  final case class GetAggregateRootEventsFailed(problem: Problem) extends GetManyAggregateRootEventsResponse
 
 
-  final case class GetAggregateEvent(eventId: EventId) extends AggregateEventLogMessage
-  sealed trait GetAggregateEventResponse extends AggregateEventLogResponse
-  final case class FetchedAggregateEvent(eventId: EventId, event: Option[AggregateRootEvent]) extends GetAggregateEventResponse
-  final case class GetAggregateEventFailed(eventId: EventId, problem: Problem) extends GetAggregateEventResponse
+  final case class GetAggregateRootEvent(eventId: EventId) extends AggregateRootEventLogMessage
+  sealed trait GetAggregateRootEventResponse extends AggregateRootEventLogResponse
+  final case class FetchedAggregateRootEvent(eventId: EventId, event: Option[AggregateRootEvent]) extends GetAggregateRootEventResponse
+  final case class GetAggregateRootEventFailed(eventId: EventId, problem: Problem) extends GetAggregateRootEventResponse
    
-  object AggreagteEventLogCoordinates {
+  object AggregateEventLogCoordinates {
 	  val actorname = "aggregate-event-log"
 	  val logicalPath: String = s"user/almhirt/storage/$actorname"
   }

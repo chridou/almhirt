@@ -44,9 +44,9 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: AggregateEventStoreFailedReadingException ⇒ Restart
+      case _: AggregateRootEventStoreFailedReadingException ⇒ Restart
       case _: RebuildAggregateRootFailedException ⇒ Restart
-      case _: CouldNotDispatchAllAggregateEventsException ⇒ Restart
+      case _: CouldNotDispatchAllAggregateRootEventsException ⇒ Restart
       case _: Exception ⇒ Escalate
     }
 

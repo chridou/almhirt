@@ -276,7 +276,7 @@ class CommandStatusTrackerTests(_system: ActorSystem)
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId
     //info(s"Test $testId")
-    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
+    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
     val trackerProps = CommandStatusTracker.props(100, 110, trackerTimeoutScanInterval)

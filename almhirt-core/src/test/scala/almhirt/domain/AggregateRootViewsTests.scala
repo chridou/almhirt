@@ -193,7 +193,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
 
     val testId = nextTestId
     info(s"Test $testId")
-    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
+    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
     val (streams, stopStreaming) = AlmhirtStreams.supervised(s"streaming-$testId").awaitResultOrEscalate(1 second)

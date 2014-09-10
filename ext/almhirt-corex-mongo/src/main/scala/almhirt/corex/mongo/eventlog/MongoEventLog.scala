@@ -10,160 +10,38 @@ import almhirt.almvalidation.kit._
 import almhirt.converters.BinaryConverter
 import almhirt.configuration._
 import almhirt.eventlog._
-import almhirt.messaging.MessagePublisher
-import almhirt.core.Almhirt
-import almhirt.corex.mongo.LogStatisticsCollector
 import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index => MIndex }
 import reactivemongo.api.indexes.IndexType
-import com.typesafe.config.Config
-import almhirt.eventlog.impl.DevNullEventLog
+import play.api.libs.iteratee._
 
 object MongoEventLog {
-  def propsRaw(
+  def props(
     db: DB with DBMetaCommands,
     collectionName: String,
     serializeEvent: Event => AlmValidation[BSONDocument],
     deserializeEvent: BSONDocument => AlmValidation[Event],
-    writeWarnThreshold: FiniteDuration,
-    serializationExecutor: ExecutionContext,
-    statisticsCollector: Option[ActorRef],
-    maxCollectionSize: Option[Long],
-    theAlmhirt: Almhirt): Props =
-    Props(new MongoEventLog(
+    writeWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts): Props =
+    Props(new MongoEventLogImpl(
       db,
       collectionName,
       serializeEvent,
       deserializeEvent,
-      writeWarnThreshold,
-      serializationExecutor,
-      statisticsCollector,
-      maxCollectionSize)(theAlmhirt))
-
-  def propsRaw(
-    db: DB with DBMetaCommands,
-    collectionName: String,
-    serializeEvent: Event => AlmValidation[BSONDocument],
-    deserializeEvent: BSONDocument => AlmValidation[Event],
-    writeWarnThreshold: FiniteDuration,
-    useNumberCruncherForSerialization: Boolean,
-    statisticsCollector: Option[ActorRef],
-    maxCollectionSize: Option[Long],
-    theAlmhirt: Almhirt): Props = {
-    val serCtx = if (useNumberCruncherForSerialization) theAlmhirt.numberCruncher else theAlmhirt.futuresExecutor
-    propsRaw(
-      db,
-      collectionName,
-      serializeEvent,
-      deserializeEvent,
-      writeWarnThreshold,
-      serCtx,
-      statisticsCollector,
-      maxCollectionSize,
-      theAlmhirt)
-  }
-
-  def props(db: DB with DBMetaCommands, serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], statisticsCollector: Option[ActorRef], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
-    for {
-      collectionName <- configSection.v[String]("table-name")
-      writeWarnThreshold <- configSection.v[FiniteDuration]("write-warn-threshold-duration")
-      useNumberCruncherForSerialization <- configSection.v[Boolean]("use-number-cruncher-for-serialization")
-      capCollection <- configSection.v[Boolean]("cap-collection")
-      maxCollectionSize <- if (capCollection)
-        configSection.v[Long]("max-collection-size").map(Some(_))
-      else
-        None.success
-    } yield {
-      theAlmhirt.log.info(s"""MongoEventLog: table-name = $collectionName""")
-      theAlmhirt.log.info(s"""MongoEventLog: write-warn-threshold-duration = ${writeWarnThreshold.defaultUnitString}""")
-      theAlmhirt.log.info(s"""MongoEventLog: use-number-cruncher-for-serialization = $useNumberCruncherForSerialization""")
-      val maxSize = maxCollectionSize.map(_.toString).getOrElse("unlimited")
-      theAlmhirt.log.info(s"""MongoEventLog: max-collection-size = $maxSize""")
-      propsRaw(db, collectionName, serializeEvent, deserializeEvent, writeWarnThreshold, useNumberCruncherForSerialization, statisticsCollector, maxCollectionSize, theAlmhirt)
-    }
-
-  def props(driver: MongoDriver, serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], statisticsCollector: Option[ActorRef], configSection: Config, theAlmhirt: Almhirt): AlmValidation[Props] =
-    for {
-      connections <- configSection.v[List[String]]("connections")
-      dbName <- configSection.v[String]("db-name")
-      db <- inTryCatch {
-        val connection = driver.connection(connections)
-        connection(dbName)(theAlmhirt.futuresExecutor)
-      }
-      props <- props(db, serializeEvent, deserializeEvent, statisticsCollector, configSection, theAlmhirt)
-    } yield {
-      theAlmhirt.log.info(s"""MongoEventLog: connections = ${connections.mkString("[", ",", "]")}""")
-      theAlmhirt.log.info(s"""MongoEventLog: db-name = $dbName""")
-      props
-    }
-
-  def props(driver: MongoDriver, serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], statisticsCollector: Option[ActorRef], configPath: String, theAlmhirt: Almhirt): AlmValidation[Props] =
-    theAlmhirt.config.v[Config](configPath).flatMap { configSection =>
-      props(driver, serializeEvent, deserializeEvent, statisticsCollector, configSection, theAlmhirt)
-    }
-
-  def props(driver: MongoDriver, serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], statisticsCollector: Option[ActorRef], theAlmhirt: Almhirt): AlmValidation[Props] =
-    props(driver, serializeEvent, deserializeEvent, statisticsCollector, "almhirt.event-log", theAlmhirt)
-
-  def props(serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], configPath: String, statisticsCollector: Option[ActorRef], theAlmhirt: Almhirt): AlmValidation[Props] =
-    inTryCatch { new MongoDriver(theAlmhirt.actorSystem) }.flatMap(driver =>
-      props(driver, serializeEvent, deserializeEvent, statisticsCollector, configPath, theAlmhirt))
-
-  def props(serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], statisticsCollector: Option[ActorRef], theAlmhirt: Almhirt): AlmValidation[Props] =
-    inTryCatch { new MongoDriver(theAlmhirt.actorSystem) }.flatMap(driver =>
-      props(driver, serializeEvent, deserializeEvent, statisticsCollector, theAlmhirt))
-
-  def apply(driver: MongoDriver, serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], configPath: String, theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
-    for {
-      configSection <- theAlmhirt.config.v[Config](configPath)
-      collectStatistics <- configSection.v[Boolean]("collect-statistics")
-      enabled <- configSection.v[Boolean]("enabled")
-      props <- {
-        theAlmhirt.log.info(s"""MongoEventLog: collect-statistics = $collectStatistics""")
-        val collector =
-          if (collectStatistics)
-            Some(theAlmhirt.actorSystem.actorOf(Props[LogStatisticsCollector], "event-log-statistics-collector"))
-          else
-            None
-        props(driver, serializeEvent, deserializeEvent, collector, configSection, theAlmhirt)
-      }
-    } yield {
-      if (!enabled)
-        theAlmhirt.log.warning(s"""MongoEventLog: THE EVENT LOG IS DISABLED""")
-      val actor =
-        if (enabled)
-          theAlmhirt.actorSystem.actorOf(props, "event-log")
-        else
-          theAlmhirt.actorSystem.actorOf(Props(new DevNullEventLog), "event-log")
-      (actor, CloseHandle.noop)
-    }
-
-  def apply(serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], configPath: String, theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
-    inTryCatch { new MongoDriver(theAlmhirt.actorSystem) }.flatMap(driver =>
-      apply(driver, serializeEvent, deserializeEvent, configPath, theAlmhirt))
-
-  def apply(driver: MongoDriver, serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
-    apply(driver, serializeEvent, deserializeEvent, "almhirt.event-log", theAlmhirt)
-
-  def apply(serializeEvent: Event => AlmValidation[BSONDocument], deserializeEvent: BSONDocument => AlmValidation[Event], theAlmhirt: Almhirt): AlmValidation[(ActorRef, CloseHandle)] =
-    apply(serializeEvent, deserializeEvent, "almhirt.event-log", theAlmhirt)
+      writeWarnThreshold))
 }
 
-class MongoEventLog(
+private[almhirt] class MongoEventLogImpl(
   db: DB with DBMetaCommands,
   collectionName: String,
   serializeEvent: Event => AlmValidation[BSONDocument],
   deserializeEvent: BSONDocument => AlmValidation[Event],
-  writeWarnThreshold: FiniteDuration,
-  serializationExecutor: ExecutionContext,
-  statisticsCollector: Option[ActorRef],
-  maxCollectionSize: Option[Long])(implicit theAlmhirt: Almhirt) extends Actor with ActorLogging with EventLog {
+  writeWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging {
   import EventLog._
-  import almhirt.corex.mongo.LogStatisticsCollector._
   import almhirt.corex.mongo.BsonConverter._
 
-  implicit val defaultExecutor = theAlmhirt.futuresExecutor
+  implicit val defaultExecutor = executionContexts.futuresContext
+  val serializationExecutor = executionContexts.futuresContext
 
   val projectionFilter = BSONDocument("event" -> 1)
 
@@ -173,17 +51,15 @@ class MongoEventLog(
   private case object Initialize
   private case object Initialized
 
+  private val fromBsonDocToEvent: Enumeratee[BSONDocument, Event] =
+    Enumeratee.mapM[BSONDocument] { doc => scala.concurrent.Future { documentToEvent(doc).resultOrEscalate }(serializationExecutor) }
+
   def eventToDocument(event: Event): AlmValidation[BSONDocument] = {
     (for {
-      serialized <- {
-        val start = Deadline.now
-        val res = serializeEvent(event)
-        statisticsCollector.foreach(_ ! AddSerializationDuration(start.lap))
-        res
-      }
+      serialized <- serializeEvent(event)
     } yield {
       BSONDocument(
-        ("_id" -> uuidToBson(event.eventId)),
+        ("_id" -> BSONString(event.eventId.value)),
         ("timestamp" -> localDateTimeToBsonDateTime(event.timestamp)),
         ("event" -> serialized))
     }).leftMap(p => SerializationProblem(s"""Could not serialize a "${event.getClass().getName()}".""", cause = Some(p)))
@@ -191,11 +67,7 @@ class MongoEventLog(
 
   def documentToEvent(document: BSONDocument): AlmValidation[Event] = {
     document.get("event") match {
-      case Some(d: BSONDocument) =>
-        val start = Deadline.now
-        val res = deserializeEvent(d)
-        statisticsCollector.foreach(_ ! AddDeserializationDuration(start.lap))
-        res
+      case Some(d: BSONDocument) => deserializeEvent(d)
       case Some(x) => MappingProblem(s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
       case None => NoSuchElementProblem("BSONDocument for payload not found").failure
     }
@@ -226,32 +98,19 @@ class MongoEventLog(
       fail => log.error(fail.toString()),
       start => {
         val lap = start.lap
-        statisticsCollector.foreach(_ ! AddWriteDuration(lap))
         if (lap > writeWarnThreshold)
           log.warning(s"""Storing event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
       })
   }
 
-  def getEvents(query: BSONDocument, sort: BSONDocument): AlmFuture[Seq[Event]] = {
+  def getEvents(query: BSONDocument, sort: BSONDocument): Enumerator[Event] = {
     val collection = db(collectionName)
-    for {
-      docs <- collection.find(query, projectionFilter).sort(sort).cursor.collect[List](1000, true).toSuccessfulAlmFuture
-      Events <- AlmFuture {
-        docs.map(x => documentToEvent(x).toAgg).sequence
-      }(serializationExecutor)
-    } yield Events
+    val enumerator = collection.find(query, projectionFilter).sort(sort).cursor.enumerate(10000, true)
+    enumerator.through(fromBsonDocToEvent)
   }
 
   def fetchAndDispatchEvents(query: BSONDocument, sort: BSONDocument, respondTo: ActorRef) {
-    val start = Deadline.now
-    getEvents(query, sort).fold(
-      problem => {
-        log.error(problem.toString())
-      },
-      events => {
-        respondTo ! FetchedEventsBatch(events)
-        statisticsCollector.foreach(_ ! AddReadDuration(start.lap))
-      })
+    respondTo ! FetchedEvents(getEvents(query, sort))
   }
 
   def uninitialized: Receive = {
@@ -260,13 +119,8 @@ class MongoEventLog(
       val collection = db(collectionName)
       (for {
         idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
-        capRes <- maxCollectionSize match {
-          case Some(maxSize) => collection.convertToCapped(maxSize, None)
-          case None => scala.concurrent.Promise.successful(false).future
-        }
-      } yield (capRes, idxRes)).onComplete {
-        case scala.util.Success((capRes, idxRes)) =>
-          log.info(s"""Collection capped: $capRes""")
+      } yield (idxRes)).onComplete {
+        case scala.util.Success(idxRes) =>
           log.info(s"""Index on "timestamp" created: $idxRes""")
           self ! Initialized
         case scala.util.Failure(exn) =>
@@ -280,17 +134,14 @@ class MongoEventLog(
       log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
 
-  override def receiveEventLogMsg: Receive = {
+  def receiveEventLogMsg: Receive = {
     case LogEvent(event) =>
       commitEvent(event)
 
-    case GetAllEvents =>
-      fetchAndDispatchEvents(BSONDocument(), sortByTimestamp, sender)
-
-    case GetEvent(eventId) =>
+    case FindEvent(eventId) =>
       val pinnedSender = sender
       val collection = db(collectionName)
-      val query = BSONDocument("_id" -> BSONBinary(BinaryConverter.uuidToBytes(eventId), Subtype.UuidSubtype))
+      val query = BSONDocument("_id" -> BSONString(eventId.value))
       val res =
         for {
           docs <- collection.find(query).cursor.collect[List](2, true).toSuccessfulAlmFuture
@@ -304,32 +155,32 @@ class MongoEventLog(
         } yield Event
       res.onComplete(
         problem => {
-          pinnedSender ! EventQueryFailed(eventId, problem)
+          pinnedSender ! FindEventFailed(eventId, problem)
           log.error(problem.toString())
         },
-        eventOpt => pinnedSender ! QueriedEvent(eventId, eventOpt))
+        eventOpt => pinnedSender ! FoundEvent(eventId, eventOpt))
 
-    case GetEventsFrom(from) =>
+    case FetchEventsFrom(from) =>
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case GetEventsAfter(after) =>
+    case FetchEventsAfter(after) =>
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$gt" -> localDateTimeToBsonDateTime(after)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case GetEventsTo(to) =>
+    case FetchEventsTo(to) =>
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$lte" -> localDateTimeToBsonDateTime(to)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case GetEventsUntil(until) =>
+    case FetchEventsUntil(until) =>
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$lt" -> localDateTimeToBsonDateTime(until)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case GetEventsFromTo(from, to) =>
+    case FetchEventsFromTo(from, to) =>
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -338,7 +189,7 @@ class MongoEventLog(
             "$lte" -> localDateTimeToBsonDateTime(to))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case GetEventsFromUntil(from, until) =>
+    case FetchEventsFromUntil(from, until) =>
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -347,7 +198,7 @@ class MongoEventLog(
             "$lt" -> localDateTimeToBsonDateTime(until))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case GetEventsAfterTo(after, to) =>
+    case FetchEventsAfterTo(after, to) =>
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -356,7 +207,7 @@ class MongoEventLog(
             "$lte" -> localDateTimeToBsonDateTime(to))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case GetEventsAfterUntil(after, until) =>
+    case FetchEventsAfterUntil(after, until) =>
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(

@@ -26,7 +26,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
   }
 
   "The AggregateRootDrone" when {
-    import almhirt.eventlog.AggregateEventLog._
+    import almhirt.eventlog.AggregateRootEventLog._
     import AggregateRootDroneInternalMessages._
     import almhirt.aggregates._
     import aggregatesforthelazyones._
@@ -46,8 +46,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, CreateUser(CommandHeader(), "a", 0L, "hans", "meier"))
             probe.expectMsgType[CommandExecuted]
 
-            probe.send(eventlog, GetAllAggregateEventsFor("a"))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAllAggregateRootEventsFor("a"))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
@@ -71,8 +71,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ChangeUserAgeForCreditCard(CommandHeader(), "a", 1L, 22))
             probe.expectMsgType[CommandExecuted]
 
-            probe.send(eventlog, GetAllAggregateEventsFor("a"))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAllAggregateRootEventsFor("a"))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(
@@ -102,8 +102,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ConfirmUserDeath(CommandHeader(), "a", 2L))
             probe.expectMsgType[CommandExecuted]
 
-            probe.send(eventlog, GetAllAggregateEventsFor("a"))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAllAggregateRootEventsFor("a"))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(
@@ -126,8 +126,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, RejectUser(CommandHeader(), "a", 0L, "hans", "meier"))
             probe.expectMsgType[CommandExecuted]
 
-            probe.send(eventlog, GetAllAggregateEventsFor("a"))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAllAggregateRootEventsFor("a"))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserNotAccepted(EventHeader(), "a", 0, "hans", "meier")))
@@ -151,8 +151,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, UserUow(CommandHeader(), "a", 1L, Seq.empty))
             probe.expectMsgType[CommandExecuted]
 
-            probe.send(eventlog, GetAllAggregateEventsFor("a"))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAllAggregateRootEventsFor("a"))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
@@ -161,10 +161,10 @@ class AggregateRootDroneTests(_system: ActorSystem)
       }
       "an aggregate root with version 2 exists" should {
         def createAr(eventlog: ActorRef, probe: TestProbe) {
-          probe.send(eventlog, CommitAggregateEvent(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
-          probe.expectMsgType[AggregateEventCommitted]
-          probe.send(eventlog, CommitAggregateEvent(UserSurnameChanged(EventHeader(), "a", 1, "peter")))
-          probe.expectMsgType[AggregateEventCommitted]
+          probe.send(eventlog, CommitAggregateRootEvent(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
+          probe.expectMsgType[AggregateRootEventCommitted]
+          probe.send(eventlog, CommitAggregateRootEvent(UserSurnameChanged(EventHeader(), "a", 1, "peter")))
+          probe.expectMsgType[AggregateRootEventCommitted]
         }
 
         "execute a modifying command" in { fixture ⇒
@@ -182,8 +182,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 2, "müller"))
             probe.expectMsgType[CommandExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 2))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 2))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserLastnameChanged(EventHeader(), "a", 2, "müller")))
@@ -205,8 +205,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ConfirmUserDeath(CommandHeader(), "a", 2L))
             probe.expectMsgType[CommandExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 2))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 2))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserDied(EventHeader(), "a", 2)))
@@ -229,8 +229,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 0, "müller"))
             probe.expectMsgType[CommandNotExecuted]
 
-            probe.send(eventlog, GetAllAggregateEventsFor("a"))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAllAggregateRootEventsFor("a"))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
@@ -249,8 +249,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ConfirmUserDeath(CommandHeader(), "a", 0))
             probe.expectMsgType[CommandNotExecuted]
 
-            probe.send(eventlog, GetAllAggregateEventsFor("a"))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAllAggregateRootEventsFor("a"))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
@@ -259,10 +259,10 @@ class AggregateRootDroneTests(_system: ActorSystem)
       }
       "an aggregate root with version 2 exists" should {
         def createAr(eventlog: ActorRef, probe: TestProbe) {
-          probe.send(eventlog, CommitAggregateEvent(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
-          probe.expectMsgType[AggregateEventCommitted]
-          probe.send(eventlog, CommitAggregateEvent(UserSurnameChanged(EventHeader(), "a", 1, "peter")))
-          probe.expectMsgType[AggregateEventCommitted]
+          probe.send(eventlog, CommitAggregateRootEvent(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
+          probe.expectMsgType[AggregateRootEventCommitted]
+          probe.send(eventlog, CommitAggregateRootEvent(UserSurnameChanged(EventHeader(), "a", 1, "peter")))
+          probe.expectMsgType[AggregateRootEventCommitted]
         }
 
         "not execute a creating command that targets version 0" in { fixture ⇒
@@ -280,8 +280,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, CreateUser(CommandHeader(), "a", 0, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 2))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 2))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
@@ -303,8 +303,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, CreateUser(CommandHeader(), "a", 2, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 2))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 2))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
@@ -329,8 +329,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 2, "müller"))
             probe.expectMsgType[CommandExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 2))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 2))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List(UserLastnameChanged(EventHeader(), "a", 2, "müller")))
@@ -339,12 +339,12 @@ class AggregateRootDroneTests(_system: ActorSystem)
       }
       "a dead aggregate root with version 3 exists" should {
         def createAr(eventlog: ActorRef, probe: TestProbe) {
-          probe.send(eventlog, CommitAggregateEvent(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
-          probe.expectMsgType[AggregateEventCommitted]
-          probe.send(eventlog, CommitAggregateEvent(UserSurnameChanged(EventHeader(), "a", 1, "peter")))
-          probe.expectMsgType[AggregateEventCommitted]
-          probe.send(eventlog, CommitAggregateEvent(UserDied(EventHeader(), "a", 2)))
-          probe.expectMsgType[AggregateEventCommitted]
+          probe.send(eventlog, CommitAggregateRootEvent(UserCreated(EventHeader(), "a", 0, "hans", "meier")))
+          probe.expectMsgType[AggregateRootEventCommitted]
+          probe.send(eventlog, CommitAggregateRootEvent(UserSurnameChanged(EventHeader(), "a", 1, "peter")))
+          probe.expectMsgType[AggregateRootEventCommitted]
+          probe.send(eventlog, CommitAggregateRootEvent(UserDied(EventHeader(), "a", 2)))
+          probe.expectMsgType[AggregateRootEventCommitted]
         }
 
         "not execute a creating command that targets version 0" in { fixture ⇒
@@ -362,8 +362,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, CreateUser(CommandHeader(), "a", 0, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 3))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 3))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
@@ -385,8 +385,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, CreateUser(CommandHeader(), "a", 3, "hans", "meier"))
             probe.expectMsgType[CommandNotExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 3))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 3))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
@@ -408,8 +408,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 3, "müller"))
             probe.expectMsgType[CommandNotExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 3))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 3))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
@@ -431,8 +431,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
             probe.send(drone, ConfirmUserDeath(CommandHeader(), "a", 3))
             probe.expectMsgType[CommandNotExecuted]
 
-            probe.send(eventlog, GetAggregateEventsFrom("a", 3))
-            val eventsEnumerator = probe.expectMsgType[FetchedAggregateEvents].enumerator
+            probe.send(eventlog, GetAggregateRootEventsFrom("a", 3))
+            val eventsEnumerator = probe.expectMsgType[FetchedAggregateRootEvents].enumerator
             val iteratee = Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, cur) ⇒ acc :+ cur }
             val events: Vector[AggregateRootEvent] = Await.result(eventsEnumerator.run(iteratee), 100.millis.dilated)
             events should equal(List())
@@ -445,8 +445,8 @@ class AggregateRootDroneTests(_system: ActorSystem)
       "crash when receiving an event" in { fixture ⇒
         val FixtureParam(testId, drone, eventlog, probe) = fixture
         within(2 seconds) {
-          probe.send(eventlog, CommitAggregateEvent(UserSurnameChanged(EventHeader(), "a", 0, "peter")))
-          probe.expectMsgType[AggregateEventCommitted]
+          probe.send(eventlog, CommitAggregateRootEvent(UserSurnameChanged(EventHeader(), "a", 0, "peter")))
+          probe.expectMsgType[AggregateRootEventCommitted]
           probe.send(drone, ChangeUserLastname(CommandHeader(), "a", 1, "müller"))
           probe.expectMsgType[CommandNotExecuted]
         }
@@ -466,7 +466,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
     val testId = nextTestId
     //info(s"Test $testId")
-    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
+    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
     val (streams, stopStreams) = AlmhirtStreams.supervised(s"streams-$testId", 1 second).awaitResultOrEscalate(1 second)
 

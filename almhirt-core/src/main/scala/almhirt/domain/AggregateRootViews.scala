@@ -38,10 +38,10 @@ object AggregateRootViews {
 
 /**
  * Manages views on an aggregate root, where there is one actor view on a single aggregate root.
- *  The views receive an [[AggregateRootViewMessages.ApplyAggregateEvent]] message on an aggregate event for the aggregate root and must deliver their
+ *  The views receive an [[AggregateRootViewMessages.ApplyAggregateRootEvent]] message on an aggregate event for the aggregate root and must deliver their
  *  view when receiving [[AggregateRootViewMessages.GetAggregateRootProjection]].
  *
- *  On [[AggregateRootViewMessages.ApplyAggregateEvent]] an [[AggregateRootViewMessages.AggregateEventHandled]] is expected.
+ *  On [[AggregateRootViewMessages.ApplyAggregateRootEvent]] an [[AggregateRootViewMessages.AggregateRootEventHandled]] is expected.
  *  On [[AggregateRootViewMessages.GetAggregateRootProjection]] the view must send a custom result to the sender of [[GetAggregateRootProjection]].
  *
  *  The Actor is an ActorSubscriber that requests [[AggregateRootEvents]].
@@ -92,13 +92,13 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
         aggregateEvent => {
           context.child(aggregateEvent.aggId.value) match {
             case Some(v) ⇒
-              v ! ApplyAggregateEvent(aggregateEvent)
+              v ! ApplyAggregateRootEvent(aggregateEvent)
             case None ⇒
               request(1)
           }
         })
 
-    case AggregateEventHandled =>
+    case AggregateRootEventHandled =>
       request(1)
 
     case ActorSubscriberMessage.OnNext(x) =>

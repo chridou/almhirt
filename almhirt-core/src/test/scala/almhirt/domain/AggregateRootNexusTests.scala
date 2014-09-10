@@ -39,7 +39,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
   }
 
   "The AggregateRootNexus" when {
-    import almhirt.eventlog.AggregateEventLog._
+    import almhirt.eventlog.AggregateRootEventLog._
     import almhirt.aggregates._
     import aggregatesforthelazyones._
     import almhirt.tracking._
@@ -172,7 +172,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
 
     val testId = nextTestId
     //info(s"Test $testId")
-    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateEventLog.props()
+    val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
     val (streams, stopStreams) = AlmhirtStreams.supervised(s"streams-$testId", 1 second).awaitResultOrEscalate(1 second)
