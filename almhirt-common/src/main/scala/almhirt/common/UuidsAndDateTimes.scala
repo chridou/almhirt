@@ -28,21 +28,10 @@ object CanCreateUuidsAndDateTimes {
     override def parseUuid(str: String): AlmValidation[java.util.UUID] = almhirt.almvalidation.funs.parseUuidAlm(str)
   }
 
+  private val BASE64 = new org.apache.commons.codec.binary.Base64(true)
   @inline
-  private def nibbleToChar(b: Int): Char =
-    (b + 'a').toChar
-
-  @inline
-  private def addByte(b: Byte, builder: StringBuilder) {
-     builder.append(nibbleToChar(b & 0x0F))
-     builder.append(nibbleToChar((b & 0xF0) >> 4))
+  private def createUniqueString: String = {
+    val b64Str = new String(BASE64.encode(almhirt.converters.BinaryConverter.uuidToBytes(java.util.UUID.randomUUID())))
+    b64Str.substring(0, b64Str.length() - 2)
   }
-
-  @inline
-  def createUniqueString: String = {
-    val builder = new StringBuilder()
-    almhirt.converters.BinaryConverter.uuidToBytes(java.util.UUID.randomUUID()).foreach(b ⇒ addByte(b, builder))
-    builder.toString
-  }
-
 }

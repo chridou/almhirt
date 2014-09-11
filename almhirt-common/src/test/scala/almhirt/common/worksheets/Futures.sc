@@ -5,46 +5,26 @@ import scalaz.syntax.validation._
 import almhirt.common._
 
 object Futures {
-  def printThreadName(t: String) = println(s"$t⇒${Thread.currentThread().getName()}")
-                                                  //> printThreadName: (t: String)Unit
-  
-  
-  implicit val execContext = HasExecutionContext.cached
-                                                  //> execContext  : almhirt.common.HasExecutionContext = almhirt.common.HasExecut
-                                                  //| ionContext$$anon$2@45fb302d
-  implicit val atMost = FiniteDuration(1, "s")    //> atMost  : scala.concurrent.duration.FiniteDuration = 1 second
-  
-  printThreadName("")                             //> ⇒main
-
-	AlmFuture{ printThreadName("A"); ().success }
-                                                  //> res0: almhirt.common.AlmFuture[Unit] = almhirt.common.AlmFuture@6611d7b8
-  var xx = 0                                      //> xx  : Int = 0
-
-	val res1 =
-		AlmFuture{ printThreadName("A"); xx = xx + 2; 2.success }
-		.mapV{x ⇒ printThreadName("B"); xx = xx + 4 ;(x+4).success }
-		.map{x ⇒ printThreadName("C"); xx = xx * 3; x * 3}.awaitResult
-                                                  //> A⇒pool-1-thread-1
-                                                  //| A⇒pool-1-thread-2
-                                                  //| B⇒pool-1-thread-3
-                                                  //| C⇒pool-1-thread-2
-                                                  //| res1  : almhirt.common.AlmValidation[Int] = Success(18)
-  println(xx)                                     //> 18
-
-	val res2 =
-		AlmFuture.successful{ printThreadName("A"); 2 }
-		.mapV{x ⇒ printThreadName("B"); (x+4).success }
-		.map{x ⇒ printThreadName("C"); x * 3}
-		.flatMap{x ⇒ printThreadName("D"); AlmFuture{printThreadName("E"); (x * 3).success}}
-		.map{x ⇒ printThreadName("F"); x * 3}
-		.awaitResult                      //> A⇒main
-                                                  //| B⇒pool-1-thread-2
-                                                  //| C⇒pool-1-thread-2
-                                                  //| D⇒pool-1-thread-2
-                                                  //| E⇒pool-1-thread-3
-                                                  //| F⇒pool-1-thread-3
-                                                  //| res2  : almhirt.common.AlmValidation[Int] = Success(162)
-
-
-  println("End")                                  //> End|
+ val ccuad = CanCreateUuidsAndDateTimes()         //> ccuad  : almhirt.common.CanCreateUuidsAndDateTimes = almhirt.common.CanCreat
+                                                  //| eUuidsAndDateTimes$$anon$1@543c944f
+              
+ 
+ 
+                                          
+ 
+ 
+ (1 to 109).map(_ => ccuad.getUniqueString).toList//> res0: List[String] = List(i4gV23baR4iUhzK8g8mvPQ, MuziFr6ZRWKjNaEdgjz_yA, Xl
+                                                  //| iBpLAIQOCFPmPMmZ8arw, arvWSeQ7T9uN6_GzPzNFLg, tJK-szgtT1moH1G-1BLv4A, ga_e4P
+                                                  //| pHTfStkZBcyAc2NA, 91w_pcJuQbq0YUUfbW6qhQ, CdJaxFwrQdWLSq-tRWnqmQ, MkC6tNCNSv
+                                                  //| ONfE_6xm-QWA, WmjX-d3QSeW4TGo824K_cA, 9Djl1ca6Qkydt2zBsu-9gw, _WbX-o56Qh-h5X
+                                                  //| 79rvRhqg, ztVQPvUFS7O_kBGnxaQpRA, aPj5yydHRDuM474zFKEbXw, 3-j0hNAwQ7CIIK5t-E
+                                                  //| 2v1g, gogezoGJSzaRJxg0RLKLnQ, 5Ua9ji4tTna4aaYFSMZJXw, Nfcn_v0ZQkOaQCX_GLgktQ
+                                                  //| , TSKINcICQZuGySuccMJg_Q, 04uSKCg0QlGJJsu1NrCSGA, 6lrXy060TW2jBXPOH0rYUw, u3
+                                                  //| ib0LAqTCq-C3s2yh240w, qBnk6fDcQ1K3TrenvHNz9Q, g36Mfjl7S5Wt89k8nNELrg, Daiiv5
+                                                  //| bOQDOvKDzjDfcmsg, ivIGkjH3QH-zReuF38R4Mg, 9DIP_L2dQImFiIeHqB2SSw, FNdL54cFQB
+                                                  //| qvDMbkAZVAsA, GliSTvuWTmmvYoD5UH9jBw, yg1dRyS_TVSHsKss8KOuEQ, kJRdRsohTDyAQf
+                                                  //| HKUIZDFw, YpGv6ARJT6CAD3z8oRXH7g, vKOYi11ERZ-NBvHAo9UDXw, dpt0GKBBRKa88tML3K
+                                                  //| p9sA, v6-VrUAYTbutJXe6b5YOyQ, fSgeP1maQP2-GoWLG6bG4g, 2JuOWFiHSDKlL8bcv1SihA
+                                                  //| , K6dPCgQGSgKGVyoUPkljfw
+                                                  //| Output exceeds cutoff limit.
 }
