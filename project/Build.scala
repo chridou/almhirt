@@ -82,6 +82,7 @@ trait CommonBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
+	  libraryDependencies += apache_codecs,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += scalatest
