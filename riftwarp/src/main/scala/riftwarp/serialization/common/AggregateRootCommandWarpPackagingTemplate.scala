@@ -21,9 +21,9 @@ trait AggregateRootCommandWarpPackagingTemplate[TCommand <: AggregateRootCommand
     withFastLookUp(from) { lookup =>
       for {
         header <- lookup.getWith("header", CommandHeaderWarpPackaging)
-        id <- lookup.getAs[String]("aggId")
-        version <- lookup.getAs[Long]("aggVersion")
-        cmd <- extractCommandParams(lookup, header, AggregateRootId(id), AggregateRootVersion(version))
+        id <- lookup.getAs[String]("aggId").flatMap(ValidatedAggregatedRootId(_))
+        version <- lookup.getAs[Long]("aggVersion").flatMap(ValidatedAggregateRootVersion(_))
+        cmd <- extractCommandParams(lookup, header, id, version)
       } yield cmd
     }
 

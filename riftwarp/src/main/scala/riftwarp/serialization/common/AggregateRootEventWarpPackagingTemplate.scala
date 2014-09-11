@@ -21,9 +21,9 @@ trait AggregateRootEventWarpPackagingTemplate[TEvent <: AggregateRootEvent] exte
     withFastLookUp(from) { lookup =>
       for {
         header <- lookup.getWith("header", EventHeaderWarpPackaging)
-        id <- lookup.getAs[String]("aggId")
-        version <- lookup.getAs[Long]("aggVersion")
-        cmd <- extractEventParams(lookup, header, AggregateRootId(id), AggregateRootVersion(version))
+        id <- lookup.getAs[String]("aggId").flatMap(ValidatedAggregatedRootId(_))
+        version <- lookup.getAs[Long]("aggVersion").flatMap(ValidatedAggregateRootVersion(_))
+        cmd <- extractEventParams(lookup, header, id, version)
       } yield cmd
     }
 
