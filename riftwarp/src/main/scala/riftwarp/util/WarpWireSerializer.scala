@@ -46,6 +46,7 @@ object WarpHttpSerializer {
   def apply[T](rw: RiftWarp)(implicit tag: ClassTag[T]): WarpHttpSerializer[T] = new WarpHttpSerializer[T](rw)
   def command(rw: RiftWarp): WarpHttpSerializer[Command] = new WarpHttpSerializer[Command](rw)
   def event(rw: RiftWarp): WarpHttpSerializer[Event] = new WarpHttpSerializer[Event](rw)
+  def commandResponse(rw: RiftWarp): WarpHttpSerializer[almhirt.tracking.CommandResponse] = new WarpHttpSerializer[almhirt.tracking.CommandResponse](rw)
   def problem(rw: RiftWarp): WarpHttpSerializer[Problem] = new WarpHttpSerializer[Problem](rw)
 
   def collection[T](rw: RiftWarp)(implicit tagT: ClassTag[T]): HttpSerializer[Seq[T]] with HttpDeserializer[Seq[T]] = 
