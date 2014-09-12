@@ -12,6 +12,8 @@ trait AggregateRootUpdater[T <: AggregateRoot, E <: AggregateRootEvent] { self: 
   def update(agg: T, event: E): (AggregateRootLifecycle[T], E) =
     (this.applyEvent(agg, event), event)
 
+  def reject(problem: Problem): UpdateRecorder[T, E] = UpdateRecorder.reject(problem)  
+    
   protected implicit class ArOps(self: T) {
     /** Use the event handler to update the existing aggregate root. More convinient than calling [[AggregateRootUpdater#update]] */
     def update(event: E) = AggregateRootUpdater.this.update(self, event)
