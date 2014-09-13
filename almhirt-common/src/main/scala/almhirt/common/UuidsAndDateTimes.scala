@@ -34,4 +34,13 @@ object CanCreateUuidsAndDateTimes {
     val b64Str = new String(BASE64.encode(almhirt.converters.BinaryConverter.uuidToBytes(java.util.UUID.randomUUID())))
     b64Str.substring(0, b64Str.length() - 2)
   }
+
+  private val regexStr = """(?:[-\w:@&=+,.!~*'_;]|%\p{XDigit}{2})(?:[-\w:@&=+,.!~*'$_;]|%\p{XDigit}{2})*"""
+  private val regex = regexStr.r
+  def validateUniqueStringId(str: String): AlmValidation[String] =
+    if ((regex findFirstIn str).nonEmpty) {
+      str.success
+    } else {
+      BadDataProblem(s""""$id" is not a valid id. It must conform to the regular expression "$regexStr".""").failure
+    }
 }

@@ -1,6 +1,5 @@
 package riftwarp.serialization.common
 
-import java.util.{ UUID => JUUID }
 import org.joda.time.LocalDateTime
 import scalaz._, Scalaz._
 import almhirt.common._
@@ -23,10 +22,10 @@ object EventHeaderWarpPackaging extends WarpPacker[EventHeader] with Registerabl
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[EventHeader] =
     withFastLookUp(from) { lookup =>
       for {
-        id <- lookup.getAs[String]("id")
+        id <- lookup.getAs[String]("id").flatMap(ValidatedEventId(_))
         timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
-      } yield EventHeader(EventId(id), timestamp, metadata)
+      } yield EventHeader(id, timestamp, metadata)
     }
 
 }

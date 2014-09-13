@@ -23,10 +23,10 @@ object CommandHeaderWarpPackaging extends WarpPacker[CommandHeader] with Registe
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandHeader] =
     withFastLookUp(from) { lookup =>
       for {
-        id <- lookup.getAs[String]("id")
+        id <- lookup.getAs[String]("id").flatMap(ValidatedCommandId(_))
         timestamp <- lookup.getAs[LocalDateTime]("timestamp")
         metadata <- lookup.getPrimitiveAssocs[String, String]("metadata").map(_.toMap)
-      } yield CommandHeader(CommandId(id), timestamp, metadata)
+      } yield CommandHeader(id, timestamp, metadata)
     }
 
 }
