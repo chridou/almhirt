@@ -23,7 +23,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
-  implicit val mat = FlowMaterializer(MaterializerSettings())
+  implicit val mat = FlowMaterializer()
 
   sealed trait UserTestRsp
   case class UserState(state: AggregateRootLifecycle[User]) extends UserTestRsp
@@ -196,7 +196,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
-    val (streams, stopStreaming) = AlmhirtStreams.supervised(s"streaming-$testId").awaitResultOrEscalate(1 second)
+    val streams = AlmhirtStreams(s"almhirt-streams-$testId").awaitResultOrEscalate(1 second)
 
     val droneProps: Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] {
@@ -238,7 +238,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, viewsActor, hiveActor, streams)))
     } finally {
-      stopStreaming.stop()
+      streams.stop()
       system.stop(hiveActor)
       system.stop(viewsActor)
       system.stop(eventlogActor)

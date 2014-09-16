@@ -351,9 +351,9 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   def callForSuppliesOnly(
     offers: Vector[SuppliesContractor[TElement]],
     contractors: Set[SuppliesContractor[TElement]],
-    demand: Int,
+    demand: Long,
     subscriptions: SubscriptionsState) {
-    val toLoad = offers.take(demand)
+    val toLoad = offers.take(demand.toInt)
     val rest = offers.drop(toLoad.size)
     val deliveryPlan =
       toLoad
@@ -370,9 +370,9 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
 
   def dispatchBufferedOnly(
     contractors: Set[SuppliesContractor[TElement]],
-    demand: Int,
+    demand: Long,
     subscriptions: SubscriptionsState) {
-    val (toDispatch, newSubscriptions) = subscriptions.takeElements(demand)
+    val (toDispatch, newSubscriptions) = subscriptions.takeElements(demand.toInt)
     toDispatch.foreach {
       case (subscriberId, element) ⇒
         onNext(element)
@@ -386,10 +386,10 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
   def dispatchAndCallForSupplies(
     offers: Vector[SuppliesContractor[TElement]],
     contractors: Set[SuppliesContractor[TElement]],
-    demand: Int,
+    demand: Long,
     subscriptions: SubscriptionsState) {
     if (rnd.nextBoolean) {
-      val toLoad = offers.take(demand)
+      val toLoad = offers.take(demand.toInt)
       val rest = offers.drop(toLoad.size)
       val deliveryPlan =
         toLoad
@@ -403,7 +403,7 @@ private[almhirt] class StreamShipperImpl[TElement](buffersizePerSubscriber: Int)
       }
       context.become(transportingSupplies(deliveryPlan, rest, contractors, subscriptions))
     } else {
-      val (toDispatch, newSubscriptions) = subscriptions.takeElements(demand)
+      val (toDispatch, newSubscriptions) = subscriptions.takeElements(demand.toInt)
       toDispatch.foreach {
         case (subscriberId, element) ⇒
           onNext(element)

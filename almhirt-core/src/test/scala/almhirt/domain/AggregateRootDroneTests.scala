@@ -468,7 +468,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
     //info(s"Test $testId")
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
-    val (streams, stopStreams) = AlmhirtStreams.supervised(s"streams-$testId", 1 second).awaitResultOrEscalate(1 second)
+    val streams = AlmhirtStreams(s"almhirt-streams-$testId").awaitResultOrEscalate(1 second)
 
     val testProbe = TestProbe()
     val droneProps: Props = Props(
@@ -490,7 +490,7 @@ class AggregateRootDroneTests(_system: ActorSystem)
     } finally {
       system.stop(droneActor)
       system.stop(eventlogActor)
-      stopStreams.stop()
+      streams.stop()
     }
   }
 

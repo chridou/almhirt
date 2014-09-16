@@ -24,7 +24,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
   implicit val ccuad = CanCreateUuidsAndDateTimes()
 
   val theId = AggregateRootId("the_id")
-  implicit val mat = FlowMaterializer(MaterializerSettings())
+  implicit val mat = FlowMaterializer()
 
   sealed trait UserTestRsp
   case class UserState(state: AggregateRootLifecycle[User]) extends UserTestRsp
@@ -232,7 +232,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
     val droneProbe = TestProbe()
 
-    val (streams, stopStreaming) = AlmhirtStreams.supervised(s"streaming-$testId").awaitResultOrEscalate(1 second)
+    val streams = AlmhirtStreams(s"almhirt-streams-$testId").awaitResultOrEscalate(1 second)
 
     val droneProps: Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] {
@@ -263,7 +263,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, viewActor, droneActor, droneProbe, eventlogActor, streams)))
     } finally {
-      stopStreaming.stop()
+      streams.stop()
       system.stop(droneActor)
       system.stop(viewActor)
       //system.stop(eventsPostOfficeActor)

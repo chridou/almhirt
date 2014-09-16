@@ -10,9 +10,7 @@ import almhirt.common._
 
 import org.reactivestreams.Subscriber
 import almhirt.streaming._
-import akka.stream.scaladsl.Flow
-import akka.stream._
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.scaladsl2._
 
 import akka.testkit._
 import org.scalatest._
@@ -21,7 +19,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
   extends TestKit(_system) with fixture.WordSpecLike with Matchers with BeforeAndAfterAll {
   def this() = this(ActorSystem("AggregateRootHiveTests", almhirt.TestConfigs.logWarningConfig))
 
-  implicit val mat = FlowMaterializer(MaterializerSettings())
+  implicit val mat = FlowMaterializer()
 
   implicit val executionContext = system.dispatchers.defaultGlobalDispatcher
   implicit val ccuad = {
@@ -69,9 +67,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
         "should emit the status events [Initiated, Executed]" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.toPublisher.subscribe(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           within(1 second) {
-            Flow(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).produceTo(commandSubscriber)
+            FlowFrom(CreateUser(CommandHeader(), "a", 0L, "hans", "meier") :: Nil).toPublisher.subscribe(commandSubscriber)
             statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Initiated)
             statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Executed)
           }
@@ -81,11 +79,11 @@ class AggregateRootHiveTests(_system: ActorSystem)
         "emit the status events [Initiated(a), Executed(a)] and [Initiated(b), Executed(b)]" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.toPublisher.subscribe(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           within(1 second) {
-            Flow(List(
+            FlowFrom(List(
               CreateUser(CommandHeader(), "a", 0L, "hans", "meier"),
-              CreateUser(CommandHeader(), "b", 0L, "hans", "meier"))).produceTo(commandSubscriber)
+              CreateUser(CommandHeader(), "b", 0L, "hans", "meier"))).toPublisher.subscribe(commandSubscriber)
             assertStatusEvents(initiated = 2, ok = 2, failed = 0, statusProbe.receiveN(2 * 2, 1 second))
           }
         }
@@ -95,10 +93,10 @@ class AggregateRootHiveTests(_system: ActorSystem)
         s"emit the status events [Initiated, Executed] $n times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.toPublisher.subscribe(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           within(3 seconds) {
-            Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).produceTo(commandSubscriber)
+            FlowFrom((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).toPublisher.subscribe(commandSubscriber)
             assertStatusEvents(initiated = n, ok = n, failed = 0, statusProbe.receiveN(n * 2, 2 seconds))
           }
           val time = start.lap
@@ -109,12 +107,13 @@ class AggregateRootHiveTests(_system: ActorSystem)
         s"emit the status events ([Initiated, Executed]x2) $n times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
-          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.toPublisher.subscribe(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          val flow = FlowFrom(
+            (1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
+              (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
           val start = Deadline.now
           within(3 seconds) {
-            flow1.concat(flow2.toPublisher()).produceTo(commandSubscriber)
+            flow.publishTo(commandSubscriber)
             assertStatusEvents(initiated = 2 * n, ok = 2 * n, failed = 0, statusProbe.receiveN(2 * n * 2, 2 second))
           }
           val time = start.lap
@@ -125,13 +124,13 @@ class AggregateRootHiveTests(_system: ActorSystem)
         s"emit the status events ([Initiated, Executed]x3) $n times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
-          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
-          val flow3 = Flow((1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.toPublisher.subscribe(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          val flow = FlowFrom((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
+            (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
+            (1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
           val start = Deadline.now
           within(3 seconds) {
-            flow1.concat(flow2.toPublisher()).concat(flow3.toPublisher()).produceTo(commandSubscriber)
+            flow.publishTo(commandSubscriber)
             assertStatusEvents(initiated = 3 * n, ok = 3 * n, failed = 0, statusProbe.receiveN(3 * n * 2, 2 seconds))
           }
           val time = start.lap
@@ -143,13 +142,13 @@ class AggregateRootHiveTests(_system: ActorSystem)
         s"emit the status events ([Initiated, Executed]x3) $bigN times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
-          val flow1 = Flow((1 to bigN).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
-          val flow2 = Flow((1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
-          val flow3 = Flow((1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.toPublisher.subscribe(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          val flow = FlowFrom((1 to bigN).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
+          (1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
+          (1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
           val start = Deadline.now
           within(15 seconds) {
-            flow1.concat(flow2.toPublisher()).concat(flow3.toPublisher()).produceTo(commandSubscriber)
+            flow.publishTo(commandSubscriber)
             assertStatusEvents(initiated = 3 * bigN, ok = 3 * bigN, failed = 0, statusProbe.receiveN(3 * bigN * 2, 15 seconds))
           }
           val time = start.lap
@@ -176,7 +175,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
-    val (streams, stopStreams) = AlmhirtStreams.supervised(s"streams-$testId", 1 second).awaitResultOrEscalate(1 second)
+    val streams = AlmhirtStreams(s"almhirt-streams-$testId").awaitResultOrEscalate(1 second)
 
     val droneProps: Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] {
@@ -212,7 +211,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
     } finally {
       system.stop(hiveActor)
       system.stop(eventlogActor)
-      stopStreams.stop()
+      streams.stop()
     }
   }
 

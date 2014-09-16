@@ -8,8 +8,6 @@ import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import almhirt.common._
 import almhirt.almvalidation.kit._
 
-
-
 class AggregateRootNexus(
   override val aggregateCommandsPublisher: Publisher[AggregateRootCommand],
   override val hiveSelector: HiveSelector,
@@ -52,7 +50,7 @@ private[almhirt] trait AggregateRootNexusSkeleton { me: Actor with ActorLogging 
   def receive: Receive = receiveInitialize
 
   private def createInitialHives() {
-    implicit val mat = FlowMaterializer(MaterializerSettings())
+    implicit val mat = FlowMaterializer()
     val (theSubscriber, thePublisher) = Duct[AggregateRootCommand].build()
     hiveSelector.foreach {
       case (descriptor, f) ⇒
