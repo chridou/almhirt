@@ -5,8 +5,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import akka.actor._
 import org.reactivestreams.Subscriber
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2._
 import almhirt.common._
 import almhirt.aggregates._
 import almhirt.problem.{ CauseIsThrowable, HasAThrowable }
@@ -103,12 +102,12 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            val flow = Flow(List[Event](
+            val flow = FlowFrom(List[Event](
               UserCreated(EventHeader(), theId, 0L, "hans", "meier"),
               UserLastnameChanged(EventHeader(), theId, 1L, "müller"),
               UserDied(EventHeader(), theId, 2L)))
             val eventsSubscriber = streams.eventBroker.newSubscriber()
-            flow.produceTo(eventsSubscriber)
+            flow.publishTo(eventsSubscriber)
 
             probe.expectNoMsg(100 millis)
             probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
@@ -123,12 +122,12 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             probe.expectMsgType[UserState]
 
-            val flow = Flow(List[Event](
+            val flow = FlowFrom(List[Event](
               UserCreated(EventHeader(), theId, 0L, "hans", "meier"),
               UserLastnameChanged(EventHeader(), theId, 1L, "müller"),
               UserDied(EventHeader(), theId, 2L)))
             val eventsSubscriber = streams.eventBroker.newSubscriber()
-            flow.produceTo(eventsSubscriber)
+            flow.publishTo(eventsSubscriber)
 
             probe.expectNoMsg(100 millis)
             probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
@@ -258,7 +257,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
 
     val viewActor = system.actorOf(viewProps, s"view-$testId")
 
-    Flow(streams.aggregateEventStream).foreach(event => viewActor ! AggregateRootViewMessages.ApplyAggregateRootEvent(event))
+    FlowFrom(streams.aggregateEventStream).withSink(ForeachSink(event => viewActor ! AggregateRootViewMessages.ApplyAggregateRootEvent(event)))
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, viewActor, droneActor, droneProbe, eventlogActor, streams)))
@@ -266,7 +265,6 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
       streams.stop()
       system.stop(droneActor)
       system.stop(viewActor)
-      //system.stop(eventsPostOfficeActor)
       system.stop(eventlogActor)
     }
   }

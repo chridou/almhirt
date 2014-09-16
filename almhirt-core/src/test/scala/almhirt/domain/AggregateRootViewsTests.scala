@@ -5,8 +5,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import akka.actor._
 import org.reactivestreams.Subscriber
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2._
 import almhirt.common._
 import almhirt.aggregates._
 import almhirt.problem.{ CauseIsThrowable, HasAThrowable }
@@ -42,11 +41,11 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"deliver $n aggregate roots with version 1" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           within(10 seconds) {
-            Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).produceTo(streams.commandBroker.newSubscriber)
+            FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(2 * n, 3 seconds)
             (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(1))) => id }.toSet
@@ -61,16 +60,15 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"signal each aggregate root as dead" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
-          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
-          val flow3 = Flow((1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
-          val theFlow = flow1.concat(flow2.toPublisher()).concat(flow3.toPublisher())
+          val theFlow = FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
+          (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
+          (1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
 
           within(10 seconds) {
-            theFlow.produceTo(streams.commandBroker.newSubscriber)
+            theFlow.publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(6 * n, 3 seconds)
             (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             val users = probe.receiveN(n, 10 seconds).collect { case UserState(Mortuus(id, AggregateRootVersion(3L))) => id }.toSet
@@ -87,7 +85,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"signal $n aggregate roots to be non existent" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           within(10 seconds) {
@@ -103,13 +101,13 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"deliver $n aggregate roots with version 1" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           within(10 seconds) {
             (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             probe.receiveN(n, 10 seconds)
-            Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).produceTo(streams.commandBroker.newSubscriber)
+            FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(2 * n, 3 seconds)
             (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(1))) => id }.toSet
@@ -124,18 +122,17 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"signal each aggregate root as dead" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
-          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
-          val flow3 = Flow((1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
-          val theFlow = flow1.concat(flow2.toPublisher()).concat(flow3.toPublisher())
+          val theFlow = FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
+          (1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
+          (1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
 
           within(10 seconds) {
             (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             probe.receiveN(n, 10 seconds)
-            theFlow.produceTo(streams.commandBroker.newSubscriber)
+            theFlow.publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(6 * n, 3 seconds)
             (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             val users = probe.receiveN(n, 10 seconds).collect { case UserState(Mortuus(id, AggregateRootVersion(3L))) => id }.toSet
@@ -152,18 +149,18 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"signal each aggregate root as dead" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          Flow(streams.systemEventStream).produceTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
-          val flow1 = Flow((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
-          val flow2 = Flow((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
+          val flow1 = FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
+          val flow2 = FlowFrom[Command]((1 to n).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand))
 
           within(10 seconds) {
-            flow1.produceTo(streams.commandBroker.newSubscriber)
+            flow1.publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(2 * n, 3 seconds)
             (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             probe.receiveN(n, 10 seconds)
-            flow2.produceTo(streams.commandBroker.newSubscriber)
+            flow2.publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(2 * n, 3 seconds)
             (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(2))) => id }.toSet
