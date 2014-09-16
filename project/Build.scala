@@ -57,7 +57,7 @@ object Dependencies {
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
-	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % "0.6" % "provided"
+	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % "0.7" % "provided"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.+" 
 
