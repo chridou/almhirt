@@ -50,7 +50,7 @@ private[almhirt] trait AggregateRootNexusSkeleton { me: Actor with ActorLogging 
 
   private def createInitialHives() {
     implicit val mat = FlowMaterializer()
-    val fanout = FlowFrom[AggregateRootCommand](aggregateCommandsPublisher).toFanoutPublisher(1, 64)
+    val fanout = FlowFrom[AggregateRootCommand](aggregateCommandsPublisher).toFanoutPublisher(1, AlmMath.nextPowerOf2(hiveSelector.size))
     hiveSelector.foreach {
       case (descriptor, f) ⇒
         val props = hiveFactory.props(descriptor).resultOrEscalate
