@@ -49,12 +49,12 @@ private[almhirt] class UnboundedSinkImpl[T]() extends ActorPublisher[T] with Act
 
     case ActorPublisherMessage.Cancel =>
       if (!queue.isEmpty && log.isWarningEnabled)
-        log.warning(s"${queue.size} element haven't been published on cancel.")
+        log.warning(s"${queue.size} element(s) left on cancel.")
       ()
 
     case InternalUnboundedSinkMessages.Stop =>
       if (!queue.isEmpty && log.isWarningEnabled)
-        log.warning(s"${queue.size} element haven't been published on stop.")
+        log.warning(s"${queue.size} element(s) left on stop.")
 
       this.onComplete()
   }
