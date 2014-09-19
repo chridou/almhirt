@@ -2,10 +2,10 @@ package almhirt.aggregates
 
 import almhirt.common._
 
-trait AggregateCommandResult[T <: AggregateRoot, E <: AggregateRootEvent]
+trait AggregateCommandResult[+T <: AggregateRoot, +E <: AggregateRootEvent]
 
-case class SyncCommandResult[T <: AggregateRoot, E <: AggregateRootEvent](r: AlmValidation[(AggregateRootLifecycle[T], Seq[E])]) extends AggregateCommandResult[T, E]
-case class AsyncCommandResult[T <: AggregateRoot, E <: AggregateRootEvent](r: AlmFuture[(AggregateRootLifecycle[T], Seq[E])]) extends AggregateCommandResult[T, E]
+case class SyncCommandResult[+T <: AggregateRoot, +E <: AggregateRootEvent](r: AlmValidation[(AggregateRootLifecycle[T], Seq[E])]) extends AggregateCommandResult[T, E]
+case class AsyncCommandResult[+T <: AggregateRoot, +E <: AggregateRootEvent](r: AlmFuture[(AggregateRootLifecycle[T], Seq[E])]) extends AggregateCommandResult[T, E]
 
 object AggregateCommandResult {
   import scala.concurrent.ExecutionContext
@@ -17,7 +17,7 @@ object AggregateCommandResult {
         case AsyncCommandResult(resF) ⇒ resF.awaitResult(atMost)
       }
 
-    def onComplete(onFail: Problem ⇒ Unit)(onSuccess: (AggregateRootLifecycle[T], Seq[E]) ⇒ Unit)(implicit executionContext: ExecutionContext) {
+    def onComplete(onFail: Problem ⇒ Unit, onSuccess: (AggregateRootLifecycle[T], Seq[E]) ⇒ Unit)(implicit executionContext: ExecutionContext) {
       self match {
         case SyncCommandResult(res) ⇒
           res match {

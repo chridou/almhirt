@@ -472,13 +472,16 @@ class AggregateRootDroneTests(_system: ActorSystem)
 
     val testProbe = TestProbe()
     val droneProps: Props = Props(
-      new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserEvent] {
+      new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
         def ccuad = AggregateRootDroneTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext
         def aggregateEventLog: ActorRef = eventlogActor
         def snapshotStorage: Option[ActorRef] = None
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
-  
+
+        override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
+        override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])
+        
         override def sendMessage(msg: AggregateRootDroneInternalMessages.AggregateDroneMessage) {
           testProbe.ref ! msg
         }

@@ -16,7 +16,8 @@ class AggregateCommandHandlerTests extends FlatSpec with Matchers with UserComma
   import aggregatesforthelazyones._
 
   implicit override val futuresContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-
+  implicit val cv = AggregateRootCommandValidator.Validated
+  
   implicit val ccuad = {
     val dt = new LocalDateTime(0L)
     new CanCreateUuidsAndDateTimes {

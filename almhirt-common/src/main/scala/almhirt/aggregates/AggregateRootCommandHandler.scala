@@ -4,13 +4,18 @@ import scala.concurrent.ExecutionContext
 import scalaz._, Scalaz._
 import almhirt.common._
 
+
 /**
  * Mix in this trait to get helpers for handling commands on Aggregate roots.
  *  This trait doesn't validate the command in any way.
  */
-trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] {
-  /** This method has to be overridden with your logic to handle commands. */
-  def handleAggregateCommand(command: AggregateRootCommand, agg: AggregateRootLifecycle[T]): AggregateCommandResult[T, E]
+trait AggregateRootCommandHandler[T <: AggregateRoot, C <: AggregateRootCommand, E <: AggregateRootEvent] {
+  /**
+   * This method has to be overridden with your logic to handle commands.
+   *
+   * The CommandValidator is only a suggestion by the user. A handler may treat a command as it likes.
+   */
+  def handleAggregateCommand(command: C, agg: AggregateRootLifecycle[T])(implicit cv: AggregateRootCommandValidator): AggregateCommandResult[T, E]
 
   implicit class FutureFOps(self: AlmFuture[(AggregateRootLifecycle[T], Seq[E])]) {
     /** Turn the AlmFuture of (AggregateRootLifecycle[T], Seq[E]) into an [[AggregateCommandResult]] */
@@ -53,7 +58,7 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] {
      * Execute the next result and combine it's result with this result.
      *  Do that if and only if the current [[AggregateCommandResult]] is not a failure.
      */
-    def andThen(nextCommand: AggregateRootCommand)(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
+    def andThen(nextCommand: C)(implicit executionContext: ExecutionContext, cv: AggregateRootCommandValidator): AggregateCommandResult[T, E] =
       self match {
         case SyncCommandResult(res) ⇒
           res.fold(
@@ -77,7 +82,7 @@ trait AggregateRootCommandHandler[T <: AggregateRoot, E <: AggregateRootEvent] {
    * Execute the given commands on the initial state as long as none of the commands results in a failure.
    * If any command results in a failure the whole operation is a failure.
    */
-  protected def chained(initialState: AggregateRootLifecycle[T], commands: Seq[AggregateRootCommand])(implicit executionContext: ExecutionContext): AggregateCommandResult[T, E] =
+  protected def chained(initialState: AggregateRootLifecycle[T], commands: Seq[C])(implicit executionContext: ExecutionContext, cv: AggregateRootCommandValidator): AggregateCommandResult[T, E] =
     commands.foldLeft(SyncCommandResult((initialState, Seq[E]()).success): AggregateCommandResult[T, E]) {
       case (acc, cur) ⇒
         acc.andThen(cur)
