@@ -4,31 +4,31 @@ import akka.actor._
 import akka.stream.actor._
 
 /** This thing is unbound. Handle with care! */
-trait UnboundPublisher[T] {
+trait UnboundedSink[T] {
   def publish(element: T)
 }
 
-object UnboundPublisher {
-  def apply[T](unboundPublisher: ActorRef): UnboundPublisher[T] with almhirt.common.Stoppable = {
-    new UnboundPublisher[T] with almhirt.common.Stoppable {
+object UnboundedSink {
+  def apply[T](unboundedSink: ActorRef): UnboundedSink[T] with almhirt.common.Stoppable = {
+    new UnboundedSink[T] with almhirt.common.Stoppable {
       override def publish(element: T) {
-        unboundPublisher ! InternalUnboundPublisherMessages.Publish(element)
+        unboundedSink ! InternalUnboundedSinkMessages.Publish(element)
       }
       override def stop() {
-        unboundPublisher ! InternalUnboundPublisherMessages.Stop
+        unboundedSink ! InternalUnboundedSinkMessages.Stop
       }
     }
   }
 
-  def props[T]: Props = Props(new UnboundActorPublisherImpl[T])
+  def props[T]: Props = Props(new UnboundedSinkImpl[T])
 }
 
-private[almhirt] object InternalUnboundPublisherMessages {
+private[almhirt] object InternalUnboundedSinkMessages {
   case object Stop
   case class Publish(element: Any)
 }
 
-private[almhirt] class UnboundActorPublisherImpl[T]() extends ActorPublisher[T] with ActorLogging {
+private[almhirt] class UnboundedSinkImpl[T]() extends ActorPublisher[T] with ActorLogging {
   private def deliver(queue: Vector[T]): Vector[T] = {
     if (isActive) {
       val toPublish = queue.take(this.totalDemand.toInt)
@@ -41,7 +41,7 @@ private[almhirt] class UnboundActorPublisherImpl[T]() extends ActorPublisher[T] 
   }
 
   def receiveRunning(queue: Vector[T]): Receive = {
-    case InternalUnboundPublisherMessages.Publish(element) =>
+    case InternalUnboundedSinkMessages.Publish(element) =>
       context.become(receiveRunning(deliver(queue :+ element.asInstanceOf[T])))
 
     case ActorPublisherMessage.Request(amount) =>
@@ -52,7 +52,7 @@ private[almhirt] class UnboundActorPublisherImpl[T]() extends ActorPublisher[T] 
         log.warning(s"${queue.size} element haven't been published on cancel.")
       ()
 
-    case InternalUnboundPublisherMessages.Stop =>
+    case InternalUnboundedSinkMessages.Stop =>
       if (!queue.isEmpty && log.isWarningEnabled)
         log.warning(s"${queue.size} element haven't been published on stop.")
 
