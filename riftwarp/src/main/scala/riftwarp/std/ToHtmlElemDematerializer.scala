@@ -1,7 +1,7 @@
 package riftwarp.std
 
 import scala.annotation.tailrec
-import scala.xml.{ Elem => XmlElem, NodeSeq, Null, TopScope, UnprefixedAttribute }
+import scala.xml.{ Elem ⇒ XmlElem, NodeSeq, Null, TopScope, UnprefixedAttribute }
 import scalaz._
 import almhirt.common._
 import riftwarp._
@@ -26,33 +26,33 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
 
   protected override final def getPrimitiveRepr(prim: WarpPrimitive): XmlElem =
     prim match {
-      case WarpBoolean(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpString(value) => <span class="primitive-value">{ value }</span>
-      case WarpByte(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpShort(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpInt(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpLong(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpBigInt(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpFloat(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpDouble(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpBigDecimal(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpUuid(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpUri(value) => <span class="primitive-value">{ value.toString }</span>
-      case WarpDateTime(value) => <span class="primitive-value">{ value.toString() }</span>
-      case WarpLocalDateTime(value) => <span class="primitive-value">{ value.toString() }</span>
-      case WarpDuration(value) => <span class="primitive-value">{ value.defaultUnitString }</span>
+      case WarpBoolean(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpString(value) ⇒ <span class="primitive-value">{ value }</span>
+      case WarpByte(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpShort(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpInt(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpLong(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpBigInt(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpFloat(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpDouble(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpBigDecimal(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpUuid(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpUri(value) ⇒ <span class="primitive-value">{ value.toString }</span>
+      case WarpDateTime(value) ⇒ <span class="primitive-value">{ value.toString() }</span>
+      case WarpLocalDateTime(value) ⇒ <span class="primitive-value">{ value.toString() }</span>
+      case WarpDuration(value) ⇒ <span class="primitive-value">{ value.defaultUnitString }</span>
     }
 
   protected override def getObjectRepr(warpObject: WarpObject): XmlElem = {
     warpObject.warpDescriptor match {
-      case Some(desc) =>
+      case Some(desc) ⇒
         <div style="border:1px solid black; padding: 10px;">
           <h2>{ desc.unqualifiedName }</h2>
           <table>
             { warpObject.elements.map(createElemRepr) }
           </table>
         </div>
-      case None =>
+      case None ⇒
         <div class="border:1px solid black; padding: 10px;">
           <table>
             { warpObject.elements.map(createElemRepr) }
@@ -62,7 +62,7 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   }
 
   protected override def foldReprs(elems: Traversable[XmlElem]): XmlElem = {
-    val inner = elems.map(x => <tr><td>{ x }</td></tr>)
+    val inner = elems.map(x ⇒ <tr><td>{ x }</td></tr>)
     <div>
       <span>{ s"Collection of ${elems.size} items" }</span><br/>
       <table>
@@ -78,7 +78,7 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
     <span>({tuple._1};{tuple._2};{tuple._3})</span>
 
   protected override def foldAssocRepr(assoc: Traversable[(XmlElem, XmlElem)]): XmlElem = {
-    val inner = assoc.map(x => <tr><td valign="top">{ x._1 }</td><td valign="top">=</td><td>{ x._2 }</td></tr>)
+    val inner = assoc.map(x ⇒ <tr><td valign="top">{ x._1 }</td><td valign="top">=</td><td>{ x._2 }</td></tr>)
     <div>
       <span>{ s"Associative collection of ${assoc.size} items" }</span><br/>
       <table>
@@ -106,8 +106,8 @@ object ToHtmlElemDematerializer extends DematerializerTemplate[XmlElem] {
 
   private def createElemRepr(elem: WarpElement): XmlElem =
     elem.value match {
-      case Some(v) => <tr><td valign="top"><b>{ elem.label + ":" }</b></td><td>{ transform(v) }</td></tr>
-      case None => <tr><td valign="top"><b>{ elem.label + ":" }</b></td><td><i>{ "null" }</i></td></tr>
+      case Some(v) ⇒ <tr><td valign="top"><b>{ elem.label + ":" }</b></td><td>{ transform(v) }</td></tr>
+      case None ⇒ <tr><td valign="top"><b>{ elem.label + ":" }</b></td><td><i>{ "null" }</i></td></tr>
     }
 
   private def foldTree(tree: scalaz.Tree[XmlElem]): XmlElem =

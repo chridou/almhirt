@@ -12,6 +12,6 @@ final case class AggregateRootId(value: String) extends AnyVal
 object ValidatedAggregatedRootId {
   def apply(value: String): AlmValidation[AggregateRootId] =
     CanCreateUuidsAndDateTimes.validateUniqueStringId(value).fold(
-      fail => BadDataProblem(s""""$value" is not a valid aggregate root id.""").failure,
-      succ => AggregateRootId(value).success)
+      fail ⇒ BadDataProblem(s""""$value" is not a valid aggregate root id.""").failure,
+      succ ⇒ AggregateRootId(value).success)
 }

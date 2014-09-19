@@ -46,7 +46,7 @@ trait HasCommonMarshallers extends HasProblemMarshaller {
   implicit def problemsMarshaller: Marshaller[Seq[almhirt.common.Problem]]
 }
 
-trait CommonMarshallerInstances { self: HasCommonMarshallers =>
+trait CommonMarshallerInstances { self: HasCommonMarshallers ⇒
   def commonHttpSerializers: HasCommonHttpSerializers
   def commonContentTypeProviders: HasCommonContentTypeProviders
 

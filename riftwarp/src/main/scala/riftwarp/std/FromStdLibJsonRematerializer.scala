@@ -17,16 +17,16 @@ object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonS
 
   private def extract(what: Any): AlmValidation[WarpPackage] =
     what match {
-      case obj: JSONObject =>
-        extractObject(obj).flatMap(pkg =>
+      case obj: JSONObject ⇒
+        extractObject(obj).flatMap(pkg ⇒
           pkg.warpDescriptor match {
-            case Some(Base64BlobWarpUnpacker.warpDescriptor) =>
+            case Some(Base64BlobWarpUnpacker.warpDescriptor) ⇒
               Base64BlobWarpUnpacker.unpack(pkg)(WarpUnpackers.NoWarpUnpackers).map(WarpBlob(_))
-            case _ =>
+            case _ ⇒
               pkg.success
           })
-      case arr: JSONArray => extractCollection(arr)
-      case other => extractPrimitive(other)
+      case arr: JSONArray ⇒ extractCollection(arr)
+      case other ⇒ extractPrimitive(other)
     }
 
   private def extractObject(what: JSONObject): AlmValidation[WarpObject] = {
@@ -36,8 +36,8 @@ object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonS
         for {
           rdElem <- extractPrimitive(elements(WarpDescriptor.defaultKey))
           rdStr <- rdElem match {
-            case WarpString(rd) => rd.success
-            case x => UnspecifiedProblem(s"${x.toString()} is not valid as a riftdescriptor").failure
+            case WarpString(rd) ⇒ rd.success
+            case x ⇒ UnspecifiedProblem(s"${x.toString()} is not valid as a riftdescriptor").failure
           }
           rd <- WarpDescriptor.parse(rdStr)
         } yield (Some(rd), elements - WarpDescriptor.defaultKey)
@@ -48,14 +48,14 @@ object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonS
   }
 
   private def mapJsonMapToWarpElement(jsonElems: Map[String, Any]): AlmValidation[Vector[WarpElement]] =
-    jsonElems.map(labelAndValue =>
+    jsonElems.map(labelAndValue ⇒
       labelAndValue._2 match {
-        case null => WarpElement(labelAndValue._1, None).success
-        case v => extract(v).map(x => WarpElement(labelAndValue._1, Some(x))).toAgg
+        case null ⇒ WarpElement(labelAndValue._1, None).success
+        case v ⇒ extract(v).map(x ⇒ WarpElement(labelAndValue._1, Some(x))).toAgg
       }).toVector.sequence
 
   private def extractCollection(what: JSONArray): AlmValidation[WarpCollection] =
-    what.list.map(item => extract(item).toAgg).sequence.map(x => WarpCollection(x.toVector))
+    what.list.map(item ⇒ extract(item).toAgg).sequence.map(x ⇒ WarpCollection(x.toVector))
 
   private def extractPrimitive(what: Any): AlmValidation[WarpPrimitive] = {
     val clazz = what.getClass()

@@ -9,8 +9,8 @@ import riftwarp.std.{ WarpPrimitiveConverter, WarpPackageConverter }
 sealed trait WarpPackage {
   def toWarpObject: AlmValidation[WarpObject] =
     this match {
-      case wo: WarpObject => wo.success
-      case _ => MappingProblem("Not a WarpObject").failure
+      case wo: WarpObject ⇒ wo.success
+      case _ ⇒ MappingProblem("Not a WarpObject").failure
     }
 
   def to[T <: WarpPackage: WarpPackageConverter]: AlmValidation[T] =
@@ -19,7 +19,7 @@ sealed trait WarpPackage {
 
 final case class WarpElement(label: String, value: Option[WarpPackage])
 
-sealed trait WarpPrimitive extends WarpPackage { self =>
+sealed trait WarpPrimitive extends WarpPackage { self ⇒
   def as[T: WarpPrimitiveConverter]: AlmValidation[T] = implicitly[WarpPrimitiveConverter[T]].convert(self)
   def value: Any
 }
@@ -27,8 +27,8 @@ sealed trait WarpPrimitive extends WarpPackage { self =>
 object WarpPrimitive {
   def unapply(what: WarpPackage): Option[Any] =
     what match {
-      case w: WarpPrimitive => Some(w.value)
-      case _ => None
+      case w: WarpPrimitive ⇒ Some(w.value)
+      case _ ⇒ None
     }
 }
 
@@ -53,8 +53,8 @@ final case class WarpDuration(override val value: scala.concurrent.duration.Fini
 final case class WarpObject(warpDescriptor: Option[WarpDescriptor], elements: Vector[WarpElement]) extends WarpPackage {
   def getWarpDescriptor: AlmValidation[WarpDescriptor] =
     warpDescriptor match {
-      case Some(rd) => rd.success
-      case None => NoSuchElementProblem("Object has no WarpDescriptor").failure
+      case Some(rd) ⇒ rd.success
+      case None ⇒ NoSuchElementProblem("Object has no WarpDescriptor").failure
     }
 }
 
@@ -92,13 +92,13 @@ object WarpCollection {
 
   def tree(wc: WarpCollection): AlmValidation[Tree[WarpPackage]] =
     wc match {
-      case WarpCollection(Vector(l, WarpCollection(subForest))) =>
+      case WarpCollection(Vector(l, WarpCollection(subForest))) ⇒
         val sfV = subForest.map {
-          case aTree: WarpCollection => tree(aTree).toAgg
-          case _ => ???
+          case aTree: WarpCollection ⇒ tree(aTree).toAgg
+          case _ ⇒ ???
         }
-        sfV.sequence.map(sf => l.node(sf: _*))
-      case x => UnspecifiedProblem(s""""${x.toString()}" can not be converted to a tree element""").failure
+        sfV.sequence.map(sf ⇒ l.node(sf: _*))
+      case x ⇒ UnspecifiedProblem(s""""${x.toString()}" can not be converted to a tree element""").failure
     }
 
   implicit class WarpCollectionOps(self: WarpCollection) {
@@ -117,18 +117,18 @@ object WarpCollection {
     }
 
     def associative: AlmValidation[WarpAssociativeCollection] =
-      self.items.map(item =>
+      self.items.map(item ⇒
         (item match {
-          case WarpCollection(innerItems) =>
+          case WarpCollection(innerItems) ⇒
             if (innerItems.length == 2)
               (innerItems(0), innerItems(1)).success
             else
               UnspecifiedProblem("An inner item must have a length of 2, when tranforming a WarpCollection to a WarpAssociativeCollection").failure
-          case _ => UnspecifiedProblem("An inner item must be a WarpCollection of WarpCollections in order to transform a WarpCollection to a WarpAssociativeCollection").failure
+          case _ ⇒ UnspecifiedProblem("An inner item must be a WarpCollection of WarpCollections in order to transform a WarpCollection to a WarpAssociativeCollection").failure
         }).toAgg).sequence.map(WarpAssociativeCollection(_))
 
     def warpTree: AlmValidation[WarpTree] =
-      WarpCollection.tree(self).map(x => WarpTree(x))
+      WarpCollection.tree(self).map(x ⇒ WarpTree(x))
   }
 }
 
@@ -141,9 +141,9 @@ object WarpAssociativeCollection {
       val cb = implicitly[WarpPackageConverter[U]]
 
       val typedV = self.items.map {
-        case (a, b) =>
-          ca.convert(a).flatMap(a1 =>
-            cb.convert(b).map(b1 =>
+        case (a, b) ⇒
+          ca.convert(a).flatMap(a1 ⇒
+            cb.convert(b).map(b1 ⇒
               (a1, b1))).toAgg
       }
       typedV.sequence.map(_.toIndexedSeq)
@@ -153,9 +153,9 @@ object WarpAssociativeCollection {
       val upA = implicitly[WarpUnpacker[T]]
       val upB = implicitly[WarpUnpacker[U]]
       val typedV = self.items.map {
-        case (a, b) =>
-          upA.unpack(a).flatMap(a1 =>
-            upB.unpack(b).map(b1 =>
+        case (a, b) ⇒
+          upA.unpack(a).flatMap(a1 ⇒
+            upB.unpack(b).map(b1 ⇒
               (a1, b1))).toAgg
       }
       typedV.sequence.map(_.toIndexedSeq)
@@ -164,8 +164,8 @@ object WarpAssociativeCollection {
     def unpackTupleItems[T: WarpUnpacker](implicit unpackers: WarpUnpackers = WarpUnpackers.empty): AlmValidation[IndexedSeq[(T, WarpPackage)]] = {
       val upA = implicitly[WarpUnpacker[T]]
       val typedV = self.items.map {
-        case (a, b) =>
-          upA.unpack(a).map(a1 => (a1, b)).toAgg
+        case (a, b) ⇒
+          upA.unpack(a).map(a1 ⇒ (a1, b)).toAgg
       }
       typedV.sequence.map(_.toIndexedSeq)
     }
@@ -174,8 +174,8 @@ object WarpAssociativeCollection {
       val upA = implicitly[WarpUnpacker[T]]
       val cb = implicitly[WarpPackageConverter[U]]
       val typedV = self.items.map {
-        case (a, b) =>
-          upA.unpack(a).flatMap(a1 =>
+        case (a, b) ⇒
+          upA.unpack(a).flatMap(a1 ⇒
             cb.convert(b).map((a1, _))).toAgg
       }
       typedV.sequence.map(_.toIndexedSeq)

@@ -11,8 +11,8 @@ import scala.reflect.ClassTag
 trait BsonDocumentSerializer[T] extends Serializes[T, BSONDocument] with Deserializes[BSONDocument, T] {
   def serialize(what: T)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[BSONDocument]
   def deserialize(what: BSONDocument)(implicit params: SerializationParams = SerializationParams.empty): AlmValidation[T]
-  def toSerializationFunc = (what: T) => serialize(what)
-  def toDeserializationFunc = (what: BSONDocument) => deserialize(what)
+  def toSerializationFunc = (what: T) ⇒ serialize(what)
+  def toDeserializationFunc = (what: BSONDocument) ⇒ deserialize(what)
 }
 
 object BsonDocumentSerializer {
@@ -23,25 +23,25 @@ object BsonDocumentSerializer {
           packer <- riftWarp.packers.getFor(what, None, None)
           packed <- packer.packBlind(what)(riftWarp.packers)
           packedWithReplacedId <- idLabel match {
-            case Some(idLabel) =>
+            case Some(idLabel) ⇒
               packed match {
-                case WarpObject(wd, elements) =>
+                case WarpObject(wd, elements) ⇒
                   elements.find(_.label == idLabel) match {
-                    case Some(warpElemForId) =>
+                    case Some(warpElemForId) ⇒
                       val newElems = WarpElement("_id", warpElemForId.value) +: elements.filterNot(_.label == idLabel)
                       WarpObject(wd, newElems).success
-                    case None =>
+                    case None ⇒
                       NoSuchElementProblem(s"""The id label "$idLabel" which will be replaced by "_id" was not found.""").failure
                   }
-                case x =>
+                case x ⇒
                   SerializationProblem(s"""Only objects can be serialized to a BSON document. "$x" is not allowed here.""").failure
               }
-            case None =>
+            case None ⇒
               packed.success
           }
           res <- ToBsonDematerializer.dematerialize(packedWithReplacedId, Map.empty) match {
-            case d: BSONDocument => d.success
-            case x => SerializationProblem(s"""The warp package did not dematerialize to a BSON document(which should be impossible...).""").failure
+            case d: BSONDocument ⇒ d.success
+            case x ⇒ SerializationProblem(s"""The warp package did not dematerialize to a BSON document(which should be impossible...).""").failure
           }
         } yield res
 
@@ -49,25 +49,25 @@ object BsonDocumentSerializer {
         for {
           rematerializedPackage <- FromBsonRematerializer.rematerialize(what, Map.empty)
           rematerializedObjectWithIdLabel <- rematerializedPackage match {
-            case wo: WarpObject =>
+            case wo: WarpObject ⇒
               idLabel match {
-                case Some(idLabel) =>
+                case Some(idLabel) ⇒
                   wo.elements.find(_.label == idLabel) match {
-                    case Some(warpElemForId) =>
+                    case Some(warpElemForId) ⇒
                       val newElems = WarpElement("_id", warpElemForId.value) +: wo.elements.filterNot(_.label == idLabel)
                       WarpObject(wo.warpDescriptor, newElems).success
-                    case None =>
+                    case None ⇒
                       NoSuchElementProblem(s"""The id label "$idLabel" which will be replaced by "_id" was not found.""").failure
                   }
-                case None => wo.success
+                case None ⇒ wo.success
               }
-            case x =>
+            case x ⇒
               SerializationProblem(s"""The BSON did not rematerialize to an object.""").failure
           }
           unpacker <- rematerializedObjectWithIdLabel.warpDescriptor match {
-            case Some(wd) =>
+            case Some(wd) ⇒
               riftWarp.unpackers.get(wd)
-            case None =>
+            case None ⇒
               riftWarp.unpackers.getByTag(tag)
           }
           unpackedUntyped <- unpacker.unpack(rematerializedObjectWithIdLabel)(riftWarp.unpackers)

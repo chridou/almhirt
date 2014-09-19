@@ -8,7 +8,7 @@ object ParseFuns {
     try {
       org.apache.commons.codec.binary.Base64.decodeBase64(toParse).success
     } catch {
-      case err: Exception => BadDataProblem("Not a Base64 encoded String".format(toParse)).failure[Array[Byte]]
+      case err: Exception ⇒ BadDataProblem("Not a Base64 encoded String".format(toParse)).failure[Array[Byte]]
     }
 
   def tryParseBase64Alm(toParse: String): AlmValidation[Option[Array[Byte]]] =

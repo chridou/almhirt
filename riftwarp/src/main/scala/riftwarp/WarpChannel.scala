@@ -64,26 +64,26 @@ object WarpChannels {
   
   def getChannel(channelDescriptor: String) : AlmValidation[WarpChannel] = {
     myChannels.get().get(channelDescriptor) match {
-      case Some(channel) => channel.success
-      case None => NoSuchElementProblem(s""""$channelDescriptor" is not registered.""").failure
+      case Some(channel) ⇒ channel.success
+      case None ⇒ NoSuchElementProblem(s""""$channelDescriptor" is not registered.""").failure
     }
   }
 
   def getBinaryChannel(channelDescriptor: String) : AlmValidation[WarpChannel] = {
-    getChannel(channelDescriptor).flatMap(ch =>
+    getChannel(channelDescriptor).flatMap(ch ⇒
       ch.HttpTransmission match {
-        case HttpTransmissionAsBinary => ch.success
-        case NoHttpTransmission => UnspecifiedProblem(s""""$channelDescriptor" is not transmittable over a Http.""").failure
-        case HttpTransmissionAsText => UnspecifiedProblem(s""""$channelDescriptor" is not a binary channel. It is a text channel.""").failure
+        case HttpTransmissionAsBinary ⇒ ch.success
+        case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$channelDescriptor" is not transmittable over a Http.""").failure
+        case HttpTransmissionAsText ⇒ UnspecifiedProblem(s""""$channelDescriptor" is not a binary channel. It is a text channel.""").failure
       })
   }
   
   def getTextChannel(channelDescriptor: String) : AlmValidation[WarpChannel] = {
-    getChannel(channelDescriptor).flatMap(ch =>
+    getChannel(channelDescriptor).flatMap(ch ⇒
       ch.HttpTransmission match {
-        case HttpTransmissionAsText => ch.success
-        case NoHttpTransmission => UnspecifiedProblem(s""""$channelDescriptor" is not transmittable over a Http.""").failure
-        case HttpTransmissionAsBinary => UnspecifiedProblem(s""""$channelDescriptor" is not a text channel. It is a binary channel""").failure
+        case HttpTransmissionAsText ⇒ ch.success
+        case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$channelDescriptor" is not transmittable over a Http.""").failure
+        case HttpTransmissionAsBinary ⇒ UnspecifiedProblem(s""""$channelDescriptor" is not a text channel. It is a binary channel""").failure
       })
   }
   

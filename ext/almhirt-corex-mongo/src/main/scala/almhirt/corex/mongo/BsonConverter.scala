@@ -1,6 +1,6 @@
 package almhirt.corex.mongo
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import reactivemongo.bson._
 import almhirt.converters.BinaryConverter
 import org.joda.time.LocalDateTime

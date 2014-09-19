@@ -16,10 +16,10 @@ trait AggregateRootDroneCommandHandlerAdaptor[T <: AggregateRoot, C <: Aggregate
   final override val handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateRootCommand, AggregateRootLifecycle[T]) ⇒ Unit =
     (ctx) ⇒ (nextCommand, currentState) ⇒ {
       nextCommand.castTo[C].fold(
-        fail => SyncCommandResult(ConstraintViolatedProblem(s"""Invalid command. It must be of type "${tag.runtimeClass.getName()}"."""", cause = Some(fail)).failure),
-        castedCmd => this.handleAggregateCommand(castedCmd, currentState))
+        fail ⇒ SyncCommandResult(ConstraintViolatedProblem(s"""Invalid command. It must be of type "${tag.runtimeClass.getName()}"."""", cause = Some(fail)).failure),
+        castedCmd ⇒ this.handleAggregateCommand(castedCmd, currentState))
         .onComplete(
-          fail => ctx.reject(fail),
-          (_, events) => ctx.commit(events))(this.futuresContext)
+          fail ⇒ ctx.reject(fail),
+          (_, events) ⇒ ctx.commit(events))(this.futuresContext)
     }
 }

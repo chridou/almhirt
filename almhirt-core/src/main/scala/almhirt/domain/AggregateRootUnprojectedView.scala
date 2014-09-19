@@ -112,7 +112,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
 
   private def receiveEvaluateEventlogRebuildResult(enqueuedRequests: Vector[ActorRef], enqueuedEvents: Vector[E]): Receive = {
     case InternalEventlogArBuildResult(arState) ⇒
-      enqueuedEvents.foreach(_ => confirmAggregateRootEventHandled())
+      enqueuedEvents.foreach(_ ⇒ confirmAggregateRootEventHandled())
       val toApply = enqueuedEvents.filter(_.aggVersion >= arState.version)
       if (toApply.isEmpty) {
         dispatchState(arState, enqueuedRequests: _*)
@@ -163,13 +163,13 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   /** Ends with termination */
   private def onError(enqueuedRequests: Vector[ActorRef], eventsStillToConfirm: Int)(ex: AggregateRootDomainException): Nothing = {
     log.error(s"Escalating! Something terrible happened:\n$ex")
-    (1 to eventsStillToConfirm).foreach(_ => confirmAggregateRootEventHandled())
+    (1 to eventsStillToConfirm).foreach(_ ⇒ confirmAggregateRootEventHandled())
     val problem = UnspecifiedProblem(s"""Escalating! Something terrible happened: "${ex.getMessage}"""", cause = Some(ex))
     enqueuedRequests.foreach(receiver ⇒ onDispatchFailure(problem, receiver))
     throw ex
   }
 
-  final def logDebug(msg: => String) {
+  final def logDebug(msg: ⇒ String) {
     if (log.isDebugEnabled)
       log.debug(msg)
   }

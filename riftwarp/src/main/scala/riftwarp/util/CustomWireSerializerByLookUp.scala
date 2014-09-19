@@ -8,7 +8,7 @@ import riftwarp._
 import riftwarp.std.RiftWarpFuns
 import scala.reflect.ClassTag
 
-trait CustomHttpSerializerByLookUp[T] extends CustomHttpSerializerTemplate[T] with RiftWarpFuns { self: HasRiftWarp =>
+trait CustomHttpSerializerByLookUp[T] extends CustomHttpSerializerTemplate[T] with RiftWarpFuns { self: HasRiftWarp ⇒
   def tag: ClassTag[TT]
 
   override protected def getDematerializer(channel: WarpChannel): AlmValidation[Dematerializer[Any]] = myRiftWarp.dematerializers.get(channel.channelDescriptor)

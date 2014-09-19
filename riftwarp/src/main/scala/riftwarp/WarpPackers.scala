@@ -17,33 +17,33 @@ trait WarpPackers extends Function1[WarpDescriptor, AlmValidation[BlindWarpPacke
     apply(WarpDescriptor(tag.runtimeClass))
 
   def getTyped[T](descriptor: WarpDescriptor): AlmValidation[WarpPacker[T]] =
-    get(descriptor).map(blindPacker => blindToTyped[T](blindPacker))
+    get(descriptor).map(blindPacker ⇒ blindToTyped[T](blindPacker))
 
   def getByTagTyped[T](implicit tag: ClassTag[T]): AlmValidation[WarpPacker[T]] =
     getTyped[T](WarpDescriptor(tag.runtimeClass))
 
   def getFor(what: Any, overrideDescriptor: Option[WarpDescriptor], backupDescriptor: Option[WarpDescriptor]): AlmValidation[BlindWarpPacker] =
     overrideDescriptor match {
-      case Some(ord) =>
+      case Some(ord) ⇒
         get(ord)
-      case None =>
+      case None ⇒
         get(WarpDescriptor(what.getClass)).fold(
-          fail =>
+          fail ⇒
             backupDescriptor match {
-              case Some(bd) =>
+              case Some(bd) ⇒
                 get(bd).fold(
-                  fail => getByPredicate(what),
-                  succ => succ.success)
-              case None =>
+                  fail ⇒ getByPredicate(what),
+                  succ ⇒ succ.success)
+              case None ⇒
                 getByPredicate(what)
             },
-          succ =>
+          succ ⇒
             succ.success)
     }
 
   def add(blindPacker: BlindWarpPacker with RegisterableWarpPacker)
   def addTyped[T](packer: WarpPacker[T] with RegisterableWarpPacker)
-  def addPredicated(pred: Any => Boolean, packer: BlindWarpPacker)
+  def addPredicated(pred: Any ⇒ Boolean, packer: BlindWarpPacker)
 
   protected def blindToTyped[T](blindPacker: BlindWarpPacker) =
     new WarpPacker[T] {
@@ -91,8 +91,8 @@ object WarpPackers {
     packers.addTyped(CommandResponseWarpPackaging)
     packers.addTyped(CommandStatusChangedWarpPackaging)
  
-    packers.addPredicated(x => x.isInstanceOf[SingleProblem], SingleProblemPackaging)
-    packers.addPredicated(x => x.isInstanceOf[AggregatedProblem], AggregatedProblemPackaging)
+    packers.addPredicated(x ⇒ x.isInstanceOf[SingleProblem], SingleProblemPackaging)
+    packers.addPredicated(x ⇒ x.isInstanceOf[AggregatedProblem], AggregatedProblemPackaging)
     
     serialization.common.ProblemTypes.registerPackers(packers)
     packers
@@ -105,6 +105,6 @@ object WarpPackers {
     override def getByPredicate(what: Any) = NoSuchElementProblem("NoWarpPackers has no packers").failure
     override def add(blindPacker: BlindWarpPacker with RegisterableWarpPacker) {}
     override def addTyped[T](packer: WarpPacker[T] with RegisterableWarpPacker) {}
-    override def addPredicated(pred: Any => Boolean, packer: BlindWarpPacker) {}
+    override def addPredicated(pred: Any ⇒ Boolean, packer: BlindWarpPacker) {}
   }
 }

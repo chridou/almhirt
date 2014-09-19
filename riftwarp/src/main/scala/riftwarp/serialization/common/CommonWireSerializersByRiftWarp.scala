@@ -6,7 +6,7 @@ import riftwarp.util.WarpHttpSerializer
 import almhirt.common.Event
 import almhirt.common.Command
 
-trait CommonHttpSerializersByRiftWarp extends HasCommonHttpSerializers { self: HasRiftWarp =>
+trait CommonHttpSerializersByRiftWarp extends HasCommonHttpSerializers { self: HasRiftWarp ⇒
   import riftwarp.std._
   override lazy val booleanHttpSerializer = WarpHttpSerializer.direct[Boolean](myRiftWarp)
   override lazy val stringHttpSerializer = WarpHttpSerializer.direct[String](myRiftWarp)

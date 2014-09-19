@@ -28,12 +28,12 @@ trait CustomHttpSerializer[T] extends CustomHttpSerializerTemplate[T] {
     unpacker.flatMap(_(what)(unpackers))
 }
 
-trait FlatHttpSerializer[T] { self : CustomHttpSerializer[T] =>
+trait FlatHttpSerializer[T] { self : CustomHttpSerializer[T] ⇒
   def packers: WarpPackers = WarpPackers.empty
   def unpackers: WarpUnpackers = WarpUnpackers.empty
 }
 
-trait RiftWarpHttpSerializer[T] { self : CustomHttpSerializer[T] =>
+trait RiftWarpHttpSerializer[T] { self : CustomHttpSerializer[T] ⇒
   def riftwarp: RiftWarp
 
   override lazy val packers: WarpPackers = riftwarp.packers

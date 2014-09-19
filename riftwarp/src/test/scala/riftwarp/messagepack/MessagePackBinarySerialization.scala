@@ -1,7 +1,7 @@
 package riftwarp.messagepack
 
 import org.scalatest._
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import org.joda.time.{ DateTime, LocalDateTime }
 import scalaz._, Scalaz._
 import almhirt.common._

@@ -14,8 +14,8 @@ object CommandStatus {
   implicit class CommandStatusOps(self: CommandStatus) {
     def notExecuted: Boolean =
       self match {
-      case NotExecuted(_) => true
-      case _ => false
+      case NotExecuted(_) ⇒ true
+      case _ ⇒ false
     }
   }
 }

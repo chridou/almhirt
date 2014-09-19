@@ -61,7 +61,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         "should emit the status events [Initiated, Executed]" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent ⇒ e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           within(2 seconds) {
             FlowFrom[Command](CreateUser(CommandHeader(), createId(1), 0L, "hans", "meier") :: Nil).publishTo(commandSubscriber)
             statusProbe.expectMsgType[CommandStatusChanged].status should equal(CommandStatus.Initiated)
@@ -73,7 +73,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         "emit the status events [Initiated(a), Executed(a)] and [Initiated(b), Executed(b)]" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent ⇒ e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           within(2 seconds) {
             FlowFrom[Command](List(
               CreateUser(CommandHeader(), createId(1), 0L, "hans", "meier"),
@@ -89,7 +89,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         s"emit the status events [Initiated, Executed] $n times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent ⇒ e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           within(3 seconds) {
             FlowFrom[Command](ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"))).publishTo(commandSubscriber)
@@ -103,7 +103,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         s"emit the status events ([Initiated(a), Executed]x2) $n times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent ⇒ e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val flow = FlowFrom[Command](ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateRootCommand) ++
             ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateRootCommand))
           val start = Deadline.now
@@ -119,7 +119,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         s"emit the status events ([Initiated, Executed]x3) $n times" in { fixture ⇒
           val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect { case e: SystemEvent ⇒ e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val flow = FlowFrom[Command](ids.toStream.map(id ⇒ CreateUser(CommandHeader(), id, 0L, "hans", "meier"): AggregateRootCommand) ++
             ids.toStream.map(id ⇒ ChangeUserLastname(CommandHeader(), id, 1L, "müller"): AggregateRootCommand) ++
             ids.toStream.map(id ⇒ ConfirmUserDeath(CommandHeader(), id, 2L): AggregateRootCommand))
@@ -136,7 +136,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
           s"emit the status events ([Initiated, Executed]x3) $bigN times" in { fixture ⇒
             val FixtureParam(testId, commandSubscriber, eventlog, streams) = fixture
             val statusProbe = TestProbe()
-            FlowFrom(streams.eventStream).collect { case e: SystemEvent => e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+            FlowFrom(streams.eventStream).collect { case e: SystemEvent ⇒ e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
             val flow = FlowFrom[Command]((1 to bigN).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
             		(1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
             		(1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
@@ -215,7 +215,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         (HiveDescriptor("4"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 4))
 
     //val (commandSubscriber, commandPublisher) = Duct[AggregateRootCommand].build()
-    val f = FlowFrom[AggregateRootCommand].collect{ case e: AggregateRootCommand => e}
+    val f = FlowFrom[AggregateRootCommand].collect{ case e: AggregateRootCommand ⇒ e}
 
     val nexusProps = Props(new AggregateRootNexus(streams.aggregateCommandStream, hiveSelector, hiveFactory))
     val nexusActor = system.actorOf(nexusProps, s"nexus-$testId")

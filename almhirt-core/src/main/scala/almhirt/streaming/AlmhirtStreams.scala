@@ -40,7 +40,7 @@ object AlmhirtStreams {
     implicit val ctx = actorRefFactory.dispatcher
     val supervisorProps = Props(new Actor with ImplicitFlowMaterializer {
       def receive: Receive = {
-        case "get_streams" =>
+        case "get_streams" ⇒
           val streams: AlmhirtStreams with Stoppable = {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
             val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
@@ -48,13 +48,13 @@ object AlmhirtStreams {
             val eventPub = cheat(FlowFrom[Event](eventShipperOut), "eventPub")(context)
             FlowFrom(eventPub).withSink(BlackholeSink).run()
 
-            val systemEventPub = cheat(FlowFrom[Event](eventPub).collect { case e: SystemEvent => e }, "systemEventPub")(context)
+            val systemEventPub = cheat(FlowFrom[Event](eventPub).collect { case e: SystemEvent ⇒ e }, "systemEventPub")(context)
             FlowFrom(systemEventPub).withSink(BlackholeSink).run()
 
-            val domainEventPub = cheat(FlowFrom[Event](eventPub).collect { case e: DomainEvent => e }, "domainEventPub")(context)
+            val domainEventPub = cheat(FlowFrom[Event](eventPub).collect { case e: DomainEvent ⇒ e }, "domainEventPub")(context)
             FlowFrom(domainEventPub).withSink(BlackholeSink).run()
 
-            val arEventPub = cheat(FlowFrom[Event](eventPub).collect { case e: AggregateRootEvent => e }, "arEventPub")(context)
+            val arEventPub = cheat(FlowFrom[Event](eventPub).collect { case e: AggregateRootEvent ⇒ e }, "arEventPub")(context)
             FlowFrom(arEventPub).withSink(BlackholeSink).run()
 
             // commands
@@ -65,13 +65,13 @@ object AlmhirtStreams {
             val commandPub = cheat(FlowFrom[Command](commandShipperOut), "commandPub")(context)
             FlowFrom(commandPub).withSink(BlackholeSink).run()
 
-            val systemCommandPub = cheat(FlowFrom[Command](commandPub).collect { case e: SystemCommand => e }, "systemCommandPub")(context)
+            val systemCommandPub = cheat(FlowFrom[Command](commandPub).collect { case e: SystemCommand ⇒ e }, "systemCommandPub")(context)
             FlowFrom(systemCommandPub).withSink(BlackholeSink).run()
 
-            val domainCommandPub = cheat(FlowFrom[Command](commandPub).collect { case e: DomainCommand => e }, "domainCommandPub")(context)
+            val domainCommandPub = cheat(FlowFrom[Command](commandPub).collect { case e: DomainCommand ⇒ e }, "domainCommandPub")(context)
             FlowFrom(domainCommandPub).withSink(BlackholeSink).run()
 
-            val arCommandPub = cheat(FlowFrom[Command](commandPub).collect { case e: AggregateRootCommand => e }, "arCommandPub")(context)
+            val arCommandPub = cheat(FlowFrom[Command](commandPub).collect { case e: AggregateRootCommand ⇒ e }, "arCommandPub")(context)
             FlowFrom(arCommandPub).withSink(BlackholeSink).run()
 
             new AlmhirtStreams with Stoppable {
@@ -104,7 +104,7 @@ object AlmhirtStreams {
     implicit val ctx = factory.dispatcher
     val actor = factory.actorOf(Props(new Actor with ImplicitFlowMaterializer {
       def receive: Receive = {
-        case "!" =>
+        case "!" ⇒
           sender() ! (f.toFanoutPublisher(1, 32))
       }
     }), name)

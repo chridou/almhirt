@@ -15,11 +15,11 @@ import akka.stream.FlowMaterializer
 object CommandStatusTracker {
   sealed trait CommandStatusTrackerMessage
 
-  final case class TrackCommand(commandId: CommandId, callback: AlmValidation[CommandStatus.CommandResult] => Unit, deadline: Deadline)
+  final case class TrackCommand(commandId: CommandId, callback: AlmValidation[CommandStatus.CommandResult] ⇒ Unit, deadline: Deadline)
 
   object TrackCommandMapped {
-    def apply(commandId: CommandId, callback: TrackerResult => Unit, deadline: Deadline): TrackCommand =
-      TrackCommand(commandId: CommandId, res => callback(mapResult(res)), deadline: Deadline)
+    def apply(commandId: CommandId, callback: TrackerResult ⇒ Unit, deadline: Deadline): TrackCommand =
+      TrackCommand(commandId: CommandId, res ⇒ callback(mapResult(res)), deadline: Deadline)
   }
 
   sealed trait TrackerResult
@@ -30,21 +30,21 @@ object CommandStatusTracker {
 
   private def mapResult(res: AlmValidation[CommandStatus.CommandResult]): TrackerResult =
     res.fold(
-      fail =>
+      fail ⇒
         fail match {
-          case OperationTimedOutProblem(_) => TrackedTimeout
-          case _ => TrackedError(fail)
+          case OperationTimedOutProblem(_) ⇒ TrackedTimeout
+          case _ ⇒ TrackedError(fail)
         },
-      succ => succ match {
-        case CommandStatus.Executed => TrackedExecutued
-        case CommandStatus.NotExecuted(cause) => TrackedNotExecutued(cause)
+      succ ⇒ succ match {
+        case CommandStatus.Executed ⇒ TrackedExecutued
+        case CommandStatus.NotExecuted(cause) ⇒ TrackedNotExecutued(cause)
       })
 
   def apply(statusTracker: ActorRef): Subscriber[CommandStatusChanged] =
     ActorSubscriber[CommandStatusChanged](statusTracker)
 
   def systemEventSubscriber(statusTracker: ActorRef)(implicit materializer: FlowMaterializer): Subscriber[SystemEvent] = {
-    val duct = Duct[SystemEvent].collect { case e: CommandStatusChanged => e }
+    val duct = Duct[SystemEvent].collect { case e: CommandStatusChanged ⇒ e }
     val (subscriber, publisher) = duct.build
     val trackingSubscriber = CommandStatusTracker(statusTracker)
     publisher.subscribe(trackingSubscriber)
@@ -67,7 +67,7 @@ private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheA
 
   implicit val executionContext: ExecutionContext = context.dispatcher
 
-  private case class Entry(callback: AlmValidation[CommandStatus.CommandResult] => Unit, due: Deadline)
+  private case class Entry(callback: AlmValidation[CommandStatus.CommandResult] ⇒ Unit, due: Deadline)
 
   private case object CheckTimeouts
   private case class RemoveTimedOut(timedOut: Map[CommandId, Set[Long]])
@@ -97,61 +97,61 @@ private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheA
   }
 
   def running(): Receive = {
-    case TrackCommand(commandId, callback, deadline) =>
+    case TrackCommand(commandId, callback, deadline) ⇒
       cachedStatusLookUp.get(commandId) match {
-        case Some(res) =>
+        case Some(res) ⇒
           callback(res.success)
-        case None =>
+        case None ⇒
           trackingSubscriptions.get(commandId) match {
-            case Some(entries) =>
+            case Some(entries) ⇒
               trackingSubscriptions = trackingSubscriptions + ((commandId, entries + (nextId -> Entry(callback, deadline))))
-            case None =>
+            case None ⇒
               trackingSubscriptions = trackingSubscriptions + (commandId -> Map(nextId -> Entry(callback, deadline)))
           }
       }
 
-    case ActorSubscriberMessage.OnNext(next: CommandStatusChanged) =>
+    case ActorSubscriberMessage.OnNext(next: CommandStatusChanged) ⇒
       next.status match {
-        case r: CommandStatus.CommandResult =>
-          trackingSubscriptions.get(next.commandHeader.id).foreach { entries =>
+        case r: CommandStatus.CommandResult ⇒
+          trackingSubscriptions.get(next.commandHeader.id).foreach { entries ⇒
             AlmFuture.compute(entries.foreach(_._2.callback(r.success)))
             trackingSubscriptions = trackingSubscriptions - next.commandHeader.id
           }
           addStatusToCache(next.commandHeader.id, r)
-        case _ =>
+        case _ ⇒
           ()
       }
       request(1)
 
-    case ActorSubscriberMessage.OnNext(x) =>
+    case ActorSubscriberMessage.OnNext(x) ⇒
       log.warning(s"Received unprocessable element $x")
       request(1)
 
-    case CheckTimeouts =>
+    case CheckTimeouts ⇒
       val currentSubscriptions = trackingSubscriptions
       AlmFuture.compute {
         val deadline = Deadline.now
         val timedOut = currentSubscriptions.map {
-          case (id, entries) =>
-            val timedOutEntries = entries.filter { case (entryId, entry) => entry.due < deadline }.map(x => x._1)
+          case (id, entries) ⇒
+            val timedOutEntries = entries.filter { case (entryId, entry) ⇒ entry.due < deadline }.map(x ⇒ x._1)
             (id, timedOutEntries.toSet)
         }
         self ! RemoveTimedOut(timedOut)
       }
 
-    case RemoveTimedOut(timedOut) =>
+    case RemoveTimedOut(timedOut) ⇒
       val currentSubscriptions = trackingSubscriptions
       AlmFuture.compute {
         timedOut.foreach {
-          case (commandId, timedOutEntryIds) =>
+          case (commandId, timedOutEntryIds) ⇒
             val activeSubscriptionsForCommand = currentSubscriptions.get(commandId) | Map.empty
             activeSubscriptionsForCommand.view
-              .filter { case (id, entry) => timedOutEntryIds.contains(id) }
-              .foreach { case (id, entry) => entry.callback(OperationTimedOutProblem("The tracking timed out.").failure) }
+              .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
+              .foreach { case (id, entry) ⇒ entry.callback(OperationTimedOutProblem("The tracking timed out.").failure) }
         }
       }
       trackingSubscriptions = trackingSubscriptions.map {
-        case (commandId, entries) =>
+        case (commandId, entries) ⇒
           (commandId, entries -- (timedOut.get(commandId).toSeq.flatten))
       }
       context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)

@@ -11,7 +11,7 @@ import akka.stream.actor._
 import org.reactivestreams.Publisher
 
 object AggregateRootViews {
-  def props[E <: AggregateRootEvent](getViewProps: AggregateRootId => Props, eventBufferSize: Int)(implicit eventTag: scala.reflect.ClassTag[E]): Props =
+  def props[E <: AggregateRootEvent](getViewProps: AggregateRootId ⇒ Props, eventBufferSize: Int)(implicit eventTag: scala.reflect.ClassTag[E]): Props =
     Props(new AggregateRootViews[E](getViewProps, eventBufferSize))
 
   import akka.stream.scaladsl2._
@@ -21,10 +21,10 @@ object AggregateRootViews {
       implicit actorRefFactory: ActorRefFactory,
       mat: FlowMaterializer,
       tag: scala.reflect.ClassTag[E]) {
-    FlowFrom(publisher).filter(p => tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).publishTo(ActorSubscriber[E](views))
+    FlowFrom(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).publishTo(ActorSubscriber[E](views))
   }
 
-  def connectedActor[E <: AggregateRootEvent](publisher: Publisher[AggregateRootEvent])(getViewProps: AggregateRootId => Props, eventBufferSize: Int, name: String)(
+  def connectedActor[E <: AggregateRootEvent](publisher: Publisher[AggregateRootEvent])(getViewProps: AggregateRootId ⇒ Props, eventBufferSize: Int, name: String)(
     implicit actorRefFactory: ActorRefFactory,
     mat: FlowMaterializer,
     tag: scala.reflect.ClassTag[E]): ActorRef = {
@@ -46,7 +46,7 @@ object AggregateRootViews {
  *  The Actor is an ActorSubscriber that requests [[AggregateRootEvents]].
  */
 class AggregateRootViews[E <: AggregateRootEvent](
-  override val getViewProps: AggregateRootId => Props,
+  override val getViewProps: AggregateRootId ⇒ Props,
   override val eventBufferSize: Int)(implicit override val eventTag: scala.reflect.ClassTag[E]) extends AggregateRootViewsSkeleton[E]
 
 private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends ActorSubscriber with ActorLogging {
@@ -59,7 +59,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       case _: Exception ⇒ Restart
     }
 
-  def getViewProps: AggregateRootId => Props
+  def getViewProps: AggregateRootId ⇒ Props
   implicit def eventTag: scala.reflect.ClassTag[E]
   def eventBufferSize: Int
   
@@ -68,7 +68,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   final override val requestStrategy = ZeroRequestStrategy
 
   private def receiveRunning: Receive = {
-    case GetAggregateRootProjectionFor(id) =>
+    case GetAggregateRootProjectionFor(id) ⇒
       val view = context.child(id.value) match {
         case Some(v) ⇒
           v
@@ -80,15 +80,15 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
       }
       view forward GetAggregateRootProjection
 
-    case ActorSubscriberMessage.OnNext(event: AggregateRootEvent) =>
+    case ActorSubscriberMessage.OnNext(event: AggregateRootEvent) ⇒
       event.castTo[E].fold(
-        fail => {
+        fail ⇒ {
           // This can happen quite often depending on the producer ...
           if (log.isWarningEnabled)
             log.warning(s"Received unproccessable aggregate event:\n$fail")
           request(1)
         },
-        aggregateEvent => {
+        aggregateEvent ⇒ {
           context.child(aggregateEvent.aggId.value) match {
             case Some(v) ⇒
               v ! ApplyAggregateRootEvent(aggregateEvent)
@@ -97,17 +97,17 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
           }
         })
 
-    case AggregateRootEventHandled =>
+    case AggregateRootEventHandled ⇒
       request(1)
 
-    case ActorSubscriberMessage.OnNext(x) =>
+    case ActorSubscriberMessage.OnNext(x) ⇒
       log.warning(s"""Received unproccessable message from publisher: ${x.getClass.getName()}".""")
       request(1)
 
-    case ActorSubscriberMessage.OnError(ex) =>
+    case ActorSubscriberMessage.OnError(ex) ⇒
       throw new Exception(s"""I("$self.path") received an error via the stream.""", ex)
 
-    case ActorSubscriberMessage.OnComplete =>
+    case ActorSubscriberMessage.OnComplete ⇒
       context.stop(self)
 
   }

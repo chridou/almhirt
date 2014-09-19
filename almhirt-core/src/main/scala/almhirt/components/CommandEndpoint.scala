@@ -20,17 +20,17 @@ private[almhirt] class CommandEndpointImpl(commandStatusTracker: ActorRef, maxTr
   import CommandStatusTracker._
 
   def receiveRunning: Receive = {
-    case cmd: Command =>
+    case cmd: Command ⇒
       if (totalDemand > 0 && isActive) {
         if (cmd.isTrackable) {
           val pinnedSender = sender()
           commandStatusTracker ! TrackCommand(
             commandId = cmd.commandId,
             callback = _.fold(
-              fail =>
+              fail ⇒
                 fail match {
-                  case OperationTimedOutProblem(_) => pinnedSender ! TrackedCommandTimedOut(cmd.commandId)
-                  case _ => pinnedSender ! TrackerFailed(cmd.commandId, fail)
+                  case OperationTimedOutProblem(_) ⇒ pinnedSender ! TrackedCommandTimedOut(cmd.commandId)
+                  case _ ⇒ pinnedSender ! TrackerFailed(cmd.commandId, fail)
                 },
               pinnedSender ! TrackedCommandResult(cmd.commandId, _)),
             deadline = maxTrackingDuration.fromNow)

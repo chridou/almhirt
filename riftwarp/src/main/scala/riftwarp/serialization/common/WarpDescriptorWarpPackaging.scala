@@ -20,7 +20,7 @@ object WarpDescriptorUnpacker extends RegisterableWarpUnpacker[WarpDescriptor] {
   val warpDescriptor = WarpDescriptor(classOf[WarpDescriptor])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[WarpDescriptor] = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         theTypeStr <- lookup.getAs[String]("type")
         wd <- WarpDescriptor.parse(theTypeStr)

@@ -89,7 +89,7 @@ trait EmptyCommonContentTypeProviders extends HasCommonContentTypeProviders {
   override val problemsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.Problem]]
 }
 
-trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProviders { self: HasCommonAlmMediaTypesProviders =>
+trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProviders { self: HasCommonAlmMediaTypesProviders ⇒
   override lazy val booleanContentTypeProvider = FullContentTypeProvider[Boolean]
   override lazy val stringContentTypeProvider = FullContentTypeProvider[String]
   override lazy val byteContentTypeProvider = FullContentTypeProvider[Byte]

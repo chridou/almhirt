@@ -1,7 +1,7 @@
 package riftwarp
 
 import org.scalatest._
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import org.joda.time.{DateTime, LocalDateTime}
 import scalaz._, Scalaz._
 import almhirt.common._
@@ -184,7 +184,7 @@ class JsonSerialization extends FunSuite with Matchers {
   
   test("RiftWarp should dematerialize the PrimitiveTypes and rematerialize them") {
     val riftwarp = RiftWarp(packers, unpackers)
-    val dematV = riftwarp.departure("json", TestObjectA.pete.primitiveTypes).flatMap(x => x._1.castTo[String].map((_, x._2)))
+    val dematV = riftwarp.departure("json", TestObjectA.pete.primitiveTypes).flatMap(x ⇒ x._1.castTo[String].map((_, x._2)))
     val resV = riftwarp.arrival("json", dematV.forceResult._1)
     resV.forceResult should equal(TestObjectA.pete.primitiveTypes)
   }
@@ -192,7 +192,7 @@ class JsonSerialization extends FunSuite with Matchers {
   test("RiftWarp should dematerialize a UUID") {
     val riftwarp = RiftWarp(packers, unpackers)
     val uuid = JUUID.randomUUID()
-    val dematV = riftwarp.departure("json", uuid).flatMap(x => x._1.castTo[String].map((_, x._2)))
+    val dematV = riftwarp.departure("json", uuid).flatMap(x ⇒ x._1.castTo[String].map((_, x._2)))
     dematV.forceResult should equal(("\""+uuid.toString()+"\"", WarpDescriptor("UUID")))
   }
 

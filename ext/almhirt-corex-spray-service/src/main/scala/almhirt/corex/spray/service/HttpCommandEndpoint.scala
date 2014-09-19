@@ -16,7 +16,7 @@ import spray.httpx.unmarshalling.Unmarshaller
 import spray.httpx.marshalling.Marshaller
 
 trait HttpCommandEndpoint extends Directives {
-  self: AlmHttpEndpoint with HasProblemMarshaller =>
+  self: AlmHttpEndpoint with HasProblemMarshaller ⇒
 
   implicit def commandUnmarshaller: Unmarshaller[Command]
   implicit def commandResponseMarshaller: Marshaller[CommandResponse]
@@ -28,14 +28,14 @@ trait HttpCommandEndpoint extends Directives {
 
   val executeCommandTerminator = pathPrefix("execute") {
     pathEnd {
-      executeCommand { cmd =>
-        implicit ctx => {
+      executeCommand { cmd ⇒
+        implicit ctx ⇒ {
           ((commandEndpoint ? cmd)(maxSyncDuration)).successfulAlmFuture[CommandResponse].completeRequestPostMapped[CommandResponse] {
-            case r: CommandAccepted => SuccessContent(r, StatusCodes.Accepted)
-            case r: CommandNotAccepted => FailureContent(r, StatusCodes.TooManyRequests)
-            case r: TrackedCommandResult => SuccessContent(r, StatusCodes.OK)
-            case r: TrackedCommandTimedOut => FailureContent(r, StatusCodes.InternalServerError)
-            case r: TrackerFailed => FailureContent(r, StatusCodes.InternalServerError)
+            case r: CommandAccepted ⇒ SuccessContent(r, StatusCodes.Accepted)
+            case r: CommandNotAccepted ⇒ FailureContent(r, StatusCodes.TooManyRequests)
+            case r: TrackedCommandResult ⇒ SuccessContent(r, StatusCodes.OK)
+            case r: TrackedCommandTimedOut ⇒ FailureContent(r, StatusCodes.InternalServerError)
+            case r: TrackerFailed ⇒ FailureContent(r, StatusCodes.InternalServerError)
           }
         }
       }

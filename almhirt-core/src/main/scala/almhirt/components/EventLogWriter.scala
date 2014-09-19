@@ -25,7 +25,7 @@ private[almhirt] class EventLogWriterImpl(val eventLog: ActorRef, writeAggregate
   private case class PotentialTimeout(eventId: EventId)
 
   def running(activeEvent: Option[Event]): Receive = {
-    case ActorSubscriberMessage.OnNext(event: Event) =>
+    case ActorSubscriberMessage.OnNext(event: Event) ⇒
       if (activeEvent.isDefined) {
         sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.get.eventId.value}' is processed.")
       }
@@ -38,7 +38,7 @@ private[almhirt] class EventLogWriterImpl(val eventLog: ActorRef, writeAggregate
         request(1)
       }
 
-    case EventLog.EventLogged(id) =>
+    case EventLog.EventLogged(id) ⇒
       if (activeEvent.map(_.eventId == id) | false) {
         request(1)
         context.become(running(activeEvent = None))
@@ -46,7 +46,7 @@ private[almhirt] class EventLogWriterImpl(val eventLog: ActorRef, writeAggregate
         log.warning(s"Received event logged for event '${id.value}' which is not the active event.")
       }
 
-    case EventLog.EventNotLogged(id, problem) =>
+    case EventLog.EventNotLogged(id, problem) ⇒
       if (activeEvent.map(_.eventId == id) | false) {
         log.error(s"Could not log event '${id.value}':\n$problem")
         request(1)
@@ -55,7 +55,7 @@ private[almhirt] class EventLogWriterImpl(val eventLog: ActorRef, writeAggregate
         log.error(s"Received event not logged for event '${id.value}' which is not the active event:\n$problem")
       }
 
-    case PotentialTimeout(eventId) =>
+    case PotentialTimeout(eventId) ⇒
       if (activeEvent.map(_.eventId == eventId) | false) {
         log.warning(s"Writing event '${eventId.value}' timed out. It might have been written or not...")
         request(1)
@@ -64,7 +64,7 @@ private[almhirt] class EventLogWriterImpl(val eventLog: ActorRef, writeAggregate
         log.warning(s"Received timeout for event '${eventId.value}' which is not the active event.")
       }
 
-    case ActorSubscriberMessage.OnNext(unprocessable) =>
+    case ActorSubscriberMessage.OnNext(unprocessable) ⇒
       if (activeEvent.isDefined) {
         sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.get.eventId.value}' is processed.")
       } else {

@@ -30,9 +30,9 @@ object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Js
     if (what.startsWith("{") || what.startsWith("[")) {
       val parser = new scala.util.parsing.json.Parser
       parser.phrase(parser.root)(new parser.lexical.Scanner(what)) match {
-        case parser.Success(result, _) =>
+        case parser.Success(result, _) ⇒
           FromStdLibJsonRematerializer.rematerialize(WarpTags.JsonStdLib(result))
-        case parser.NoSuccess(msg, _) =>
+        case parser.NoSuccess(msg, _) ⇒
           ParsingProblem(msg, Some(what)).failure
       }
     } else if (what.startsWith("\"") && what.endsWith("\"")) {
@@ -59,6 +59,6 @@ object FromJsonCordRematerializer extends Rematerializer[Cord @@ WarpTags.Json] 
 object FromXmlStringRematerializer extends Rematerializer[String @@ WarpTags.Xml] {
   override val channel = WarpChannels.`rift-xml`
   def rematerialize(what: String @@ WarpTags.Xml, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
-    inTryCatch { scala.xml.XML.loadString(what) }.flatMap(xml =>
+    inTryCatch { scala.xml.XML.loadString(what) }.flatMap(xml ⇒
       FromStdLibXmlRematerializer.rematerialize(xml))
 }

@@ -80,7 +80,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
      signContractAndThen(eventsBroker, initialPayload = Some(Seq.empty)) {
-        case unexpectedCommand: AggregateRootCommand =>
+        case unexpectedCommand: AggregateRootCommand ⇒
           sendMessage(Busy(unexpectedCommand))
       }(receiveWaitForContract(firstCommand))
   }
@@ -174,7 +174,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       rest match {
         case Seq() ⇒
           this.offerAndThen(newDone, None) {
-            case unexpectedCommand: AggregateRootCommand =>
+            case unexpectedCommand: AggregateRootCommand ⇒
               sendMessage(Busy(unexpectedCommand))
           }(receiveWaitingForEventsDispatched(currentCommand, unpersisted, newDone))
         case next +: newRest ⇒

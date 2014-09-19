@@ -101,8 +101,8 @@ object TestObjectA {
         Map("a" -> 1, "b" -> 2, "a" -> 1, "c" -> 3),
         Map(UUID.randomUUID() -> DateTime.now(), UUID.randomUUID() -> DateTime.now().plusDays(1), UUID.randomUUID() -> DateTime.now().plusDays(2))),
       complexMaps = ComplexMaps(
-        TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap,
-        TestAddress.someAddresses.zipWithIndex.map(x => (x._2, x._1)).toMap),
+        TestAddress.someAddresses.zipWithIndex.map(x ⇒ (x._2, x._1)).toMap,
+        TestAddress.someAddresses.zipWithIndex.map(x ⇒ (x._2, x._1)).toMap),
       addressOpt = Some(TestAddress("Berlin", "At the wall 89")),
       trees = Trees())
 }

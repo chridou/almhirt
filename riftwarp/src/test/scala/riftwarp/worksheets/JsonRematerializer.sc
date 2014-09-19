@@ -20,7 +20,7 @@ object JsonRematerializer {
                                                   //> res1  : almhirt.common.AlmValidation[Vector[Any]] = Success(Vector(1, A, 1.8
                                                   //| 9))
 
-  val res2: AlmValidation[List[Any]] = remat.resequencedMappedFromRepr(orig.manifestation, x => x.success)
+  val res2: AlmValidation[List[Any]] = remat.resequencedMappedFromRepr(orig.manifestation, x ⇒ x.success)
                                                   //> res2  : almhirt.common.AlmValidation[List[Any]] = Success(List(1, A, 1.89))
                                                   //| 
             

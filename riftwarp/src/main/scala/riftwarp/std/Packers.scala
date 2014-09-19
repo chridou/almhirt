@@ -1,7 +1,7 @@
 package riftwarp.std
 
 import java.net.URI
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import org.joda.time.{ DateTime, LocalDateTime }
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
@@ -20,9 +20,9 @@ object BooleanWarpUnpacker extends RegisterableWarpUnpacker[Boolean] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[Boolean]) :: WarpDescriptor(classOf[java.lang.Boolean]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Boolean] =
     what match {
-      case WarpBoolean(v) => v.success
-      case WarpString(v) => v.toBooleanAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Boolean""").failure
+      case WarpBoolean(v) ⇒ v.success
+      case WarpString(v) ⇒ v.toBooleanAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Boolean""").failure
     }
 }
 
@@ -37,8 +37,8 @@ object StringWarpUnpacker extends RegisterableWarpUnpacker[String] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[String]) :: WarpDescriptor(classOf[java.lang.String]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[String] =
     what match {
-      case WarpString(v) => v.success
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a String""").failure
+      case WarpString(v) ⇒ v.success
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a String""").failure
     }
 }
 
@@ -53,9 +53,9 @@ object ByteWarpUnpacker extends RegisterableWarpUnpacker[Byte] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[Byte]) :: WarpDescriptor(classOf[java.lang.Byte]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Byte] =
     what match {
-      case WarpByte(v) => v.success
-      case WarpString(v) => v.toByteAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Byte""").failure
+      case WarpByte(v) ⇒ v.success
+      case WarpString(v) ⇒ v.toByteAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Byte""").failure
     }
 }
 object ShortWarpPacker extends WarpPacker[Short] with SimpleWarpPacker[Short] with RegisterableWarpPacker {
@@ -69,10 +69,10 @@ object ShortWarpUnpacker extends RegisterableWarpUnpacker[Short] {
   override val alternativeWarpDescriptors = WarpDescriptor("Short") :: WarpDescriptor(classOf[Short]) :: WarpDescriptor(classOf[java.lang.Short]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Short] =
     what match {
-      case WarpShort(v) => v.success
-      case WarpByte(v) => v.toShort.success
-      case WarpString(v) => v.toShortAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Short""").failure
+      case WarpShort(v) ⇒ v.success
+      case WarpByte(v) ⇒ v.toShort.success
+      case WarpString(v) ⇒ v.toShortAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Short""").failure
     }
 }
 
@@ -87,11 +87,11 @@ object IntWarpUnpacker extends RegisterableWarpUnpacker[Int] {
   override val alternativeWarpDescriptors = WarpDescriptor("Integer") :: WarpDescriptor(classOf[Int]) :: WarpDescriptor(classOf[java.lang.Integer]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Int] =
     what match {
-      case WarpInt(v) => v.success
-      case WarpByte(v) => v.toInt.success
-      case WarpShort(v) => v.toInt.success
-      case WarpString(v) => v.toIntAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Int""").failure
+      case WarpInt(v) ⇒ v.success
+      case WarpByte(v) ⇒ v.toInt.success
+      case WarpShort(v) ⇒ v.toInt.success
+      case WarpString(v) ⇒ v.toIntAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Int""").failure
     }
 }
 
@@ -106,12 +106,12 @@ object LongWarpUnpacker extends RegisterableWarpUnpacker[Long] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[Long]) :: WarpDescriptor(classOf[java.lang.Long]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Long] =
     what match {
-      case WarpLong(v) => v.success
-      case WarpByte(v) => v.toLong.success
-      case WarpShort(v) => v.toLong.success
-      case WarpInt(v) => v.toLong.success
-      case WarpString(v) => v.toLongAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Long""").failure
+      case WarpLong(v) ⇒ v.success
+      case WarpByte(v) ⇒ v.toLong.success
+      case WarpShort(v) ⇒ v.toLong.success
+      case WarpInt(v) ⇒ v.toLong.success
+      case WarpString(v) ⇒ v.toLongAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Long""").failure
     }
 }
 
@@ -126,13 +126,13 @@ object BigIntWarpUnpacker extends RegisterableWarpUnpacker[BigInt] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[BigInt]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[BigInt] =
     what match {
-      case WarpBigInt(v) => v.success
-      case WarpLong(v) => BigInt(v).success
-      case WarpByte(v) => BigInt(v).success
-      case WarpShort(v) => BigInt(v).success
-      case WarpInt(v) => BigInt(v).success
-      case WarpString(v) => v.toBigIntAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a BigInt""").failure
+      case WarpBigInt(v) ⇒ v.success
+      case WarpLong(v) ⇒ BigInt(v).success
+      case WarpByte(v) ⇒ BigInt(v).success
+      case WarpShort(v) ⇒ BigInt(v).success
+      case WarpInt(v) ⇒ BigInt(v).success
+      case WarpString(v) ⇒ v.toBigIntAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a BigInt""").failure
     }
 }
 
@@ -147,9 +147,9 @@ object FloatWarpUnpacker extends RegisterableWarpUnpacker[Float] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[Float]) :: WarpDescriptor(classOf[java.lang.Float]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Float] =
     what match {
-      case WarpFloat(v) => v.success
-      case WarpString(v) => v.toFloatAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Float""").failure
+      case WarpFloat(v) ⇒ v.success
+      case WarpString(v) ⇒ v.toFloatAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Float""").failure
     }
 }
 
@@ -164,10 +164,10 @@ object DoubleWarpUnpacker extends RegisterableWarpUnpacker[Double] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[Double]) :: WarpDescriptor(classOf[java.lang.Double]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Double] =
     what match {
-      case WarpDouble(v) => v.success
-      case WarpFloat(v) => v.toDouble.success
-      case WarpString(v) => v.toDoubleAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Double""").failure
+      case WarpDouble(v) ⇒ v.success
+      case WarpFloat(v) ⇒ v.toDouble.success
+      case WarpString(v) ⇒ v.toDoubleAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a Double""").failure
     }
 }
 
@@ -182,16 +182,16 @@ object BigDecimalWarpUnpacker extends RegisterableWarpUnpacker[BigDecimal] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[BigDecimal]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[BigDecimal] =
     what match {
-      case WarpBigDecimal(v) => v.success
-      case WarpBigInt(v) => BigDecimal(v).success
-      case WarpLong(v) => BigDecimal(v).success
-      case WarpByte(v) => BigDecimal(v).success
-      case WarpShort(v) => BigDecimal(v).success
-      case WarpInt(v) => BigDecimal(v).success
-      case WarpDouble(v) => BigDecimal(v).success
-      case WarpFloat(v) => BigDecimal(v.toString).success
-      case WarpString(v) => v.toDecimalAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a BigDecimal""").failure
+      case WarpBigDecimal(v) ⇒ v.success
+      case WarpBigInt(v) ⇒ BigDecimal(v).success
+      case WarpLong(v) ⇒ BigDecimal(v).success
+      case WarpByte(v) ⇒ BigDecimal(v).success
+      case WarpShort(v) ⇒ BigDecimal(v).success
+      case WarpInt(v) ⇒ BigDecimal(v).success
+      case WarpDouble(v) ⇒ BigDecimal(v).success
+      case WarpFloat(v) ⇒ BigDecimal(v.toString).success
+      case WarpString(v) ⇒ v.toDecimalAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a BigDecimal""").failure
     }
 }
 
@@ -206,9 +206,9 @@ object UuidWarpUnpacker extends RegisterableWarpUnpacker[JUUID] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[JUUID]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[JUUID] =
     what match {
-      case WarpUuid(v) => v.success
-      case WarpString(v) => v.toUuidAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an UUID""").failure
+      case WarpUuid(v) ⇒ v.success
+      case WarpString(v) ⇒ v.toUuidAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an UUID""").failure
     }
 }
 
@@ -223,9 +223,9 @@ object UriWarpUnpacker extends RegisterableWarpUnpacker[URI] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[URI]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[URI] =
     what match {
-      case WarpUri(v) => v.success
-      case WarpString(v) => v.toUriAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an URI""").failure
+      case WarpUri(v) ⇒ v.success
+      case WarpString(v) ⇒ v.toUriAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an URI""").failure
     }
 }
 
@@ -240,9 +240,9 @@ object DateTimeWarpUnpacker extends RegisterableWarpUnpacker[DateTime] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[DateTime]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[DateTime] =
     what match {
-      case WarpDateTime(v) => v.success
-      case WarpString(v) => v.toDateTimeAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a DateTime""").failure
+      case WarpDateTime(v) ⇒ v.success
+      case WarpString(v) ⇒ v.toDateTimeAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a DateTime""").failure
     }
 }
 
@@ -257,9 +257,9 @@ object LocalDateTimeWarpUnpacker extends RegisterableWarpUnpacker[LocalDateTime]
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[LocalDateTime]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[LocalDateTime] =
     what match {
-      case WarpLocalDateTime(v) => v.success
-      case WarpString(v) => v.toLocalDateTimeAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a LocalDateTime""").failure
+      case WarpLocalDateTime(v) ⇒ v.success
+      case WarpString(v) ⇒ v.toLocalDateTimeAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a LocalDateTime""").failure
     }
 }
 
@@ -274,9 +274,9 @@ object DurationWarpUnpacker extends RegisterableWarpUnpacker[FiniteDuration] {
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[FiniteDuration]) :: Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[FiniteDuration] =
     what match {
-      case WarpDuration(v) => v.success
-      case WarpString(v) => v.toDurationAlm
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a FiniteDuration""").failure
+      case WarpDuration(v) ⇒ v.success
+      case WarpString(v) ⇒ v.toDurationAlm
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to a FiniteDuration""").failure
     }
 }
 
@@ -291,8 +291,8 @@ object ByteArrayWarpUnpacker extends RegisterableWarpUnpacker[IndexedSeq[Byte]] 
   override val alternativeWarpDescriptors = Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[IndexedSeq[Byte]] =
     what match {
-      case WarpBytes(v) => v.success
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Array[Byte]""").failure
+      case WarpBytes(v) ⇒ v.success
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Array[Byte]""").failure
     }
 }
 
@@ -312,13 +312,13 @@ object Base64BlobWarpUnpacker extends RegisterableWarpUnpacker[IndexedSeq[Byte]]
   override val alternativeWarpDescriptors = Nil
   override def unpack(what: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[IndexedSeq[Byte]] =
     what match {
-      case WarpBlob(v) => v.success
-      case WarpObject(Some(WarpDescriptor("Base64Blob")), elems) =>
+      case WarpBlob(v) ⇒ v.success
+      case WarpObject(Some(WarpDescriptor("Base64Blob")), elems) ⇒
         elems.headOption match {
-          case Some(WarpElement("data", Some(WarpString(data)))) => ParseFuns.parseBase64Alm(data).map(IndexedSeq(_: _*))
-          case _ => UnspecifiedProblem(s""""${what.getClass().getName()}" can not be unpacked to an Array[Byte] from a WarpObject because it is empty, has no element labeled "data" or its content is not a WarpString""").failure
+          case Some(WarpElement("data", Some(WarpString(data)))) ⇒ ParseFuns.parseBase64Alm(data).map(IndexedSeq(_: _*))
+          case _ ⇒ UnspecifiedProblem(s""""${what.getClass().getName()}" can not be unpacked to an Array[Byte] from a WarpObject because it is empty, has no element labeled "data" or its content is not a WarpString""").failure
         }
-      case x => UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Array[Byte]""").failure
+      case x ⇒ UnspecifiedProblem(s""""${x.getClass().getName()}" can not unpack to an Array[Byte]""").failure
     }
 }
 

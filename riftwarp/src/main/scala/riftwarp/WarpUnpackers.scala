@@ -12,7 +12,7 @@ trait WarpUnpackers {
   final def apply(descriptor: WarpDescriptor): AlmValidation[WarpUnpacker[Any]] = get(descriptor)
   def get(descriptor: WarpDescriptor): AlmValidation[WarpUnpacker[Any]]
   def getTyped[T](descriptor: WarpDescriptor)(implicit tag: ClassTag[T]): AlmValidation[WarpUnpacker[T]] =
-    apply(descriptor).map(unpacker =>
+    apply(descriptor).map(unpacker ⇒
       new WarpUnpacker[T] {
         val warpDescriptor = descriptor
         def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[T] =
@@ -25,7 +25,7 @@ trait WarpUnpackers {
     apply(WarpDescriptor(tag.runtimeClass))
 
   def getByTagTyped[T](implicit tag: ClassTag[T]): AlmValidation[WarpUnpacker[T]] =
-    apply(WarpDescriptor(tag.runtimeClass)).map(untyped => untypedToTyped[T](untyped))
+    apply(WarpDescriptor(tag.runtimeClass)).map(untyped ⇒ untypedToTyped[T](untyped))
 
   def add(unpacker: RegisterableWarpUnpacker[Any])
   def addTyped[T](unpacker: RegisterableWarpUnpacker[T])

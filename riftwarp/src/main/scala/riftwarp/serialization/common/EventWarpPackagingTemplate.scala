@@ -20,7 +20,7 @@ object EventHeaderWarpPackaging extends WarpPacker[EventHeader] with Registerabl
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[EventHeader] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id").flatMap(ValidatedEventId(_))
         timestamp <- lookup.getAs[LocalDateTime]("timestamp")
@@ -32,13 +32,13 @@ object EventHeaderWarpPackaging extends WarpPacker[EventHeader] with Registerabl
 
 trait EventWarpPackagingTemplate[TEvent <: Event] extends WarpPacker[TEvent] with RegisterableWarpUnpacker[TEvent]{
   override def pack(what: TEvent)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    (this.warpDescriptor ~> With("header", what.header, EventHeaderWarpPackaging)).flatMap(obj =>
+    (this.warpDescriptor ~> With("header", what.header, EventHeaderWarpPackaging)).flatMap(obj ⇒
       addEventParams(what, obj))
   }
 
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TEvent] =
-    withFastLookUp(from) { lookup =>
-      lookup.getWith("header", EventHeaderWarpPackaging).flatMap(header =>
+    withFastLookUp(from) { lookup ⇒
+      lookup.getWith("header", EventHeaderWarpPackaging).flatMap(header ⇒
         extractEventParams(lookup, header))
     }
   

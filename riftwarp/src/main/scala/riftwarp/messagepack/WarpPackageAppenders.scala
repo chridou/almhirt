@@ -8,35 +8,35 @@ import almhirt.converters.BinaryConverter
 object WarpPackageAppenders {
   def appendWarpPackage(p: WarpPackage, writer: BinaryWriter): BinaryWriter = {
     p match {
-      case pack: WarpPrimitive => appendWarpPrimitive(pack, writer)
-      case pack: WarpObject => appendWarpObject(pack, writer)
-      case pack: WarpCollection => appendWarpCollection(pack, writer)
-      case pack: WarpAssociativeCollection => appendWarpAssociativeCollection(pack, writer)
-      case pack: WarpTree => appendWarpTree(pack, writer)
-      case pack: WarpTuple2 => appendWarpTuple2(pack, writer)
-      case pack: WarpTuple3 => appendWarpTuple3(pack, writer)
-      case pack: BinaryWarpPackage => appendBinaryWarpPackage(pack, writer)
+      case pack: WarpPrimitive ⇒ appendWarpPrimitive(pack, writer)
+      case pack: WarpObject ⇒ appendWarpObject(pack, writer)
+      case pack: WarpCollection ⇒ appendWarpCollection(pack, writer)
+      case pack: WarpAssociativeCollection ⇒ appendWarpAssociativeCollection(pack, writer)
+      case pack: WarpTree ⇒ appendWarpTree(pack, writer)
+      case pack: WarpTuple2 ⇒ appendWarpTuple2(pack, writer)
+      case pack: WarpTuple3 ⇒ appendWarpTuple3(pack, writer)
+      case pack: BinaryWarpPackage ⇒ appendBinaryWarpPackage(pack, writer)
     }
   }
 
   @inline
   def appendWarpPrimitive(p: WarpPrimitive, writer: BinaryWriter): BinaryWriter = {
     p match {
-      case prim: WarpBoolean => appendWarpBoolean(prim, writer)
-      case prim: WarpString => appendWarpString(prim, writer)
-      case prim: WarpByte => appendWarpByte(prim, writer)
-      case prim: WarpShort => appendWarpShort(prim, writer)
-      case prim: WarpInt => appendWarpInt(prim, writer)
-      case prim: WarpLong => appendWarpLong(prim, writer)
-      case prim: WarpBigInt => appendWarpBigInt(prim, writer)
-      case prim: WarpFloat => appendWarpFloat(prim, writer)
-      case prim: WarpDouble => appendWarpDouble(prim, writer)
-      case prim: WarpBigDecimal => appendWarpBigDecimal(prim, writer)
-      case prim: WarpUuid => appendWarpUuid(prim, writer)
-      case prim: WarpUri => appendWarpUri(prim, writer)
-      case prim: WarpDateTime => appendWarpDateTime(prim, writer)
-      case prim: WarpLocalDateTime => appendWarpLocalDateTime(prim, writer)
-      case prim: WarpDuration => appendWarpDuration(prim, writer)
+      case prim: WarpBoolean ⇒ appendWarpBoolean(prim, writer)
+      case prim: WarpString ⇒ appendWarpString(prim, writer)
+      case prim: WarpByte ⇒ appendWarpByte(prim, writer)
+      case prim: WarpShort ⇒ appendWarpShort(prim, writer)
+      case prim: WarpInt ⇒ appendWarpInt(prim, writer)
+      case prim: WarpLong ⇒ appendWarpLong(prim, writer)
+      case prim: WarpBigInt ⇒ appendWarpBigInt(prim, writer)
+      case prim: WarpFloat ⇒ appendWarpFloat(prim, writer)
+      case prim: WarpDouble ⇒ appendWarpDouble(prim, writer)
+      case prim: WarpBigDecimal ⇒ appendWarpBigDecimal(prim, writer)
+      case prim: WarpUuid ⇒ appendWarpUuid(prim, writer)
+      case prim: WarpUri ⇒ appendWarpUri(prim, writer)
+      case prim: WarpDateTime ⇒ appendWarpDateTime(prim, writer)
+      case prim: WarpLocalDateTime ⇒ appendWarpLocalDateTime(prim, writer)
+      case prim: WarpDuration ⇒ appendWarpDuration(prim, writer)
     }
   }
 
@@ -52,7 +52,7 @@ object WarpPackageAppenders {
       writer.writeUnsignedByte(MessagePackTypecodes.Array32)
       writer.writeInt(size)
     }
-    v.items.foreach(x => appendWarpPackage(x, writer))
+    v.items.foreach(x ⇒ appendWarpPackage(x, writer))
     writer
   }
 
@@ -68,7 +68,7 @@ object WarpPackageAppenders {
       writer.writeUnsignedByte(MessagePackTypecodes.Map32)
       writer.writeInt(size)
     }
-    v.items.foreach { x =>
+    v.items.foreach { x ⇒
       appendWarpPackage(x._1, writer)
       appendWarpPackage(x._2, writer)
     }
@@ -96,7 +96,7 @@ object WarpPackageAppenders {
       writer.writeUnsignedByte(MessagePackTypecodes.Array32)
       writer.writeInt(size)
     }
-    tree.subForest.foreach(st => appendWarpTreeNode(st, writer))
+    tree.subForest.foreach(st ⇒ appendWarpTreeNode(st, writer))
   }
 
   def appendWarpTuple2(v: WarpTuple2, writer: BinaryWriter): BinaryWriter = {
@@ -135,9 +135,9 @@ object WarpPackageAppenders {
     val wdWriter = writer.spawnNew()
     RiftWarpPrimitiveAppenders.appendString(wd.identifier, wdWriter)
     wd.version match {
-      case Some(v) => 
+      case Some(v) ⇒ 
         RiftWarpPrimitiveAppenders.appendInt(v, wdWriter)
-      case None => 
+      case None ⇒ 
         wdWriter.writeUnsignedByte(MessagePackTypecodes.Null)
     }
     RiftWarpPrimitiveAppenders.appendExt(wdWriter.toArray, RiftwarpTypecodes.WarpDescriptorCode, writer)
@@ -146,8 +146,8 @@ object WarpPackageAppenders {
   def appendWarpObject(v: WarpObject, writer: BinaryWriter): BinaryWriter = {
     val objWriter = writer.spawnNew(None)
     v.warpDescriptor match {
-      case Some(wd) => appendWarpDescriptor(wd, objWriter)
-      case None => objWriter.writeUnsignedByte(MessagePackTypecodes.Null)
+      case Some(wd) ⇒ appendWarpDescriptor(wd, objWriter)
+      case None ⇒ objWriter.writeUnsignedByte(MessagePackTypecodes.Null)
     }
     val size = v.elements.size
     if (size < 16) {
@@ -160,7 +160,7 @@ object WarpPackageAppenders {
       objWriter.writeUnsignedByte(MessagePackTypecodes.Map32)
       objWriter.writeInt(size)
     }
-    v.elements.foreach(e => appendWarpElement(e, objWriter))
+    v.elements.foreach(e ⇒ appendWarpElement(e, objWriter))
     RiftWarpPrimitiveAppenders.appendExt(objWriter.toArray, RiftwarpTypecodes.ObjectCode, writer)
   }
 
@@ -168,8 +168,8 @@ object WarpPackageAppenders {
     //writer.writeUnsignedByte(0x82) // 10000010
     RiftWarpPrimitiveAppenders.appendString(v.label, writer)
     v.value match {
-      case Some(v) => appendWarpPackage(v, writer)
-      case None => writer.writeUnsignedByte(MessagePackTypecodes.Null)
+      case Some(v) ⇒ appendWarpPackage(v, writer)
+      case None ⇒ writer.writeUnsignedByte(MessagePackTypecodes.Null)
     }
   }
 

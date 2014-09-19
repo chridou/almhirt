@@ -15,8 +15,8 @@ class RematerializersRegistry extends Rematerializers {
     
   override def get(channel: String): AlmValidation[Rematerializer[_]] =
     rematerializers.get(channel) match {
-      case null => NoSuchElementProblem(s"""No Rematerialzer found  found for channel "$channel".""").failure
-      case x => x.success
+      case null ⇒ NoSuchElementProblem(s"""No Rematerialzer found  found for channel "$channel".""").failure
+      case x ⇒ x.success
     }
 
 }

@@ -15,7 +15,7 @@ object CommandAcceptedWarpPackaging extends WarpPacker[CommandAccepted] with Reg
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandAccepted] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id")
       } yield CommandAccepted(CommandId(id))
@@ -30,7 +30,7 @@ object CommandNotAcceptedWarpPackaging extends WarpPacker[CommandNotAccepted] wi
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandNotAccepted] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id")
         reason <- lookup.getAs[String]("reason")
@@ -46,7 +46,7 @@ object TrackedCommandResultWarpPackaging extends WarpPacker[TrackedCommandResult
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TrackedCommandResult] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id")
         status <- lookup.getWith("status", CommandStatusCommandResultWarpPackaging)
@@ -62,7 +62,7 @@ object TrackedCommandTimedOutWarpPackaging extends WarpPacker[TrackedCommandTime
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TrackedCommandTimedOut] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id")
       } yield TrackedCommandTimedOut(CommandId(id))
@@ -77,7 +77,7 @@ object TrackerFailedWarpPackaging extends WarpPacker[TrackerFailed] with Registe
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TrackerFailed] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id")
         problem <- lookup.getWith("problem", ProblemPackaging)
@@ -91,9 +91,9 @@ object TrackedCommandResponseWarpPackaging extends WarpPacker[TrackedCommandResp
 
   override def pack(what: TrackedCommandResponse)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case w: TrackedCommandResult => TrackedCommandResultWarpPackaging(w)
-      case w: TrackedCommandTimedOut => TrackedCommandTimedOutWarpPackaging(w)
-      case w: TrackerFailed => TrackerFailedWarpPackaging(w)
+      case w: TrackedCommandResult ⇒ TrackedCommandResultWarpPackaging(w)
+      case w: TrackedCommandTimedOut ⇒ TrackedCommandTimedOutWarpPackaging(w)
+      case w: TrackerFailed ⇒ TrackerFailedWarpPackaging(w)
     }
   }
   
@@ -106,11 +106,11 @@ object CommandResponseWarpPackaging extends WarpPacker[CommandResponse] with Reg
 
   override def pack(what: CommandResponse)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case w: CommandAccepted => CommandAcceptedWarpPackaging(w)
-      case w: CommandNotAccepted => CommandNotAcceptedWarpPackaging(w)
-      case w: TrackedCommandResult => TrackedCommandResultWarpPackaging(w)
-      case w: TrackedCommandTimedOut => TrackedCommandTimedOutWarpPackaging(w)
-      case w: TrackerFailed => TrackerFailedWarpPackaging(w)
+      case w: CommandAccepted ⇒ CommandAcceptedWarpPackaging(w)
+      case w: CommandNotAccepted ⇒ CommandNotAcceptedWarpPackaging(w)
+      case w: TrackedCommandResult ⇒ TrackedCommandResultWarpPackaging(w)
+      case w: TrackedCommandTimedOut ⇒ TrackedCommandTimedOutWarpPackaging(w)
+      case w: TrackerFailed ⇒ TrackerFailedWarpPackaging(w)
     }
   }
   

@@ -34,7 +34,7 @@ object CommandStatusNotExecutedWarpPackaging extends WarpPacker[CommandStatus.No
     this.warpDescriptor ~> With("cause", what.cause, ProblemCausePacker)
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandStatus.NotExecuted] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         cause <- lookup.getWith("cause", ProblemCauseUnpacker)
       } yield CommandStatus.NotExecuted(cause)
@@ -47,8 +47,8 @@ object CommandStatusCommandResultWarpPackaging extends WarpPacker[CommandStatus.
 
   override def pack(what: CommandStatus.CommandResult)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case CommandStatus.Executed => CommandStatusExecutedWarpPackaging(CommandStatus.Executed)
-      case w: CommandStatus.NotExecuted => CommandStatusNotExecutedWarpPackaging(w)
+      case CommandStatus.Executed ⇒ CommandStatusExecutedWarpPackaging(CommandStatus.Executed)
+      case w: CommandStatus.NotExecuted ⇒ CommandStatusNotExecutedWarpPackaging(w)
     }
   }
   
@@ -61,9 +61,9 @@ object CommandStatusWarpPackaging extends WarpPacker[CommandStatus] with Registe
 
   override def pack(what: CommandStatus)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case CommandStatus.Initiated => CommandStatusInitiatedWarpPackaging(CommandStatus.Initiated)
-      case CommandStatus.Executed => CommandStatusExecutedWarpPackaging(CommandStatus.Executed)
-      case w: CommandStatus.NotExecuted => CommandStatusNotExecutedWarpPackaging(w)
+      case CommandStatus.Initiated ⇒ CommandStatusInitiatedWarpPackaging(CommandStatus.Initiated)
+      case CommandStatus.Executed ⇒ CommandStatusExecutedWarpPackaging(CommandStatus.Executed)
+      case w: CommandStatus.NotExecuted ⇒ CommandStatusNotExecutedWarpPackaging(w)
     }
   }
   

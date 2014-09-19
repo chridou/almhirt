@@ -2,7 +2,7 @@
 //
 //import org.scalatest._
 //import org.scalatest.matchers.ShouldMatchers
-//import java.util.{UUID => JUUID}
+//import java.util.{UUID ⇒ JUUID}
 //import org.joda.time.DateTime
 //import scalaz._, Scalaz._
 //import almhirt.syntax.almvalidation._

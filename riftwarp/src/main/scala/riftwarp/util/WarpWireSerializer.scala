@@ -21,9 +21,9 @@ class WarpHttpSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) exten
       theChannel <- WarpChannels.getChannel(channel)
       serialized <- riftWarp.departure(theChannel.channelDescriptor, what, options)
       typedSerialized <- theChannel.HttpTransmission match {
-        case HttpTransmissionAsBinary => serialized._1.castTo[Array[Byte]].map(BinaryBody)
-        case HttpTransmissionAsText => serialized._1.castTo[String].map(TextBody)
-        case NoHttpTransmission => UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
+        case HttpTransmissionAsBinary ⇒ serialized._1.castTo[Array[Byte]].map(BinaryBody)
+        case HttpTransmissionAsText ⇒ serialized._1.castTo[String].map(TextBody)
+        case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
       }
 
     } yield typedSerialized
@@ -32,11 +32,11 @@ class WarpHttpSerializer[T](riftWarp: RiftWarp)(implicit tag: ClassTag[T]) exten
     for {
       theChannel <- WarpChannels.getChannel(channel)
       result <- what match {
-        case BinaryBody(bytes) if theChannel.HttpTransmission == HttpTransmissionAsBinary =>
+        case BinaryBody(bytes) if theChannel.HttpTransmission == HttpTransmissionAsBinary ⇒
           riftWarp.arrival(channel, bytes, options).flatMap(_.castTo[T])
-        case TextBody(text) if theChannel.HttpTransmission == HttpTransmissionAsText =>
+        case TextBody(text) if theChannel.HttpTransmission == HttpTransmissionAsText ⇒
           riftWarp.arrival(channel, text, options).flatMap(_.castTo[T])
-        case _ =>
+        case _ ⇒
           UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.HttpTransmission}").""").failure
       }
     } yield result

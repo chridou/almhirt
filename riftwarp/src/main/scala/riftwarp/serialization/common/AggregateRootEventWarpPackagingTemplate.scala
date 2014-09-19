@@ -13,12 +13,12 @@ trait AggregateRootEventWarpPackagingTemplate[TEvent <: AggregateRootEvent] exte
     (this.warpDescriptor ~>
       With("header", what.header, EventHeaderWarpPackaging) ~>
       P("aggId", what.aggId.value) ~>
-      P("aggVersion", what.aggVersion.value)).flatMap(obj =>
+      P("aggVersion", what.aggVersion.value)).flatMap(obj ⇒
         addEventParams(what, obj))
   }
 
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TEvent] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         header <- lookup.getWith("header", EventHeaderWarpPackaging)
         id <- lookup.getAs[String]("aggId").flatMap(ValidatedAggregatedRootId(_))

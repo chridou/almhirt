@@ -34,19 +34,19 @@ trait HttpExternalConnector {
   implicit def executionContext: ExecutionContext
   def serializationExecutionContext: ExecutionContext
 
-  def pipeline: HttpRequest => Future[HttpResponse]
+  def pipeline: HttpRequest ⇒ Future[HttpResponse]
 
   def sendRequest(request: HttpRequest): AlmFuture[(HttpResponse, FiniteDuration)] = {
     val start = Deadline.now
-    pipeline(request).map { resp => (resp, start.lap)
+    pipeline(request).map { resp ⇒ (resp, start.lap)
     }.successfulAlmFuture[(HttpResponse, FiniteDuration)].foldV(
-      fail => UnspecifiedProblem("The request failed.", cause = Some(fail)).failure,
-      succ => succ.success)
+      fail ⇒ UnspecifiedProblem("The request failed.", cause = Some(fail)).failure,
+      succ ⇒ succ.success)
   }
 
   def deserializeProblem(response: HttpResponse)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Problem] =
     response.entity.toOption match {
-      case Some(body) =>
+      case Some(body) ⇒
         val mediaType = body.contentType.mediaType.toAlmMediaType
         if (mediaType == AlmMediaTypes.`text/plain`)
           UnspecifiedProblem(s"Received a text message on status code ${response.status}: ${body.asString}").failure
@@ -56,13 +56,13 @@ trait HttpExternalConnector {
           else
             problemDeserializer.deserialize(mediaType, TextBody(body.data.asString))
         }
-      case None =>
+      case None ⇒
         UnspecifiedProblem(s"""Event endpoint "XXXX" returned an empty response. Status code ${response.status}.""").failure
     }
 
 }
 
-trait RequestsWithEntity { self: HttpExternalConnector =>
+trait RequestsWithEntity { self: HttpExternalConnector ⇒
   def createEntityRequest[T: HttpSerializer](payload: T, settings: EntityRequestSettings): AlmValidation[HttpRequest] = {
     val serializer = implicitly[HttpSerializer[T]]
     for {
@@ -73,25 +73,25 @@ trait RequestsWithEntity { self: HttpExternalConnector =>
       headers = Nil,
       entity =
         serialized match {
-          case TextBody(data) => HttpEntity(ContentType(settings.contentMediaType), data)
-          case BinaryBody(data) => HttpEntity(ContentType(settings.contentMediaType), data)
+          case TextBody(data) ⇒ HttpEntity(ContentType(settings.contentMediaType), data)
+          case BinaryBody(data) ⇒ HttpEntity(ContentType(settings.contentMediaType), data)
         })
   }
 }
 
-trait AwaitingEntityResponse { self: HttpExternalConnector =>
+trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
   def evaluateEntityResponse[T: HttpDeserializer](response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[T] = {
     if (acceptAsSuccess(response.status))
       deserializeEntity[T](response)
     else
       deserializeProblem(response).fold(
-        fail => SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
-        succ => succ.failure)
+        fail ⇒ SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
+        succ ⇒ succ.failure)
   }
 
   def deserializeEntity[T: HttpDeserializer](response: HttpResponse): AlmValidation[T] =
     (response.entity.toOption match {
-      case Some(body) =>
+      case Some(body) ⇒
         val mediaType = body.contentType.mediaType.toAlmMediaType
         if (mediaType == AlmMediaTypes.`text/plain`)
           UnspecifiedProblem(s"Expected an entity but received a text message on status code ${response.status}: ${body.asString}").failure
@@ -103,15 +103,15 @@ trait AwaitingEntityResponse { self: HttpExternalConnector =>
           else
             deserializer.deserialize(mediaType ,TextBody(body.data.asString))
         }
-      case None =>
+      case None ⇒
         UnspecifiedProblem(s"""Expected an entity from endpoint "XXXX" there was no content. Status code ${response.status}.""").failure
-    }).leftMap { innerProb =>
+    }).leftMap { innerProb ⇒
       val headers = response.headers.map(_.toString).mkString("\nHeaders:\n", "\n", "\n")
       UnspecifiedProblem(s"""A problem occured handling the response.$headers""", cause = Some(innerProb))
     }
 }
 
-trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntity =>
+trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntity ⇒
   def publishToExternalEndpoint[T: HttpSerializer](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmFuture[(T, FiniteDuration)] =
     for {
       request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)
@@ -124,12 +124,12 @@ trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntit
       response.success
     else
       deserializeProblem(response).fold(
-        fail => SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
-        succ => succ.failure)
+        fail ⇒ SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
+        succ ⇒ succ.failure)
   }
 }
 
-trait HttpExternalQuery { self: HttpExternalConnector with AwaitingEntityResponse =>
+trait HttpExternalQuery { self: HttpExternalConnector with AwaitingEntityResponse ⇒
   def createSimpleQueryRequest(settings: RequestSettings): HttpRequest =
     HttpRequest(
       method = settings.method,
@@ -144,7 +144,7 @@ trait HttpExternalQuery { self: HttpExternalConnector with AwaitingEntityRespons
     } yield (entity, resonseAndTime._2)
 }
 
-trait HttpExternalConversation { self: HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse =>
+trait HttpExternalConversation { self: HttpExternalConnector with RequestsWithEntity with AwaitingEntityResponse ⇒
   def conversationWithExternalEndpoint[T: HttpSerializer, U: HttpDeserializer](payload: T, settings: EntityRequestSettings)(implicit problemDeserializer: HttpDeserializer[Problem]): AlmFuture[(U, FiniteDuration)] =
     for {
       request <- AlmFuture(createEntityRequest(payload, settings))(serializationExecutionContext)

@@ -5,11 +5,11 @@
 //import riftwarp._
 //import almhirt.common._
 //
-//trait TemplatePart[U] { self =>
+//trait TemplatePart[U] { self ⇒
 //  type TagetType
 //  def label: String
-//  def getValue: U => TagetType
-//  def createWarpElement : (U, WarpPackers) => AlmValidation[WarpElement]
+//  def getValue: U ⇒ TagetType
+//  def createWarpElement : (U, WarpPackers) ⇒ AlmValidation[WarpElement]
 //}
 //
 //object TemplatePart {
@@ -21,7 +21,7 @@
 //    
 //}
 //
-//trait TemplateCombinator[T <: TemplatePart[U], U] { self : T =>
+//trait TemplateCombinator[T <: TemplatePart[U], U] { self : T ⇒
 //  def ~[V <: TemplatePart[U]](other: V): Template[T :: V :: HNil, U] =
 //    TemplatePart.combine(self, other)
 //    
@@ -37,22 +37,22 @@
 //
 //}
 //
-//class StringPart[U]private (val label: String, val getValue: U => String) extends TemplatePart[U] with TemplateCombinator[StringPart[U], U] {
+//class StringPart[U]private (val label: String, val getValue: U ⇒ String) extends TemplatePart[U] with TemplateCombinator[StringPart[U], U] {
 //  type TagetType = String
-//  override def createWarpElement = (u: U, packers: WarpPackers) => WarpElement(label, Some(WarpString(getValue(u)))).success
+//  override def createWarpElement = (u: U, packers: WarpPackers) ⇒ WarpElement(label, Some(WarpString(getValue(u)))).success
 //}
 //
 //object StringPart {
-//  def apply[U](theLabel: String, getter: U => String) = 
+//  def apply[U](theLabel: String, getter: U ⇒ String) = 
 //    new StringPart[U](theLabel, getter)
 //}
 //
-//class IntPart[U]private (val label: String, val getValue: U => Int) extends TemplatePart[U] with TemplateCombinator[IntPart[U], U] {
+//class IntPart[U]private (val label: String, val getValue: U ⇒ Int) extends TemplatePart[U] with TemplateCombinator[IntPart[U], U] {
 //  type TagetType = Int
-//  override def createWarpElement = (u: U, packers: WarpPackers) => WarpElement(label, Some(WarpInt(getValue(u)))).success
+//  override def createWarpElement = (u: U, packers: WarpPackers) ⇒ WarpElement(label, Some(WarpInt(getValue(u)))).success
 //}
 //
 //object IntPart {
-//  def apply[U](theLabel: String, getter: U => Int) = 
+//  def apply[U](theLabel: String, getter: U ⇒ Int) = 
 //    new IntPart[U](theLabel, getter)
 //}

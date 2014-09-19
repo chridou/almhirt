@@ -26,22 +26,22 @@ trait ActorConsumerHttpPublisher[T] extends ActorSubscriber with ActorLogging wi
   final override val requestStrategy = ZeroRequestStrategy
 
   final override def receive: Receive = {
-    case ActorSubscriberMessage.OnNext(element) =>
+    case ActorSubscriberMessage.OnNext(element) ⇒
       element.castTo[T].fold(
-        fail => log.warning(s"Received unprocessable item $element"),
-        typedElem => {
-          publishOverWire(typedElem).onComplete { res =>
+        fail ⇒ log.warning(s"Received unprocessable item $element"),
+        typedElem ⇒ {
+          publishOverWire(typedElem).onComplete { res ⇒
             res match {
-              case scalaz.Success(_) =>
+              case scalaz.Success(_) ⇒
                 () // We are some kind of "Fire&Forget"
-              case scalaz.Failure(prob) =>
+              case scalaz.Failure(prob) ⇒
                 log.error(s"Failed to transmit an element over the wire:\n$prob")
             }
             self ! Processed
           }
         })
         
-    case Processed =>
+    case Processed ⇒
       request(1)
   }
 

@@ -23,33 +23,33 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
 
   protected override final def getPrimitiveRepr(prim: WarpPrimitive): BSONValue =
     prim match {
-      case WarpBoolean(value) => BSONBoolean(value)
-      case WarpString(value) => BSONString(value)
-      case WarpByte(value) => BSONInteger(value.toInt)
-      case WarpShort(value) => BSONInteger(value.toInt)
-      case WarpInt(value) => BSONInteger(value)
-      case WarpLong(value) => BSONLong(value)
-      case WarpBigInt(value) => BSONString(value.toString)
-      case WarpFloat(value) => BSONDouble(value)
-      case WarpDouble(value) => BSONDouble(value)
-      case WarpBigDecimal(value) => BSONString(value.toString)
-      case WarpUuid(value) => BsonConverter.uuidToBson(value)
-      case WarpUri(value) => BSONString(value.toString)
-      case WarpDateTime(value) => BSONString(value.toString)
-      case WarpLocalDateTime(value) => BSONTimestamp(value.toDateTime(DateTimeZone.UTC).getMillis())
-      case WarpDuration(value) => BSONLong(value.toNanos)
+      case WarpBoolean(value) ⇒ BSONBoolean(value)
+      case WarpString(value) ⇒ BSONString(value)
+      case WarpByte(value) ⇒ BSONInteger(value.toInt)
+      case WarpShort(value) ⇒ BSONInteger(value.toInt)
+      case WarpInt(value) ⇒ BSONInteger(value)
+      case WarpLong(value) ⇒ BSONLong(value)
+      case WarpBigInt(value) ⇒ BSONString(value.toString)
+      case WarpFloat(value) ⇒ BSONDouble(value)
+      case WarpDouble(value) ⇒ BSONDouble(value)
+      case WarpBigDecimal(value) ⇒ BSONString(value.toString)
+      case WarpUuid(value) ⇒ BsonConverter.uuidToBson(value)
+      case WarpUri(value) ⇒ BSONString(value.toString)
+      case WarpDateTime(value) ⇒ BSONString(value.toString)
+      case WarpLocalDateTime(value) ⇒ BSONTimestamp(value.toDateTime(DateTimeZone.UTC).getMillis())
+      case WarpDuration(value) ⇒ BSONLong(value.toNanos)
     }
 
   protected override def getObjectRepr(warpObject: WarpObject): BSONDocument = {
     val head: Vector[(String, BSONValue)] =
-      warpObject.warpDescriptor.map(rd => (WarpDescriptor.defaultKey -> BSONString(rd.toParsableString()))).toVector
+      warpObject.warpDescriptor.map(rd ⇒ (WarpDescriptor.defaultKey -> BSONString(rd.toParsableString()))).toVector
 
     val elements =
       head ++ (
         if (warpObject.elements.isEmpty)
           Vector.empty[(String, BSONValue)]
         else
-          warpObject.elements.map(elem => createElemRepr(elem)).flatten)
+          warpObject.elements.map(elem ⇒ createElemRepr(elem)).flatten)
 
     BSONDocument(elements)
   }
@@ -64,7 +64,7 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
     BSONArray(tuple._1, tuple._2, tuple._3)
 
   protected override def foldAssocRepr(assoc: Traversable[(BSONValue, BSONValue)]): BSONValue =
-    BSONArray(assoc.map(x => foldTuple2Reprs(x)))
+    BSONArray(assoc.map(x ⇒ foldTuple2Reprs(x)))
 
   //@tailrec
   protected override def foldTreeRepr(tree: scalaz.Tree[BSONValue]): BSONValue =
@@ -77,5 +77,5 @@ object ToBsonDematerializer extends DematerializerTemplate[BSONValue] {
     foldByteArrayRepr(bytes)
 
   private def createElemRepr(elem: WarpElement): Option[(String, BSONValue)] =
-    elem.value map (v => elem.label -> transform(v))
+    elem.value map (v ⇒ elem.label -> transform(v))
 }

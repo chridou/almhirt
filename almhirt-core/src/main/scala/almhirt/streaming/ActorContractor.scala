@@ -25,7 +25,7 @@ trait ActorContractor[TElement] extends Actor {
    */
   protected def signContract(broker: StreamBroker[TElement]) {
     stockroom match {
-      case None =>
+      case None ⇒
         broker.signContract(new SuppliesContractor[TElement] {
           def onProblem(problem: Problem) {
             self ! OnBrokerProblem(problem)
@@ -44,25 +44,25 @@ trait ActorContractor[TElement] extends Actor {
             self ! OnContractExpired
           }
         })
-      case Some(_) =>
+      case Some(_) ⇒
         throw new Exception("We are already contracted. You cannot sign more than one contract.")
     }
   }
 
   protected def offer(amount: Int) {
     stockroom match {
-      case Some(sr) =>
+      case Some(sr) ⇒
         sr.offerSupplies(amount)
-      case None =>
+      case None ⇒
         self ! DeliveryJobFailed(IllegalOperationProblem("No contract signed. Please sign a contract with your favorite local broker."))
     }
   }
 
   protected def deliver(items: Seq[TElement]) {
     stockroom match {
-      case Some(sr) =>
+      case Some(sr) ⇒
         sr.deliverSupplies(items)
-      case None =>
+      case None ⇒
         self ! DeliveryJobFailed(IllegalOperationProblem("No contract signed. Please sign a contract with your favorite local broker."))
     }
   }

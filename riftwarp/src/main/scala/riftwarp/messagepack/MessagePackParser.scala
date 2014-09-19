@@ -12,7 +12,7 @@ object MessagePackParser {
     try {
       parseUnsafe(reader).success
     } catch {
-      case scala.util.control.NonFatal(exn) => ParsingProblem(s"Could not parse MessagePack: ${exn.getMessage()}", cause = Some(exn)).failure
+      case scala.util.control.NonFatal(exn) ⇒ ParsingProblem(s"Could not parse MessagePack: ${exn.getMessage()}", cause = Some(exn)).failure
     }
   }
 
@@ -89,29 +89,29 @@ object MessagePackParser {
   def parseSpecialType(formatByte: Int, reader: BinaryReader): WarpPackage = {
     val (customType, size) = MessagePackTypecodes.parseExtHeader(formatByte, reader)
     customType match {
-      case RiftwarpTypecodes.ObjectCode =>
+      case RiftwarpTypecodes.ObjectCode ⇒
         parseObject(size, reader)
-      case RiftwarpTypecodes.BigIntCode =>
+      case RiftwarpTypecodes.BigIntCode ⇒
         parseBigInt(size, reader)
-      case RiftwarpTypecodes.BigDecimalCode =>
+      case RiftwarpTypecodes.BigDecimalCode ⇒
         parseBigDecimal(size, reader)
-      case RiftwarpTypecodes.UuidCode =>
+      case RiftwarpTypecodes.UuidCode ⇒
         parseUuid(reader)
-      case RiftwarpTypecodes.UriCode =>
+      case RiftwarpTypecodes.UriCode ⇒
         parseUri(size, reader)
-      case RiftwarpTypecodes.DateTimeCode =>
+      case RiftwarpTypecodes.DateTimeCode ⇒
         parseDateTime(size, reader)
-      case RiftwarpTypecodes.LocalDateTimeCode =>
+      case RiftwarpTypecodes.LocalDateTimeCode ⇒
         parseLocalDateTime(size, reader)
-      case RiftwarpTypecodes.Tuple2Code =>
+      case RiftwarpTypecodes.Tuple2Code ⇒
         parseTuple2(size, reader)
-      case RiftwarpTypecodes.Tuple3Code =>
+      case RiftwarpTypecodes.Tuple3Code ⇒
         parseTuple3(size, reader)
-      case RiftwarpTypecodes.DurationCode =>
+      case RiftwarpTypecodes.DurationCode ⇒
         parseDuration(reader)
-      case RiftwarpTypecodes.TreeCode =>
+      case RiftwarpTypecodes.TreeCode ⇒
         parseTree(size, reader)
-      case x =>
+      case x ⇒
         throw new Exception(s"$x is not a valid custom type for a WarpPackage encoded in a MessagePack 'ext' type")
     }
   }
@@ -169,15 +169,15 @@ object MessagePackParser {
 
   private def parseTreeNode(nestedTreeCollection: WarpPackage): Tree[WarpPackage] = {
     nestedTreeCollection match {
-      case WarpCollection(Vector(label, WarpCollection(subforest))) =>
+      case WarpCollection(Vector(label, WarpCollection(subforest))) ⇒
         label.node(subforest.map(parseTreeNode): _*)
-      case WarpCollection(items @ Vector(a, b)) =>
+      case WarpCollection(items @ Vector(a, b)) ⇒
         throw new Exception(
           s"""	|A tree node must be a collection of size 2 with the first element representing the label and the second representing the subforest. 
           		|Received a WarpCollection of size ${items.size}.
           		|The first element is a "$a",
           		|the second is a "$b".""".stripMargin)
-      case x =>
+      case x ⇒
         throw new Exception(
           s"""A tree node must be a collection of size 2 with the first element representing the label and the second representing the subforest. Received a $x.""")
     }
@@ -207,15 +207,15 @@ object MessagePackParser {
       val identifier = readString(reader.readUnsignedByte, reader)
       val versionFormatByte = reader.readUnsignedByte
       val version: Option[Int] = versionFormatByte match {
-        case MessagePackTypecodes.Null =>
+        case MessagePackTypecodes.Null ⇒
           None
-        case _ =>
+        case _ ⇒
           val v = readInteger(versionFormatByte, reader).as[Int].resultOrEscalate
           Some(v)
       }
       WarpDescriptor(identifier, version)
     } catch {
-      case scala.util.control.NonFatal(exn) => throw new Exception("Could not parse WarpDescriptor", exn)
+      case scala.util.control.NonFatal(exn) ⇒ throw new Exception("Could not parse WarpDescriptor", exn)
     }
   }
 
@@ -224,14 +224,14 @@ object MessagePackParser {
       val label = readString(reader.readUnsignedByte, reader)
       val formatByte = reader.readUnsignedByte
       val value: Option[WarpPackage] = formatByte match {
-        case MessagePackTypecodes.Null =>
+        case MessagePackTypecodes.Null ⇒
           None
-        case formatByte =>
+        case formatByte ⇒
           Some(parseUnsafe(formatByte, reader))
       }
       WarpElement(label, value)
     } catch {
-      case scala.util.control.NonFatal(exn) => throw new Exception("Could not parse WarpElement", exn)
+      case scala.util.control.NonFatal(exn) ⇒ throw new Exception("Could not parse WarpElement", exn)
     }
   }
 
@@ -239,16 +239,16 @@ object MessagePackParser {
     try {
       val wdFormatByte = reader.readUnsignedByte
       val wd: Option[WarpDescriptor] = wdFormatByte match {
-        case MessagePackTypecodes.Null =>
+        case MessagePackTypecodes.Null ⇒
           None
-        case formatByte =>
+        case formatByte ⇒
           Some(parseWarpDescriptor(formatByte, reader))
       }
       val numElems = MessagePackTypecodes.parseMapHeader(reader.readUnsignedByte, reader)
       val elems = (for (n <- 0 until numElems) yield parseElement(reader))
       WarpObject(wd, elems.toVector)
     } catch {
-      case scala.util.control.NonFatal(exn) => throw new Exception("Could not parse WarpObject", exn)
+      case scala.util.control.NonFatal(exn) ⇒ throw new Exception("Could not parse WarpObject", exn)
     }
   }
 

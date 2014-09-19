@@ -19,29 +19,29 @@ object ToExplodedDematerializer extends Dematerializer[Any @@ Exploded] {
 
   private def transform(what: WarpPackage): Any =
     what match {
-      case prim: WarpPrimitive =>
+      case prim: WarpPrimitive ⇒
         prim.value
-      case obj: WarpObject =>
+      case obj: WarpObject ⇒
         getObjectRepr(obj)
-      case WarpCollection(items) =>
+      case WarpCollection(items) ⇒
         items.map(transform)
-      case WarpAssociativeCollection(items) =>
-        items.map(x => (transform(x._1), transform(x._2)))
-      case WarpTree(tree) =>
+      case WarpAssociativeCollection(items) ⇒
+        items.map(x ⇒ (transform(x._1), transform(x._2)))
+      case WarpTree(tree) ⇒
         tree.map(transform)
-      case WarpTuple2(a, b) =>
+      case WarpTuple2(a, b) ⇒
         (transform(a), transform(b))
-      case WarpTuple3(a, b, c) =>
+      case WarpTuple3(a, b, c) ⇒
         (transform(a), transform(b), transform(c))
-      case WarpBytes(bytes) =>
+      case WarpBytes(bytes) ⇒
         bytes
-      case WarpBlob(bytes) =>
+      case WarpBlob(bytes) ⇒
         bytes
     }
 
   private def getObjectRepr(warpObject: WarpObject): Map[String, Any] =
-    (warpObject.warpDescriptor.map(w => (WarpDescriptor.defaultKey, w.toParsableString())).toVector ++ warpObject.elements.map(we =>
-      we.value.map(v =>
+    (warpObject.warpDescriptor.map(w ⇒ (WarpDescriptor.defaultKey, w.toParsableString())).toVector ++ warpObject.elements.map(we ⇒
+      we.value.map(v ⇒
         (we.label, transform(v)))).flatten).toMap
 
 }

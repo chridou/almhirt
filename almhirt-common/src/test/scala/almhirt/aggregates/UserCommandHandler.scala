@@ -11,7 +11,7 @@ trait UserCommandHandler extends AggregateRootCommandHandler[User, UserCommand, 
     AlmFuture.compute(age >= 21)
 
   override def handleAggregateCommand(command: UserCommand, agg: AggregateRootLifecycle[User])(implicit cv: AggregateRootCommandValidator): AggregateCommandResult[User, UserEvent] =
-    cv.handleIfValid(command, agg) { (command, agg) =>
+    cv.handleIfValid(command, agg) { (command, agg) ⇒
       (agg, command) match {
         case (Vacat, CreateUser(_, aggId, aggVersion, surname, lastname)) ⇒
           create(aggId, surname, lastname).recordings.fold(

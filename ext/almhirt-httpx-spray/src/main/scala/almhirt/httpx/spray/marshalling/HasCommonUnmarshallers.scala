@@ -46,7 +46,7 @@ trait HasCommonUnmarshallers {
   implicit def problemsUnmarshaller: Unmarshaller[Seq[almhirt.common.Problem]]
 }
 
-trait CommonUnmarshallerInstances {self : HasCommonUnmarshallers =>
+trait CommonUnmarshallerInstances {self : HasCommonUnmarshallers ⇒
   def commonHttpSerializers: HasCommonHttpSerializers
   def commonContentTypeProviders: HasCommonContentTypeProviders
   

@@ -8,9 +8,9 @@ trait RiftWarpProblem extends ProblemType
 object RiftWarpProblem {
   def unapply(problem: SingleProblem): Option[RiftWarpProblem] =
     problem.problemType match {
-      case x: RiftWarpSerializationProblem.type => Some(x)
-      case x: RiftWarpDeserializationProblem.type => Some(x)
-      case _ => None
+      case x: RiftWarpSerializationProblem.type ⇒ Some(x)
+      case x: RiftWarpDeserializationProblem.type ⇒ Some(x)
+      case _ ⇒ None
     }
 }
 

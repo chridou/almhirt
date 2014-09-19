@@ -1,6 +1,6 @@
 package riftwarp.serialization.common
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import org.joda.time.LocalDateTime
 import scalaz._, Scalaz._
 import almhirt.common._
@@ -21,7 +21,7 @@ object CommandHeaderWarpPackaging extends WarpPacker[CommandHeader] with Registe
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandHeader] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id").flatMap(ValidatedCommandId(_))
         timestamp <- lookup.getAs[LocalDateTime]("timestamp")
@@ -33,13 +33,13 @@ object CommandHeaderWarpPackaging extends WarpPacker[CommandHeader] with Registe
 
 trait CommandWarpPackagingTemplate[TCommand <: Command] extends WarpPacker[TCommand] with RegisterableWarpUnpacker[TCommand]{
   override def pack(what: TCommand)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    (this.warpDescriptor ~> With("header", what.header, CommandHeaderWarpPackaging)).flatMap(obj =>
+    (this.warpDescriptor ~> With("header", what.header, CommandHeaderWarpPackaging)).flatMap(obj ⇒
       addCommandParams(what, obj))
   }
 
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TCommand] =
-    withFastLookUp(from) { lookup =>
-      lookup.getWith("header", CommandHeaderWarpPackaging).flatMap(header =>
+    withFastLookUp(from) { lookup ⇒
+      lookup.getWith("header", CommandHeaderWarpPackaging).flatMap(header ⇒
         extractCommandParams(lookup, header))
     }
   

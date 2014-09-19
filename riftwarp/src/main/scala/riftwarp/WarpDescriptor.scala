@@ -23,8 +23,8 @@ sealed class WarpDescriptor private (val identifier: String, val version: Option
 
   override def equals(other: Any) = {
     other match {
-      case that: WarpDescriptor => that.canEqual(WarpDescriptor.this) && identifier == that.identifier && version == that.version
-      case _ => false
+      case that: WarpDescriptor ⇒ that.canEqual(WarpDescriptor.this) && identifier == that.identifier && version == that.version
+      case _ ⇒ false
     }
   }
 
@@ -32,13 +32,13 @@ sealed class WarpDescriptor private (val identifier: String, val version: Option
 
   override def toString() = toString(";")
   def toString(versionDelim: String) = {
-    option.cata(version)(v => s"WarpDescriptor($identifier;$v)", s"WarpDescriptor($identifier;no version)")
+    option.cata(version)(v ⇒ s"WarpDescriptor($identifier;$v)", s"WarpDescriptor($identifier;no version)")
   }
 
   def toParsableString(versionDelim: String = ";") =
     version match {
-      case Some(v) => s"$identifier$versionDelim$v"
-      case None => s"$identifier"
+      case Some(v) ⇒ s"$identifier$versionDelim$v"
+      case None ⇒ s"$identifier"
     }
 }
 
@@ -57,12 +57,12 @@ object WarpDescriptor {
   def parse(toParse: String, versionDelim: String): AlmValidation[WarpDescriptor] = {
     val parts = toParse.split(versionDelim)
     parts match {
-      case Array(name) =>
+      case Array(name) ⇒
         WarpDescriptor(name, None).success
-      case Array(name, version) =>
+      case Array(name, version) ⇒
         val v = version.drop(1)
-        parseIntAlm(v).leftMap(_.withLabel("version")).map(v => WarpDescriptor(name, Some(v)))
-      case _ =>
+        parseIntAlm(v).leftMap(_.withLabel("version")).map(v ⇒ WarpDescriptor(name, Some(v)))
+      case _ ⇒
         ParsingProblem(s"""Not a valid WarpDescriptor format. The provided delimeter for name and version was "$versionDelim"""", Some(toParse)).failure
     }
   }

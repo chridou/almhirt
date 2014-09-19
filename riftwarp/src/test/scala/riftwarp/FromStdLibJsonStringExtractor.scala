@@ -19,24 +19,24 @@
 //  "FromStdLibJsonStringExtractor" when {
 //    "dematerializing an empty List of Integers" should {
 //      "extract the property" in {
-//        val list = FromStdLibJsonStringExtractor(list0Json, true).flatMap(extractor =>
+//        val list = FromStdLibJsonStringExtractor(list0Json, true).flatMap(extractor ⇒
 //          extractor.getManyPrimitives[List, Int]("list"))
 //        list.isSuccess should be(true)
 //      }
 //      "dematerialize the property correctly" in {
-//        val list = FromStdLibJsonStringExtractor(list0Json, true).flatMap(extractor =>
+//        val list = FromStdLibJsonStringExtractor(list0Json, true).flatMap(extractor ⇒
 //          extractor.getManyPrimitives[List, Int]("list")).forceResult
 //        list should equal(list0)
 //      }
 //    }
 //    "dematerializing a List of 4 Integers" should {
 //      "extract the property" in {
-//        val list = FromStdLibJsonStringExtractor(list1Json, true).flatMap(extractor =>
+//        val list = FromStdLibJsonStringExtractor(list1Json, true).flatMap(extractor ⇒
 //          extractor.getManyPrimitives[List, Int]("list"))
 //        list.isSuccess should be(true)
 //      }
 //      "dematerialize the property correctly" in {
-//        val list = FromStdLibJsonStringExtractor(list1Json, true).flatMap(extractor =>
+//        val list = FromStdLibJsonStringExtractor(list1Json, true).flatMap(extractor ⇒
 //          extractor.getManyPrimitives[List, Int]("list")).forceResult
 //        list should equal(list1)
 //      }

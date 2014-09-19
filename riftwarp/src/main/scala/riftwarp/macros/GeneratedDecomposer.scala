@@ -20,9 +20,9 @@ import riftwarp._
 //   
 //    val fields = Queue(
 //      tWhat.members
-//        .filter(m => m.isTerm && !m.isMethod && m.isPublic)
-//        .map(sym => sym.asTerm.getter)
-//        .filterNot(getter => getter == NoSymbol /*|| getter.name. == "warpDescriptor"*/).toSeq: _*)
+//        .filter(m ⇒ m.isTerm && !m.isMethod && m.isPublic)
+//        .map(sym ⇒ sym.asTerm.getter)
+//        .filterNot(getter ⇒ getter == NoSymbol /*|| getter.name. == "warpDescriptor"*/).toSeq: _*)
 //
 //    // private def getPri
 //    ???

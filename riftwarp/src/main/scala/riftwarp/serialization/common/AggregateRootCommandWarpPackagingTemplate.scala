@@ -13,12 +13,12 @@ trait AggregateRootCommandWarpPackagingTemplate[TCommand <: AggregateRootCommand
     (this.warpDescriptor ~>
       With("header", what.header, CommandHeaderWarpPackaging) ~>
       P("aggId", what.aggId.value) ~>
-      P("aggVersion", what.aggVersion.value)).flatMap(obj =>
+      P("aggVersion", what.aggVersion.value)).flatMap(obj ⇒
         addCommandParams(what, obj))
   }
 
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TCommand] =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         header <- lookup.getWith("header", CommandHeaderWarpPackaging)
         id <- lookup.getAs[String]("aggId").flatMap(ValidatedAggregatedRootId(_))

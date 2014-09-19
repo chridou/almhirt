@@ -7,10 +7,10 @@ sealed trait DeliveryStatus { def isSuccess: Boolean }
 
 object DeliveryStatus {
   implicit class DeliveryStatusOps(self: DeliveryStatus) {
-    def onFailure(f: Problem => Unit) {
+    def onFailure(f: Problem ⇒ Unit) {
       self match {
-        case d: DeliveryJobFailed => f(d.problem)
-        case _ => ()
+        case d: DeliveryJobFailed ⇒ f(d.problem)
+        case _ ⇒ ()
       }
     }
   }
@@ -32,9 +32,9 @@ object DeliveryJobDone {
 
   def unapply(d: DeliveryStatus): Option[Option[TrackingTicket]] =
     d match {
-      case UntrackedDeliveryJobDone => Some(None)
-      case TrackedDeliveryJobDone(ticket) => Some(Some(ticket))
-      case _ => None
+      case UntrackedDeliveryJobDone ⇒ Some(None)
+      case TrackedDeliveryJobDone(ticket) ⇒ Some(Some(ticket))
+      case _ ⇒ None
     }
 }
 
@@ -53,8 +53,8 @@ object DeliveryJobFailed {
 
   def unapply(d: DeliveryStatus): Option[(Problem, Option[TrackingTicket])] =
     d match {
-      case UntrackedDeliveryJobFailed(problem) => Some((problem, None))
-      case TrackedDeliveryJobFailed(problem, ticket) => Some((problem, Some(ticket)))
-      case _ => None
+      case UntrackedDeliveryJobFailed(problem) ⇒ Some((problem, None))
+      case TrackedDeliveryJobFailed(problem, ticket) ⇒ Some((problem, Some(ticket)))
+      case _ ⇒ None
     }
 }

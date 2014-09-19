@@ -18,7 +18,7 @@ object Dematerializers {
   
   implicit class DematerializersOps(self: Dematerializers) {
     def dematerialize(channel: String, what: WarpPackage, options: Map[String, Any] = Map.empty): AlmValidation[Any] = {
-      self.get(channel).map(f => f(what, options))
+      self.get(channel).map(f ⇒ f(what, options))
     }
 
     def dematerializeTyped[T](channel: String, what: WarpPackage, options: Map[String, Any] = Map.empty)(implicit tag: ClassTag[T]): AlmValidation[T] = {

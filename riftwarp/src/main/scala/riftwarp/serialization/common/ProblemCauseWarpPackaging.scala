@@ -33,8 +33,8 @@ object ThrowableRepresentationPacker extends WarpPacker[ThrowableRepresentation]
   val alternativeWarpDescriptors = WarpDescriptor(classOf[ThrowableRepresentation]) :: Nil
   override def pack(what: ThrowableRepresentation)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case hat: HasAThrowable => HasAThrowablePacker(hat)
-      case hatd: HasAThrowableDescribed => HasAThrowableDescribedPacker(hatd)
+      case hat: HasAThrowable ⇒ HasAThrowablePacker(hat)
+      case hatd: HasAThrowableDescribed ⇒ HasAThrowableDescribedPacker(hatd)
     }
   }
 }
@@ -60,8 +60,8 @@ object ProblemCausePacker extends WarpPacker[ProblemCause] with RegisterableWarp
   val alternativeWarpDescriptors = WarpDescriptor(classOf[ProblemCause]) :: Nil
   override def pack(what: ProblemCause)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
-      case cip: CauseIsProblem => CauseIsProblemPacker(cip)
-      case cit: CauseIsThrowable => CauseIsThrowablePacker(cit)
+      case cip: CauseIsProblem ⇒ CauseIsProblemPacker(cip)
+      case cit: CauseIsThrowable ⇒ CauseIsThrowablePacker(cit)
     }
   }
 }
@@ -70,7 +70,7 @@ object HasAThrowableDescribedUnpacker extends RegisterableWarpUnpacker[HasAThrow
   val warpDescriptor = WarpDescriptor(classOf[HasAThrowableDescribed].getSimpleName())
   val alternativeWarpDescriptors = WarpDescriptor(classOf[HasAThrowableDescribed]) :: Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[HasAThrowableDescribed] = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         classname <- lookup.getAs[String]("classname")
         message <- lookup.getAs[String]("message")
@@ -85,8 +85,8 @@ object CauseIsThrowableUnpacker extends RegisterableWarpUnpacker[CauseIsThrowabl
   val warpDescriptor = WarpDescriptor(classOf[CauseIsThrowable].getSimpleName())
   val alternativeWarpDescriptors = WarpDescriptor(classOf[CauseIsThrowable]) :: Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CauseIsThrowable] = {
-    withFastLookUp(from) { lookup =>
-      lookup.getWith("representation", HasAThrowableDescribedUnpacker).map(desc =>
+    withFastLookUp(from) { lookup ⇒
+      lookup.getWith("representation", HasAThrowableDescribedUnpacker).map(desc ⇒
         CauseIsThrowable(desc))
     }
   }
@@ -96,8 +96,8 @@ object CauseIsProblemUnpacker extends RegisterableWarpUnpacker[CauseIsProblem] {
   val warpDescriptor = WarpDescriptor(classOf[CauseIsProblem].getSimpleName())
   val alternativeWarpDescriptors = WarpDescriptor(classOf[CauseIsProblem]) :: Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CauseIsProblem] = {
-    withFastLookUp(from) { lookup =>
-      lookup.getTyped[Problem]("problem").map(prob =>
+    withFastLookUp(from) { lookup ⇒
+      lookup.getTyped[Problem]("problem").map(prob ⇒
         CauseIsProblem(prob))
     }
   }

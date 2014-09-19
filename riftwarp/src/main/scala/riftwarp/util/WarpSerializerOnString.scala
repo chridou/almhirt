@@ -1,6 +1,6 @@
 package riftwarp.util
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -19,7 +19,7 @@ import scala.reflect.ClassTag
 //    } yield (typedSerialized, serialized._2)
 //
 //  override def serialize(channel: String)(what: TIn, options: Map[String, Any] = Map.empty): AlmValidation[(String, Option[String])] =
-//    serializeWithRiftWarp(what, channel, options).map(x => (x._1, Some(x._2.toParsableString())))
+//    serializeWithRiftWarp(what, channel, options).map(x ⇒ (x._1, Some(x._2.toParsableString())))
 //}
 //
 //class WarpDeserializerFromString[TOut <: Any](riftWarp: RiftWarp)(implicit tag: ClassTag[TOut]) extends CanDeserialize[TOut] {

@@ -13,7 +13,7 @@ object Futures {
                                           
  
  
- (1 to 109).map(_ => ccuad.getUniqueString).toList//> res0: List[String] = List(i4gV23baR4iUhzK8g8mvPQ, MuziFr6ZRWKjNaEdgjz_yA, Xl
+ (1 to 109).map(_ ⇒ ccuad.getUniqueString).toList//> res0: List[String] = List(i4gV23baR4iUhzK8g8mvPQ, MuziFr6ZRWKjNaEdgjz_yA, Xl
                                                   //| iBpLAIQOCFPmPMmZ8arw, arvWSeQ7T9uN6_GzPzNFLg, tJK-szgtT1moH1G-1BLv4A, ga_e4P
                                                   //| pHTfStkZBcyAc2NA, 91w_pcJuQbq0YUUfbW6qhQ, CdJaxFwrQdWLSq-tRWnqmQ, MkC6tNCNSv
                                                   //| ONfE_6xm-QWA, WmjX-d3QSeW4TGo824K_cA, 9Djl1ca6Qkydt2zBsu-9gw, _WbX-o56Qh-h5X

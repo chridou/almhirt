@@ -16,7 +16,7 @@ trait WarpPacker[T] extends BlindWarpPacker  {
   override final def packBlind(what: Any)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = unsafe { pack(what.asInstanceOf[T]) }
 }
 
-trait SimpleWarpPacker[T] { self: WarpPacker[T] =>
+trait SimpleWarpPacker[T] { self: WarpPacker[T] ⇒
   def packSimple(what: T): AlmValidation[WarpPackage] = apply(what)(WarpPackers.NoWarpPackers)
 }
 

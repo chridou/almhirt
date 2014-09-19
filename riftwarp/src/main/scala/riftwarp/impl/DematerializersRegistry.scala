@@ -15,8 +15,8 @@ class DematerializersRegistry extends Dematerializers {
 
   override def get(channel: String): AlmValidation[Dematerializer[Any]] =
     dematerializers.get(channel) match {
-      case null => NoSuchElementProblem(s"""No Dematerialzer found  found for channel "$channel".""").failure
-      case x => x.success
+      case null ⇒ NoSuchElementProblem(s"""No Dematerialzer found  found for channel "$channel".""").failure
+      case x ⇒ x.success
     }
 
 }

@@ -51,7 +51,7 @@ package almhirt.corex.mongo.domaineventlog
 //
 //  var driver = new MongoDriver(theAlmhirt.actorSystem)
 //
-//  override def createDomainEventLog(testId: Int): (ActorRef, () => Unit) = {
+//  override def createDomainEventLog(testId: Int): (ActorRef, () ⇒ Unit) = {
 //    import almhirt.testkit.AR1.Serialization._
 //    import almhirt.configuration._
 //    val theConfig = config(testId).v[Config]("almhirt.mongo-domain-event-log").resultOrEscalate
@@ -62,6 +62,6 @@ package almhirt.corex.mongo.domaineventlog
 //    val props = MongoDomainEventLog.props(driver, serializer.toSerializationFunc, serializer.toDeserializationFunc, None, theConfig, theAlmhirt).resultOrEscalate
 //
 //    (system.actorOf(props, "domaineventlog_" + testId.toString),
-//      () => ())
+//      () ⇒ ())
 //  }
 //}

@@ -11,9 +11,9 @@ object Helper {
   def extractChannel(mediaTypeValue: String): String = {
     val subtype = mediaTypeValue.split('/')(1)
     val potChannel = subtype.split('+') match {
-      case Array(x) => x
-      case Array(_, y) => y
-      case _ => throw new Exception(s"""Invalid media type: "$mediaTypeValue"""")
+      case Array(x) ⇒ x
+      case Array(_, y) ⇒ y
+      case _ ⇒ throw new Exception(s"""Invalid media type: "$mediaTypeValue"""")
     }
     if (potChannel.startsWith("x-"))
       potChannel.drop(2)
@@ -29,12 +29,12 @@ object Helper {
     try {
       validMediaTypeChannels.contains(extractChannel(mediaType))
     } catch {
-      case NonFatal(exn) => false
+      case NonFatal(exn) ⇒ false
     }
 
   def validateMediaTypes(mediaTypes: Seq[MediaType]): AlmValidation[Seq[MediaType]] = {
     val res =
-      mediaTypes.map(mediaType =>
+      mediaTypes.map(mediaType ⇒
         if (isValidMediaType(mediaType))
           mediaType.success
         else

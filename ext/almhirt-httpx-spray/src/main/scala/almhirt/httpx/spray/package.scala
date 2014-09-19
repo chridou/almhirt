@@ -24,15 +24,15 @@ package object spray {
 
   implicit def almEncoding2SprayEncoding(ac: AlmCharacterEncoding): HttpCharset = {
     ac match {
-      case AlmCharacterEncodings.`UTF-8` => HttpCharsets.`UTF-8`
+      case AlmCharacterEncodings.`UTF-8` ⇒ HttpCharsets.`UTF-8`
     }
   }
 
   implicit def almMediaType2SprayContentType(amt: AlmMediaType)(implicit defaultEncoding: AlmCharacterEncoding): ContentType = {
     val mt = almMediaType2SprayMediaType(amt)
     amt.streamRepresentation match {
-      case BinaryMedia => ContentType(mt, None)
-      case TextualMedia(preferredMt) =>
+      case BinaryMedia ⇒ ContentType(mt, None)
+      case TextualMedia(preferredMt) ⇒
         val enc = preferredMt.map(almEncoding2SprayEncoding(_)) | defaultEncoding
         ContentType(mt, Some(enc))
     }

@@ -12,7 +12,7 @@ trait AlmHttpProblemTerminator {
   def terminateProblem(ctx: RequestContext, problem: Problem)(implicit problemMarshaller: Marshaller[Problem])
 }
 
-trait AlmHttpEndpoint { self: HasProblemMarshaller =>
+trait AlmHttpEndpoint { self: HasProblemMarshaller ⇒
 
   sealed trait PostMappedResult[+T]
   case class SuccessContent[T](payload: T, status: StatusCode = StatusCodes.OK) extends PostMappedResult[T]
@@ -23,8 +23,8 @@ trait AlmHttpEndpoint { self: HasProblemMarshaller =>
   implicit protected class AlmContext1Ops(ctx: RequestContext) {
     def completeAlm[T: Marshaller](successStatus: StatusCode, res: AlmValidation[T])(implicit problemTerminator: AlmHttpProblemTerminator): Unit =
       res.fold(
-        fail => problemTerminator.terminateProblem(ctx, fail),
-        succ => ctx.complete(successStatus, succ))
+        fail ⇒ problemTerminator.terminateProblem(ctx, fail),
+        succ ⇒ ctx.complete(successStatus, succ))
 
     def completeAlmOk[T: Marshaller](res: AlmValidation[T])(implicit problemTerminator: AlmHttpProblemTerminator): Unit =
       ctx.completeAlm(StatusCodes.OK, res)
@@ -34,8 +34,8 @@ trait AlmHttpEndpoint { self: HasProblemMarshaller =>
 
     def completeAlmF[T: Marshaller](successStatus: StatusCode, res: AlmFuture[T])(implicit problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext): Unit =
       res.onComplete(
-        fail => problemTerminator.terminateProblem(ctx, fail),
-        succ => ctx.complete(successStatus, succ))
+        fail ⇒ problemTerminator.terminateProblem(ctx, fail),
+        succ ⇒ ctx.complete(successStatus, succ))
 
     def completeAlmOkF[T: Marshaller](res: AlmFuture[T])(implicit problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext): Unit =
       ctx.completeAlmF(StatusCodes.OK, res)
@@ -46,7 +46,7 @@ trait AlmHttpEndpoint { self: HasProblemMarshaller =>
 
   implicit protected class AlmContext2Ops(ctx: RequestContext) {
     def completeAlmPF[T: Marshaller, U](successStatus: StatusCode, res: AlmValidation[U], pf: PartialFunction[U, AlmValidation[T]]): Unit =
-      ctx.completeAlm(successStatus, res.flatMap(u => pf(u)))
+      ctx.completeAlm(successStatus, res.flatMap(u ⇒ pf(u)))
 
     def completeAlmOkPF[T: Marshaller, U](res: AlmValidation[U], pf: PartialFunction[U, AlmValidation[T]]): Unit =
       ctx.completeAlmPF(StatusCodes.OK, res, pf)
@@ -55,7 +55,7 @@ trait AlmHttpEndpoint { self: HasProblemMarshaller =>
       ctx.completeAlmPF(StatusCodes.Accepted, res, pf)
 
     def completeAlmFPF[T: Marshaller, U](successStatus: StatusCode, res: AlmFuture[U], pf: PartialFunction[U, AlmValidation[T]])(implicit executionContext: ExecutionContext): Unit =
-      ctx.completeAlmF(successStatus, res.mapV(u => pf(u)))
+      ctx.completeAlmF(successStatus, res.mapV(u ⇒ pf(u)))
 
     def completeAlmOkFPF[T: Marshaller, U](res: AlmFuture[U], pf: PartialFunction[U, AlmValidation[T]])(implicit executionContext: ExecutionContext): Unit =
       ctx.completeAlmFPF(StatusCodes.OK, res, pf)
@@ -67,22 +67,22 @@ trait AlmHttpEndpoint { self: HasProblemMarshaller =>
   implicit protected class AlmContext3Ops(ctx: RequestContext) {
     def completeAlmPostMapped[T: Marshaller, U](res: AlmValidation[U], pf: PartialFunction[U, PostMappedResult[T]])(implicit problemTerminator: AlmHttpProblemTerminator): Unit =
       res fold (
-        fail => problemTerminator.terminateProblem(ctx,fail),
-        succ => pf(succ) match {
-          case SuccessContent(payload, status) => ctx.complete(status, payload)
-          case NoContent(status) => ctx.complete(status, "")
-          case FailureContent(payload, status) => ctx.complete(status, payload)
-          case ProblemContent(problem) => problemTerminator.terminateProblem(ctx, problem)
+        fail ⇒ problemTerminator.terminateProblem(ctx,fail),
+        succ ⇒ pf(succ) match {
+          case SuccessContent(payload, status) ⇒ ctx.complete(status, payload)
+          case NoContent(status) ⇒ ctx.complete(status, "")
+          case FailureContent(payload, status) ⇒ ctx.complete(status, payload)
+          case ProblemContent(problem) ⇒ problemTerminator.terminateProblem(ctx, problem)
         })
 
     def completeAlmPostMappedF[T: Marshaller, U](res: AlmFuture[U], pf: PartialFunction[U, PostMappedResult[T]])(implicit problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext): Unit =
       res fold (
-        fail => problemTerminator.terminateProblem(ctx,fail),
-        succ => pf(succ) match {
-          case SuccessContent(payload, status) => ctx.complete(status, payload)
-          case NoContent(status) => ctx.complete(status, "")
-          case FailureContent(payload, status) => ctx.complete(status, payload)
-          case ProblemContent(problem) => problemTerminator.terminateProblem(ctx, problem)
+        fail ⇒ problemTerminator.terminateProblem(ctx,fail),
+        succ ⇒ pf(succ) match {
+          case SuccessContent(payload, status) ⇒ ctx.complete(status, payload)
+          case NoContent(status) ⇒ ctx.complete(status, "")
+          case FailureContent(payload, status) ⇒ ctx.complete(status, payload)
+          case ProblemContent(problem) ⇒ problemTerminator.terminateProblem(ctx, problem)
         })
   }
 

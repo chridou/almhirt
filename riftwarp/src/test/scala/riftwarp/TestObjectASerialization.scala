@@ -30,7 +30,7 @@ object TestObjectAUnpacker extends RegisterableWarpUnpacker[TestObjectA] {
   val warpDescriptor = WarpDescriptor(classOf[TestObjectA])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         bytes <- lookup.getBytes("bytes")
         blob <- lookup.getBytes("blob")
@@ -69,7 +69,7 @@ object PrimitiveTypesUnpacker extends RegisterableWarpUnpacker[PrimitiveTypes] {
   val warpDescriptor = WarpDescriptor(classOf[PrimitiveTypes])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) =
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         str <- lookup.getAs[String]("str")
         bool <- lookup.getAs[Boolean]("bool")
@@ -104,7 +104,7 @@ object PrimitiveListMAsUnpacker extends RegisterableWarpUnpacker[PrimitiveListMA
   val warpDescriptor = WarpDescriptor(classOf[PrimitiveListMAs])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         listString <- lookup.getPrimitives[String]("listString").map(_.toList)
         listInt <- lookup.getPrimitives[Int]("listInt").map(_.toList)
@@ -132,7 +132,7 @@ object ComplexMAsUnpacker extends RegisterableWarpUnpacker[ComplexMAs] {
   val warpDescriptor = WarpDescriptor(classOf[ComplexMAs])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         addresses1 <- lookup.getManyWith("addresses1", TestAddressUnpacker).map(_.toList)
         addresses2 <- lookup.getManyTyped[TestAddress]("addresses2")
@@ -158,7 +158,7 @@ object PrimitiveMapsUnpacker extends RegisterableWarpUnpacker[PrimitiveMaps] {
   val warpDescriptor = WarpDescriptor(classOf[PrimitiveMaps])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         mapIntInt <- lookup.getPrimitiveAssocs[Int, Int]("mapIntInt").map(_.toMap)
         mapStringInt <- lookup.getPrimitiveAssocs[String, Int]("mapStringInt").map(_.toMap)
@@ -182,7 +182,7 @@ object ComplexMapsUnpacker extends RegisterableWarpUnpacker[ComplexMaps] {
   val warpDescriptor = WarpDescriptor(classOf[ComplexMaps])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers) = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         mapIntTestAddress1 <- lookup.getAssocsWith[Int, TestAddress]("mapIntTestAddress1", TestAddressUnpacker).map(_.toMap)
         mapIntAny <- lookup.getAssocsTyped[Int, AnyRef]("mapIntAny").map(_.toMap)
@@ -205,7 +205,7 @@ object TestAddressUnpacker extends RegisterableWarpUnpacker[TestAddress] {
   val warpDescriptor = WarpDescriptor(classOf[TestAddress])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TestAddress] = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         city <- lookup.getAs[String]("city")
         street <- lookup.getAs[String]("street")
@@ -228,7 +228,7 @@ object TreesUnpacker extends RegisterableWarpUnpacker[Trees] {
   val warpDescriptor = WarpDescriptor(classOf[Trees])
   val alternativeWarpDescriptors = Nil
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[Trees] = {
-    withFastLookUp(from) { lookup =>
+    withFastLookUp(from) { lookup ⇒
       for {
         intTree <- lookup.getPrimitivesTree[Int]("intTree")
         addressTree <- lookup.getTreeTyped[TestAddress]("addressTree")

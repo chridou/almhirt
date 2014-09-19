@@ -33,15 +33,15 @@ object AggregateRootLifecycle {
 
     def toOption: Option[T] =
       self match {
-        case Vivus(ar) => Some(ar)
-        case _ => None
+        case Vivus(ar) ⇒ Some(ar)
+        case _ ⇒ None
       }
 
     def toAggregateRoot: AlmValidation[T] =
       self match {
-        case Vivus(ar) => ar.success
-        case Vacat => NotFoundProblem("The aggregate root does not exist.").failure
-        case Mortuus(id, v) => AggregateRootDeletedProblem(id).failure
+        case Vivus(ar) ⇒ ar.success
+        case Vacat ⇒ NotFoundProblem("The aggregate root does not exist.").failure
+        case Mortuus(id, v) ⇒ AggregateRootDeletedProblem(id).failure
       }
   }
 }

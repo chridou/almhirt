@@ -16,13 +16,13 @@ object SingleProblemPackaging extends WarpPacker[SingleProblem] with Registerabl
     this.warpDescriptor ~>
       P("message", what.message) ~>
       LookUp("problemType", what.problemType).fold(
-        fail => With("problemType", almhirt.problem.problemtypes.UnknownProblem, ProblemTypes.UnknownProblemTypePackaging),
-        succ => succ.success) ~>
+        fail ⇒ With("problemType", almhirt.problem.problemtypes.UnknownProblem, ProblemTypes.UnknownProblemTypePackaging),
+        succ ⇒ succ.success) ~>
         MLookUpForgiving[String, Any]("args", what.args) ~>
         WithOpt("cause", what.cause, ProblemCausePacker)
 
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[SingleProblem] =
-    withFastLookUp(from) { lu =>
+    withFastLookUp(from) { lu ⇒
       for {
         message <- lu.getAs[String]("message")
         args <- lu.getAssocs[String]("args").map(_.toMap)
@@ -42,7 +42,7 @@ object AggregatedProblemPackaging extends WarpPacker[AggregatedProblem] with Reg
       CWith("problems", what.problems, ProblemPackaging)
 
   override def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[AggregatedProblem] =
-    withFastLookUp(from) { lu =>
+    withFastLookUp(from) { lu ⇒
       for {
         args <- lu.getAssocs[String]("args").map(_.toMap)
         problems <- lu.getManyWith("problems", ProblemPackaging)
@@ -55,15 +55,15 @@ object ProblemPackaging extends WarpPacker[Problem] with RegisterableWarpPacker 
   override val alternativeWarpDescriptors = WarpDescriptor(classOf[Problem]) :: Nil
   override def pack(what: Problem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] =
     what match {
-      case sp: SingleProblem => SingleProblemPackaging(sp)
-      case ap: AggregatedProblem => AggregatedProblemPackaging(ap)
+      case sp: SingleProblem ⇒ SingleProblemPackaging(sp)
+      case ap: AggregatedProblem ⇒ AggregatedProblemPackaging(ap)
     }
 
   override val unpackers = SingleProblemPackaging :: AggregatedProblemPackaging :: Nil
 }
 
 object ProblemTypes {
-  def createPackaging[T <: almhirt.problem.ProblemType](mainDesc: WarpDescriptor, alternateDescs: List[WarpDescriptor], create: => T): WarpPacker[T] with RegisterableWarpPacker with RegisterableWarpUnpacker[T] =
+  def createPackaging[T <: almhirt.problem.ProblemType](mainDesc: WarpDescriptor, alternateDescs: List[WarpDescriptor], create: ⇒ T): WarpPacker[T] with RegisterableWarpPacker with RegisterableWarpUnpacker[T] =
     new WarpPacker[T] with RegisterableWarpPacker with RegisterableWarpUnpacker[T] {
       val warpDescriptor = mainDesc
       val alternativeWarpDescriptors = alternateDescs
@@ -73,7 +73,7 @@ object ProblemTypes {
         create.success
     }
 
-  def createDefaultPackaging[T <: almhirt.problem.ProblemType](create: => T)(implicit tag: ClassTag[T]): WarpPacker[T] with RegisterableWarpPacker with RegisterableWarpUnpacker[T] =
+  def createDefaultPackaging[T <: almhirt.problem.ProblemType](create: ⇒ T)(implicit tag: ClassTag[T]): WarpPacker[T] with RegisterableWarpPacker with RegisterableWarpUnpacker[T] =
     createPackaging[T](tag.runtimeClass.getSimpleName().filterNot(_ == '$'), List(tag.runtimeClass.getName.filterNot(_ == '$'), tag.runtimeClass.getName), create)
 
   val UnknownProblemTypePackaging = createDefaultPackaging[almhirt.problem.problemtypes.UnknownProblem.type](almhirt.problem.problemtypes.UnknownProblem)

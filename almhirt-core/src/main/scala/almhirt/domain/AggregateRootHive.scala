@@ -133,17 +133,17 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         numFailedInternal += 1
       }
       val event: Event = rsp match {
-        case AggregateRootDroneInternalMessages.CommandExecuted(command) =>
+        case AggregateRootDroneInternalMessages.CommandExecuted(command) ⇒
           CommandSuccessfullyExecuted(command)
-        case AggregateRootDroneInternalMessages.CommandNotExecuted(command, problem) =>
+        case AggregateRootDroneInternalMessages.CommandNotExecuted(command, problem) ⇒
           CommandExecutionFailed(command, problem)
-        case AggregateRootDroneInternalMessages.Busy(command) =>
+        case AggregateRootDroneInternalMessages.Busy(command) ⇒
           CommandExecutionFailed(command, CollisionProblem("Command can not be executed since another command is being executed."))
       }
       enqueueEvent(event)
       requestCommands()
 
-    case OnDeliverSuppliesNow(amount) =>
+    case OnDeliverSuppliesNow(amount) ⇒
       deliverEvents(amount)
       requestCommands()
 
@@ -155,10 +155,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       if (log.isDebugEnabled)
         log.debug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
 
-    case OnBrokerProblem(problem) =>
+    case OnBrokerProblem(problem) ⇒
       throw new Exception(s"The broker reported a problem:\n$problem")
 
-    case OnContractExpired =>
+    case OnContractExpired ⇒
       log.info(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
   }
 

@@ -9,23 +9,23 @@ import almhirt.http._
 import almhirt.httpx.spray._
 import spray.http.HttpEntity.{ NonEmpty, Empty }
 
-trait MarshallerFactory[T] { self =>
+trait MarshallerFactory[T] { self ⇒
   import Helper._
   import spray.util._
 
   def marshaller(
     serializer: HttpSerializer[T],
     contentTypes: ContentType*): Marshaller[T] = {
-    Marshaller.of[T](contentTypes: _*) { (value, contentType, ctx) =>
+    Marshaller.of[T](contentTypes: _*) { (value, contentType, ctx) ⇒
       val amt = contentType.mediaType.toAlmMediaType
       if (amt.binary) {
         serializer.serialize(value, amt).fold(
-          fail => ctx.handleError(fail.escalate),
-          succ => ctx.marshalTo(HttpEntity(contentType.withoutDefinedCharset, succ.value.asInstanceOf[Array[Byte]])))
+          fail ⇒ ctx.handleError(fail.escalate),
+          succ ⇒ ctx.marshalTo(HttpEntity(contentType.withoutDefinedCharset, succ.value.asInstanceOf[Array[Byte]])))
       } else {
         serializer.serialize(value, amt).fold(
-          fail => ctx.handleError(fail.escalate),
-          succ => ctx.marshalTo(HttpEntity(contentType, succ.value.asInstanceOf[String])))
+          fail ⇒ ctx.handleError(fail.escalate),
+          succ ⇒ ctx.marshalTo(HttpEntity(contentType, succ.value.asInstanceOf[String])))
       }
     }
   }
@@ -37,18 +37,18 @@ trait MarshallerFactory[T] { self =>
     }
 }
 
-trait UnmarshallerFactory[T] { self =>
+trait UnmarshallerFactory[T] { self ⇒
   import Helper._
   import spray.util._
 
   def unmarshaller(
     deserializer: HttpDeserializer[T],
     contentTypes: ContentType*): Unmarshaller[T] = {
-    val supported = contentTypes.map(ct => if (ct.mediaType.binary) ct else ContentType(ct.mediaType, HttpCharsets.`UTF-8`)).toSet
+    val supported = contentTypes.map(ct ⇒ if (ct.mediaType.binary) ct else ContentType(ct.mediaType, HttpCharsets.`UTF-8`)).toSet
     new Unmarshaller[T] {
       override def apply(entity: HttpEntity): Deserialized[T] =
         entity match {
-          case NonEmpty(contentType, httpData) =>
+          case NonEmpty(contentType, httpData) ⇒
             if (!supported.contains(contentType)) {
               val msgSupp = supported.map(_.value).mkString("Expected '", "' or '", "'")
               Left(UnsupportedContentType(s""""${contentType}" is not supported. $msgSupp"""))
@@ -56,15 +56,15 @@ trait UnmarshallerFactory[T] { self =>
               val amt = contentType.mediaType.toAlmMediaType
               if (amt.binary) {
                 deserializer.deserialize(amt, BinaryBody(httpData.toByteArray)).fold(
-                  fail => Left(MalformedContent(fail.toString, None)),
-                  succ => Right(succ))
+                  fail ⇒ Left(MalformedContent(fail.toString, None)),
+                  succ ⇒ Right(succ))
               } else {
                 deserializer.deserialize(amt, TextBody(httpData.asString)).fold(
-                  fail => Left(MalformedContent(fail.toString, None)),
-                  succ => Right(succ))
+                  fail ⇒ Left(MalformedContent(fail.toString, None)),
+                  succ ⇒ Right(succ))
               }
             }
-          case Empty =>
+          case Empty ⇒
             Left(ContentExpected)
         }
     }
@@ -77,7 +77,7 @@ trait UnmarshallerFactory[T] { self =>
     }
 }
 
-trait MarshallingFactory[T] extends MarshallerFactory[T] with UnmarshallerFactory[T] { self =>
+trait MarshallingFactory[T] extends MarshallerFactory[T] with UnmarshallerFactory[T] { self ⇒
   def bindToContentType(implicit mctProvider: MarshallingContentTypesProvider[T], umctProvider: UnmarshallingContentTypesProvider[T]): ContentTypeBoundMarshallingFactory[T] =
     new ContentTypeBoundMarshallingFactory[T] {
       val baseMarshallerFactory: MarshallerFactory[T] = self

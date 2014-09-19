@@ -47,14 +47,14 @@ object MessagePackTypecodes {
   def parseExtHeader(formatByte: Int, reader: BinaryReader): (Int, Int) = {
     val size =
       formatByte match {
-        case Fixext1 => 1
-        case Fixext2 => 2
-        case Fixext4 => 4
-        case Fixext8 => 8
-        case Fixext16 => 16
-        case Ext8 => reader.readUnsignedByte
-        case Ext16 => reader.readUnsignedShort
-        case Ext32 => reader.readInt
+        case Fixext1 ⇒ 1
+        case Fixext2 ⇒ 2
+        case Fixext4 ⇒ 4
+        case Fixext8 ⇒ 8
+        case Fixext16 ⇒ 16
+        case Ext8 ⇒ reader.readUnsignedByte
+        case Ext16 ⇒ reader.readUnsignedShort
+        case Ext32 ⇒ reader.readInt
       }
     val customType = reader.readByte
     (customType, size)
@@ -116,9 +116,9 @@ object MessagePackTypecodes {
 
   def parseBinHeader(formatByte: Int, reader: BinaryReader): Int = {
     formatByte match {
-      case Bin8 => reader.readUnsignedByte
-      case Bin16 => reader.readUnsignedShort
-      case Bin32 => reader.readInt
+      case Bin8 ⇒ reader.readUnsignedByte
+      case Bin16 ⇒ reader.readUnsignedShort
+      case Bin32 ⇒ reader.readInt
     }
   }
 

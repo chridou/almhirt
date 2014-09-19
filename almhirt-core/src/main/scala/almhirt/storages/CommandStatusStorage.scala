@@ -33,7 +33,7 @@ private[almhirt] class AStupidInMemoryCommandStatusStorage(maxEntries: Int) exte
   private[this] var entries: Vector[CommandStatusDocument] = Vector.empty
 
   override def receive: Receive = {
-    case StoreCommandStatus(status) =>
+    case StoreCommandStatus(status) ⇒
       if (maxEntries > 0) {
         if (entries.size < maxEntries) {
           entries = entries :+ status
@@ -43,11 +43,11 @@ private[almhirt] class AStupidInMemoryCommandStatusStorage(maxEntries: Int) exte
       }
       sender() ! CommandStatusStored(status.commandId)
 
-    case FetchCommandStatus(commandId) =>
+    case FetchCommandStatus(commandId) ⇒
       entries.find(_.commandId == commandId) match {
-        case Some(status) =>
+        case Some(status) ⇒
           sender() ! CommandStatusFetched(status)
-        case None =>
+        case None ⇒
           sender() ! CommandStatusNotFetched(commandId, NotFoundProblem(s"""No status for command "${commandId.value}"."""))
       }
   }

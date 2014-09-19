@@ -32,7 +32,7 @@ object handson {
 
  // val z = x().map(evalPolyF)
   
-  val gen = x.genElemsFun                         //> gen  : (riftwarp.templating.handson.AA, riftwarp.WarpPackers) => almhirt.com
+  val gen = x.genElemsFun                         //> gen  : (riftwarp.templating.handson.AA, riftwarp.WarpPackers) ⇒ almhirt.com
                                                   //| mon.AlmValidation[Seq[riftwarp.WarpElement]] = <function2>
   gen(a, null)                                    //> res3: almhirt.common.AlmValidation[Seq[riftwarp.WarpElement]] = Success(List
                                                   //| (WarpElement(a,Some(WarpString(a))), WarpElement(b,Some(WarpInt(1))), WarpEl
@@ -47,7 +47,7 @@ object handson {
 	object eval extends Poly1 {
 	  implicit def caseString = at[String](_.length)
 	  implicit def caseInt = at[Int](_.toString+"!")
-	  implicit def caseLong = at[Long](_ => "Long!")
+	  implicit def caseLong = at[Long](_ ⇒ "Long!")
 	}
 	
 	r.map(eval)                               //> res6: shapeless.::[String,shapeless.::[Int,shapeless.::[String,shapeless.HNi

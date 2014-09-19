@@ -6,10 +6,10 @@ import almhirt.common._
 /** This is a strategy on how to validate a command */
 trait AggregateRootCommandValidator {
   def checkCommand[TCmd <: AggregateRootCommand](command: TCmd, ar: AggregateRootLifecycle[AggregateRoot]): AlmValidation[TCmd]
-  final def handleIfValid[TAr <: AggregateRoot, TCmd <: AggregateRootCommand, E <: AggregateRootEvent](command: TCmd, ar: AggregateRootLifecycle[TAr])(handle: (TCmd, AggregateRootLifecycle[TAr]) => AggregateCommandResult[TAr, E]) =
+  final def handleIfValid[TAr <: AggregateRoot, TCmd <: AggregateRootCommand, E <: AggregateRootEvent](command: TCmd, ar: AggregateRootLifecycle[TAr])(handle: (TCmd, AggregateRootLifecycle[TAr]) ⇒ AggregateCommandResult[TAr, E]) =
     checkCommand(command, ar).fold(
-      problem => SyncCommandResult(problem.failure),
-      res => handle(command, ar))
+      problem ⇒ SyncCommandResult(problem.failure),
+      res ⇒ handle(command, ar))
 }
 
 object AggregateRootCommandValidator {
@@ -23,7 +23,7 @@ object AggregateRootCommandValidator {
       ar match {
         case m: Mortuus ⇒
           IllegalOperationProblem(s"The aggregate root is already dead.").failure
-        case _ =>
+        case _ ⇒
           command.success
       }
   }

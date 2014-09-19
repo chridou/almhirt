@@ -19,28 +19,28 @@ trait CustomHttpSerializerTemplate[T] extends HttpSerializer[T] with HttpDeseria
   protected def getStringRematerializer(channel: String): AlmValidation[Rematerializer[String]]
   protected def getBinaryRematerializer(channel: String): AlmValidation[Rematerializer[Array[Byte]]]
   
-  protected def serializeInternal(what: T, channel: String, pack: T => AlmValidation[WarpPackage]): AlmValidation[AlmHttpBody] =
+  protected def serializeInternal(what: T, channel: String, pack: T ⇒ AlmValidation[WarpPackage]): AlmValidation[AlmHttpBody] =
     for {
       theChannel <- WarpChannels.getChannel(channel)
       dematerializer <- getDematerializer(theChannel)
-      serialized <- pack(what).map(wc => dematerializer.dematerialize(wc, Map.empty))
+      serialized <- pack(what).map(wc ⇒ dematerializer.dematerialize(wc, Map.empty))
       typedSerialized <- theChannel.HttpTransmission match {
-        case HttpTransmissionAsBinary => serialized.castTo[Array[Byte]].map(BinaryBody)
-        case HttpTransmissionAsText => serialized.castTo[String].map(TextBody)
-        case NoHttpTransmission => UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
+        case HttpTransmissionAsBinary ⇒ serialized.castTo[Array[Byte]].map(BinaryBody)
+        case HttpTransmissionAsText ⇒ serialized.castTo[String].map(TextBody)
+        case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel.""").failure
       }
 
     } yield typedSerialized
 
-  protected def deserializeInternal(channel: String)(what: AlmHttpBody, unpack: WarpPackage => AlmValidation[T]): AlmValidation[T] =
+  protected def deserializeInternal(channel: String)(what: AlmHttpBody, unpack: WarpPackage ⇒ AlmValidation[T]): AlmValidation[T] =
     for {
       theChannel <- WarpChannels.getChannel(channel)
       rematerialized <- what match {
-        case BinaryBody(bytes) if theChannel.HttpTransmission == HttpTransmissionAsBinary =>
+        case BinaryBody(bytes) if theChannel.HttpTransmission == HttpTransmissionAsBinary ⇒
           getBinaryRematerializer(theChannel.channelDescriptor).flatMap(_(bytes))
-        case TextBody(text) if theChannel.HttpTransmission == HttpTransmissionAsText =>
+        case TextBody(text) if theChannel.HttpTransmission == HttpTransmissionAsText ⇒
           getStringRematerializer(theChannel.channelDescriptor).flatMap(_(text))
-        case _ =>
+        case _ ⇒
           UnspecifiedProblem(s""""$channel" is neither a binary nor a text channel or the serialized representation do not match("${what.getClass().getSimpleName()}" -> "${theChannel.HttpTransmission}").""").failure
       }
       unpacked <- unpack(rematerialized)
@@ -55,7 +55,7 @@ trait CustomHttpSerializerTemplate[T] extends HttpSerializer[T] with HttpDeseria
 }
 
 
-trait SimpleHttpSerializer[T] { self : CustomHttpSerializerTemplate[T] =>
+trait SimpleHttpSerializer[T] { self : CustomHttpSerializerTemplate[T] ⇒
   type TT = T
 
   override protected def packOuter(in: T): AlmValidation[WarpPackage]  = packInner(in)

@@ -11,23 +11,23 @@ trait DematerializerTemplate[T] extends Dematerializer[T] {
 
   def transform(what: WarpPackage): ValueRepr =
     what match {
-      case prim: WarpPrimitive =>
+      case prim: WarpPrimitive ⇒
         getPrimitiveRepr(prim)
-      case obj: WarpObject =>
+      case obj: WarpObject ⇒
         getObjectRepr(obj)
-      case WarpCollection(items) =>
+      case WarpCollection(items) ⇒
         foldReprs(items.map(transform))
-      case WarpAssociativeCollection(items) =>
-        foldAssocRepr(items.map(item => (transform(item._1), transform(item._2))))
-      case WarpTree(tree) =>
+      case WarpAssociativeCollection(items) ⇒
+        foldAssocRepr(items.map(item ⇒ (transform(item._1), transform(item._2))))
+      case WarpTree(tree) ⇒
         foldTreeRepr(tree.map(transform))
-      case WarpTuple2(a, b) =>
+      case WarpTuple2(a, b) ⇒
         foldTuple2Reprs((transform(a), transform(b)))
-      case WarpTuple3(a, b, c) =>
+      case WarpTuple3(a, b, c) ⇒
         foldTuple3Reprs((transform(a), transform(b), transform(c)))
-      case WarpBytes(bytes) =>
+      case WarpBytes(bytes) ⇒
         foldByteArrayRepr(bytes)
-      case WarpBlob(bytes) =>
+      case WarpBlob(bytes) ⇒
         foldBlobRepr(bytes)
     }
 

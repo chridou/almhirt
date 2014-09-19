@@ -9,14 +9,14 @@ import spray.httpx.marshalling.Marshaller
 import spray.httpx.unmarshalling.Unmarshaller
 import almhirt.httpx.spray.marshalling._
 
-trait HttpEventEndpoint extends Directives { self: HasCommonMarshallers with HasCommonUnmarshallers =>
+trait HttpEventEndpoint extends Directives { self: HasCommonMarshallers with HasCommonUnmarshallers ⇒
   def publish(payload: AnyRef)
 
   val putEventDirective = put & entity(as[Event])
 
   val eventEndpointTerminator = putEventDirective {
-    event =>
-      ctx => {
+    event ⇒
+      ctx ⇒ {
         publish(event)
         ctx.complete(StatusCodes.Accepted, event.eventId.toString())
       }

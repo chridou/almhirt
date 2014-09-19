@@ -47,10 +47,10 @@ class AggregateRootViewsTests(_system: ActorSystem)
           within(10 seconds) {
             FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(2 * n, 3 seconds)
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
-            val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(1))) => id }.toSet
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(1))) ⇒ id }.toSet
             users should have size (n)
-            users.toSet should equal((1 to n).map(id => AggregateRootId(s"$id")).toSet)
+            users.toSet should equal((1 to n).map(id ⇒ AggregateRootId(s"$id")).toSet)
           }
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -70,10 +70,10 @@ class AggregateRootViewsTests(_system: ActorSystem)
           within(10 seconds) {
             theFlow.publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(6 * n, 3 seconds)
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
-            val users = probe.receiveN(n, 10 seconds).collect { case UserState(Mortuus(id, AggregateRootVersion(3L))) => id }.toSet
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            val users = probe.receiveN(n, 10 seconds).collect { case UserState(Mortuus(id, AggregateRootVersion(3L))) ⇒ id }.toSet
             users should have size (n)
-            users.toSet should equal((1 to n).map(id => AggregateRootId(s"$id")).toSet)
+            users.toSet should equal((1 to n).map(id ⇒ AggregateRootId(s"$id")).toSet)
           }
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -89,8 +89,8 @@ class AggregateRootViewsTests(_system: ActorSystem)
           val start = Deadline.now
           val probe = TestProbe()
           within(10 seconds) {
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
-            val res = probe.receiveN(n, 10 seconds).collect { case UserState(Vacat) => 1 }.sum
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            val res = probe.receiveN(n, 10 seconds).collect { case UserState(Vacat) ⇒ 1 }.sum
             res should equal(n)
           }
           val time = start.lap
@@ -105,14 +105,14 @@ class AggregateRootViewsTests(_system: ActorSystem)
           val start = Deadline.now
           val probe = TestProbe()
           within(10 seconds) {
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             probe.receiveN(n, 10 seconds)
             FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"))).publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(2 * n, 3 seconds)
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
-            val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(1))) => id }.toSet
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(1))) ⇒ id }.toSet
             users should have size (n)
-            users.toSet should equal((1 to n).map(id => AggregateRootId(s"$id")).toSet)
+            users.toSet should equal((1 to n).map(id ⇒ AggregateRootId(s"$id")).toSet)
           }
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -130,14 +130,14 @@ class AggregateRootViewsTests(_system: ActorSystem)
           (1 to n).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
 
           within(10 seconds) {
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             probe.receiveN(n, 10 seconds)
             theFlow.publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(6 * n, 3 seconds)
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
-            val users = probe.receiveN(n, 10 seconds).collect { case UserState(Mortuus(id, AggregateRootVersion(3L))) => id }.toSet
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            val users = probe.receiveN(n, 10 seconds).collect { case UserState(Mortuus(id, AggregateRootVersion(3L))) ⇒ id }.toSet
             users should have size (n)
-            users.toSet should equal((1 to n).map(id => AggregateRootId(s"$id")).toSet)
+            users.toSet should equal((1 to n).map(id ⇒ AggregateRootId(s"$id")).toSet)
           }
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -158,14 +158,14 @@ class AggregateRootViewsTests(_system: ActorSystem)
           within(10 seconds) {
             flow1.publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(2 * n, 3 seconds)
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
             probe.receiveN(n, 10 seconds)
             flow2.publishTo(streams.commandBroker.newSubscriber)
             statusProbe.receiveN(2 * n, 3 seconds)
-            (1 to n).foreach(id => probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
-            val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(2))) => id }.toSet
+            (1 to n).foreach(id ⇒ probe.send(views, AggregateRootViewMessages.GetAggregateRootProjectionFor(s"$id")))
+            val users = probe.receiveN(n, 10 seconds).collect { case UserState(VivusRef(id, AggregateRootVersion(2))) ⇒ id }.toSet
             users should have size (n)
-            users.toSet should equal((1 to n).map(id => AggregateRootId(s"$id")).toSet)
+            users.toSet should equal((1 to n).map(id ⇒ AggregateRootId(s"$id")).toSet)
           }
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -229,8 +229,8 @@ class AggregateRootViewsTests(_system: ActorSystem)
 
     def getViewProps(id: AggregateRootId) = Props(new AggregateRootUnprojectedView[User, UserEvent](
       id, eventlogActor, None,
-      (lc, receiver) => receiver ! UserState(lc),
-      (prob, receiver) => receiver ! ViewFailure(prob)) with UserEventHandler {
+      (lc, receiver) ⇒ receiver ! UserState(lc),
+      (prob, receiver) ⇒ receiver ! ViewFailure(prob)) with UserEventHandler {
     })
 
     val viewsActor = AggregateRootViews.connectedActor[UserEvent](streams.aggregateEventStream)(getViewProps, 50, s"views-$testId")
