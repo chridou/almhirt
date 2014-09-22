@@ -3,9 +3,8 @@ package almhirt.streaming
 import scala.language.postfixOps
 import scala.concurrent.duration._
 import akka.actor._
-import akka.stream.scaladsl.{ Flow }
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import almhirt.common._
+import akka.stream.scaladsl2._
 import akka.testkit._
 import org.scalatest._
 
@@ -328,7 +327,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val streamSubscriber = streams.eventBroker.newSubscriber
         within(1 second) {
           streams.eventStream.subscribe(streamSubscriber)
-          Flow(List[Event](event)).produceTo(subscriber)
+          FlowFrom(List[Event](event)).publishTo(subscriber)
           subscriberProbeEvent.expectMsg(100 millis, event)
         }
       }
@@ -344,9 +343,9 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val streamSubscriber2 = streams.eventBroker.newSubscriber
         within(1 second) {
           streams.eventStream.subscribe(subscriber)
-          Flow(List[Event](event1)).produceTo(streamSubscriber1)
+          FlowFrom(List[Event](event1)).publishTo(streamSubscriber1)
           subscriberProbeEvent.expectMsg(100 millis, event1)
-          Flow(List[Event](event2)).produceTo(streamSubscriber2)
+          FlowFrom(List[Event](event2)).publishTo(streamSubscriber2)
           subscriberProbeEvent.expectMsg(100 millis, event2)
         }
       }
