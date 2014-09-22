@@ -1,6 +1,7 @@
 package almhirt.streaming
 
 import scala.concurrent.duration._
+import akka.dispatch.Dispatcher
 import akka.actor._
 import akka.pattern._
 import org.reactivestreams.{ Subscriber, Subscription, Publisher }
@@ -34,9 +35,13 @@ object AlmhirtStreams {
   import akka.stream.scaladsl2._
   import akka.stream.MaterializerSettings
   def apply(supervisorName: String, maxDur: FiniteDuration = 2.seconds)(implicit actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] = 
-    create(supervisorName, maxDur, actorRefFactory)
+    create(supervisorName, maxDur, actorRefFactory, None)
     
-  private def create(supervisorName: String, maxDur: FiniteDuration = 2.seconds, actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] = {
+  private[almhirt] def createInternal(actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] = {
+    create("streams", 2.seconds, actorRefFactory, Some("almhirt.context.dispatchers.streaming-dispatcher"))
+  }
+    
+  private def create(supervisorName: String, maxDur: FiniteDuration, actorRefFactory: ActorRefFactory, dispatcherName: Option[String]): AlmFuture[AlmhirtStreams with Stoppable] = {
     implicit val ctx = actorRefFactory.dispatcher
     val supervisorProps = Props(new Actor with ImplicitFlowMaterializer {
       def receive: Receive = {
@@ -93,7 +98,12 @@ object AlmhirtStreams {
           sender() ! streams
       }
     })
-    val supervisor = actorRefFactory.actorOf(supervisorProps, supervisorName)
+    val props =
+      dispatcherName match {
+      case None => supervisorProps
+      case Some(dpname) => supervisorProps.withDispatcher(dpname)
+    }
+    val supervisor = actorRefFactory.actorOf(props, supervisorName)
 
     (supervisor ? "get_streams")(maxDur).successfulAlmFuture[AlmhirtStreams with Stoppable]
   }
