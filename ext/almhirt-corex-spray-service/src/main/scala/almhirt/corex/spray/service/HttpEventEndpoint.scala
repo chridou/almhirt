@@ -18,7 +18,7 @@ trait HttpEventEndpoint extends Directives { self: HasCommonMarshallers with Has
     event ⇒
       ctx ⇒ {
         publish(event)
-        ctx.complete(StatusCodes.Accepted, event.eventId.toString())
+        ctx.complete(StatusCodes.Accepted, event.eventId.value.toString())
       }
   }
 }
