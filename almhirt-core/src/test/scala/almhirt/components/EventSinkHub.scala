@@ -13,7 +13,7 @@ object EventSinkHub {
   type EventSinkHubMemberFactories = Map[String, (Props, Option[ProcessorFlow[Event, Event]])]
 
   def props(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event], buffersize: Option[Int]): Props =
-    Props(new EventSinkHubImpl(factories, eventPublisher, buffersize))
+    Props(new EventSinksSupervisorImpl(factories, eventPublisher, buffersize))
 
   def props(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event])(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     ???
@@ -22,7 +22,7 @@ object EventSinkHub {
   val actorname = "event-sink-hub"
 }
 
-private[almhirt] class EventSinkHubImpl(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event], buffersize: Option[Int]) extends Actor with ActorLogging {
+private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event], buffersize: Option[Int]) extends Actor with ActorLogging {
   case object Start
 
   def receiveInitialize: Receive = {
