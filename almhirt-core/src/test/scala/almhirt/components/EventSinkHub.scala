@@ -16,7 +16,12 @@ object EventSinkHub {
     Props(new EventSinksSupervisorImpl(factories, eventPublisher, buffersize))
 
   def props(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event])(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
-    ???
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    for {
+      configSection <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.event-sink-hub")
+      buffersize <- configSection.v[Int]("buffer-size").constrained(_ >= 0, n => s""""buffer-size" must be greater or equal than 0, not $n.""")
+    } yield props(factories, eventPublisher, Some(buffersize))
   }
 
   val actorname = "event-sink-hub"
@@ -42,7 +47,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
     implicit val mat = FlowMaterializer()
     val fanout =
       buffersize match {
-        case Some(bfs) =>
+        case Some(bfs) if bfs > 0 =>
           FlowFrom[Event](eventPublisher).buffer(bfs, OverflowStrategy.backpressure).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
         case None =>
           FlowFrom[Event](eventPublisher).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
