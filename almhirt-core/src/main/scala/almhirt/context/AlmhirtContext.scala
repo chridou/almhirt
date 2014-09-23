@@ -65,7 +65,7 @@ object AlmhirtContext {
             case AlmhirtContextMessages.Start =>
               theReceiver = sender()
               log.info("Creating streams.")
-              AlmhirtStreams.createInternal(this.context).onComplete(
+              AlmhirtStreams.createInternal(this.context, system.settings.config).onComplete(
                 problem => self ! AlmhirtContextMessages.StreamsNotCreated(problem),
                 streams => self ! AlmhirtContextMessages.StreamsCreated(streams))
 
@@ -84,14 +84,8 @@ object AlmhirtContext {
                 def parseUuid(str: String) = ccuad.parseUuid(str)
                 val eventBroker = streams.eventBroker
                 val eventStream = streams.eventStream
-                val systemEventStream = streams.systemEventStream
-                val domainEventStream = streams.domainEventStream
-                val aggregateEventStream = streams.aggregateEventStream
                 val commandBroker = streams.commandBroker
                 val commandStream = streams.commandStream
-                val systemCommandStream = streams.systemCommandStream
-                val domainCommandStream = streams.domainCommandStream
-                val aggregateCommandStream = streams.aggregateCommandStream
                 def stop() {
                   log.info("Stopping.")
                   streams.stop()

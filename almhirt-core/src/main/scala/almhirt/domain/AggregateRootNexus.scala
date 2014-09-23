@@ -8,7 +8,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 
 class AggregateRootNexus(
-  override val aggregateCommandsPublisher: Publisher[AggregateRootCommand],
+  override val commandsPublisher: Publisher[Command],
   override val hiveSelector: HiveSelector,
   override val hiveFactory: AggregateRootHiveFactory) extends Actor with ActorLogging with AggregateRootNexusSkeleton {
   
@@ -25,7 +25,7 @@ private[almhirt] object AggregateRootNexusInternal {
 private[almhirt] trait AggregateRootNexusSkeleton { me: Actor with ActorLogging ⇒
   import AggregateRootNexusInternal._
 
-  def aggregateCommandsPublisher: Publisher[AggregateRootCommand]
+  def commandsPublisher: Publisher[Command]
   def hiveFactory: AggregateRootHiveFactory
 
   /**
@@ -50,7 +50,7 @@ private[almhirt] trait AggregateRootNexusSkeleton { me: Actor with ActorLogging 
 
   private def createInitialHives() {
     implicit val mat = FlowMaterializer()
-    val fanout = FlowFrom[AggregateRootCommand](aggregateCommandsPublisher).toFanoutPublisher(1, AlmMath.nextPowerOf2(hiveSelector.size))
+    val fanout = FlowFrom[Command](commandsPublisher).collect{ case e: AggregateRootCommand => e}.toFanoutPublisher(1, AlmMath.nextPowerOf2(hiveSelector.size))
     hiveSelector.foreach {
       case (descriptor, f) ⇒
         val props = hiveFactory.props(descriptor).resultOrEscalate

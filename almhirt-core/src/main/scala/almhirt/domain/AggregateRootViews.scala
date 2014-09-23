@@ -15,13 +15,13 @@ object AggregateRootViews {
     Props(new AggregateRootViews[E](getViewProps, eventBufferSize))
 
   import akka.stream.scaladsl2._
-  def subscribeTo[E <: AggregateRootEvent](
-    publisher: Publisher[AggregateRootEvent],
+  def subscribeTo[E <: Event](
+    publisher: Publisher[Event],
     views: ActorRef)(implicit mat: FlowMaterializer, tag: scala.reflect.ClassTag[E]) {
     FlowFrom(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).publishTo(ActorSubscriber[E](views))
   }
 
-  def connectedActor[E <: AggregateRootEvent](publisher: Publisher[AggregateRootEvent])(getViewProps: AggregateRootId ⇒ Props, eventBufferSize: Int, name: String)(
+  def connectedActor[E <: Event](publisher: Publisher[Event])(getViewProps: AggregateRootId ⇒ Props, eventBufferSize: Int, name: String)(
     implicit actorRefFactory: ActorRefFactory,
     mat: FlowMaterializer,
     tag: scala.reflect.ClassTag[E]): ActorRef = {

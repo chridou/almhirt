@@ -41,7 +41,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"deliver $n aggregate roots with version 1" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect{case e: SystemEvent => e}.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           within(10 seconds) {
@@ -60,7 +60,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"signal each aggregate root as dead" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect{case e: SystemEvent => e}.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           val theFlow = FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
@@ -85,7 +85,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"signal $n aggregate roots to be non existent" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect{case e: SystemEvent => e}.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           within(10 seconds) {
@@ -101,7 +101,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"deliver $n aggregate roots with version 1" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect{case e: SystemEvent => e}.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           within(10 seconds) {
@@ -122,7 +122,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"signal each aggregate root as dead" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect{case e: SystemEvent => e}.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           val theFlow = FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
@@ -149,7 +149,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
         s"signal each aggregate root as dead" in { fixture ⇒
           val FixtureParam(testId, views, hive, streams) = fixture
           val statusProbe = TestProbe()
-          FlowFrom(streams.systemEventStream).publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
+          FlowFrom(streams.eventStream).collect{case e: SystemEvent => e}.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
           val start = Deadline.now
           val probe = TestProbe()
           val flow1 = FlowFrom[Command]((1 to n).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand))
@@ -225,7 +225,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
         streams.eventBroker)(AggregateRootViewsTests.this.ccuad, AggregateRootViewsTests.this.executionContext))
     val hiveActor = system.actorOf(hiveProps, s"hive-$testId-test")
     val hiveSubscriber = akka.stream.actor.ActorSubscriber[AggregateRootCommand](hiveActor)
-    streams.aggregateCommandStream.subscribe(hiveSubscriber)
+    FlowFrom(streams.commandStream).collect{ case c: AggregateRootCommand => c}.publishTo(hiveSubscriber)
 
     def getViewProps(id: AggregateRootId) = Props(new AggregateRootUnprojectedView[User, UserEvent](
       id, eventlogActor, None,
@@ -233,7 +233,7 @@ class AggregateRootViewsTests(_system: ActorSystem)
       (prob, receiver) ⇒ receiver ! ViewFailure(prob)) with UserEventHandler {
     })
 
-    val viewsActor = AggregateRootViews.connectedActor[UserEvent](streams.aggregateEventStream)(getViewProps, 50, s"views-$testId")
+    val viewsActor = AggregateRootViews.connectedActor[UserEvent](streams.eventStream)(getViewProps, 50, s"views-$testId")
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, viewsActor, hiveActor, streams)))

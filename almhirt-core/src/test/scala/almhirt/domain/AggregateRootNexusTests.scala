@@ -217,7 +217,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
     //val (commandSubscriber, commandPublisher) = Duct[AggregateRootCommand].build()
     val f = FlowFrom[AggregateRootCommand].collect{ case e: AggregateRootCommand ⇒ e}
 
-    val nexusProps = Props(new AggregateRootNexus(streams.aggregateCommandStream, hiveSelector, hiveFactory))
+    val nexusProps = Props(new AggregateRootNexus(streams.commandStream, hiveSelector, hiveFactory))
     val nexusActor = system.actorOf(nexusProps, s"nexus-$testId")
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, streams.commandBroker.newSubscriber, eventlogActor, streams)))
