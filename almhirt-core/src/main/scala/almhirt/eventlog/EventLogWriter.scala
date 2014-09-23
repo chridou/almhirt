@@ -8,7 +8,7 @@ object EventLogWriter {
 
 }
 
-private[almhirt] class EventLogWriterImpl(eventLogSelection: ActorSelection, lookupInterval: FiniteDuration, maxLookupDuration: FiniteDuration) extends ActorSubscriber with ActorLogging {
+private[almhirt] class EventLogWriterImpl(eventLogPath: ActorPath, lookupInterval: FiniteDuration, maxLookupDuration: FiniteDuration) extends ActorSubscriber with ActorLogging {
   override def requestStrategy = ZeroRequestStrategy
   
   def receiveInitialize: Receive = {

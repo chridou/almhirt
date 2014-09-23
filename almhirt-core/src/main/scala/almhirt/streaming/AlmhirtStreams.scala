@@ -45,7 +45,7 @@ object AlmhirtStreams {
     import almhirt.almvalidation.kit._
     AlmFuture.completed {
       for {
-        configSection <- config.v[com.typesafe.config.Config]("almhirt.context.streams")
+        configSection <- config.v[com.typesafe.config.Config]("almhirt.streams")
         useDedicatedDispatcher <- configSection.v[Boolean]("use-dedicated-dispatcher")
         soakCommands <- configSection.v[Boolean]("soak-commands")
         soakEvents <- configSection.v[Boolean]("soak-events")
@@ -63,7 +63,7 @@ object AlmhirtStreams {
         maxFanoutEvents)
     }.flatMap {
       case (useDedicatedDispatcher, soakCommands, soakEvents, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) =>
-        val dispatcherName = if(useDedicatedDispatcher) Some("almhirt.context.dispatchers.streaming-dispatcher") else None
+        val dispatcherName = if(useDedicatedDispatcher) Some("almhirt.streams.dedicated-dispatcher") else None
         create("streams", 2.seconds, actorRefFactory, dispatcherName,
           initialFanoutEvents, maxFanoutEvents, initialFanoutCommands, maxFanoutCommands, soakEvents, soakCommands)
     }(actorRefFactory.dispatcher)
