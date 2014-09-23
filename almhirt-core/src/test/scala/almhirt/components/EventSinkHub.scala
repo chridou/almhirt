@@ -44,25 +44,29 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
   def receive: Receive = receiveInitialize
 
   private def createInitialMembers() {
-    implicit val mat = FlowMaterializer()
-    val fanout =
-      buffersize match {
-        case Some(bfs) if bfs > 0 =>
-          FlowFrom[Event](eventPublisher).buffer(bfs, OverflowStrategy.backpressure).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
-        case None =>
-          FlowFrom[Event](eventPublisher).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
-      }
-    factories.foreach {
-      case (name, (props, filterOpt)) ⇒
-        val actor = context.actorOf(props, name)
-        context watch actor
-        val subscriber = ActorSubscriber[Event](actor)
-        filterOpt match {
-          case Some(filter) =>
-            filter.withSource(PublisherSource(fanout)).publishTo(subscriber)
+    if (!factories.isEmpty) {
+      implicit val mat = FlowMaterializer()
+      val fanout =
+        buffersize match {
+          case Some(bfs) if bfs > 0 =>
+            FlowFrom[Event](eventPublisher).buffer(bfs, OverflowStrategy.backpressure).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
           case None =>
-            FlowFrom(fanout).publishTo(subscriber)
+            FlowFrom[Event](eventPublisher).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
         }
+      factories.foreach {
+        case (name, (props, filterOpt)) ⇒
+          val actor = context.actorOf(props, name)
+          context watch actor
+          val subscriber = ActorSubscriber[Event](actor)
+          filterOpt match {
+            case Some(filter) =>
+              filter.withSource(PublisherSource(fanout)).publishTo(subscriber)
+            case None =>
+              FlowFrom(fanout).publishTo(subscriber)
+          }
+      }
+    } else {
+      log.warning("No members. Nothing will be subscribed")
     }
   }
 
