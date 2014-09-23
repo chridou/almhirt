@@ -9,7 +9,6 @@ import spray.http._
 import spray.client.pipelining._
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
-import akka.stream.FlowMaterializer
 
 object ElasticSearchEventPublisher {
   def props(host: String,
@@ -20,15 +19,6 @@ object ElasticSearchEventPublisher {
 
   def apply(elasticSearchEventPublischer: ActorRef): Subscriber[Event] =
     ActorSubscriber[Event](elasticSearchEventPublischer)
-
-  def withoutAggregateRootEvents(elasticSearchEventPublischer: ActorRef)(implicit materializer: FlowMaterializer): Subscriber[Event] = {
-    import akka.stream.scaladsl.Duct
-    val duct = Duct[Event].filter(!_.isInstanceOf[AggregateRootEvent])
-    val (subscriber, publisher) = duct.build
-    val eventSubscriber = ElasticSearchEventPublisher(elasticSearchEventPublischer)
-    publisher.subscribe(eventSubscriber)
-    subscriber
-  }
 }
 
 private[almhirt] class ElasticSearchEventPublisherImpl(
