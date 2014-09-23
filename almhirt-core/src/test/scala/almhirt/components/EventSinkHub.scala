@@ -2,22 +2,23 @@ package almhirt.components
 
 import akka.actor._
 import almhirt.common._
-import akka.stream.scaladsl2._
-import org.reactivestreams.Publisher
-import akka.stream.actor.ActorSubscriber
 import almhirt.context.AlmhirtContext
+import org.reactivestreams.Publisher
+import akka.stream.scaladsl2._
+import akka.stream.actor.ActorSubscriber
+import akka.stream.OverflowStrategy
 
 object EventSinkHub {
   /** [Name, (Props, Option[Filter])] */
   type EventSinkHubMemberFactories = Map[String, (Props, Option[ProcessorFlow[Event, Event]])]
-  
+
   def props(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event], buffersize: Option[Int]): Props =
     Props(new EventSinkHubImpl(factories, eventPublisher, buffersize))
 
   def props(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event])(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     ???
   }
-    
+
   val actorname = "event-sink-hub"
 }
 
@@ -39,7 +40,13 @@ private[almhirt] class EventSinkHubImpl(factories: EventSinkHub.EventSinkHubMemb
 
   private def createInitialMembers() {
     implicit val mat = FlowMaterializer()
-    val fanout = FlowFrom[Event](eventPublisher).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
+    val fanout =
+      buffersize match {
+        case Some(bfs) =>
+          FlowFrom[Event](eventPublisher).buffer(bfs, OverflowStrategy.backpressure).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
+        case None =>
+          FlowFrom[Event](eventPublisher).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
+      }
     factories.foreach {
       case (name, (props, filterOpt)) ⇒
         val actor = context.actorOf(props, name)
