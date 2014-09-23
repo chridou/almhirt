@@ -17,10 +17,7 @@ object AggregateRootViews {
   import akka.stream.scaladsl2._
   def subscribeTo[E <: AggregateRootEvent](
     publisher: Publisher[AggregateRootEvent],
-    views: ActorRef)(
-      implicit actorRefFactory: ActorRefFactory,
-      mat: FlowMaterializer,
-      tag: scala.reflect.ClassTag[E]) {
+    views: ActorRef)(implicit mat: FlowMaterializer, tag: scala.reflect.ClassTag[E]) {
     FlowFrom(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).publishTo(ActorSubscriber[E](views))
   }
 
@@ -62,7 +59,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   def getViewProps: AggregateRootId ⇒ Props
   implicit def eventTag: scala.reflect.ClassTag[E]
   def eventBufferSize: Int
-  
+
   log.error(s"${eventTag.runtimeClass}")
 
   final override val requestStrategy = ZeroRequestStrategy
