@@ -52,6 +52,7 @@ private[almhirt] class EventLogWriterImpl(
       context.resolveSingle(ResolvePath(eventLogPath), resolveSettings, None, Some("event-log-resolver"))
 
     case ActorMessages.ResolvedSingle(eventlog, _) =>
+      log.info("Found event log.")
       context.become(running(eventlog, None))
 
     case ActorMessages.SingleNotResolved(problem, _) =>
