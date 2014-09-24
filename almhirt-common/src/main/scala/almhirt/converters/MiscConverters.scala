@@ -22,4 +22,12 @@ object MiscConverters {
     }
   }
 
+  @inline
+  def uuidStrToBase64Str(str: String): almhirt.common.AlmValidation[String] =
+    almhirt.almvalidation.funs.parseUuidAlm(str).map(uuidToBase64String)
+
+  @inline
+  def uuidBase64StrToUuidString(str: String): almhirt.common.AlmValidation[String] =
+    base64StringToUuid(str).map(_.toString())
+
 }
