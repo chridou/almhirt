@@ -41,7 +41,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
   deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
   writeWarnThreshold: FiniteDuration,
-  readWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging {
+  readWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging with almhirt.akkax.AlmActorSupport {
   import almhirt.eventlog.AggregateRootEventLog._
 
   implicit val defaultExecutor = executionContexts.futuresContext
@@ -201,26 +201,23 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       fetchAndDispatchAggregateRootEvents(BSONDocument(), noSorting, sender)
 
     case GetAggregateRootEvent(eventId) ⇒
-      val pinnedSender = sender
       val collection = db(collectionName)
       val query = BSONDocument("_id" -> BSONString(eventId.value))
-      val res =
-        for {
-          docs <- collection.find(query).cursor.collect[List](2, true).toSuccessfulAlmFuture
-          aggregateRootEvent <- AlmFuture {
-            docs match {
-              case Nil ⇒ None.success
-              case d :: Nil ⇒ documentToAggregateRootEvent(d).map(Some(_))
-              case x ⇒ PersistenceProblem(s"""Expected 1 domain event with id "$eventId" but found ${x.size}.""").failure
-            }
-          }(serializationExecutor)
-        } yield aggregateRootEvent
-      res.onComplete(
+      (for {
+        docs <- collection.find(query).cursor.collect[List](2, true).toSuccessfulAlmFuture
+        aggregateRootEvent <- AlmFuture {
+          docs match {
+            case Nil ⇒ None.success
+            case d :: Nil ⇒ documentToAggregateRootEvent(d).map(Some(_))
+            case x ⇒ PersistenceProblem(s"""Expected 1 domain event with id "$eventId" but found ${x.size}.""").failure
+          }
+        }(serializationExecutor)
+      } yield aggregateRootEvent).mapRecoverPipeTo(
+        eventOpt ⇒ FetchedAggregateRootEvent(eventId, eventOpt),
         problem ⇒ {
-          pinnedSender ! GetAggregateRootEventFailed(eventId, problem)
           log.error(problem.toString())
-        },
-        eventOpt ⇒ pinnedSender ! FetchedAggregateRootEvent(eventId, eventOpt))
+          GetAggregateRootEventFailed(eventId, problem)
+        })(sender())
 
     case GetAllAggregateRootEventsFor(aggId) ⇒
       val query = BSONDocument("aggid" -> BSONString(aggId.value))
