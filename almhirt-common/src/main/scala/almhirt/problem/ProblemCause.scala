@@ -47,4 +47,17 @@ object ProblemCause {
   implicit def prob2ProblemCause(problem: Problem): ProblemCause = ProblemCause(problem)
 }
 
+object ContainsThrowable {
+  def unapply(p: Problem): Option[Throwable] =
+    p match {
+    case IsSingleProblem(sp) =>
+      sp.cause match {
+        case Some(CauseIsThrowable(HasAThrowable(throwable))) =>
+          Some(throwable)
+        case _ => None
+      }
+    case _ => None
+  }
+}
+
 
