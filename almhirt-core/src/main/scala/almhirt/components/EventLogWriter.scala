@@ -53,6 +53,7 @@ private[almhirt] class EventLogWriterImpl(
 
     case ActorMessages.ResolvedSingle(eventlog, _) =>
       log.info("Found event log.")
+      request(1)
       context.become(running(eventlog, None))
 
     case ActorMessages.SingleNotResolved(problem, _) =>
