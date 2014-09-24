@@ -51,10 +51,21 @@ object CommandStatusTracker {
     subscriber
   }
 
-  def props(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration): Props = {
+  def propsRaw(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration): Props = {
     Props(new MyCommandStatusTracker(targetCacheSize, shrinkCacheAt, checkTimeoutInterval))
   }
 
+  def props(config: com.typesafe.config.Config): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    for {
+      section <- config.v[com.typesafe.config.Config]("almhirt.components.misc.command-status-tracker")
+      targetCacheSize <- config.v[Int]("target-cache-size")
+      shrinkCacheAt <- config.v[Int]("shrink-cache-at")
+      checkTimeoutInterval <- config.v[FiniteDuration]("check-timeout-interval")
+    } yield propsRaw(targetCacheSize, shrinkCacheAt, checkTimeoutInterval)
+  }
+  
   val actorname = "command-status-tracker"
 }
 

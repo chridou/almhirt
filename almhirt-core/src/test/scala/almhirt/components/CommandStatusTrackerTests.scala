@@ -279,7 +279,7 @@ class CommandStatusTrackerTests(_system: ActorSystem)
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
-    val trackerProps = CommandStatusTracker.props(100, 110, trackerTimeoutScanInterval)
+    val trackerProps = CommandStatusTracker.propsRaw(100, 110, trackerTimeoutScanInterval)
     val trackerActor = system.actorOf(trackerProps, s"tracker-$testId")
 
     val trackerSubscriber = CommandStatusTracker.systemEventSubscriber(trackerActor)

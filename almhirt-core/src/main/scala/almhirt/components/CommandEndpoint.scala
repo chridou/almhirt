@@ -17,7 +17,7 @@ object CommandEndpoint {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     for {
-      section <- config.v[com.typesafe.config.Config]("almhirt.components.command-endpoint")
+      section <- config.v[com.typesafe.config.Config]("almhirt.components.misc.command-endpoint")
       commandStatusTrackerPathStr <- config.v[String]("command-status-tracker-path")
       commandStatusTrackerToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(commandStatusTrackerPathStr)) }
       maxTrackingDuration <- config.v[FiniteDuration]("max-tracking-duration")
