@@ -44,11 +44,10 @@ private[almhirt] class EventLogWriterImpl(
 
   override val requestStrategy = ZeroRequestStrategy
 
+  private case object Start
   private case class PotentialTimeout(eventId: EventId)
 
-  private case object Start
-
-  def receiveLookup(start: Deadline): Receive = {
+  def receiveLookup: Receive = {
     case Start =>
       context.resolveSingle(ResolvePath(eventLogPath), resolveSettings, None, Some("event-log-resolver"))
 
@@ -105,7 +104,7 @@ private[almhirt] class EventLogWriterImpl(
       }
   }
 
-  override def receive: Receive = receiveLookup(Deadline.now)
+  override def receive: Receive = receiveLookup
 
   override def preStart() {
     self ! Start
