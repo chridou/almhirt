@@ -1,13 +1,24 @@
 package almhirt.akkax
 
-import akka.actor.{ Props, ActorRef }
+import akka.actor.{ Props, ActorRef, ActorPath, ActorSelection }
 import almhirt.common._
+import almhirt.tracking.CorrelationId
 
 object ActorMessages {
   final case class CreateChildActor(props: Props, name: Option[String], returnActorRef: Boolean)
   sealed trait CreateChildActorRsp
   final case class ChildActorCreated(actorRef: ActorRef) extends CreateChildActorRsp
   final case class CreateChildActorFailed(cause: Problem) extends CreateChildActorRsp
+  
+  sealed trait ResovleResponse
+  sealed trait ResolveSingleResponse extends ResovleResponse
+  final case class ResolvedSingle(resolved: ActorRef, correlationId: Option[CorrelationId]) extends ResolveSingleResponse
+  final case class SingleNotResolved(problem: Problem, correlationId: Option[CorrelationId]) extends ResolveSingleResponse
+
+  sealed trait ResolveManyResponse extends ResovleResponse
+  final case class ManyResolved(resolved: Seq[ActorRef], correlationId: Option[CorrelationId]) extends ResolveManyResponse
+  final case class ManyNotResolved(problem: Problem, correlationId: Option[CorrelationId]) extends ResolveManyResponse
+
 }
 
 object CreateChildActorHelper {

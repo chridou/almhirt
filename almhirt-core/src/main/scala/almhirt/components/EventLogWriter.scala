@@ -54,7 +54,7 @@ private[almhirt] class EventLogWriterImpl(
 
     case SelectionNotResolved(path, ex) =>
       if (start.lapExceeds(maxLookupDuration)) {
-        log.error(s"""	|Could not resolve "${path}" after ${maxLookupDuration.defaultUnitString}.
+        log.error(s"""	|Could not resolve "${path}" after ${lookupInterval.defaultUnitString}.
         				|Cause:
     		  			|$ex""".stripMargin)
         throw ex
