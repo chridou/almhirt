@@ -12,11 +12,11 @@ import org.reactivestreams.Subscriber
 
 object EventLogWriter {
   def propsRaw(
-    eventLogPath: ActorPath,
+    eventLogToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     maxWaitForEventLog: FiniteDuration = 1 second): Props = {
     Props(new EventLogWriterImpl(
-      eventLogPath,
+      eventLogToResolve,
       resolveSettings,
       maxWaitForEventLog: FiniteDuration))
   }
@@ -26,10 +26,10 @@ object EventLogWriter {
     for {
       section <- config.v[com.typesafe.config.Config]("almhirt.components.event-log-writer")
       eventLogPathStr <- config.v[String]("event-log-path")
-      eventLogPath <- inTryCatch { ActorPath.fromString(eventLogPathStr) }
+      eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
       maxWaitForEventLog <- config.v[FiniteDuration]("max-wait-for-event-log")
       resolveSettings <- config.v[ResolveSettings]("resolve-settings")
-    } yield propsRaw(eventLogPath, resolveSettings, maxWaitForEventLog)
+    } yield propsRaw(eventLogToResolve, resolveSettings, maxWaitForEventLog)
   }
 
   def apply(eventLogWriter: ActorRef): Subscriber[Event] =
@@ -37,19 +37,19 @@ object EventLogWriter {
 }
 
 private[almhirt] class EventLogWriterImpl(
-  eventLogPath: ActorPath,
+  eventLogToResolve: ToResolve,
   resolveSettings: ResolveSettings,
   maxWaitForEventLog: FiniteDuration) extends ActorSubscriber with ActorLogging {
   import almhirt.eventlog.EventLog
 
   override val requestStrategy = ZeroRequestStrategy
 
-  private case object Start
   private case class PotentialTimeout(eventId: EventId)
 
-  def receiveLookup: Receive = {
-    case Start =>
-      context.resolveSingle(ResolvePath(eventLogPath), resolveSettings, None, Some("event-log-resolver"))
+  private case object Resolve
+  def receiveResolve: Receive = {
+    case Resolve =>
+      context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
 
     case ActorMessages.ResolvedSingle(eventlog, _) =>
       log.info("Found event log.")
@@ -57,8 +57,8 @@ private[almhirt] class EventLogWriterImpl(
       context.become(running(eventlog, None))
 
     case ActorMessages.SingleNotResolved(problem, _) =>
-      log.error(s"Could not resolve event log @ ${eventLogPath}:\n$problem")
-      sys.error(s"Could not resolve event log @ ${eventLogPath}.")
+      log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
+      sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
   }
 
   def running(eventLog: ActorRef, activeEvent: Option[Event]): Receive = {
@@ -106,9 +106,9 @@ private[almhirt] class EventLogWriterImpl(
       }
   }
 
-  override def receive: Receive = receiveLookup
+  override def receive: Receive = receiveResolve
 
   override def preStart() {
-    self ! Start
+    self ! Resolve
   }
 } 

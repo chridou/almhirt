@@ -54,15 +54,17 @@ object CommandStatusTracker {
   def props(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration): Props = {
     Props(new MyCommandStatusTracker(targetCacheSize, shrinkCacheAt, checkTimeoutInterval))
   }
+
+  val actorname = "command-status-tracker"
 }
 
 private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration) extends ActorSubscriber with ActorLogging {
   import CommandStatusTracker._
   import almhirt.storages._
 
-  if(targetCacheSize < 1) throw new Exception(s"targetCacheSize($targetCacheSize) must be grater than zero.")
-  if(shrinkCacheAt < targetCacheSize) throw new Exception(s"shrinkCacheAt($targetCacheSize) must at least targetCacheSize($targetCacheSize).")
-  
+  if (targetCacheSize < 1) throw new Exception(s"targetCacheSize($targetCacheSize) must be grater than zero.")
+  if (shrinkCacheAt < targetCacheSize) throw new Exception(s"shrinkCacheAt($targetCacheSize) must at least targetCacheSize($targetCacheSize).")
+
   override val requestStrategy = ZeroRequestStrategy
 
   implicit val executionContext: ExecutionContext = context.dispatcher

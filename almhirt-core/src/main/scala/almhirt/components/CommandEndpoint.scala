@@ -5,21 +5,53 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking._
+import almhirt.akkax._
 // Streaming
 import akka.stream.actor._
 
 object CommandEndpoint {
-  def props(commandStatusTracker: ActorRef, maxTrackingDuration: FiniteDuration): Props =
-    Props(new CommandEndpointImpl(commandStatusTracker, maxTrackingDuration))
+  def propsRaw(commandStatusTrackerToResolve: ToResolve, resolveSettings: ResolveSettings, maxTrackingDuration: FiniteDuration): Props =
+    Props(new CommandEndpointImpl(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration))
 
+  def props(config: com.typesafe.config.Config): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    for {
+      section <- config.v[com.typesafe.config.Config]("almhirt.components.command-endpoint")
+      commandStatusTrackerPathStr <- config.v[String]("command-status-tracker-path")
+      commandStatusTrackerToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(commandStatusTrackerPathStr)) }
+      maxTrackingDuration <- config.v[FiniteDuration]("max-tracking-duration")
+      resolveSettings <- config.v[ResolveSettings]("resolve-settings")
+    } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration)
+  }
+     
   def apply(commandEndpoint: ActorRef): org.reactivestreams.Publisher[Command] =
     ActorPublisher[Command](commandEndpoint)
+    
+  val actorname = "command-endpoint"
 }
 
-private[almhirt] class CommandEndpointImpl(commandStatusTracker: ActorRef, maxTrackingDuration: FiniteDuration) extends ActorPublisher[Command] with ActorLogging {
+private[almhirt] class CommandEndpointImpl(commandStatusTrackerToResolve: ToResolve, resolveSettings: ResolveSettings, maxTrackingDuration: FiniteDuration) extends ActorPublisher[Command] with ActorLogging {
   import CommandStatusTracker._
 
-  def receiveRunning: Receive = {
+  private case object Resolve
+  def receiveResolve: Receive = {
+    case Resolve =>
+      context.resolveSingle(commandStatusTrackerToResolve, resolveSettings, None, Some("status-tracker-resolver"))
+
+    case ActorMessages.ResolvedSingle(commandStatusTracker, _) =>
+      log.info("Found command status tracker.")
+      context.become(receiveRunning(commandStatusTracker))
+
+    case ActorMessages.SingleNotResolved(problem, _) =>
+      log.error(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
+      sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
+
+    case cmd: Command ⇒
+      sender() ! CommandNotAccepted(cmd.commandId, "Not ready! Try again later.")
+  }
+
+  def receiveRunning(commandStatusTracker: ActorRef): Receive = {
     case cmd: Command ⇒
       if (totalDemand > 0 && isActive) {
         if (cmd.isTrackable) {
@@ -55,6 +87,10 @@ private[almhirt] class CommandEndpointImpl(commandStatusTracker: ActorRef, maxTr
       }
   }
 
-  override def receive: Receive = receiveRunning
+  override def receive: Receive = receiveResolve
+
+  override def preStart() {
+    self ! Resolve
+  }
 
 }
