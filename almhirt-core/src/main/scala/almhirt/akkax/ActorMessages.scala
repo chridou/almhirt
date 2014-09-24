@@ -16,7 +16,7 @@ object ActorMessages {
   final case class SingleNotResolved(problem: Problem, correlationId: Option[CorrelationId]) extends ResolveSingleResponse
 
   sealed trait ResolveManyResponse extends ResovleResponse
-  final case class ManyResolved(resolved: Seq[ActorRef], correlationId: Option[CorrelationId]) extends ResolveManyResponse
+  final case class ManyResolved(resolved: Map[String, ActorRef], correlationId: Option[CorrelationId]) extends ResolveManyResponse
   final case class ManyNotResolved(problem: Problem, correlationId: Option[CorrelationId]) extends ResolveManyResponse
 
 }
