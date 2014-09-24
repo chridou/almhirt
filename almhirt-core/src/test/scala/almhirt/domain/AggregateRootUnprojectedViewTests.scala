@@ -231,7 +231,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
     val droneProbe = TestProbe()
 
-    val streams = AlmhirtStreams(s"almhirt-streams-$testId").awaitResultOrEscalate(1 second)
+    val streams = AlmhirtStreams(s"almhirt-streams-$testId")(1 second).awaitResultOrEscalate(1 second)
 
     val droneProps: Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {

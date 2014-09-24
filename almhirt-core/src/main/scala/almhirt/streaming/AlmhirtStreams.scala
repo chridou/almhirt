@@ -26,19 +26,47 @@ trait AlmhirtStreams extends EventStream with CommandStream with CanDispatchEven
 
 object AlmhirtStreams {
   import akka.stream.scaladsl2._
-  import akka.stream.MaterializerSettings
-  def apply(supervisorName: String, maxDur: FiniteDuration = 2.seconds)(implicit actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] =
+  import akka.stream.OverflowStrategy
+  
+  def apply(supervisorName: String)(maxDur: FiniteDuration)(implicit actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] =
     create(
       supervisorName,
       maxDur,
       actorRefFactory,
       None,
+      0,
       1,
       16,
+      0,
       1,
       16,
       true,
       true)
+
+  def apply(
+    supervisorName: String,
+    dispatcherName: Option[String],
+    eventBufferSize: Int,
+    initialFanoutEvents: Int,
+    maxFanoutEvents: Int,
+    commandBufferSize: Int,
+    initialFanoutCommands: Int,
+    maxFanoutCommands: Int,
+    soakEvents: Boolean,
+    soakCommands: Boolean)(maxDur: FiniteDuration)(implicit actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] =
+    create(
+      supervisorName,
+      maxDur,
+      actorRefFactory,
+      dispatcherName,
+      eventBufferSize,
+      initialFanoutEvents,
+      maxFanoutEvents,
+      commandBufferSize,
+      initialFanoutCommands,
+      maxFanoutCommands,
+      soakEvents,
+      soakCommands)
 
   private[almhirt] def createInternal(actorRefFactory: ActorRefFactory, config: com.typesafe.config.Config): AlmFuture[AlmhirtStreams with Stoppable] = {
     import almhirt.configuration._
@@ -49,23 +77,35 @@ object AlmhirtStreams {
         useDedicatedDispatcher <- configSection.v[Boolean]("use-dedicated-dispatcher")
         soakCommands <- configSection.v[Boolean]("soak-commands")
         soakEvents <- configSection.v[Boolean]("soak-events")
-        initialFanoutCommands <- configSection.v[Int]("initial-commands-fanout-buffer-size").constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"initial-commands-fanout-buffer-size must be a power of 2 and not $x.")
-        maxFanoutCommands <- configSection.v[Int]("max-commands-fanout-buffer-size").constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"max-commands-fanout-buffer-size must be a power of 2 and not $x.")
-        initialFanoutEvents <- configSection.v[Int]("initial-events-fanout-buffer-size").constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"initial-events-fanout-buffer-size must be a power of 2 and not $x.")
-        maxFanoutEvents <- configSection.v[Int]("max-events-fanout-buffer-size").constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"imax-events-fanout-buffer-size must be a power of 2 and not $x.")
+        commandBufferSize <- configSection.v[Int]("command-buffer-size")
+          .constrained(_ >= 0, x => s"command-buffer-size must be grater or equal 0, not $x.")
+        eventBufferSize <- configSection.v[Int]("event-buffer-size")
+          .constrained(_ >= 0, x => s"event-buffer-size must be grater or equal 0, not $x.")
+        initialFanoutCommands <- configSection.v[Int]("initial-commands-fanout-buffer-size")
+          .constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"initial-commands-fanout-buffer-size must be a power of 2 and not $x.")
+        maxFanoutCommands <- configSection.v[Int]("max-commands-fanout-buffer-size")
+          .constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"max-commands-fanout-buffer-size must be a power of 2 and not $x.")
+        initialFanoutEvents <- configSection.v[Int]("initial-events-fanout-buffer-size")
+          .constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"initial-events-fanout-buffer-size must be a power of 2 and not $x.")
+        maxFanoutEvents <- configSection.v[Int]("max-events-fanout-buffer-size")
+          .constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"imax-events-fanout-buffer-size must be a power of 2 and not $x.")
       } yield (
-        useDedicatedDispatcher,  
+        useDedicatedDispatcher,
         soakCommands,
         soakEvents,
+        commandBufferSize,
+        eventBufferSize,
         initialFanoutCommands,
         maxFanoutCommands,
         initialFanoutEvents,
         maxFanoutEvents)
     }.flatMap {
-      case (useDedicatedDispatcher, soakCommands, soakEvents, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) =>
-        val dispatcherName = if(useDedicatedDispatcher) Some("almhirt.streams.dedicated-dispatcher") else None
+      case (useDedicatedDispatcher, soakCommands, soakEvents, commandBufferSize, eventBufferSize, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) =>
+        val dispatcherName = if (useDedicatedDispatcher) Some("almhirt.streams.dedicated-dispatcher") else None
         create("streams", 2.seconds, actorRefFactory, dispatcherName,
-          initialFanoutEvents, maxFanoutEvents, initialFanoutCommands, maxFanoutCommands, soakEvents, soakCommands)
+          eventBufferSize, initialFanoutEvents, maxFanoutEvents,
+          commandBufferSize, initialFanoutCommands, maxFanoutCommands,
+          soakEvents, soakCommands)
     }(actorRefFactory.dispatcher)
   }
 
@@ -74,8 +114,10 @@ object AlmhirtStreams {
     maxDur: FiniteDuration,
     actorRefFactory: ActorRefFactory,
     dispatcherName: Option[String],
+    eventBufferSize: Int,
     initialFanoutEvents: Int,
     maxFanoutEvents: Int,
+    commandBufferSize: Int,
     initialFanoutCommands: Int,
     maxFanoutCommands: Int,
     soakEvents: Boolean,
@@ -88,7 +130,12 @@ object AlmhirtStreams {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
             val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
 
-            val eventPub = cheat(FlowFrom[Event](eventShipperOut), initialFanoutEvents, maxFanoutEvents, "eventPub")(context)
+            val eventPub =
+              if (eventBufferSize > 0)
+                cheat(FlowFrom[Event](eventShipperOut).buffer(eventBufferSize, OverflowStrategy.backpressure), initialFanoutEvents, maxFanoutEvents, "eventPub")(context)
+              else
+                cheat(FlowFrom[Event](eventShipperOut), initialFanoutEvents, maxFanoutEvents, "eventPub")(context)
+
             if (soakEvents)
               FlowFrom(eventPub).withSink(BlackholeSink).run()
 
@@ -97,7 +144,12 @@ object AlmhirtStreams {
             val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), "command-broker")
             val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
 
-            val commandPub = cheat(FlowFrom[Command](commandShipperOut), initialFanoutCommands, maxFanoutCommands, "commandPub")(context)
+            val commandPub =
+              if (commandBufferSize > 0)
+                cheat(FlowFrom[Command](commandShipperOut).buffer(eventBufferSize, OverflowStrategy.backpressure), initialFanoutCommands, maxFanoutCommands, "commandPub")(context)
+              else
+                cheat(FlowFrom[Command](commandShipperOut), initialFanoutCommands, maxFanoutCommands, "commandPub")(context)
+
             if (soakCommands)
               FlowFrom(commandPub).withSink(BlackholeSink).run()
 

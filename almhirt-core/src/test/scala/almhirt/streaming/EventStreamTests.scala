@@ -154,7 +154,7 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
   def withFixture(test: OneArgTest) = {
     val testId = nextTestId
     info(s"Test $testId")
-    val (streams) = AlmhirtStreams(s"almhirt-streams-$testId").awaitResultOrEscalate(1 second)
+    val (streams) = AlmhirtStreams(s"almhirt-streams-$testId")(1 second).awaitResultOrEscalate(1 second)
     val fixture = FixtureParam(streams)
     try {
       withFixture(test.toNoArgTest(fixture))
