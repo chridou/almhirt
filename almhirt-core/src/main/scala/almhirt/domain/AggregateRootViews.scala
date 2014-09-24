@@ -1,6 +1,7 @@
 package almhirt.domain
 
 import scala.language.postfixOps
+import scala.reflect.ClassTag
 import scala.concurrent.duration._
 import scalaz._, Scalaz._
 import akka.actor._
@@ -11,10 +12,10 @@ import akka.stream.actor._
 import org.reactivestreams.Publisher
 
 object AggregateRootViews {
-  def propsRaw[E <: AggregateRootEvent: scala.reflect.ClassTag](getViewProps: AggregateRootId ⇒ Props, eventBufferSize: Int): Props =
+  def propsRaw[E <: AggregateRootEvent: ClassTag](getViewProps: AggregateRootId ⇒ Props, eventBufferSize: Int): Props =
     Props(new AggregateRootViews[E](getViewProps, eventBufferSize))
 
-  def props[E <: AggregateRootEvent: scala.reflect.ClassTag](config: com.typesafe.config.Config, getViewProps: AggregateRootId ⇒ Props, viewsConfigName: Option[String] = None): AlmValidation[Props] = {
+  def props[E <: AggregateRootEvent: ClassTag](config: com.typesafe.config.Config, getViewProps: AggregateRootId ⇒ Props, viewsConfigName: Option[String] = None): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     val path = "almhirt.components.views" + viewsConfigName.map("." + _).getOrElse("")
