@@ -30,7 +30,6 @@ class AggregateRootHiveTests(_system: ActorSystem)
       override def getUniqueString(): String = s"id-${currentId.getAndIncrement()}"
       override def getDateTime(): DateTime = ???
       override def getUtcTimestamp(): LocalDateTime = dt
-      override def parseUuid(str: String): AlmValidation[java.util.UUID] = ???
     }
   }
 

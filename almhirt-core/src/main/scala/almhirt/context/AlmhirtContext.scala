@@ -81,7 +81,6 @@ object AlmhirtContext {
                 def getUniqueString() = ccuad.getUniqueString
                 def getDateTime() = ccuad.getDateTime
                 def getUtcTimestamp() = ccuad.getUtcTimestamp
-                def parseUuid(str: String) = ccuad.parseUuid(str)
                 val eventBroker = streams.eventBroker
                 val eventStream = streams.eventStream
                 val commandBroker = streams.commandBroker

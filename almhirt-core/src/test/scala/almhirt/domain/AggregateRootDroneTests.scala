@@ -21,7 +21,6 @@ class AggregateRootDroneTests(_system: ActorSystem)
       override def getUniqueString(): String = "unique"
       override def getDateTime(): DateTime = ???
       override def getUtcTimestamp(): LocalDateTime = dt
-      override def parseUuid(str: String): AlmValidation[java.util.UUID] = ???
     }
   }
 
