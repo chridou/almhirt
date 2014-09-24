@@ -11,9 +11,20 @@ import akka.stream.actor._
 import org.reactivestreams.Publisher
 
 object AggregateRootViews {
-  def props[E <: AggregateRootEvent](getViewProps: AggregateRootId ⇒ Props, eventBufferSize: Int)(implicit eventTag: scala.reflect.ClassTag[E]): Props =
+  def propsRaw[E <: AggregateRootEvent: scala.reflect.ClassTag](getViewProps: AggregateRootId ⇒ Props, eventBufferSize: Int): Props =
     Props(new AggregateRootViews[E](getViewProps, eventBufferSize))
 
+  def props[E <: AggregateRootEvent: scala.reflect.ClassTag](config: com.typesafe.config.Config, getViewProps: AggregateRootId ⇒ Props, viewsConfigName: Option[String] = None): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    val path = "almhirt.components.views" + viewsConfigName.map("." + _).getOrElse("")
+    for {
+      section <- config.v[com.typesafe.config.Config](path)
+      eventBufferSize <- config.v[Int]("event-buffer-size")
+    } yield propsRaw(getViewProps, eventBufferSize)
+    
+  } 
+    
   import akka.stream.scaladsl2._
   def subscribeTo[E <: Event](
     publisher: Publisher[Event],
@@ -25,7 +36,7 @@ object AggregateRootViews {
     implicit actorRefFactory: ActorRefFactory,
     mat: FlowMaterializer,
     tag: scala.reflect.ClassTag[E]): ActorRef = {
-    val props = AggregateRootViews.props(getViewProps, eventBufferSize)
+    val props = AggregateRootViews.propsRaw(getViewProps, eventBufferSize)
     val views = actorRefFactory.actorOf(props, name)
     subscribeTo[E](publisher, views)
     views
