@@ -18,10 +18,10 @@ object CommandEndpoint {
     import almhirt.almvalidation.kit._
     for {
       section <- config.v[com.typesafe.config.Config]("almhirt.components.misc.command-endpoint")
-      commandStatusTrackerPathStr <- config.v[String]("command-status-tracker-path")
+      commandStatusTrackerPathStr <- section.v[String]("command-status-tracker-path")
       commandStatusTrackerToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(commandStatusTrackerPathStr)) }
-      maxTrackingDuration <- config.v[FiniteDuration]("max-tracking-duration")
-      resolveSettings <- config.v[ResolveSettings]("resolve-settings")
+      maxTrackingDuration <- section.v[FiniteDuration]("max-tracking-duration")
+      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
     } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration)
   }
      

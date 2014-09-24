@@ -10,6 +10,7 @@ import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
 import almhirt.converters.BinaryConverter
 import almhirt.configuration._
+import almhirt.context.AlmhirtContext
 import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index ⇒ MIndex }
@@ -19,7 +20,7 @@ import com.typesafe.config.Config
 import play.api.libs.iteratee._
 
 object MongoAggregateRootEventLog {
-  def props(
+  def propsRaw(
     db: DB with DBMetaCommands,
     collectionName: String,
     serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
@@ -33,6 +34,28 @@ object MongoAggregateRootEventLog {
       deserializeAggregateRootEvent,
       writeWarnThreshold,
       readWarnThreshold))
+
+  def props(
+    db: DB with DBMetaCommands,
+    serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
+    deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
+    configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    val path = "almhirt.components.event-logs.aggregate-root-event-log" + configName.map("." + _).getOrElse("")
+    for {
+      section <- ctx.config.v[com.typesafe.config.Config](path)
+      collectionName <- section.v[String]("collection-name")
+      writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
+      readWarnThreshold <- section.v[FiniteDuration]("read-warn-threshold")
+    } yield propsRaw(
+      db,
+      collectionName,
+      serializeAggregateRootEvent,
+      deserializeAggregateRootEvent,
+      writeWarnThreshold,
+      readWarnThreshold)
+  }
 }
 
 private[almhirt] class MongoAggregateRootEventLogImpl(

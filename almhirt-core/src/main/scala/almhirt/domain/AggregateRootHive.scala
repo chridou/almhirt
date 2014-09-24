@@ -31,20 +31,20 @@ object AggregateRootHive {
     droneFactory: AggregateRootDroneFactory,
     eventsBroker: StreamBroker[Event],
     config: com.typesafe.config.Config,
-    viewsConfigName: Option[String] = None)(implicit ccuad: CanCreateUuidsAndDateTimes, futuresContext: ExecutionContext): AlmValidation[Props] = {
+    hiveConfigName: Option[String] = None)(implicit ccuad: CanCreateUuidsAndDateTimes, futuresContext: ExecutionContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
-    val path = "aggregate-root-hive" + viewsConfigName.map("." + _).getOrElse("")
+    val path = "almhirt.components.aggregate-root-hive" + hiveConfigName.map("." + _).getOrElse("")
     for {
       section <- config.v[com.typesafe.config.Config](path)
-      commandBuffersize <- config.v[Int]("command-buffer-size")
-      enqueudEventsThrottlingThresholdFactor <- config.v[Int]("enqueud-events-throttling-threshold-factor")
+      commandBuffersize <- section.v[Int]("command-buffer-size")
+      enqueudEventsThrottlingThresholdFactor <- section.v[Int]("enqueud-events-throttling-threshold-factor")
     } yield propsRaw(
-        hiveDescriptor,
-    commandBuffersize,
-    droneFactory,
-    eventsBroker,
-    enqueudEventsThrottlingThresholdFactor)
+      hiveDescriptor,
+      commandBuffersize,
+      droneFactory,
+      eventsBroker,
+      enqueudEventsThrottlingThresholdFactor)
 
   }
 }

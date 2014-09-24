@@ -60,9 +60,9 @@ object CommandStatusTracker {
     import almhirt.almvalidation.kit._
     for {
       section <- config.v[com.typesafe.config.Config]("almhirt.components.misc.command-status-tracker")
-      targetCacheSize <- config.v[Int]("target-cache-size")
-      shrinkCacheAt <- config.v[Int]("shrink-cache-at")
-      checkTimeoutInterval <- config.v[FiniteDuration]("check-timeout-interval")
+      targetCacheSize <- section.v[Int]("target-cache-size")
+      shrinkCacheAt <- section.v[Int]("shrink-cache-at")
+      checkTimeoutInterval <- section.v[FiniteDuration]("check-timeout-interval")
     } yield propsRaw(targetCacheSize, shrinkCacheAt, checkTimeoutInterval)
   }
   

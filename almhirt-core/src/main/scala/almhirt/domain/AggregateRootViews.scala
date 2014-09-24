@@ -21,7 +21,7 @@ object AggregateRootViews {
     val path = "almhirt.components.aggregate-root-views" + viewsConfigName.map("." + _).getOrElse("")
     for {
       section <- config.v[com.typesafe.config.Config](path)
-      eventBufferSize <- config.v[Int]("event-buffer-size")
+      eventBufferSize <- section.v[Int]("event-buffer-size")
     } yield propsRaw(getViewProps, eventBufferSize)
     
   } 

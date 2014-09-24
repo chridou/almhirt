@@ -25,10 +25,10 @@ object EventLogWriter {
     import almhirt.configuration._
     for {
       section <- config.v[com.typesafe.config.Config]("almhirt.components.event-log-writer")
-      eventLogPathStr <- config.v[String]("event-log-path")
+      eventLogPathStr <- section.v[String]("event-log-path")
       eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
-      maxWaitForEventLog <- config.v[FiniteDuration]("max-wait-for-event-log")
-      resolveSettings <- config.v[ResolveSettings]("resolve-settings")
+      maxWaitForEventLog <- section.v[FiniteDuration]("max-wait-for-event-log")
+      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
     } yield propsRaw(eventLogToResolve, resolveSettings, maxWaitForEventLog)
   }
 

@@ -14,7 +14,7 @@ object AggregateRootEventLog {
   sealed trait CommitAggregateRootEventResponse extends AggregateRootEventLogResponse
   final case class AggregateRootEventCommitted(id: EventId) extends CommitAggregateRootEventResponse
   final case class AggregateRootEventNotCommitted(id: EventId, problem: Problem) extends CommitAggregateRootEventResponse
-  
+
   case object GetAllAggregateRootEvents extends AggregateRootEventLogMessage
   final case class GetAllAggregateRootEventsFor(aggId: AggregateRootId) extends AggregateRootEventLogMessage
   final case class GetAggregateRootEventsFrom(aggId: AggregateRootId, fromVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
@@ -26,14 +26,11 @@ object AggregateRootEventLog {
   final case class FetchedAggregateRootEvents(enumerator: Enumerator[AggregateRootEvent]) extends GetManyAggregateRootEventsResponse
   final case class GetAggregateRootEventsFailed(problem: Problem) extends GetManyAggregateRootEventsResponse
 
-
   final case class GetAggregateRootEvent(eventId: EventId) extends AggregateRootEventLogMessage
   sealed trait GetAggregateRootEventResponse extends AggregateRootEventLogResponse
   final case class FetchedAggregateRootEvent(eventId: EventId, event: Option[AggregateRootEvent]) extends GetAggregateRootEventResponse
   final case class GetAggregateRootEventFailed(eventId: EventId, problem: Problem) extends GetAggregateRootEventResponse
-   
-  object AggregateEventLogCoordinates {
-	  val actorname = "aggregate-event-log"
-	  val logicalPath: String = s"user/almhirt/storage/$actorname"
-  }
+
+  val actorname = "aggregate-event-log"
+  def logicalPath(actorname: String): String = s"/user/almhirt/components/event-logs/$actorname"
 }

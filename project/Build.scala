@@ -167,6 +167,7 @@ trait CorexMongoBuild {
 	  libraryDependencies += jodaconvert,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += akka_streams,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += typesafe_config,
 	  libraryDependencies += "org.reactivemongo" %% "reactivemongo" % BuildSettings.reactiveMongoVersion % "provided"

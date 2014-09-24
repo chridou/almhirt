@@ -35,9 +35,6 @@ object EventLog {
   final case class FetchedEvents(events: Enumerator[Event]) extends FetchEventsResponse
   final case class FetchEventsFailed(problem: Problem) extends FetchEventsResponse
 
-  object EventLogCoordinates {
-	  val actorname = "event-log"
-	  val logicalPath: String = s"user/almhirt/storage/$actorname"
-  }
-
+  val actorname = "event-log"
+  def logicalPath(actorname: String): String = s"/user/almhirt/components/event-logs/$actorname"
 }
