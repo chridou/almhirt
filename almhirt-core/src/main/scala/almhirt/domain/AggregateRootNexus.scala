@@ -7,7 +7,14 @@ import akka.stream.scaladsl2._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 
-class AggregateRootNexus(
+object AggregateRootNexus {
+  def props(commandsPublisher: Publisher[Command], hiveSelector: HiveSelector, hiveFactory: AggregateRootHiveFactory): Props =
+    Props(new AggregateRootNexus(commandsPublisher, hiveSelector, hiveFactory))
+  
+  val actorname = "aggregate-root-nexus"
+}
+
+private[almhirt] class AggregateRootNexus(
   override val commandsPublisher: Publisher[Command],
   override val hiveSelector: HiveSelector,
   override val hiveFactory: AggregateRootHiveFactory) extends Actor with ActorLogging with AggregateRootNexusSkeleton {

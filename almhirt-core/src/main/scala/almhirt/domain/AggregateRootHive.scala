@@ -10,19 +10,49 @@ import org.reactivestreams.{ Publisher }
 import akka.stream.actor.{ ActorSubscriber, ActorSubscriberMessage, ZeroRequestStrategy }
 import almhirt.streaming._
 
-class HiveDescriptor(val value: String) extends AnyVal
-
-object HiveDescriptor {
-  def apply(value: String) = new HiveDescriptor(value)
-}
+final case class HiveDescriptor(val value: String) extends AnyVal
 
 object AggregateRootHive {
+  def propsRaw(
+    hiveDescriptor: HiveDescriptor,
+    commandBuffersize: Int,
+    droneFactory: AggregateRootDroneFactory,
+    eventsBroker: StreamBroker[Event],
+    enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit ccuad: CanCreateUuidsAndDateTimes, futuresContext: ExecutionContext): Props =
+    Props(new AggregateRootHive(
+      hiveDescriptor,
+      commandBuffersize,
+      droneFactory,
+      eventsBroker,
+      enqueudEventsThrottlingThresholdFactor))
+
+  def props(
+    hiveDescriptor: HiveDescriptor,
+    droneFactory: AggregateRootDroneFactory,
+    eventsBroker: StreamBroker[Event],
+    config: com.typesafe.config.Config,
+    viewsConfigName: Option[String] = None)(implicit ccuad: CanCreateUuidsAndDateTimes, futuresContext: ExecutionContext): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    val path = "aggregate-root-hive" + viewsConfigName.map("." + _).getOrElse("")
+    for {
+      section <- config.v[com.typesafe.config.Config](path)
+      commandBuffersize <- config.v[Int]("command-buffer-size")
+      enqueudEventsThrottlingThresholdFactor <- config.v[Int]("enqueud-events-throttling-threshold-factor")
+    } yield propsRaw(
+        hiveDescriptor,
+    commandBuffersize,
+    droneFactory,
+    eventsBroker,
+    enqueudEventsThrottlingThresholdFactor)
+
+  }
 }
 
 private[almhirt] object AggregateRootHiveInternals {
 }
 
-class AggregateRootHive(
+private[almhirt] class AggregateRootHive(
   override val hiveDescriptor: HiveDescriptor,
   override val commandBuffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
@@ -72,13 +102,12 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       context.become(receiveRunning())
   }
 
-
   private var remainingRequestCapacity: Int = commandBuffersize
   private var bufferedEvents: Vector[Event] = Vector.empty
 
   private def requestCommands() {
-    if(bufferedEvents.size > enqueudEventsThrottlingThreshold) {
-      log.warning(s"to many events: ${bufferedEvents .size}")
+    if (bufferedEvents.size > enqueudEventsThrottlingThreshold) {
+      log.warning(s"to many events: ${bufferedEvents.size}")
     }
     if (remainingRequestCapacity > 0 && bufferedEvents.size <= enqueudEventsThrottlingThreshold) {
       request(remainingRequestCapacity)
@@ -123,7 +152,6 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       }
       drone ! aggregateCommand
       enqueueEvent(CommandExecutionInitiated(aggregateCommand))
-
 
     case rsp: AggregateRootDroneInternalMessages.ExecuteCommandResponse ⇒
       receivedCommandResponse()

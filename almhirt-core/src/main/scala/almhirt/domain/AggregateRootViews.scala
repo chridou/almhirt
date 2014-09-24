@@ -18,7 +18,7 @@ object AggregateRootViews {
   def props[E <: AggregateRootEvent: ClassTag](config: com.typesafe.config.Config, getViewProps: AggregateRootId ⇒ Props, viewsConfigName: Option[String] = None): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
-    val path = "almhirt.components.views" + viewsConfigName.map("." + _).getOrElse("")
+    val path = "almhirt.components.aggregate-root-views" + viewsConfigName.map("." + _).getOrElse("")
     for {
       section <- config.v[com.typesafe.config.Config](path)
       eventBufferSize <- config.v[Int]("event-buffer-size")
