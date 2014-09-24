@@ -5,20 +5,31 @@ import scala.language.postfixOps
 import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
+import almhirt.almvalidation.kit._
+import almhirt.akkax._
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
 
 object EventLogWriter {
-  def props(
+  def propsRaw(
     eventLogPath: ActorPath,
-    lookupInterval: FiniteDuration,
-    maxLookupDuration: FiniteDuration,
+    resolveSettings: ResolveSettings,
     maxWaitForEventLog: FiniteDuration = 1 second): Props = {
     Props(new EventLogWriterImpl(
       eventLogPath,
-      maxWaitForEventLog,
-      lookupInterval: FiniteDuration,
-      maxLookupDuration: FiniteDuration))
+      resolveSettings,
+      maxWaitForEventLog: FiniteDuration))
+  }
+
+  def props(config: com.typesafe.config.Config): AlmValidation[Props] = {
+    import almhirt.configuration._
+    for {
+      section <- config.v[com.typesafe.config.Config]("almhirt.components.event-log-writer")
+      eventLogPathStr <- config.v[String]("event-log-path")
+      eventLogPath <- inTryCatch { ActorPath.fromString(eventLogPathStr) }
+      maxWaitForEventLog <- config.v[FiniteDuration]("max-wait-for-event-log")
+      resolveSettings <- config.v[ResolveSettings]("resolve-settings")
+    } yield propsRaw(eventLogPath, resolveSettings, maxWaitForEventLog)
   }
 
   def apply(eventLogWriter: ActorRef): Subscriber[Event] =
@@ -27,44 +38,26 @@ object EventLogWriter {
 
 private[almhirt] class EventLogWriterImpl(
   eventLogPath: ActorPath,
-  maxWaitForEventLog: FiniteDuration,
-  lookupInterval: FiniteDuration,
-  maxLookupDuration: FiniteDuration) extends ActorSubscriber with ActorLogging {
+  resolveSettings: ResolveSettings,
+  maxWaitForEventLog: FiniteDuration) extends ActorSubscriber with ActorLogging {
   import almhirt.eventlog.EventLog
 
   override val requestStrategy = ZeroRequestStrategy
 
   private case class PotentialTimeout(eventId: EventId)
 
-  private case class ResolvePath(path: ActorPath)
-  private case class SelectionResolved(actor: ActorRef)
-  private case class SelectionNotResolved(path: ActorPath, ex: Throwable)
+  private case object Start
 
   def receiveLookup(start: Deadline): Receive = {
-    case ResolvePath(path) =>
-      val selection = context.actorSelection(path)
-      selection.resolveOne(1.second).onComplete {
-        case scala.util.Success(actor) => self ! SelectionResolved(actor)
-        case scala.util.Failure(ex) => self ! SelectionNotResolved(path, ex)
-      }(context.dispatcher)
+    case Start =>
+      context.resolveSingle(ResolvePath(eventLogPath), resolveSettings, None, Some("event-log-resolver"))
 
-    case SelectionResolved(eventLog) =>
-      context.become(running(eventLog, None))
-      request(1)
+    case ActorMessages.ResolvedSingle(eventlog, _) =>
+      context.become(running(eventlog, None))
 
-    case SelectionNotResolved(path, ex) =>
-      if (start.lapExceeds(maxLookupDuration)) {
-        log.error(s"""	|Could not resolve "${path}" after ${lookupInterval.defaultUnitString}.
-        				|Cause:
-    		  			|$ex""".stripMargin)
-        throw ex
-      } else {
-        log.warning(s"""	|Could not resolve "${path}" after ${maxLookupDuration.defaultUnitString}.
-        					|Will retry in ${lookupInterval.defaultUnitString}.
-        					|Cause:
-        					|$ex""".stripMargin)
-        context.system.scheduler.scheduleOnce(lookupInterval, self, ResolvePath(eventLogPath))(context.dispatcher)
-      }
+    case ActorMessages.SingleNotResolved(problem, _) =>
+      log.error(s"Could not resolve event log @ ${eventLogPath}:\n$problem")
+      sys.error(s"Could not resolve event log @ ${eventLogPath}.")
   }
 
   def running(eventLog: ActorRef, activeEvent: Option[Event]): Receive = {
@@ -115,6 +108,6 @@ private[almhirt] class EventLogWriterImpl(
   override def receive: Receive = receiveLookup(Deadline.now)
 
   override def preStart() {
-    self ! ResolvePath(eventLogPath)
+    self ! Start
   }
 } 
