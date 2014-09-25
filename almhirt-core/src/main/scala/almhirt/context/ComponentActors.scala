@@ -2,7 +2,6 @@ package almhirt.context
 
 import akka.actor._
 import almhirt.almvalidation.kit._
-import scala.actors.ActorRef
 
 private[almhirt] object componentactors {
   import almhirt.akkax.{ ActorMessages, ComponentFactory }
