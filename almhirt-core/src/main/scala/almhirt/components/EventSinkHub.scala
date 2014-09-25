@@ -15,13 +15,13 @@ object EventSinkHub {
   def props(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event], buffersize: Option[Int]): Props =
     Props(new EventSinksSupervisorImpl(factories, eventPublisher, buffersize))
 
-  def props(factories: EventSinkHub.EventSinkHubMemberFactories, eventPublisher: Publisher[Event])(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+  def props(factories: EventSinkHub.EventSinkHubMemberFactories)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     for {
       configSection <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.event-sink-hub")
       buffersize <- configSection.v[Int]("buffer-size").constrained(_ >= 0, n => s""""buffer-size" must be greater or equal than 0, not $n.""")
-    } yield props(factories, eventPublisher, Some(buffersize))
+    } yield props(factories, ctx.eventStream, Some(buffersize))
   }
 
   val actorname = "event-sink-hub"
