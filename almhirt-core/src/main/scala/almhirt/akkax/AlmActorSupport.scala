@@ -18,7 +18,6 @@ trait AlmActorSupport { me: Actor =>
     what.mapRecoverPipeTo(map, recover)(receiver)
   }
   
-  
   implicit class AlmFuturePipeTo[T](self: AlmFuture[T]) {
     def pipeTo(receiver: ActorRef, unwrapProblem: Boolean = true)(implicit executionContext: ExecutionContext) {
       import almhirt.problem._
@@ -46,6 +45,5 @@ trait AlmActorSupport { me: Actor =>
         problem => receiver ! recover(problem),
         succ => receiver ! map(succ))
     }
-
   }
 }
