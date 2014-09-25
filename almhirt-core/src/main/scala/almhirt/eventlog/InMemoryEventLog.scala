@@ -1,8 +1,7 @@
-package almhirt.eventlog.impl
+package almhirt.eventlog
 
 import akka.actor._
 import almhirt.common._
-import almhirt.eventlog.EventLog
 import play.api.libs.iteratee.Enumerator
 
 object InMemoryEventLog {
