@@ -37,25 +37,13 @@ private[almhirt] object componentactors {
         apps ! m
         m.factories.buildNexus.foreach(_(ctx).onComplete(
           problem => log.error(s"Failed to create nexus props:\$problem"),
-          Function.tupled((name, factory) =>
-            self ! ActorMessages.CreateChildActor(factory, Some(name), false)))(context.dispatcher))
+          factory => self ! ActorMessages.CreateChildActor(factory, false))(context.dispatcher))
       }
 
-      case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
-        inTryCatch {
-          val actorRef =
-            nameOpt match {
-              case Some(name) =>
-                context.actorOf(props, name)
-              case None =>
-                context.actorOf(props)
-            }
-          postAction(actorRef)
-          log.info(s"""Created "${actorRef.path}".""")
-          actorRef
-        }.fold(
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
+        componentFactory(context).fold(
           problem => {
-            log.error(s"""Failed to create "${nameOpt.getOrElse("<<<no name>>>")}".""")
+            log.error(s"""Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}".""")
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
           actorRef =>
@@ -71,23 +59,12 @@ private[almhirt] object componentactors {
         log.info("Unfolding.")
         buildEventLogs(ctx).onComplete(
           fail => log.error(s"Failed to create Props:\n$fail"),
-          propsByName => propsByName.foreach { case (name, props) => self ! ActorMessages.CreateChildActor(props, Some(name), false) })(context.dispatcher)
+          factories => factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, false) })(context.dispatcher)
 
-      case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
-        inTryCatch {
-          val actorRef =
-            nameOpt match {
-              case Some(name) =>
-                context.actorOf(props, name)
-              case None =>
-                context.actorOf(props)
-            }
-          postAction(actorRef)
-          log.info(s"""Created "${actorRef.path}".""")
-          actorRef
-        }.fold(
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
+        componentFactory(context).fold(
           problem => {
-            log.error(s"""Failed to create "${nameOpt.getOrElse("<<<no name>>>")}".""")
+            log.error(s"""Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}".""")
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
           actorRef =>
@@ -102,23 +79,12 @@ private[almhirt] object componentactors {
         log.info("Unfolding.")
         buildViews(ctx).onComplete(
           fail => log.error(s"Failed to create Props:\n$fail"),
-          propsByName => propsByName.foreach { case (name, props) => self ! ActorMessages.CreateChildActor(props, Some(name), false) })(context.dispatcher)
+          factories => factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, false) })(context.dispatcher)
 
-      case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
-        inTryCatch {
-          val actorRef =
-            nameOpt match {
-              case Some(name) =>
-                context.actorOf(props, name)
-              case None =>
-                context.actorOf(props)
-            }
-          postAction(actorRef)
-          log.info(s"""Created "${actorRef.path}".""")
-          actorRef
-        }.fold(
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
+        componentFactory(context).fold(
           problem => {
-            log.error(s"""Failed to create "${nameOpt.getOrElse("<<<no name>>>")}".""")
+            log.error(s"""Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}".""")
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
           actorRef =>
@@ -133,23 +99,12 @@ private[almhirt] object componentactors {
         log.info("Unfolding.")
         buildMisc(ctx).onComplete(
           fail => log.error(s"Failed to create Props:\n$fail"),
-          propsByName => propsByName.foreach { case (name, props) => self ! ActorMessages.CreateChildActor(props, Some(name), false) })(context.dispatcher)
+          factories => factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, false) })(context.dispatcher)
 
-      case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
-        inTryCatch {
-          val actorRef =
-            nameOpt match {
-              case Some(name) =>
-                context.actorOf(props, name)
-              case None =>
-                context.actorOf(props)
-            }
-          postAction(actorRef)
-          log.info(s"""Created "${actorRef.path}".""")
-          actorRef
-        }.fold(
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
+        componentFactory(context).fold(
           problem => {
-            log.error(s"""Failed to create "${nameOpt.getOrElse("<<<no name>>>")}".""")
+            log.error(s"""Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}".""")
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
           actorRef =>
@@ -164,23 +119,12 @@ private[almhirt] object componentactors {
         log.info("Unfolding.")
         buildApps(ctx).onComplete(
           fail => log.error(s"Failed to create Props:\n$fail"),
-          propsByName => propsByName.foreach { case (name, props) => self ! ActorMessages.CreateChildActor(props, Some(name), false) })(context.dispatcher)
+          factories => factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, false) })(context.dispatcher)
 
-      case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
-        inTryCatch {
-          val actorRef =
-            nameOpt match {
-              case Some(name) =>
-                context.actorOf(props, name)
-              case None =>
-                context.actorOf(props)
-            }
-          postAction(actorRef)
-          log.info(s"""Created "${actorRef.path}".""")
-          actorRef
-        }.fold(
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
+        componentFactory(context).fold(
           problem => {
-            log.error(s"""Failed to create "${nameOpt.getOrElse("<<<no name>>>")}".""")
+            log.error(s"""Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}".""")
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
           actorRef =>
