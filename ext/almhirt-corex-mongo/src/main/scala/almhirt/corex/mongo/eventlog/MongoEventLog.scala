@@ -31,7 +31,7 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold))
 
-  def props(
+  def propsWithDb(
     db: DB with DBMetaCommands,
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
@@ -51,6 +51,25 @@ object MongoEventLog {
       writeWarnThreshold)
   }
 
+  def propsWithConnection(
+    connection: MongoConnection,
+    serializeEvent: Event ⇒ AlmValidation[BSONDocument],
+    deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
+    configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    val path = "almhirt.components.event-logs.event-log" + configName.map("." + _).getOrElse("")
+    for {
+      section <- ctx.config.v[com.typesafe.config.Config](path)
+      dbName <- section.v[String]("db-name")
+      db <- inTryCatch {connection(dbName)(ctx.futuresContext)}
+      props <- propsWithDb(
+        db,
+        serializeEvent,
+        deserializeEvent,
+        configName)
+    } yield props
+  }
 }
 
 private[almhirt] class MongoEventLogImpl(

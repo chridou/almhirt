@@ -35,7 +35,7 @@ object MongoAggregateRootEventLog {
       writeWarnThreshold,
       readWarnThreshold))
 
-  def props(
+  def propsWithDb(
     db: DB with DBMetaCommands,
     serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
@@ -56,6 +56,27 @@ object MongoAggregateRootEventLog {
       writeWarnThreshold,
       readWarnThreshold)
   }
+
+  def propsWithConnection(
+    connection: MongoConnection,
+    serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
+    deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
+    configName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+    import almhirt.configuration._
+    import almhirt.almvalidation.kit._
+    val path = "almhirt.components.event-logs.aggregate-root-event-log" + configName.map("." + _).getOrElse("")
+    for {
+      section <- ctx.config.v[com.typesafe.config.Config](path)
+      dbName <- section.v[String]("db-name")
+      db <- inTryCatch { connection(dbName)(ctx.futuresContext) }
+      props <- propsWithDb(
+        db,
+        serializeAggregateRootEvent,
+        deserializeAggregateRootEvent,
+        configName)
+    } yield props
+  }
+
 }
 
 private[almhirt] class MongoAggregateRootEventLogImpl(
