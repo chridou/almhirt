@@ -11,7 +11,9 @@ final case class ComponentFactories(
   /** These are other components. They will be children of  "/user/{almhirt}/components/misc". */ 
   buildMisc: AlmhirtContext => AlmFuture[Map[String, ComponentFactory]],
   /** These are your hosted apps. They will be children of  "/user/{almhirt}/components/apps". */ 
-  buildApps: AlmhirtContext => AlmFuture[Map[String, ComponentFactory]]
+  buildApps: AlmhirtContext => AlmFuture[Map[String, ComponentFactory]],
+  /** Build the nexus under  "/user/{almhirt}/components/{nexus}". */ 
+  buildNexus: Option[AlmhirtContext => AlmFuture[(String, ComponentFactory)]]
 )
 
 
@@ -21,6 +23,7 @@ object ComponentFactories {
     _ => AlmFuture.successful(Map.empty), 
     _ => AlmFuture.successful(Map.empty), 
     _ => AlmFuture.successful(Map.empty),
-    _ => AlmFuture.successful(Map.empty)
+    _ => AlmFuture.successful(Map.empty),
+    None
   )
 }

@@ -20,14 +20,14 @@ private[almhirt] object componentactors {
 
   def appsProps(ctx: AlmhirtContext): Props =
     Props(new AppsActor(ctx))
-    
+
   final case class Unfold(factories: ComponentFactories)
   class ComponentsActor(ctx: AlmhirtContext) extends Actor with ActorLogging {
     val eventLogs = context.actorOf(eventLogsProps(ctx), "event-logs")
     val views = context.actorOf(viewsProps(ctx), "views")
     val misc = context.actorOf(miscProps(ctx), "misc")
     val apps = context.actorOf(appsProps(ctx), "apps")
-    
+
     override def receive: Receive = {
       case m: Unfold => {
         log.info("Unfolding.")
@@ -35,6 +35,10 @@ private[almhirt] object componentactors {
         views ! m
         misc ! m
         apps ! m
+        m.factories.buildNexus.foreach(_(ctx).onComplete(
+          problem => log.error(s"Failed to create nexus props:\$problem"),
+          Function.tupled((name, factory) =>
+            self ! ActorMessages.CreateChildActor(factory, Some(name), false)))(context.dispatcher))
       }
 
       case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
@@ -63,7 +67,7 @@ private[almhirt] object componentactors {
   class EventLogsActor(ctx: AlmhirtContext) extends Actor with ActorLogging with almhirt.akkax.AlmActorSupport {
     override def receive: Receive = {
 
-      case Unfold(ComponentFactories(buildEventLogs, _, _, _)) =>
+      case Unfold(ComponentFactories(buildEventLogs, _, _, _, _)) =>
         log.info("Unfolding.")
         buildEventLogs(ctx).onComplete(
           fail => log.error("Failed to create Props."),
@@ -94,7 +98,7 @@ private[almhirt] object componentactors {
 
   class ViewsActor(ctx: AlmhirtContext) extends Actor with ActorLogging with almhirt.akkax.AlmActorSupport {
     override def receive: Receive = {
-      case Unfold(ComponentFactories(_, buildViews, _, _)) =>
+      case Unfold(ComponentFactories(_, buildViews, _, _, _)) =>
         log.info("Unfolding.")
         buildViews(ctx).onComplete(
           fail => log.error("Failed to create Props."),
@@ -125,7 +129,7 @@ private[almhirt] object componentactors {
 
   class MiscActor(ctx: AlmhirtContext) extends Actor with ActorLogging with almhirt.akkax.AlmActorSupport {
     override def receive: Receive = {
-      case Unfold(ComponentFactories(_, _, buildMisc, _)) =>
+      case Unfold(ComponentFactories(_, _, buildMisc, _, _)) =>
         log.info("Unfolding.")
         buildMisc(ctx).onComplete(
           fail => log.error("Failed to create Props."),
@@ -153,10 +157,10 @@ private[almhirt] object componentactors {
               sender() ! ActorMessages.ChildActorCreated(actorRef))
     }
   }
-  
+
   class AppsActor(ctx: AlmhirtContext) extends Actor with ActorLogging with almhirt.akkax.AlmActorSupport {
     override def receive: Receive = {
-      case Unfold(ComponentFactories(_, _, _, buildApps)) =>
+      case Unfold(ComponentFactories(_, _, _, buildApps, _)) =>
         log.info("Unfolding.")
         buildApps(ctx).onComplete(
           fail => log.error("Failed to create Props."),
@@ -183,6 +187,6 @@ private[almhirt] object componentactors {
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef))
     }
-  }  
+  }
 
 }
