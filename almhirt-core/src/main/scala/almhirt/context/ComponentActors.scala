@@ -26,12 +26,15 @@ private[almhirt] object componentactors {
     val eventLogs = context.actorOf(eventLogsProps(ctx), "event-logs")
     val views = context.actorOf(viewsProps(ctx), "views")
     val misc = context.actorOf(miscProps(ctx), "misc")
+    val apps = context.actorOf(appsProps(ctx), "apps")
+    
     override def receive: Receive = {
       case m: Unfold => {
         log.info("Unfolding.")
         eventLogs ! m
         views ! m
         misc ! m
+        apps ! m
       }
 
       case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
