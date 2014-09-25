@@ -9,6 +9,10 @@ import almhirt.tracking.CorrelationId
 
 final case class ResolveSettings(maxResolveTime: FiniteDuration, resolveWait: FiniteDuration, resolvePause: FiniteDuration)
 
+object ResolveSettings {
+  val default = ResolveSettings(maxResolveTime = 10.seconds, resolveWait = 4.seconds, resolvePause = 1.second)
+}
+
 sealed trait ToResolve
 final case class NoResolvingRequired(actorRef: ActorRef) extends ToResolve
 sealed trait ToReallyResolve extends ToResolve
