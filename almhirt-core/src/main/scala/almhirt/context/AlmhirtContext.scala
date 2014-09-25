@@ -86,7 +86,7 @@ object AlmhirtContext {
                 val commandStream = streams.commandStream
                 def stop() {
                   log.info("Stopping.")
-                  streams.stop()
+                  //streams.stop()
                   context.stop(self)
                 }
               }
