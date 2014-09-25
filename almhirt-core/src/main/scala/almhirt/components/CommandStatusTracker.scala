@@ -6,11 +6,10 @@ import scalaz._, Scalaz._
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking.{ CommandStatus, CommandStatusChanged }
-
+import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
-import akka.stream.scaladsl.Duct
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2._
 
 object CommandStatusTracker {
   sealed trait CommandStatusTrackerMessage
@@ -44,32 +43,38 @@ object CommandStatusTracker {
     ActorSubscriber[CommandStatusChanged](statusTracker)
 
   def systemEventSubscriber(statusTracker: ActorRef)(implicit materializer: FlowMaterializer): Subscriber[SystemEvent] = {
-    val duct = Duct[SystemEvent].collect { case e: CommandStatusChanged ⇒ e }
-    val (subscriber, publisher) = duct.build
-    val trackingSubscriber = CommandStatusTracker(statusTracker)
-    publisher.subscribe(trackingSubscriber)
-    subscriber
+//    val duct = Duct[SystemEvent].collect { case e: CommandStatusChanged ⇒ e }
+//    val (subscriber, publisher) = duct.build
+//    val trackingSubscriber = CommandStatusTracker(statusTracker)
+//    publisher.subscribe(trackingSubscriber)
+//    subscriber
+    ???
   }
 
-  def propsRaw(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration): Props = {
-    Props(new MyCommandStatusTracker(targetCacheSize, shrinkCacheAt, checkTimeoutInterval))
+  def propsRaw(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration, autoSubscribe: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
+    Props(new MyCommandStatusTracker(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoSubscribe))
   }
 
-  def props(config: com.typesafe.config.Config): AlmValidation[Props] = {
+  def props()(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     for {
-      section <- config.v[com.typesafe.config.Config]("almhirt.components.misc.command-status-tracker")
+      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-status-tracker")
       targetCacheSize <- section.v[Int]("target-cache-size")
       shrinkCacheAt <- section.v[Int]("shrink-cache-at")
       checkTimeoutInterval <- section.v[FiniteDuration]("check-timeout-interval")
-    } yield propsRaw(targetCacheSize, shrinkCacheAt, checkTimeoutInterval)
+      autoSubscribe <- section.v[Boolean]("auto-subscribe")
+    } yield propsRaw(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoSubscribe)
   }
-  
+
   val actorname = "command-status-tracker"
 }
 
-private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration) extends ActorSubscriber with ActorLogging {
+private[almhirt] class MyCommandStatusTracker(
+  targetCacheSize: Int,
+  shrinkCacheAt: Int,
+  checkTimeoutInterval: FiniteDuration,
+  autoSubscribe: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
   import almhirt.storages._
 
@@ -109,7 +114,14 @@ private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheA
     cachedStatusLookUp = cachedStatusLookUp + (id -> status)
   }
 
+  private case object AutoSubscribe
+
   def running(): Receive = {
+    case AutoSubscribe =>
+      log.info("Subscribing myself to event stream.")
+      FlowFrom(ctx.eventStream).collect { case e: CommandStatusChanged => e }.publishTo(CommandStatusTracker(self))
+      request(1)
+
     case TrackCommand(commandId, callback, deadline) ⇒
       cachedStatusLookUp.get(commandId) match {
         case Some(res) ⇒
@@ -175,7 +187,10 @@ private[almhirt] class MyCommandStatusTracker(targetCacheSize: Int, shrinkCacheA
 
   override def preStart() {
     super.preStart()
-    request(1)
+    if (autoSubscribe)
+      self ! AutoSubscribe
+    else
+      request(1)
     context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)
   }
 }
