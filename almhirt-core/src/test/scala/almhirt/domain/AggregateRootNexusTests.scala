@@ -138,8 +138,8 @@ class AggregateRootNexusTests(_system: ActorSystem)
             val statusProbe = TestProbe()
             FlowFrom(streams.eventStream).collect { case e: SystemEvent ⇒ e }.publishTo(DelegatingSubscriber[SystemEvent](statusProbe.ref))
             val flow = FlowFrom[Command]((1 to bigN).toSeq.map(id ⇒ CreateUser(CommandHeader(), s"$id", 0L, "hans", "meier"): AggregateRootCommand) ++
-            		(1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
-            		(1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
+              (1 to bigN).toSeq.map(id ⇒ ChangeUserLastname(CommandHeader(), s"$id", 1L, "müller"): AggregateRootCommand) ++
+              (1 to bigN).toSeq.map(id ⇒ ConfirmUserDeath(CommandHeader(), s"$id", 2L): AggregateRootCommand))
             val start = Deadline.now
             within(15 seconds) {
               flow.publishTo(commandSubscriber)
@@ -166,6 +166,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
     import scalaz._, Scalaz._
     import akka.stream.scaladsl.Duct
     import almhirt.aggregates._
+    import almhirt.akkax._
 
     val testId = nextTestId
     //info(s"Test $testId")
@@ -173,31 +174,35 @@ class AggregateRootNexusTests(_system: ActorSystem)
     val eventlogActor: ActorRef = system.actorOf(eventlogProps, s"eventlog-$testId")
 
     val streams = AlmhirtStreams(s"almhirt-streams-$testId")(1 second).awaitResultOrEscalate(1 second)
-    val droneProps: Props = Props(
+    def droneProps(ars: ActorRef, ss: Option[ActorRef]): Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
         def ccuad = AggregateRootNexusTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext
-        def aggregateEventLog: ActorRef = eventlogActor
-        def snapshotStorage: Option[ActorRef] = None
+        def aggregateEventLog: ActorRef = ars
+        def snapshotStorage: Option[ActorRef] = ss
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
         override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])
+
       })
 
     val droneFactory = new AggregateRootDroneFactory {
       import scalaz._, Scalaz._
-      def propsForCommand(command: AggregateRootCommand): AlmValidation[Props] = {
+      def propsForCommand(command: AggregateRootCommand, ars: ActorRef, ss: Option[ActorRef]): AlmValidation[Props] = {
         command match {
-          case c: UserCommand ⇒ droneProps.success
+          case c: UserCommand ⇒ droneProps(ars, ss).success
           case x ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }
     }
 
-    def hiveProps(desc: HiveDescriptor) = Props(
+    def hiveProps(descriptor: HiveDescriptor) = Props(
       new AggregateRootHive(
-        desc,
+        descriptor,
+        NoResolvingRequired(eventlogActor),
+        None,
+        ResolveSettings.default,
         commandBuffersize = 10,
         droneFactory = droneFactory,
         streams.eventBroker)(AggregateRootNexusTests.this.ccuad, AggregateRootNexusTests.this.executionContext))
@@ -215,7 +220,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         (HiveDescriptor("4"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 4))
 
     //val (commandSubscriber, commandPublisher) = Duct[AggregateRootCommand].build()
-    val f = FlowFrom[AggregateRootCommand].collect{ case e: AggregateRootCommand ⇒ e}
+    val f = FlowFrom[AggregateRootCommand].collect { case e: AggregateRootCommand ⇒ e }
 
     val nexusProps = Props(new AggregateRootNexus(streams.commandStream, hiveSelector, hiveFactory))
     val nexusActor = system.actorOf(nexusProps, s"nexus-$testId")

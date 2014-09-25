@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking._
+import almhirt.akkax._
 import org.reactivestreams.{ Publisher }
 import akka.stream.actor.{ ActorSubscriber, ActorSubscriberMessage, ZeroRequestStrategy }
 import almhirt.streaming._
@@ -15,12 +16,18 @@ final case class HiveDescriptor(val value: String) extends AnyVal
 object AggregateRootHive {
   def propsRaw(
     hiveDescriptor: HiveDescriptor,
+    aggregateEventLogToResolve: ToResolve,
+    snapShotStorageToResolve: Option[ToResolve],
+    resolveSettings: ResolveSettings,
     commandBuffersize: Int,
     droneFactory: AggregateRootDroneFactory,
     eventsBroker: StreamBroker[Event],
     enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit ccuad: CanCreateUuidsAndDateTimes, futuresContext: ExecutionContext): Props =
     Props(new AggregateRootHive(
       hiveDescriptor,
+      aggregateEventLogToResolve,
+      snapShotStorageToResolve,
+      resolveSettings,
       commandBuffersize,
       droneFactory,
       eventsBroker,
@@ -39,12 +46,14 @@ object AggregateRootHive {
       section <- config.v[com.typesafe.config.Config](path)
       commandBuffersize <- section.v[Int]("command-buffer-size")
       enqueudEventsThrottlingThresholdFactor <- section.v[Int]("enqueud-events-throttling-threshold-factor")
-    } yield propsRaw(
-      hiveDescriptor,
-      commandBuffersize,
-      droneFactory,
-      eventsBroker,
-      enqueudEventsThrottlingThresholdFactor)
+    } yield ???
+
+    //    propsRaw(
+    //      hiveDescriptor,
+    //      commandBuffersize,
+    //      droneFactory,
+    //      eventsBroker,
+    //      enqueudEventsThrottlingThresholdFactor)
 
   }
 }
@@ -54,6 +63,9 @@ private[almhirt] object AggregateRootHiveInternals {
 
 private[almhirt] class AggregateRootHive(
   override val hiveDescriptor: HiveDescriptor,
+  override val aggregateEventLogToResolve: ToResolve,
+  override val snapShotStorageToResolve: Option[ToResolve],
+  override val resolveSettings: ResolveSettings,
   override val commandBuffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
   override val eventsBroker: StreamBroker[Event],
@@ -80,6 +92,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       case _: Exception ⇒ Escalate
     }
 
+  def aggregateEventLogToResolve: ToResolve
+  def snapShotStorageToResolve: Option[ToResolve]
+  def resolveSettings: ResolveSettings
+
   def hiveDescriptor: HiveDescriptor
   def commandBuffersize: Int
   def droneFactory: AggregateRootDroneFactory
@@ -96,10 +112,29 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def numSucceeded = numSucceededInternal
   def numFailed = numFailedInternal
 
-  def receiveInitialize: Receive = {
+  private case object Resolve
+  def receiveResolve: Receive = {
+    case Resolve =>
+      val actorsToResolve =
+        Map("aggregateeventlog" -> aggregateEventLogToResolve) ++
+          snapShotStorageToResolve.map(r => Map("snapshotstorage" -> r)).getOrElse(Map.empty)
+      context.resolveMany(actorsToResolve, resolveSettings, None, Some("resolver"))
+
+    case ActorMessages.ManyResolved(dependencies, _) =>
+      log.info("Found dependencies.")
+      signContract(eventsBroker)
+
+      context.become(receiveInitialize(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
+
+    case ActorMessages.ManyNotResolved(problem, _) =>
+      log.error(s"Failed to resolve dependencies:\n$problem")
+      sys.error(s"Failed to resolve dependencies.")
+  }
+
+  def receiveInitialize(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = {
     case ReadyForDeliveries ⇒
       requestCommands()
-      context.become(receiveRunning())
+      context.become(receiveRunning(aggregateEventLog, snapshotStorage))
   }
 
   private var remainingRequestCapacity: Int = commandBuffersize
@@ -135,14 +170,14 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     bufferedEvents = rest
   }
 
-  def receiveRunning(): Receive = {
+  def receiveRunning(aggregateEventLog: ActorRef, snapshotStorage: Option[ActorRef]): Receive = {
     case ActorSubscriberMessage.OnNext(aggregateCommand: AggregateRootCommand) ⇒
       numReceivedInternal += 1
       val drone = context.child(aggregateCommand.aggId.value) match {
         case Some(drone) ⇒
           drone
         case None ⇒
-          droneFactory(aggregateCommand) match {
+          droneFactory(aggregateCommand, aggregateEventLog, snapshotStorage) match {
             case scalaz.Success(props) ⇒
               context.actorOf(props, aggregateCommand.aggId.value)
             //context watch drone
@@ -190,11 +225,11 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       log.info(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
   }
 
-  override def receive: Receive = receiveInitialize
+  override def receive: Receive = receiveResolve
 
   override def preStart() {
     super.preStart()
-    signContract(eventsBroker)
+    self ! Resolve
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
@@ -205,7 +240,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   override def postRestart(reason: Throwable) {
     super.postRestart(reason)
-    signContract(eventsBroker)
+    self ! Resolve
   }
 
   override def postStop() {

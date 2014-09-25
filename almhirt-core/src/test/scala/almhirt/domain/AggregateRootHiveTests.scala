@@ -169,6 +169,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
   def withFixture(test: OneArgTest) = {
     import almhirt.aggregates._
     import almhirt.tracking.CommandStatusChanged
+    import almhirt.akkax._
     val testId = nextTestId
     //info(s"Test $testId")
     val eventlogProps: Props = almhirt.eventlog.InMemoryAggregateRootEventLog.props()
@@ -176,12 +177,12 @@ class AggregateRootHiveTests(_system: ActorSystem)
 
     val streams = AlmhirtStreams(s"almhirt-streams-$testId")(1 second).awaitResultOrEscalate(1 second)
 
-    val droneProps: Props = Props(
+    def droneProps(ars: ActorRef, ss: Option[ActorRef]): Props = Props(
       new AggregateRootDrone[User, UserEvent] with ActorLogging with UserEventHandler with UserCommandHandler with UserUpdater with AggregateRootDroneCommandHandlerAdaptor[User, UserCommand, UserEvent] {
-        def ccuad = AggregateRootHiveTests.this.ccuad
+         def ccuad = AggregateRootHiveTests.this.ccuad
         def futuresContext: ExecutionContext = executionContext
-        def aggregateEventLog: ActorRef = eventlogActor
-        def snapshotStorage: Option[ActorRef] = None
+        def aggregateEventLog: ActorRef = ars
+        def snapshotStorage: Option[ActorRef] = ss
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
@@ -191,9 +192,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
 
     val droneFactory = new AggregateRootDroneFactory {
       import scalaz._, Scalaz._
-      def propsForCommand(command: AggregateRootCommand): AlmValidation[Props] = {
+      def propsForCommand(command: AggregateRootCommand, ars: ActorRef, ss: Option[ActorRef]): AlmValidation[Props] = {
         command match {
-          case c: UserCommand ⇒ droneProps.success
+          case c: UserCommand ⇒ droneProps(ars, ss).success
           case x ⇒ NoSuchElementProblem(s"I don't have props for command $x").failure
         }
       }
@@ -202,6 +203,9 @@ class AggregateRootHiveTests(_system: ActorSystem)
     val hiveProps = Props(
       new AggregateRootHive(
         HiveDescriptor(s"hive-$testId"),
+        NoResolvingRequired(eventlogActor),
+        None,
+        ResolveSettings.default,
         commandBuffersize = 10,
         droneFactory = droneFactory,
         streams.eventBroker)(AggregateRootHiveTests.this.ccuad, AggregateRootHiveTests.this.executionContext))
