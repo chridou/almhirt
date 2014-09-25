@@ -220,7 +220,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         (HiveDescriptor("4"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 4))
 
     //val (commandSubscriber, commandPublisher) = Duct[AggregateRootCommand].build()
-    val f = FlowFrom[AggregateRootCommand].collect { case e: AggregateRootCommand ⇒ e }
+    //val f = FlowFrom[AggregateRootCommand].collect { case e: AggregateRootCommand ⇒ e }
 
     val nexusProps = Props(new AggregateRootNexus(streams.commandStream, hiveSelector, hiveFactory))
     val nexusActor = system.actorOf(nexusProps, s"nexus-$testId")

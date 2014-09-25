@@ -64,10 +64,30 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     def reject(problem: Problem) { self ! Rejected(problem) }
     def unhandled() { self ! Unhandled }
   }
-
+  
+  
+  /** Override to perform your own initialization(like resolving dependencies).
+   *  Do not forget to handle any incoming command and to call #signContract" after initializing.
+   *  Use the default implementation as a template.
+   */
+  protected case object StartUserInitialization  
+  def receiveUserInitialization(currentCommand: AggregateRootCommand): Receive = {
+    case StartUserInitialization =>
+      signContract(currentCommand)
+      
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+   }
+  
+  protected final def signContract(currentCommand: AggregateRootCommand) {
+    context.become(receiveSignContract(currentCommand))
+    self ! SignContract
+  }
+  
   //*************
   //   Internal 
   //*************
+  private case object SignContract
 
   private case class InternalArBuildResult(ar: AggregateRootLifecycle[T])
   private case class InternalBuildArFailed(error: Throwable)
@@ -79,12 +99,21 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
+     context.become(receiveUserInitialization(firstCommand))
+     self ! StartUserInitialization
+  }
+
+  private def receiveSignContract(currentCommand: AggregateRootCommand): Receive = {
+    case SignContract ⇒
      signContractAndThen(eventsBroker, initialPayload = Some(Seq.empty)) {
         case unexpectedCommand: AggregateRootCommand ⇒
           sendMessage(Busy(unexpectedCommand))
-      }(receiveWaitForContract(firstCommand))
-  }
+      }(receiveWaitForContract(currentCommand))
 
+    case unexpectedCommand: AggregateRootCommand ⇒
+      sendMessage(Busy(unexpectedCommand))
+  }
+  
   private def receiveWaitForContract(currentCommand: AggregateRootCommand): Receive = {
     case ReadyForDeliveries(_) ⇒
       snapshotStorage match {

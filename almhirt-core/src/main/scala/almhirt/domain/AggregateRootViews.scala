@@ -11,15 +11,18 @@ import almhirt.almvalidation.kit._
 import almhirt.akkax._
 import akka.stream.actor._
 import org.reactivestreams.Publisher
+import akka.stream.scaladsl2.ImplicitFlowMaterializer
 
 object AggregateRootViews {
+  
   def propsRaw[E <: AggregateRootEvent: ClassTag](
     getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props,
     aggregateEventLogToResolve: ToResolve,
     snapShotStorageToResolve: Option[ToResolve],
     resolveSettings: ResolveSettings,
-    eventBufferSize: Int): Props =
-    Props(new AggregateRootViews[E](getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize))
+    eventBufferSize: Int,
+    connectTo: Option[Publisher[Event]]): Props =
+    Props(new AggregateRootViews[E](getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize, connectTo))
 
   def props[E <: AggregateRootEvent: ClassTag](
     config: com.typesafe.config.Config,
@@ -52,7 +55,7 @@ object AggregateRootViews {
       implicit actorRefFactory: ActorRefFactory,
       mat: FlowMaterializer,
       tag: scala.reflect.ClassTag[E]): ActorRef = {
-    val props = AggregateRootViews.propsRaw(getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize)
+    val props = AggregateRootViews.propsRaw(getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize, None)
     val views = actorRefFactory.actorOf(props, name)
     subscribeTo[E](publisher, views)
     views
@@ -74,9 +77,10 @@ class AggregateRootViews[E <: AggregateRootEvent](
   override val aggregateEventLogToResolve: ToResolve,
   override val snapShotStorageToResolve: Option[ToResolve],
   override val resolveSettings: ResolveSettings,
-  override val eventBufferSize: Int)(implicit override val eventTag: scala.reflect.ClassTag[E]) extends AggregateRootViewsSkeleton[E]
+  override val eventBufferSize: Int,
+  override val connectTo: Option[Publisher[Event]] = None)(implicit override val eventTag: scala.reflect.ClassTag[E]) extends AggregateRootViewsSkeleton[E]
 
-private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends ActorSubscriber with ActorLogging {
+private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
   import AggregateRootViewMessages._
 
   import akka.actor.OneForOneStrategy
@@ -91,6 +95,8 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   def aggregateEventLogToResolve: ToResolve
   def snapShotStorageToResolve: Option[ToResolve]
   def resolveSettings: ResolveSettings
+  
+  def connectTo: Option[Publisher[Event]]
 
   implicit def eventTag: scala.reflect.ClassTag[E]
   def eventBufferSize: Int
@@ -107,7 +113,13 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
 
     case ActorMessages.ManyResolved(dependencies, _) =>
       log.info("Found dependencies.")
-
+      connectTo match {
+        case Some(publisher) =>
+          log.info("Subscribing myself.")
+          AggregateRootViews.subscribeTo[E](publisher, self)
+        case None =>
+          ()
+      }
       request(eventBufferSize)
       context.become(receiveRunning(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
 
