@@ -44,8 +44,9 @@ package object akkax {
       for {
         section <- config.v[Config](path) 
         maxResolveTime <- section.v[FiniteDuration]("max-resolve-time")
-        resolveInterval <- section.v[FiniteDuration]("resolve-interval")
-      } yield ResolveSettings(maxResolveTime = maxResolveTime, resolveInterval = resolveInterval)
+        resolveWait <- section.v[FiniteDuration]("resolve-wait")
+        resolveInterval <- section.v[FiniteDuration]("resolve-pause")
+      } yield ResolveSettings(maxResolveTime = maxResolveTime, resolveWait = resolveInterval, resolvePause = resolveInterval)
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[ResolveSettings]] =
       config.opt[Config](path).flatMap {

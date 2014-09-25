@@ -7,7 +7,7 @@ import almhirt.tracking.CorrelationId
 import scala.concurrent.duration.FiniteDuration
 import almhirt.tracking.CorrelationId
 
-final case class ResolveSettings(maxResolveTime: FiniteDuration, resolveInterval: FiniteDuration)
+final case class ResolveSettings(maxResolveTime: FiniteDuration, resolveWait: FiniteDuration, resolvePause: FiniteDuration)
 
 sealed trait ToResolve
 final case class NoResolvingRequired(actorRef: ActorRef) extends ToResolve
@@ -40,7 +40,7 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, settings: Resolv
               case ResolvePath(path) => context.actorSelection(path)
               case ResolveSelection(selection) => selection
             }
-          selection.resolveOne(1.second).onComplete {
+          selection.resolveOne(settings.resolveWait).onComplete {
             case scala.util.Success(actor) => self ! Resolved(actor)
             case scala.util.Failure(ex) => self ! NotResolved(ex)
           }(context.dispatcher)
@@ -60,10 +60,10 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, settings: Resolv
         context.stop(self)
       } else {
         log.warning(s"""	|Could not resolve "${toResolve}" after ${startedAt.lap.defaultUnitString}.
-        					|Will retry in ${settings.resolveInterval.defaultUnitString}.
+        					|Will retry in ${settings.resolvePause.defaultUnitString}.
         					|Cause:
         					|$ex""".stripMargin)
-        context.system.scheduler.scheduleOnce(settings.resolveInterval, self, Resolve)(context.dispatcher)
+        context.system.scheduler.scheduleOnce(settings.resolvePause, self, Resolve)(context.dispatcher)
       }
   }
 
