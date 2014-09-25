@@ -70,7 +70,7 @@ private[almhirt] object componentactors {
       case Unfold(ComponentFactories(buildEventLogs, _, _, _, _)) =>
         log.info("Unfolding.")
         buildEventLogs(ctx).onComplete(
-          fail => log.error("Failed to create Props."),
+          fail => log.error(s"Failed to create Props:\n$fail"),
           propsByName => propsByName.foreach { case (name, props) => self ! ActorMessages.CreateChildActor(props, Some(name), false) })(context.dispatcher)
 
       case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
@@ -101,7 +101,7 @@ private[almhirt] object componentactors {
       case Unfold(ComponentFactories(_, buildViews, _, _, _)) =>
         log.info("Unfolding.")
         buildViews(ctx).onComplete(
-          fail => log.error("Failed to create Props."),
+          fail => log.error(s"Failed to create Props:\n$fail"),
           propsByName => propsByName.foreach { case (name, props) => self ! ActorMessages.CreateChildActor(props, Some(name), false) })(context.dispatcher)
 
       case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
@@ -132,7 +132,7 @@ private[almhirt] object componentactors {
       case Unfold(ComponentFactories(_, _, buildMisc, _, _)) =>
         log.info("Unfolding.")
         buildMisc(ctx).onComplete(
-          fail => log.error("Failed to create Props."),
+          fail => log.error(s"Failed to create Props:\n$fail"),
           propsByName => propsByName.foreach { case (name, props) => self ! ActorMessages.CreateChildActor(props, Some(name), false) })(context.dispatcher)
 
       case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>
@@ -163,7 +163,7 @@ private[almhirt] object componentactors {
       case Unfold(ComponentFactories(_, _, _, buildApps, _)) =>
         log.info("Unfolding.")
         buildApps(ctx).onComplete(
-          fail => log.error("Failed to create Props."),
+          fail => log.error(s"Failed to create Props:\n$fail"),
           propsByName => propsByName.foreach { case (name, props) => self ! ActorMessages.CreateChildActor(props, Some(name), false) })(context.dispatcher)
 
       case ActorMessages.CreateChildActor(ComponentFactory(props, postAction), nameOpt, returnActorRef) =>

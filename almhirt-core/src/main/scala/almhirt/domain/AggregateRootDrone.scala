@@ -37,7 +37,7 @@ trait ConfirmationContext[E <: AggregateRootEvent] {
  *  The drone can only execute on command at a time.
  */
 trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends StateChangingActorContractor[Event] {
-  me: ActorLogging with AggregateRootEventHandler[T, E]  ⇒
+  me: ActorLogging with AggregateRootEventHandler[T, E] ⇒
   import AggregateRootDroneInternalMessages._
   import almhirt.eventlog.AggregateRootEventLog._
 
@@ -64,26 +64,36 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     def reject(problem: Problem) { self ! Rejected(problem) }
     def unhandled() { self ! Unhandled }
   }
-  
-  
-  /** Override to perform your own initialization(like resolving dependencies).
+
+  /**
+   * Override to perform your own initialization(like resolving dependencies).
    *  Do not forget to handle any incoming command and to call #signContract" after initializing.
    *  Use the default implementation as a template.
    */
-  protected case object StartUserInitialization  
+  protected case object StartUserInitialization
   def receiveUserInitialization(currentCommand: AggregateRootCommand): Receive = {
     case StartUserInitialization =>
       signContract(currentCommand)
-      
+
     case unexpectedCommand: AggregateRootCommand ⇒
-      sendMessage(Busy(unexpectedCommand))
-   }
-  
+      sendBusy(unexpectedCommand)
+  }
+
   protected final def signContract(currentCommand: AggregateRootCommand) {
     context.become(receiveSignContract(currentCommand))
     self ! SignContract
   }
-  
+
+  protected final def sendBusy(unexpectedCommand: AggregateRootCommand) {
+    sendMessage(Busy(unexpectedCommand))
+  }
+
+  protected final def sendNotExecutedAndEscalate(currentCommand: AggregateRootCommand, throwable: Throwable) {
+    log.error(s"Escalating! Something terrible happened:\n$throwable")
+    sendMessage(CommandNotExecuted(currentCommand, UnspecifiedProblem(s"""Something really bad happened: "${throwable.getMessage}". Escalating.""", cause = Some(throwable))))
+    throw throwable
+  }
+
   //*************
   //   Internal 
   //*************
@@ -99,13 +109,13 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
 
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
-     context.become(receiveUserInitialization(firstCommand))
-     self ! StartUserInitialization
+      context.become(receiveUserInitialization(firstCommand))
+      self ! StartUserInitialization
   }
 
   private def receiveSignContract(currentCommand: AggregateRootCommand): Receive = {
     case SignContract ⇒
-     signContractAndThen(eventsBroker, initialPayload = Some(Seq.empty)) {
+      signContractAndThen(eventsBroker, initialPayload = Some(Seq.empty)) {
         case unexpectedCommand: AggregateRootCommand ⇒
           sendMessage(Busy(unexpectedCommand))
       }(receiveWaitForContract(currentCommand))
@@ -113,7 +123,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
   }
-  
+
   private def receiveWaitForContract(currentCommand: AggregateRootCommand): Receive = {
     case ReadyForDeliveries(_) ⇒
       snapshotStorage match {
@@ -126,7 +136,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case unexpectedCommand: AggregateRootCommand ⇒
       sendMessage(Busy(unexpectedCommand))
   }
-  
+
   private def receiveAcceptingCommand(persistedState: AggregateRootLifecycle[T]): Receive = {
     case nextCommand: AggregateRootCommand ⇒
       handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
@@ -196,7 +206,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       sendMessage(Busy(unexpectedCommand))
   }
 
-
   private def receiveCommitEvents(currentCommand: AggregateRootCommand, inFlight: E, rest: Seq[E], done: Seq[E], unpersisted: Postnatalis[T]): Receive = {
     case AggregateRootEventCommitted(id) ⇒
       val newDone = done :+ inFlight
@@ -234,7 +243,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case commandNotToExecute: AggregateRootCommand ⇒
       handleCommandFailed(state, commandNotToExecute, AggregateRootDeletedProblem(commandNotToExecute.aggId))
   }
-  
+
   def receive: Receive = receiveUninitialized
 
   /** Ends with termination */
@@ -260,7 +269,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     sendMessage(CommandExecuted(command))
     context.become(receiveAcceptingCommand(persistedState))
   }
-  
+
   override def preRestart(reason: Throwable, message: Option[Any]) {
     super.preRestart(reason, message)
     cancelContract()
@@ -289,6 +298,6 @@ private[almhirt] object AggregateRootDroneInternalMessages {
   final case class Busy(command: AggregateRootCommand) extends ExecuteCommandResponse {
     def isSuccess = false
   }
-  
+
 }
 
