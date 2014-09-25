@@ -28,15 +28,10 @@ package object akkax {
           self.actorOf(MultiResolver.props(toResolve, settings, correlationId))
       }
     }
+    
+    def childFrom(factory: ComponentFactory): AlmValidation[ActorRef] = factory(self)
   }
-
-  implicit class AkkaXActorRefOps(self: ActorRef) {
-    import scala.concurrent.ExecutionContext
-    import scala.concurrent.duration.FiniteDuration
-    def createChildActor(factory: ComponentFactory)(maxDur: FiniteDuration)(implicit execCtx: ExecutionContext) =
-      CreateChildActorHelper.createChildActor(self, factory)(maxDur)
-  }
-
+ 
   import almhirt.configuration._
   import com.typesafe.config.Config
   implicit object ResolveConfigExtractor extends ConfigExtractor[ResolveSettings] {
