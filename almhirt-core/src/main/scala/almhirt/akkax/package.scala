@@ -33,8 +33,8 @@ package object akkax {
   implicit class AkkaXActorRefOps(self: ActorRef) {
     import scala.concurrent.ExecutionContext
     import scala.concurrent.duration.FiniteDuration
-    def createChildActor(factory: ComponentFactory, name: Option[String])(maxDur: FiniteDuration)(implicit execCtx: ExecutionContext) =
-      CreateChildActorHelper.createChildActor(self, factory, name)(maxDur)
+    def createChildActor(factory: ComponentFactory)(maxDur: FiniteDuration)(implicit execCtx: ExecutionContext) =
+      CreateChildActorHelper.createChildActor(self, factory)(maxDur)
   }
 
   import almhirt.configuration._
@@ -42,7 +42,7 @@ package object akkax {
   implicit object ResolveConfigExtractor extends ConfigExtractor[ResolveSettings] {
     def getValue(config: Config, path: String): AlmValidation[ResolveSettings] =
       for {
-        section <- config.v[Config](path) 
+        section <- config.v[Config](path)
         maxResolveTime <- section.v[FiniteDuration]("max-resolve-time")
         resolveWait <- section.v[FiniteDuration]("resolve-wait")
         resolveInterval <- section.v[FiniteDuration]("resolve-pause")
