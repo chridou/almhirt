@@ -41,7 +41,7 @@ private[almhirt] object componentactors {
 
     override def receive: Receive = {
       case m: Unfold => {
-        log.info("Unfolding.")
+        log.info("Unfolding components.")
         eventLogs ! m
         views ! m
         misc ! m
@@ -54,7 +54,8 @@ private[almhirt] object componentactors {
       case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
         context.childFrom(componentFactory).fold(
           problem => {
-            log.error(s"""Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}".""")
+            log.error(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
+            				|$problem""".stripMargin)
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
           actorRef =>
@@ -68,20 +69,25 @@ private[almhirt] object componentactors {
 
     override def receive: Receive = {
       case Unfold(cf: ComponentFactories) =>
-        log.info("Unfolding.")
         extractFactories(cf).onComplete(
-          fail => log.error(s"Failed to create Props:\n$fail"),
-          factories => factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, false) })(context.dispatcher)
+          fail => log.error(s"Failed to create component factories:\n$fail"),
+          factories => {
+            log.info(s"Unfolding:\n${factories.map(_.name.getOrElse("<<<no name>>>")).mkString(", ")}")
+            factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, false) }
+          })(context.dispatcher)
 
       case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
         context.childFrom(componentFactory).fold(
           problem => {
-            log.error(s"""Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}".""")
+            log.error(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
+            				|$problem""".stripMargin)
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
-          actorRef =>
+          actorRef => {
+            log.info(s"Created ${actorRef.path}")
             if (returnActorRef)
-              sender() ! ActorMessages.ChildActorCreated(actorRef))
+              sender() ! ActorMessages.ChildActorCreated(actorRef)
+          })
     }
   }
 
