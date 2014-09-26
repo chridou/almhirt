@@ -13,7 +13,7 @@ object EventSinkHub {
   /** [Name, (Props, Option[Filter])] */
   type EventSinkHubMemberFactories = Map[String, (Props, Option[ProcessorFlow[Event, Event]])]
 
-  def props(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int])(implicit ctx: AlmhirtContext): Props =
+  def propsRaw(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int])(implicit ctx: AlmhirtContext): Props =
     Props(new EventSinksSupervisorImpl(factories, buffersize))
 
   def props(factories: EventSinkHub.EventSinkHubMemberFactories)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
@@ -22,7 +22,7 @@ object EventSinkHub {
     for {
       section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.event-sink-hub")
       buffersize <- section.v[Int]("buffer-size").constrained(_ >= 0, n => s""""buffer-size" must be greater or equal than 0, not $n.""")
-    } yield props(factories, Some(buffersize))
+    } yield propsRaw(factories, Some(buffersize))
   }
 
   val actorname = "event-sink-hub"
