@@ -1,6 +1,7 @@
 package almhirt.context
 
 import akka.actor._
+import almhirt.common._
 import almhirt.akkax._
 
 import almhirt.almvalidation.kit._
@@ -31,7 +32,7 @@ private[almhirt] object componentactors {
     Props(new AppsSupervisor())
 
   final case class Unfold(factories: ComponentFactories)
-  
+
   class ComponentsActor(ctx: AlmhirtContext) extends Actor with ActorLogging {
     val eventLogs = context.actorOf(eventLogsProps(ctx), "event-logs")
     val views = context.actorOf(viewsProps(ctx), "views")
@@ -63,10 +64,12 @@ private[almhirt] object componentactors {
   }
 
   trait SimpleUnfolder extends Actor with ActorLogging with HasAlmhirtContext with almhirt.akkax.AlmActorSupport {
+    def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]]
+
     override def receive: Receive = {
-      case Unfold(ComponentFactories(buildEventLogs, _, _, _, _)) =>
+      case Unfold(cf: ComponentFactories) =>
         log.info("Unfolding.")
-        buildEventLogs(almhirtContext).onComplete(
+        extractFactories(cf).onComplete(
           fail => log.error(s"Failed to create Props:\n$fail"),
           factories => factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, false) })(context.dispatcher)
 
@@ -81,9 +84,24 @@ private[almhirt] object componentactors {
               sender() ! ActorMessages.ChildActorCreated(actorRef))
     }
   }
-  
-  class ViewsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
-  class EventLogsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
-  class MiscSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
-  class AppsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
+
+  class ViewsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder {
+    override def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]] =
+      cf.buildViews(almhirtContext)
+  }
+
+  class EventLogsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder {
+    override def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]] =
+      cf.buildEventLogs(almhirtContext)
+  }
+
+  class MiscSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder {
+    override def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]] =
+      cf.buildMisc(almhirtContext)
+  }
+
+  class AppsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder {
+    override def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]] =
+      cf.buildApps(almhirtContext)
+  }
 }

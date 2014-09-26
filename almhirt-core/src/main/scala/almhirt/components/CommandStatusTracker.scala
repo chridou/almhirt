@@ -43,11 +43,11 @@ object CommandStatusTracker {
     ActorSubscriber[CommandStatusChanged](statusTracker)
 
   def systemEventSubscriber(statusTracker: ActorRef)(implicit materializer: FlowMaterializer): Subscriber[SystemEvent] = {
-//    val duct = Duct[SystemEvent].collect { case e: CommandStatusChanged ⇒ e }
-//    val (subscriber, publisher) = duct.build
-//    val trackingSubscriber = CommandStatusTracker(statusTracker)
-//    publisher.subscribe(trackingSubscriber)
-//    subscriber
+    //    val duct = Duct[SystemEvent].collect { case e: CommandStatusChanged ⇒ e }
+    //    val (subscriber, publisher) = duct.build
+    //    val trackingSubscriber = CommandStatusTracker(statusTracker)
+    //    publisher.subscribe(trackingSubscriber)
+    //    subscriber
     ???
   }
 
@@ -74,7 +74,10 @@ private[almhirt] class MyCommandStatusTracker(
   targetCacheSize: Int,
   shrinkCacheAt: Int,
   checkTimeoutInterval: FiniteDuration,
-  autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
+  autoConnect: Boolean)(implicit ctx: AlmhirtContext)
+  extends ActorSubscriber
+  with ActorLogging
+  with ImplicitFlowMaterializer {
   import CommandStatusTracker._
   import almhirt.storages._
 
