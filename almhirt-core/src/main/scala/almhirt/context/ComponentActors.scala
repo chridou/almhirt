@@ -58,9 +58,11 @@ private[almhirt] object componentactors {
             				|$problem""".stripMargin)
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
-          actorRef =>
+          actorRef => {
+            log.info(s"Created ${actorRef.path} @ ${actorRef.path} ")
             if (returnActorRef)
-              sender() ! ActorMessages.ChildActorCreated(actorRef))
+              sender() ! ActorMessages.ChildActorCreated(actorRef)
+          })
     }
   }
 
@@ -84,7 +86,7 @@ private[almhirt] object componentactors {
             sender() ! ActorMessages.CreateChildActorFailed(problem)
           },
           actorRef => {
-            log.info(s"Created ${actorRef.path}")
+            log.info(s"Created ${actorRef.path} @ ${actorRef.path} ")
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef)
           })
