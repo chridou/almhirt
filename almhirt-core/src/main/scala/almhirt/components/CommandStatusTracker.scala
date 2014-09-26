@@ -51,8 +51,8 @@ object CommandStatusTracker {
     ???
   }
 
-  def propsRaw(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration, autoSubscribe: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
-    Props(new MyCommandStatusTracker(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoSubscribe))
+  def propsRaw(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration, autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
+    Props(new MyCommandStatusTracker(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoConnect))
   }
 
   def props()(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
@@ -63,8 +63,8 @@ object CommandStatusTracker {
       targetCacheSize <- section.v[Int]("target-cache-size")
       shrinkCacheAt <- section.v[Int]("shrink-cache-at")
       checkTimeoutInterval <- section.v[FiniteDuration]("check-timeout-interval")
-      autoSubscribe <- section.v[Boolean]("auto-subscribe")
-    } yield propsRaw(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoSubscribe)
+      autoConnect <- section.v[Boolean]("auto-connect")
+    } yield propsRaw(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoConnect)
   }
 
   val actorname = "command-status-tracker"
@@ -74,7 +74,7 @@ private[almhirt] class MyCommandStatusTracker(
   targetCacheSize: Int,
   shrinkCacheAt: Int,
   checkTimeoutInterval: FiniteDuration,
-  autoSubscribe: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
+  autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
   import almhirt.storages._
 
@@ -114,11 +114,11 @@ private[almhirt] class MyCommandStatusTracker(
     cachedStatusLookUp = cachedStatusLookUp + (id -> status)
   }
 
-  private case object AutoSubscribe
+  private case object AutoConnect
 
   def running(): Receive = {
-    case AutoSubscribe =>
-      log.info("Subscribing myself to event stream.")
+    case AutoConnect =>
+      log.info("Subscribing to event stream.")
       FlowFrom(ctx.eventStream).collect { case e: CommandStatusChanged => e }.publishTo(CommandStatusTracker(self))
       request(1)
 
@@ -187,8 +187,8 @@ private[almhirt] class MyCommandStatusTracker(
 
   override def preStart() {
     super.preStart()
-    if (autoSubscribe)
-      self ! AutoSubscribe
+    if (autoConnect)
+      self ! AutoConnect
     else
       request(1)
     context.system.scheduler.scheduleOnce(checkTimeoutInterval, self, CheckTimeouts)

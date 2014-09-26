@@ -7,29 +7,34 @@ import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.akkax._
+import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
+import akka.stream.scaladsl2._
 
 object EventLogWriter {
   def propsRaw(
     eventLogToResolve: ToResolve,
     resolveSettings: ResolveSettings,
-    maxWaitForEventLog: FiniteDuration = 1 second): Props = {
+    maxWaitForEventLog: FiniteDuration,
+    autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
     Props(new EventLogWriterImpl(
       eventLogToResolve,
       resolveSettings,
-      maxWaitForEventLog: FiniteDuration))
+      maxWaitForEventLog: FiniteDuration,
+      autoConnect))
   }
 
-  def props(config: com.typesafe.config.Config): AlmValidation[Props] = {
+  def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     for {
-      section <- config.v[com.typesafe.config.Config]("almhirt.components.event-log-writer")
+      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.event-log-writer")
       eventLogPathStr <- section.v[String]("event-log-path")
       eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
       maxWaitForEventLog <- section.v[FiniteDuration]("max-wait-for-event-log")
       resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-    } yield propsRaw(eventLogToResolve, resolveSettings, maxWaitForEventLog)
+      autoConnect <- section.v[Boolean]("auto-connect")
+    } yield propsRaw(eventLogToResolve, resolveSettings, maxWaitForEventLog, autoConnect)
   }
 
   def apply(eventLogWriter: ActorRef): Subscriber[Event] =
@@ -39,12 +44,14 @@ object EventLogWriter {
 private[almhirt] class EventLogWriterImpl(
   eventLogToResolve: ToResolve,
   resolveSettings: ResolveSettings,
-  maxWaitForEventLog: FiniteDuration) extends ActorSubscriber with ActorLogging {
+  maxWaitForEventLog: FiniteDuration,
+  autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
 
   override val requestStrategy = ZeroRequestStrategy
 
   private case class PotentialTimeout(eventId: EventId)
+  private case object AutoConnect
 
   private case object Resolve
   def receiveResolve: Receive = {
@@ -53,7 +60,10 @@ private[almhirt] class EventLogWriterImpl(
 
     case ActorMessages.ResolvedSingle(eventlog, _) =>
       log.info("Found event log.")
-      request(1)
+      if (autoConnect)
+        self ! AutoConnect
+      else
+        request(1)
       context.become(running(eventlog, None))
 
     case ActorMessages.SingleNotResolved(problem, _) =>
@@ -62,6 +72,11 @@ private[almhirt] class EventLogWriterImpl(
   }
 
   def running(eventLog: ActorRef, activeEvent: Option[Event]): Receive = {
+    case AutoConnect =>
+      log.info("Subscribing to event stream.")
+      FlowFrom(ctx.eventStream).publishTo(EventLogWriter(self))
+      request(1)
+
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
       if (activeEvent.isDefined) {
         sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.get.eventId.value}' is processed.")

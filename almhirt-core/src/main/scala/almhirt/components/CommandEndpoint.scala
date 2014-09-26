@@ -1,28 +1,29 @@
 package almhirt.components
 
-//Misc
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking._
 import almhirt.akkax._
-// Streaming
+import almhirt.context.AlmhirtContext
 import akka.stream.actor._
+import akka.stream.scaladsl2._
 
 object CommandEndpoint {
-  def propsRaw(commandStatusTrackerToResolve: ToResolve, resolveSettings: ResolveSettings, maxTrackingDuration: FiniteDuration): Props =
-    Props(new CommandEndpointImpl(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration))
+  def propsRaw(commandStatusTrackerToResolve: ToResolve, resolveSettings: ResolveSettings, maxTrackingDuration: FiniteDuration, autoConnect: Boolean)(implicit ctx: AlmhirtContext): Props =
+    Props(new CommandEndpointImpl(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration, autoConnect))
 
-  def props(config: com.typesafe.config.Config): AlmValidation[Props] = {
+  def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     for {
-      section <- config.v[com.typesafe.config.Config]("almhirt.components.misc.command-endpoint")
+      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.command-endpoint")
       commandStatusTrackerPathStr <- section.v[String]("command-status-tracker-path")
       commandStatusTrackerToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(commandStatusTrackerPathStr)) }
       maxTrackingDuration <- section.v[FiniteDuration]("max-tracking-duration")
       resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-    } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration)
+      autoConnect <- section.v[Boolean]("auto-connect")
+    } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration, autoConnect)
   }
      
   def apply(commandEndpoint: ActorRef): org.reactivestreams.Publisher[Command] =
@@ -31,9 +32,14 @@ object CommandEndpoint {
   val actorname = "command-endpoint"
 }
 
-private[almhirt] class CommandEndpointImpl(commandStatusTrackerToResolve: ToResolve, resolveSettings: ResolveSettings, maxTrackingDuration: FiniteDuration) extends ActorPublisher[Command] with ActorLogging {
+private[almhirt] class CommandEndpointImpl(
+    commandStatusTrackerToResolve: ToResolve, 
+    resolveSettings: ResolveSettings, 
+    maxTrackingDuration: FiniteDuration,
+    autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorPublisher[Command] with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
 
+  private case object AutoConnect
   private case object Resolve
   def receiveResolve: Receive = {
     case Resolve =>
@@ -41,6 +47,7 @@ private[almhirt] class CommandEndpointImpl(commandStatusTrackerToResolve: ToReso
 
     case ActorMessages.ResolvedSingle(commandStatusTracker, _) =>
       log.info("Found command status tracker.")
+      if(autoConnect) self ! AutoConnect
       context.become(receiveRunning(commandStatusTracker))
 
     case ActorMessages.SingleNotResolved(problem, _) =>
@@ -52,6 +59,10 @@ private[almhirt] class CommandEndpointImpl(commandStatusTrackerToResolve: ToReso
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = {
+    case AutoConnect =>
+      log.info("Connecting to command consumer.")
+      CommandEndpoint(self).subscribe(ctx.commandBroker.newSubscriber)
+      
     case cmd: Command ⇒
       if (totalDemand > 0 && isActive) {
         if (cmd.isTrackable) {
