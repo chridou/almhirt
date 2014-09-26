@@ -20,7 +20,7 @@ object EventSinkHub {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
     for {
-      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.event-sink-hub")
+      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub")
       buffersize <- section.v[Int]("buffer-size").constrained(_ >= 0, n => s""""buffer-size" must be greater or equal than 0, not $n.""")
     } yield propsRaw(factories, Some(buffersize))
   }
