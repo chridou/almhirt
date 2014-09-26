@@ -39,6 +39,8 @@ object EventLogWriter {
 
   def apply(eventLogWriter: ActorRef): Subscriber[Event] =
     ActorSubscriber[Event](eventLogWriter)
+    
+  val actorname = "event-log-writer"
 }
 
 private[almhirt] class EventLogWriterImpl(
