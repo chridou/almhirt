@@ -42,15 +42,6 @@ object CommandStatusTracker {
   def apply(statusTracker: ActorRef): Subscriber[CommandStatusChanged] =
     ActorSubscriber[CommandStatusChanged](statusTracker)
 
-  def systemEventSubscriber(statusTracker: ActorRef)(implicit materializer: FlowMaterializer): Subscriber[SystemEvent] = {
-    //    val duct = Duct[SystemEvent].collect { case e: CommandStatusChanged ⇒ e }
-    //    val (subscriber, publisher) = duct.build
-    //    val trackingSubscriber = CommandStatusTracker(statusTracker)
-    //    publisher.subscribe(trackingSubscriber)
-    //    subscriber
-    ???
-  }
-
   def propsRaw(targetCacheSize: Int, shrinkCacheAt: Int, checkTimeoutInterval: FiniteDuration, autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
     Props(new MyCommandStatusTracker(targetCacheSize, shrinkCacheAt, checkTimeoutInterval, autoConnect))
   }

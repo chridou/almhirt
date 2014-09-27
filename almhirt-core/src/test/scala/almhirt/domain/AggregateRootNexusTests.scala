@@ -219,10 +219,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
         (HiveDescriptor("3"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 3),
         (HiveDescriptor("4"), cmd ⇒ Math.abs(cmd.aggId.hashCode % 5) == 4))
 
-    //val (commandSubscriber, commandPublisher) = Duct[AggregateRootCommand].build()
-    //val f = FlowFrom[AggregateRootCommand].collect { case e: AggregateRootCommand ⇒ e }
-
-    val nexusProps = Props(new AggregateRootNexus(streams.commandStream, hiveSelector, hiveFactory))
+    val nexusProps = AggregateRootNexus.propsRaw(hiveSelector, hiveFactory, Some(streams.commandStream))
     val nexusActor = system.actorOf(nexusProps, s"nexus-$testId")
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, streams.commandBroker.newSubscriber, eventlogActor, streams)))
