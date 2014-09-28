@@ -184,6 +184,7 @@ class AggregateRootHiveTests(_system: ActorSystem)
         def aggregateEventLog: ActorRef = ars
         def snapshotStorage: Option[ActorRef] = ss
         val eventsBroker: StreamBroker[Event] = streams.eventBroker
+        val returnToUnitializedAfter = None
 
         override val aggregateCommandValidator = AggregateRootCommandValidator.Validated
         override val tag = scala.reflect.ClassTag[UserCommand](classOf[UserCommand])

@@ -1,5 +1,6 @@
 package almhirt.domain
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext
 import akka.actor._
 import almhirt.common._
@@ -29,6 +30,10 @@ trait ConfirmationContext[E <: AggregateRootEvent] {
   def unhandled()
 }
 
+private[almhirt] object AggregateRootDroneInternal {
+  case object ReturnToUninitialized
+}
+
 /**
  * Mix in this trait to create an Actor that manages command execution for an aggregate root and commits the resulting events.
  *  The resulting Actor is intended to be used and managed by the AgrregateRootHive.
@@ -51,19 +56,15 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
   def eventsBroker: StreamBroker[Event]
+  def returnToUnitializedAfter: Option[FiniteDuration]
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
+  /** In production the hive has to be notified which should be the parent */
   def sendMessage(msg: AggregateDroneMessage) {
     context.parent ! msg
   }
 
   def handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateRootCommand, AggregateRootLifecycle[T]) ⇒ Unit
-
-  private object DefaultConfirmationContext extends ConfirmationContext[E] {
-    def commit(events: Seq[E]) { self ! Commit(events) }
-    def reject(problem: Problem) { self ! Rejected(problem) }
-    def unhandled() { self ! Unhandled }
-  }
 
   /**
    * Override to perform your own initialization(like resolving dependencies).
@@ -97,6 +98,12 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   //*************
   //   Internal 
   //*************
+  private object DefaultConfirmationContext extends ConfirmationContext[E] {
+    def commit(events: Seq[E]) { self ! Commit(events) }
+    def reject(problem: Problem) { self ! Rejected(problem) }
+    def unhandled() { self ! Unhandled }
+  }
+
   private case object SignContract
 
   private case class InternalArBuildResult(ar: AggregateRootLifecycle[T])
@@ -141,6 +148,10 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case nextCommand: AggregateRootCommand ⇒
       handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
+    case AggregateRootDroneInternal.ReturnToUninitialized =>
+      if (log.isDebugEnabled)
+        log.debug("Returning to uninitialized.")
+      context.become(receiveUninitialized)
   }
 
   private def receiveRebuildFromScratch(currentCommand: AggregateRootCommand): Receive = {
@@ -262,11 +273,17 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     if (log.isDebugEnabled)
       log.debug(s"Command ${command.getClass().getName()}(${command.header}) failed:\n$prob")
     sendMessage(CommandNotExecuted(command, prob))
-    context.become(receiveAcceptingCommand(persistedState))
+    becomeReceiveWaitingForCommand(persistedState)
   }
 
   private def handleCommandExecuted(persistedState: AggregateRootLifecycle[T], command: AggregateRootCommand) {
     sendMessage(CommandExecuted(command))
+    becomeReceiveWaitingForCommand(persistedState)
+  }
+
+  private def becomeReceiveWaitingForCommand(persistedState: AggregateRootLifecycle[T]) {
+    returnToUnitializedAfter.foreach(dur =>
+      context.system.scheduler.scheduleOnce(dur, self, AggregateRootDroneInternal.ReturnToUninitialized)(context.dispatcher))
     context.become(receiveAcceptingCommand(persistedState))
   }
 
