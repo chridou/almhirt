@@ -95,7 +95,7 @@ object AlmhirtContext {
             case AlmhirtContextMessages.ContextCreated(ctx) =>
               log.info("Context created. Next: Configure components")
               val components = context.actorOf(componentactors.componentsProps(ctx), "components")
-              components ! componentactors.Unfold(componentFactories)
+              components ! componentactors.UnfoldFromFactories(componentFactories)
               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
 
             case AlmhirtContextMessages.StreamsNotCreated(prob) =>
