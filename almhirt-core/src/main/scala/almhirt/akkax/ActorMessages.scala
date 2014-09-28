@@ -31,8 +31,8 @@ object CreateChildActorHelper {
   import almhirt.almfuture.all._
   def createChildActor(parent: ActorRef, factory: ComponentFactory, correlationId: Option[CorrelationId])(maxDur: FiniteDuration)(implicit execCtx: ExecutionContext): AlmFuture[ActorRef] = {
     parent.ask(ActorMessages.CreateChildActor(factory, true, correlationId))(maxDur).successfulAlmFuture[ActorMessages.CreateChildActorRsp].mapV {
-      case ActorMessages.ChildActorCreated(newChild, correlationId) => scalaz.Success(newChild)
-      case ActorMessages.CreateChildActorFailed(problem, correlationId) => scalaz.Failure(problem)
+      case ActorMessages.ChildActorCreated(newChild, correlationId) ⇒ scalaz.Success(newChild)
+      case ActorMessages.CreateChildActorFailed(problem, correlationId) ⇒ scalaz.Failure(problem)
     }
   }
 }

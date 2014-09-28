@@ -114,19 +114,19 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   private case object Resolve
   def receiveResolve: Receive = {
-    case Resolve =>
+    case Resolve ⇒
       val actorsToResolve =
         Map("aggregateeventlog" -> aggregateEventLogToResolve) ++
-          snapShotStorageToResolve.map(r => Map("snapshotstorage" -> r)).getOrElse(Map.empty)
+          snapShotStorageToResolve.map(r ⇒ Map("snapshotstorage" -> r)).getOrElse(Map.empty)
       context.resolveMany(actorsToResolve, resolveSettings, None, Some("resolver"))
 
-    case ActorMessages.ManyResolved(dependencies, _) =>
+    case ActorMessages.ManyResolved(dependencies, _) ⇒
       log.info("Found dependencies.")
       signContract(eventsBroker)
 
       context.become(receiveInitialize(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
 
-    case ActorMessages.ManyNotResolved(problem, _) =>
+    case ActorMessages.ManyNotResolved(problem, _) ⇒
       log.error(s"Failed to resolve dependencies:\n$problem")
       sys.error(s"Failed to resolve dependencies.")
   }

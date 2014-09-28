@@ -42,15 +42,15 @@ private[almhirt] class CommandEndpointImpl(
   private case object AutoConnect
   private case object Resolve
   def receiveResolve: Receive = {
-    case Resolve =>
+    case Resolve ⇒
       context.resolveSingle(commandStatusTrackerToResolve, resolveSettings, None, Some("status-tracker-resolver"))
 
-    case ActorMessages.ResolvedSingle(commandStatusTracker, _) =>
+    case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
       log.info("Found command status tracker.")
       if(autoConnect) self ! AutoConnect
       context.become(receiveRunning(commandStatusTracker))
 
-    case ActorMessages.SingleNotResolved(problem, _) =>
+    case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
       sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
 
@@ -59,7 +59,7 @@ private[almhirt] class CommandEndpointImpl(
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = {
-    case AutoConnect =>
+    case AutoConnect ⇒
       log.info("Connecting to command consumer.")
       CommandEndpoint(self).subscribe(ctx.commandBroker.newSubscriber)
       

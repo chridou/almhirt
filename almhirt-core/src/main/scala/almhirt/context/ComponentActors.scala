@@ -46,33 +46,33 @@ private[almhirt] object componentactors {
     val apps = context.actorOf(appsProps(ctx), "apps")
 
     override def receive: Receive = {
-      case UnfoldFromFactories(factories) => {
+      case UnfoldFromFactories(factories) ⇒ {
         log.info("Unfolding components.")
         factories.buildEventLogs(ctx).onComplete(
-          proplem => log.error(s"""Could not create component factories for event logs."""),
-          factories => eventLogs ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
+          proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
+          factories ⇒ eventLogs ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildViews(ctx).onComplete(
-          proplem => log.error(s"""Could not create component factories for event logs."""),
-          factories => views ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
+          proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
+          factories ⇒ views ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildMisc(ctx).onComplete(
-          proplem => log.error(s"""Could not create component factories for event logs."""),
-          factories => misc ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
+          proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
+          factories ⇒ misc ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildApps(ctx).onComplete(
-          proplem => log.error(s"""Could not create component factories for event logs."""),
-          factories => apps ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
+          proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
+          factories ⇒ apps ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildNexus.foreach(_(ctx).onComplete(
-          problem => log.error(s"Failed to create nexus props:\$problem"),
-          factory => self ! ActorMessages.CreateChildActor(factory, false, None))(context.dispatcher))
+          problem ⇒ log.error(s"Failed to create nexus props:\$problem"),
+          factory ⇒ self ! ActorMessages.CreateChildActor(factory, false, None))(context.dispatcher))
       }
 
-      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) =>
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
         context.childFrom(componentFactory).fold(
-          problem => {
+          problem ⇒ {
             log.error(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
             				|$problem""".stripMargin)
             sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
-          actorRef => {
+          actorRef ⇒ {
             log.info(s"Created ${actorRef.path} @ ${actorRef.path} ")
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
@@ -82,18 +82,18 @@ private[almhirt] object componentactors {
 
   trait SimpleUnfolder extends Actor with ActorLogging with HasAlmhirtContext with almhirt.akkax.AlmActorSupport {
     override def receive: Receive = {
-      case ActorMessages.CreateChildActors(factories, returnActorRefs, correlationId) =>
+      case ActorMessages.CreateChildActors(factories, returnActorRefs, correlationId) ⇒
         log.info(s"Creating:\n${factories.map(_.name.getOrElse("<<<no name>>>")).mkString(", ")}")
-        factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, returnActorRefs, correlationId) }
+        factories.foreach { factory ⇒ self ! ActorMessages.CreateChildActor(factory, returnActorRefs, correlationId) }
 
-      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) =>
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
         context.childFrom(componentFactory).fold(
-          problem => {
+          problem ⇒ {
             log.error(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
             				|$problem""".stripMargin)
             sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
-          actorRef => {
+          actorRef ⇒ {
             log.info(s"Created ${actorRef.path} @ ${actorRef.path} ")
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)

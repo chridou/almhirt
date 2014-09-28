@@ -57,10 +57,10 @@ private[almhirt] class EventLogWriterImpl(
 
   private case object Resolve
   def receiveResolve: Receive = {
-    case Resolve =>
+    case Resolve ⇒
       context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
 
-    case ActorMessages.ResolvedSingle(eventlog, _) =>
+    case ActorMessages.ResolvedSingle(eventlog, _) ⇒
       log.info("Found event log.")
       if (autoConnect)
         self ! AutoConnect
@@ -68,13 +68,13 @@ private[almhirt] class EventLogWriterImpl(
         request(1)
       context.become(running(eventlog, None))
 
-    case ActorMessages.SingleNotResolved(problem, _) =>
+    case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
       sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
   }
 
   def running(eventLog: ActorRef, activeEvent: Option[Event]): Receive = {
-    case AutoConnect =>
+    case AutoConnect ⇒
       log.info("Subscribing to event stream.")
       FlowFrom(ctx.eventStream).publishTo(EventLogWriter(self))
       request(1)

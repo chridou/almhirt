@@ -17,7 +17,7 @@ class AlmhirtContextTests(_system: ActorSystem)  extends TestKit(_system) with F
 
   test("AlmhirtContext should be constructable") {
     val start = Deadline.now
-    val ctxF = AlmhirtContext(system, Some(s"ctx-${nextTestId}"), ComponentFactories.empty).map(ct => (ct, start.lap))
+    val ctxF = AlmhirtContext(system, Some(s"ctx-${nextTestId}"), ComponentFactories.empty).map(ct ⇒ (ct, start.lap))
     val (ctx, time) = ctxF.awaitResultOrEscalate(2.seconds.dilated)
     info(s"construction took ${time.defaultUnitString}")
     ctx.stop()

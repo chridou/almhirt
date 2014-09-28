@@ -78,17 +78,17 @@ object AlmhirtStreams {
         soakCommands <- configSection.v[Boolean]("soak-commands")
         soakEvents <- configSection.v[Boolean]("soak-events")
         commandBufferSize <- configSection.v[Int]("command-buffer-size")
-          .constrained(_ >= 0, x => s"command-buffer-size must be grater or equal 0, not $x.")
+          .constrained(_ >= 0, x ⇒ s"command-buffer-size must be grater or equal 0, not $x.")
         eventBufferSize <- configSection.v[Int]("event-buffer-size")
-          .constrained(_ >= 0, x => s"event-buffer-size must be grater or equal 0, not $x.")
+          .constrained(_ >= 0, x ⇒ s"event-buffer-size must be grater or equal 0, not $x.")
         initialFanoutCommands <- configSection.v[Int]("initial-commands-fanout-buffer-size")
-          .constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"initial-commands-fanout-buffer-size must be a power of 2 and not $x.")
+          .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"initial-commands-fanout-buffer-size must be a power of 2 and not $x.")
         maxFanoutCommands <- configSection.v[Int]("max-commands-fanout-buffer-size")
-          .constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"max-commands-fanout-buffer-size must be a power of 2 and not $x.")
+          .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"max-commands-fanout-buffer-size must be a power of 2 and not $x.")
         initialFanoutEvents <- configSection.v[Int]("initial-events-fanout-buffer-size")
-          .constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"initial-events-fanout-buffer-size must be a power of 2 and not $x.")
+          .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"initial-events-fanout-buffer-size must be a power of 2 and not $x.")
         maxFanoutEvents <- configSection.v[Int]("max-events-fanout-buffer-size")
-          .constrained(x => AlmMath.nextPowerOf2(x) == x, x => s"imax-events-fanout-buffer-size must be a power of 2 and not $x.")
+          .constrained(x ⇒ AlmMath.nextPowerOf2(x) == x, x ⇒ s"imax-events-fanout-buffer-size must be a power of 2 and not $x.")
       } yield (
         useDedicatedDispatcher,
         soakCommands,
@@ -100,7 +100,7 @@ object AlmhirtStreams {
         initialFanoutEvents,
         maxFanoutEvents)
     }.flatMap {
-      case (useDedicatedDispatcher, soakCommands, soakEvents, commandBufferSize, eventBufferSize, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) =>
+      case (useDedicatedDispatcher, soakCommands, soakEvents, commandBufferSize, eventBufferSize, initialFanoutCommands, maxFanoutCommands, initialFanoutEvents, maxFanoutEvents) ⇒
         val dispatcherName = if (useDedicatedDispatcher) Some("almhirt.streams.dedicated-dispatcher") else None
         create("streams", 2.seconds, actorRefFactory, dispatcherName,
           eventBufferSize, initialFanoutEvents, maxFanoutEvents,
@@ -168,8 +168,8 @@ object AlmhirtStreams {
     })
     val props =
       dispatcherName match {
-        case None => supervisorProps
-        case Some(dpname) => supervisorProps.withDispatcher(dpname)
+        case None ⇒ supervisorProps
+        case Some(dpname) ⇒ supervisorProps.withDispatcher(dpname)
       }
     val supervisor = actorRefFactory.actorOf(props, supervisorName)
 

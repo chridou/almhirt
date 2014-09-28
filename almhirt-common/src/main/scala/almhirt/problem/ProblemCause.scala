@@ -50,13 +50,13 @@ object ProblemCause {
 object ContainsThrowable {
   def unapply(p: Problem): Option[Throwable] =
     p match {
-    case IsSingleProblem(sp) =>
+    case IsSingleProblem(sp) ⇒
       sp.cause match {
-        case Some(CauseIsThrowable(HasAThrowable(throwable))) =>
+        case Some(CauseIsThrowable(HasAThrowable(throwable))) ⇒
           Some(throwable)
-        case _ => None
+        case _ ⇒ None
       }
-    case _ => None
+    case _ ⇒ None
   }
 }
 

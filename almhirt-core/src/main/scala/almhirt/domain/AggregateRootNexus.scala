@@ -40,8 +40,8 @@ private[almhirt] class AggregateRootNexus(
 
   def receiveInitialize: Receive = {
     case Start ⇒
-      commandsPublisher.foreach(cmdPub =>
-        FlowFrom[Command](cmdPub).collect { case e: AggregateRootCommand => e }.publishTo(ActorSubscriber[AggregateRootCommand](self)))
+      commandsPublisher.foreach(cmdPub ⇒
+        FlowFrom[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.publishTo(ActorSubscriber[AggregateRootCommand](self)))
 
       createInitialHives()
       request(1)
@@ -49,33 +49,33 @@ private[almhirt] class AggregateRootNexus(
   }
 
   def receiveRunning(buffered: Option[AggregateRootCommand]): Receive = {
-    case ActorSubscriberMessage.OnNext(next: AggregateRootCommand) =>
+    case ActorSubscriberMessage.OnNext(next: AggregateRootCommand) ⇒
       buffered match {
-        case None if totalDemand > 0 =>
+        case None if totalDemand > 0 ⇒
           onNext(next)
           request(1)
-        case None =>
+        case None ⇒
           context.become(receiveRunning(Some(next)))
-        case Some(buff) =>
+        case Some(buff) ⇒
           val msg = "Received an element even though my buffer is full."
           onError(new Exception(msg))
           cancel()
       }
 
-    case ActorPublisherMessage.Request(amount) =>
+    case ActorPublisherMessage.Request(amount) ⇒
       buffered match {
-        case Some(buf) if totalDemand > 0 =>
+        case Some(buf) if totalDemand > 0 ⇒
           request(1)
           onNext(buf)
           context.become(receiveRunning(None))
-        case _ =>
+        case _ ⇒
           ()
       }
 
-    case ActorSubscriberMessage.OnError(exn) =>
+    case ActorSubscriberMessage.OnError(exn) ⇒
       log.error(exn, "Received an error via the stream.")
 
-    case ActorPublisherMessage.Cancel =>
+    case ActorPublisherMessage.Cancel ⇒
       log.info("The fanout publisher cancelled it's subscription. Propagating cancellation.")
       cancel()
 

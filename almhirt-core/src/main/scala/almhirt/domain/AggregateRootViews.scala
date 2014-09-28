@@ -105,25 +105,25 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
 
   private case object Resolve
   def receiveResolve: Receive = {
-    case Resolve =>
+    case Resolve ⇒
       val actorsToResolve =
         Map("aggregateeventlog" -> aggregateEventLogToResolve) ++
-          snapShotStorageToResolve.map(r => Map("snapshotstorage" -> r)).getOrElse(Map.empty)
+          snapShotStorageToResolve.map(r ⇒ Map("snapshotstorage" -> r)).getOrElse(Map.empty)
       context.resolveMany(actorsToResolve, resolveSettings, None, Some("resolver"))
 
-    case ActorMessages.ManyResolved(dependencies, _) =>
+    case ActorMessages.ManyResolved(dependencies, _) ⇒
       log.info("Found dependencies.")
       connectTo match {
-        case Some(publisher) =>
+        case Some(publisher) ⇒
           log.info("Subscribing myself.")
           AggregateRootViews.subscribeTo[E](publisher, self)
-        case None =>
+        case None ⇒
           ()
       }
       request(eventBufferSize)
       context.become(receiveRunning(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
 
-    case ActorMessages.ManyNotResolved(problem, _) =>
+    case ActorMessages.ManyNotResolved(problem, _) ⇒
       log.error(s"Failed to resolve dependencies:\n$problem")
       sys.error(s"Failed to resolve dependencies.")
   }

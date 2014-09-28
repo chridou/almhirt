@@ -177,10 +177,10 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   def toProblemOption(): Option[Problem] =
     self fold (prob ⇒ Some(prob), _ ⇒ None)
   
-  def constrained(cond: T ⇒ Boolean, msg: T => String = _ => "A constraint has was violated."): AlmValidation[T] =
+  def constrained(cond: T ⇒ Boolean, msg: T ⇒ String = _ ⇒ "A constraint has was violated."): AlmValidation[T] =
     self.fold(
-     fail => fail.failure,
-     succ => if(cond(succ)) succ.success else ConstraintViolatedProblem(msg(succ)).failure
+     fail ⇒ fail.failure,
+     succ ⇒ if(cond(succ)) succ.success else ConstraintViolatedProblem(msg(succ)).failure
     )
 
 }

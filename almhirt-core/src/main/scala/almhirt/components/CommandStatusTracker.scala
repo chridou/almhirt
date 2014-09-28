@@ -111,9 +111,9 @@ private[almhirt] class MyCommandStatusTracker(
   private case object AutoConnect
 
   def running(): Receive = {
-    case AutoConnect =>
+    case AutoConnect ⇒
       log.info("Subscribing to event stream.")
-      FlowFrom(ctx.eventStream).collect { case e: CommandStatusChanged => e }.publishTo(CommandStatusTracker(self))
+      FlowFrom(ctx.eventStream).collect { case e: CommandStatusChanged ⇒ e }.publishTo(CommandStatusTracker(self))
       request(1)
 
     case TrackCommand(commandId, callback, deadline) ⇒

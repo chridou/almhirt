@@ -1,6 +1,6 @@
 package almhirt.converters
 
-import java.util.{ UUID => JUUID }
+import java.util.{ UUID ⇒ JUUID }
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._

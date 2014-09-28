@@ -14,17 +14,17 @@ package object akkax {
     import scala.concurrent.duration.FiniteDuration
     def resolveSingle(toResolve: ToResolve, settings: ResolveSettings, correlationId: Option[CorrelationId], resolverName: Option[String] = None) = {
       resolverName match {
-        case Some(name) =>
+        case Some(name) ⇒
           self.actorOf(SingleResolver.props(toResolve, settings, correlationId), name)
-        case None =>
+        case None ⇒
           self.actorOf(SingleResolver.props(toResolve, settings, correlationId))
       }
     }
     def resolveMany(toResolve: Map[String, ToResolve], settings: ResolveSettings, correlationId: Option[CorrelationId], resolverName: Option[String] = None) = {
       resolverName match {
-        case Some(name) =>
+        case Some(name) ⇒
           self.actorOf(MultiResolver.props(toResolve, settings, correlationId), name)
-        case None =>
+        case None ⇒
           self.actorOf(MultiResolver.props(toResolve, settings, correlationId))
       }
     }
@@ -45,8 +45,8 @@ package object akkax {
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[ResolveSettings]] =
       config.opt[Config](path).flatMap {
-        case Some(_) => getValue(config, path).map(Some(_))
-        case None => scalaz.Success(None)
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
       }
   }
 }

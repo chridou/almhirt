@@ -10,7 +10,7 @@ import almhirt.common._
  */
 final case class PostActionParams(createdActor: ActorRef, creator: ActorRef, localActorRefFactory: ActorRefFactory)
 
-final case class PostAction(f: PostActionParams => AlmValidation[Unit]) extends Function3[ActorRef, ActorRef, ActorRefFactory, AlmValidation[Unit]] {
+final case class PostAction(f: PostActionParams ⇒ AlmValidation[Unit]) extends Function3[ActorRef, ActorRef, ActorRefFactory, AlmValidation[Unit]] {
   final def apply(createdActor: ActorRef, creator: ActorRef, localActorRefFactory: ActorRefFactory): AlmValidation[Unit] =
     executePostAction(PostActionParams(createdActor, creator, localActorRefFactory))
 
@@ -19,7 +19,7 @@ final case class PostAction(f: PostActionParams => AlmValidation[Unit]) extends 
 }
 
 object PostAction {
-  val noOp: PostAction = PostAction(_ => ().success)
+  val noOp: PostAction = PostAction(_ ⇒ ().success)
 }
 
 final case class ComponentFactory(props: Props, name: Option[String], postAction: PostAction) extends Function1[ActorContext, AlmValidation[ActorRef]] {
@@ -30,18 +30,18 @@ final case class ComponentFactory(props: Props, name: Option[String], postAction
     for {
       actorRef <- inTryCatch {
         name match {
-          case Some(n) =>
+          case Some(n) ⇒
             creatorContext.actorOf(props, n)
-          case None =>
+          case None ⇒
             creatorContext.actorOf(props)
         }
       }
       _ <- postAction(actorRef, creatorContext.self, creatorContext).fold(
-        problem => {
+        problem ⇒ {
           creatorContext.stop(actorRef)
           UnspecifiedProblem(s"The post action failed. Killing created actor ${actorRef}. Cause:\n$problem").failure
         },
-        _ => actorRef.success)
+        _ ⇒ actorRef.success)
     } yield {
       actorRef
     }
@@ -59,10 +59,10 @@ object ComponentFactory {
     def withPostAction1(postAction: PostAction): ComponentFactory =
       self.copy(postAction = postAction)
 
-    def withPostAction2(f: PostActionParams => AlmValidation[Unit]): ComponentFactory =
+    def withPostAction2(f: PostActionParams ⇒ AlmValidation[Unit]): ComponentFactory =
       self.copy(postAction = PostAction(f))
 
-    def withPostAction3(f: (ActorRef, ActorRef, ActorRefFactory) => AlmValidation[Unit]): ComponentFactory =
-      self.copy(postAction = PostAction(params => f(params.createdActor, params.creator, params.localActorRefFactory)))
+    def withPostAction3(f: (ActorRef, ActorRef, ActorRefFactory) ⇒ AlmValidation[Unit]): ComponentFactory =
+      self.copy(postAction = PostAction(params ⇒ f(params.createdActor, params.creator, params.localActorRefFactory)))
   }
 }

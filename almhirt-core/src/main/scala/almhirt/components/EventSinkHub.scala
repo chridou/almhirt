@@ -21,7 +21,7 @@ object EventSinkHub {
     import almhirt.almvalidation.kit._
     for {
       section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub")
-      buffersize <- section.v[Int]("buffer-size").constrained(_ >= 0, n => s""""buffer-size" must be greater or equal than 0, not $n.""")
+      buffersize <- section.v[Int]("buffer-size").constrained(_ >= 0, n ⇒ s""""buffer-size" must be greater or equal than 0, not $n.""")
     } yield propsRaw(factories, Some(buffersize))
   }
 
@@ -49,9 +49,9 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
     if (!factories.isEmpty) {
       val fanout =
         buffersize match {
-          case Some(bfs) if bfs > 0 =>
+          case Some(bfs) if bfs > 0 ⇒
             FlowFrom[Event](ctx.eventStream).buffer(bfs, OverflowStrategy.backpressure).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
-          case None =>
+          case None ⇒
             FlowFrom[Event](ctx.eventStream).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
         }
       factories.foreach {
@@ -61,9 +61,9 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
           log.info(s"""Create subrcriber "$name".""")
           val subscriber = ActorSubscriber[Event](actor)
           filterOpt match {
-            case Some(filter) =>
+            case Some(filter) ⇒
               filter.withSource(PublisherSource(fanout)).publishTo(subscriber)
-            case None =>
+            case None ⇒
               FlowFrom(fanout).publishTo(subscriber)
           }
       }

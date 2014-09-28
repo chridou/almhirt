@@ -41,18 +41,18 @@ private[almhirt] class UnboundedSinkImpl[T]() extends ActorPublisher[T] with Act
   }
 
   def receiveRunning(queue: Vector[T]): Receive = {
-    case InternalUnboundedSinkMessages.Publish(element) =>
+    case InternalUnboundedSinkMessages.Publish(element) ⇒
       context.become(receiveRunning(deliver(queue :+ element.asInstanceOf[T])))
 
-    case ActorPublisherMessage.Request(amount) =>
+    case ActorPublisherMessage.Request(amount) ⇒
       context.become(receiveRunning(deliver(queue)))
 
-    case ActorPublisherMessage.Cancel =>
+    case ActorPublisherMessage.Cancel ⇒
       if (!queue.isEmpty && log.isWarningEnabled)
         log.warning(s"${queue.size} element(s) left on cancel.")
       ()
 
-    case InternalUnboundedSinkMessages.Stop =>
+    case InternalUnboundedSinkMessages.Stop ⇒
       if (!queue.isEmpty && log.isWarningEnabled)
         log.warning(s"${queue.size} element(s) left on stop.")
 

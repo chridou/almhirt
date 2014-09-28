@@ -120,8 +120,8 @@ object SingleProblem {
 object IsSingleProblem {
   def unapply(problem: Problem): Option[SingleProblem] =
     problem match {
-      case p: SingleProblem => Some(p)
-      case _ => None
+      case p: SingleProblem ⇒ Some(p)
+      case _ ⇒ None
     }
 }
 

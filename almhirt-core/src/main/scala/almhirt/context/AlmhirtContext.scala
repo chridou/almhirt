@@ -23,7 +23,7 @@ object AlmhirtContextMessages {
 }
 
 object AlmhirtContext {
-  type ComponentFactory = AlmhirtContext => AlmFuture[Props]
+  type ComponentFactory = AlmhirtContext ⇒ AlmFuture[Props]
 
   def apply(system: ActorSystem, actorName: Option[String], componentFactories: ComponentFactories): AlmFuture[AlmhirtContext with Stoppable] = {
     import almhirt.configuration._
@@ -61,14 +61,14 @@ object AlmhirtContext {
           implicit val execCtx = futuresExecutor
           var theReceiver: ActorRef = null
           def receive: Receive = {
-            case AlmhirtContextMessages.Start =>
+            case AlmhirtContextMessages.Start ⇒
               theReceiver = sender()
               log.info("Create streams")
               AlmhirtStreams.createInternal(this.context, system.settings.config).onComplete(
-                problem => self ! AlmhirtContextMessages.StreamsNotCreated(problem),
-                streams => self ! AlmhirtContextMessages.StreamsCreated(streams))
+                problem ⇒ self ! AlmhirtContextMessages.StreamsNotCreated(problem),
+                streams ⇒ self ! AlmhirtContextMessages.StreamsCreated(streams))
 
-            case AlmhirtContextMessages.StreamsCreated(streams) =>
+            case AlmhirtContextMessages.StreamsCreated(streams) ⇒
               log.info("Created streams. Next: Create context")
               val ccuad = CanCreateUuidsAndDateTimes()
               val ctx = new AlmhirtContext with Stoppable {
@@ -92,25 +92,25 @@ object AlmhirtContext {
               }
               self ! AlmhirtContextMessages.ContextCreated(ctx)
 
-            case AlmhirtContextMessages.ContextCreated(ctx) =>
+            case AlmhirtContextMessages.ContextCreated(ctx) ⇒
               log.info("Context created. Next: Configure components")
               val components = context.actorOf(componentactors.componentsProps(ctx), "components")
               components ! componentactors.UnfoldFromFactories(componentFactories)
               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
 
-            case AlmhirtContextMessages.StreamsNotCreated(prob) =>
+            case AlmhirtContextMessages.StreamsNotCreated(prob) ⇒
               log.error(s"Could not create streams:\n$prob")
               theReceiver ! AlmhirtContextMessages.FailedInitialization(prob)
           }
         })
       }
 
-    propsV.flatMap { almhirtProps =>
+    propsV.flatMap { almhirtProps ⇒
       import scala.concurrent.duration._
       system.settings.config.v[FiniteDuration]("almhirt.context.max-init-duration").map((almhirtProps, _))
     }.fold(
-      fail => AlmFuture.failed(fail),
-      Function.tupled((almhirtProps, maxInitDur) => {
+      fail ⇒ AlmFuture.failed(fail),
+      Function.tupled((almhirtProps, maxInitDur) ⇒ {
         val contextName = actorName getOrElse (this.actorname)
         val theAlmhirt = system.actorOf(almhirtProps, contextName)
 
@@ -119,8 +119,8 @@ object AlmhirtContext {
         import akka.pattern._
         implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
         (theAlmhirt ? AlmhirtContextMessages.Start)(maxInitDur).successfulAlmFuture[AlmhirtContextMessages.FinishedResponse].mapV {
-          case AlmhirtContextMessages.FinishedInitialization(ctx) => scalaz.Success(ctx)
-          case AlmhirtContextMessages.FailedInitialization(prob) => scalaz.Failure(prob)
+          case AlmhirtContextMessages.FinishedInitialization(ctx) ⇒ scalaz.Success(ctx)
+          case AlmhirtContextMessages.FailedInitialization(prob) ⇒ scalaz.Failure(prob)
         }
       }))
   }
@@ -141,14 +141,14 @@ object AlmhirtContext {
         implicit val execCtx = futuresExecutor
         var theReceiver: ActorRef = null
         def receive: Receive = {
-          case AlmhirtContextMessages.Start =>
+          case AlmhirtContextMessages.Start ⇒
             theReceiver = sender()
             log.debug("Create streams")
             AlmhirtStreams.createInternal(this.context, system.settings.config).onComplete(
-              problem => self ! AlmhirtContextMessages.StreamsNotCreated(problem),
-              streams => self ! AlmhirtContextMessages.StreamsCreated(streams))
+              problem ⇒ self ! AlmhirtContextMessages.StreamsNotCreated(problem),
+              streams ⇒ self ! AlmhirtContextMessages.StreamsCreated(streams))
 
-          case AlmhirtContextMessages.StreamsCreated(streams) =>
+          case AlmhirtContextMessages.StreamsCreated(streams) ⇒
             log.debug("Created streams. Next: Create context")
             val ctx = new AlmhirtContext with Stoppable {
               val config = system.settings.config
@@ -181,8 +181,8 @@ object AlmhirtContext {
       import akka.pattern._
       implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
       (theAlmhirt ? AlmhirtContextMessages.Start)(maxDur).successfulAlmFuture[AlmhirtContextMessages.FinishedResponse].mapV {
-        case AlmhirtContextMessages.FinishedInitialization(ctx) => scalaz.Success(ctx)
-        case AlmhirtContextMessages.FailedInitialization(prob) => scalaz.Failure(prob)
+        case AlmhirtContextMessages.FinishedInitialization(ctx) ⇒ scalaz.Success(ctx)
+        case AlmhirtContextMessages.FailedInitialization(prob) ⇒ scalaz.Failure(prob)
       }
     }
   }

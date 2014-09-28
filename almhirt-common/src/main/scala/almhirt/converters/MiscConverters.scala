@@ -17,7 +17,7 @@ object MiscConverters {
       val bb = ByteBuffer.wrap(bytes);
       scalaz.Success(new java.util.UUID(bb.getLong(), bb.getLong()))
     } catch {
-      case scala.util.control.NonFatal(ex) =>
+      case scala.util.control.NonFatal(ex) ⇒
         scalaz.Failure(almhirt.common.ParsingProblem(s""""$str" is not a base64 encoded UUID.""", cause = Some(ex)))
     }
   }

@@ -34,27 +34,27 @@ private[almhirt] class SingleResolverImpl(toResolve: ToResolve, settings: Resolv
   private case class Resolved(actor: ActorRef)
   private case class NotResolved(ex: Throwable)
   def receiveResolve(startedAt: Deadline): Receive = {
-    case Resolve =>
+    case Resolve ⇒
       toResolve match {
-        case NoResolvingRequired(actorRef) => 
+        case NoResolvingRequired(actorRef) ⇒ 
           self ! Resolved(actorRef)
-        case r: ToReallyResolve =>
+        case r: ToReallyResolve ⇒
           val selection =
             r match {
-              case ResolvePath(path) => context.actorSelection(path)
-              case ResolveSelection(selection) => selection
+              case ResolvePath(path) ⇒ context.actorSelection(path)
+              case ResolveSelection(selection) ⇒ selection
             }
           selection.resolveOne(settings.resolveWait).onComplete {
-            case scala.util.Success(actor) => self ! Resolved(actor)
-            case scala.util.Failure(ex) => self ! NotResolved(ex)
+            case scala.util.Success(actor) ⇒ self ! Resolved(actor)
+            case scala.util.Failure(ex) ⇒ self ! NotResolved(ex)
           }(context.dispatcher)
       }
 
-    case Resolved(actor) =>
+    case Resolved(actor) ⇒
       context.parent ! ActorMessages.ResolvedSingle(actor, correlationId)
       context.stop(self)
 
-    case NotResolved(ex) =>
+    case NotResolved(ex) ⇒
       if (startedAt.lapExceeds(settings.maxResolveTime)) {
         log.error(s"""	|Could not resolve "${toResolve}" after ${settings.maxResolveTime.defaultUnitString}.
         				|Giving up.
@@ -84,20 +84,20 @@ private[almhirt] class MultiResolverImpl(toResolve: Map[String, ToResolve], sett
   var resolvedActors: Map[String, ActorRef] = Map.empty
 
   def receiveResolve: Receive = {
-    case Resolve =>
+    case Resolve ⇒
       toResolve.zipWithIndex.foreach {
-        case ((name, toResolve), index) =>
+        case ((name, toResolve), index) ⇒
           context.resolveSingle(toResolve, settings, Some(CorrelationId(name)), Some(s"resolver-$index"))
       }
 
-    case ActorMessages.ResolvedSingle(resolved, correlationIdOpt) =>
+    case ActorMessages.ResolvedSingle(resolved, correlationIdOpt) ⇒
       resolvedActors = resolvedActors + (correlationIdOpt.get.value -> resolved)
       if (resolvedActors.size == toResolve.size) {
         context.parent ! ActorMessages.ManyResolved(resolvedActors, correlationId)
         context.stop(self)
       }
 
-    case ActorMessages.SingleNotResolved(problem, _) =>
+    case ActorMessages.SingleNotResolved(problem, _) ⇒
       context.parent ! ActorMessages.ManyNotResolved(problem, correlationId)
       log.error(s"Aborting to resolve.\n$problem")
       context.stop(self)

@@ -15,8 +15,8 @@ package object mongo {
 
     def tryGetValue(config: Config, path: String): AlmValidation[Option[MongoConnectionSettings]] =
       config.opt[Config](path).flatMap {
-        case Some(_) => getValue(config, path).map(Some(_))
-        case None => scalaz.Success(None)
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
       }
   }
 

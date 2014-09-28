@@ -72,7 +72,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
    */
   protected case object StartUserInitialization
   def receiveUserInitialization(currentCommand: AggregateRootCommand): Receive = {
-    case StartUserInitialization =>
+    case StartUserInitialization ⇒
       signContract(currentCommand)
 
     case unexpectedCommand: AggregateRootCommand ⇒
