@@ -52,13 +52,13 @@ private[almhirt] object componentactors {
           proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
           factories ⇒ eventLogs ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildViews(ctx).onComplete(
-          proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
+          proplem ⇒ log.error(s"""Could not create component factories for views."""),
           factories ⇒ views ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildMisc(ctx).onComplete(
-          proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
+          proplem ⇒ log.error(s"""Could not create component factories for misc."""),
           factories ⇒ misc ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildApps(ctx).onComplete(
-          proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
+          proplem ⇒ log.error(s"""Could not create component factories for apps."""),
           factories ⇒ apps ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildNexus.foreach(_(ctx).onComplete(
           problem ⇒ log.error(s"Failed to create nexus props:\$problem"),
