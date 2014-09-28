@@ -3,8 +3,8 @@ package almhirt.context
 import akka.actor._
 import almhirt.common._
 import almhirt.akkax._
-
 import almhirt.almvalidation.kit._
+import almhirt.tracking.CorrelationId
 
 object SupervisorPaths {
   val eventLogs = ""
@@ -17,7 +17,7 @@ private[almhirt] object componentactors {
   import almhirt.akkax.{ ActorMessages, ComponentFactory }
 
   def componentsProps(implicit ctx: AlmhirtContext): Props =
-    Props(new ComponentsActor(ctx))
+    Props(new ComponentsSupervisor(ctx))
 
   def viewsProps(implicit ctx: AlmhirtContext): Props =
     Props(new ViewsSupervisor())
@@ -31,85 +31,73 @@ private[almhirt] object componentactors {
   def appsProps(implicit ctx: AlmhirtContext): Props =
     Props(new AppsSupervisor())
 
-  final case class Unfold(factories: ComponentFactories)
 
-  class ComponentsActor(ctx: AlmhirtContext) extends Actor with ActorLogging {
+  class ViewsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
+  class EventLogsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
+  class MiscSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
+  class AppsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
+    
+  final case class UnfoldFromFactories(factories: ComponentFactories)
+
+  class ComponentsSupervisor(ctx: AlmhirtContext) extends Actor with ActorLogging {
     val eventLogs = context.actorOf(eventLogsProps(ctx), "event-logs")
     val views = context.actorOf(viewsProps(ctx), "views")
     val misc = context.actorOf(miscProps(ctx), "misc")
     val apps = context.actorOf(appsProps(ctx), "apps")
 
     override def receive: Receive = {
-      case m: Unfold => {
+      case UnfoldFromFactories(factories) => {
         log.info("Unfolding components.")
-        eventLogs ! m
-        views ! m
-        misc ! m
-        apps ! m
-        m.factories.buildNexus.foreach(_(ctx).onComplete(
+        factories.buildEventLogs(ctx).onComplete(
+          proplem => log.error(s"""Could not create component factories for event logs."""),
+          factories => eventLogs ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
+        factories.buildViews(ctx).onComplete(
+          proplem => log.error(s"""Could not create component factories for event logs."""),
+          factories => views ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
+        factories.buildMisc(ctx).onComplete(
+          proplem => log.error(s"""Could not create component factories for event logs."""),
+          factories => misc ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
+        factories.buildApps(ctx).onComplete(
+          proplem => log.error(s"""Could not create component factories for event logs."""),
+          factories => apps ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
+        factories.buildNexus.foreach(_(ctx).onComplete(
           problem => log.error(s"Failed to create nexus props:\$problem"),
-          factory => self ! ActorMessages.CreateChildActor(factory, false))(context.dispatcher))
+          factory => self ! ActorMessages.CreateChildActor(factory, false, None))(context.dispatcher))
       }
 
-      case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) =>
         context.childFrom(componentFactory).fold(
           problem => {
             log.error(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
             				|$problem""".stripMargin)
-            sender() ! ActorMessages.CreateChildActorFailed(problem)
+            sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
           actorRef => {
             log.info(s"Created ${actorRef.path} @ ${actorRef.path} ")
             if (returnActorRef)
-              sender() ! ActorMessages.ChildActorCreated(actorRef)
+              sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
           })
     }
   }
 
   trait SimpleUnfolder extends Actor with ActorLogging with HasAlmhirtContext with almhirt.akkax.AlmActorSupport {
-    def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]]
-
     override def receive: Receive = {
-      case Unfold(cf: ComponentFactories) =>
-        extractFactories(cf).onComplete(
-          fail => log.error(s"Failed to create component factories:\n$fail"),
-          factories => {
-            log.info(s"Unfolding:\n${factories.map(_.name.getOrElse("<<<no name>>>")).mkString(", ")}")
-            factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, false) }
-          })(context.dispatcher)
+      case ActorMessages.CreateChildActors(factories, returnActorRefs, correlationId) =>
+        log.info(s"Creating:\n${factories.map(_.name.getOrElse("<<<no name>>>")).mkString(", ")}")
+        factories.foreach { factory => self ! ActorMessages.CreateChildActor(factory, returnActorRefs, correlationId) }
 
-      case ActorMessages.CreateChildActor(componentFactory, returnActorRef) =>
+      case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) =>
         context.childFrom(componentFactory).fold(
           problem => {
             log.error(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
             				|$problem""".stripMargin)
-            sender() ! ActorMessages.CreateChildActorFailed(problem)
+            sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
           actorRef => {
             log.info(s"Created ${actorRef.path} @ ${actorRef.path} ")
             if (returnActorRef)
-              sender() ! ActorMessages.ChildActorCreated(actorRef)
+              sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
           })
     }
-  }
-
-  class ViewsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder {
-    override def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]] =
-      cf.buildViews(almhirtContext)
-  }
-
-  class EventLogsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder {
-    override def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]] =
-      cf.buildEventLogs(almhirtContext)
-  }
-
-  class MiscSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder {
-    override def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]] =
-      cf.buildMisc(almhirtContext)
-  }
-
-  class AppsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder {
-    override def extractFactories(cf: ComponentFactories): AlmFuture[Seq[ComponentFactory]] =
-      cf.buildApps(almhirtContext)
   }
 }
