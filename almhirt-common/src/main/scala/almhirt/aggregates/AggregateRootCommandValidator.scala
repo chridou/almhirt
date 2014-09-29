@@ -38,7 +38,7 @@ object AggregateRootCommandValidator {
             command.success
         case p: Postnatalis[AggregateRoot] ⇒
           if (command.aggId != p.id) {
-            IllegalOperationProblem(s"Ids do not match: Command(${command.aggId.value}) vs Aggregate(${p.id.value}).").failure
+            IllegalOperationProblem(s"Ids do not match: Command[${command.getClass().getName()}](${command.aggId.value}) vs Aggregate(${p.id.value}).").failure
           } else {
             p match {
               case v: Vivus[AggregateRoot] ⇒
