@@ -37,7 +37,7 @@ object AggregateRootDrone {
   }
 
   def propsMaker(maker: Option[FiniteDuration] => Props,
-    droneConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] =  {
+    droneConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     val path = "almhirt.components.aggregates.aggregate-root-drone" + droneConfigName.map("." + _).getOrElse("")
     for {
@@ -134,10 +134,30 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   private case class Rejected(problem: Problem) extends CommandResult
   private case object Unhandled extends CommandResult
 
+  private var capturedId: Option[AggregateRootId] = None
+
   private def receiveUninitialized: Receive = {
     case firstCommand: AggregateRootCommand ⇒
-      context.become(receiveUserInitialization(firstCommand))
-      self ! StartUserInitialization
+      capturedId match {
+        case Some(id) =>
+          if (firstCommand.aggId == id) {
+            snapshotStorage match {
+              case None ⇒
+                context.become(receiveRebuildFromScratch(firstCommand))
+                aggregateEventLog ! GetAllAggregateRootEventsFor(firstCommand.aggId)
+              case Some(snaphots) ⇒
+                ???
+            }
+          } else {
+            sendMessage(CommandNotExecuted(
+              firstCommand,
+              ConstraintViolatedProblem(s"""This drone only accepts commands for aggregate root id "${id.value}". The command targets ${firstCommand.aggId.value}.""")))
+          }
+        case None =>
+          capturedId = Some(firstCommand.aggId)
+          context.become(receiveUserInitialization(firstCommand))
+          self ! StartUserInitialization
+      }
   }
 
   private def receiveSignContract(currentCommand: AggregateRootCommand): Receive = {
