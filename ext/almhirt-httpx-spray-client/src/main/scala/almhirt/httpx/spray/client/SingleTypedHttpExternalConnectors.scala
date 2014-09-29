@@ -84,7 +84,7 @@ abstract class SingleTypeHttpConversationWithParametrizedQuery[T, U](implicit se
           }.mkString("&")
           s"?$items"
         }
-      s"$prefix/$segmentsAppendix$paramsAppendix"
+      s"$prefix$segmentsAppendix$paramsAppendix"
     }
   }
 
