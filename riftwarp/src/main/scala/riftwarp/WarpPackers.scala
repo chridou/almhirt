@@ -88,6 +88,12 @@ object WarpPackers {
     packers.addTyped(AggregatedProblemPackaging)
     packers.addTyped(ProblemPackaging)
 
+    packers.addTyped(CommandAcceptedWarpPackaging)
+    packers.addTyped(CommandNotAcceptedWarpPackaging)
+    packers.addTyped(TrackedCommandResultWarpPackaging)
+    packers.addTyped(TrackedCommandTimedOutWarpPackaging)
+    packers.addTyped(TrackerFailedWarpPackaging)
+    packers.addTyped(TrackedCommandResponseWarpPackaging)
     packers.addTyped(CommandResponseWarpPackaging)
     packers.addTyped(CommandStatusChangedWarpPackaging)
  

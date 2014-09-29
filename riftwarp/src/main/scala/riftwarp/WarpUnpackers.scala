@@ -71,7 +71,14 @@ object WarpUnpackers {
     unpackers.addTyped(AggregatedProblemPackaging)
     unpackers.addTyped(ProblemPackaging)
 
+    unpackers.addTyped(CommandAcceptedWarpPackaging)
+    unpackers.addTyped(CommandNotAcceptedWarpPackaging)
+    unpackers.addTyped(TrackedCommandResultWarpPackaging)
+    unpackers.addTyped(TrackedCommandTimedOutWarpPackaging)
+    unpackers.addTyped(TrackerFailedWarpPackaging)
+    unpackers.addTyped(TrackedCommandResponseWarpPackaging)
     unpackers.addTyped(CommandResponseWarpPackaging)
+    unpackers.addTyped(CommandStatusChangedWarpPackaging)
     unpackers.addTyped(CommandStatusChangedWarpPackaging)
     
     serialization.common.ProblemTypes.registerUnpackers(unpackers)
