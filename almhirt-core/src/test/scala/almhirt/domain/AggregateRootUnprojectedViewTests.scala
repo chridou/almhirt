@@ -255,14 +255,15 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
     val viewProps = Props(new AggregateRootUnprojectedView[User, UserEvent](
       theId, eventlogActor, None,
       (lc, receiver) ⇒ receiver ! UserState(lc),
-      (prob, receiver) ⇒ receiver ! ViewFailure(prob)) with UserEventHandler {
+      (prob, receiver) ⇒ receiver ! ViewFailure(prob),
+      None) with UserEventHandler {
       override def confirmAggregateRootEventHandled() {
       }
     })
 
     val viewActor = system.actorOf(viewProps, s"view-$testId")
 
-    FlowFrom(streams.eventStream).collect{ case e: AggregateRootEvent ⇒ e}.withSink(ForeachSink(event ⇒ viewActor ! AggregateRootViewMessages.ApplyAggregateRootEvent(event)))
+    FlowFrom(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.withSink(ForeachSink(event ⇒ viewActor ! AggregateRootViewMessages.ApplyAggregateRootEvent(event)))
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, viewActor, droneActor, droneProbe, eventlogActor, streams)))

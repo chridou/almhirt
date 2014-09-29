@@ -59,10 +59,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def returnToUnitializedAfter: Option[FiniteDuration]
   implicit def ccuad: CanCreateUuidsAndDateTimes
 
-  /** In production the hive has to be notified which should be the parent */
-  def sendMessage(msg: AggregateDroneMessage) {
-    context.parent ! msg
-  }
 
   def handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateRootCommand, AggregateRootLifecycle[T]) ⇒ Unit
 
@@ -104,6 +100,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     def unhandled() { self ! Unhandled }
   }
 
+  /** 
+   *  Send a message to a stakeholder.
+   *  In production the hive has to be notified which should be the parent 
+   */
+  def sendMessage(msg: AggregateDroneMessage) {
+    context.parent ! msg
+  }
+  
   private case object SignContract
 
   private case class InternalArBuildResult(ar: AggregateRootLifecycle[T])
@@ -148,6 +152,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     case nextCommand: AggregateRootCommand ⇒
       handleAggregateCommand(DefaultConfirmationContext)(nextCommand, persistedState)
       context.become(receiveWaitingForCommandResult(nextCommand, persistedState))
+
     case AggregateRootDroneInternal.ReturnToUninitialized =>
       if (log.isDebugEnabled)
         log.debug("Returning to uninitialized.")

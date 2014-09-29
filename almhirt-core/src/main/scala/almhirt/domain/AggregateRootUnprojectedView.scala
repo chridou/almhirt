@@ -1,13 +1,14 @@
 package almhirt.domain
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 import akka.actor._
 import almhirt.common._
 import almhirt.aggregates._
 import almhirt.almvalidation.kit._
-import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import almhirt.common.AggregateRootEvent
+import play.api.libs.iteratee.{ Enumerator, Iteratee }
 
 object AggregateRootViewMessages {
   final case class ApplyAggregateRootEvent(event: AggregateRootEvent)
@@ -17,13 +18,18 @@ object AggregateRootViewMessages {
 
 }
 
+private[almhirt] object AggregateRootViewInternal {
+  case object ReturnToUninitialized
+}
+
 /** View an unprojected aggregate root that is updated vial the aggregate event log or aggregate events as they come in */
 abstract class AggregateRootUnprojectedView[T <: AggregateRoot, E <: AggregateRootEvent](
   override val aggregateRootId: AggregateRootId,
   override val aggregateEventLog: ActorRef,
   override val snapshotStorage: Option[ActorRef],
   override val onDispatchSuccess: (AggregateRootLifecycle[T], ActorRef) ⇒ Unit,
-  override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit)(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
+  override val onDispatchFailure: (Problem, ActorRef) ⇒ Unit,
+  override val returnToUnitializedAfter: Option[FiniteDuration])(implicit override val futuresContext: ExecutionContext, override val eventTag: ClassTag[E]) extends Actor with ActorLogging with AggregateRootUnprojectedViewSkeleton[T, E] { me: AggregateRootEventHandler[T, E] ⇒
 
   override def receive: Receive = me.receiveUninitialized
 
@@ -40,6 +46,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   def aggregateEventLog: ActorRef
   def snapshotStorage: Option[ActorRef]
   def aggregateRootId: AggregateRootId
+  def returnToUnitializedAfter: Option[FiniteDuration]
   implicit def eventTag: ClassTag[E]
 
   def confirmAggregateRootEventHandled()
@@ -116,13 +123,13 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       val toApply = enqueuedEvents.filter(_.aggVersion >= arState.version)
       if (toApply.isEmpty) {
         dispatchState(arState, enqueuedRequests: _*)
-        context.become(receiveServe(arState))
+        becomeReceiveServe(arState)
       } else {
         if (toApply.head.aggVersion == arState.version) {
           logDebug(s"[receiveEvaluateEventlogRebuildResult]: Applying ${toApply.size} enqueued events.")
           val newState = toApply.foldLeft(arState) { case (state, nextEvent) ⇒ applyEventLifecycleAgnostic(state, nextEvent) }
           dispatchState(newState, enqueuedRequests: _*)
-          context.become(receiveServe(newState))
+          becomeReceiveServe(newState)
         } else {
           logDebug(s"[receiveEvaluateEventlogRebuildResult]: Version gap. Updating from eventlog.")
           updateFromEventlog(arState, enqueuedRequests)
@@ -149,7 +156,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
           if (event.aggVersion == s.version) {
             confirmAggregateRootEventHandled()
             logDebug(s"[receiveServe]: Applying event $event")
-            context.become(receiveServe(applyEventAntemortem(s, event.specificWithHandler[E](onError(Vector.empty, 0)))))
+            becomeReceiveServe(applyEventAntemortem(s, event.specificWithHandler[E](onError(Vector.empty, 0))))
           } else {
             confirmAggregateRootEventHandled()
             logDebug(s"[receiveServe]: Version mismatch. $event causes updating from eventlog.")
@@ -158,6 +165,18 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
         case Mortuus(id, v) ⇒
           onError(Vector.empty, 1)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
       }
+
+    case AggregateRootViewInternal.ReturnToUninitialized =>
+      if (log.isDebugEnabled)
+        log.debug("Returning to uninitialized.")
+      context.become(receiveUninitialized)
+
+  }
+
+  private def becomeReceiveServe(currentState: AggregateRootLifecycle[T]) {
+    returnToUnitializedAfter.foreach(dur =>
+      context.system.scheduler.scheduleOnce(dur, self, AggregateRootViewInternal.ReturnToUninitialized)(context.dispatcher))
+    context.become(receiveServe(currentState))
   }
 
   /** Ends with termination */

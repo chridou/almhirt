@@ -237,7 +237,8 @@ class AggregateRootViewsTests(_system: ActorSystem)
     def getViewProps(id: AggregateRootId, el: ActorRef, ss: Option[ActorRef]) = Props(new AggregateRootUnprojectedView[User, UserEvent](
       id, el, ss,
       (lc, receiver) ⇒ receiver ! UserState(lc),
-      (prob, receiver) ⇒ receiver ! ViewFailure(prob)) with UserEventHandler {
+      (prob, receiver) ⇒ receiver ! ViewFailure(prob),
+      None) with UserEventHandler {
     })
 
     import almhirt.akkax._
