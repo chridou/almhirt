@@ -66,14 +66,15 @@ private[almhirt] class EventLogWriterImpl(
         self ! AutoConnect
       else
         request(1)
-      context.become(running(eventlog, None))
+      context.become(running(eventlog, None, cancelTimeout = None))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
       sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
   }
 
-  def running(eventLog: ActorRef, activeEvent: Option[Event]): Receive = {
+  
+  def running(eventLog: ActorRef, activeEvent: Option[Event], cancelTimeout: Option[Cancellable]): Receive = {
     case AutoConnect ⇒
       log.info("Subscribing to event stream.")
       FlowFrom(ctx.eventStream).publishTo(EventLogWriter(self))
@@ -84,14 +85,15 @@ private[almhirt] class EventLogWriterImpl(
         sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.get.eventId.value}' is processed.")
       }
 
-      context.system.scheduler.scheduleOnce(maxWaitForEventLog, self, PotentialTimeout(event.eventId))(context.dispatcher)
+      val cancel = context.system.scheduler.scheduleOnce(maxWaitForEventLog, self, PotentialTimeout(event.eventId))(context.dispatcher)
       eventLog ! EventLog.LogEvent(event)
-      context.become(running(eventLog, activeEvent = Some(event)))
+      context.become(running(eventLog, activeEvent = Some(event), Some(cancel)))
 
     case EventLog.EventLogged(id) ⇒
       if (activeEvent.map(_.eventId == id) | false) {
         request(1)
-        context.become(running(eventLog, activeEvent = None))
+        cancelTimeout.foreach(_.cancel())
+        context.become(running(eventLog, activeEvent = None, cancelTimeout = None))
       } else {
         log.warning(s"Received event logged for event '${id.value}' which is not the active event.")
       }
@@ -100,7 +102,8 @@ private[almhirt] class EventLogWriterImpl(
       if (activeEvent.map(_.eventId == id) | false) {
         log.error(s"Could not log event '${id.value}':\n$problem")
         request(1)
-        context.become(running(eventLog, activeEvent = None))
+        cancelTimeout.foreach(_.cancel())
+        context.become(running(eventLog, activeEvent = None, cancelTimeout = None))
       } else {
         log.error(s"Received event not logged for event '${id.value}' which is not the active event:\n$problem")
       }
@@ -109,7 +112,7 @@ private[almhirt] class EventLogWriterImpl(
       if (activeEvent.map(_.eventId == eventId) | false) {
         log.warning(s"Writing event '${eventId.value}' timed out. It might have been written or not...")
         request(1)
-        context.become(running(eventLog, activeEvent = None))
+        context.become(running(eventLog, activeEvent = None, cancelTimeout = None))
       } else {
         log.warning(s"Received timeout for event '${eventId.value}' which is not the active event.")
       }
