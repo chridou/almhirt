@@ -16,6 +16,22 @@ package object configuration {
         fail ⇒ None,
         succ ⇒ succ)
 
+    /**
+     * The value is a None, if and only if it is the case insensitive String "None".
+     *  Otherwise it is parsed with the given Extractor.
+     */
+    def magicOption[T](path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[Option[T]] =
+      ConfigStringExtractorInst.getValue(self, path).fold(
+        problem => {
+          self.value[T](path).map(Some(_))
+        },
+        mayBeMagicValue => {
+          mayBeMagicValue.toLowerCase() match {
+            case "none" => scalaz.Success(None)
+            case _ => self.value[T](path).map(Some(_))
+          }
+        })
+
     final def v[T](path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[T] =
       value[T](path)(configExtractor)
 
@@ -24,6 +40,7 @@ package object configuration {
 
     final def unsafeOpt[T](path: String)(implicit configExtractor: ConfigExtractor[T]): Option[T] =
       unsafeValue[T](path)(configExtractor)
+
   }
 
   implicit val ConfigStringExtractorInst = new ConfigStringExtractor {}
