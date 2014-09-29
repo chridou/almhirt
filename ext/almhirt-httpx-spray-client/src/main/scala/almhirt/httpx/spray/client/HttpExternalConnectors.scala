@@ -94,7 +94,14 @@ trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
       case Some(body) ⇒
         val mediaType = body.contentType.mediaType.toAlmMediaType
         if (mediaType == AlmMediaTypes.`text/plain`)
-          UnspecifiedProblem(s"Expected an entity but received a text message on status code ${response.status}: ${body.asString}").failure
+          UnspecifiedProblem(s"""	|
+        		  					|Expected an entity but received a text message.
+        		  					|Status code: 
+        		  					|${response.status}
+          							|Headers:
+          							|${response.headers}
+          							|Body:
+          							|${body.asString}""".stripMargin).failure
         else {
           val deserializer = implicitly[HttpDeserializer[T]]
           val channel = almhirt.httpx.spray.marshalling.Helper.extractChannel(body.contentType.mediaType)
@@ -104,7 +111,12 @@ trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
             deserializer.deserialize(mediaType ,TextBody(body.data.asString))
         }
       case None ⇒
-        UnspecifiedProblem(s"""Expected an entity from endpoint "XXXX" there was no content. Status code ${response.status}.""").failure
+        UnspecifiedProblem(s"""	|
+          						|Expected an entity from endpoint.
+        						|There was no content.
+        						|Status code: ${response.status}
+        						|Headers: 
+        						|${response.headers}""".stripMargin).failure
     }).leftMap { innerProb ⇒
       val headers = response.headers.map(_.toString).mkString("\nHeaders:\n", "\n", "\n")
       UnspecifiedProblem(s"""A problem occured handling the response.$headers""", cause = Some(innerProb))
