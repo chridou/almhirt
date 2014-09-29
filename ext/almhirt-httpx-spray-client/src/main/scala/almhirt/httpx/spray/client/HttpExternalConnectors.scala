@@ -49,7 +49,14 @@ trait HttpExternalConnector {
       case Some(body) ⇒
         val mediaType = body.contentType.mediaType.toAlmMediaType
         if (mediaType == AlmMediaTypes.`text/plain`)
-          UnspecifiedProblem(s"Received a text message on status code ${response.status}: ${body.asString}").failure
+          UnspecifiedProblem(s"""	|
+        		  					|Expected an entity but received a text message.
+        		  					|Status code: 
+        		  					|${response.status}
+          							|Headers:
+          							|${response.headers}
+          							|Body:
+          							|${body.asString}""".stripMargin).failure
         else {
           if (mediaType.binary)
             problemDeserializer.deserialize(mediaType, BinaryBody(body.data.toByteArray))
@@ -57,7 +64,12 @@ trait HttpExternalConnector {
             problemDeserializer.deserialize(mediaType, TextBody(body.data.asString))
         }
       case None ⇒
-        UnspecifiedProblem(s"""Event endpoint "XXXX" returned an empty response. Status code ${response.status}.""").failure
+        UnspecifiedProblem(s"""	|
+          						|Expected an entity from endpoint.
+        						|There was no content.
+        						|Status code: ${response.status}
+        						|Headers: 
+        						|${response.headers}""".stripMargin).failure
     }
 
 }
