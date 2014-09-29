@@ -7,6 +7,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.tracking._
 import almhirt.akkax._
+import almhirt.context.AlmhirtContext
 import org.reactivestreams.{ Publisher }
 import akka.stream.actor.{ ActorSubscriber, ActorSubscriberMessage, ZeroRequestStrategy }
 import almhirt.streaming._
@@ -36,25 +37,28 @@ object AggregateRootHive {
   def props(
     hiveDescriptor: HiveDescriptor,
     droneFactory: AggregateRootDroneFactory,
-    eventsBroker: StreamBroker[Event],
-    config: com.typesafe.config.Config,
-    hiveConfigName: Option[String] = None)(implicit ccuad: CanCreateUuidsAndDateTimes, futuresContext: ExecutionContext): AlmValidation[Props] = {
+    hiveConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
-    val path = "almhirt.components.aggregate-root-hive" + hiveConfigName.map("." + _).getOrElse("")
+    val path = "almhirt.components.aggregates.aggregate-root-hive" + hiveConfigName.map("." + _).getOrElse("")
     for {
-      section <- config.v[com.typesafe.config.Config](path)
+      section <- ctx.config.v[com.typesafe.config.Config](path)
+      aggregateEventLogPath <- section.v[String]("aggregate-event-log-path")
+      aggregateEventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(aggregateEventLogPath)) }
+      snapShotStoragePath <- section.magicOption[String]("snapshot-storage-path")
+      snapShotStorageToResolve <- inTryCatch { snapShotStoragePath.map(path => ResolvePath(ActorPath.fromString(path))) }
+      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
       commandBuffersize <- section.v[Int]("command-buffer-size")
       enqueudEventsThrottlingThresholdFactor <- section.v[Int]("enqueud-events-throttling-threshold-factor")
-    } yield ???
-
-    //    propsRaw(
-    //      hiveDescriptor,
-    //      commandBuffersize,
-    //      droneFactory,
-    //      eventsBroker,
-    //      enqueudEventsThrottlingThresholdFactor)
-
+    } yield propsRaw(
+      hiveDescriptor,
+      aggregateEventLogToResolve,
+      snapShotStorageToResolve,
+      resolveSettings,
+      commandBuffersize,
+      droneFactory,
+      ctx.eventBroker,
+      enqueudEventsThrottlingThresholdFactor)(ctx, ctx.futuresContext)
   }
 }
 

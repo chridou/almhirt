@@ -9,12 +9,13 @@ import almhirt.common._
 import almhirt.aggregates._
 import almhirt.almvalidation.kit._
 import almhirt.akkax._
+import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Publisher
 import akka.stream.scaladsl2.ImplicitFlowMaterializer
 
 object AggregateRootViews {
-  
+
   def propsRaw[E <: AggregateRootEvent: ClassTag](
     getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props,
     aggregateEventLogToResolve: ToResolve,
@@ -25,17 +26,26 @@ object AggregateRootViews {
     Props(new AggregateRootViews[E](getViewProps, aggregateEventLogToResolve, snapShotStorageToResolve, resolveSettings, eventBufferSize, connectTo))
 
   def props[E <: AggregateRootEvent: ClassTag](
-    config: com.typesafe.config.Config,
     getViewProps: (AggregateRootId, ActorRef, Option[ActorRef]) ⇒ Props,
-    viewsConfigName: Option[String] = None): AlmValidation[Props] = {
+    viewsConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     import almhirt.almvalidation.kit._
-    val path = "almhirt.components.aggregate-root-views" + viewsConfigName.map("." + _).getOrElse("")
+    val path = "almhirt.components.views.aggregate-root-views" + viewsConfigName.map("." + _).getOrElse("")
     for {
-      section <- config.v[com.typesafe.config.Config](path)
+      section <- ctx.config.v[com.typesafe.config.Config](path)
+      aggregateEventLogPath <- section.v[String]("aggregate-event-log-path")
+      aggregateEventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(aggregateEventLogPath)) }
+      snapShotStoragePath <- section.magicOption[String]("snapshot-storage-path")
+      snapShotStorageToResolve <- inTryCatch { snapShotStoragePath.map(path => ResolvePath(ActorPath.fromString(path))) }
+      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
       eventBufferSize <- section.v[Int]("event-buffer-size")
-    } yield ??? //propsRaw(getViewProps, eventBufferSize)
-
+    } yield propsRaw(
+      getViewProps,
+      aggregateEventLogToResolve,
+      snapShotStorageToResolve,
+      resolveSettings,
+      eventBufferSize,
+      Some(ctx.eventStream))
   }
 
   import akka.stream.scaladsl2._
@@ -95,7 +105,7 @@ private[almhirt] trait AggregateRootViewsSkeleton[E <: AggregateRootEvent] exten
   def aggregateEventLogToResolve: ToResolve
   def snapShotStorageToResolve: Option[ToResolve]
   def resolveSettings: ResolveSettings
-  
+
   def connectTo: Option[Publisher[Event]]
 
   implicit def eventTag: scala.reflect.ClassTag[E]
