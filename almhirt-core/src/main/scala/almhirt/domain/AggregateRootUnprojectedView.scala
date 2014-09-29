@@ -91,7 +91,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
     case FetchedAggregateRootEvents(eventsEnumerator) ⇒
       val iteratee: Iteratee[AggregateRootEvent, AggregateRootLifecycle[T]] = Iteratee.fold[AggregateRootEvent, AggregateRootLifecycle[T]](currentState) {
         case (acc, event) ⇒
-          applyEventLifecycleAgnostic(acc, event.specific[E])
+          applyEventLifecycleAgnostic(acc, event.specificUnsafe[E])
       }(futuresContext)
 
       eventsEnumerator.run(iteratee).onComplete {
@@ -107,7 +107,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       onError(enqueuedRequests, enqueuedEvents.size)(AggregateRootEventStoreFailedReadingException(aggregateRootId, "An error has occured fetching the aggregate root events:\n$problem"))
 
     case ApplyAggregateRootEvent(event) ⇒
-      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests, enqueuedEvents.size + 1))))
+      context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests, enqueuedEvents :+ event.specificUnsafeWithHandler[E](onError(enqueuedRequests, enqueuedEvents.size + 1))))
 
     case GetAggregateRootProjection ⇒
       context.become(receiveRebuildFromEventlog(currentState, enqueuedRequests :+ sender(), enqueuedEvents))
@@ -140,7 +140,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
       onError(enqueuedRequests, enqueuedEvents.size)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured rebuilding the aggregate root.", error))
 
     case ApplyAggregateRootEvent(event) ⇒
-      context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents :+ event.specificWithHandler[E](onError(enqueuedRequests, enqueuedEvents.size + 1))))
+      context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests, enqueuedEvents :+ event.specificUnsafeWithHandler[E](onError(enqueuedRequests, enqueuedEvents.size + 1))))
 
     case GetAggregateRootProjection ⇒
       context.become(receiveEvaluateEventlogRebuildResult(enqueuedRequests :+ sender(), enqueuedEvents))
@@ -156,7 +156,7 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
           if (event.aggVersion == s.version) {
             confirmAggregateRootEventHandled()
             logDebug(s"[receiveServe]: Applying event $event")
-            becomeReceiveServe(applyEventAntemortem(s, event.specificWithHandler[E](onError(Vector.empty, 0))))
+            becomeReceiveServe(applyEventAntemortem(s, event.specificUnsafeWithHandler[E](onError(Vector.empty, 0))))
           } else {
             confirmAggregateRootEventHandled()
             logDebug(s"[receiveServe]: Version mismatch. $event causes updating from eventlog.")

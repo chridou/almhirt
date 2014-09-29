@@ -18,12 +18,16 @@ package object domain {
   type HiveSelector = Seq[(HiveDescriptor, AggregateRootCommand ⇒ Boolean)]
   
   implicit class AggregateRootEventOps(self: AggregateRootEvent) {
-    def specific[E <: AggregateRootEvent](implicit tag: scala.reflect.ClassTag[E]): E = {
+    def specific[E <: AggregateRootEvent](implicit tag: scala.reflect.ClassTag[E]): AlmValidation[E] = {
+      almhirt.almvalidation.funs.almCast[E](self)
+    }
+      
+    def specificUnsafe[E <: AggregateRootEvent](implicit tag: scala.reflect.ClassTag[E]): E = {
       almhirt.almvalidation.funs.almCast[E](self).fold(
         fail ⇒ throw WrongAggregateRootEventTypeException(self, tag),
         succ ⇒ succ)
     }
-    def specificWithHandler[E <: AggregateRootEvent](f: AggregateRootDomainException ⇒ Nothing)(implicit tag: scala.reflect.ClassTag[E]): E = {
+    def specificUnsafeWithHandler[E <: AggregateRootEvent](f: AggregateRootDomainException ⇒ Nothing)(implicit tag: scala.reflect.ClassTag[E]): E = {
       almhirt.almvalidation.funs.almCast[E](self).fold(
         fail ⇒ f(WrongAggregateRootEventTypeException(self, tag)),
         succ ⇒ succ)
