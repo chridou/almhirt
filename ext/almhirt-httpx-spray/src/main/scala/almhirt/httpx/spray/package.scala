@@ -2,10 +2,11 @@ package almhirt.httpx
 
 import scala.language.implicitConversions
 import scalaz._, Scalaz._
-import almhirt.http.AlmMediaType
-import _root_.spray.http.{ MediaType, ContentType }
-import _root_.spray.http.{ HttpCharset, HttpCharsets }
+import almhirt.common._
 import almhirt.http._
+import almhirt.configuration._
+import _root_.spray.http.{ MediaType, ContentType, HttpCharset, HttpCharsets, HttpMethod, HttpMethods }
+import com.typesafe.config.Config
 
 package object spray {
   implicit def almMediaType2SprayMediaType(amt: AlmMediaType): MediaType = {
@@ -82,6 +83,27 @@ package object spray {
             if (self.binary) BinaryMedia else TextualMedia(Some(AlmCharacterEncodings.`UTF-8`)),
             self.fileExtensions,
             false)
+      }
+  }
+
+  implicit object HttpMethodConfigExtractor extends ConfigExtractor[HttpMethod] {
+    def getValue(config: Config, path: String): AlmValidation[HttpMethod] =
+      for {
+        methodStr <- config.v[String](path)
+        method <- methodStr.toUpperCase() match {
+          case "GET" => HttpMethods.GET.success
+          case "PUT" => HttpMethods.PUT.success
+          case "POST" => HttpMethods.POST.success
+          case "PATCH" => HttpMethods.PATCH.success
+          case "DELETE" => HttpMethods.DELETE.success
+          case x => ParsingProblem(s""""$x" is not a HTTP-Method.""").failure
+        }
+      } yield method
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[HttpMethod]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
       }
   }
 }
