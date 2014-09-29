@@ -7,7 +7,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.aggregates._
 import almhirt.almvalidation.kit._
-import almhirt.common.AggregateRootEvent
+import almhirt.context.AlmhirtContext
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 
 object AggregateRootViewMessages {
@@ -16,6 +16,23 @@ object AggregateRootViewMessages {
   case object GetAggregateRootProjection
   final case class GetAggregateRootProjectionFor(id: AggregateRootId)
 
+}
+
+object AggregateRootUnprojectedView {
+  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] => Props): Props = {
+    maker(returnToUnitializedAfter)
+  }
+
+  def propsMaker(
+    maker: Option[FiniteDuration] => Props,
+    droneConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+    import almhirt.configuration._
+    val path = "almhirt.components.views.unprojected-view" + droneConfigName.map("." + _).getOrElse("")
+    for {
+      section <- ctx.config.v[com.typesafe.config.Config](path)
+      returnToUnitializedAfter <- section.magicOption[FiniteDuration]("return-to-unitialized-after")
+    } yield propsRawMaker(returnToUnitializedAfter, maker)
+  }
 }
 
 private[almhirt] object AggregateRootViewInternal {

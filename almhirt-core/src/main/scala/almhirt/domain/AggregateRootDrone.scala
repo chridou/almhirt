@@ -6,10 +6,11 @@ import akka.actor._
 import almhirt.common._
 import almhirt.aggregates._
 import almhirt.tracking._
+import almhirt.problem.{ CauseIsThrowable, CauseIsProblem, HasAThrowable }
+import almhirt.context.AlmhirtContext
 import almhirt.streaming._
 import play.api.libs.iteratee.{ Enumerator, Iteratee }
 import scala.util.Success
-import almhirt.problem.{ CauseIsThrowable, CauseIsProblem, HasAThrowable }
 
 /** Used to commit or reject the events resulting from a command */
 trait ConfirmationContext[E <: AggregateRootEvent] {
@@ -28,6 +29,22 @@ trait ConfirmationContext[E <: AggregateRootEvent] {
    * Do not call multiple times from within command a handler.
    */
   def unhandled()
+}
+
+object AggregateRootDrone {
+  def propsRawMaker(returnToUnitializedAfter: Option[FiniteDuration], maker: Option[FiniteDuration] => Props): Props = {
+    maker(returnToUnitializedAfter)
+  }
+
+  def propsMaker(maker: Option[FiniteDuration] => Props,
+    droneConfigName: Option[String] = None)(implicit ctx: AlmhirtContext): AlmValidation[Props] =  {
+    import almhirt.configuration._
+    val path = "almhirt.components.aggregates.aggregate-root-drone" + droneConfigName.map("." + _).getOrElse("")
+    for {
+      section <- ctx.config.v[com.typesafe.config.Config](path)
+      returnToUnitializedAfter <- section.magicOption[FiniteDuration]("return-to-unitialized-after")
+    } yield propsRawMaker(returnToUnitializedAfter, maker)
+  }
 }
 
 private[almhirt] object AggregateRootDroneInternal {
@@ -58,7 +75,6 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
   def eventsBroker: StreamBroker[Event]
   def returnToUnitializedAfter: Option[FiniteDuration]
   implicit def ccuad: CanCreateUuidsAndDateTimes
-
 
   def handleAggregateCommand: ConfirmationContext[E] ⇒ (AggregateRootCommand, AggregateRootLifecycle[T]) ⇒ Unit
 
@@ -100,14 +116,14 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
     def unhandled() { self ! Unhandled }
   }
 
-  /** 
+  /**
    *  Send a message to a stakeholder.
-   *  In production the hive has to be notified which should be the parent 
+   *  In production the hive has to be notified which should be the parent
    */
   def sendMessage(msg: AggregateDroneMessage) {
     context.parent ! msg
   }
-  
+
   private case object SignContract
 
   private case class InternalArBuildResult(ar: AggregateRootLifecycle[T])
