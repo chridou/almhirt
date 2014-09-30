@@ -49,16 +49,16 @@ private[almhirt] object componentactors {
       case UnfoldFromFactories(factories) ⇒ {
         log.info("Unfolding components.")
         factories.buildEventLogs(ctx).onComplete(
-          proplem ⇒ log.error(s"""Could not create component factories for event logs."""),
+          problem ⇒ log.error(s"Could not create component factories for event logs:\n$problem"),
           factories ⇒ eventLogs ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildViews(ctx).onComplete(
-          proplem ⇒ log.error(s"""Could not create component factories for views."""),
+          problem ⇒ log.error(s"Could not create component factories for views:\n$problem"),
           factories ⇒ views ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildMisc(ctx).onComplete(
-          proplem ⇒ log.error(s"""Could not create component factories for misc."""),
+          problem ⇒ log.error(s"Could not create component factories for misc:\n$problem"),
           factories ⇒ misc ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildApps(ctx).onComplete(
-          proplem ⇒ log.error(s"""Could not create component factories for apps."""),
+          problem ⇒ log.error(s"Could not create component factories for apps:\n$problem"),
           factories ⇒ apps ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
         factories.buildNexus.foreach(_(ctx).onComplete(
           problem ⇒ log.error(s"Failed to create nexus props:\$problem"),
