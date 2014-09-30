@@ -2,6 +2,7 @@ package almhirt.httpx.spray
 
 import org.scalatest._
 import almhirt.http._
+import spray.http.MediaType
 
 class MediaTypeConversionTests  extends FunSuite with Matchers {
   test("A binary MediaType(msgpack) created with AlmMediaType.applicationStructured should return on .binary") {

@@ -6,26 +6,26 @@ import almhirt.almvalidation.kit._
 import riftwarp._
 
 object ToJsonStringDematerializer extends Dematerializer[String @@ WarpTags.Json] {
-  override val channel = WarpChannels.`rift-json`
+  override val channels = Set(WarpChannels.`rift-json`)
   def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): String @@ WarpTags.Json =
     WarpTags.JsonString(ToJsonCordDematerializer.dematerialize(what).toString)
 }
 
 object ToNoisyXmlStringDematerializer extends Dematerializer[String @@ WarpTags.Xml] {
-  override val channel = WarpChannels.`rift-xml`
+  override val channels = Set(WarpChannels.`rift-xml`)
   def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): String @@ WarpTags.Xml =
     WarpTags.XmlString(ToNoisyXmlElemDematerializer.dematerialize(what).toString)
 }
 
 object ToHtmlStringDematerializer extends Dematerializer[String @@ WarpTags.Html] {
-  override val channel = WarpChannels.`rift-html`
+  override val channels = Set(WarpChannels.`rift-html`)
   def dematerialize(what: WarpPackage, options: Map[String, Any] = Map.empty): String @@ WarpTags.Html =
     WarpTags.HtmlString(ToHtmlElemDematerializer.dematerialize(what).toString)
 }
 
 object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Json] {
   import scala.util.parsing.json._
-  override val channel = WarpChannels.`rift-json`
+  override val channels = Set(WarpChannels.`rift-json`)
   def rematerialize(what: String @@ WarpTags.Json, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] = {
     if (what.startsWith("{") || what.startsWith("[")) {
       val parser = new scala.util.parsing.json.Parser
@@ -51,13 +51,13 @@ object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Js
 
 object FromJsonCordRematerializer extends Rematerializer[Cord @@ WarpTags.Json] {
   import scala.util.parsing.json._
-  override val channel = WarpChannels.`rift-json-cord`
+  override val channels = Set(WarpChannels.`rift-json-cord`)
   def rematerialize(what: Cord @@ WarpTags.Json, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
     FromJsonStringRematerializer.rematerialize(WarpTags.JsonString(what.toString), options)
 }
 
 object FromXmlStringRematerializer extends Rematerializer[String @@ WarpTags.Xml] {
-  override val channel = WarpChannels.`rift-xml`
+  override val channels = Set(WarpChannels.`rift-xml`)
   def rematerialize(what: String @@ WarpTags.Xml, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
     inTryCatch { scala.xml.XML.loadString(what) }.flatMap(xml ⇒
       FromStdLibXmlRematerializer.rematerialize(xml))

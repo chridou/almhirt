@@ -10,7 +10,7 @@ class RematerializersRegistry extends Rematerializers {
   private val rematerializers = new _root_.java.util.concurrent.ConcurrentHashMap[String, Rematerializer[_]](32)
 
   override def add[T](rematerializer: Rematerializer[T]) {
-    rematerializers.put(rematerializer.channel.channelDescriptor, rematerializer)
+    rematerializer.channels.foreach(channel => rematerializers.put(channel.channelDescriptor, rematerializer))
   }
     
   override def get(channel: String): AlmValidation[Rematerializer[_]] =

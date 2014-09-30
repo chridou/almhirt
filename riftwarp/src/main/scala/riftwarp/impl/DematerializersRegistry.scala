@@ -10,7 +10,7 @@ class DematerializersRegistry extends Dematerializers {
   private val dematerializers = new _root_.java.util.concurrent.ConcurrentHashMap[String, Dematerializer[Any]](32)
 
   override def add[T](dematerializer: Dematerializer[T]) {
-    dematerializers.put((dematerializer.channel.channelDescriptor), dematerializer)
+    dematerializer.channels.foreach(channel => dematerializers.put(channel.channelDescriptor, dematerializer))
   }
 
   override def get(channel: String): AlmValidation[Dematerializer[Any]] =

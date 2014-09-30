@@ -14,7 +14,7 @@ class WarpPackageHttpSerializer(dematerializers: Dematerializers) extends HttpSe
     for {
       theChannel <- WarpChannels.getChannel(mediaType.contentFormat)
       serialized <- dematerializers.dematerialize(theChannel.channelDescriptor, what, Map.empty)
-      typedSerialized <- theChannel.HttpTransmission match {
+      typedSerialized <- theChannel.httpTransmission match {
         case HttpTransmissionAsBinary ⇒ serialized.castTo[Array[Byte]].map(BinaryBody)
         case HttpTransmissionAsText ⇒ serialized.castTo[String].map(TextBody)
         case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$theChannel" is neither a binary nor a text channel.""").failure
@@ -29,12 +29,12 @@ class WarpPackageHttpDeserializer(rematerializers: Rematerializers) extends Http
     for {
       theChannel <- WarpChannels.getChannel(mediaType.contentFormat)
       result <- what match {
-        case BinaryBody(bytes) if theChannel.HttpTransmission == HttpTransmissionAsBinary ⇒
+        case BinaryBody(bytes) if theChannel.httpTransmission == HttpTransmissionAsBinary ⇒
           rematerializers.rematerializeTyped[Array[Byte]](theChannel.channelDescriptor, bytes, Map.empty)
-        case TextBody(text) if theChannel.HttpTransmission == HttpTransmissionAsText ⇒
+        case TextBody(text) if theChannel.httpTransmission == HttpTransmissionAsText ⇒
           rematerializers.rematerializeTyped[String](theChannel.channelDescriptor, text, Map.empty)
         case _ ⇒
-          SerializationProblem(s""""$theChannel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.HttpTransmission}").""").failure
+          SerializationProblem(s""""$theChannel" is neither a binary nor a text channel or the serialized representations do not match("${what.getClass().getSimpleName()}" -> "${theChannel.httpTransmission}").""").failure
       }
     } yield result
 }
