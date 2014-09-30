@@ -32,7 +32,12 @@ trait HttpCommandEndpoint extends Directives {
         implicit ctx ⇒ {
           ((commandEndpoint ? cmd)(maxSyncDuration)).successfulAlmFuture[CommandResponse].completeRequestPostMapped[CommandResponse] {
             case r: CommandAccepted ⇒ SuccessContent(r, StatusCodes.Accepted)
-            case r: CommandNotAccepted ⇒ FailureContent(r, StatusCodes.TooManyRequests)
+            case r: CommandNotAccepted ⇒
+              r.why match {
+                case _: RejectionReason.TooBusy => FailureContent(r, StatusCodes.TooManyRequests)
+                case _: RejectionReason.NotReady => FailureContent(r, StatusCodes.ServiceUnavailable)
+                case _: RejectionReason.AProblem => FailureContent(r, StatusCodes.InternalServerError)
+              }
             case r: TrackedCommandResult ⇒ SuccessContent(r, StatusCodes.OK)
             case r: TrackedCommandTimedOut ⇒ FailureContent(r, StatusCodes.InternalServerError)
             case r: TrackerFailed ⇒ FailureContent(r, StatusCodes.InternalServerError)
