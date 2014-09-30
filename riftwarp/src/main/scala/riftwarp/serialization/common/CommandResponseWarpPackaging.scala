@@ -26,15 +26,15 @@ object CommandNotAcceptedWarpPackaging extends WarpPacker[CommandNotAccepted] wi
   val warpDescriptor = WarpDescriptor("CommandNotAccepted")
   val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandNotAccepted]) :: Nil
   override def pack(what: CommandNotAccepted)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    this.warpDescriptor ~> P("id", what.id.value) ~> P("reason", what.reason)
+    this.warpDescriptor ~> P("id", what.id.value) ~> With("why", what.why, RejectionReasonWarpPackaging)
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandNotAccepted] =
     withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id")
-        reason <- lookup.getAs[String]("reason")
-      } yield CommandNotAccepted(CommandId(id), reason)
+        why <- lookup.getWith[RejectionReason]("why", RejectionReasonWarpPackaging)
+      } yield CommandNotAccepted(CommandId(id), why)
     }
 }
 

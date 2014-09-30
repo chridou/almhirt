@@ -25,18 +25,18 @@ object CommandEndpoint {
       autoConnect <- section.v[Boolean]("auto-connect")
     } yield propsRaw(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration, autoConnect)
   }
-     
+
   def apply(commandEndpoint: ActorRef): org.reactivestreams.Publisher[Command] =
     ActorPublisher[Command](commandEndpoint)
-    
+
   val actorname = "command-endpoint"
 }
 
 private[almhirt] class CommandEndpointImpl(
-    commandStatusTrackerToResolve: ToResolve, 
-    resolveSettings: ResolveSettings, 
-    maxTrackingDuration: FiniteDuration,
-    autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorPublisher[Command] with ActorLogging with ImplicitFlowMaterializer {
+  commandStatusTrackerToResolve: ToResolve,
+  resolveSettings: ResolveSettings,
+  maxTrackingDuration: FiniteDuration,
+  autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorPublisher[Command] with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
 
   private case object AutoConnect
@@ -47,7 +47,7 @@ private[almhirt] class CommandEndpointImpl(
 
     case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
       log.info("Found command status tracker.")
-      if(autoConnect) self ! AutoConnect
+      if (autoConnect) self ! AutoConnect
       context.become(receiveRunning(commandStatusTracker))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
@@ -55,14 +55,14 @@ private[almhirt] class CommandEndpointImpl(
       sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
 
     case cmd: Command ⇒
-      sender() ! CommandNotAccepted(cmd.commandId, "Not ready! Try again later.")
+      sender() ! CommandNotAccepted(cmd.commandId, RejectionReason.NotReady("Not ready! Try again later."))
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = {
     case AutoConnect ⇒
       log.info("Connecting to command consumer.")
       CommandEndpoint(self).subscribe(ctx.commandBroker.newSubscriber)
-      
+
     case cmd: Command ⇒
       if (totalDemand > 0 && isActive) {
         if (cmd.isTrackable) {
@@ -82,19 +82,19 @@ private[almhirt] class CommandEndpointImpl(
         }
         onNext(cmd)
       } else {
-        val msg =
+        val reason =
           if (!isCanceled) {
-            "Command processing was shut down."
+            RejectionReason.AProblem(UnspecifiedProblem("Command processing was shut down."))
           } else if (isErrorEmitted) {
-            "Command processing is broken."
+            RejectionReason.AProblem(UnspecifiedProblem("Command processing is broken."))
           } else if (!isActive) {
-            "Command processing is not yet ready."
+            RejectionReason.NotReady("Command processing is not yet ready.")
           } else if (totalDemand == 0) {
-            "No demand. Try again later."
+            RejectionReason.TooBusy("No demand. Try again later.")
           } else {
-            "No reason."
+            RejectionReason.AProblem(UnspecifiedProblem("Unknown cause."))
           }
-        sender() ! CommandNotAccepted(cmd.commandId, msg)
+        sender() ! CommandNotAccepted(cmd.commandId, reason)
       }
   }
 
