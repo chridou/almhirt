@@ -118,7 +118,7 @@ private[almhirt] class MongoEventLogImpl(
     val collection = db(collectionName)
     val start = Deadline.now
     for {
-      lastError <- collection.insert(document).toSuccessfulAlmFuture
+      lastError <- collection.insert(document).toAlmFuture
       _ <- if (lastError.ok)
         AlmFuture.successful(())
       else {
@@ -185,7 +185,7 @@ private[almhirt] class MongoEventLogImpl(
       val query = BSONDocument("_id" -> BSONString(eventId.value))
       val res =
         for {
-          docs <- collection.find(query).cursor.collect[List](2, true).toSuccessfulAlmFuture
+          docs <- collection.find(query).cursor.collect[List](2, true).toAlmFuture
           Event <- AlmFuture {
             docs match {
               case Nil ⇒ None.success

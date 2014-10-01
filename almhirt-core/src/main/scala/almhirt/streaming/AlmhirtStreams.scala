@@ -173,7 +173,7 @@ object AlmhirtStreams {
       }
     val supervisor = actorRefFactory.actorOf(props, supervisorName)
 
-    (supervisor ? "get_streams")(maxDur).successfulAlmFuture[AlmhirtStreams with Stoppable]
+    (supervisor ? "get_streams")(maxDur).mapCastTo[AlmhirtStreams with Stoppable]
   }
 
   private def cheat[T](f: FlowWithSource[T, T], initialFanout: Int, maxFanout: Int, name: String)(factory: ActorRefFactory): Publisher[T] = {
@@ -185,7 +185,7 @@ object AlmhirtStreams {
       }
     }), name)
 
-    (actor ? "!")(1.second).successfulAlmFuture[Publisher[T]].awaitResultOrEscalate(1.second)
+    (actor ? "!")(1.second).mapCastTo[Publisher[T]].awaitResultOrEscalate(1.second)
 
   }
 

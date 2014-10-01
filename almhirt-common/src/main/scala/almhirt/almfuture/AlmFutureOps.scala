@@ -49,26 +49,14 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
    *
    * @tparam T The successful result type of the Future
    */
-  def successfulAlmFuture[T](implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] =
+  def mapCastTo[T](implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] =
     new AlmFuture[T](self.mapTo[T].map(_.success)(executionContext))
-    
-  def actorExtractDivertSupport[T, U](extract: PartialFunction[T, U],divert: PartialFunction[T,Problem])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
-    successfulAlmFuture[T].extractDivert(extract, divert)
 
-  def ?>![T, U](extract: PartialFunction[T, U],divert: PartialFunction[T,Problem])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
+  def actorExtractDivertSupport[T, U](extract: PartialFunction[T, U], divert: PartialFunction[T, Problem])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
+    mapCastTo[T].extractDivert(extract, divert)
+
+  def ?>![T, U](extract: PartialFunction[T, U], divert: PartialFunction[T, Problem])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
     actorExtractDivertSupport[T, U](extract, divert)
-}
-
-trait AlmFutureOps1[T] extends Ops[Future[AlmValidation[T]]] {
-  /**
-   * Turn this [[scala.concurrent.Future]] into on [[almhirt.common.AlmFuture]] of the given type
-   *
-   * '''The real type of the [[scala.concurrent.Future]] must be [[almhirt.common.AlmValidation]][T]'''
-   *
-   * @tparam T The success type in the [[almhirt.common.AlmValidation]] of the successful Future of that [[almhirt.common.AlmValidation]]
-   */
-  def toAlmFuture: AlmFuture[T] =
-    new AlmFuture[T](self)
 }
 
 /** Operations for starting a future operation from a [[almhirt.common.AlmValidation]] */
@@ -131,7 +119,7 @@ trait AlmFutureOps3[T] extends Ops[Future[T]] {
    *
    * @param compute The computation which eventually returns a result
    */
-  def toSuccessfulAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] =
+  def toAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](self.map(_.success)(executionContext))
 }
 
@@ -167,10 +155,8 @@ trait AlmFutureOps5[T] extends Ops[AlmFuture[AlmFuture[T]]] {
     self.flatMap(x ⇒ x)
 }
 
-
 trait ToAlmFutureOps {
   implicit def FromFutureToAlmFutureOps0(a: Future[Any]): AlmFutureOps0 = new AlmFutureOps0 { def self = a }
-  implicit def FromTypedFutureToAlmFutureOps1[T](a: Future[AlmValidation[T]]): AlmFutureOps1[T] = new AlmFutureOps1[T] { def self = a }
   implicit def FromAlmValidationToAlmFutureOps2[T](a: AlmValidation[T]): AlmFutureOps2[T] = new AlmFutureOps2[T] { def self = a }
   implicit def FromTypedFutureToAlmFutureOps3[T](a: Future[T]): AlmFutureOps3[T] = new AlmFutureOps3[T] { def self = a }
   implicit def FromAlmFutureOptionToAlmFutureOps4[T](a: AlmFuture[Option[T]]): AlmFutureOps4[T] = new AlmFutureOps4[T] { def self = a }

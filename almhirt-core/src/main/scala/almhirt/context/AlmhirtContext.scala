@@ -118,7 +118,7 @@ object AlmhirtContext {
         import almhirt.almfuture.all._
         import akka.pattern._
         implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
-        (theAlmhirt ? AlmhirtContextMessages.Start)(maxInitDur).successfulAlmFuture[AlmhirtContextMessages.FinishedResponse].mapV {
+        (theAlmhirt ? AlmhirtContextMessages.Start)(maxInitDur).mapCastTo[AlmhirtContextMessages.FinishedResponse].mapV {
           case AlmhirtContextMessages.FinishedInitialization(ctx) ⇒ scalaz.Success(ctx)
           case AlmhirtContextMessages.FailedInitialization(prob) ⇒ scalaz.Failure(prob)
         }
@@ -180,7 +180,7 @@ object AlmhirtContext {
       import almhirt.almfuture.all._
       import akka.pattern._
       implicit val execCtx = system.dispatchers.defaultGlobalDispatcher
-      (theAlmhirt ? AlmhirtContextMessages.Start)(maxDur).successfulAlmFuture[AlmhirtContextMessages.FinishedResponse].mapV {
+      (theAlmhirt ? AlmhirtContextMessages.Start)(maxDur).mapCastTo[AlmhirtContextMessages.FinishedResponse].mapV {
         case AlmhirtContextMessages.FinishedInitialization(ctx) ⇒ scalaz.Success(ctx)
         case AlmhirtContextMessages.FailedInitialization(prob) ⇒ scalaz.Failure(prob)
       }

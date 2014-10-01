@@ -39,7 +39,7 @@ trait HttpExternalConnector {
   def sendRequest(request: HttpRequest): AlmFuture[(HttpResponse, FiniteDuration)] = {
     val start = Deadline.now
     pipeline(request).map { resp ⇒ (resp, start.lap)
-    }.successfulAlmFuture[(HttpResponse, FiniteDuration)].foldV(
+    }.mapCastTo[(HttpResponse, FiniteDuration)].foldV(
       fail ⇒ UnspecifiedProblem("The request failed.", cause = Some(fail)).failure,
       succ ⇒ succ.success)
   }

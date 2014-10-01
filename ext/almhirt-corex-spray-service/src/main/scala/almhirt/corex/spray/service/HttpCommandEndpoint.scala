@@ -30,7 +30,7 @@ trait HttpCommandEndpoint extends Directives {
     pathEnd {
       executeCommand { cmd ⇒
         implicit ctx ⇒ {
-          ((commandEndpoint ? cmd)(maxSyncDuration)).successfulAlmFuture[CommandResponse].completeRequestPostMapped[CommandResponse] {
+          ((commandEndpoint ? cmd)(maxSyncDuration)).mapCastTo[CommandResponse].completeRequestPostMapped[CommandResponse] {
             case r: CommandAccepted ⇒ SuccessContent(r, StatusCodes.Accepted)
             case r: CommandNotAccepted ⇒
               r.why match {
