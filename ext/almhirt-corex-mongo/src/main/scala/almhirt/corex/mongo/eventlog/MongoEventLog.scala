@@ -264,27 +264,31 @@ private[almhirt] class MongoEventLogImpl(
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
 
-    case FetchEventsFrom(from) ⇒
+    case FetchAllEvents(skip, take)  ⇒
+      val query = BSONDocument()
+      fetchAndDispatchEvents(query, sortByTimestamp, sender)
+        
+    case FetchEventsFrom(from, skip, take) ⇒
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsAfter(after) ⇒
+    case FetchEventsAfter(after, skip, take) ⇒
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$gt" -> localDateTimeToBsonDateTime(after)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsTo(to) ⇒
+    case FetchEventsTo(to, skip, take) ⇒
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$lte" -> localDateTimeToBsonDateTime(to)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsUntil(until) ⇒
+    case FetchEventsUntil(until, skip, take) ⇒
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$lt" -> localDateTimeToBsonDateTime(until)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsFromTo(from, to) ⇒
+    case FetchEventsFromTo(from, to, skip, take) ⇒
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -293,7 +297,7 @@ private[almhirt] class MongoEventLogImpl(
             "$lte" -> localDateTimeToBsonDateTime(to))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsFromUntil(from, until) ⇒
+    case FetchEventsFromUntil(from, until, skip, take) ⇒
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -302,7 +306,7 @@ private[almhirt] class MongoEventLogImpl(
             "$lt" -> localDateTimeToBsonDateTime(until))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsAfterTo(after, to) ⇒
+    case FetchEventsAfterTo(after, to, skip, take) ⇒
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -311,7 +315,7 @@ private[almhirt] class MongoEventLogImpl(
             "$lte" -> localDateTimeToBsonDateTime(to))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsAfterUntil(after, until) ⇒
+    case FetchEventsAfterUntil(after, until, skip, take) ⇒
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(

@@ -51,7 +51,7 @@ object Dependencies {
 
 	lazy val jodatime    = "joda-time" % "joda-time" % "2.+" % "compile"
 	lazy val jodaconvert    = "org.joda" % "joda-convert" % "1.+" % "compile"
-	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.0.+" % "provided"
+	lazy val scalaz       = "org.scalaz" %% "scalaz-core" % "7.1.+" % "provided"
 
 	lazy val play2_iteratees   = "com.typesafe.play" %% "play-iteratees" % "2.3.+" % "provided"
 	
@@ -185,6 +185,7 @@ trait CorexSprayServiceBuild {
 	  resolvers += sprayRepo,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += spray_routing,
 	  libraryDependencies += spray_testkit,
 	  libraryDependencies += scalatest

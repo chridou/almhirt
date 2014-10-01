@@ -27,24 +27,25 @@ object FromJsonStringRematerializer extends Rematerializer[String @@ WarpTags.Js
   import scala.util.parsing.json._
   override val channels = Set(WarpChannels.`rift-json`)
   def rematerialize(what: String @@ WarpTags.Json, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] = {
-    if (what.startsWith("{") || what.startsWith("[")) {
+    val wwhat = Tag.unwrap(what)
+    if (wwhat.startsWith("{") || wwhat.startsWith("[")) {
       val parser = new scala.util.parsing.json.Parser
-      parser.phrase(parser.root)(new parser.lexical.Scanner(what)) match {
+      parser.phrase(parser.root)(new parser.lexical.Scanner(wwhat: String)) match {
         case parser.Success(result, _) ⇒
           FromStdLibJsonRematerializer.rematerialize(WarpTags.JsonStdLib(result))
         case parser.NoSuccess(msg, _) ⇒
-          ParsingProblem(msg, Some(what)).failure
+          ParsingProblem(msg, Some(wwhat)).failure
       }
-    } else if (what.startsWith("\"") && what.endsWith("\"")) {
-      WarpString(what.substring(1, what.length() - 1)).success
-    } else if (what == "true") {
+    } else if (wwhat.startsWith("\"") && wwhat.endsWith("\"")) {
+      WarpString(wwhat.substring(1, wwhat.length() - 1)).success
+    } else if (wwhat == "true") {
       WarpBoolean(true).success
-    } else if (what == "false") {
+    } else if (wwhat == "false") {
       WarpBoolean(false).success
-    } else if (what.toDoubleAlm.isSuccess) {
-      WarpDouble(what.toDoubleAlm.forceResult).success
+    } else if (wwhat.toDoubleAlm.isSuccess) {
+      WarpDouble(wwhat.toDoubleAlm.forceResult).success
     } else {
-      ParsingProblem("Input is no JSON nor a primitive type", Some(what)).failure
+      ParsingProblem("Input is no JSON nor a primitive type", Some(wwhat)).failure
     }
   }
 }
@@ -59,6 +60,6 @@ object FromJsonCordRematerializer extends Rematerializer[Cord @@ WarpTags.Json] 
 object FromXmlStringRematerializer extends Rematerializer[String @@ WarpTags.Xml] {
   override val channels = Set(WarpChannels.`rift-xml`)
   def rematerialize(what: String @@ WarpTags.Xml, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
-    inTryCatch { scala.xml.XML.loadString(what) }.flatMap(xml ⇒
+    inTryCatch { scala.xml.XML.loadString(Tag.unwrap(what)) }.flatMap(xml ⇒
       FromStdLibXmlRematerializer.rematerialize(xml))
 }

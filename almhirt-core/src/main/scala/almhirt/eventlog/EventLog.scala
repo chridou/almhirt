@@ -20,15 +20,15 @@ object EventLog {
   final case class FindEventFailed(eventId: EventId, problem: Problem) extends FindEventResponse
   
   
-  case object FetchAllEvents extends EventLogMessage
-  final case class FetchEventsFrom(from: LocalDateTime) extends EventLogMessage
-  final case class FetchEventsAfter(after: LocalDateTime) extends EventLogMessage
-  final case class FetchEventsTo(to: LocalDateTime) extends EventLogMessage
-  final case class FetchEventsUntil(until: LocalDateTime) extends EventLogMessage
-  final case class FetchEventsFromTo(from: LocalDateTime, to: LocalDateTime) extends EventLogMessage
-  final case class FetchEventsFromUntil(from: LocalDateTime, until: LocalDateTime) extends EventLogMessage
-  final case class FetchEventsAfterTo(after: LocalDateTime, to: LocalDateTime) extends EventLogMessage
-  final case class FetchEventsAfterUntil(after: LocalDateTime, until: LocalDateTime) extends EventLogMessage
+  final case class FetchAllEvents(skip: Option[Int], take: Option[Int]) extends EventLogMessage
+  final case class FetchEventsFrom(from: LocalDateTime, skip: Option[Int], take: Option[Int]) extends EventLogMessage
+  final case class FetchEventsAfter(after: LocalDateTime, skip: Option[Int], take: Option[Int]) extends EventLogMessage
+  final case class FetchEventsTo(to: LocalDateTime, skip: Option[Int], take: Option[Int]) extends EventLogMessage
+  final case class FetchEventsUntil(until: LocalDateTime, skip: Option[Int], take: Option[Int]) extends EventLogMessage
+  final case class FetchEventsFromTo(from: LocalDateTime, to: LocalDateTime, skip: Option[Int], take: Option[Int]) extends EventLogMessage
+  final case class FetchEventsFromUntil(from: LocalDateTime, until: LocalDateTime, skip: Option[Int], take: Option[Int]) extends EventLogMessage
+  final case class FetchEventsAfterTo(after: LocalDateTime, to: LocalDateTime, skip: Option[Int], take: Option[Int]) extends EventLogMessage
+  final case class FetchEventsAfterUntil(after: LocalDateTime, until: LocalDateTime, skip: Option[Int], take: Option[Int]) extends EventLogMessage
 
 
   sealed trait FetchEventsResponse extends EventLogMessage

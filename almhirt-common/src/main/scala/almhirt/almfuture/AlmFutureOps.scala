@@ -19,7 +19,7 @@ import scala.language.postfixOps
 
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.ClassTag
-import scalaz.Scalaz.ToValidationV
+import scalaz.syntax.validation._
 import scalaz.syntax.Ops
 import almhirt.common._
 import almhirt.almvalidation.kit._

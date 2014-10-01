@@ -16,7 +16,7 @@ package almhirt.xml
 
 import java.util.{ UUID ⇒ JUUID }
 import scala.concurrent.duration._
-import scalaz._, Scalaz._
+import scalaz.syntax.validation._
 import scalaz.std._
 import org.joda.time.{DateTime, LocalDateTime}
 import almhirt.common._

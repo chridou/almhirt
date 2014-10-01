@@ -9,28 +9,39 @@ import almhirt.almfuture.all._
 import almhirt.tracking._
 import almhirt.httpx.spray.marshalling._
 import almhirt.httpx.spray.service.AlmHttpEndpoint
+import almhirt.akkax._
 import spray.routing._
 import spray.http._
 import spray.routing.directives._
 import spray.httpx.unmarshalling.Unmarshaller
 import spray.httpx.marshalling.Marshaller
 
+object HttpCommandEndpoint {
+  protected trait HttpCommandEndpointParams {
+    def commandEndpoint: ActorRef
+    def maxSyncDuration: scala.concurrent.duration.FiniteDuration
+    def exectionContextSelector: ExtendedExecutionContextSelector
+    implicit def commandUnmarshaller: Unmarshaller[Command]
+    implicit def commandResponseMarshaller: Marshaller[CommandResponse]
+  }
+}
+
 trait HttpCommandEndpoint extends Directives {
-  self: AlmHttpEndpoint with HasProblemMarshaller ⇒
+  me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasExecutionContexts ⇒
 
-  implicit def commandUnmarshaller: Unmarshaller[Command]
-  implicit def commandResponseMarshaller: Marshaller[CommandResponse]
+  def httpCommandEndpointParams: HttpCommandEndpoint.HttpCommandEndpointParams
 
-  def commandEndpoint: ActorRef
-  def maxSyncDuration: scala.concurrent.duration.FiniteDuration
-  implicit def executionContext: scala.concurrent.ExecutionContext
+  implicit private lazy val execCtx = httpCommandEndpointParams.exectionContextSelector.select(me, me.context)
+  implicit private val commandUnmarshaller = httpCommandEndpointParams.commandUnmarshaller
+  implicit private val commandResponseMarshaller = httpCommandEndpointParams.commandResponseMarshaller
+
   val executeCommand = post & entity(as[Command])
 
   val executeCommandTerminator = pathPrefix("execute") {
     pathEnd {
       executeCommand { cmd ⇒
         implicit ctx ⇒ {
-          ((commandEndpoint ? cmd)(maxSyncDuration)).mapCastTo[CommandResponse].completeRequestPostMapped[CommandResponse] {
+          ((httpCommandEndpointParams.commandEndpoint ? cmd)(httpCommandEndpointParams.maxSyncDuration)).mapCastTo[CommandResponse].completeRequestPostMapped[CommandResponse] {
             case r: CommandAccepted ⇒ SuccessContent(r, StatusCodes.Accepted)
             case r: CommandNotAccepted ⇒
               r.why match {

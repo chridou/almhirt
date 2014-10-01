@@ -163,8 +163,7 @@ class AggregateRootNexusTests(_system: ActorSystem)
     streams: AlmhirtStreams)
 
   def withFixture(test: OneArgTest) = {
-    import scalaz._, Scalaz._
-    import akka.stream.scaladsl.Duct
+    import scalaz.syntax.validation._
     import almhirt.aggregates._
     import almhirt.akkax._
 

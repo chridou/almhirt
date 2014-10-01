@@ -21,23 +21,23 @@ class InMemoryEventLog extends Actor with ActorLogging {
         sender() ! EventLogged(event.eventId)
     case FindEvent(eventId) ⇒
       sender() ! FoundEvent(eventId, eventLog.find(_.eventId == eventId))
-    case FetchAllEvents ⇒
+    case FetchAllEvents(skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog: _*))
-    case FetchEventsFrom(from) ⇒
+    case FetchEventsFrom(from, skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0): _*))
-    case FetchEventsAfter(after) ⇒
+    case FetchEventsAfter(after, skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0): _*))
-    case FetchEventsTo(to) ⇒
+    case FetchEventsTo(to, skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(to) <= 0): _*))
-    case FetchEventsUntil(until) ⇒
+    case FetchEventsUntil(until, skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(until) < 0): _*))
-    case FetchEventsFromTo(from, to) ⇒
+    case FetchEventsFromTo(from, to, skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0 && event.timestamp.compareTo(to) <= 0): _*))
-    case FetchEventsFromUntil(from, until) ⇒
+    case FetchEventsFromUntil(from, until, skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(from) >= 0 && event.timestamp.compareTo(until) < 0): _*))
-    case FetchEventsAfterTo(after, to) ⇒
+    case FetchEventsAfterTo(after, to, skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0 && event.timestamp.compareTo(to) <= 0): _*))
-    case FetchEventsAfterUntil(after, until) ⇒
+    case FetchEventsAfterUntil(after, until, skip, take) ⇒
       sender() ! FetchedEvents(Enumerator(eventLog.filter(event ⇒ event.timestamp.compareTo(after) > 0 && event.timestamp.compareTo(until) < 0): _*))
   }
 }
