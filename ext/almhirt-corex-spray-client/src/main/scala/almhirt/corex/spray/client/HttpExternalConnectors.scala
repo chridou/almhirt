@@ -1,4 +1,4 @@
-package almhirt.httpx.spray.client
+package almhirt.corex.spray.client
 
 import scala.concurrent._
 import scala.concurrent.duration._
