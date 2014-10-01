@@ -28,13 +28,13 @@ package object akkax {
           self.actorOf(MultiResolver.props(toResolve, settings, correlationId))
       }
     }
-    
+
     def childFrom(factory: ComponentFactory): AlmValidation[ActorRef] = factory(self)
   }
- 
+
   import almhirt.configuration._
   import com.typesafe.config.Config
-  implicit object ResolveConfigExtractor extends ConfigExtractor[ResolveSettings] {
+  implicit object ResolveSettingsConfigExtractor extends ConfigExtractor[ResolveSettings] {
     def getValue(config: Config, path: String): AlmValidation[ResolveSettings] =
       for {
         section <- config.v[Config](path)
@@ -49,4 +49,35 @@ package object akkax {
         case None ⇒ scalaz.Success(None)
       }
   }
+
+  implicit object FullExecutionContextConfigExtractor extends ConfigExtractor[FullExecutionContextSelector] {
+    def getValue(config: Config, path: String): AlmValidation[FullExecutionContextSelector] =
+      for {
+        str <- config.v[String](path)
+        selector <- FullExecutionContextSelector.parseString(str)
+      } yield selector
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[FullExecutionContextSelector]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
+      }
+
+  }
+
+  implicit object MinorExecutionContextConfigExtractor extends ConfigExtractor[MinorExecutionContextSelector] {
+    def getValue(config: Config, path: String): AlmValidation[MinorExecutionContextSelector] =
+      for {
+        str <- config.v[String](path)
+        selector <- MinorExecutionContextSelector.parseString(str)
+      } yield selector
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[MinorExecutionContextSelector]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
+      }
+
+  }
+  
 }
