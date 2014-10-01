@@ -105,10 +105,10 @@ trait HttpxSprayBuild {
   )
 }
 
-trait HttpxSprayClientBuild {
+trait CorexSprayClientBuild {
   import Dependencies._
   import Resolvers._
-  def httpxSprayClientProject(name: String, baseFile: java.io.File) = 
+  def corexSprayClientProject(name: String, baseFile: java.io.File) = 
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
   	  resolvers += sprayRepo,
 	  libraryDependencies += jodatime,
@@ -258,7 +258,7 @@ trait RiftWarpAutomaticBuild {
 object AlmHirtBuild extends Build 
 	with CommonBuild 
 	with HttpxSprayBuild
-	with HttpxSprayClientBuild
+	with CorexSprayClientBuild
 	with HttpxSprayServiceBuild
 	with CoreBuild 
 	with CorexMongoBuild 
@@ -274,7 +274,7 @@ object AlmHirtBuild extends Build
       .settings(unidocSettings: _*)
       .aggregate(	common, 
 									httpxSpray, 
-									httpxSprayClient, 
+									corexSprayClient, 
 									httpxSprayService, 
 									core, 
 									mongoExtensions, 
@@ -288,11 +288,11 @@ object AlmHirtBuild extends Build
   lazy val httpxSpray = httpxSprayProject(	name = "almhirt-httpx-spray",
                        			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
 
-  lazy val httpxSprayClient = httpxSprayClientProject(	name = "almhirt-httpx-spray-client",
-                       			baseFile = file("./ext/almhirt-httpx-spray-client")) dependsOn(common, httpxSpray)
+  lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
+                       			baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, httpxSpray)
 								
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
-                       			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
+                       			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray, core)
 								
   lazy val core = coreProject(	name = "almhirt-core",
 		baseFile = file("almhirt-core")) dependsOn(	common % "compile; test->compile; test->test"/*, 

@@ -1,8 +1,10 @@
 package almhirt.components
 
 import akka.actor._
+import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.context.AlmhirtContext
+import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import org.reactivestreams.Publisher
 import akka.stream.scaladsl2._
 import akka.stream.actor._
@@ -21,9 +23,10 @@ object EventSinkHub {
     import almhirt.almvalidation.kit._
     for {
       section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub")
+      enabled <- section.v[Boolean]("enabled")
       buffersize <- section.v[Int]("buffer-size").constrained(_ >= 0, n ⇒ s""""buffer-size" must be greater or equal than 0, not $n.""")
       withBlackHoleIfEmpty <- section.v[Boolean]("with-black-hole-if-empty")
-    } yield propsRaw(factories, Some(buffersize), withBlackHoleIfEmpty)
+    } yield propsRaw(if (enabled) factories else Map.empty, Some(buffersize), withBlackHoleIfEmpty)
   }
 
   val actorname = "event-sink-hub"

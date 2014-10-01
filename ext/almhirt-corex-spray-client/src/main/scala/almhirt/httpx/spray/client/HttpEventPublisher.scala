@@ -11,6 +11,7 @@ import spray.http._
 import spray.client.pipelining._
 import org.reactivestreams.Subscriber
 import akka.stream.actor._
+import org.reactivestreams.Publisher
 import com.typesafe.config.Config
 
 object HttpEventPublisher {
@@ -18,14 +19,15 @@ object HttpEventPublisher {
     endpointUri: String,
     method: HttpMethod,
     contentMediaType: MediaType,
-    addEventId: Boolean)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): Props =
-    Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType))
+    addEventId: Boolean)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], autoConnectTo: Option[Publisher[Event]], executionContexts: HasExecutionContexts): Props =
+    Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType, autoConnectTo))
 
   def props(config: Config, httpEventPublisherName: String)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): AlmValidation[Props] = {
     implicit val extr = almhirt.httpx.spray.HttpMethodConfigExtractor
     val path = s"almhirt.components.event-publishers.http-event-publishers.$httpEventPublisherName"
     for {
       section <- config.v[com.typesafe.config.Config](path)
+      enabled <- section.v[Boolean]("enabled")
       endpointUri <- section.v[String]("endpoint-uri")
       method <- section.v[HttpMethod]("method")
       contentMediaTypeStr <- section.v[String]("content-media-type")
@@ -42,7 +44,8 @@ private[almhirt] class HttpEventPublisherImpl(
   endpointUri: String,
   addEventId: Boolean,
   override val method: HttpMethod,
-  override val contentMediaType: MediaType)(implicit override val serializer: HttpSerializer[Event], override val problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts) extends ActorConsumerHttpPublisher[Event] {
+  override val contentMediaType: MediaType,
+  autoConnectTo: Option[Publisher[Event]])(implicit override val serializer: HttpSerializer[Event], override val problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts) extends ActorConsumerHttpPublisher[Event] {
 
   override val acceptAsSuccess: Set[StatusCode] = Set(StatusCodes.OK, StatusCodes.Accepted)
   override val entityTag = implicitly[ClassTag[Event]]

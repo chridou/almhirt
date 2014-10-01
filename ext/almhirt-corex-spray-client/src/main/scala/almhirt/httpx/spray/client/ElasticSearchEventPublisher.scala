@@ -24,6 +24,7 @@ object ElasticSearchEventPublisher {
     val path = "almhirt.components.event-publishers.http-event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
     for {
       section <- config.v[com.typesafe.config.Config](path)
+      enabled <- section.v[Boolean]("enabled")
       host <- section.v[String]("host")
       index <- section.v[String]("index")
       fixedTypeName <- section.magicOption[String]("index")

@@ -8,6 +8,7 @@ import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.akkax._
 import almhirt.context.AlmhirtContext
+import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
 import akka.stream.scaladsl2._
@@ -29,12 +30,19 @@ object EventLogWriter {
     import almhirt.configuration._
     for {
       section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.event-log-writer")
-      eventLogPathStr <- section.v[String]("event-log-path")
-      eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
-      warningThreshold <- section.v[FiniteDuration]("warning-threshold")
-      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
+      enabled <- section.v[Boolean]("enabled")
       autoConnect <- section.v[Boolean]("auto-connect")
-    } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, autoConnect)
+      res <- if (enabled) {
+        for {
+          eventLogPathStr <- section.v[String]("event-log-path")
+          eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
+          warningThreshold <- section.v[FiniteDuration]("warning-threshold")
+          resolveSettings <- section.v[ResolveSettings]("resolve-settings")
+        } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, autoConnect)
+      } else {
+        ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if(autoConnect) Some(ctx.eventStream) else None).success
+      }
+    } yield res
   }
 
   def apply(eventLogWriter: ActorRef): Subscriber[Event] =
@@ -92,7 +100,7 @@ private[almhirt] class EventLogWriterImpl(
       sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.eventId.value}' is processed.")
 
     case EventLog.EventLogged(id) ⇒
-      if(start.lapExceeds(warningThreshold))
+      if (start.lapExceeds(warningThreshold))
         log.warning(s"Wrinting event '${id.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}")
       request(1)
       context.become(receiveWaiting(eventLog))

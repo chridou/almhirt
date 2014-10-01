@@ -2,37 +2,54 @@ package almhirt.streaming
 
 import akka.actor._
 import akka.stream.actor._
+import org.reactivestreams.Publisher
+import akka.stream.scaladsl2._
 
 object ActorDelegatingSubscriber {
-  def props(delegateTo: ActorRef, bufferSize: Int): Props =
-    Props(new ActorDelegatingSubscriberImpl(Some(delegateTo), bufferSize))
+  def props[T](delegateTo: ActorRef, bufferSize: Int): Props =
+    ActorMayBeDelegatingSubscriberWithAutoSubscribe.props[T](Some(delegateTo), bufferSize, None)
 
-  def props(delegateTo: ActorRef): Props =
-    props(delegateTo, 16)
+  def props[T](delegateTo: ActorRef): Props =
+    props[T](delegateTo, 16)
 }
 
 object ActorDevNullSubscriber {
   def props(bufferSize: Int): Props =
-    Props(new ActorDelegatingSubscriberImpl(None, bufferSize))
-    
+    ActorMayBeDelegatingSubscriberWithAutoSubscribe.props[Any](None, bufferSize, None)
+
   def props(): Props =
-    Props(new ActorDelegatingSubscriberImpl(None, 16))
-    
-  def create(bufferSize: Int, actorname: String)(implicit system: ActorRefFactory): ActorRef =
-    system.actorOf(props(bufferSize), actorname)
-    
-  def create(actorname: String)(implicit system: ActorRefFactory): ActorRef =
-    create(16, actorname)
-    
+    ActorMayBeDelegatingSubscriberWithAutoSubscribe.props[Any](None, 16, None)
+
+  //  def create(bufferSize: Int, actorname: String)(implicit system: ActorRefFactory): ActorRef =
+  //    system.actorOf(props(bufferSize, autoConnectTo), actorname)
+  //
+  //  def create(actorname: String)(implicit system: ActorRefFactory): ActorRef =
+  //    create(16, actorname)
+
 }
 
-private[almhirt] class ActorDelegatingSubscriberImpl(delegateTo: Option[ActorRef], bufferSize: Int) extends ActorSubscriber {
+object ActorDevNullSubscriberWithAutoSubscribe {
+  def props[T](bufferSize: Int, autoConnectTo: Option[Publisher[T]]): Props =
+    Props(new ActorDelegatingSubscriberImpl(None, bufferSize, autoConnectTo))
+}
+
+private[almhirt] object ActorMayBeDelegatingSubscriberWithAutoSubscribe {
+  def props[T](delegateTo: Option[ActorRef], bufferSize: Int, autoConnectTo: Option[Publisher[T]]): Props =
+    Props(new ActorDelegatingSubscriberImpl(delegateTo, bufferSize, autoConnectTo))
+}
+
+private[almhirt] class ActorDelegatingSubscriberImpl[T](delegateTo: Option[ActorRef], bufferSize: Int, autoConnectTo: Option[Publisher[T]]) extends ActorSubscriber with ImplicitFlowMaterializer {
 
   protected def requestStrategy: RequestStrategy = ZeroRequestStrategy
 
   protected var received: Int = 0
 
+  private object Start
   def receive: Receive = {
+    case Start =>
+      autoConnectTo.foreach(pub => FlowFrom(pub).publishTo(ActorSubscriber[T](self)))
+      this.request(bufferSize)
+
     case ActorSubscriberMessage.OnNext(element: Any) ⇒
       delegateTo.foreach(_ ! element)
       received += 1
@@ -46,6 +63,6 @@ private[almhirt] class ActorDelegatingSubscriberImpl(delegateTo: Option[ActorRef
   }
 
   override def preStart() {
-    this.request(bufferSize)
+    self ! Start
   }
 }

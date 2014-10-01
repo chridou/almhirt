@@ -11,21 +11,29 @@ import spray.http.StatusCode
 import spray.http.MediaType
 import spray.http.HttpMethod
 import spray.http.Uri
+import org.reactivestreams.Publisher
+import akka.stream.scaladsl2._
 
-trait ActorConsumerHttpPublisher[T] extends ActorSubscriber with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher {
+trait ActorConsumerHttpPublisher[T] extends ActorSubscriber with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
   implicit def entityTag: ClassTag[T]
   implicit def serializer: HttpSerializer[T]
   implicit def problemDeserializer: HttpDeserializer[Problem]
+  def autoConnectTo: Option[Publisher[Event]]
   def acceptAsSuccess: Set[StatusCode]
   def contentMediaType: MediaType
   def method: HttpMethod
   def createUri(entity: T): Uri
 
   private case object Processed
-  
+
   final override val requestStrategy = ZeroRequestStrategy
 
+  private case object Start
   final override def receive: Receive = {
+    case Start =>
+      autoConnectTo.foreach(pub => FlowFrom[Event](pub).publishTo(ActorSubscriber[Event](self)))
+      request(1)
+
     case ActorSubscriberMessage.OnNext(element) ⇒
       element.castTo[T].fold(
         fail ⇒ log.warning(s"Received unprocessable item $element"),
@@ -40,7 +48,7 @@ trait ActorConsumerHttpPublisher[T] extends ActorSubscriber with ActorLogging wi
             self ! Processed
           }
         })
-        
+
     case Processed ⇒
       request(1)
   }
@@ -49,10 +57,10 @@ trait ActorConsumerHttpPublisher[T] extends ActorSubscriber with ActorLogging wi
     val settings = EntityRequestSettings(createUri(entity), contentMediaType, Seq.empty, method, acceptAsSuccess)
     publishToExternalEndpoint(entity, settings)(serializer, problemDeserializer)
   }
-  
+
   override def preStart() {
     super.preStart()
-    request(1)
+    self ! Start
   }
 
 }
