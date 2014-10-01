@@ -11,6 +11,7 @@ import almhirt.converters.BinaryConverter
 import almhirt.configuration._
 import almhirt.eventlog._
 import almhirt.context.AlmhirtContext
+import almhirt.akkax._
 import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.indexes.{ Index ⇒ MIndex }
@@ -99,9 +100,6 @@ private[almhirt] class MongoEventLogImpl(
   val noSorting = BSONDocument()
   val sortByTimestamp = BSONDocument("timestamp" -> 1)
 
-  private case object Initialize
-  private case object Initialized
-
   private val fromBsonDocToEvent: Enumeratee[BSONDocument, Event] =
     Enumeratee.mapM[BSONDocument] { doc ⇒ scala.concurrent.Future { documentToEvent(doc).resultOrEscalate }(serializationExecutor) }
 
@@ -174,34 +172,73 @@ private[almhirt] class MongoEventLogImpl(
     respondTo ! FetchedEvents(getEvents(query, sort))
   }
 
-  def uninitialized: Receive = {
+  private case object Initialize
+  private case object Initialized
+  private case class InitializeFailed(prob: Problem)
+
+  def uninitializedReadWrite: Receive = {
     case Initialize ⇒
-      log.info("Initializing")
+      log.info("Initializing(read/write)")
       val collection = db(collectionName)
       (for {
         idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
-      } yield (idxRes)).onComplete {
-        case scala.util.Success(idxRes) ⇒
+      } yield (idxRes)).toAlmFuture.onComplete(
+        problem ⇒ self ! InitializeFailed(problem),
+        idxRes => {
           log.info(s"""Index on "timestamp" created: $idxRes""")
           self ! Initialized
-        case scala.util.Failure(exn) ⇒
-          log.error(exn, "Failed to ensure indexes and/or collection capping")
-          this.context.stop(self)
-      }
+        })
     case Initialized ⇒
       log.info("Initialized")
-      context.become(receiveEventLogMsg)
+      context.become(receiveEventLogMsg(false))
+
+    case InitializeFailed(prob) ⇒
+      log.error(s"Initialize failed:\n$prob")
+      sys.error(prob.message)
+    
     case m: EventLogMessage ⇒
       log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
 
-  def receiveEventLogMsg: Receive = {
+  def uninitializedReadOnly(collectionLookupRetries: RetrySettings): Receive = {
+    case Initialize ⇒
+      log.info("Initializing(read-only)")
+      context.retry[Unit](
+        () => db.collectionNames.toAlmFuture.foldV(
+          fail => fail.failure,
+          collectionNames => {
+            if (collectionNames.contains(collectionName))
+              ().success
+            else
+              MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
+          }),
+        _ => { self ! Initialized },
+        (t, n, p) => log.info(s"Look up collection '$collectionName' failed after $n attempts and ${t.defaultUnitString}:\n$p"),
+        (t, n, p) => {
+          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}:\n$p")
+          self ! InitializeFailed(UnspecifiedProblem(s"")) },
+        collectionLookupRetries,
+        Some("looks-for-collection"))
+
+    case Initialized ⇒
+      log.info("Initialized")
+      context.become(receiveEventLogMsg(true))
+    
+    case InitializeFailed(prob) ⇒
+      log.error(s"Initialize failed:\n$prob")
+      sys.error(prob.message)
+    
+    case m: EventLogMessage ⇒
+      log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
+  }
+
+  def receiveEventLogMsg(readOnly: Boolean): Receive = {
     case LogEvent(event, acknowledge) ⇒
-      if (readOnlySettings.isDefined)
+      if (readOnly)
         if (!acknowledge)
           log.warning("Received log")
         else
-          sender() ! EventNotLogged(event.eventId, PersistenceProblem("The event log is in read only mode."))
+          sender() ! EventNotLogged(event.eventId, IllegalOperationProblem("The event log is in read only mode."))
       else
         commitEvent(event, if (acknowledge) Some(sender()) else None)
 
@@ -284,7 +321,13 @@ private[almhirt] class MongoEventLogImpl(
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
   }
 
-  override def receive = uninitialized
+  override def receive =
+    readOnlySettings match {
+      case Some(roSettings) =>
+        uninitializedReadOnly(roSettings)
+      case None =>
+        uninitializedReadWrite
+    }
 
   override def preStart() {
     super.preStart()

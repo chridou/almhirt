@@ -1,6 +1,7 @@
 package almhirt
 
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.Promise
 import scalaz.syntax.validation._
 import akka.actor.{ ActorRef, Props, ActorContext }
 import almhirt.common._
@@ -28,6 +29,51 @@ package object akkax {
         case None ⇒
           self.actorOf(MultiResolver.props(toResolve, settings, correlationId))
       }
+    }
+
+    def retry[T](
+      toTry: () => AlmFuture[T],
+      onSuccess: T => Unit,
+      onFailedAttempt: (FiniteDuration, Int, Problem) => Unit,
+      onFinalFailure: (FiniteDuration, Int, Problem) => Unit,
+      settings: almhirt.configuration.RetrySettings,
+      actorName: Option[String]) {
+      actorName match {
+        case Some(name) =>
+          self.actorOf(RetryActor.props(settings, toTry, onSuccess, onFailedAttempt, onFinalFailure), name)
+        case None =>
+          self.actorOf(RetryActor.props(settings, toTry, onSuccess, onFailedAttempt, onFinalFailure))
+      }
+    }
+
+    def retryNoReports[T](
+      toTry: () => AlmFuture[T],
+      onSuccess: T => Unit,
+      onFinalFailure: (FiniteDuration, Int, Problem) => Unit,
+      settings: almhirt.configuration.RetrySettings,
+      actorName: Option[String]) {
+      actorName match {
+        case Some(name) =>
+          self.actorOf(RetryActor.props(settings, toTry, onSuccess, (_, _, _) => (), onFinalFailure), name)
+        case None =>
+          self.actorOf(RetryActor.props(settings, toTry, onSuccess, (_, _, _) => (), onFinalFailure))
+      }
+    }
+
+    def retrySimple[T](
+      toTry: () => AlmFuture[T],
+      settings: almhirt.configuration.RetrySettings,
+      actorName: Option[String]): AlmFuture[T] = {
+      val p = Promise[AlmValidation[T]]
+
+      def handleFailure(elapsed: FiniteDuration, attempts: Int, problem: Problem) {
+        val prob = UnspecifiedProblem(s"Retry failed after $attempts attempts and ${elapsed.defaultUnitString}: ${problem.message}", cause = Some(problem))
+        p.success(scalaz.Failure(prob))
+      }
+
+      self.retryNoReports(toTry, (res: T) => p.success(scalaz.Success(res)), handleFailure, settings, actorName)
+ 
+      new AlmFuture(p.future)
     }
 
     def childFrom(factory: ComponentFactory): AlmValidation[ActorRef] = factory(self)
