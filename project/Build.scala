@@ -289,10 +289,10 @@ object AlmHirtBuild extends Build
                        			baseFile = file("./ext/almhirt-httpx-spray")) dependsOn(common)
 
   lazy val corexSprayClient = corexSprayClientProject(	name = "almhirt-corex-spray-client",
-                       			baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, httpxSpray)
+                       			baseFile = file("./ext/almhirt-corex-spray-client")) dependsOn(common, httpxSpray, core)
 								
   lazy val httpxSprayService = httpxSprayServiceProject(	name = "almhirt-httpx-spray-service",
-                       			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray, core)
+                       			baseFile = file("./ext/almhirt-httpx-spray-service")) dependsOn(common, httpxSpray)
 								
   lazy val core = coreProject(	name = "almhirt-core",
 		baseFile = file("almhirt-core")) dependsOn(	common % "compile; test->compile; test->test"/*, 
