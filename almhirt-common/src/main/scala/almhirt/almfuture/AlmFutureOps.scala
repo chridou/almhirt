@@ -52,6 +52,10 @@ trait AlmFutureOps0 extends Ops[Future[Any]] {
   def mapCastTo[T](implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] =
     new AlmFuture[T](self.mapTo[T].map(_.success)(executionContext))
 
+  @deprecated("Use mapCastTo", "0.7.0")
+  def successfulAlmFuture[T](implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[T] =
+    new AlmFuture[T](self.mapTo[T].map(_.success)(executionContext))
+
   def actorExtractDivertSupport[T, U](extract: PartialFunction[T, U], divert: PartialFunction[T, Problem])(implicit executionContext: ExecutionContext, t: scala.reflect.ClassTag[T]): AlmFuture[U] =
     mapCastTo[T].extractDivert(extract, divert)
 
@@ -120,6 +124,10 @@ trait AlmFutureOps3[T] extends Ops[Future[T]] {
    * @param compute The computation which eventually returns a result
    */
   def toAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] =
+    new AlmFuture[T](self.map(_.success)(executionContext))
+
+  @deprecated("Use toAlmFuture", "0.7.0")
+  def toSuccessfulAlmFuture(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](self.map(_.success)(executionContext))
 }
 
