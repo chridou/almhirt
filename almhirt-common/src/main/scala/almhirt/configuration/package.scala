@@ -66,4 +66,21 @@ package object configuration {
 
   implicit val ConfigConfigExtractorInst = new ConfigConfigExtractor {}
   implicit val ConfigJavaPropertiesExtractorInst = new ConfigJavaPropertiesExtractor {}
+  
+
+  implicit object ExecutionContextConfigExtractor extends ConfigExtractor[ExecutionContextSelector] {
+    def getValue(config: Config, path: String): AlmValidation[ExecutionContextSelector] =
+      for {
+        str <- config.v[String](path)
+        selector <- ExecutionContextSelector.parseString(str)
+      } yield selector
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[ExecutionContextSelector]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
+      }
+
+  }
+  
 }
