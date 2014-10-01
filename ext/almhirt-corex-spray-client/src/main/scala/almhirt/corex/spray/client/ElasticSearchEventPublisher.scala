@@ -26,7 +26,7 @@ object ElasticSearchEventPublisher {
     Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl, autoConnectTo))
 
   def props(elConfigName: Option[String] = None)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
-    val path = "almhirt.components.event-publishers.http-event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
+    val path = "almhirt.components.misc.event-sink-hub.event-publishers.http-event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
     for {
       section <- ctx.config.v[com.typesafe.config.Config](path)
       enabled <- section.v[Boolean]("enabled")

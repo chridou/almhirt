@@ -27,7 +27,7 @@ object HttpEventPublisher {
 
   def props(httpEventPublisherName: String)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
     implicit val extr = almhirt.httpx.spray.HttpMethodConfigExtractor
-    val path = s"almhirt.components.event-publishers.http-event-publishers.$httpEventPublisherName"
+    val path = s"almhirt.components.misc.event-sink-hub.event-publishers.http-event-publishers.$httpEventPublisherName"
     for {
       section <- ctx.config.v[com.typesafe.config.Config](path)
       enabled <- section.v[Boolean]("enabled")

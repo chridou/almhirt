@@ -29,7 +29,7 @@ object EventLogWriter {
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
     for {
-      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.event-log-writer")
+      section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub.event-publishers.event-log-writer")
       enabled <- section.v[Boolean]("enabled")
       autoConnect <- section.v[Boolean]("auto-connect")
       res <- if (enabled) {
