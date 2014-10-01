@@ -9,7 +9,7 @@ import scala.util.parsing.json.JSONArray
 import scala.util.parsing.json.JSONObject
 
 object FromStdLibJsonRematerializer extends Rematerializer[Any @@ WarpTags.JsonStdLib] {
-  override val channel = WarpChannels.`rift-json-std`
+  override val channels = Set(WarpChannels.`rift-json-std`)
   
   import scala.util.parsing.json._
   override def rematerialize(what: Any @@ WarpTags.JsonStdLib, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =

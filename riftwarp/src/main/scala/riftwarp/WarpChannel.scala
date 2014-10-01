@@ -12,14 +12,14 @@ case object HttpTransmissionAsText extends HttpTransmission
 
 trait WarpChannel {
   def channelDescriptor: String
-  def HttpTransmission: HttpTransmission
+  def httpTransmission: HttpTransmission
   def schemaless: Boolean
 }
 
 object WarpChannel {
   def apply(theChannelDescriptor: String, theHttpTransmission: HttpTransmission, isSchemaless: Boolean) = new WarpChannel {
     val channelDescriptor = theChannelDescriptor
-    val HttpTransmission = theHttpTransmission
+    val httpTransmission = theHttpTransmission
     val schemaless = isSchemaless
   }
 
@@ -65,25 +65,25 @@ object WarpChannels {
   def getChannel(channelDescriptor: String) : AlmValidation[WarpChannel] = {
     myChannels.get().get(channelDescriptor) match {
       case Some(channel) ⇒ channel.success
-      case None ⇒ NoSuchElementProblem(s""""$channelDescriptor" is not registered.""").failure
+      case None ⇒ NoSuchElementProblem(s"""WarpChannel "$channelDescriptor" is not registered.""").failure
     }
   }
 
   def getBinaryChannel(channelDescriptor: String) : AlmValidation[WarpChannel] = {
     getChannel(channelDescriptor).flatMap(ch ⇒
-      ch.HttpTransmission match {
+      ch.httpTransmission match {
         case HttpTransmissionAsBinary ⇒ ch.success
-        case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$channelDescriptor" is not transmittable over a Http.""").failure
-        case HttpTransmissionAsText ⇒ UnspecifiedProblem(s""""$channelDescriptor" is not a binary channel. It is a text channel.""").failure
+        case NoHttpTransmission ⇒ UnspecifiedProblem(s"""WarpChannel "$channelDescriptor" is not transmittable over a HTTP.""").failure
+        case HttpTransmissionAsText ⇒ UnspecifiedProblem(s"""WarpChannel "$channelDescriptor" is not a binary channel. It is a text channel.""").failure
       })
   }
   
   def getTextChannel(channelDescriptor: String) : AlmValidation[WarpChannel] = {
     getChannel(channelDescriptor).flatMap(ch ⇒
-      ch.HttpTransmission match {
+      ch.httpTransmission match {
         case HttpTransmissionAsText ⇒ ch.success
-        case NoHttpTransmission ⇒ UnspecifiedProblem(s""""$channelDescriptor" is not transmittable over a Http.""").failure
-        case HttpTransmissionAsBinary ⇒ UnspecifiedProblem(s""""$channelDescriptor" is not a text channel. It is a binary channel""").failure
+        case NoHttpTransmission ⇒ UnspecifiedProblem(s"""WarpChannel "$channelDescriptor" is not transmittable over a Http.""").failure
+        case HttpTransmissionAsBinary ⇒ UnspecifiedProblem(s"""WarpChannel "$channelDescriptor" is not a text channel. It is a binary channel""").failure
       })
   }
   
@@ -93,6 +93,7 @@ object WarpChannels {
   val `rift-html` = registeredOverHttpAsText("html", true)
 
   val `rift-msgpack` = registeredOverHttpAsBinary("msgpack", true)
+  val `rift-x-msgpack` = registeredOverHttpAsBinary("x-msgpack", true)
   val `rift-bson` = registeredOverHttpAsBinary("bson", true)
 
   val `rift-json-cord` = registeredNotHttpCapable("json-cord", true)

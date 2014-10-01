@@ -5,7 +5,7 @@ import riftwarp._
 import almhirt.io.BinaryWriter
 
 trait ToMessagePackDematerializer extends Dematerializer[Array[Byte] @@ WarpTags.MessagePack] {
-  override val channel = WarpChannels.`rift-msgpack`
+  override val channels = Set(WarpChannels.`rift-msgpack`, WarpChannels.`rift-x-msgpack`)
   
   def createBinaryWriter(): BinaryWriter
 

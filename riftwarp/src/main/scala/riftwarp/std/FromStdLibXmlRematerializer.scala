@@ -11,7 +11,7 @@ import scala.Array.canBuildFrom
 import scala.xml.{ Elem ⇒ XmlElem }
 
 object FromStdLibXmlRematerializer extends Rematerializer[XmlElem] {
-  override val channel = WarpChannels.`rift-xml-std`
+  override val channels = Set(WarpChannels.`rift-xml-std`)
   override def rematerialize(what: XmlElem, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
     extract(what)
 

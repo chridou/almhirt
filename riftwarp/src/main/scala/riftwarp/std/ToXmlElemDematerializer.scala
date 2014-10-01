@@ -10,7 +10,7 @@ object ToNoisyXmlElemDematerializer extends DematerializerTemplate[XmlElem] {
   type ValueRepr = XmlElem
   type ObjRepr = XmlElem
 
-  override val channel = WarpChannels.`rift-xml-std`
+  override val channels = Set(WarpChannels.`rift-xml-std`)
 
   protected def valueReprToDim(repr: XmlElem): XmlElem =
     repr

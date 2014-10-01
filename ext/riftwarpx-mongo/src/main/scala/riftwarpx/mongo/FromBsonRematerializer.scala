@@ -11,7 +11,7 @@ import riftwarp._
 
 object FromBsonRematerializer extends Rematerializer[BSONValue] {
   import BsonConverter._
-  override val channel = WarpChannels.`rift-bson-reactive-mongo`
+  override val channels = Set(WarpChannels.`rift-bson-reactive-mongo`)
   override def rematerialize(what: BSONValue, options: Map[String, Any] = Map.empty): AlmValidation[WarpPackage] =
     extract(what, Nil)
 

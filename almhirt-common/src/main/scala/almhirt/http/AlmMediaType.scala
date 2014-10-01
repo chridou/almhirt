@@ -53,31 +53,25 @@ sealed trait MediaTypeRepresentation
 case object BinaryMedia extends MediaTypeRepresentation
 case class TextualMedia(preferredEncoding: Option[AlmCharacterEncoding]) extends MediaTypeRepresentation
 
-trait AlmMediaType {
-  def mainType: String
-  def subTypeParts: AlmMediaSubTypeParts
-  def compressible: Boolean
-  def streamRepresentation: MediaTypeRepresentation
-  def fileExtensions: Seq[String]
-  def ianaRegistered: Boolean
+final case class AlmMediaType(
+  mainType: String,
+  subTypeParts: AlmMediaSubTypeParts,
+  compressible: Boolean,
+  streamRepresentation: MediaTypeRepresentation,
+  fileExtensions: Seq[String],
+  ianaRegistered: Boolean) {
   final def subTypeValue: String = subTypeParts.value
   final def value: String = s"$mainType/$subTypeValue"
   final def binary = streamRepresentation == BinaryMedia
   final def contentValue = subTypeParts.contentValue
   final def contentFormat = subTypeParts.contentFormat
+  
+  def matches(other: AlmMediaType): Boolean =
+    this.mainType == other.mainType &&
+    this.subTypeParts == other.subTypeParts 
 }
 
 object AlmMediaType {
-  def apply(theMainType: String, theSubTypeParts: AlmMediaSubTypeParts, isCompressible: Boolean, theStreamRepresentation: MediaTypeRepresentation, theFileExtensions: Seq[String], isIanaRegistered: Boolean): AlmMediaType =
-    new AlmMediaType {
-      val mainType = theMainType
-      val subTypeParts = theSubTypeParts
-      val compressible = isCompressible
-      val streamRepresentation = theStreamRepresentation
-      val fileExtensions = theFileExtensions
-      val ianaRegistered = isIanaRegistered
-    }
-
   implicit class AlmMediaTypeOps(self: AlmMediaType) {
     def makeIanaRegistered = AlmMediaType(self.mainType, self.subTypeParts, self.compressible, self.streamRepresentation, self.fileExtensions, true)
     def makeCompressible = AlmMediaType(self.mainType, self.subTypeParts, true, self.streamRepresentation, self.fileExtensions, self.ianaRegistered)
