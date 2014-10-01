@@ -123,11 +123,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   }
 
   def documentToAggregateRootEvent(document: BSONDocument): AlmValidation[AggregateRootEvent] = {
-    (document.get("domainevent") match {
+    (document.get("event") match {
       case Some(d: BSONDocument) ⇒
         deserializeAggregateRootEvent(d)
       case Some(x) ⇒
-        val msg = s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}"."""
+        val msg = s"""Event must be contained as a BSONDocument. It is a "${x.getClass().getName()}"."""
         MappingProblem(msg).failure
       case None ⇒
         NoSuchElementProblem("BSONDocument for payload not found").failure

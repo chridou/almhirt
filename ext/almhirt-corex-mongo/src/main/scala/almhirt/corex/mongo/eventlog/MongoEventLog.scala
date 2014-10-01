@@ -117,7 +117,7 @@ private[almhirt] class MongoEventLogImpl(
   def documentToEvent(document: BSONDocument): AlmValidation[Event] = {
     document.get("event") match {
       case Some(d: BSONDocument) ⇒ deserializeEvent(d)
-      case Some(x) ⇒ MappingProblem(s"""Payload must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
+      case Some(x) ⇒ MappingProblem(s"""Event must be contained as a BSONDocument. It is a "${x.getClass().getName()}".""").failure
       case None ⇒ NoSuchElementProblem("BSONDocument for payload not found").failure
     }
   }
