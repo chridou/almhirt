@@ -1,6 +1,7 @@
 package almhirt.args
 
 import scala.reflect.ClassTag
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 
 trait ArgsFuns {

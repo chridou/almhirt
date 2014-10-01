@@ -3,6 +3,7 @@ package almhirt.domain
 import scala.language.postfixOps
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking._

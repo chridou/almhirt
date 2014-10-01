@@ -3,6 +3,7 @@ package almhirt.corex.mongo.eventlog
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.almfuture.all._
@@ -195,7 +196,7 @@ private[almhirt] class MongoEventLogImpl(
     case InitializeFailed(prob) ⇒
       log.error(s"Initialize failed:\n$prob")
       sys.error(prob.message)
-    
+
     case m: EventLogMessage ⇒
       log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
@@ -216,18 +217,19 @@ private[almhirt] class MongoEventLogImpl(
         (t, n, p) => log.info(s"Look up collection '$collectionName' failed after $n attempts and ${t.defaultUnitString}:\n$p"),
         (t, n, p) => {
           val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}:\n$p")
-          self ! InitializeFailed(UnspecifiedProblem(s"")) },
+          self ! InitializeFailed(UnspecifiedProblem(s""))
+        },
         collectionLookupRetries,
         Some("looks-for-collection"))
 
     case Initialized ⇒
       log.info("Initialized")
       context.become(receiveEventLogMsg(true))
-    
+
     case InitializeFailed(prob) ⇒
       log.error(s"Initialize failed:\n$prob")
       sys.error(prob.message)
-    
+
     case m: EventLogMessage ⇒
       log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
@@ -264,10 +266,10 @@ private[almhirt] class MongoEventLogImpl(
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
 
-    case FetchAllEvents(skip, take)  ⇒
+    case FetchAllEvents(skip, take) ⇒
       val query = BSONDocument()
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
-        
+
     case FetchEventsFrom(from, skip, take) ⇒
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))

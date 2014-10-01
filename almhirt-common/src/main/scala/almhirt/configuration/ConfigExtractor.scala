@@ -2,6 +2,7 @@ package almhirt.configuration
 
 import scala.reflect.ClassTag
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException

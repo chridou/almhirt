@@ -3,6 +3,7 @@ package riftwarp
 import java.util.UUID
 import org.joda.time.{DateTime, LocalDateTime}
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._

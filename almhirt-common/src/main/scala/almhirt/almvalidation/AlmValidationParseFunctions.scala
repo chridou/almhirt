@@ -19,6 +19,7 @@ import scala.language.higherKinds
 import java.util.UUID
 import scala.collection.generic.CanBuildFrom
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import scalaz.std._
 import org.joda.time.{ DateTime, LocalDateTime }
 import almhirt.common._

@@ -3,6 +3,7 @@ package almhirt.corex.spray.client
 import scala.reflect.ClassTag
 import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.http._

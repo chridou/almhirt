@@ -1,6 +1,7 @@
 package almhirt.akkax
 
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import akka.actor.{ Props, ActorRef, ActorRefFactory, ActorContext }
 import almhirt.common._
 

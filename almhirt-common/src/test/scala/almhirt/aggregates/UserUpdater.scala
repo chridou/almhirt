@@ -1,15 +1,17 @@
 package almhirt.aggregates
 
 import almhirt.common._
+import scalaz.Validation.FlatMap._
 import almhirt.almvalidation.kit._
 
-/** Examples on how to update the state of an AR and collect the associated events. 
- *  
+/**
+ * Examples on how to update the state of an AR and collect the associated events.
+ *
  *  Some of the methods are arguable since they could/should be modeled with an own Event.
  *  Like appendSurname. In this example, it is just a name changed but one might be
  *  interested in how many users really forgot to provide their second surname upon
  *  registration....
- *  
+ *
  */
 trait UserUpdater extends AggregateRootUpdater[User, UserEvent] { self: UserEventHandler ⇒
   implicit def ccuad: CanCreateUuidsAndDateTimes

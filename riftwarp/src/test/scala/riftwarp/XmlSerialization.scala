@@ -4,6 +4,7 @@ import org.scalatest._
 import java.util.{ UUID ⇒ JUUID }
 import org.joda.time.{DateTime, LocalDateTime}
 import scalaz.@@
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._

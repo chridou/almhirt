@@ -3,6 +3,7 @@ package almhirt.components
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.tracking.{ CommandStatus, CommandStatusChanged }

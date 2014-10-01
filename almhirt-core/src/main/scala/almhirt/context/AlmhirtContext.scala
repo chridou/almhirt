@@ -1,6 +1,7 @@
 package almhirt.context
 
 import akka.actor._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.streaming.AlmhirtStreams
 import almhirt.akkax.ActorMessages

@@ -3,6 +3,7 @@ package riftwarpx.mongo
 import org.joda.time.{ LocalDateTime, DateTimeZone }
 import scalaz._
 import scalaz.Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.converters.BinaryConverter

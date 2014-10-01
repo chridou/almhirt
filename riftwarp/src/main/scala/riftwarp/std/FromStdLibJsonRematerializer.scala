@@ -2,6 +2,7 @@ package riftwarp.std
 
 import scalaz._
 import scalaz.Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._

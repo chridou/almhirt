@@ -2,6 +2,7 @@ package almhirt.almvalidation
 
 import org.scalatest._
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 
 class AlmValidationSpecs extends FlatSpec with Matchers {

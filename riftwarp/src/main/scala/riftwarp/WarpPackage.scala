@@ -2,6 +2,7 @@ package riftwarp
 
 import scalaz._, Scalaz._
 import scalaz.Tree._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp.std.{ WarpPrimitiveConverter, WarpPackageConverter }

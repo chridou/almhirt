@@ -2,6 +2,7 @@ package riftwarpx.mongo
 
 import almhirt.serialization._
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import reactivemongo.bson._

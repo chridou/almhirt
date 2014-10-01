@@ -3,6 +3,7 @@ package riftwarp
 import scala.reflect.ClassTag
 import scalaz.std._
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.serialization._

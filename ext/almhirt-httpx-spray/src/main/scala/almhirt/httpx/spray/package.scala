@@ -2,6 +2,7 @@ package almhirt.httpx
 
 import scala.language.implicitConversions
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.http._
 import almhirt.configuration._

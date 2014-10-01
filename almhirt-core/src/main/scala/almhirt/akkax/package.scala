@@ -3,6 +3,7 @@ package almhirt
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Promise
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import akka.actor.{ ActorRef, Props, ActorContext }
 import almhirt.common._
 import almhirt.almvalidation.kit._

@@ -2,6 +2,7 @@ package riftwarp.serialization.common
 
 import org.joda.time.LocalDateTime
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp._

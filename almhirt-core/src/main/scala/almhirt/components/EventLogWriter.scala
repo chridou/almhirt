@@ -3,6 +3,7 @@ package almhirt.components
 import scalaz._, Scalaz._
 import scala.language.postfixOps
 import scala.concurrent.duration._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.kit._

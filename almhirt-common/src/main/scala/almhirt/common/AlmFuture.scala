@@ -18,8 +18,10 @@ import java.util.concurrent.TimeoutException
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.Builder
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import scala.concurrent.{ Future, Promise, Await, ExecutionContext }
 import scala.concurrent.duration.Duration
+import scalaz.Validation.FlatMap
 import almhirt.common._
 import almhirt.almfuture.all.akkaFutureToAlmhirtFuture
 import almhirt.problem.CauseIsThrowable
@@ -36,7 +38,7 @@ import almhirt.problem.HasAThrowable
  */
 final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   import almhirt.almfuture.all._
-  
+
   /** Map the contents to this Future to another content */
   def map[T](compute: R ⇒ T)(implicit executionContext: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](underlying.map(validation ⇒ validation map compute))
@@ -104,9 +106,9 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     mapV {
       r ⇒ if (pred(r)) r.success else NoSuchElementProblem("AlmFuture.filter predicate is not satisfied").failure
     }
-  
+
   final def withFilter(p: R ⇒ Boolean)(implicit executor: ExecutionContext): AlmFuture[R] = filter(p)(executor)
- 
+
   /** Make the result or problem something else but stay in the future context */
   def fold[T](failure: Problem ⇒ T, success: R ⇒ T)(implicit executionContext: ExecutionContext): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
@@ -166,7 +168,6 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     new AlmFuture(p.future)
   }
 
-  
   /** Act on completion */
   def onComplete(handler: AlmValidation[R] ⇒ Unit)(implicit executionContext: ExecutionContext): Unit = {
     underlying.onComplete {
@@ -190,7 +191,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   /** As soon as a success is known, schedule the effect */
   def successEffect(effect: R ⇒ Unit)(implicit executionContext: ExecutionContext): AlmFuture[R] =
     andThen { _.fold(_ ⇒ (), succ ⇒ effect(succ)) }
-  
+
   /** Use when only interested in a success and a failure can be converted to a success to rejoin with the happy path */
   def onSuccessWithRejoinedFailure[U >: R](rejoin: Problem ⇒ U, onRes: U ⇒ Unit)(implicit executionContext: ExecutionContext): Unit =
     this.rejoinFailure(rejoin).onSuccess(onRes)
@@ -225,35 +226,32 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   def rejoinFailure[U >: R](rejoin: Problem ⇒ U)(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.fold[U](
       rejoin,
-      succ ⇒ succ
-    )
+      succ ⇒ succ)
   }
 
   /** A some successes can become a failure */
-  def divertToFailure(divert: PartialFunction[R,Problem])(implicit executionContext: ExecutionContext): AlmFuture[R] = {
+  def divertToFailure(divert: PartialFunction[R, Problem])(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     this.foldV(
       fail ⇒ fail.failure,
-      succ ⇒ if(divert.isDefinedAt(succ)){
+      succ ⇒ if (divert.isDefinedAt(succ)) {
         divert(succ).failure
       } else {
         succ.success
-      }
-    )
+      })
   }
-  
-  def extractDivert[U](extract: PartialFunction[R, U],divert: PartialFunction[R,Problem])(implicit executionContext: ExecutionContext): AlmFuture[U] = {
+
+  def extractDivert[U](extract: PartialFunction[R, U], divert: PartialFunction[R, Problem])(implicit executionContext: ExecutionContext): AlmFuture[U] = {
     this.foldV(
       fail ⇒ fail.failure,
-      succ ⇒ if(divert.isDefinedAt(succ)){
+      succ ⇒ if (divert.isDefinedAt(succ)) {
         divert(succ).failure
-      } else if (extract.isDefinedAt(succ)){
+      } else if (extract.isDefinedAt(succ)) {
         extract(succ).success
       } else {
         UnspecifiedProblem(s"""${succ} is neither handled by extract nor by divert.""").failure
-      }
-    )
+      })
   }
-  
+
   def isCompleted = underlying.isCompleted
 
   def awaitResult(atMost: Duration): AlmValidation[R] =
@@ -267,24 +265,25 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
     import almhirt.syntax.almvalidation._
     awaitResult(atMost).resultOrEscalate
   }
-  
+
   def withTimeout(maxDuration: scala.concurrent.duration.FiniteDuration, createMessage: scala.concurrent.duration.FiniteDuration ⇒ String = t ⇒ s"A timeout occured after ${t}.")(implicit executionContext: ExecutionContext): AlmFuture[R] = {
     val p = Promise[AlmValidation[R]]
-    
+
     this.onComplete(
-  		fail ⇒ p.complete(scala.util.Success(fail.failure)),
-  		succ ⇒ p.complete(scala.util.Success(succ.success))
-    )
-    
+      fail ⇒ p.complete(scala.util.Success(fail.failure)),
+      succ ⇒ p.complete(scala.util.Success(succ.success)))
+
     val timer = new java.util.Timer()
-    val r = new java.util.TimerTask() { def run() { 
-      p.complete(scala.util.Success(OperationTimedOutProblem(createMessage(maxDuration)).failure)) } }
+    val r = new java.util.TimerTask() {
+      def run() {
+        p.complete(scala.util.Success(OperationTimedOutProblem(createMessage(maxDuration)).failure))
+      }
+    }
     timer.schedule(r, maxDuration.toMillis)
-    
+
     new AlmFuture(p.future)
   }
 
-  
   /** Convert this future to a future of the std lib */
   def std(implicit executionContext: ExecutionContext): Future[R] = {
     val p = Promise[R]
@@ -310,7 +309,7 @@ final class AlmFuture[+R](val underlying: Future[AlmValidation[R]]) {
   }
 
   def toStdFuture(implicit executionContext: ExecutionContext): Future[R] = this.std
- 
+
 }
 
 object AlmFuture {
@@ -356,7 +355,7 @@ object AlmFuture {
       case scala.util.control.NonFatal(exn) ⇒ launderException(exn).failure
     }
   })
-  
+
   /** Returns the result after the given duration */
   def delayed[T](duration: scala.concurrent.duration.FiniteDuration)(result: ⇒ AlmValidation[T]): AlmFuture[T] = {
     val p = Promise[AlmValidation[T]]
@@ -375,5 +374,5 @@ object AlmFuture {
   def delayedFailure[T](duration: scala.concurrent.duration.FiniteDuration)(problem: ⇒ Problem): AlmFuture[Nothing] = {
     delayed(duration)(problem.failure)
   }
-  
+
 }

@@ -1,6 +1,7 @@
 package riftwarp.util
 
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.http.{ HttpSerializer, HttpDeserializer }

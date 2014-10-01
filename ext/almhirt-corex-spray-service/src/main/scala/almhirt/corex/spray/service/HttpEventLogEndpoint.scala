@@ -2,6 +2,7 @@ package almhirt.corex.spray.service
 
 import scala.language.postfixOps
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import akka.pattern._
 import almhirt.common._

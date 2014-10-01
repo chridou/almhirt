@@ -4,6 +4,7 @@ import scala.language.reflectiveCalls
 import scala.concurrent._
 import scala.concurrent.duration._
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.almfuture.all._

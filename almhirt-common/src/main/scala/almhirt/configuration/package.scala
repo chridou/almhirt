@@ -2,6 +2,7 @@ package almhirt
 
 import scala.concurrent.duration.FiniteDuration
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import com.typesafe.config.Config
 
@@ -68,7 +69,6 @@ package object configuration {
 
   implicit val ConfigConfigExtractorInst = new ConfigConfigExtractor {}
   implicit val ConfigJavaPropertiesExtractorInst = new ConfigJavaPropertiesExtractor {}
-  
 
   implicit object ExecutionContextConfigExtractor extends ConfigExtractor[ExecutionContextSelector] {
     def getValue(config: Config, path: String): AlmValidation[ExecutionContextSelector] =
@@ -84,7 +84,7 @@ package object configuration {
       }
 
   }
-  
+
   implicit object RetrySettingsConfigExtractor extends ConfigExtractor[RetrySettings] {
     def getValue(config: Config, path: String): AlmValidation[RetrySettings] = {
       for {
@@ -120,6 +120,5 @@ package object configuration {
       }
     }
   }
-  
-  
+
 }

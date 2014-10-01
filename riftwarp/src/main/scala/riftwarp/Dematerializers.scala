@@ -1,6 +1,7 @@
 package riftwarp
 
 import scala.reflect.ClassTag
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import riftwarp.impl.DematerializersRegistry

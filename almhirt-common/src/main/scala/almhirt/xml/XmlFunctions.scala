@@ -18,7 +18,7 @@ import java.util.{ UUID ⇒ JUUID }
 import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import scalaz.std._
-import org.joda.time.{DateTime, LocalDateTime}
+import org.joda.time.{ DateTime, LocalDateTime }
 import almhirt.common._
 import almhirt.almvalidation.funs._
 import almhirt.problem.inst._
@@ -27,6 +27,7 @@ import almhirt.syntax.almvalidation._
 trait XmlFunctions {
   import scala.xml.{ XML, Node, Elem, NodeSeq }
   import scala.xml.XML
+  import scalaz.Validation.FlatMap._
   import almhirt.problem.all._
 
   def allElems(elem: Elem): Seq[Elem] =
@@ -92,7 +93,7 @@ trait XmlFunctions {
       None.success
     else
       shortFromXmlNode(node) fold (_.failure, Some(_).success)
-      
+
   def intFromXmlNode(node: Elem): AlmValidation[Int] =
     notEmptyOrWhitespace(node.text) flatMap (ne ⇒ parseIntAlm(ne)) bimap (f ⇒ f.withLabel(node.label), s ⇒ s)
 
@@ -164,7 +165,7 @@ trait XmlFunctions {
       None.success
     else
       localDateTimeFromXmlNode(node) fold (_.failure, Some(_).success)
-      
+
   def durationFromXmlNode(node: Elem): AlmValidation[FiniteDuration] =
     notEmptyOrWhitespace(node.text) flatMap (ne ⇒ parseDurationAlm(ne)) bimap (f ⇒ f.withLabel(node.label), s ⇒ s)
 
@@ -173,7 +174,7 @@ trait XmlFunctions {
       None.success
     else
       durationFromXmlNode(node) fold (_.failure, Some(_).success)
-      
+
   def uuidFromXmlNode(node: Elem): AlmValidation[JUUID] =
     notEmptyOrWhitespace(node.text) flatMap (ne ⇒ parseUuidAlm(ne)) bimap (f ⇒ f.withLabel(node.label), s ⇒ s)
 
@@ -212,7 +213,7 @@ trait XmlFunctions {
       case l :: ls ⇒ l.success
     }
   }
-  
+
   def mapOptionalFirstChild[T](node: Elem, label: String, compute: Elem ⇒ AlmValidation[T]): AlmValidation[Option[T]] =
     elems(node)(label).headOption match {
       case Some(t) ⇒ compute(t) map { r ⇒ Some(r) }

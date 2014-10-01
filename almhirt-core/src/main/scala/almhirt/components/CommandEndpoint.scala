@@ -2,6 +2,7 @@ package almhirt.components
 
 import scala.concurrent.duration.FiniteDuration
 import akka.actor._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.tracking._
 import almhirt.akkax._

@@ -1,6 +1,7 @@
 package riftwarp.serialization.common
 
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.tracking.CommandStatusChanged
 import riftwarp._

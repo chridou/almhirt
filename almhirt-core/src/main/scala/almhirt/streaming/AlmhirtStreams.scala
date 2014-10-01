@@ -1,6 +1,7 @@
 package almhirt.streaming
 
 import scala.concurrent.duration._
+import scalaz.Validation.FlatMap._
 import akka.dispatch.Dispatcher
 import akka.actor._
 import akka.pattern._

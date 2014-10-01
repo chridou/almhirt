@@ -1,6 +1,7 @@
 package riftwarp
 
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 

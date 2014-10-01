@@ -1,6 +1,7 @@
 package almhirt.almvalidation
 
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 
 

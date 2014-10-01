@@ -2,6 +2,7 @@ package almhirt.domain
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.aggregates._

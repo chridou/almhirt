@@ -3,6 +3,7 @@ package riftwarp
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicReference
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import almhirt.common._
 
 sealed trait HttpTransmission

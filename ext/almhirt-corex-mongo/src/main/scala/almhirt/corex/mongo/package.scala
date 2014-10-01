@@ -1,11 +1,12 @@
 package almhirt.corex
 
 import almhirt.common._
+import scalaz.Validation.FlatMap._
 
 package object mongo {
   import almhirt.configuration._
   import com.typesafe.config.Config
-  
+
   implicit object ResolveConfigExtractor extends ConfigExtractor[MongoConnectionSettings] {
     def getValue(config: Config, path: String): AlmValidation[MongoConnectionSettings] =
       for {

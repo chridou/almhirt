@@ -3,6 +3,7 @@ package almhirt.httpx.spray.service
 import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.httpx.spray.marshalling.HasProblemMarshaller
+import scalaz.Validation.FlatMap._
 import spray.httpx.marshalling.Marshaller
 import spray.routing.RequestContext
 import scala.concurrent.ExecutionContext
