@@ -11,7 +11,6 @@ import spray.http._
 import spray.client.pipelining._
 import org.reactivestreams.Subscriber
 import akka.stream.actor._
-import akka.stream.FlowMaterializer
 import com.typesafe.config.Config
 
 object HttpEventPublisher {
@@ -22,9 +21,9 @@ object HttpEventPublisher {
     addEventId: Boolean)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): Props =
     Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType))
 
-  def props(config: Config, configName: Option[String])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): AlmValidation[Props] = {
+  def props(config: Config, httpEventPublisherName: String)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): AlmValidation[Props] = {
     implicit val extr = almhirt.httpx.spray.HttpMethodConfigExtractor
-    val path = "almhirt.components.event-publishers.http-event-publisher" + configName.map("." + _).getOrElse("")
+    val path = s"almhirt.components.event-publishers.http-event-publishers.$httpEventPublisherName"
     for {
       section <- config.v[com.typesafe.config.Config](path)
       endpointUri <- section.v[String]("endpoint-uri")
@@ -37,15 +36,6 @@ object HttpEventPublisher {
 
   def apply(eventPublischer: ActorRef): Subscriber[Event] =
     ActorSubscriber[Event](eventPublischer)
-
-  def withoutAggregateRootEvents(eventPublischer: ActorRef)(implicit materializer: FlowMaterializer): Subscriber[Event] = {
-    import akka.stream.scaladsl.Duct
-    val duct = Duct[Event].filter(!_.isInstanceOf[AggregateRootEvent])
-    val (subscriber, publisher) = duct.build
-    val eventSubscriber = HttpEventPublisher(eventPublischer)
-    publisher.subscribe(eventSubscriber)
-    subscriber
-  }
 }
 
 private[almhirt] class HttpEventPublisherImpl(

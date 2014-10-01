@@ -21,7 +21,7 @@ object ElasticSearchEventPublisher {
     Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl))
 
   def props(config: Config, elConfigName: Option[String] = None)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): AlmValidation[Props] = {
-    val path = "almhirt.components.event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
+    val path = "almhirt.components.event-publishers.http-event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
     for {
       section <- config.v[com.typesafe.config.Config](path)
       host <- section.v[String]("host")
