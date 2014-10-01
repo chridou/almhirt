@@ -23,13 +23,15 @@ object MongoEventLog {
     collectionName: String,
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
-    writeWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts): Props =
+    writeWarnThreshold: FiniteDuration,
+    readOnlySettings: Option[RetrySettings])(implicit executionContexts: HasExecutionContexts): Props =
     Props(new MongoEventLogImpl(
       db,
       collectionName,
       serializeEvent,
       deserializeEvent,
-      writeWarnThreshold))
+      writeWarnThreshold,
+      readOnlySettings))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
@@ -43,12 +45,19 @@ object MongoEventLog {
       section <- ctx.config.v[com.typesafe.config.Config](path)
       collectionName <- section.v[String]("collection-name")
       writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
+      readOnly <- section.v[Boolean]("read-only")
+      readOnlySettings <- if (readOnly) {
+        section.v[RetrySettings]("read-only-collection-lookup-retries").map(Some(_))
+      } else {
+        None.success
+      }
     } yield propsRaw(
       db,
       collectionName,
       serializeEvent,
       deserializeEvent,
-      writeWarnThreshold)
+      writeWarnThreshold,
+      readOnlySettings)
   }
 
   def propsWithConnection(
@@ -62,7 +71,7 @@ object MongoEventLog {
     for {
       section <- ctx.config.v[com.typesafe.config.Config](path)
       dbName <- section.v[String]("db-name")
-      db <- inTryCatch {connection(dbName)(ctx.futuresContext)}
+      db <- inTryCatch { connection(dbName)(ctx.futuresContext) }
       props <- propsWithDb(
         db,
         serializeEvent,
@@ -77,7 +86,8 @@ private[almhirt] class MongoEventLogImpl(
   collectionName: String,
   serializeEvent: Event ⇒ AlmValidation[BSONDocument],
   deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
-  writeWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging {
+  writeWarnThreshold: FiniteDuration,
+  readOnlySettings: Option[RetrySettings])(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
 
@@ -134,13 +144,23 @@ private[almhirt] class MongoEventLogImpl(
       start <- insertDocument(serialized)
     } yield start
 
-  def commitEvent(event: Event) {
+  def commitEvent(event: Event, respondTo: Option[ActorRef]) {
     storeEvent(event) onComplete (
-      fail ⇒ log.error(fail.toString()),
+      fail ⇒ {
+        val msg = s"Could not log event with id ${event.eventId.value}:\n$fail"
+        respondTo match {
+          case Some(r) =>
+            log.warning(msg)
+            r ! EventNotLogged(event.eventId, PersistenceProblem(msg, cause = Some(fail)))
+          case None =>
+            log.error(msg)
+        }
+      },
       start ⇒ {
         val lap = start.lap
         if (lap > writeWarnThreshold)
           log.warning(s"""Storing event "${event.getClass().getSimpleName()}(${event.eventId})" took longer than ${writeWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+        respondTo.foreach(_ ! EventLogged(event.eventId))
       })
   }
 
@@ -176,8 +196,14 @@ private[almhirt] class MongoEventLogImpl(
   }
 
   def receiveEventLogMsg: Receive = {
-    case LogEvent(event) ⇒
-      commitEvent(event)
+    case LogEvent(event, acknowledge) ⇒
+      if (readOnlySettings.isDefined)
+        if (!acknowledge)
+          log.warning("Received log")
+        else
+          sender() ! EventNotLogged(event.eventId, PersistenceProblem("The event log is in read only mode."))
+      else
+        commitEvent(event, if (acknowledge) Some(sender()) else None)
 
     case FindEvent(eventId) ⇒
       val pinnedSender = sender

@@ -26,14 +26,16 @@ object MongoAggregateRootEventLog {
     serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
     writeWarnThreshold: FiniteDuration,
-    readWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts): Props =
+    readWarnThreshold: FiniteDuration,
+    readOnlySettings: Option[RetrySettings])(implicit executionContexts: HasExecutionContexts): Props =
     Props(new MongoAggregateRootEventLogImpl(
       db,
       collectionName,
       serializeAggregateRootEvent,
       deserializeAggregateRootEvent,
       writeWarnThreshold,
-      readWarnThreshold))
+      readWarnThreshold,
+      readOnlySettings))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
@@ -48,13 +50,20 @@ object MongoAggregateRootEventLog {
       collectionName <- section.v[String]("collection-name")
       writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
       readWarnThreshold <- section.v[FiniteDuration]("read-warn-threshold")
-    } yield propsRaw(
+       readOnly <- section.v[Boolean]("read-only")
+      readOnlySettings <- if(readOnly) {
+        section.v[RetrySettings]("read-only-collection-lookup-retries").map(Some(_))
+      } else {
+        None.success
+      }
+   } yield propsRaw(
       db,
       collectionName,
       serializeAggregateRootEvent,
       deserializeAggregateRootEvent,
       writeWarnThreshold,
-      readWarnThreshold)
+      readWarnThreshold,
+      readOnlySettings)
   }
 
   def propsWithConnection(
@@ -85,7 +94,8 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   serializeAggregateRootEvent: AggregateRootEvent ⇒ AlmValidation[BSONDocument],
   deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
   writeWarnThreshold: FiniteDuration,
-  readWarnThreshold: FiniteDuration)(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging with almhirt.akkax.AlmActorSupport {
+  readWarnThreshold: FiniteDuration,
+  readOnlySettings: Option[RetrySettings])(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging with almhirt.akkax.AlmActorSupport {
   import almhirt.eventlog.AggregateRootEventLog._
 
   implicit val defaultExecutor = executionContexts.futuresContext

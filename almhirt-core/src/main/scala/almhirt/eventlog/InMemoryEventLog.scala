@@ -5,7 +5,7 @@ import almhirt.common._
 import play.api.libs.iteratee.Enumerator
 
 object InMemoryEventLog {
-  def props(): Props = 
+  def props(): Props =
     Props(new InMemoryEventLog())
 }
 
@@ -15,9 +15,10 @@ class InMemoryEventLog extends Actor with ActorLogging {
   private var eventLog = Vector.empty[Event]
 
   def receive: Receive = {
-    case LogEvent(event) ⇒
+    case LogEvent(event, acknowledge) ⇒
       eventLog = (eventLog :+ event).sortBy(_.timestamp)
-      sender() ! EventLogged(event.eventId)
+      if (acknowledge)
+        sender() ! EventLogged(event.eventId)
     case FindEvent(eventId) ⇒
       sender() ! FoundEvent(eventId, eventLog.find(_.eventId == eventId))
     case FetchAllEvents ⇒

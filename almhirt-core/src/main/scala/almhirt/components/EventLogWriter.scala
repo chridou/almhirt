@@ -79,7 +79,7 @@ private[almhirt] class EventLogWriterImpl(
       request(1)
 
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
-      eventLog ! EventLog.LogEvent(event)
+      eventLog ! EventLog.LogEvent(event, true)
       context.become(receiveWriting(eventLog, event, Deadline.now))
 
     case ActorSubscriberMessage.OnNext(unprocessable) ⇒

@@ -9,7 +9,7 @@ import play.api.libs.iteratee.Enumerator
 object EventLog {
   sealed trait EventLogMessage
 
-  final case class LogEvent(event: Event) extends EventLogMessage
+  final case class LogEvent(event: Event, acknowledge: Boolean) extends EventLogMessage
   sealed trait LogEventResponse extends EventLogMessage { def eventId: EventId }
   final case class EventLogged(eventId: EventId) extends EventLogMessage
   final case class EventNotLogged(eventId: EventId, problem: Problem) extends EventLogMessage
