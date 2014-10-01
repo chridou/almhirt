@@ -59,6 +59,7 @@ private[almhirt] class MaxTimeBasedSingleResolverImpl(toResolve: ToResolve, reso
       }
 
     case Resolved(actor) ⇒
+      log.info(s"*** Resolved: ${actor} ***")
       context.parent ! ActorMessages.ResolvedSingle(actor, correlationId)
       context.stop(self)
 
@@ -114,6 +115,7 @@ private[almhirt] class MaxAttemptsBasedSingleResolverImpl(toResolve: ToResolve, 
       }
 
     case Resolved(actor) ⇒
+      log.info(s"*** Resolved: ${actor} ***")
       context.parent ! ActorMessages.ResolvedSingle(actor, correlationId)
       context.stop(self)
 

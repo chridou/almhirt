@@ -200,7 +200,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   def uninitializedReadWrite: Receive = {
     case Initialize ⇒
-      log.info("Initializing")
+      log.info("Initializing(read/write)")
       (for {
         collectinNames <- db.collectionNames
         createonRes <- if (collectinNames.contains(collectionName)) {
@@ -220,7 +220,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         })
 
     case Initialized ⇒
-      log.info("Initialized")
+      log.info("*** Initialized ***")
       context.become(receiveAggregateRootEventLogMsg(false))
 
     case InitializeFailed(prob) ⇒
