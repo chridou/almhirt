@@ -17,6 +17,14 @@ class UuidTests extends FunSuite with Matchers {
     }
   }
 
+  test("A base64 encoded uuid should not contain a slash!") {
+    for (i <- 1 to 100000) {
+      val uuid = JUUID.randomUUID()
+      val b64 = uuidToBase64String(uuid)
+      b64.contains('/') should equal(false)
+    }
+  }
+  
   test("A uuid string should be convertable to a base 64 string") {
     for (i <- 1 to 10000) {
       val uuid = JUUID.randomUUID()

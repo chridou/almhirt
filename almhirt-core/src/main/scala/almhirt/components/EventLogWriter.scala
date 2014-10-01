@@ -16,12 +16,12 @@ object EventLogWriter {
   def propsRaw(
     eventLogToResolve: ToResolve,
     resolveSettings: ResolveSettings,
-    maxWaitForEventLog: FiniteDuration,
+    warningThreshold: FiniteDuration,
     autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
     Props(new EventLogWriterImpl(
       eventLogToResolve,
       resolveSettings,
-      maxWaitForEventLog: FiniteDuration,
+      warningThreshold,
       autoConnect))
   }
 
@@ -31,28 +31,27 @@ object EventLogWriter {
       section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.event-log-writer")
       eventLogPathStr <- section.v[String]("event-log-path")
       eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
-      maxWaitForEventLog <- section.v[FiniteDuration]("max-wait-for-event-log")
+      warningThreshold <- section.v[FiniteDuration]("warning-threshold")
       resolveSettings <- section.v[ResolveSettings]("resolve-settings")
       autoConnect <- section.v[Boolean]("auto-connect")
-    } yield propsRaw(eventLogToResolve, resolveSettings, maxWaitForEventLog, autoConnect)
+    } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, autoConnect)
   }
 
   def apply(eventLogWriter: ActorRef): Subscriber[Event] =
     ActorSubscriber[Event](eventLogWriter)
-    
+
   val actorname = "event-log-writer"
 }
 
 private[almhirt] class EventLogWriterImpl(
   eventLogToResolve: ToResolve,
   resolveSettings: ResolveSettings,
-  maxWaitForEventLog: FiniteDuration,
+  warningThreshold: FiniteDuration,
   autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
 
   override val requestStrategy = ZeroRequestStrategy
 
-  private case class PotentialTimeout(eventId: EventId)
   private case object AutoConnect
 
   private case object Resolve
@@ -66,64 +65,43 @@ private[almhirt] class EventLogWriterImpl(
         self ! AutoConnect
       else
         request(1)
-      context.become(running(eventlog, None, cancelTimeout = None))
+      context.become(receiveWaiting(eventlog))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
       sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
   }
 
-  
-  def running(eventLog: ActorRef, activeEvent: Option[Event], cancelTimeout: Option[Cancellable]): Receive = {
+  def receiveWaiting(eventLog: ActorRef): Receive = {
     case AutoConnect ⇒
       log.info("Subscribing to event stream.")
       FlowFrom(ctx.eventStream).publishTo(EventLogWriter(self))
       request(1)
 
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
-      if (activeEvent.isDefined) {
-        sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.get.eventId.value}' is processed.")
-      }
-
-      val cancel = context.system.scheduler.scheduleOnce(maxWaitForEventLog, self, PotentialTimeout(event.eventId))(context.dispatcher)
       eventLog ! EventLog.LogEvent(event)
-      context.become(running(eventLog, activeEvent = Some(event), Some(cancel)))
-
-    case EventLog.EventLogged(id) ⇒
-      if (activeEvent.map(_.eventId == id) | false) {
-        request(1)
-        cancelTimeout.foreach(_.cancel())
-        context.become(running(eventLog, activeEvent = None, cancelTimeout = None))
-      } else {
-        log.warning(s"Received event logged for event '${id.value}' which is not the active event.")
-      }
-
-    case EventLog.EventNotLogged(id, problem) ⇒
-      if (activeEvent.map(_.eventId == id) | false) {
-        log.error(s"Could not log event '${id.value}':\n$problem")
-        request(1)
-        cancelTimeout.foreach(_.cancel())
-        context.become(running(eventLog, activeEvent = None, cancelTimeout = None))
-      } else {
-        log.error(s"Received event not logged for event '${id.value}' which is not the active event:\n$problem")
-      }
-
-    case PotentialTimeout(eventId) ⇒
-      if (activeEvent.map(_.eventId == eventId) | false) {
-        log.warning(s"Writing event '${eventId.value}' timed out. It might have been written or not...")
-        request(1)
-        context.become(running(eventLog, activeEvent = None, cancelTimeout = None))
-      } else {
-        log.warning(s"Received timeout for event '${eventId.value}' which is not the active event.")
-      }
+      context.become(receiveWriting(eventLog, event, Deadline.now))
 
     case ActorSubscriberMessage.OnNext(unprocessable) ⇒
-      if (activeEvent.isDefined) {
-        sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.get.eventId.value}' is processed.")
-      } else {
-        log.warning(s"received unprocessable element $unprocessable")
-        request(1)
-      }
+      log.warning(s"received unprocessable element $unprocessable")
+      request(1)
+  }
+
+  def receiveWriting(eventLog: ActorRef, activeEvent: Event, start: Deadline): Receive = {
+    case ActorSubscriberMessage.OnNext(event) ⇒
+      sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.eventId.value}' is processed.")
+
+    case EventLog.EventLogged(id) ⇒
+      if(start.lapExceeds(warningThreshold))
+        log.warning(s"Wrinting event '${id.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}")
+      request(1)
+      context.become(receiveWaiting(eventLog))
+
+    case EventLog.EventNotLogged(id, problem) ⇒
+      log.error(s"Could not log event '${id.value}' after ${start.lap.defaultUnitString}:\n$problem")
+      request(1)
+      context.become(receiveWaiting(eventLog))
+
   }
 
   override def receive: Receive = receiveResolve

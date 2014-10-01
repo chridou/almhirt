@@ -13,8 +13,8 @@ object EventSinkHub {
   /** [Name, (Props, Option[Filter])] */
   type EventSinkHubMemberFactories = Map[String, (Props, Option[ProcessorFlow[Event, Event]])]
 
-  def propsRaw(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int])(implicit ctx: AlmhirtContext): Props =
-    Props(new EventSinksSupervisorImpl(factories, buffersize))
+  def propsRaw(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit ctx: AlmhirtContext): Props =
+    Props(new EventSinksSupervisorImpl(factories, buffersize, withBlackHoleIfEmpty))
 
   def props(factories: EventSinkHub.EventSinkHubMemberFactories)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -22,13 +22,14 @@ object EventSinkHub {
     for {
       section <- ctx.config.v[com.typesafe.config.Config]("almhirt.components.misc.event-sink-hub")
       buffersize <- section.v[Int]("buffer-size").constrained(_ >= 0, n ⇒ s""""buffer-size" must be greater or equal than 0, not $n.""")
-    } yield propsRaw(factories, Some(buffersize))
+      withBlackHoleIfEmpty <- section.v[Boolean]("with-black-hole-if-empty")
+    } yield propsRaw(factories, Some(buffersize), withBlackHoleIfEmpty)
   }
 
   val actorname = "event-sink-hub"
 }
 
-private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int])(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
+private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
   override val requestStrategy = ZeroRequestStrategy
   case object Start
 
@@ -42,7 +43,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
     case Terminated(actor) ⇒
       log.info(s"Member ${actor.path.name} terminated.")
   }
-  
+
   def receive: Receive = receiveInitialize
 
   private def createInitialMembers() {
@@ -67,6 +68,9 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
               FlowFrom(fanout).publishTo(subscriber)
           }
       }
+    } else if (factories.isEmpty && withBlackHoleIfEmpty) {
+      log.warning("No members, but I created a black hole!")
+      FlowFrom[Event](ctx.eventStream).withSink(BlackholeSink)
     } else {
       log.warning("No members. Nothing will be subscribed")
     }
