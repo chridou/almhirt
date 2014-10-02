@@ -36,11 +36,17 @@ trait HasCommonHttpSerializers {
   implicit def finiteDurationsHttpSerializer: HttpSerializer[Seq[scala.concurrent.duration.FiniteDuration]] with HttpDeserializer[Seq[scala.concurrent.duration.FiniteDuration]]
 
   implicit def eventHttpSerializer: HttpSerializer[almhirt.common.Event] with HttpDeserializer[almhirt.common.Event]
+  def systemEventHttpSerializer: HttpSerializer[almhirt.common.SystemEvent] with HttpDeserializer[almhirt.common.SystemEvent]
+  def domainEventHttpSerializer: HttpSerializer[almhirt.common.DomainEvent] with HttpDeserializer[almhirt.common.DomainEvent]
+  def aggregateRootEventHttpSerializer: HttpSerializer[almhirt.common.AggregateRootEvent] with HttpDeserializer[almhirt.common.AggregateRootEvent]
   implicit def commandHttpSerializer: HttpSerializer[almhirt.common.Command] with HttpDeserializer[almhirt.common.Command]
   implicit def problemHttpSerializer: HttpSerializer[almhirt.common.Problem] with HttpDeserializer[almhirt.common.Problem]
   implicit def commandResponseHttpSerializer: HttpSerializer[almhirt.tracking.CommandResponse] with HttpDeserializer[almhirt.tracking.CommandResponse]
 
   implicit def eventsHttpSerializer: HttpSerializer[Seq[almhirt.common.Event]] with HttpDeserializer[Seq[almhirt.common.Event]]
+  implicit def systemEventsHttpSerializer: HttpSerializer[Seq[almhirt.common.SystemEvent]] with HttpDeserializer[Seq[almhirt.common.SystemEvent]]
+  implicit def domainEventsHttpSerializer: HttpSerializer[Seq[almhirt.common.DomainEvent]] with HttpDeserializer[Seq[almhirt.common.DomainEvent]]
+  implicit def aggregateRootEventsHttpSerializer: HttpSerializer[Seq[almhirt.common.AggregateRootEvent]] with HttpDeserializer[Seq[almhirt.common.AggregateRootEvent]]
   implicit def commandsHttpSerializer: HttpSerializer[Seq[almhirt.common.Command]] with HttpDeserializer[Seq[almhirt.common.Command]]
   implicit def problemsHttpSerializer: HttpSerializer[Seq[almhirt.common.Problem]] with HttpDeserializer[Seq[almhirt.common.Problem]]
 }

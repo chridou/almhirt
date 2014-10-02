@@ -37,11 +37,17 @@ trait HasCommonContentTypeProviders {
   implicit def finiteDurationsContentTypeProvider: FullContentTypeProvider[Seq[scala.concurrent.duration.FiniteDuration]]
 
   implicit def eventContentTypeProvider: FullContentTypeProvider[almhirt.common.Event]
+  def systemEventContentTypeProvider: FullContentTypeProvider[almhirt.common.SystemEvent]
+  def domainEventContentTypeProvider: FullContentTypeProvider[almhirt.common.DomainEvent]
+  def aggregateRootEventContentTypeProvider: FullContentTypeProvider[almhirt.common.AggregateRootEvent]
   implicit def commandContentTypeProvider: FullContentTypeProvider[almhirt.common.Command]
   implicit def problemContentTypeProvider: FullContentTypeProvider[almhirt.common.Problem]
   implicit def commandResponseContentTypeProvider: FullContentTypeProvider[almhirt.tracking.CommandResponse]
 
   implicit def eventsContentTypeProvider: FullContentTypeProvider[Seq[almhirt.common.Event]]
+  implicit def systemEventsContentTypeProvider: FullContentTypeProvider[Seq[almhirt.common.SystemEvent]]
+  implicit def domainEventsContentTypeProvider: FullContentTypeProvider[Seq[almhirt.common.DomainEvent]]
+  implicit def aggregateRootEventsContentTypeProvider: FullContentTypeProvider[Seq[almhirt.common.AggregateRootEvent]]
   implicit def commandsContentTypeProvider: FullContentTypeProvider[Seq[almhirt.common.Command]]
   implicit def problemsContentTypeProvider: FullContentTypeProvider[Seq[almhirt.common.Problem]]
 }
@@ -80,11 +86,17 @@ trait EmptyCommonContentTypeProviders extends HasCommonContentTypeProviders {
   override val finiteDurationsContentTypeProvider = FullContentTypeProvider.empty[Seq[scala.concurrent.duration.FiniteDuration]]
 
   override val eventContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.Event]
+  override val systemEventContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.SystemEvent]
+  override val domainEventContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.DomainEvent]
+  override val aggregateRootEventContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.AggregateRootEvent]
   override val commandContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.Command]
   override val problemContentTypeProvider = FullContentTypeProvider.empty[almhirt.common.Problem]
   override val commandResponseContentTypeProvider = FullContentTypeProvider.empty[almhirt.tracking.CommandResponse]
 
   override val eventsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.Event]]
+  override val systemEventsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.SystemEvent]]
+  override val domainEventsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.DomainEvent]]
+  override val aggregateRootEventsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.AggregateRootEvent]]
   override val commandsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.Command]]
   override val problemsContentTypeProvider = FullContentTypeProvider.empty[Seq[almhirt.common.Problem]]
 }
@@ -123,11 +135,17 @@ trait CommonContentTypeProvidersFromMediaTypes extends HasCommonContentTypeProvi
   override lazy val finiteDurationsContentTypeProvider = FullContentTypeProvider[Seq[scala.concurrent.duration.FiniteDuration]]
 
   override lazy val eventContentTypeProvider = FullContentTypeProvider[almhirt.common.Event]
+  override lazy val systemEventContentTypeProvider = FullContentTypeProvider[almhirt.common.SystemEvent](systemEventAlmMediaTypesProvider, implicitly[AlmCharacterEncoding])
+  override lazy val domainEventContentTypeProvider = FullContentTypeProvider[almhirt.common.DomainEvent](domainEventAlmMediaTypesProvider, implicitly[AlmCharacterEncoding])
+  override lazy val aggregateRootEventContentTypeProvider = FullContentTypeProvider[almhirt.common.AggregateRootEvent](aggregateRootEventAlmMediaTypesProvider, implicitly[AlmCharacterEncoding])
   override lazy val commandContentTypeProvider = FullContentTypeProvider[almhirt.common.Command]
   override lazy val problemContentTypeProvider = FullContentTypeProvider[almhirt.common.Problem]
   override lazy val commandResponseContentTypeProvider = FullContentTypeProvider[almhirt.tracking.CommandResponse]
 
   override lazy val eventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Event]]
+  override lazy val systemEventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.SystemEvent]]
+  override lazy val domainEventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.DomainEvent]]
+  override lazy val aggregateRootEventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.AggregateRootEvent]]
   override lazy val commandsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Command]]
   override lazy val problemsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Problem]]
 }
@@ -168,11 +186,17 @@ trait DelegatingCommonContentTypeProvidersFromMediaTypes extends HasCommonConten
   override lazy val finiteDurationsContentTypeProvider = FullContentTypeProvider[Seq[scala.concurrent.duration.FiniteDuration]](hasCommonAlmMediaTypesProviders.finiteDurationsAlmMediaTypesProvider, defaultEncoding)
 
   override lazy val eventContentTypeProvider = FullContentTypeProvider[almhirt.common.Event](hasCommonAlmMediaTypesProviders.eventAlmMediaTypesProvider, defaultEncoding)
+  override lazy val systemEventContentTypeProvider = FullContentTypeProvider[almhirt.common.SystemEvent](hasCommonAlmMediaTypesProviders.systemEventAlmMediaTypesProvider, defaultEncoding)
+  override lazy val domainEventContentTypeProvider = FullContentTypeProvider[almhirt.common.DomainEvent](hasCommonAlmMediaTypesProviders.domainEventAlmMediaTypesProvider, defaultEncoding)
+  override lazy val aggregateRootEventContentTypeProvider = FullContentTypeProvider[almhirt.common.AggregateRootEvent](hasCommonAlmMediaTypesProviders.aggregateRootEventAlmMediaTypesProvider, defaultEncoding)
   override lazy val commandContentTypeProvider = FullContentTypeProvider[almhirt.common.Command](hasCommonAlmMediaTypesProviders.commandAlmMediaTypesProvider, defaultEncoding)
   override lazy val problemContentTypeProvider = FullContentTypeProvider[almhirt.common.Problem](hasCommonAlmMediaTypesProviders.problemAlmMediaTypesProvider, defaultEncoding)
   override lazy val commandResponseContentTypeProvider = FullContentTypeProvider[almhirt.tracking.CommandResponse](hasCommonAlmMediaTypesProviders.commandResponseAlmMediaTypesProvider, defaultEncoding)
 
   override lazy val eventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Event]](hasCommonAlmMediaTypesProviders.eventsAlmMediaTypesProvider, defaultEncoding)
+  override lazy val systemEventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.SystemEvent]](hasCommonAlmMediaTypesProviders.systemEventsAlmMediaTypesProvider, defaultEncoding)
+  override lazy val domainEventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.DomainEvent]](hasCommonAlmMediaTypesProviders.domainEventsAlmMediaTypesProvider, defaultEncoding)
+  override lazy val aggregateRootEventsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.AggregateRootEvent]](hasCommonAlmMediaTypesProviders.aggregateRootEventsAlmMediaTypesProvider, defaultEncoding)
   override lazy val commandsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Command]](hasCommonAlmMediaTypesProviders.commandsAlmMediaTypesProvider, defaultEncoding)
   override lazy val problemsContentTypeProvider = FullContentTypeProvider[Seq[almhirt.common.Problem]](hasCommonAlmMediaTypesProviders.problemsAlmMediaTypesProvider, defaultEncoding)
 }

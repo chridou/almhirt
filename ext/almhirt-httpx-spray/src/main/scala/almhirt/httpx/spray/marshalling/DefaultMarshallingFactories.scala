@@ -35,10 +35,16 @@ object DateTimesMarshalling extends MarshallingFactory[Seq[org.joda.time.DateTim
 object DurationsMarshalling extends MarshallingFactory[Seq[scala.concurrent.duration.FiniteDuration]]
 
 object EventMarshalling extends MarshallingFactory[Event]
+object SystemEventMarshalling extends MarshallingFactory[SystemEvent]
+object DomainEventMarshalling extends MarshallingFactory[DomainEvent]
+object AggregateRootEventMarshalling extends MarshallingFactory[AggregateRootEvent]
 object CommandMarshalling extends MarshallingFactory[Command]
 object ProblemMarshalling extends MarshallingFactory[almhirt.common.Problem]
 object CommandResponseMarshalling extends MarshallingFactory[almhirt.tracking.CommandResponse]
 
 object EventsMarshalling extends MarshallingFactory[Seq[Event]]
+object SystemEventsMarshalling extends MarshallingFactory[Seq[SystemEvent]]
+object DomainEventsMarshalling extends MarshallingFactory[Seq[DomainEvent]]
+object AggregateRootEventsMarshalling extends MarshallingFactory[Seq[AggregateRootEvent]]
 object CommandsMarshalling extends MarshallingFactory[Seq[Command]]
 object ProblemsMarshalling extends MarshallingFactory[Seq[almhirt.common.Problem]]

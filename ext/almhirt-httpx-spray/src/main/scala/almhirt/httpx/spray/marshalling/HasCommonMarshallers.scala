@@ -37,11 +37,17 @@ trait HasCommonMarshallers extends HasProblemMarshaller {
   implicit def finiteDurationsMarshaller: Marshaller[Seq[scala.concurrent.duration.FiniteDuration]]
 
   implicit def eventMarshaller: Marshaller[almhirt.common.Event]
+  def systemEventMarshaller: Marshaller[almhirt.common.SystemEvent]
+  def domainEventMarshaller: Marshaller[almhirt.common.DomainEvent]
+  def aggregateRootEventMarshaller: Marshaller[almhirt.common.AggregateRootEvent]
   implicit def commandMarshaller: Marshaller[almhirt.common.Command]
   implicit def problemMarshaller: Marshaller[almhirt.common.Problem]
   implicit def commandResponseMarshaller: Marshaller[almhirt.tracking.CommandResponse]
 
   implicit def eventsMarshaller: Marshaller[Seq[almhirt.common.Event]]
+  implicit def systemEventsMarshaller: Marshaller[Seq[almhirt.common.SystemEvent]]
+  implicit def domainEventsMarshaller: Marshaller[Seq[almhirt.common.DomainEvent]]
+  implicit def aggregateRootEventsMarshaller: Marshaller[Seq[almhirt.common.AggregateRootEvent]]
   implicit def commandsMarshaller: Marshaller[Seq[almhirt.common.Command]]
   implicit def problemsMarshaller: Marshaller[Seq[almhirt.common.Problem]]
 }
@@ -143,6 +149,15 @@ trait CommonMarshallerInstances { self: HasCommonMarshallers ⇒
   override lazy val eventMarshaller: Marshaller[almhirt.common.Event] =
     ContentTypeBoundMarshallerFactory[almhirt.common.Event](commonContentTypeProviders.eventContentTypeProvider, DefaultMarshallingInstances.EventMarshallingInst).marshaller(commonHttpSerializers.eventHttpSerializer)
 
+  override lazy val systemEventMarshaller: Marshaller[almhirt.common.SystemEvent] =
+    ContentTypeBoundMarshallerFactory[almhirt.common.SystemEvent](commonContentTypeProviders.systemEventContentTypeProvider, DefaultMarshallingInstances.SystemEventMarshallingInst).marshaller(commonHttpSerializers.systemEventHttpSerializer)
+
+  override lazy val domainEventMarshaller: Marshaller[almhirt.common.DomainEvent] =
+    ContentTypeBoundMarshallerFactory[almhirt.common.DomainEvent](commonContentTypeProviders.domainEventContentTypeProvider, DefaultMarshallingInstances.DomainEventMarshallingInst ).marshaller(commonHttpSerializers.domainEventHttpSerializer)
+
+  override lazy val aggregateRootEventMarshaller: Marshaller[almhirt.common.AggregateRootEvent] =
+    ContentTypeBoundMarshallerFactory[almhirt.common.AggregateRootEvent](commonContentTypeProviders.aggregateRootEventContentTypeProvider, DefaultMarshallingInstances.AggregateRootEventMarshallingInst).marshaller(commonHttpSerializers.aggregateRootEventHttpSerializer)
+
   override lazy val commandMarshaller: Marshaller[almhirt.common.Command] =
     ContentTypeBoundMarshallerFactory[almhirt.common.Command](commonContentTypeProviders.commandContentTypeProvider, DefaultMarshallingInstances.CommandMarshallingInst).marshaller(commonHttpSerializers.commandHttpSerializer)
 
@@ -154,6 +169,15 @@ trait CommonMarshallerInstances { self: HasCommonMarshallers ⇒
 
   override lazy val eventsMarshaller: Marshaller[Seq[almhirt.common.Event]] =
     ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Event]](commonContentTypeProviders.eventsContentTypeProvider, DefaultMarshallingInstances.EventsMarshallingInst).marshaller(commonHttpSerializers.eventsHttpSerializer)
+
+  override lazy val systemEventsMarshaller: Marshaller[Seq[almhirt.common.SystemEvent]] =
+    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.SystemEvent]](commonContentTypeProviders.systemEventsContentTypeProvider, DefaultMarshallingInstances.SystemEventsMarshallingInst ).marshaller(commonHttpSerializers.systemEventsHttpSerializer)
+
+  override lazy val domainEventsMarshaller: Marshaller[Seq[almhirt.common.DomainEvent]] =
+    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.DomainEvent]](commonContentTypeProviders.domainEventsContentTypeProvider, DefaultMarshallingInstances.DomainEventsMarshallingInst ).marshaller(commonHttpSerializers.domainEventsHttpSerializer)
+
+  override lazy val aggregateRootEventsMarshaller: Marshaller[Seq[almhirt.common.AggregateRootEvent]] =
+    ContentTypeBoundMarshallerFactory[Seq[almhirt.common.AggregateRootEvent]](commonContentTypeProviders.aggregateRootEventsContentTypeProvider, DefaultMarshallingInstances.AggregateRootEventsMarshallingInst ).marshaller(commonHttpSerializers.aggregateRootEventsHttpSerializer)
 
   override lazy val commandsMarshaller: Marshaller[Seq[almhirt.common.Command]] =
     ContentTypeBoundMarshallerFactory[Seq[almhirt.common.Command]](commonContentTypeProviders.commandsContentTypeProvider, DefaultMarshallingInstances.CommandsMarshallingInst).marshaller(commonHttpSerializers.commandsHttpSerializer)

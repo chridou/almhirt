@@ -34,11 +34,17 @@ object DefaultMarshallingInstances {
   implicit val DurationsMarshallingInst = DurationsMarshalling
 
   implicit val EventMarshallingInst = EventMarshalling
+  implicit val SystemEventMarshallingInst = SystemEventMarshalling
+  implicit val DomainEventMarshallingInst = DomainEventMarshalling
+  implicit val AggregateRootEventMarshallingInst = AggregateRootEventMarshalling
   implicit val CommandMarshallingInst = CommandMarshalling
   implicit val ProblemMarshallingInst = ProblemMarshalling
   implicit val CommandResponseMarshallingInst = CommandResponseMarshalling
-  
+
   implicit val EventsMarshallingInst = EventsMarshalling
+  implicit val SystemEventsMarshallingInst = SystemEventsMarshalling
+  implicit val DomainEventsMarshallingInst = DomainEventsMarshalling
+  implicit val AggregateRootEventsMarshallingInst = AggregateRootEventsMarshalling
   implicit val CommandsMarshallingInst = CommandsMarshalling
   implicit val ProblemsMarshallingInst = ProblemsMarshalling
 }
