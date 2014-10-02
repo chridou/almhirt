@@ -2,6 +2,7 @@ package almhirt.corex.spray.service
 
 import scala.language.postfixOps
 import scalaz._, Scalaz._
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import akka.pattern._
 import almhirt.common._
@@ -9,6 +10,7 @@ import almhirt.almfuture.all._
 import almhirt.tracking._
 import almhirt.httpx.spray.marshalling._
 import almhirt.httpx.spray.service.AlmHttpEndpoint
+import almhirt.context.AlmhirtContext
 import almhirt.akkax._
 import spray.routing._
 import spray.http._
@@ -17,13 +19,27 @@ import spray.httpx.unmarshalling.Unmarshaller
 import spray.httpx.marshalling.Marshaller
 
 object HttpCommandEndpoint {
-  protected trait HttpCommandEndpointParams {
-    def commandEndpoint: ActorRef
-    def maxSyncDuration: scala.concurrent.duration.FiniteDuration
-    def exectionContextSelector: ExtendedExecutionContextSelector
-    implicit def commandUnmarshaller: Unmarshaller[Command]
-    implicit def commandResponseMarshaller: Marshaller[CommandResponse]
+  case class HttpCommandEndpointParams (
+    commandEndpoint: ActorRef,
+    maxSyncDuration: scala.concurrent.duration.FiniteDuration,
+    exectionContextSelector: ExtendedExecutionContextSelector,
+    commandUnmarshaller: Unmarshaller[Command],
+    commandResponseMarshaller: Marshaller[CommandResponse])
+  
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Unmarshaller[Command], Marshaller[CommandResponse]) => HttpCommandEndpointParams] = {
+    import com.typesafe.config.Config
+    import almhirt.configuration._
+    import scala.concurrent.duration.FiniteDuration
+    for {
+      section <- ctx.config.v[Config]("almhirt.http.endpoints.command-endpoint")
+      maxSyncDuration <- section.v[FiniteDuration]("max-sync-duration")
+      selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
+    } yield {
+      (commandEndpoint: ActorRef, commandUnmarshaller: Unmarshaller[Command], commandResponseMarshaller: Marshaller[CommandResponse]) =>
+        HttpCommandEndpointParams(commandEndpoint, maxSyncDuration, selector, commandUnmarshaller, commandResponseMarshaller)
+    }
   }
+  
 }
 
 trait HttpCommandEndpoint extends Directives {

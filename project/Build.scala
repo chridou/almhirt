@@ -185,6 +185,7 @@ trait CorexSprayServiceBuild {
 	  resolvers += sprayRepo,
 	  libraryDependencies += scalaz,
 	  libraryDependencies += akka_actor,
+	  libraryDependencies += akka_streams,
 	  libraryDependencies += play2_iteratees,
 	  libraryDependencies += spray_routing,
 	  libraryDependencies += spray_testkit,

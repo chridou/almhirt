@@ -8,6 +8,7 @@ import akka.pattern._
 import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
+import almhirt.context.AlmhirtContext
 import almhirt.httpx.spray.marshalling._
 import almhirt.httpx.spray.service.AlmHttpEndpoint
 import almhirt.akkax._
@@ -18,12 +19,25 @@ import spray.httpx.marshalling.Marshaller
 import play.api.libs.iteratee._
 
 object HttpEventLogQueryEndpoint {
-  protected trait HttpEventLogQueryEndpointParams {
-    def eventLog: ActorRef
-    def maxQueryDuration: scala.concurrent.duration.FiniteDuration
-    def exectionContextSelector: ExtendedExecutionContextSelector
-    implicit def eventMarshaller: Marshaller[Event]
-    implicit def eventsMarshaller: Marshaller[Seq[Event]]
+  final case class HttpEventLogQueryEndpointParams(
+    eventLog: ActorRef,
+    maxQueryDuration: scala.concurrent.duration.FiniteDuration,
+    exectionContextSelector: ExtendedExecutionContextSelector,
+    eventMarshaller: Marshaller[Event],
+    eventsMarshaller: Marshaller[Seq[Event]])
+
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[Event], Marshaller[Seq[Event]]) => HttpEventLogQueryEndpointParams] = {
+    import com.typesafe.config.Config
+    import almhirt.configuration._
+    import scala.concurrent.duration.FiniteDuration
+    for {
+      section <- ctx.config.v[Config]("almhirt.http.endpoints.event-log-endpoint")
+      maxQueryDuration <- section.v[FiniteDuration]("max-query-duration")
+      selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
+    } yield {
+      (eventLog: ActorRef, eventMarshaller: Marshaller[Event], eventsMarshaller: Marshaller[Seq[Event]]) =>
+        HttpEventLogQueryEndpointParams(eventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller)
+    }
   }
 }
 
