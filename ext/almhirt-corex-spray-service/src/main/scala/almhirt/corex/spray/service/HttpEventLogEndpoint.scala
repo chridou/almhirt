@@ -25,9 +25,10 @@ object HttpEventLogEndpoint {
     maxQueryDuration: scala.concurrent.duration.FiniteDuration,
     exectionContextSelector: ExtendedExecutionContextSelector,
     eventMarshaller: Marshaller[Event],
-    eventsMarshaller: Marshaller[Seq[Event]])
+    eventsMarshaller: Marshaller[Seq[Event]],
+    problemMarshaller: Marshaller[Problem])
 
-  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[Event], Marshaller[Seq[Event]]) => HttpEventLogEndpointParams] = {
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[Event], Marshaller[Seq[Event]], Marshaller[Problem]) => HttpEventLogEndpointParams] = {
     import com.typesafe.config.Config
     import almhirt.configuration._
     import scala.concurrent.duration.FiniteDuration
@@ -36,13 +37,13 @@ object HttpEventLogEndpoint {
       maxQueryDuration <- section.v[FiniteDuration]("max-query-duration")
       selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
     } yield {
-      (eventLog: ActorRef, eventMarshaller: Marshaller[Event], eventsMarshaller: Marshaller[Seq[Event]]) =>
-        HttpEventLogEndpointParams(eventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller)
+      (eventLog: ActorRef, eventMarshaller: Marshaller[Event], eventsMarshaller: Marshaller[Seq[Event]], problemMarshaller: Marshaller[Problem]) =>
+        HttpEventLogEndpointParams(eventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller, problemMarshaller)
     }
   }
 }
 
-trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasAlmhirtContext =>
+trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext =>
   import almhirt.eventlog.EventLog
 
   def httpEventLogEndpointParams: HttpEventLogEndpoint.HttpEventLogEndpointParams
@@ -50,6 +51,7 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
   implicit private lazy val execCtx = httpEventLogEndpointParams.exectionContextSelector.select(me.almhirtContext, me.context)
   implicit private val eventMarshaller = httpEventLogEndpointParams.eventMarshaller
   implicit private val eventsMarshaller = httpEventLogEndpointParams.eventsMarshaller
+  implicit private val problemMarshaller = httpEventLogEndpointParams.problemMarshaller 
 
   val eventlogQueryTerminator = pathPrefix("event-log") {
     path(Segment) { id =>

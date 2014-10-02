@@ -26,9 +26,10 @@ object HttpAggregateRootEventLogQueryEndpoint {
     maxQueryDuration: scala.concurrent.duration.FiniteDuration,
     exectionContextSelector: ExtendedExecutionContextSelector,
     eventMarshaller: Marshaller[AggregateRootEvent],
-    eventsMarshaller: Marshaller[Seq[AggregateRootEvent]])
+    eventsMarshaller: Marshaller[Seq[AggregateRootEvent]],
+    problemMarshaller: Marshaller[Problem])
 
-  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[AggregateRootEvent], Marshaller[Seq[AggregateRootEvent]]) => HttpAggregateRootEventLogQueryEndpointParams] = {
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[AggregateRootEvent], Marshaller[Seq[AggregateRootEvent]], Marshaller[Problem]) => HttpAggregateRootEventLogQueryEndpointParams] = {
     import com.typesafe.config.Config
     import almhirt.configuration._
     import scala.concurrent.duration.FiniteDuration
@@ -37,13 +38,13 @@ object HttpAggregateRootEventLogQueryEndpoint {
       maxQueryDuration <- section.v[FiniteDuration]("max-query-duration")
       selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
     } yield {
-      (aggragateRootEeventLog: ActorRef, eventMarshaller: Marshaller[AggregateRootEvent], eventsMarshaller: Marshaller[Seq[AggregateRootEvent]]) =>
-        HttpAggregateRootEventLogQueryEndpointParams(aggragateRootEeventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller)
+      (aggragateRootEeventLog: ActorRef, eventMarshaller: Marshaller[AggregateRootEvent], eventsMarshaller: Marshaller[Seq[AggregateRootEvent]], problemMarshaller: Marshaller[Problem]) =>
+        HttpAggregateRootEventLogQueryEndpointParams(aggragateRootEeventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller, problemMarshaller)
     }
   }
 }
 
-trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasAlmhirtContext =>
+trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext =>
   import almhirt.eventlog.AggregateRootEventLog
 
   def httpAggregateRootEventLogQueryEndpointParams: HttpAggregateRootEventLogQueryEndpoint.HttpAggregateRootEventLogQueryEndpointParams
@@ -51,6 +52,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
   implicit private lazy val execCtx = httpAggregateRootEventLogQueryEndpointParams.exectionContextSelector.select(me.almhirtContext, me.context)
   implicit private val eventMarshaller = httpAggregateRootEventLogQueryEndpointParams.eventMarshaller
   implicit private val eventsMarshaller = httpAggregateRootEventLogQueryEndpointParams.eventsMarshaller
+  implicit private val problemMarshaller = httpAggregateRootEventLogQueryEndpointParams.problemMarshaller 
 
   val aggregateRootEventLogQueryTerminator = pathPrefix("aggregate-root-event-log") {
     get {
