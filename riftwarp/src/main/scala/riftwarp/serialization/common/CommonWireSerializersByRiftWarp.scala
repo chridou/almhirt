@@ -3,7 +3,7 @@ package riftwarp.serialization.common
 import almhirt.http.HasCommonHttpSerializers
 import riftwarp.HasRiftWarp
 import riftwarp.util.WarpHttpSerializer
-import almhirt.common.Event
+import almhirt.common.{ Event, SystemEvent, DomainEvent, AggregateRootEvent }
 import almhirt.common.Command
 
 trait CommonHttpSerializersByRiftWarp extends HasCommonHttpSerializers { self: HasRiftWarp ⇒
@@ -41,11 +41,17 @@ trait CommonHttpSerializersByRiftWarp extends HasCommonHttpSerializers { self: H
   override lazy val finiteDurationsHttpSerializer = WarpHttpSerializer.collectionDirect[scala.concurrent.duration.FiniteDuration](myRiftWarp)
 
   override lazy val eventHttpSerializer = WarpHttpSerializer.event(myRiftWarp)
+  override lazy val systemEventHttpSerializer = WarpHttpSerializer[SystemEvent](myRiftWarp)
+  override lazy val domainEventHttpSerializer = WarpHttpSerializer[DomainEvent](myRiftWarp)
+  override lazy val aggregateRootEventHttpSerializer = WarpHttpSerializer[AggregateRootEvent](myRiftWarp)
   override lazy val commandHttpSerializer = WarpHttpSerializer.command(myRiftWarp)
   override lazy val problemHttpSerializer = WarpHttpSerializer.problem(myRiftWarp)
   override lazy val commandResponseHttpSerializer = WarpHttpSerializer.commandResponse(myRiftWarp)
 
   override lazy val eventsHttpSerializer = WarpHttpSerializer.collection[Event](myRiftWarp)
+  override lazy val systemEventsHttpSerializer = WarpHttpSerializer.collection[SystemEvent](myRiftWarp)
+  override lazy val domainEventsHttpSerializer = WarpHttpSerializer.collection[DomainEvent](myRiftWarp)
+  override lazy val aggregateRootEventsHttpSerializer = WarpHttpSerializer.collection[AggregateRootEvent](myRiftWarp)
   override lazy val commandsHttpSerializer = WarpHttpSerializer.collection[Command](myRiftWarp)
   override lazy val problemsHttpSerializer = WarpHttpSerializer.collection[almhirt.common.Problem](myRiftWarp)
 }
