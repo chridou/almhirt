@@ -22,6 +22,7 @@ object AggregateRootEventLog {
   final case class GetAggregateRootEventsUntil(aggId: AggregateRootId, untilVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
   final case class GetAggregateRootEventsFromTo(aggId: AggregateRootId, fromVersion: AggregateRootVersion, toVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
   final case class GetAggregateRootEventsFromUntil(aggId: AggregateRootId, fromVersion: AggregateRootVersion, untilVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
+  
   sealed trait GetManyAggregateRootEventsResponse extends AggregateRootEventLogResponse
   final case class FetchedAggregateRootEvents(enumerator: Enumerator[AggregateRootEvent]) extends GetManyAggregateRootEventsResponse
   final case class GetAggregateRootEventsFailed(problem: Problem) extends GetManyAggregateRootEventsResponse

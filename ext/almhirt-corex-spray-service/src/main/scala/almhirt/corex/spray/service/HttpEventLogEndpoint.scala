@@ -18,15 +18,15 @@ import spray.routing.directives._
 import spray.httpx.marshalling.Marshaller
 import play.api.libs.iteratee._
 
-object HttpEventLogQueryEndpoint {
-  final case class HttpEventLogQueryEndpointParams(
+object HttpEventLogEndpoint {
+  final case class HttpEventLogEndpointParams(
     eventLog: ActorRef,
     maxQueryDuration: scala.concurrent.duration.FiniteDuration,
     exectionContextSelector: ExtendedExecutionContextSelector,
     eventMarshaller: Marshaller[Event],
     eventsMarshaller: Marshaller[Seq[Event]])
 
-  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[Event], Marshaller[Seq[Event]]) => HttpEventLogQueryEndpointParams] = {
+  def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Marshaller[Event], Marshaller[Seq[Event]]) => HttpEventLogEndpointParams] = {
     import com.typesafe.config.Config
     import almhirt.configuration._
     import scala.concurrent.duration.FiniteDuration
@@ -36,33 +36,35 @@ object HttpEventLogQueryEndpoint {
       selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
     } yield {
       (eventLog: ActorRef, eventMarshaller: Marshaller[Event], eventsMarshaller: Marshaller[Seq[Event]]) =>
-        HttpEventLogQueryEndpointParams(eventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller)
+        HttpEventLogEndpointParams(eventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller)
     }
   }
 }
 
-trait HttpEventLogQueryEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasExecutionContexts =>
+trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasExecutionContexts =>
   import almhirt.eventlog.EventLog
 
-  def httpEventLogQueryEndpointParams: HttpEventLogQueryEndpoint.HttpEventLogQueryEndpointParams
+  def httpEventLogEndpointParams: HttpEventLogEndpoint.HttpEventLogEndpointParams
 
-  implicit private lazy val execCtx = httpEventLogQueryEndpointParams.exectionContextSelector.select(me, me.context)
-  implicit private val eventMarshaller = httpEventLogQueryEndpointParams.eventMarshaller
-  implicit private val eventsMarshaller = httpEventLogQueryEndpointParams.eventsMarshaller
+  implicit private lazy val execCtx = httpEventLogEndpointParams.exectionContextSelector.select(me, me.context)
+  implicit private val eventMarshaller = httpEventLogEndpointParams.eventMarshaller
+  implicit private val eventsMarshaller = httpEventLogEndpointParams.eventsMarshaller
 
   val eventlogQueryTerminator = pathPrefix("event-log") {
     path(Segment) { id =>
-      implicit ctx =>
-        val fut = (httpEventLogQueryEndpointParams.eventLog ? EventLog.FindEvent(EventId(id)))(httpEventLogQueryEndpointParams.maxQueryDuration)
-          .mapCastTo[EventLog.FindEventResponse].collectV {
-            case EventLog.FoundEvent(id, Some(event)) =>
-              event.success
-            case EventLog.FoundEvent(id, None) =>
-              NotFoundProblem(s"""No event found with id "${id.value}. It might appear later.""").failure
-            case EventLog.FindEventFailed(id, problem) =>
-              problem.failure
-          }
-        fut.completeRequestOk
+      get {
+        implicit ctx =>
+          val fut = (httpEventLogEndpointParams.eventLog ? EventLog.FindEvent(EventId(id)))(httpEventLogEndpointParams.maxQueryDuration)
+            .mapCastTo[EventLog.FindEventResponse].collectV {
+              case EventLog.FoundEvent(id, Some(event)) =>
+                event.success
+              case EventLog.FoundEvent(id, None) =>
+                NotFoundProblem(s"""No event found with id "${id.value}. It might appear later.""").failure
+              case EventLog.FindEventFailed(id, problem) =>
+                problem.failure
+            }
+          fut.completeRequestOk
+      }
     } ~
       get {
         parameters('from ?, 'to?, 'skip ?, 'take ?) { (from, to, skip, take) =>
@@ -88,7 +90,7 @@ trait HttpEventLogQueryEndpoint extends Directives { me: Actor with AlmHttpEndpo
                     }
                   }
                 }
-                rsp <- (httpEventLogQueryEndpointParams.eventLog ? eventLogMessage)(httpEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[EventLog.FetchEventsResponse]
+                rsp <- (httpEventLogEndpointParams.eventLog ? eventLogMessage)(httpEventLogEndpointParams.maxQueryDuration).mapCastTo[EventLog.FetchEventsResponse]
                 events <- rsp match {
                   case EventLog.FetchedEvents(enumerator) =>
                     enumerator.run(Iteratee.fold[Event, Vector[Event]](Vector.empty) { case (acc, elem) => acc :+ elem }).toAlmFuture

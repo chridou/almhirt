@@ -9,7 +9,7 @@ import almhirt.common._
  */
 final case class AggregateRootId(value: String) extends AnyVal
 
-object ValidatedAggregatedRootId {
+object ValidatedAggregateRootId {
   def apply(value: String): AlmValidation[AggregateRootId] =
     CanCreateUuidsAndDateTimes.validateUniqueStringId(value).fold(
       fail ⇒ BadDataProblem(s""""$value" is not a valid aggregate root id.""").failure,
