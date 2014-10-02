@@ -34,7 +34,7 @@ object HttpAggregateRootEventLogQueryEndpoint {
     import almhirt.configuration._
     import scala.concurrent.duration.FiniteDuration
     for {
-      section <- ctx.config.v[Config]("almhirt.http.endpoints.ggregate-root-event-log-endpoint")
+      section <- ctx.config.v[Config]("almhirt.http.endpoints.aggregate-root-event-log-endpoint")
       maxQueryDuration <- section.v[FiniteDuration]("max-query-duration")
       selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
     } yield {
