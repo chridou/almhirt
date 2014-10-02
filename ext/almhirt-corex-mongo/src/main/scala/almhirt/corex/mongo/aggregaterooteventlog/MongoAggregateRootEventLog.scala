@@ -119,6 +119,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         ("_id" -> BSONString(aggregateRootEvent.eventId.value)),
         ("aggid" -> BSONString(aggregateRootEvent.aggId.value)),
         ("version" -> BSONLong(aggregateRootEvent.aggVersion.value)),
+        ("type" -> BSONString(aggregateRootEvent.getClass().getSimpleName())),
         ("event" -> serialized))
     }).leftMap(p ⇒ SerializationProblem(s"""Could not serialize a "${aggregateRootEvent.getClass().getName()}".""", cause = Some(p)))
   }

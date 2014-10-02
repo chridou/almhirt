@@ -111,6 +111,7 @@ private[almhirt] class MongoEventLogImpl(
       BSONDocument(
         ("_id" -> BSONString(event.eventId.value)),
         ("timestamp" -> localDateTimeToBsonDateTime(event.timestamp)),
+        ("type" -> BSONString(event.getClass().getSimpleName())),
         ("event" -> serialized))
     }).leftMap(p ⇒ SerializationProblem(s"""Could not serialize a "${event.getClass().getName()}".""", cause = Some(p)))
   }
