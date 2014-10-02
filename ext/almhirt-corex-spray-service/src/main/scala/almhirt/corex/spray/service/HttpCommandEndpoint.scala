@@ -17,6 +17,7 @@ import spray.http._
 import spray.routing.directives._
 import spray.httpx.unmarshalling.Unmarshaller
 import spray.httpx.marshalling.Marshaller
+import almhirt.context.HasAlmhirtContext
 
 object HttpCommandEndpoint {
   case class HttpCommandEndpointParams (
@@ -43,11 +44,11 @@ object HttpCommandEndpoint {
 }
 
 trait HttpCommandEndpoint extends Directives {
-  me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasExecutionContexts ⇒
+  me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasAlmhirtContext ⇒
 
   def httpCommandEndpointParams: HttpCommandEndpoint.HttpCommandEndpointParams
 
-  implicit private lazy val execCtx = httpCommandEndpointParams.exectionContextSelector.select(me, me.context)
+  implicit private lazy val execCtx = httpCommandEndpointParams.exectionContextSelector.select(me.almhirtContext, me.context)
   implicit private val commandUnmarshaller = httpCommandEndpointParams.commandUnmarshaller
   implicit private val commandResponseMarshaller = httpCommandEndpointParams.commandResponseMarshaller
 

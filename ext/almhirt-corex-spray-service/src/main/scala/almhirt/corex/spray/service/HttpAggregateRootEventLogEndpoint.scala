@@ -12,6 +12,7 @@ import almhirt.context.AlmhirtContext
 import almhirt.httpx.spray.marshalling._
 import almhirt.httpx.spray.service.AlmHttpEndpoint
 import almhirt.aggregates.{ ValidatedAggregateRootId, AggregateRootVersion }
+import almhirt.context.HasAlmhirtContext
 import almhirt.akkax._
 import spray.routing._
 import spray.http._
@@ -42,12 +43,12 @@ object HttpAggregateRootEventLogQueryEndpoint {
   }
 }
 
-trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasExecutionContexts =>
+trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasAlmhirtContext =>
   import almhirt.eventlog.AggregateRootEventLog
 
   def httpAggregateRootEventLogQueryEndpointParams: HttpAggregateRootEventLogQueryEndpoint.HttpAggregateRootEventLogQueryEndpointParams
 
-  implicit private lazy val execCtx = httpAggregateRootEventLogQueryEndpointParams.exectionContextSelector.select(me, me.context)
+  implicit private lazy val execCtx = httpAggregateRootEventLogQueryEndpointParams.exectionContextSelector.select(me.almhirtContext, me.context)
   implicit private val eventMarshaller = httpAggregateRootEventLogQueryEndpointParams.eventMarshaller
   implicit private val eventsMarshaller = httpAggregateRootEventLogQueryEndpointParams.eventsMarshaller
 

@@ -12,6 +12,7 @@ import almhirt.context.AlmhirtContext
 import almhirt.httpx.spray.marshalling._
 import almhirt.httpx.spray.service.AlmHttpEndpoint
 import almhirt.akkax._
+import almhirt.context.HasAlmhirtContext
 import spray.routing._
 import spray.http._
 import spray.routing.directives._
@@ -41,12 +42,12 @@ object HttpEventLogEndpoint {
   }
 }
 
-trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasExecutionContexts =>
+trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasProblemMarshaller with HasAlmhirtContext =>
   import almhirt.eventlog.EventLog
 
   def httpEventLogEndpointParams: HttpEventLogEndpoint.HttpEventLogEndpointParams
 
-  implicit private lazy val execCtx = httpEventLogEndpointParams.exectionContextSelector.select(me, me.context)
+  implicit private lazy val execCtx = httpEventLogEndpointParams.exectionContextSelector.select(me.almhirtContext, me.context)
   implicit private val eventMarshaller = httpEventLogEndpointParams.eventMarshaller
   implicit private val eventsMarshaller = httpEventLogEndpointParams.eventsMarshaller
 
