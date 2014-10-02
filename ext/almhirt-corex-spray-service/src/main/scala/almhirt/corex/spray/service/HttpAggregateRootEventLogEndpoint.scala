@@ -38,8 +38,8 @@ object HttpAggregateRootEventLogQueryEndpoint {
       maxQueryDuration <- section.v[FiniteDuration]("max-query-duration")
       selector <- section.v[ExtendedExecutionContextSelector]("execution-context-selector")
     } yield {
-      (aggragateRootEeventLog: ActorRef, eventMarshaller: Marshaller[AggregateRootEvent], eventsMarshaller: Marshaller[Seq[AggregateRootEvent]], problemMarshaller: Marshaller[Problem]) =>
-        HttpAggregateRootEventLogQueryEndpointParams(aggragateRootEeventLog, maxQueryDuration, selector, eventMarshaller, eventsMarshaller, problemMarshaller)
+      (aggragateRootEeventLog: ActorRef, aggregateRootEventMarshaller: Marshaller[AggregateRootEvent], aggregateRootEventsMarshaller: Marshaller[Seq[AggregateRootEvent]], problemMarshaller: Marshaller[Problem]) =>
+        HttpAggregateRootEventLogQueryEndpointParams(aggragateRootEeventLog, maxQueryDuration, selector, aggregateRootEventMarshaller, aggregateRootEventsMarshaller, problemMarshaller)
     }
   }
 }
