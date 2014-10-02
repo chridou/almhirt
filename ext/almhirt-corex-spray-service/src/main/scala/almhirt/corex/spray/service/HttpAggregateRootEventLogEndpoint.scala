@@ -52,7 +52,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
   implicit private val eventMarshaller = httpAggregateRootEventLogQueryEndpointParams.eventMarshaller
   implicit private val eventsMarshaller = httpAggregateRootEventLogQueryEndpointParams.eventsMarshaller
 
-  val AggregateRootEventLogQueryTerminator = pathPrefix("aggregate-root-event-log") {
+  val aggregateRootEventLogQueryTerminator = pathPrefix("aggregate-root-event-log") {
     get {
       parameters('skip ?, 'take ?) { (skip, take) =>
         implicit ctx =>
