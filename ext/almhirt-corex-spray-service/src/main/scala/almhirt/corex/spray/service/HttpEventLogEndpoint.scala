@@ -54,20 +54,37 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
   implicit private val problemMarshaller = httpEventLogEndpointParams.problemMarshaller
 
   val eventlogQueryTerminator = pathPrefix("event-log") {
-    pathPrefix(Segment) { id =>
+    pathPrefix(Segment) { eventId =>
       pathEnd {
-        get {
-          implicit ctx =>
-            val fut = (httpEventLogEndpointParams.eventLog ? EventLog.FindEvent(EventId(id)))(httpEventLogEndpointParams.maxQueryDuration)
-              .mapCastTo[EventLog.FindEventResponse].collectV {
-                case EventLog.FoundEvent(id, Some(event)) =>
-                  event.success
-                case EventLog.FoundEvent(id, None) =>
-                  NotFoundProblem(s"""No event found with id "${id.value}. It might appear later.""").failure
-                case EventLog.FindEventFailed(id, problem) =>
-                  problem.failure
-              }
-            fut.completeRequestOk
+        parameter('uuid ?) { uuid =>
+          get {
+            implicit ctx =>
+              val fut =
+                for {
+                  validatedEventId <- AlmFuture.completed {
+                    (uuid.map(_.toLowerCase()) match {
+                      case Some("true") =>
+                        almhirt.converters.MiscConverters.uuidStrToBase64Str(eventId)
+                      case Some("false") =>
+                        eventId.success
+                      case Some(x) =>
+                        BadDataProblem(s"""$x" is not allowed for ?uuid. Only "true" or "false".""").failure
+                      case None =>
+                        eventId.success
+                    }).flatMap(ValidatedEventId(_))
+                  }
+                  res <- (httpEventLogEndpointParams.eventLog ? EventLog.FindEvent(validatedEventId))(httpEventLogEndpointParams.maxQueryDuration)
+                    .mapCastTo[EventLog.FindEventResponse].collectV {
+                      case EventLog.FoundEvent(id, Some(event)) =>
+                        event.success
+                      case EventLog.FoundEvent(id, None) =>
+                        NotFoundProblem(s"""No event found with id "${id.value}. It might appear later.""").failure
+                      case EventLog.FindEventFailed(id, problem) =>
+                        problem.failure
+                    }
+                } yield res
+              fut.completeRequestOk
+          }
         }
       }
     } ~
