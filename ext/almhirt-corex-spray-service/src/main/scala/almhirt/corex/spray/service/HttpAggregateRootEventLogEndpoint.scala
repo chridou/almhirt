@@ -68,47 +68,51 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
           fut.completeRequestOk
       }
     } ~
-      path(Segment) { id =>
-        get {
-          implicit ctx =>
-            val fut = (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? AggregateRootEventLog.GetAggregateRootEvent(EventId(id)))(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration)
-              .mapCastTo[AggregateRootEventLog.GetAggregateRootEventResponse].collectV {
-                case AggregateRootEventLog.FetchedAggregateRootEvent(id, Some(event)) =>
-                  event.success
-                case AggregateRootEventLog.FetchedAggregateRootEvent(id, None) =>
-                  NotFoundProblem(s"""No aggregate root event found with id "${id.value}. It might appear later.""").failure
-                case AggregateRootEventLog.GetAggregateRootEventFailed(id, problem) =>
-                  problem.failure
-              }
-            fut.completeRequestOk
-        }
-      } ~ path("aggregate" / Segment) { unvalidatedId =>
-        get {
-          parameters('fromversion ?, 'toversion?, 'skip ?, 'take ?) { (fromVersion, toVersion, skip, take) =>
+      pathPrefix(Segment) { id =>
+        pathEnd {
+          get {
             implicit ctx =>
-              import AggregateRootEventLog._
-              val fut =
-                for {
-                  (eventLogMessage) <- AlmFuture.completed {
-                    for {
-                      fromVersion <- fromVersion.map(_.toLongAlm.map(x => FromVersion(AggregateRootVersion(x)))) getOrElse FromStart.success
-                      toVersion <- toVersion.map(_.toLongAlm.map(x => ToVersion(AggregateRootVersion(x)))) getOrElse ToEnd.success
-                      id <- ValidatedAggregateRootId(unvalidatedId)
-                      skip <- skip.map(_.toIntAlm.map(TraverseWindow.Skip(_))) getOrElse TraverseWindow.SkipNone.success
-                      take <- take.map(_.toIntAlm.map(TraverseWindow.Take(_))) getOrElse TraverseWindow.TakeAll.success
-                    } yield {
-                      AggregateRootEventLog.GetAggregateRootEventsFor(id, fromVersion, toVersion, TraverseWindow(skip, take))
-                    }
-                  }
-                  rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]
-                  events <- rsp match {
-                    case AggregateRootEventLog.FetchedAggregateRootEvents(enumerator) =>
-                      enumerator.run(Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, elem) => acc :+ elem }).toAlmFuture
-                    case AggregateRootEventLog.GetAggregateRootEventsFailed(problem) =>
-                      AlmFuture.failed(problem)
-                  }
-                } yield events
+              val fut = (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? AggregateRootEventLog.GetAggregateRootEvent(EventId(id)))(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration)
+                .mapCastTo[AggregateRootEventLog.GetAggregateRootEventResponse].collectV {
+                  case AggregateRootEventLog.FetchedAggregateRootEvent(id, Some(event)) =>
+                    event.success
+                  case AggregateRootEventLog.FetchedAggregateRootEvent(id, None) =>
+                    NotFoundProblem(s"""No aggregate root event found with id "${id.value}. It might appear later.""").failure
+                  case AggregateRootEventLog.GetAggregateRootEventFailed(id, problem) =>
+                    problem.failure
+                }
               fut.completeRequestOk
+          }
+        }
+      } ~ pathPrefix("aggregate" / Segment) { unvalidatedId =>
+        pathEnd {
+          get {
+            parameters('fromversion ?, 'toversion?, 'skip ?, 'take ?) { (fromVersion, toVersion, skip, take) =>
+              implicit ctx =>
+                import AggregateRootEventLog._
+                val fut =
+                  for {
+                    (eventLogMessage) <- AlmFuture.completed {
+                      for {
+                        fromVersion <- fromVersion.map(_.toLongAlm.map(x => FromVersion(AggregateRootVersion(x)))) getOrElse FromStart.success
+                        toVersion <- toVersion.map(_.toLongAlm.map(x => ToVersion(AggregateRootVersion(x)))) getOrElse ToEnd.success
+                        id <- ValidatedAggregateRootId(unvalidatedId)
+                        skip <- skip.map(_.toIntAlm.map(TraverseWindow.Skip(_))) getOrElse TraverseWindow.SkipNone.success
+                        take <- take.map(_.toIntAlm.map(TraverseWindow.Take(_))) getOrElse TraverseWindow.TakeAll.success
+                      } yield {
+                        AggregateRootEventLog.GetAggregateRootEventsFor(id, fromVersion, toVersion, TraverseWindow(skip, take))
+                      }
+                    }
+                    rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]
+                    events <- rsp match {
+                      case AggregateRootEventLog.FetchedAggregateRootEvents(enumerator) =>
+                        enumerator.run(Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, elem) => acc :+ elem }).toAlmFuture
+                      case AggregateRootEventLog.GetAggregateRootEventsFailed(problem) =>
+                        AlmFuture.failed(problem)
+                    }
+                  } yield events
+                fut.completeRequestOk
+            }
           }
         }
       }

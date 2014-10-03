@@ -54,19 +54,21 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
   implicit private val problemMarshaller = httpEventLogEndpointParams.problemMarshaller
 
   val eventlogQueryTerminator = pathPrefix("event-log") {
-    path(Segment) { id =>
-      get {
-        implicit ctx =>
-          val fut = (httpEventLogEndpointParams.eventLog ? EventLog.FindEvent(EventId(id)))(httpEventLogEndpointParams.maxQueryDuration)
-            .mapCastTo[EventLog.FindEventResponse].collectV {
-              case EventLog.FoundEvent(id, Some(event)) =>
-                event.success
-              case EventLog.FoundEvent(id, None) =>
-                NotFoundProblem(s"""No event found with id "${id.value}. It might appear later.""").failure
-              case EventLog.FindEventFailed(id, problem) =>
-                problem.failure
-            }
-          fut.completeRequestOk
+    pathPrefix(Segment) { id =>
+      pathEnd {
+        get {
+          implicit ctx =>
+            val fut = (httpEventLogEndpointParams.eventLog ? EventLog.FindEvent(EventId(id)))(httpEventLogEndpointParams.maxQueryDuration)
+              .mapCastTo[EventLog.FindEventResponse].collectV {
+                case EventLog.FoundEvent(id, Some(event)) =>
+                  event.success
+                case EventLog.FoundEvent(id, None) =>
+                  NotFoundProblem(s"""No event found with id "${id.value}. It might appear later.""").failure
+                case EventLog.FindEventFailed(id, problem) =>
+                  problem.failure
+              }
+            fut.completeRequestOk
+        }
       }
     } ~
       get {
