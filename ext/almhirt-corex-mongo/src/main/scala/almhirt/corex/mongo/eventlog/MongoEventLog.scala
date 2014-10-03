@@ -6,6 +6,7 @@ import scalaz._, Scalaz._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
+import almhirt.common.LocalDateTimeRange._
 import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
 import almhirt.converters.BinaryConverter
@@ -267,31 +268,31 @@ private[almhirt] class MongoEventLogImpl(
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
 
-    case FetchAllEvents(skip, take) ⇒
-      val query = BSONDocument()
+   case FetchEventsParts(BeginningOfTime, EndOfTime, skip, length) =>
+       val query = BSONDocument()
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsFrom(from, skip, take) ⇒
-      val query = BSONDocument(
+    case FetchEventsParts(From(from), EndOfTime, skip, length) =>
+       val query = BSONDocument(
         "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsAfter(after, skip, take) ⇒
+    case FetchEventsParts(After(after), EndOfTime, skip, length) =>
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$gt" -> localDateTimeToBsonDateTime(after)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsTo(to, skip, take) ⇒
+    case FetchEventsParts(BeginningOfTime, To(to), skip, length) =>
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$lte" -> localDateTimeToBsonDateTime(to)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsUntil(until, skip, take) ⇒
+    case FetchEventsParts(BeginningOfTime, Until(until), skip, length) =>
       val query = BSONDocument(
         "timestamp" -> BSONDocument("$lt" -> localDateTimeToBsonDateTime(until)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsFromTo(from, to, skip, take) ⇒
+    case FetchEventsParts(From(from), To(to), skip, length) =>
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -300,7 +301,7 @@ private[almhirt] class MongoEventLogImpl(
             "$lte" -> localDateTimeToBsonDateTime(to))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsFromUntil(from, until, skip, take) ⇒
+    case FetchEventsParts(From(from), Until(until), skip, length) =>
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -309,7 +310,7 @@ private[almhirt] class MongoEventLogImpl(
             "$lt" -> localDateTimeToBsonDateTime(until))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsAfterTo(after, to, skip, take) ⇒
+    case FetchEventsParts(After(after), To(to), skip, length) =>
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(
@@ -318,7 +319,7 @@ private[almhirt] class MongoEventLogImpl(
             "$lte" -> localDateTimeToBsonDateTime(to))))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
-    case FetchEventsAfterUntil(after, until, skip, take) ⇒
+    case FetchEventsParts(After(after), Until(until), skip, length) =>
       val query = BSONDocument(
         "$and" -> BSONDocument(
           "timestamp" -> BSONDocument(

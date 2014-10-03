@@ -1,5 +1,6 @@
 package almhirt.domain
 
+import scala.language.postfixOps
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext
 import scalaz.Validation.FlatMap._
@@ -145,7 +146,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
             snapshotStorage match {
               case None ⇒
                 context.become(receiveRebuildFromScratch(firstCommand))
-                aggregateEventLog ! GetAllAggregateRootEventsFor(firstCommand.aggId)
+                aggregateEventLog ! GetAggregateRootEventsFor(firstCommand.aggId, FromStart, ToEnd, skip.none takeAll)
               case Some(snaphots) ⇒
                 ???
             }
@@ -177,7 +178,7 @@ trait AggregateRootDrone[T <: AggregateRoot, E <: AggregateRootEvent] extends St
       snapshotStorage match {
         case None ⇒
           context.become(receiveRebuildFromScratch(currentCommand))
-          aggregateEventLog ! GetAllAggregateRootEventsFor(currentCommand.aggId)
+          aggregateEventLog ! GetAggregateRootEventsFor(currentCommand.aggId, FromStart, ToEnd, skip.none takeAll)
         case Some(snaphots) ⇒
           ???
       }

@@ -235,21 +235,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       m match {
         case CommitAggregateRootEvent(event) ⇒
           sender ! AggregateRootEventNotCommitted(event.eventId, problem)
-        case GetAllAggregateRootEvents ⇒
+        case m: GetAllAggregateRootEvents ⇒
           sender ! GetAggregateRootEventsFailed(problem)
         case GetAggregateRootEvent(eventId) ⇒
           sender ! GetAggregateRootEventFailed(eventId, problem)
-        case GetAllAggregateRootEventsFor(aggId) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsFrom(aggId, fromVersion) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsTo(aggId, toVersion) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsUntil(aggId, untilVersion) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsFromTo(aggId, fromVersion, toVersion) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsFromUntil(aggId, fromVersion, untilVersion) ⇒
+        case m: GetAggregateRootEventsFor ⇒
           sender ! GetAggregateRootEventsFailed(problem)
       }
   }
@@ -289,21 +279,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       m match {
         case CommitAggregateRootEvent(event) ⇒
           sender ! AggregateRootEventNotCommitted(event.eventId, problem)
-        case GetAllAggregateRootEvents ⇒
+        case m: GetAllAggregateRootEvents ⇒
           sender ! GetAggregateRootEventsFailed(problem)
         case GetAggregateRootEvent(eventId) ⇒
           sender ! GetAggregateRootEventFailed(eventId, problem)
-        case GetAllAggregateRootEventsFor(aggId) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsFrom(aggId, fromVersion) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsTo(aggId, toVersion) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsUntil(aggId, untilVersion) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsFromTo(aggId, fromVersion, toVersion) ⇒
-          sender ! GetAggregateRootEventsFailed(problem)
-        case GetAggregateRootEventsFromUntil(aggId, fromVersion, untilVersion) ⇒
+        case m: GetAggregateRootEventsFor ⇒
           sender ! GetAggregateRootEventsFailed(problem)
       }
   }
@@ -314,7 +294,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         sender() ! AggregateRootEventNotCommitted(event.eventId, IllegalOperationProblem("Read only mode is enabled."))
       commitEvent(event, sender())
 
-    case GetAllAggregateRootEvents ⇒
+    case GetAllAggregateRootEvents(traverse) ⇒
       fetchAndDispatchAggregateRootEvents(BSONDocument(), noSorting, sender)
 
     case GetAggregateRootEvent(eventId) ⇒
@@ -336,42 +316,28 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
           GetAggregateRootEventFailed(eventId, problem)
         })(sender())
 
-    case GetAllAggregateRootEventsFor(aggId) ⇒
+    case GetAggregateRootEventsFor(aggId, FromStart, ToEnd, traverse) ⇒
       val query = BSONDocument("aggid" -> BSONString(aggId.value))
       fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
 
-    case GetAggregateRootEventsFrom(aggId, fromVersion) ⇒
+    case GetAggregateRootEventsFor(aggId, FromVersion(fromVersion), ToEnd, traverse) ⇒
       val query = BSONDocument(
         "aggid" -> BSONString(aggId.value),
         "version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value)))
       fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
 
-    case GetAggregateRootEventsTo(aggId, toVersion) ⇒
+    case GetAggregateRootEventsFor(aggId, FromStart, ToVersion(toVersion), traverse) ⇒
       val query = BSONDocument(
         "aggid" -> BSONString(aggId.value),
         "version" -> BSONDocument("$lte" -> BSONLong(toVersion.value)))
       fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
 
-    case GetAggregateRootEventsUntil(aggId, untilVersion) ⇒
-      val query = BSONDocument(
-        "aggid" -> BSONString(aggId.value),
-        "version" -> BSONDocument("$lt" -> BSONLong(untilVersion.value)))
-      fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
-
-    case GetAggregateRootEventsFromTo(aggId, fromVersion, toVersion) ⇒
+    case GetAggregateRootEventsFor(aggId, FromVersion(fromVersion), ToVersion(toVersion), traverse) ⇒
       val query = BSONDocument(
         "aggid" -> BSONString(aggId.value),
         "$and" -> BSONArray(
           BSONDocument("version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))),
           BSONDocument("version" -> BSONDocument("$lte" -> BSONLong(toVersion.value)))))
-      fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
-
-    case GetAggregateRootEventsFromUntil(aggId, fromVersion, untilVersion) ⇒
-      val query = BSONDocument(
-        "aggid" -> BSONString(aggId.value),
-        "$and" -> BSONArray(
-          BSONDocument("version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))),
-          BSONDocument("version" -> BSONDocument("$lt" -> BSONLong(untilVersion.value)))))
       fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
   }
 

@@ -5,24 +5,40 @@ import akka.actor._
 import play.api.libs.iteratee.Enumerator
 import almhirt.aggregates.AggregateRootId
 import almhirt.aggregates.AggregateRootVersion
+import almhirt.aggregates.AggregateRootVersion
+import almhirt.aggregates.AggregateRootVersion
 
 object AggregateRootEventLog {
   trait AggregateRootEventLogMessage
   trait AggregateRootEventLogResponse
+
+  sealed trait VersionRangeStartMarker
+  final case class FromVersion(version: AggregateRootVersion) extends VersionRangeStartMarker
+  final case object FromStart extends VersionRangeStartMarker
+
+  sealed trait VersionRangeEndMarker
+  final case class ToVersion(version: AggregateRootVersion) extends VersionRangeEndMarker
+  final case object ToEnd extends VersionRangeEndMarker
 
   final case class CommitAggregateRootEvent(event: AggregateRootEvent) extends AggregateRootEventLogMessage
   sealed trait CommitAggregateRootEventResponse extends AggregateRootEventLogResponse
   final case class AggregateRootEventCommitted(id: EventId) extends CommitAggregateRootEventResponse
   final case class AggregateRootEventNotCommitted(id: EventId, problem: Problem) extends CommitAggregateRootEventResponse
 
-  case object GetAllAggregateRootEvents extends AggregateRootEventLogMessage
-  final case class GetAllAggregateRootEventsFor(aggId: AggregateRootId) extends AggregateRootEventLogMessage
-  final case class GetAggregateRootEventsFrom(aggId: AggregateRootId, fromVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
-  final case class GetAggregateRootEventsTo(aggId: AggregateRootId, toVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
-  final case class GetAggregateRootEventsUntil(aggId: AggregateRootId, untilVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
-  final case class GetAggregateRootEventsFromTo(aggId: AggregateRootId, fromVersion: AggregateRootVersion, toVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
-  final case class GetAggregateRootEventsFromUntil(aggId: AggregateRootId, fromVersion: AggregateRootVersion, untilVersion: AggregateRootVersion) extends AggregateRootEventLogMessage
-  
+  final case class GetAllAggregateRootEvents(traverse: TraverseWindow) extends AggregateRootEventLogMessage
+  final case class GetAggregateRootEventsFor(aggId: AggregateRootId, start: VersionRangeStartMarker, end: VersionRangeEndMarker, traverse: TraverseWindow) extends AggregateRootEventLogMessage
+  object GetAllAggregateRootEventsFor {
+    def apply(aggId: AggregateRootId, traverse: TraverseWindow): GetAggregateRootEventsFor =
+      GetAggregateRootEventsFor(aggId, FromStart, ToEnd, traverse)
+    def apply(aggId: AggregateRootId): GetAggregateRootEventsFor =
+      GetAggregateRootEventsFor(aggId, FromStart, ToEnd, skip.none.takeAll)
+  }
+  object GetAggregateRootEventsFrom {
+    def apply(aggId: AggregateRootId, from: AggregateRootVersion, traverse: TraverseWindow): GetAggregateRootEventsFor =
+      GetAggregateRootEventsFor(aggId, FromVersion(from), ToEnd, traverse)
+    def apply(aggId: AggregateRootId, from: AggregateRootVersion): GetAggregateRootEventsFor =
+      GetAggregateRootEventsFor(aggId, FromVersion(from), ToEnd, skip.none.takeAll)
+  }
   sealed trait GetManyAggregateRootEventsResponse extends AggregateRootEventLogResponse
   final case class FetchedAggregateRootEvents(enumerator: Enumerator[AggregateRootEvent]) extends GetManyAggregateRootEventsResponse
   final case class GetAggregateRootEventsFailed(problem: Problem) extends GetManyAggregateRootEventsResponse

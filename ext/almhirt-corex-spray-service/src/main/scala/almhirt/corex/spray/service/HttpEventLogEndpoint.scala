@@ -51,7 +51,7 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
   implicit private lazy val execCtx = httpEventLogEndpointParams.exectionContextSelector.select(me.almhirtContext, me.context)
   implicit private val eventMarshaller = httpEventLogEndpointParams.eventMarshaller
   implicit private val eventsMarshaller = httpEventLogEndpointParams.eventsMarshaller
-  implicit private val problemMarshaller = httpEventLogEndpointParams.problemMarshaller 
+  implicit private val problemMarshaller = httpEventLogEndpointParams.problemMarshaller
 
   val eventlogQueryTerminator = pathPrefix("event-log") {
     path(Segment) { id =>
@@ -76,21 +76,12 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
               for {
                 (eventLogMessage) <- AlmFuture.completed {
                   for {
-                    from <- from.map(_.toLocalDateTimeAlm).validationOut
-                    to <- to.map(_.toLocalDateTimeAlm).validationOut
-                    skip <- skip.map(_.toIntAlm).validationOut
-                    take <- take.map(_.toIntAlm).validationOut
+                    from <- from.map(_.toLocalDateTimeAlm.map(x => LocalDateTimeRange.From(x))) getOrElse LocalDateTimeRange.BeginningOfTime.success
+                    to <- to.map(_.toLocalDateTimeAlm.map(x => LocalDateTimeRange.To(x))) getOrElse LocalDateTimeRange.EndOfTime.success
+                    skip <- skip.map(_.toIntAlm.map(TraverseWindow.Skip(_))) getOrElse TraverseWindow.SkipNone.success
+                    take <- take.map(_.toIntAlm.map(TraverseWindow.Take(_))) getOrElse TraverseWindow.TakeAll.success
                   } yield {
-                    val msg: EventLog.EventLogMessage = (from, to) match {
-                      case (Some(from), Some(to)) =>
-                        EventLog.FetchEventsFromTo(from, to, skip, take)
-                      case (Some(from), None) =>
-                        EventLog.FetchEventsFrom(from, skip, take)
-                      case (None, Some(to)) =>
-                        EventLog.FetchEventsTo(to, skip, take)
-                      case (None, None) =>
-                        EventLog.FetchAllEvents(skip, take)
-                    }
+                    EventLog.FetchEvents(LocalDateTimeRange(from, to), TraverseWindow(skip, take))
                   }
                 }
                 rsp <- (httpEventLogEndpointParams.eventLog ? eventLogMessage)(httpEventLogEndpointParams.maxQueryDuration).mapCastTo[EventLog.FetchEventsResponse]

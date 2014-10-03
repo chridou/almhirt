@@ -52,7 +52,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
   implicit private lazy val execCtx = httpAggregateRootEventLogQueryEndpointParams.exectionContextSelector.select(me.almhirtContext, me.context)
   implicit private val eventMarshaller = httpAggregateRootEventLogQueryEndpointParams.eventMarshaller
   implicit private val eventsMarshaller = httpAggregateRootEventLogQueryEndpointParams.eventsMarshaller
-  implicit private val problemMarshaller = httpAggregateRootEventLogQueryEndpointParams.problemMarshaller 
+  implicit private val problemMarshaller = httpAggregateRootEventLogQueryEndpointParams.problemMarshaller
 
   val aggregateRootEventLogQueryTerminator = pathPrefix("aggregate-root-event-log") {
     get {
@@ -86,26 +86,18 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
         get {
           parameters('fromversion ?, 'toversion?, 'skip ?, 'take ?) { (fromVersion, toVersion, skip, take) =>
             implicit ctx =>
+              import AggregateRootEventLog._
               val fut =
                 for {
                   (eventLogMessage) <- AlmFuture.completed {
                     for {
-                      fromVersion <- fromVersion.map(_.toLongAlm.map(AggregateRootVersion(_))).validationOut
-                      toVersion <- toVersion.map(_.toLongAlm.map(AggregateRootVersion(_))).validationOut
+                      fromVersion <- fromVersion.map(_.toLongAlm.map(x => FromVersion(AggregateRootVersion(x)))) getOrElse FromStart.success
+                      toVersion <- toVersion.map(_.toLongAlm.map(x => ToVersion(AggregateRootVersion(x)))) getOrElse ToEnd.success
                       id <- ValidatedAggregateRootId(unvalidatedId)
-                      skip <- skip.map(_.toIntAlm).validationOut
-                      take <- take.map(_.toIntAlm).validationOut
+                      skip <- skip.map(_.toIntAlm.map(TraverseWindow.Skip(_))) getOrElse TraverseWindow.SkipNone.success
+                      take <- take.map(_.toIntAlm.map(TraverseWindow.Take(_))) getOrElse TraverseWindow.TakeAll.success
                     } yield {
-                      val msg: AggregateRootEventLog.AggregateRootEventLogMessage = (fromVersion, toVersion) match {
-                        case (Some(fromVersion), Some(toVersion)) =>
-                          AggregateRootEventLog.GetAggregateRootEventsFromTo(id, fromVersion, toVersion)
-                        case (Some(fromVersion), None) =>
-                          AggregateRootEventLog.GetAggregateRootEventsFrom(id, fromVersion)
-                        case (None, Some(toVersion)) =>
-                          AggregateRootEventLog.GetAggregateRootEventsTo(id, toVersion)
-                        case (None, None) =>
-                          AggregateRootEventLog.GetAllAggregateRootEventsFor(id)
-                      }
+                      AggregateRootEventLog.GetAggregateRootEventsFor(id, fromVersion, toVersion, TraverseWindow(skip, take))
                     }
                   }
                   rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]

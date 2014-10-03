@@ -1,5 +1,6 @@
 package almhirt.domain
 
+import scala.language.postfixOps 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
@@ -214,9 +215,9 @@ private[almhirt] trait AggregateRootUnprojectedViewSkeleton[T <: AggregateRoot, 
   private def updateFromEventlog(state: AggregateRootLifecycle[T], enqueuedRequests: Vector[ActorRef]) {
     state match {
       case Vacat ⇒
-        aggregateEventLog ! GetAllAggregateRootEventsFor(aggregateRootId)
+        aggregateEventLog ! GetAggregateRootEventsFor(aggregateRootId, FromStart, ToEnd, skip.none takeAll)
       case Vivus(ar) ⇒
-        aggregateEventLog ! GetAggregateRootEventsFrom(aggregateRootId, ar.version)
+        aggregateEventLog ! GetAggregateRootEventsFor(aggregateRootId, FromVersion(ar.version), ToEnd, skip.none takeAll)
       case Mortuus(id, v) ⇒
         onError(enqueuedRequests, 0)(RebuildAggregateRootFailedException(aggregateRootId, "An error has occured building the aggregate root. Nothing can be built from a dead aggregate root."))
     }

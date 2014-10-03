@@ -28,16 +28,16 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   type Problem = almhirt.problem.Problem
   type SingleProblem = almhirt.problem.SingleProblem
   type AggregatedProblem = almhirt.problem.AggregatedProblem
-  
-  implicit def stdF2AlmF[T](f: Future[T])(implicit execCtx: ExecutionContext): AlmFuture[T] = 
+
+  implicit def stdF2AlmF[T](f: Future[T])(implicit execCtx: ExecutionContext): AlmFuture[T] =
     new AlmFuture[T](f.map(scalaz.Success(_)))
 
-  implicit def almF2StdF[T](f: AlmFuture[T])(implicit execCtx: ExecutionContext): Future[T] =  f.std
-    
+  implicit def almF2StdF[T](f: AlmFuture[T])(implicit execCtx: ExecutionContext): Future[T] = f.std
+
   implicit def ProblemEqual[T <: Problem]: scalaz.Equal[T] = new scalaz.Equal[T] { def equal(p1: T, p2: T): Boolean = p1 == p2 }
 
   def launderException(exn: Throwable): SingleProblem = (CommonExceptionToProblem orElse (AnyExceptionToCaughtExceptionProblem))(exn)
-  
+
   def handleThrowable(throwable: Throwable): Problem =
     throwable match {
       case NonFatal(exn) ⇒ launderException(exn)
@@ -53,14 +53,16 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
 
   implicit class AlmRichString(self: String) {
     def ellipse(maxLength: Int, suffix: String = "..."): String = {
-      if(self.length > maxLength) {
-        self.take(maxLength-suffix.length) + suffix
+      if (self.length > maxLength) {
+        self.take(maxLength - suffix.length) + suffix
       } else {
         self
       }
     }
   }
- 
+
+  val skip = TraverseWindow.skipStart
+
   object Severity {
     val Critical = almhirt.problem.Critical
     val Major = almhirt.problem.Major
