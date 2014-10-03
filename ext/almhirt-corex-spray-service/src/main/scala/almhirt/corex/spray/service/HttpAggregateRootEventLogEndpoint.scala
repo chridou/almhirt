@@ -84,7 +84,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
                         case Some("false") =>
                           eventId.success
                         case Some(x) =>
-                          BadDataProblem(s"""$x" is not allowed for ?uuid. Only "true" or "false".""").failure
+                          BadDataProblem(s""""?uuid=$x" is not allowed for ?uuid. Only "true" or "false".""").failure
                         case None =>
                           eventId.success
                       }).flatMap(ValidatedEventId(_))
@@ -119,7 +119,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
                           case Some("false") =>
                             unvalidatedAggId.success
                           case Some(x) =>
-                            BadDataProblem(s"""$x" is not allowed for ?uuid. Only "true" or "false".""").failure
+                            BadDataProblem(s""""?uuid=$x" is not allowed for ?uuid. Only "true" or "false".""").failure
                           case None =>
                             unvalidatedAggId.success
                         }).flatMap(ValidatedAggregateRootId(_))

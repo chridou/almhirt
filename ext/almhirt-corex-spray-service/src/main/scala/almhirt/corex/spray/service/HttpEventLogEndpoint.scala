@@ -68,7 +68,7 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
                       case Some("false") =>
                         eventId.success
                       case Some(x) =>
-                        BadDataProblem(s"""$x" is not allowed for ?uuid. Only "true" or "false".""").failure
+                        BadDataProblem(s""""?uuid=$x" is not allowed for ?uuid. Only "true" or "false".""").failure
                       case None =>
                         eventId.success
                     }).flatMap(ValidatedEventId(_))
