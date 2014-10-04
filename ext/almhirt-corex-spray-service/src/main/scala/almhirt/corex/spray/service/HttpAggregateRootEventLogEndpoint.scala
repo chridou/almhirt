@@ -80,7 +80,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
                     validatedEventId <- AlmFuture.completed {
                       (uuid.map(_.toLowerCase()) match {
                         case Some("true") =>
-                          almhirt.converters.MiscConverters.uuidStrToBase64Str(eventId)
+                          almhirt.converters.MiscConverters.uuidStringToBase64(eventId)
                         case Some("false") =>
                           eventId.success
                         case Some(x) =>
@@ -115,7 +115,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
                       for {
                         validatedAggIdId <- (uuid.map(_.toLowerCase()) match {
                           case Some("true") =>
-                            almhirt.converters.MiscConverters.uuidStrToBase64Str(unvalidatedAggId)
+                            almhirt.converters.MiscConverters.uuidStringToBase64(unvalidatedAggId)
                           case Some("false") =>
                             unvalidatedAggId.success
                           case Some(x) =>

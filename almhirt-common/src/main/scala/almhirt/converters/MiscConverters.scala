@@ -11,7 +11,7 @@ object MiscConverters {
   }
 
   @inline
-  def base64StringToUuid(str: String): almhirt.common.AlmValidation[java.util.UUID] = {
+  def base64ToUuid(str: String): almhirt.common.AlmValidation[java.util.UUID] = {
     try {
       val bytes = BASE64.decode(str)
       val bb = ByteBuffer.wrap(bytes);
@@ -23,11 +23,11 @@ object MiscConverters {
   }
 
   @inline
-  def uuidStrToBase64Str(str: String): almhirt.common.AlmValidation[String] =
+  def uuidStringToBase64(str: String): almhirt.common.AlmValidation[String] =
     almhirt.almvalidation.funs.parseUuidAlm(str).map(uuidToBase64String)
 
   @inline
-  def uuidBase64StrToUuidString(str: String): almhirt.common.AlmValidation[String] =
-    base64StringToUuid(str).map(_.toString())
+  def base64ToUuidString(str: String): almhirt.common.AlmValidation[String] =
+    base64ToUuid(str).map(_.toString())
 
 }

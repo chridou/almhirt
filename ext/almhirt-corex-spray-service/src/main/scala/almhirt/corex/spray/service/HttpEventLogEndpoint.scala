@@ -64,7 +64,7 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
                   validatedEventId <- AlmFuture.completed {
                     (uuid.map(_.toLowerCase()) match {
                       case Some("true") =>
-                        almhirt.converters.MiscConverters.uuidStrToBase64Str(eventId)
+                        almhirt.converters.MiscConverters.uuidStringToBase64(eventId)
                       case Some("false") =>
                         eventId.success
                       case Some(x) =>
