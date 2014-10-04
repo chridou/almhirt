@@ -88,6 +88,7 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val MappingProblem = almhirt.problem.problemtypes.MappingProblem
   val SerializationProblem = almhirt.problem.problemtypes.SerializationProblem
   val StartupProblem = almhirt.problem.problemtypes.StartupProblem
+  val DependencyNotFoundProblem = almhirt.problem.problemtypes.DependencyNotFoundProblem
   val IndexOutOfBoundsProblem = almhirt.problem.problemtypes.IndexOutOfBoundsProblem
   val NotFoundProblem = almhirt.problem.problemtypes.NotFoundProblem
   val ConstraintViolatedProblem = almhirt.problem.problemtypes.ConstraintViolatedProblem

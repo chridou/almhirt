@@ -158,6 +158,15 @@ object problemtypes {
       SingleProblem(msg, StartupProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, StartupProblem)
   }
+  
+/**
+   * A component couldn't find a dependency
+   */
+  case object DependencyNotFoundProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, StartupProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, DependencyNotFoundProblem)
+  }  
 
   case object IndexOutOfBoundsProblem extends ProblemType {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =

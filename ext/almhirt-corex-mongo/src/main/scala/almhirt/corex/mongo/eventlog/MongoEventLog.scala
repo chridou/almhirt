@@ -206,7 +206,8 @@ private[almhirt] class MongoEventLogImpl(
   def uninitializedReadOnly(collectionLookupRetries: RetrySettings): Receive = {
     case Initialize ⇒
       log.info("Initializing(read-only)")
-      context.retry[Unit](
+      context.retryWithLogging[Unit](
+        s"Find collection $collectionName",
         () => db.collectionNames.toAlmFuture.foldV(
           fail => fail.failure,
           collectionNames => {
@@ -216,11 +217,11 @@ private[almhirt] class MongoEventLogImpl(
               MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
           }),
         _ => { self ! Initialized },
-        (t, n, p) => log.info(s"Look up collection '$collectionName' failed after $n attempts and ${t.defaultUnitString}:\n$p"),
         (t, n, p) => {
-          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}:\n$p")
+          val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
           self ! InitializeFailed(UnspecifiedProblem(s""))
         },
+        this.log,
         collectionLookupRetries,
         Some("looks-for-collection"))
 
@@ -268,12 +269,12 @@ private[almhirt] class MongoEventLogImpl(
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
 
-   case FetchEventsParts(BeginningOfTime, EndOfTime, skip, length) =>
-       val query = BSONDocument()
+    case FetchEventsParts(BeginningOfTime, EndOfTime, skip, length) =>
+      val query = BSONDocument()
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 
     case FetchEventsParts(From(from), EndOfTime, skip, length) =>
-       val query = BSONDocument(
+      val query = BSONDocument(
         "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
       fetchAndDispatchEvents(query, sortByTimestamp, sender)
 

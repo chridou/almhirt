@@ -5,6 +5,7 @@ import scala.concurrent.Promise
 import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import akka.actor.{ ActorRef, Props, ActorContext }
+import akka.event.LoggingAdapter
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import almhirt.tracking.CorrelationId
@@ -36,15 +37,41 @@ package object akkax {
       toTry: () => AlmFuture[T],
       onSuccess: T => Unit,
       onFailedAttempt: (FiniteDuration, Int, Problem) => Unit,
+      onFailedLoop: (FiniteDuration, Int, Problem) => Unit,
       onFinalFailure: (FiniteDuration, Int, Problem) => Unit,
       settings: almhirt.configuration.RetrySettings,
       actorName: Option[String]) {
       actorName match {
         case Some(name) =>
-          self.actorOf(RetryActor.props(settings, toTry, onSuccess, onFailedAttempt, onFinalFailure), name)
+          self.actorOf(RetryActor.props(settings, toTry, onSuccess, onFailedAttempt, onFailedLoop, onFinalFailure), name)
         case None =>
-          self.actorOf(RetryActor.props(settings, toTry, onSuccess, onFailedAttempt, onFinalFailure))
+          self.actorOf(RetryActor.props(settings, toTry, onSuccess, onFailedAttempt, onFailedLoop, onFinalFailure))
       }
+    }
+
+    def retryWithLogging[T](
+      retryContext: String,
+      toTry: () => AlmFuture[T],
+      onSuccess: T => Unit,
+      onFinalFailure: (FiniteDuration, Int, Problem) => Unit,
+      log: LoggingAdapter,
+      settings: almhirt.configuration.RetrySettings,
+      actorName: Option[String]) {
+      retry(
+        toTry,
+        onSuccess,
+        (t, n, p) => log.info(s"""		|$retryContext
+        								|Failed after $n attempts and ${t.defaultUnitString}
+        								|The problem was:
+        								|$p""".stripMargin),
+        (t, n, p) => log.warning(s"""	|$retryContext
+        								|Failed after $n attempts and ${t.defaultUnitString}
+        								|Will pause for ${settings.infiniteLoopPause.map(_.defaultUnitString).getOrElse("?")}
+        								|The problem was:
+        								|$p""".stripMargin),
+        onFinalFailure,
+        settings,
+        actorName)
     }
 
     def retryNoReports[T](
@@ -53,12 +80,7 @@ package object akkax {
       onFinalFailure: (FiniteDuration, Int, Problem) => Unit,
       settings: almhirt.configuration.RetrySettings,
       actorName: Option[String]) {
-      actorName match {
-        case Some(name) =>
-          self.actorOf(RetryActor.props(settings, toTry, onSuccess, (_, _, _) => (), onFinalFailure), name)
-        case None =>
-          self.actorOf(RetryActor.props(settings, toTry, onSuccess, (_, _, _) => (), onFinalFailure))
-      }
+      retry(toTry, onSuccess, (_, _, _) => (), (_, _, _) => (), onFinalFailure, settings, actorName)
     }
 
     def retrySimple[T](
@@ -73,7 +95,7 @@ package object akkax {
       }
 
       self.retryNoReports(toTry, (res: T) => p.success(scalaz.Success(res)), handleFailure, settings, actorName)
- 
+
       new AlmFuture(p.future)
     }
 

@@ -93,7 +93,8 @@ package object configuration {
         pause <- section.v[FiniteDuration]("retry-pause")
         maxTime <- section.opt[FiniteDuration]("retry-max-time")
         maxAttempts <- section.opt[Int]("retry-max-attempts")
-        res <- build(pause, mode, maxTime, maxAttempts)
+        infiniteLoopPause <- section.magicOption[FiniteDuration]("retry-infinite-loop-pause")
+        res <- build(pause, mode, maxTime, maxAttempts, infiniteLoopPause)
       } yield res
     }
 
@@ -103,16 +104,16 @@ package object configuration {
         case None ⇒ scalaz.Success(None)
       }
 
-    private def build(pause: FiniteDuration, mode: Option[String], maxTime: Option[FiniteDuration], maxAttempts: Option[Int]): AlmValidation[RetrySettings] = {
+    private def build(pause: FiniteDuration, mode: Option[String], maxTime: Option[FiniteDuration], maxAttempts: Option[Int], infiniteLoopPause: Option[FiniteDuration]): AlmValidation[RetrySettings] = {
       (mode, maxTime, maxAttempts) match {
         case (None, None, Some(ma)) =>
-          AttemptLimitedRetrySettings(pause = pause, maxAttempts = ma).success
+          AttemptLimitedRetrySettings(pause = pause, maxAttempts = ma, infiniteLoopPause = infiniteLoopPause).success
         case (None, Some(mt), None) =>
-          TimeLimitedRetrySettings(pause = pause, maxTime = mt).success
+          TimeLimitedRetrySettings(pause = pause, maxTime = mt, infiniteLoopPause = infiniteLoopPause).success
         case (Some("retry-limit-attempts"), _, Some(ma)) =>
-          AttemptLimitedRetrySettings(pause = pause, maxAttempts = ma).success
+          AttemptLimitedRetrySettings(pause = pause, maxAttempts = ma, infiniteLoopPause = infiniteLoopPause).success
         case (Some("retry-limit-time"), Some(mt), _) =>
-          TimeLimitedRetrySettings(pause = pause, maxTime = mt).success
+          TimeLimitedRetrySettings(pause = pause, maxTime = mt, infiniteLoopPause = infiniteLoopPause).success
         case (None, Some(mt), Some(ma)) =>
           UnspecifiedProblem("""When "retry-max-time" and "retry-max-attempts" are both set, you must specify the mode via "retry-mode"("retry-limit-time" | "retry-limit-attempts").""").failure
         case x =>

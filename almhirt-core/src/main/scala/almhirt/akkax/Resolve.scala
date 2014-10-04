@@ -13,7 +13,7 @@ import almhirt.configuration.TimeLimitedRetrySettings
 final case class ResolveSettings(retrySettings: RetrySettings, resolveWait: FiniteDuration)
 
 object ResolveSettings {
-  val default = ResolveSettings(AttemptLimitedRetrySettings(pause = 1.second, maxAttempts = 50), resolveWait = 1.second)
+  val default = ResolveSettings(AttemptLimitedRetrySettings(pause = 1.second, maxAttempts = 30, Some(1.minute)), resolveWait = 1.second)
 }
 
 sealed trait ToResolve
@@ -24,12 +24,7 @@ final case class ResolveSelection(selection: ActorSelection) extends ToReallyRes
 
 object SingleResolver {
   def props(toResolve: ToResolve, settings: ResolveSettings, correlationId: Option[CorrelationId]): Props =
-    settings.retrySettings match {
-      case tl: TimeLimitedRetrySettings =>
-        Props(new MaxTimeBasedSingleResolverImpl(toResolve, settings.resolveWait, tl, correlationId))
-      case al: AttemptLimitedRetrySettings =>
-        Props(new MaxAttemptsBasedSingleResolverImpl(toResolve, settings.resolveWait, al, correlationId))
-    }
+    Props(new SingleResolverImpl(toResolve, settings.resolveWait, settings.retrySettings, correlationId))
 }
 
 object MultiResolver {
@@ -37,108 +32,74 @@ object MultiResolver {
     Props(new MultiResolverImpl(toResolve, settings, correlationId))
 }
 
-private[almhirt] class MaxTimeBasedSingleResolverImpl(toResolve: ToResolve, resolveWait: FiniteDuration, retrySettings: TimeLimitedRetrySettings, correlationId: Option[CorrelationId]) extends Actor with ActorLogging {
+private[almhirt] class SingleResolverImpl(toResolve: ToResolve, resolveWait: FiniteDuration, retrySettings: RetrySettings, correlationId: Option[CorrelationId]) extends Actor with ActorLogging {
+
+  implicit val execCtx = context.dispatcher
+
   private object Resolve
   private case class Resolved(actor: ActorRef)
   private case class NotResolved(ex: Throwable)
-  def receiveResolve(startedAt: Deadline): Receive = {
-    case Resolve ⇒
-      toResolve match {
-        case NoResolvingRequired(actorRef) ⇒
-          self ! Resolved(actorRef)
-        case r: ToReallyResolve ⇒
-          val selection =
-            r match {
-              case ResolvePath(path) ⇒ context.actorSelection(path)
-              case ResolveSelection(selection) ⇒ selection
-            }
-          selection.resolveOne(resolveWait).onComplete {
-            case scala.util.Success(actor) ⇒ self ! Resolved(actor)
-            case scala.util.Failure(ex) ⇒ self ! NotResolved(ex)
-          }(context.dispatcher)
-      }
 
-    case Resolved(actor) ⇒
-      if (log.isDebugEnabled)
-        log.debug(s"*** Resolved: ${actor} ***")
-      context.parent ! ActorMessages.ResolvedSingle(actor, correlationId)
+  def resolve(started: Deadline, attempt: Int) {
+    toResolve match {
+      case NoResolvingRequired(actorRef) ⇒
+        self ! Resolved(actorRef)
+      case r: ToReallyResolve ⇒
+        val selection =
+          r match {
+            case ResolvePath(path) ⇒ context.actorSelection(path)
+            case ResolveSelection(selection) ⇒ selection
+          }
+        selection.resolveOne(resolveWait).onComplete {
+          case scala.util.Success(actor) ⇒ self ! Resolved(actor)
+          case scala.util.Failure(exn) ⇒ handleFailedAttempt(started, attempt, exn)
+        }(context.dispatcher)
+    }
+  }
+
+  def receiveResolve(started: Deadline, attempt: Int): Receive = {
+    case Resolve =>
+      resolve(started, attempt)
+      context.become(receiveResolve(started, attempt + 1))
+
+    case Resolved(actorRef: ActorRef) =>
+      context.parent ! ActorMessages.ResolvedSingle(actorRef, correlationId)
       context.stop(self)
 
-    case NotResolved(ex) ⇒
-      if (startedAt.lapExceeds(retrySettings.maxTime)) {
-        log.warning(s"""	|Could not resolve "${toResolve}" after ${retrySettings.maxTime.defaultUnitString}.
-        				|Giving up.
-        				|Cause:
-    		  			|$ex""".stripMargin)
-        context.parent ! ActorMessages.SingleNotResolved(UnspecifiedProblem(s"Resolve $toResolve failed after ${startedAt.lap.defaultUnitString}.", cause = Some(ex)), correlationId)
-        context.stop(self)
-      } else {
-        log.warning(s"""	|Could not resolve "${toResolve}" after ${startedAt.lap.defaultUnitString}.
-        					|Will retry in ${retrySettings.pause.defaultUnitString}.
-        					|Cause:
-        					|$ex""".stripMargin)
-        context.system.scheduler.scheduleOnce(retrySettings.pause, self, Resolve)(context.dispatcher)
-      }
-  }
-
-  def receive: Receive = receiveResolve(Deadline.now)
-
-  override def preStart() {
-    self ! Resolve
-  }
-}
-
-private[almhirt] class MaxAttemptsBasedSingleResolverImpl(toResolve: ToResolve, resolveWait: FiniteDuration, retrySettings: AttemptLimitedRetrySettings, correlationId: Option[CorrelationId]) extends Actor with ActorLogging {
-  private object Resolve
-  private case class Resolved(actor: ActorRef)
-  private case class NotResolved(ex: Throwable)
-  def receiveResolve(attemptsLeft: Int): Receive = {
-    case Resolve ⇒
-      if (attemptsLeft > 0) {
-        toResolve match {
-          case NoResolvingRequired(actorRef) ⇒
-            self ! Resolved(actorRef)
-          case r: ToReallyResolve ⇒
-            val selection =
-              r match {
-                case ResolvePath(path) ⇒ context.actorSelection(path)
-                case ResolveSelection(selection) ⇒ selection
-              }
-            selection.resolveOne(resolveWait).onComplete {
-              case scala.util.Success(actor) ⇒ self ! Resolved(actor)
-              case scala.util.Failure(ex) ⇒ self ! NotResolved(ex)
-            }(context.dispatcher)
-            context.become(receiveResolve(attemptsLeft - 1))
-        }
-      } else {
-        context.parent ! ActorMessages.SingleNotResolved(UnspecifiedProblem(s"Resolve $toResolve failed after ${retrySettings.maxAttempts} attempts. Giving up."), correlationId)
-        context.stop(self)
-      }
-
-    case Resolved(actor) ⇒
-      if (log.isDebugEnabled)
-        log.debug(s"*** Resolved: ${actor} ***")
-      context.parent ! ActorMessages.ResolvedSingle(actor, correlationId)
+    case NotResolved(ex: Throwable) =>
+      context.parent ! ActorMessages.SingleNotResolved(DependencyNotFoundProblem(s"$toResolve", cause = Some(ex)), correlationId)
       context.stop(self)
-
-    case NotResolved(ex) ⇒
-      if (attemptsLeft <= 0) {
-        log.warning(s"""|Could not resolve "${toResolve}" after ${retrySettings.maxAttempts} attempts.
-        				|Giving up.
-        				|Cause:
-    		  			|$ex""".stripMargin)
-        context.parent ! ActorMessages.SingleNotResolved(UnspecifiedProblem(s"Resolve $toResolve failed after ${retrySettings.maxAttempts} attempts.", cause = Some(ex)), correlationId)
-        context.stop(self)
-      } else {
-        log.warning(s"""	|Could not resolve "${toResolve}". $attemptsLeft attmepts of ${retrySettings.maxAttempts} left.
-        					|Will retry in ${retrySettings.pause.defaultUnitString}.
-        					|Cause:
-        					|$ex""".stripMargin)
-        context.system.scheduler.scheduleOnce(retrySettings.pause, self, Resolve)(context.dispatcher)
-      }
   }
 
-  def receive: Receive = receiveResolve(retrySettings.maxAttempts)
+
+  def handleFailedAttempt(started: Deadline, attempt: Int, exn: Throwable) {
+    val isLoopFinalFailure =
+      retrySettings match {
+        case TimeLimitedRetrySettings(_, limit, _) =>
+          started.lapExceeds(limit)
+        case AttemptLimitedRetrySettings(_, limit, _) =>
+          attempt >= limit
+      }
+
+    if (isLoopFinalFailure) {
+      retrySettings.infiniteLoopPause match {
+        case None =>
+          self ! NotResolved(exn)
+        case Some(pause) =>
+          if (log.isWarningEnabled)
+            log.warning(s"""	|Resolve $toResolve:
+								|Failed after $attempt attempts and ${started.lap.defaultUnitString}
+								|Will pause for ${retrySettings.infiniteLoopPause.map(_.defaultUnitString).getOrElse("?")}
+								|The exception was:
+								|$exn""".stripMargin)
+          context.system.scheduler.scheduleOnce(pause, self, Resolve)
+      }
+    } else {
+      context.system.scheduler.scheduleOnce(retrySettings.pause, self, Resolve)
+    }
+  }
+  
+  def receive: Receive = receiveResolve(Deadline.now, 1)
 
   override def preStart() {
     self ! Resolve
