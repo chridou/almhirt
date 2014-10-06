@@ -10,6 +10,7 @@ import almhirt.aggregates.AggregateRootVersion
 
 object AggregateRootEventLog {
   trait AggregateRootEventLogMessage
+  trait AggregateRootEventLogQueryManyMessage extends AggregateRootEventLogMessage { def traverse : TraverseWindow }
   trait AggregateRootEventLogResponse
 
   sealed trait VersionRangeStartMarker
@@ -25,8 +26,8 @@ object AggregateRootEventLog {
   final case class AggregateRootEventCommitted(id: EventId) extends CommitAggregateRootEventResponse
   final case class AggregateRootEventNotCommitted(id: EventId, problem: Problem) extends CommitAggregateRootEventResponse
 
-  final case class GetAllAggregateRootEvents(traverse: TraverseWindow) extends AggregateRootEventLogMessage
-  final case class GetAggregateRootEventsFor(aggId: AggregateRootId, start: VersionRangeStartMarker, end: VersionRangeEndMarker, traverse: TraverseWindow) extends AggregateRootEventLogMessage
+  final case class GetAllAggregateRootEvents(traverse: TraverseWindow) extends AggregateRootEventLogQueryManyMessage
+  final case class GetAggregateRootEventsFor(aggId: AggregateRootId, start: VersionRangeStartMarker, end: VersionRangeEndMarker, traverse: TraverseWindow) extends AggregateRootEventLogQueryManyMessage
   object GetAllAggregateRootEventsFor {
     def apply(aggId: AggregateRootId, traverse: TraverseWindow): GetAggregateRootEventsFor =
       GetAggregateRootEventsFor(aggId, FromStart, ToEnd, traverse)

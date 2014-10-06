@@ -7,6 +7,7 @@ import scalaz._, Scalaz._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
+import almhirt.aggregates.AggregateRootId
 import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
 import almhirt.converters.BinaryConverter
@@ -174,24 +175,52 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       })
   }
 
-  def getAggregateRootEventsDocs(query: BSONDocument, sort: BSONDocument): Enumerator[BSONDocument] = {
+  def getAggregateRootEventsDocs(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[BSONDocument] = {
+    val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).sort(sort).cursor.enumerate(10000, true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor.enumerate(take, true)
     enumerator
   }
 
-  def getAggregateRootEvents(query: BSONDocument, sort: BSONDocument): Enumerator[AggregateRootEvent] = {
-    val docsEnumerator = getAggregateRootEventsDocs(query, sort)
+  def getAggregateRootEvents(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[AggregateRootEvent] = {
+    val docsEnumerator = getAggregateRootEventsDocs(query, sort, traverse)
     docsEnumerator.through(fromBsonDocToAggregateRootEvent)
   }
 
-  def fetchAndDispatchAggregateRootEvents(query: BSONDocument, sort: BSONDocument, respondTo: ActorRef) {
+  def createQuery(m: AggregateRootEventLogQueryManyMessage): BSONDocument = {
+    m match {
+      case m: GetAllAggregateRootEvents =>
+        BSONDocument.empty
+      case GetAggregateRootEventsFor(aggId, start, end, _) =>
+        (start, end) match {
+          case (FromStart, ToEnd) =>
+            BSONDocument("aggid" -> BSONString(aggId.value))
+          case (FromVersion(fromVersion), ToEnd) =>
+            BSONDocument(
+              "aggid" -> BSONString(aggId.value),
+              "version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value)))
+          case (FromStart, ToVersion(toVersion)) =>
+            BSONDocument(
+              "aggid" -> BSONString(aggId.value),
+              "version" -> BSONDocument("$lte" -> BSONLong(toVersion.value)))
+          case (FromVersion(fromVersion), ToVersion(toVersion)) =>
+            BSONDocument(
+              "aggid" -> BSONString(aggId.value),
+              "$and" -> BSONArray(
+                BSONDocument("version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))),
+                BSONDocument("version" -> BSONDocument("$lte" -> BSONLong(toVersion.value)))))
+        }
+    }
+  }
+
+  def fetchAndDispatchAggregateRootEvents(m: AggregateRootEventLogQueryManyMessage, respondTo: ActorRef) {
     val start = Deadline.now
-    val eventsEnumerator = getAggregateRootEvents(query, sort)
+    val query = createQuery(m)
+    val eventsEnumerator = getAggregateRootEvents(query, sortByVersion, m.traverse)
     val enumeratorWithCallBack = eventsEnumerator.onDoneEnumerating(() ⇒ {
       val lap = start.lap
       if (lap > readWarnThreshold)
-        log.warning(s"""Fetching domain events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
+        log.warning(s"""Fetching aggregate root events took longer than ${readWarnThreshold.defaultUnitString}(${lap.defaultUnitString}).""")
     })
     respondTo ! FetchedAggregateRootEvents(enumeratorWithCallBack)
   }
@@ -295,8 +324,8 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         sender() ! AggregateRootEventNotCommitted(event.eventId, IllegalOperationProblem("Read only mode is enabled."))
       commitEvent(event, sender())
 
-    case GetAllAggregateRootEvents(traverse) ⇒
-      fetchAndDispatchAggregateRootEvents(BSONDocument(), noSorting, sender)
+    case m: AggregateRootEventLogQueryManyMessage ⇒
+      fetchAndDispatchAggregateRootEvents(m, sender())
 
     case GetAggregateRootEvent(eventId) ⇒
       val collection = db(collectionName)
@@ -316,30 +345,6 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
           log.error(problem.toString())
           GetAggregateRootEventFailed(eventId, problem)
         })(sender())
-
-    case GetAggregateRootEventsFor(aggId, FromStart, ToEnd, traverse) ⇒
-      val query = BSONDocument("aggid" -> BSONString(aggId.value))
-      fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
-
-    case GetAggregateRootEventsFor(aggId, FromVersion(fromVersion), ToEnd, traverse) ⇒
-      val query = BSONDocument(
-        "aggid" -> BSONString(aggId.value),
-        "version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value)))
-      fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
-
-    case GetAggregateRootEventsFor(aggId, FromStart, ToVersion(toVersion), traverse) ⇒
-      val query = BSONDocument(
-        "aggid" -> BSONString(aggId.value),
-        "version" -> BSONDocument("$lte" -> BSONLong(toVersion.value)))
-      fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
-
-    case GetAggregateRootEventsFor(aggId, FromVersion(fromVersion), ToVersion(toVersion), traverse) ⇒
-      val query = BSONDocument(
-        "aggid" -> BSONString(aggId.value),
-        "$and" -> BSONArray(
-          BSONDocument("version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))),
-          BSONDocument("version" -> BSONDocument("$lte" -> BSONLong(toVersion.value)))))
-      fetchAndDispatchAggregateRootEvents(query, sortByVersion, sender)
   }
 
   override def receive =
