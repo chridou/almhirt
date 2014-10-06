@@ -59,13 +59,24 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
       get {
         parameters('skip ?, 'take ?) { (skip, take) =>
           implicit ctx =>
-            val fut = (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? AggregateRootEventLog.GetAllAggregateRootEvents)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration)
-              .mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse].collectF {
-                case AggregateRootEventLog.FetchedAggregateRootEvents(enumerator) =>
-                  enumerator.run(Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, elem) => acc :+ elem }).toAlmFuture
-                case AggregateRootEventLog.GetAggregateRootEventsFailed(problem) =>
-                  AlmFuture.failed(problem)
-              }
+            val fut =
+              for {
+                eventLogMessage <- AlmFuture.completed {
+                  for {
+                    skip <- skip.map(_.toIntAlm.map(TraverseWindow.Skip(_))) getOrElse TraverseWindow.SkipNone.success
+                    take <- take.map(_.toIntAlm.map(TraverseWindow.Take(_))) getOrElse TraverseWindow.TakeAll.success
+                  } yield {
+                    AggregateRootEventLog.GetAllAggregateRootEvents(TraverseWindow(skip, take))
+                  }
+                }
+                rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]
+                events <- rsp match {
+                  case AggregateRootEventLog.FetchedAggregateRootEvents(enumerator) =>
+                    enumerator.run(Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, elem) => acc :+ elem }).toAlmFuture
+                  case AggregateRootEventLog.GetAggregateRootEventsFailed(problem) =>
+                    AlmFuture.failed(problem)
+                }
+              } yield events
             fut.completeRequestOk
         }
       }
