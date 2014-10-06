@@ -98,7 +98,7 @@ abstract class SingleTypeHttpConversationWithParametrizedQuery[T, U](implicit se
 
   def conversationOverWire(entity: T, uriPartsAndParams: UriPartsAndParams): AlmFuture[(U, FiniteDuration)] = {
     val settings = EntityRequestSettings(createUri(entity, uriPartsAndParams), contentMediaType, acceptMediaTypes, method, acceptAsSuccess)
-    conversationWithExternalEndpoint(entity, settings)(serializer, deserializer, problemDeserializer)
+    conversationWithExternalEndpoint[T, U](entity, settings)(serializer, deserializer, problemDeserializer)
   }
 
 }

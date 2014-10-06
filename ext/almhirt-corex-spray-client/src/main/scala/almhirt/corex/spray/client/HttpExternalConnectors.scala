@@ -94,7 +94,14 @@ trait RequestsWithEntity { self: HttpExternalConnector ⇒
 trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
   def evaluateEntityResponse[T: HttpDeserializer](response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[T] = {
     if (acceptAsSuccess(response.status))
-      deserializeEntity[T](response)
+      deserializeEntity[T](response).fold(
+        fail => {
+          // Try whether there's a problem in the response
+          deserializeProblem(response).fold(
+            alsoFailed => SerializationProblem(s"""The response was accepted as a success but couldn't be deserialized to the target entity so I tried to deserialize to a Problem which also failed.""", cause = Some(alsoFailed)).failure,
+            aProblem => SerializationProblem(s"""The response was accepted as a success but couldn't be deserialized to the target  so I tried to deserialize to a Problem which succeeded.""", cause = Some(aProblem)).failure)
+        },
+        deserializedEntity => deserializedEntity.success)
     else
       deserializeProblem(response).fold(
         fail ⇒ SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
@@ -118,9 +125,9 @@ trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
           val deserializer = implicitly[HttpDeserializer[T]]
           val channel = almhirt.httpx.spray.marshalling.Helper.extractChannel(body.contentType.mediaType)
           if (mediaType.binary && channel != "json")
-            deserializer.deserialize(mediaType ,BinaryBody(body.data.toByteArray))
+            deserializer.deserialize(mediaType, BinaryBody(body.data.toByteArray))
           else
-            deserializer.deserialize(mediaType ,TextBody(body.data.asString))
+            deserializer.deserialize(mediaType, TextBody(body.data.asString))
         }
       case None ⇒
         UnspecifiedProblem(s"""	|
