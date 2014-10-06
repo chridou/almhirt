@@ -187,36 +187,36 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     docsEnumerator.through(fromBsonDocToAggregateRootEvent)
   }
 
-  def createQuery(m: AggregateRootEventLogQueryManyMessage): BSONDocument = {
+  def createQueryAndSort(m: AggregateRootEventLogQueryManyMessage): (BSONDocument, BSONDocument) = {
     m match {
       case m: GetAllAggregateRootEvents =>
-        BSONDocument.empty
+        (BSONDocument.empty, BSONDocument.empty)
       case GetAggregateRootEventsFor(aggId, start, end, _) =>
         (start, end) match {
           case (FromStart, ToEnd) =>
-            BSONDocument("aggid" -> BSONString(aggId.value))
+            (BSONDocument("aggid" -> BSONString(aggId.value)), sortByVersion)
           case (FromVersion(fromVersion), ToEnd) =>
-            BSONDocument(
+            (BSONDocument(
               "aggid" -> BSONString(aggId.value),
-              "version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value)))
+              "version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))), sortByVersion)
           case (FromStart, ToVersion(toVersion)) =>
-            BSONDocument(
+            (BSONDocument(
               "aggid" -> BSONString(aggId.value),
-              "version" -> BSONDocument("$lte" -> BSONLong(toVersion.value)))
+              "version" -> BSONDocument("$lte" -> BSONLong(toVersion.value))), sortByVersion)
           case (FromVersion(fromVersion), ToVersion(toVersion)) =>
-            BSONDocument(
+            (BSONDocument(
               "aggid" -> BSONString(aggId.value),
               "$and" -> BSONArray(
                 BSONDocument("version" -> BSONDocument("$gte" -> BSONLong(fromVersion.value))),
-                BSONDocument("version" -> BSONDocument("$lte" -> BSONLong(toVersion.value)))))
+                BSONDocument("version" -> BSONDocument("$lte" -> BSONLong(toVersion.value))))), sortByVersion)
         }
     }
   }
 
   def fetchAndDispatchAggregateRootEvents(m: AggregateRootEventLogQueryManyMessage, respondTo: ActorRef) {
     val start = Deadline.now
-    val query = createQuery(m)
-    val eventsEnumerator = getAggregateRootEvents(query, sortByVersion, m.traverse)
+    val (query, sort) = createQueryAndSort(m)
+    val eventsEnumerator = getAggregateRootEvents(query, sort, m.traverse)
     val enumeratorWithCallBack = eventsEnumerator.onDoneEnumerating(() ⇒ {
       val lap = start.lap
       if (lap > readWarnThreshold)
