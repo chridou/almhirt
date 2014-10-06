@@ -22,7 +22,7 @@ import play.api.libs.iteratee._
 
 object HttpAggregateRootEventLogQueryEndpoint {
   final case class HttpAggregateRootEventLogQueryEndpointParams(
-    aggragateRootEventLog: ActorRef,
+    aggregateRootEventLog: ActorRef,
     maxQueryDuration: scala.concurrent.duration.FiniteDuration,
     exectionContextSelector: ExtendedExecutionContextSelector,
     eventMarshaller: Marshaller[AggregateRootEvent],
@@ -69,7 +69,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
                     AggregateRootEventLog.GetAllAggregateRootEvents(TraverseWindow(skip, take))
                   }
                 }
-                rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]
+                rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggregateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]
                 events <- rsp match {
                   case AggregateRootEventLog.FetchedAggregateRootEvents(enumerator) =>
                     enumerator.run(Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, elem) => acc :+ elem }).toAlmFuture
@@ -100,7 +100,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
                           eventId.success
                       }).flatMap(ValidatedEventId(_))
                     }
-                    res <- (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? AggregateRootEventLog.GetAggregateRootEvent(validatedEventId))(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration)
+                    res <- (httpAggregateRootEventLogQueryEndpointParams.aggregateRootEventLog ? AggregateRootEventLog.GetAggregateRootEvent(validatedEventId))(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration)
                       .mapCastTo[AggregateRootEventLog.GetAggregateRootEventResponse].collectV {
                         case AggregateRootEventLog.FetchedAggregateRootEvent(id, Some(event)) =>
                           event.success
@@ -142,7 +142,7 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
                         AggregateRootEventLog.GetAggregateRootEventsFor(validatedAggIdId, fromVersion, toVersion, TraverseWindow(skip, take))
                       }
                     }
-                    rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggragateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]
+                    rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggregateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]
                     events <- rsp match {
                       case AggregateRootEventLog.FetchedAggregateRootEvents(enumerator) =>
                         enumerator.run(Iteratee.fold[AggregateRootEvent, Vector[AggregateRootEvent]](Vector.empty) { case (acc, elem) => acc :+ elem }).toAlmFuture
