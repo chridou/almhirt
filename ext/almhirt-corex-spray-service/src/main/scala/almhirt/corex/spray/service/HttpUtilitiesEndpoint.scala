@@ -65,7 +65,7 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
     } ~ pathPrefix("convert") {
       pathPrefix("uuid-string-to-base64" / Segment) { uuidStr =>
         pathEnd {
-          post {
+          get {
             implicit ctx =>
               almhirt.converters.MiscConverters.uuidStringToBase64(uuidStr).completeRequestOk
           }
@@ -73,7 +73,7 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
       } ~
         pathPrefix("base64-to-uuid" / Segment) { b64 =>
           pathEnd {
-            post {
+            get {
               implicit ctx =>
                 almhirt.converters.MiscConverters.base64ToUuid(b64).completeRequestOk
             }
@@ -81,7 +81,7 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
         } ~
         pathPrefix("base64-to-uuid-string" / Segment) { b64 =>
           pathEnd {
-            post {
+            get {
               implicit ctx =>
                 almhirt.converters.MiscConverters.base64ToUuidString(b64).completeRequestOk
             }
