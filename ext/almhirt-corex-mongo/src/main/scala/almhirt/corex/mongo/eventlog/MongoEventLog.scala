@@ -223,7 +223,7 @@ private[almhirt] class MongoEventLogImpl(
   def getEvents(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[Event] = {
     val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor.enumerate(take, true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor.enumerate(maxDocs = take, stopOnError = true)
     enumerator.through(fromBsonDocToEvent)
   }
 

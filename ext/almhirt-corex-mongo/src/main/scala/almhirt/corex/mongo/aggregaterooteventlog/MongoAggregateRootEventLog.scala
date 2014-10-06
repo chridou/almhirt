@@ -178,7 +178,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   def getAggregateRootEventsDocs(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[BSONDocument] = {
     val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor.enumerate(take, true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor.enumerate(maxDocs = take, stopOnError = true)
     enumerator
   }
 
