@@ -56,7 +56,7 @@ private[almhirt] class CommandEndpointImpl(
       sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
 
     case cmd: Command ⇒
-      sender() ! CommandNotAccepted(cmd.commandId, RejectionReason.NotReady("Not ready! Try again later."))
+      sender() ! CommandNotAccepted(cmd.commandId, RejectionReason.NotReady("Command endpoint not ready! Try again later."))
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = {
