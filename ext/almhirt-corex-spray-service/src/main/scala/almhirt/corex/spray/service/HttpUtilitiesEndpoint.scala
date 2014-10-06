@@ -20,6 +20,7 @@ object HttpUtilitiesEndpoint {
     problemMarshaller: Marshaller[Problem])
 
 }
+
 trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint with HasAlmhirtContext =>
   import HttpUtilitiesEndpoint._
 
