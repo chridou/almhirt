@@ -53,9 +53,9 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
       }
     } ~ pathPrefix("uuid") {
       pathEnd {
-        parameter('base64) { base64param =>
+        parameter('base64 ?) { base64param =>
           get {
-            if (base64param.isEmpty())
+            if (base64param.isDefined)
               complete(almhirtContext.getUuid)
             else
               complete(almhirt.converters.MiscConverters.uuidToBase64String(almhirtContext.getUuid))
