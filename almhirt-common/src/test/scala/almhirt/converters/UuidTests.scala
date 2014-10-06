@@ -43,7 +43,7 @@ class UuidTests extends FunSuite with Matchers {
       uuidStr should equal(uuid.toString())
     }
   }
-  
+
   val testUuid = JUUID.randomUUID()
   test(s"""uuid from string: ${testUuid.toString}""") {
     val uuidFromString = JUUID.fromString(testUuid.toString())
@@ -56,15 +56,14 @@ class UuidTests extends FunSuite with Matchers {
     uuid should equal(testUuid)
   }
 
-  
   test(s"""uuid -> base -> uuidStr: ${testUuid.toString}""") {
     val b64 = uuidToBase64String(testUuid)
     val uuidStr = base64ToUuidString(b64).forceResult
     uuidStr should equal(testUuid.toString())
   }
 
+  val URL_SAFE_BASE64 = new org.apache.commons.codec.binary.Base64(true)
   test(s"""The base 64 representation of a uuid(${testUuid.toString}) is big endian(network-byte-order)""") {
-    val URL_SAFE_BASE64 = new org.apache.commons.codec.binary.Base64(true)
     val leastSignificantBits = testUuid.getLeastSignificantBits()
     val mostSignificantBits = testUuid.getMostSignificantBits()
     val b64Str = uuidToBase64String(testUuid)
@@ -75,9 +74,9 @@ class UuidTests extends FunSuite with Matchers {
     b64mostSignificantBits should equal(mostSignificantBits)
     b64leastSignificantBits should equal(leastSignificantBits)
   }
-      
+
   test("A invalid uuid string should not be convertable to a base64 string") {
     uuidStringToBase64("aaa").isFailure should be(true)
   }
-  
+
 }
