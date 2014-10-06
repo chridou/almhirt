@@ -38,7 +38,7 @@ object RejectionReasonNotReadyWarpPackaging extends WarpPacker[RejectionReason.N
 }
 
 object RejectionReasonAProblemWarpPackaging extends WarpPacker[RejectionReason.AProblem] with RegisterableWarpPacker with RegisterableWarpUnpacker[RejectionReason.AProblem] {
-  val warpDescriptor = WarpDescriptor("NotReady")
+  val warpDescriptor = WarpDescriptor("AProblem")
   val alternativeWarpDescriptors = WarpDescriptor(classOf[RejectionReason.AProblem]) :: Nil
   override def pack(what: RejectionReason.AProblem)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     this.warpDescriptor ~> With("problem", what.problem, ProblemPackaging)
