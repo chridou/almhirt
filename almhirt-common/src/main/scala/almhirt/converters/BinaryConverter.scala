@@ -76,6 +76,28 @@ object BinaryConverter {
     longBuffer.put(uuid.getLeastSignificantBits).put(uuid.getMostSignificantBits)
     bytes
   }
+  
+  @inline
+  def bytesToUuid(bytes: Array[Byte]): JUUID = {
+    bytesToUuidBigEndian(bytes)
+  }
+
+  @inline
+  def bytesToUuidBigEndian(bytes: Array[Byte]): JUUID = {
+    val longBuffer = ByteBuffer.wrap(bytes).asLongBuffer
+    new JUUID(longBuffer.get, longBuffer.get)
+  }
+  
+  @inline
+  def bytesToUuidLittleEndian(bytes: Array[Byte]): JUUID = {
+    val longBuffer = ByteBuffer.wrap(bytes).asLongBuffer
+    val b2 = longBuffer.get
+    val b1 = longBuffer.get
+    new JUUID(b1, b2)
+  }
+  
+  @inline
+  def bytesBigEndianToUuid(bytes: Array[Byte]): JUUID = bytesToUuid(bytes)
 
   @inline
   def bytesToShort(bytes: Array[Byte]): Short = ByteBuffer.wrap(bytes).getShort()
@@ -88,13 +110,5 @@ object BinaryConverter {
   @inline
   def bytesToDouble(bytes: Array[Byte]): Double = ByteBuffer.wrap(bytes).getDouble()
 
-  @inline
-  def bytesToUuid(bytes: Array[Byte]): JUUID = {
-    val longBuffer = ByteBuffer.wrap(bytes).asLongBuffer
-    new JUUID(longBuffer.get, longBuffer.get)
-  }
-
-  @inline
-  def bytesBigEndianToUuid(bytes: Array[Byte]): JUUID = bytesToUuid(bytes)
 
 }

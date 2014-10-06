@@ -14,8 +14,7 @@ object MiscConverters {
   def base64ToUuid(str: String): almhirt.common.AlmValidation[java.util.UUID] = {
     try {
       val bytes = BASE64.decode(str)
-      val bb = ByteBuffer.wrap(bytes);
-      scalaz.Success(new java.util.UUID(bb.getLong(), bb.getLong()))
+      scalaz.Success(almhirt.converters.BinaryConverter.bytesToUuid(bytes))
     } catch {
       case scala.util.control.NonFatal(ex) ⇒
         scalaz.Failure(almhirt.common.ParsingProblem(s""""$str" is not a base64 encoded UUID.""", cause = Some(ex)))
