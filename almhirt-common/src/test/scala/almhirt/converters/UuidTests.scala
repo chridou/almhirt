@@ -25,6 +25,14 @@ class UuidTests extends FunSuite with Matchers {
       b64.contains('/') should equal(false)
     }
   }
+  
+  test("A base64 encoded uuid has length 20 or 22!") {
+    for (i <- 1 to 100000) {
+      val uuid = JUUID.randomUUID()
+      val b64 = uuidToBase64String(uuid)
+      (b64.length == 20 || b64.length == 22) should equal(true)
+    }
+  }
 
   test("A uuid string should be convertable to a base 64 string") {
     for (i <- 1 to 10000) {
@@ -79,4 +87,10 @@ class UuidTests extends FunSuite with Matchers {
     uuidStringToBase64("aaa").isFailure should be(true)
   }
 
+  
+  test("A invalid uuid string(too long) should not be convertable to a base64 string") {
+    val uuidStr = testUuid.toString() + "1"
+    uuidStringToBase64(uuidStr).isFailure should be(true)
+  }
+  
 }

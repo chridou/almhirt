@@ -12,16 +12,16 @@ object MiscConverters {
     b64Str.substring(0, b64Str.length() - 2)
   }
 
-  private val lengthProb = ParsingProblem("A UUID as a String must have 36 characters. Example: C0D65AA2-3029-4EF4-80C9-95B6691FFF04")
   @inline
   def base64ToUuid(str: String): almhirt.common.AlmValidation[java.util.UUID] = {
     try {
-      if(str.length() != 36) {
-        scalaz.Failure(lengthProb)
+      if (str.length() == 20 || str.length() == 22) {
+        val bytes = URL_SAFE_BASE64.decode(str)
+        scalaz.Success(almhirt.converters.BinaryConverter.bytesToUuid(bytes))
       } else {
-      val bytes = URL_SAFE_BASE64.decode(str)
-      scalaz.Success(almhirt.converters.BinaryConverter.bytesToUuid(bytes))
+        scalaz.Failure(ParsingProblem(s"""A UUID in a base 64 must have 20 or 22 characters, not ${str.length()} as in "$str"."""))
       }
+
     } catch {
       case scala.util.control.NonFatal(ex) ⇒
         scalaz.Failure(almhirt.common.ParsingProblem(s""""$str" is not a base64 encoded UUID.""", cause = Some(ex)))

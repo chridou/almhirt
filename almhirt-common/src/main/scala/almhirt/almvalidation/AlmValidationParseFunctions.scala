@@ -122,7 +122,10 @@ trait AlmValidationParseFunctions {
 
   def parseUuidAlm(toParse: String): AlmValidation[UUID] =
     try {
-      UUID.fromString(toParse).success
+      if (toParse.length() == 36)
+        UUID.fromString(toParse).success
+      else
+        ParsingProblem(s"""Not a valid UUID: "$toParse". It must have 36 characters.""").failure
     } catch {
       case err: Exception ⇒ ParsingProblem("Not a valid UUID: %s".format(toParse)).failure[UUID]
     }
@@ -184,12 +187,12 @@ trait AlmValidationParseFunctions {
   /** Parses each item of the string toParse separated by sep with parser */
   def parseToManyAlm[A, M[_] <: Traversable[_]](toParse: String, parse: String ⇒ AlmValidation[A], sep: String = ";")(implicit cbf: CanBuildFrom[Seq[A], A, M[A]]): AlmValidation[M[A]] = {
     import almhirt.almvalidation.funs
-    if(toParse.isEmpty()) {
+    if (toParse.isEmpty()) {
       val bldr = cbf()
       bldr.result.success
     } else {
-    funs.inTryCatch(toParse.split(sep).map(x ⇒ parse(x))).flatMap(parsedItems ⇒
-      funs.aggregateProblemsMN[A, Seq, M](parsedItems))
+      funs.inTryCatch(toParse.split(sep).map(x ⇒ parse(x))).flatMap(parsedItems ⇒
+        funs.aggregateProblemsMN[A, Seq, M](parsedItems))
     }
   }
 
@@ -197,7 +200,7 @@ trait AlmValidationParseFunctions {
   def parseTrimmedToManyAlm[A, M[_] <: Traversable[_]](toParse: String, parse: String ⇒ AlmValidation[A], sep: String = ";")(implicit cbf: CanBuildFrom[Seq[A], A, M[A]]): AlmValidation[M[A]] = {
     parseToManyAlm(toParse.trim, str ⇒ parse(str.trim), sep)
   }
-  
+
   private def emptyStringIsNone[T](str: String, f: String ⇒ AlmValidation[T]) =
     if (str.trim.isEmpty)
       None.success
