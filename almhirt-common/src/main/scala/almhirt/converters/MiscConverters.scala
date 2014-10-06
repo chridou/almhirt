@@ -3,17 +3,18 @@ package almhirt.converters
 import java.nio.ByteBuffer
 
 object MiscConverters {
-  private val BASE64 = new org.apache.commons.codec.binary.Base64(true)
+  // url-safe = true
+  private val URL_SAFE_BASE64 = new org.apache.commons.codec.binary.Base64(true)
   @inline
   def uuidToBase64String(uuid: java.util.UUID): String = {
-    val b64Str = new String(BASE64.encode(almhirt.converters.BinaryConverter.uuidToBytes(uuid)))
+    val b64Str = new String(URL_SAFE_BASE64.encode(almhirt.converters.BinaryConverter.uuidToBytes(uuid)))
     b64Str.substring(0, b64Str.length() - 2)
   }
 
   @inline
   def base64ToUuid(str: String): almhirt.common.AlmValidation[java.util.UUID] = {
     try {
-      val bytes = BASE64.decode(str)
+      val bytes = URL_SAFE_BASE64.decode(str)
       scalaz.Success(almhirt.converters.BinaryConverter.bytesToUuid(bytes))
     } catch {
       case scala.util.control.NonFatal(ex) ⇒

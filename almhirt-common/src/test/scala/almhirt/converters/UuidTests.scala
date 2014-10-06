@@ -5,6 +5,7 @@ import scalaz._, Scalaz._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import org.scalatest._
+import java.nio.ByteBuffer
 
 class UuidTests extends FunSuite with Matchers {
   import MiscConverters._
@@ -62,7 +63,21 @@ class UuidTests extends FunSuite with Matchers {
     uuidStr should equal(testUuid.toString())
   }
 
+  test(s"""The base 64 representation of a uuid(4{testUuid.toString}) is big endian(network-byte-order)""") {
+    val URL_SAFE_BASE64 = new org.apache.commons.codec.binary.Base64(true)
+    val leastSignificantBits = testUuid.getLeastSignificantBits()
+    val mostSignificantBits = testUuid.getMostSignificantBits()
+    val b64Str = uuidToBase64String(testUuid)
+    val b64Bytes = URL_SAFE_BASE64.decode(b64Str)
+    val longBuffer = ByteBuffer.wrap(b64Bytes).asLongBuffer
+    val b64mostSignificantBits = longBuffer.get()
+    val b64leastSignificantBits = longBuffer.get()
+    b64mostSignificantBits should equal(mostSignificantBits)
+    b64leastSignificantBits should equal(leastSignificantBits)
+  }
+      
   test("A invalid uuid string should not be convertable to a base64 string") {
     uuidStringToBase64("aaa").isFailure should be(true)
   }
+  
 }
