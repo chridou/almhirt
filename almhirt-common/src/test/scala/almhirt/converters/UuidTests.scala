@@ -63,7 +63,7 @@ class UuidTests extends FunSuite with Matchers {
     uuidStr should equal(testUuid.toString())
   }
 
-  test(s"""The base 64 representation of a uuid(4{testUuid.toString}) is big endian(network-byte-order)""") {
+  test(s"""The base 64 representation of a uuid(${testUuid.toString}) is big endian(network-byte-order)""") {
     val URL_SAFE_BASE64 = new org.apache.commons.codec.binary.Base64(true)
     val leastSignificantBits = testUuid.getLeastSignificantBits()
     val mostSignificantBits = testUuid.getMostSignificantBits()
