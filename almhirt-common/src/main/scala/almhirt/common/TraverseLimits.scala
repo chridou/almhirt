@@ -1,17 +1,19 @@
 package almhirt.common
 
-final case class TraverseWindow(skip: TraverseWindow.LowerBound, take: TraverseWindow.Length)
+final case class TraverseWindow(skip: TraverseWindow.LowerBound, take: TraverseWindow.Length) {
+  def toInts = (skip.toInt, take.toInt)
+}
 
 object TraverseWindow {
   val noWindow = TraverseWindow(SkipNone, TakeAll)
 
-  sealed trait LowerBound
-  final case class Skip(amount: Int) extends LowerBound
-  case object SkipNone extends LowerBound
+  sealed trait LowerBound { def toInt: Int }
+  final case class Skip(amount: Int) extends LowerBound { def toInt: Int = amount }
+  case object SkipNone extends LowerBound { val toInt = 0 }
 
-  sealed trait Length
-  final case class Take(amount: Int) extends Length
-  case object TakeAll extends Length
+  sealed trait Length { def toInt: Int }
+  final case class Take(amount: Int) extends Length { def toInt: Int = amount }
+  case object TakeAll extends Length { def toInt: Int = Int.MaxValue }
 
   object skipStart {
     def apply(amount: Int): LowerBoundAnchor = new LowerBoundAnchor { val captured = Skip(amount) }

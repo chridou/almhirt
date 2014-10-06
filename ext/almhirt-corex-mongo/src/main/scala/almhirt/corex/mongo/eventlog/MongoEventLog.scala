@@ -165,14 +165,71 @@ private[almhirt] class MongoEventLogImpl(
       })
   }
 
-  def getEvents(query: BSONDocument, sort: BSONDocument): Enumerator[Event] = {
+  def createQuery(dateRange: LocalDateTimeRange): BSONDocument = {
+    dateRange match {
+      case LocalDateTimeRange(BeginningOfTime, EndOfTime) =>
+        BSONDocument()
+
+      case LocalDateTimeRange(From(from), EndOfTime) =>
+        BSONDocument(
+          "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
+
+      case LocalDateTimeRange(After(after), EndOfTime) =>
+        BSONDocument(
+          "timestamp" -> BSONDocument("$gt" -> localDateTimeToBsonDateTime(after)))
+
+      case LocalDateTimeRange(BeginningOfTime, To(to)) =>
+        BSONDocument(
+          "timestamp" -> BSONDocument("$lte" -> localDateTimeToBsonDateTime(to)))
+
+      case LocalDateTimeRange(BeginningOfTime, Until(until)) =>
+        BSONDocument(
+          "timestamp" -> BSONDocument("$lt" -> localDateTimeToBsonDateTime(until)))
+
+      case LocalDateTimeRange(From(from), To(to)) =>
+        BSONDocument(
+          "$and" -> BSONDocument(
+            "timestamp" -> BSONDocument(
+              "$gte" -> localDateTimeToBsonDateTime(from)),
+            "timestamp" -> BSONDocument(
+              "$lte" -> localDateTimeToBsonDateTime(to))))
+
+      case LocalDateTimeRange(From(from), Until(until)) =>
+        BSONDocument(
+          "$and" -> BSONDocument(
+            "timestamp" -> BSONDocument(
+              "$gte" -> localDateTimeToBsonDateTime(from)),
+            "timestamp" -> BSONDocument(
+              "$lt" -> localDateTimeToBsonDateTime(until))))
+
+      case LocalDateTimeRange(After(after), To(to)) =>
+        BSONDocument(
+          "$and" -> BSONDocument(
+            "timestamp" -> BSONDocument(
+              "$gt" -> localDateTimeToBsonDateTime(after)),
+            "timestamp" -> BSONDocument(
+              "$lte" -> localDateTimeToBsonDateTime(to))))
+
+      case LocalDateTimeRange(After(after), Until(until)) =>
+        BSONDocument(
+          "$and" -> BSONDocument(
+            "timestamp" -> BSONDocument(
+              "$gt" -> localDateTimeToBsonDateTime(after)),
+            "timestamp" -> BSONDocument(
+              "$lt" -> localDateTimeToBsonDateTime(until))))
+    }
+  }
+
+  def getEvents(query: BSONDocument, sort: BSONDocument, traverse: TraverseWindow): Enumerator[Event] = {
+    val (skip, take) = traverse.toInts
     val collection = db(collectionName)
-    val enumerator = collection.find(query, projectionFilter).sort(sort).cursor.enumerate(10000, true)
+    val enumerator = collection.find(query, projectionFilter).options(new QueryOpts(skipN = skip)).sort(sort).cursor.enumerate(take, true)
     enumerator.through(fromBsonDocToEvent)
   }
 
-  def fetchAndDispatchEvents(query: BSONDocument, sort: BSONDocument, respondTo: ActorRef) {
-    respondTo ! FetchedEvents(getEvents(query, sort))
+  def fetchAndDispatchEvents(m: FetchEvents, respondTo: ActorRef) {
+    val query = createQuery(m.range)
+    respondTo ! FetchedEvents(getEvents(query, sortByTimestamp, m.traverse))
   }
 
   private case object Initialize
@@ -269,65 +326,9 @@ private[almhirt] class MongoEventLogImpl(
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
 
-    case FetchEventsParts(BeginningOfTime, EndOfTime, skip, length) =>
-      val query = BSONDocument()
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
+    case m: FetchEvents =>
+      fetchAndDispatchEvents(m, sender())
 
-    case FetchEventsParts(From(from), EndOfTime, skip, length) =>
-      val query = BSONDocument(
-        "timestamp" -> BSONDocument("$gte" -> localDateTimeToBsonDateTime(from)))
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
-
-    case FetchEventsParts(After(after), EndOfTime, skip, length) =>
-      val query = BSONDocument(
-        "timestamp" -> BSONDocument("$gt" -> localDateTimeToBsonDateTime(after)))
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
-
-    case FetchEventsParts(BeginningOfTime, To(to), skip, length) =>
-      val query = BSONDocument(
-        "timestamp" -> BSONDocument("$lte" -> localDateTimeToBsonDateTime(to)))
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
-
-    case FetchEventsParts(BeginningOfTime, Until(until), skip, length) =>
-      val query = BSONDocument(
-        "timestamp" -> BSONDocument("$lt" -> localDateTimeToBsonDateTime(until)))
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
-
-    case FetchEventsParts(From(from), To(to), skip, length) =>
-      val query = BSONDocument(
-        "$and" -> BSONDocument(
-          "timestamp" -> BSONDocument(
-            "$gte" -> localDateTimeToBsonDateTime(from)),
-          "timestamp" -> BSONDocument(
-            "$lte" -> localDateTimeToBsonDateTime(to))))
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
-
-    case FetchEventsParts(From(from), Until(until), skip, length) =>
-      val query = BSONDocument(
-        "$and" -> BSONDocument(
-          "timestamp" -> BSONDocument(
-            "$gte" -> localDateTimeToBsonDateTime(from)),
-          "timestamp" -> BSONDocument(
-            "$lt" -> localDateTimeToBsonDateTime(until))))
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
-
-    case FetchEventsParts(After(after), To(to), skip, length) =>
-      val query = BSONDocument(
-        "$and" -> BSONDocument(
-          "timestamp" -> BSONDocument(
-            "$gt" -> localDateTimeToBsonDateTime(after)),
-          "timestamp" -> BSONDocument(
-            "$lte" -> localDateTimeToBsonDateTime(to))))
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
-
-    case FetchEventsParts(After(after), Until(until), skip, length) =>
-      val query = BSONDocument(
-        "$and" -> BSONDocument(
-          "timestamp" -> BSONDocument(
-            "$gt" -> localDateTimeToBsonDateTime(after)),
-          "timestamp" -> BSONDocument(
-            "$lt" -> localDateTimeToBsonDateTime(until))))
-      fetchAndDispatchEvents(query, sortByTimestamp, sender)
   }
 
   override def receive =
