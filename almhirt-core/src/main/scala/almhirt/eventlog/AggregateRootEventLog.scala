@@ -1,6 +1,7 @@
 package almhirt.eventlog
 
 import akka.actor._
+import scalaz.syntax.validation._
 import almhirt.common._
 import almhirt.almvalidation.kit._
 import play.api.libs.iteratee.Enumerator
@@ -23,8 +24,14 @@ object AggregateRootEventLog {
       }
 
     def parseStringOption(v: Option[String]): AlmValidation[VersionRangeStartMarker] = {
-      val vStr = v.flatMap(str => if (str.trim().isEmpty()) None else Some(str)).getOrElse("0")
-      vStr.toLongAlm.map(x => fromLongOption(Some(x)))
+      v match {
+        case None => FromStart.success
+        case Some(v) =>
+          if (v.trim().isEmpty())
+            FromStart.success
+          else
+            v.toLongAlm.map(v => fromLongOption(Some(v)))
+      }
     }
   }
 
@@ -36,13 +43,20 @@ object AggregateRootEventLog {
     def fromLongOption(v: Option[Long]): VersionRangeEndMarker =
       v match {
         case Some(v) if v >= 0 && v < Int.MaxValue => ToVersion(AggregateRootVersion(v))
+        case Some(v) if v == Int.MaxValue => ToEnd
         case Some(v) if v < 0 => ToVersion(AggregateRootVersion(0L))
-        case _ => ToEnd
+        case None => ToEnd
       }
 
     def parseStringOption(v: Option[String]): AlmValidation[VersionRangeEndMarker] = {
-      val vStr = v.flatMap(str => if (str.trim().isEmpty()) None else Some(str)).getOrElse("0")
-      vStr.toLongAlm.map(x => fromLongOption(Some(x)))
+      v match {
+        case None => ToEnd.success
+        case Some(v) =>
+          if (v.trim().isEmpty())
+            ToEnd.success
+          else
+            v.toLongAlm.map(v => fromLongOption(Some(v)))
+      }
     }
   }
 
