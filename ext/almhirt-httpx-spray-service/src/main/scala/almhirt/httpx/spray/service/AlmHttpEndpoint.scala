@@ -2,6 +2,7 @@ package almhirt.httpx.spray.service
 
 import scalaz._, Scalaz._
 import almhirt.common._
+import almhirt.tracking._
 import almhirt.httpx.spray.marshalling.HasProblemMarshaller
 import scalaz.Validation.FlatMap._
 import spray.httpx.marshalling.Marshaller
@@ -13,7 +14,7 @@ trait AlmHttpProblemTerminator {
   def terminateProblem(ctx: RequestContext, problem: Problem)(implicit problemMarshaller: Marshaller[Problem])
 }
 
-trait AlmHttpEndpoint { 
+trait AlmHttpEndpoint {
 
   sealed trait PostMappedResult[+T]
   case class SuccessContent[T](payload: T, status: StatusCode = StatusCodes.OK) extends PostMappedResult[T]
@@ -155,6 +156,43 @@ trait AlmHttpEndpoint {
       ctx.completeAlmPostMappedF[U, T](self, pf)
   }
 
+  implicit protected class AlmFutureCommandResponseOps(self: AlmFuture[CommandResponse]) {
+    def completeWithFlattenedCommandResponse(implicit entityMarshaller: Marshaller[String], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]): Unit =
+      self.onComplete(
+        fail => problemTerminator.terminateProblem(ctx, fail),
+        commandResponse => {
+          commandResponse match {
+            case CommandAccepted(id) ⇒
+              ctx.complete(StatusCodes.Accepted, id.value)
+            case CommandNotAccepted(id, problem) ⇒
+              problemTerminator.terminateProblem(ctx, problem)
+            case TrackedCommandResult(id, CommandStatus.Executed) ⇒
+              ctx.complete(StatusCodes.OK, id.value)
+            case TrackedCommandResult(id, CommandStatus.NotExecuted(cause)) ⇒
+              problemTerminator.terminateProblem(ctx, CommandExecutionFailedProblem("A was not completed", args = Map("command-id" -> id.value), cause = Some(cause)))
+            case TrackingFailed(id, problem) ⇒
+              problemTerminator.terminateProblem(ctx, problem)
+          }
+        })
+
+    def completeWithCommandResponse(implicit entityMarshaller: Marshaller[CommandResponse], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]): Unit =
+      self.onComplete(
+        fail => problemTerminator.terminateProblem(ctx, fail),
+        commandResponse => {
+          commandResponse match {
+            case r: CommandAccepted ⇒
+              ctx.complete(StatusCodes.Accepted, r)
+            case r: CommandNotAccepted ⇒
+              ctx.complete(determineStatusCode(r.problem), r)
+            case r @ TrackedCommandResult(_, CommandStatus.Executed) ⇒
+              ctx.complete(StatusCodes.OK, r)
+            case r @ TrackedCommandResult(id, CommandStatus.NotExecuted(cause)) ⇒
+              ctx.complete(determineStatusCode(cause.toProblem), r)
+            case r @ TrackingFailed(id, problem) ⇒
+              ctx.complete(determineStatusCode(r.problem), r)
+          }
+        })
+  }
 }
 
   

@@ -56,7 +56,7 @@ private[almhirt] class CommandEndpointImpl(
       sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
 
     case cmd: Command ⇒
-      sender() ! CommandNotAccepted(cmd.commandId, RejectionReason.NotReady("Command endpoint not ready! Try again later."))
+      sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = {
@@ -73,8 +73,8 @@ private[almhirt] class CommandEndpointImpl(
             callback = _.fold(
               fail ⇒
                 fail match {
-                  case OperationTimedOutProblem(_) ⇒ pinnedSender ! TrackedCommandTimedOut(cmd.commandId)
-                  case _ ⇒ pinnedSender ! TrackerFailed(cmd.commandId, fail)
+                  case OperationTimedOutProblem(p) ⇒ pinnedSender ! TrackingFailed(cmd.commandId, p)
+                  case _ ⇒ pinnedSender ! TrackingFailed(cmd.commandId, fail)
                 },
               pinnedSender ! TrackedCommandResult(cmd.commandId, _)),
             deadline = maxTrackingDuration.fromNow)
@@ -89,9 +89,9 @@ private[almhirt] class CommandEndpointImpl(
           } else if (isErrorEmitted) {
             ServiceBrokenProblem("Command processing is broken.")
           } else if (!isActive) {
-            RejectionReason.NotReady("Command processing is not yet ready.")
+            ServiceNotAvailableProblem("Command processing is not yet ready.")
           } else if (totalDemand == 0) {
-            RejectionReason.TooBusy("No demand. Try again later.")
+            ServiceBusyProblem("No demand. Try again later.")
           } else {
             UnspecifiedProblem("Unknown cause.")
           }

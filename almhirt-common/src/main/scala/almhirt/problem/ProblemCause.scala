@@ -45,19 +45,28 @@ object ProblemCause {
 
   implicit def throwable2ProblemCause(exn: Throwable): ProblemCause = ProblemCause(exn)
   implicit def prob2ProblemCause(problem: Problem): ProblemCause = ProblemCause(problem)
+
+  implicit class ProblemCauseOps(self: ProblemCause) {
+    def toProblem: Problem =
+      self match {
+        case CauseIsProblem(p) => p
+        case CauseIsThrowable(HasAThrowable(exn)) => almhirt.common.ExceptionCaughtProblem(exn)
+        case CauseIsThrowable(d: HasAThrowableDescribed) => almhirt.common.UnspecifiedProblem(s"There was a description of an exception:\n$d")
+      }
+  }
 }
 
 object ContainsThrowable {
   def unapply(p: Problem): Option[Throwable] =
     p match {
-    case IsSingleProblem(sp) ⇒
-      sp.cause match {
-        case Some(CauseIsThrowable(HasAThrowable(throwable))) ⇒
-          Some(throwable)
-        case _ ⇒ None
-      }
-    case _ ⇒ None
-  }
+      case IsSingleProblem(sp) ⇒
+        sp.cause match {
+          case Some(CauseIsThrowable(HasAThrowable(throwable))) ⇒
+            Some(throwable)
+          case _ ⇒ None
+        }
+      case _ ⇒ None
+    }
 }
 
 

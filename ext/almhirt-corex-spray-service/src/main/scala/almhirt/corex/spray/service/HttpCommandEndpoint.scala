@@ -20,14 +20,14 @@ import spray.httpx.marshalling.Marshaller
 import almhirt.context.HasAlmhirtContext
 
 object HttpCommandEndpoint {
-  case class HttpCommandEndpointParams (
+  case class HttpCommandEndpointParams(
     commandEndpoint: ActorRef,
     maxSyncDuration: scala.concurrent.duration.FiniteDuration,
     exectionContextSelector: ExtendedExecutionContextSelector,
     commandUnmarshaller: Unmarshaller[Command],
     commandResponseMarshaller: Marshaller[CommandResponse],
     problemMarshaller: Marshaller[Problem])
-  
+
   def paramsFactory(implicit ctx: AlmhirtContext): AlmValidation[(ActorRef, Unmarshaller[Command], Marshaller[CommandResponse], Marshaller[Problem]) => HttpCommandEndpointParams] = {
     import com.typesafe.config.Config
     import almhirt.configuration._
@@ -41,7 +41,7 @@ object HttpCommandEndpoint {
         HttpCommandEndpointParams(commandEndpoint, maxSyncDuration, selector, commandUnmarshaller, commandResponseMarshaller, problemMarshaller)
     }
   }
-  
+
 }
 
 trait HttpCommandEndpoint extends Directives {
@@ -52,25 +52,21 @@ trait HttpCommandEndpoint extends Directives {
   implicit private lazy val execCtx = httpCommandEndpointParams.exectionContextSelector.select(me.almhirtContext, me.context)
   implicit private val commandUnmarshaller = httpCommandEndpointParams.commandUnmarshaller
   implicit private val commandResponseMarshaller = httpCommandEndpointParams.commandResponseMarshaller
-  implicit private val problemMarshaller = httpCommandEndpointParams.problemMarshaller 
+  implicit private val problemMarshaller = httpCommandEndpointParams.problemMarshaller
 
   val executeCommand = post & entity(as[Command])
 
   val executeCommandTerminator = pathPrefix("execute") {
     pathEnd {
-      executeCommand { cmd ⇒
-        implicit ctx ⇒ {
-          ((httpCommandEndpointParams.commandEndpoint ? cmd)(httpCommandEndpointParams.maxSyncDuration)).mapCastTo[CommandResponse].completeRequestPostMapped[CommandResponse] {
-            case r: CommandAccepted ⇒ SuccessContent(r, StatusCodes.Accepted)
-            case r: CommandNotAccepted ⇒
-              r.why match {
-                case _: RejectionReason.TooBusy => FailureContent(r, StatusCodes.TooManyRequests)
-                case _: RejectionReason.NotReady => FailureContent(r, StatusCodes.ServiceUnavailable)
-                case _: RejectionReason.AProblem => FailureContent(r, StatusCodes.InternalServerError)
-              }
-            case r: TrackedCommandResult ⇒ SuccessContent(r, StatusCodes.OK)
-            case r: TrackedCommandTimedOut ⇒ FailureContent(r, StatusCodes.InternalServerError)
-            case r: TrackerFailed ⇒ FailureContent(r, StatusCodes.InternalServerError)
+      parameter('flat ?) { flatParam =>
+
+        executeCommand { cmd ⇒
+          implicit ctx ⇒ {
+            val flat = flatParam.map(_.toLowerCase() == "true").getOrElse(false)
+            if (flat)
+              ((httpCommandEndpointParams.commandEndpoint ? cmd)(httpCommandEndpointParams.maxSyncDuration)).mapCastTo[CommandResponse].completeWithFlattenedCommandResponse
+            else
+              ((httpCommandEndpointParams.commandEndpoint ? cmd)(httpCommandEndpointParams.maxSyncDuration)).mapCastTo[CommandResponse].completeWithCommandResponse
           }
         }
       }

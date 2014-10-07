@@ -27,15 +27,15 @@ object CommandNotAcceptedWarpPackaging extends WarpPacker[CommandNotAccepted] wi
   val warpDescriptor = WarpDescriptor("CommandNotAccepted")
   val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandNotAccepted]) :: Nil
   override def pack(what: CommandNotAccepted)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    this.warpDescriptor ~> P("id", what.id.value) ~> With("why", what.why, RejectionReasonWarpPackaging)
+    this.warpDescriptor ~> P("id", what.id.value) ~> With("problem", what.problem, ProblemPackaging)
   }
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[CommandNotAccepted] =
     withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id")
-        why <- lookup.getWith[RejectionReason]("why", RejectionReasonWarpPackaging)
-      } yield CommandNotAccepted(CommandId(id), why)
+        problem <- lookup.getWith("problem", ProblemPackaging)
+      } yield CommandNotAccepted(CommandId(id), problem)
     }
 }
 
@@ -55,34 +55,19 @@ object TrackedCommandResultWarpPackaging extends WarpPacker[TrackedCommandResult
     }
 }
 
-object TrackedCommandTimedOutWarpPackaging extends WarpPacker[TrackedCommandTimedOut] with RegisterableWarpPacker with RegisterableWarpUnpacker[TrackedCommandTimedOut] {
-  val warpDescriptor = WarpDescriptor("TrackedCommandTimedOut")
-  val alternativeWarpDescriptors = WarpDescriptor(classOf[TrackedCommandTimedOut]) :: Nil
-  override def pack(what: TrackedCommandTimedOut)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
-    this.warpDescriptor ~> P("id", what.id.value)
-  }
-
-  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TrackedCommandTimedOut] =
-    withFastLookUp(from) { lookup ⇒
-      for {
-        id <- lookup.getAs[String]("id")
-      } yield TrackedCommandTimedOut(CommandId(id))
-    }
-}
-
-object TrackerFailedWarpPackaging extends WarpPacker[TrackerFailed] with RegisterableWarpPacker with RegisterableWarpUnpacker[TrackerFailed] {
-  val warpDescriptor = WarpDescriptor("TrackerFailed")
-  val alternativeWarpDescriptors = WarpDescriptor(classOf[TrackerFailed]) :: Nil
-  override def pack(what: TrackerFailed)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+object TrackingFailedWarpPackaging extends WarpPacker[TrackingFailed] with RegisterableWarpPacker with RegisterableWarpUnpacker[TrackingFailed] {
+  val warpDescriptor = WarpDescriptor("TrackingFailed")
+  val alternativeWarpDescriptors = WarpDescriptor(classOf[TrackingFailed]) :: Nil
+  override def pack(what: TrackingFailed)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     this.warpDescriptor ~> P("id", what.id.value) ~> With("problem", what.problem, ProblemPackaging)
   }
 
-  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TrackerFailed] =
+  def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[TrackingFailed] =
     withFastLookUp(from) { lookup ⇒
       for {
         id <- lookup.getAs[String]("id")
         problem <- lookup.getWith("problem", ProblemPackaging)
-      } yield TrackerFailed(CommandId(id), problem)
+      } yield TrackingFailed(CommandId(id), problem)
     }
 }
 
@@ -93,12 +78,11 @@ object TrackedCommandResponseWarpPackaging extends WarpPacker[TrackedCommandResp
   override def pack(what: TrackedCommandResponse)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
       case w: TrackedCommandResult ⇒ TrackedCommandResultWarpPackaging(w)
-      case w: TrackedCommandTimedOut ⇒ TrackedCommandTimedOutWarpPackaging(w)
-      case w: TrackerFailed ⇒ TrackerFailedWarpPackaging(w)
-    }
+      case w: TrackingFailed ⇒ TrackingFailedWarpPackaging(w)
+   }
   }
   
-  override val unpackers = TrackedCommandResultWarpPackaging :: TrackedCommandTimedOutWarpPackaging :: TrackerFailedWarpPackaging :: Nil
+  override val unpackers = TrackedCommandResultWarpPackaging :: TrackingFailedWarpPackaging :: Nil
 }
 
 object CommandResponseWarpPackaging extends WarpPacker[CommandResponse] with RegisterableWarpPacker with RegisterableWarpUnpacker[CommandResponse] with DivertingWarpUnpacker[CommandResponse] with DivertingWarpUnpackerWithAutoRegistration[CommandResponse] {
@@ -110,10 +94,9 @@ object CommandResponseWarpPackaging extends WarpPacker[CommandResponse] with Reg
       case w: CommandAccepted ⇒ CommandAcceptedWarpPackaging(w)
       case w: CommandNotAccepted ⇒ CommandNotAcceptedWarpPackaging(w)
       case w: TrackedCommandResult ⇒ TrackedCommandResultWarpPackaging(w)
-      case w: TrackedCommandTimedOut ⇒ TrackedCommandTimedOutWarpPackaging(w)
-      case w: TrackerFailed ⇒ TrackerFailedWarpPackaging(w)
+      case w: TrackingFailed ⇒ TrackingFailedWarpPackaging(w)
     }
   }
   
-  override val unpackers = CommandAcceptedWarpPackaging :: CommandNotAcceptedWarpPackaging :: TrackedCommandResultWarpPackaging :: TrackedCommandTimedOutWarpPackaging :: TrackerFailedWarpPackaging :: Nil
+  override val unpackers = CommandAcceptedWarpPackaging :: CommandNotAcceptedWarpPackaging :: TrackedCommandResultWarpPackaging :: TrackingFailedWarpPackaging :: Nil
 }

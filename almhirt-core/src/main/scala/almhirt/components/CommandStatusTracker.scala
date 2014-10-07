@@ -6,7 +6,7 @@ import scalaz._, Scalaz._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
-import almhirt.tracking.{ CommandStatus, CommandStatusChanged }
+import almhirt.tracking.{ CommandStatus, CommandStatusChanged, CommandResult}
 import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
@@ -15,7 +15,7 @@ import akka.stream.scaladsl2._
 object CommandStatusTracker {
   sealed trait CommandStatusTrackerMessage
 
-  final case class TrackCommand(commandId: CommandId, callback: AlmValidation[CommandStatus.CommandResult] ⇒ Unit, deadline: Deadline)
+  final case class TrackCommand(commandId: CommandId, callback: AlmValidation[CommandResult] ⇒ Unit, deadline: Deadline)
 
   object TrackCommandMapped {
     def apply(commandId: CommandId, callback: TrackerResult ⇒ Unit, deadline: Deadline): TrackCommand =
@@ -28,7 +28,7 @@ object CommandStatusTracker {
   case object TrackedTimeout extends TrackerResult
   final case class TrackedError(prob: Problem) extends TrackerResult
 
-  private def mapResult(res: AlmValidation[CommandStatus.CommandResult]): TrackerResult =
+  private def mapResult(res: AlmValidation[CommandResult]): TrackerResult =
     res.fold(
       fail ⇒
         fail match {
@@ -80,7 +80,7 @@ private[almhirt] class MyCommandStatusTracker(
 
   implicit val executionContext: ExecutionContext = context.dispatcher
 
-  private case class Entry(callback: AlmValidation[CommandStatus.CommandResult] ⇒ Unit, due: Deadline)
+  private case class Entry(callback: AlmValidation[CommandResult] ⇒ Unit, due: Deadline)
 
   private case object CheckTimeouts
   private case class RemoveTimedOut(timedOut: Map[CommandId, Set[Long]])
@@ -94,12 +94,12 @@ private[almhirt] class MyCommandStatusTracker(
   private type EntriesById = Map[Long, Entry]
   private[this] var trackingSubscriptions: Map[CommandId, EntriesById] = Map.empty
 
-  private[this] var cachedStatusLookUp: Map[CommandId, CommandStatus.CommandResult] = Map.empty
+  private[this] var cachedStatusLookUp: Map[CommandId, CommandResult] = Map.empty
   private[this] var cachedStatusSeq: Vector[CommandId] = Vector.empty
 
   private[this] val shrinkSize = (shrinkCacheAt - targetCacheSize) + 1
 
-  private def addStatusToCache(id: CommandId, status: CommandStatus.CommandResult) {
+  private def addStatusToCache(id: CommandId, status: CommandResult) {
     if (cachedStatusSeq.size == shrinkCacheAt) {
       val (remove, keep) = cachedStatusSeq.splitAt(shrinkSize)
       cachedStatusSeq = keep
@@ -132,7 +132,7 @@ private[almhirt] class MyCommandStatusTracker(
 
     case ActorSubscriberMessage.OnNext(next: CommandStatusChanged) ⇒
       next.status match {
-        case r: CommandStatus.CommandResult ⇒
+        case r: CommandResult ⇒
           trackingSubscriptions.get(next.commandHeader.id).foreach { entries ⇒
             AlmFuture.compute(entries.foreach(_._2.callback(r.success)))
             trackingSubscriptions = trackingSubscriptions - next.commandHeader.id

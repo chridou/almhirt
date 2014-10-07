@@ -5,7 +5,7 @@ import almhirt.common._
 import almhirt.problem._
 import riftwarp._
 import riftwarp.std.kit._
-import almhirt.tracking.CommandStatus
+import almhirt.tracking.{CommandResult, CommandStatus}
 
 object CommandStatusInitiatedWarpPackaging extends WarpPacker[CommandStatus.Initiated.type] with RegisterableWarpPacker with RegisterableWarpUnpacker[CommandStatus.Initiated.type] {
   val warpDescriptor = WarpDescriptor("CommandStatus_Initiated")
@@ -41,11 +41,11 @@ object CommandStatusNotExecutedWarpPackaging extends WarpPacker[CommandStatus.No
     }
 }
 
-object CommandStatusCommandResultWarpPackaging extends WarpPacker[CommandStatus.CommandResult] with RegisterableWarpPacker with RegisterableWarpUnpacker[CommandStatus.CommandResult] with DivertingWarpUnpacker[CommandStatus.CommandResult] with DivertingWarpUnpackerWithAutoRegistration[CommandStatus.CommandResult] {
+object CommandStatusCommandResultWarpPackaging extends WarpPacker[CommandResult] with RegisterableWarpPacker with RegisterableWarpUnpacker[CommandResult] with DivertingWarpUnpacker[CommandResult] with DivertingWarpUnpackerWithAutoRegistration[CommandResult] {
   val warpDescriptor = WarpDescriptor("CommandStatus_CommandResult")
-  val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandStatus.CommandResult]) :: WarpDescriptor(classOf[CommandStatus.CommandResult].getSimpleName()) :: Nil
+  val alternativeWarpDescriptors = WarpDescriptor(classOf[CommandResult]) :: WarpDescriptor(classOf[CommandResult].getSimpleName()) :: Nil
 
-  override def pack(what: CommandStatus.CommandResult)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
+  override def pack(what: CommandResult)(implicit packers: WarpPackers): AlmValidation[WarpPackage] = {
     what match {
       case CommandStatus.Executed ⇒ CommandStatusExecutedWarpPackaging(CommandStatus.Executed)
       case w: CommandStatus.NotExecuted ⇒ CommandStatusNotExecutedWarpPackaging(w)

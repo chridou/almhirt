@@ -314,4 +314,14 @@ object problemtypes {
       SingleProblem(msg, NoSuchElementProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, NoSuchElementProblem)
   }
+  
+  /**
+   * Command execution has been initiated but execution couldn't be completed
+   */
+  case object CommandExecutionFailedProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, CommandExecutionFailedProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, CommandExecutionFailedProblem)
+  }
+  
 }

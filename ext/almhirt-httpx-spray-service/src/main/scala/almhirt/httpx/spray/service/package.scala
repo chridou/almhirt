@@ -4,22 +4,42 @@ import almhirt.common._
 import spray.routing.RequestContext
 import spray.http._
 import spray.httpx.marshalling.Marshaller
+import almhirt.problem.CauseIsProblem
+import almhirt.problem.CauseIsThrowable
+import almhirt.problem.HasAThrowable
 
 package object service {
+  def determineStatusCode(problem: Problem): StatusCode = {
+    problem match {
+      case NotFoundProblem(_) ⇒ StatusCodes.NotFound
+      case ServiceNotFoundProblem(_) ⇒ StatusCodes.ServiceUnavailable
+      case ServiceBrokenProblem(_) ⇒ StatusCodes.InternalServerError
+      case ServiceShutDownProblem(_) ⇒ StatusCodes.ServiceUnavailable
+      case ServiceNotAvailableProblem(_) ⇒ StatusCodes.ServiceUnavailable
+      case ServiceBusyProblem(_) ⇒ StatusCodes.TooManyRequests
+      case BadDataProblem(_) ⇒ StatusCodes.BadRequest
+      case ConstraintViolatedProblem(_) ⇒ StatusCodes.BadRequest
+      case BusinessRuleViolatedProblem(_) ⇒ StatusCodes.BadRequest
+      case OperationTimedOutProblem(_) ⇒ StatusCodes.InternalServerError
+      case ExceptionCaughtProblem(p) ⇒
+        p.cause match {
+          case Some(CauseIsThrowable(HasAThrowable(exn: EscalatedProblemException))) =>
+            determineStatusCode(exn.escalatedProblem)
+          case _ => StatusCodes.InternalServerError
+        }
+      case CommandExecutionFailedProblem(p) ⇒
+        p.cause match {
+          case Some(CauseIsProblem(innerProb)) => determineStatusCode(innerProb)
+          case Some(CauseIsThrowable(HasAThrowable(exn: EscalatedProblemException))) =>
+            determineStatusCode(exn.escalatedProblem)
+          case _ => StatusCodes.InternalServerError
+        }
+      case _ ⇒ StatusCodes.InternalServerError
+    }
+  }
+
   implicit object DefaultAlmHttpProblemTerminator extends AlmHttpProblemTerminator {
     def terminateProblem(ctx: RequestContext, problem: Problem)(implicit problemMarshaller: Marshaller[Problem]) =
-      problem match {
-        case NotFoundProblem(p) ⇒ ctx.complete(StatusCodes.NotFound, p)
-        case ServiceNotFoundProblem(p) ⇒ ctx.complete(StatusCodes.ServiceUnavailable, p)
-        case ServiceBrokenProblem(p) ⇒ ctx.complete(StatusCodes.InternalServerError, p)
-        case ServiceShutDownProblem(p) ⇒ ctx.complete(StatusCodes.ServiceUnavailable, p)
-        case ServiceNotAvailableProblem(p) ⇒ ctx.complete(StatusCodes.ServiceUnavailable, p)
-        case ServiceBusyProblem(p) ⇒ ctx.complete(StatusCodes.TooManyRequests , p)
-        case BadDataProblem(p) ⇒ ctx.complete(StatusCodes.BadRequest, p)
-        case ConstraintViolatedProblem(p) ⇒ ctx.complete(StatusCodes.BadRequest, p)
-        case BusinessRuleViolatedProblem(p) ⇒ ctx.complete(StatusCodes.BadRequest, p)
-        case OperationTimedOutProblem(p) ⇒ ctx.complete(StatusCodes.InternalServerError, p)
-        case p ⇒ ctx.complete(StatusCodes.InternalServerError, p)
-      }
+      ctx.complete(determineStatusCode(problem), problem)
   }
 }
