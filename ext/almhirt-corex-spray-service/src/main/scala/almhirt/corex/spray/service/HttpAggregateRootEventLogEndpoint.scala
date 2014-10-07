@@ -63,10 +63,9 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
               for {
                 eventLogMessage <- AlmFuture.completed {
                   for {
-                    skip <- skip.map(_.toIntAlm.map(TraverseWindow.Skip(_))) getOrElse TraverseWindow.SkipNone.success
-                    take <- take.map(_.toIntAlm.map(TraverseWindow.Take(_))) getOrElse TraverseWindow.TakeAll.success
+                    traverseWindow <- TraverseWindow.parseFromStringOptions(skip, take)
                   } yield {
-                    AggregateRootEventLog.GetAllAggregateRootEvents(TraverseWindow(skip, take))
+                    AggregateRootEventLog.GetAllAggregateRootEvents(traverseWindow)
                   }
                 }
                 rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggregateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]
@@ -134,12 +133,11 @@ trait HttpAggregateRootEventLogQueryEndpoint extends Directives { me: Actor with
                           case None =>
                             unvalidatedAggId.success
                         }).flatMap(ValidatedAggregateRootId(_))
-                        fromVersion <- fromVersion.map(_.toLongAlm.map(x => FromVersion(AggregateRootVersion(x)))) getOrElse FromStart.success
-                        toVersion <- toVersion.map(_.toLongAlm.map(x => ToVersion(AggregateRootVersion(x)))) getOrElse ToEnd.success
-                        skip <- skip.map(_.toIntAlm.map(TraverseWindow.Skip(_))) getOrElse TraverseWindow.SkipNone.success
-                        take <- take.map(_.toIntAlm.map(TraverseWindow.Take(_))) getOrElse TraverseWindow.TakeAll.success
+                        fromVersion <- AggregateRootEventLog.VersionRangeStartMarker.parseStringOption(fromVersion)
+                        toVersion <- AggregateRootEventLog.VersionRangeEndMarker.parseStringOption(toVersion)
+                        traverseWindow <- TraverseWindow.parseFromStringOptions(skip, take)
                       } yield {
-                        AggregateRootEventLog.GetAggregateRootEventsFor(validatedAggIdId, fromVersion, toVersion, TraverseWindow(skip, take))
+                        AggregateRootEventLog.GetAggregateRootEventsFor(validatedAggIdId, fromVersion, toVersion, traverseWindow)
                       }
                     }
                     rsp <- (httpAggregateRootEventLogQueryEndpointParams.aggregateRootEventLog ? eventLogMessage)(httpAggregateRootEventLogQueryEndpointParams.maxQueryDuration).mapCastTo[AggregateRootEventLog.GetManyAggregateRootEventsResponse]

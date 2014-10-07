@@ -97,10 +97,9 @@ trait HttpEventLogEndpoint extends Directives { me: Actor with AlmHttpEndpoint w
                   for {
                     from <- from.map(_.toLocalDateTimeAlm.map(x => LocalDateTimeRange.From(x))) getOrElse LocalDateTimeRange.BeginningOfTime.success
                     to <- to.map(_.toLocalDateTimeAlm.map(x => LocalDateTimeRange.To(x))) getOrElse LocalDateTimeRange.EndOfTime.success
-                    skip <- skip.map(_.toIntAlm.map(TraverseWindow.Skip(_))) getOrElse TraverseWindow.SkipNone.success
-                    take <- take.map(_.toIntAlm.map(TraverseWindow.Take(_))) getOrElse TraverseWindow.TakeAll.success
+                    traverseWindow <- TraverseWindow.parseFromStringOptions(skip, take)
                   } yield {
-                    EventLog.FetchEvents(LocalDateTimeRange(from, to), TraverseWindow(skip, take))
+                    EventLog.FetchEvents(LocalDateTimeRange(from, to), traverseWindow)
                   }
                 }
                 rsp <- (httpEventLogEndpointParams.eventLog ? eventLogMessage)(httpEventLogEndpointParams.maxQueryDuration).mapCastTo[EventLog.FetchEventsResponse]

@@ -1,25 +1,50 @@
 package almhirt.eventlog
 
-import almhirt.common._
 import akka.actor._
+import almhirt.common._
+import almhirt.almvalidation.kit._
 import play.api.libs.iteratee.Enumerator
-import almhirt.aggregates.AggregateRootId
-import almhirt.aggregates.AggregateRootVersion
-import almhirt.aggregates.AggregateRootVersion
-import almhirt.aggregates.AggregateRootVersion
+import almhirt.aggregates.{ AggregateRootId, AggregateRootVersion }
 
 object AggregateRootEventLog {
   trait AggregateRootEventLogMessage
-  trait AggregateRootEventLogQueryManyMessage extends AggregateRootEventLogMessage { def traverse : TraverseWindow }
+  trait AggregateRootEventLogQueryManyMessage extends AggregateRootEventLogMessage { def traverse: TraverseWindow }
   trait AggregateRootEventLogResponse
 
   sealed trait VersionRangeStartMarker
   final case class FromVersion(version: AggregateRootVersion) extends VersionRangeStartMarker
   final case object FromStart extends VersionRangeStartMarker
 
+  object VersionRangeStartMarker {
+    def fromLongOption(v: Option[Long]): VersionRangeStartMarker =
+      v match {
+        case Some(v) if v >= 0 => FromVersion(AggregateRootVersion(v))
+        case _ => FromStart
+      }
+
+    def parseStringOption(v: Option[String]): AlmValidation[VersionRangeStartMarker] = {
+      val vStr = v.flatMap(str => if (str.trim().isEmpty()) None else Some(str)).getOrElse("0")
+      vStr.toLongAlm.map(x => fromLongOption(Some(x)))
+    }
+  }
+
   sealed trait VersionRangeEndMarker
   final case class ToVersion(version: AggregateRootVersion) extends VersionRangeEndMarker
   final case object ToEnd extends VersionRangeEndMarker
+
+  object VersionRangeEndMarker {
+    def fromLongOption(v: Option[Long]): VersionRangeEndMarker =
+      v match {
+        case Some(v) if v >= 0 && v < Int.MaxValue => ToVersion(AggregateRootVersion(v))
+        case Some(v) if v < 0 => ToVersion(AggregateRootVersion(0L))
+        case _ => ToEnd
+      }
+
+    def parseStringOption(v: Option[String]): AlmValidation[VersionRangeEndMarker] = {
+      val vStr = v.flatMap(str => if (str.trim().isEmpty()) None else Some(str)).getOrElse("0")
+      vStr.toLongAlm.map(x => fromLongOption(Some(x)))
+    }
+  }
 
   final case class CommitAggregateRootEvent(event: AggregateRootEvent) extends AggregateRootEventLogMessage
   sealed trait CommitAggregateRootEventResponse extends AggregateRootEventLogResponse
