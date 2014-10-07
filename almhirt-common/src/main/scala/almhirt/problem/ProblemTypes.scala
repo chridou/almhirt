@@ -56,6 +56,24 @@ object problemtypes {
       SingleProblem(msg, ServiceBusyProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceBusyProblem)
   }
+
+  /**
+   * There is a service, but it's somehow broken..
+   */
+  case object ServiceBrokenProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, ServiceBrokenProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceBrokenProblem)
+  }
+
+  /**
+   * There is a service, but it it has been shut down
+   */
+  case object ServiceShutDownProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, ServiceShutDownProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceShutDownProblem)
+  }
   
   /**
    * A component couldn't find a dependency

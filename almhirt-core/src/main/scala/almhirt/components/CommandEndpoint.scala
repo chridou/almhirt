@@ -85,15 +85,15 @@ private[almhirt] class CommandEndpointImpl(
       } else {
         val reason =
           if (!isCanceled) {
-            RejectionReason.AProblem(UnspecifiedProblem("Command processing was shut down."))
+            ServiceShutDownProblem("Command processing was shut down.")
           } else if (isErrorEmitted) {
-            RejectionReason.AProblem(UnspecifiedProblem("Command processing is broken."))
+            ServiceBrokenProblem("Command processing is broken.")
           } else if (!isActive) {
             RejectionReason.NotReady("Command processing is not yet ready.")
           } else if (totalDemand == 0) {
             RejectionReason.TooBusy("No demand. Try again later.")
           } else {
-            RejectionReason.AProblem(UnspecifiedProblem("Unknown cause."))
+            UnspecifiedProblem("Unknown cause.")
           }
         sender() ! CommandNotAccepted(cmd.commandId, reason)
       }
