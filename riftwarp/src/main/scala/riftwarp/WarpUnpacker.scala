@@ -16,17 +16,23 @@ trait RegisterableWarpUnpacker[+T] extends WarpUnpacker[T] {
 }
 
 trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] ⇒
-  def divert: WarpDescriptor ⇒ Option[WarpUnpacker[T]]
+  def divert: Map[WarpDescriptor, WarpUnpacker[T]]
 
   def unpack(from: WarpPackage)(implicit unpackers: WarpUnpackers): AlmValidation[T] =
     std.funs.tryGetWarpDescriptor(from) match {
       case Some(wd) ⇒
-        (divert >! wd).fold(
-          fail ⇒ {
+        (divert.get(wd)) match {
+          case Some(unpacker) =>
+            unpacker.unpack(from)
+          case None =>
             val fromStr = from.toString.ellipse(100)
-            NoSuchElementProblem(s"""[DivertingWarpUnpacker(${this.warpDescriptor})]: Tried to unpack a $fromStr.  Could not find a Unpacker for the found descriptor $wd""").failure
-          },
-          unpacker ⇒ unpacker.unpack(from))
+            val wds = divert.map { case (wd, up) => s"$wd -> ${up.getClass.getSimpleName}" }
+            NoSuchElementProblem(s"""	|[DivertingWarpUnpacker(${this.warpDescriptor})]
+            							|Tried to unpack a $fromStr
+            							|Could not find an Unpacker for the found descriptor $wd
+            							|I know the following descriptors:
+            							|${wds.mkString("\n")}""".stripMargin).failure
+        }
       case None ⇒
         UnspecifiedProblem(s"""[DivertingWarpUnpacker]:"${from.toString()} has no WarpDescriptor nor one can be derived!""").failure
     }
@@ -34,10 +40,10 @@ trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] ⇒
 
 trait DivertingWarpUnpackerWithAutoRegistration[+T] { self: DivertingWarpUnpacker[T] ⇒
   def unpackers: List[RegisterableWarpUnpacker[T]]
-  
+
   override lazy val divert = {
     val items = unpackers.map(up ⇒ up.allDescriptors.map(desc ⇒ (desc, up))).flatten
-    items.toMap.lift
+    items.toMap
   }
 }
 
