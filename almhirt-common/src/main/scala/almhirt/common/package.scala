@@ -75,6 +75,9 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val ExceptionCaughtProblem = almhirt.problem.problemtypes.ExceptionCaughtProblem
   val RegistrationProblem = almhirt.problem.problemtypes.RegistrationProblem
   val ServiceNotFoundProblem = almhirt.problem.problemtypes.ServiceNotFoundProblem
+  val ServiceNotAvailableProblem = almhirt.problem.problemtypes.ServiceNotAvailableProblem
+  val ServiceBusyProblem = almhirt.problem.problemtypes.ServiceBusyProblem
+  val DependencyNotFoundProblem = almhirt.problem.problemtypes.DependencyNotFoundProblem
   val NoConnectionProblem = almhirt.problem.problemtypes.NoConnectionProblem
   val OperationTimedOutProblem = almhirt.problem.problemtypes.OperationTimedOutProblem
   val OperationAbortedProblem = almhirt.problem.problemtypes.OperationAbortedProblem
@@ -88,7 +91,6 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val MappingProblem = almhirt.problem.problemtypes.MappingProblem
   val SerializationProblem = almhirt.problem.problemtypes.SerializationProblem
   val StartupProblem = almhirt.problem.problemtypes.StartupProblem
-  val DependencyNotFoundProblem = almhirt.problem.problemtypes.DependencyNotFoundProblem
   val IndexOutOfBoundsProblem = almhirt.problem.problemtypes.IndexOutOfBoundsProblem
   val NotFoundProblem = almhirt.problem.problemtypes.NotFoundProblem
   val ConstraintViolatedProblem = almhirt.problem.problemtypes.ConstraintViolatedProblem

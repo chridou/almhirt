@@ -40,6 +40,34 @@ object problemtypes {
   }
 
   /**
+   * There is a service, but it's services are currently unavailable
+   */
+  case object ServiceNotAvailableProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, ServiceNotAvailableProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceNotAvailableProblem)
+  }
+
+  /**
+   * There is a service, but it's busy and can not process any more requests
+   */
+  case object ServiceBusyProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, ServiceBusyProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ServiceBusyProblem)
+  }
+  
+  /**
+   * A component couldn't find a dependency
+   */
+  case object DependencyNotFoundProblem extends ProblemType {
+    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, StartupProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, DependencyNotFoundProblem)
+  }
+
+  
+  /**
    * A connection couldn't be established. Use for networking problems.
    */
   case object NoConnectionProblem extends ProblemType {
@@ -158,15 +186,6 @@ object problemtypes {
       SingleProblem(msg, StartupProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, StartupProblem)
   }
-  
-/**
-   * A component couldn't find a dependency
-   */
-  case object DependencyNotFoundProblem extends ProblemType {
-    def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
-      SingleProblem(msg, StartupProblem, args, cause)
-    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, DependencyNotFoundProblem)
-  }  
 
   case object IndexOutOfBoundsProblem extends ProblemType {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
