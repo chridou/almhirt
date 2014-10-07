@@ -24,7 +24,7 @@ trait DivertingWarpUnpacker[+T] { self: WarpUnpacker[T] ⇒
         (divert >! wd).fold(
           fail ⇒ {
             val fromStr = from.toString.take(100)
-            NoSuchElementProblem(s"""[DivertingWarpUnpacker]: Tried to unpack a $fromStr.  Could not find a Unpacker for the found descriptor $wd""").failure
+            NoSuchElementProblem(s"""[DivertingWarpUnpacker(${this.warpDescriptor})]: Tried to unpack a $fromStr.  Could not find a Unpacker for the found descriptor $wd""").failure
           },
           unpacker ⇒ unpacker.unpack(from))
       case None ⇒
