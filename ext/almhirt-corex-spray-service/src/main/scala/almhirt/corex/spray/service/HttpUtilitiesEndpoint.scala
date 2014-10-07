@@ -33,7 +33,13 @@ trait HttpUtilitiesEndpoint extends Directives { me: Actor with AlmHttpEndpoint 
   implicit private val uuidMarshaller = httpUtilitiesEndpointMarshallers.uuidMarshaller
 
   val utilitiesTerminator =
-    pathPrefix("date") {
+    pathPrefix("config") {
+      pathEnd {
+        get {
+          complete(almhirtContext.config.root().render())
+        }
+      }
+    } ~ pathPrefix("date") {
       parameter('local ?) { local =>
         pathEnd {
           get {
