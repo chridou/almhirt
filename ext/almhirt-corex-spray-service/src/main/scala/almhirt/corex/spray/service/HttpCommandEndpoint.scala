@@ -62,11 +62,8 @@ trait HttpCommandEndpoint extends Directives {
 
         executeCommand { cmd ⇒
           implicit ctx ⇒ {
-            val flat = flatParam.map(_.toLowerCase() == "true").getOrElse(false)
-            if (flat)
-              ((httpCommandEndpointParams.commandEndpoint ? cmd)(httpCommandEndpointParams.maxSyncDuration)).mapCastTo[CommandResponse].completeWithFlattenedCommandResponse
-            else
-              ((httpCommandEndpointParams.commandEndpoint ? cmd)(httpCommandEndpointParams.maxSyncDuration)).mapCastTo[CommandResponse].completeWithCommandResponse
+            val flattened = flatParam.map(_.toLowerCase() == "true").getOrElse(false)
+              ((httpCommandEndpointParams.commandEndpoint ? cmd)(httpCommandEndpointParams.maxSyncDuration)).mapCastTo[CommandResponse].completeCommandResponse(flattened)
           }
         }
       }

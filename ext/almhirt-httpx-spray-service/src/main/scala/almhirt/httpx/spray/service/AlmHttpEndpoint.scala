@@ -157,7 +157,7 @@ trait AlmHttpEndpoint {
   }
 
   implicit protected class AlmFutureCommandResponseOps(self: AlmFuture[CommandResponse]) {
-    def completeWithFlattenedCommandResponse(implicit entityMarshaller: Marshaller[String], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]): Unit =
+    def completeWithFlattenedCommandResponse(implicit entityMarshaller: Marshaller[String], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]) = {
       self.onComplete(
         fail => problemTerminator.terminateProblem(ctx, fail),
         commandResponse => {
@@ -174,8 +174,9 @@ trait AlmHttpEndpoint {
               problemTerminator.terminateProblem(ctx, problem)
           }
         })
+    }
 
-    def completeWithCommandResponse(implicit entityMarshaller: Marshaller[CommandResponse], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]): Unit =
+    def completeWithCommandResponse(implicit entityMarshaller: Marshaller[CommandResponse], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]) {
       self.onComplete(
         fail => problemTerminator.terminateProblem(ctx, fail),
         commandResponse => {
@@ -192,6 +193,14 @@ trait AlmHttpEndpoint {
               ctx.complete(determineStatusCode(r.problem), r)
           }
         })
+    }
+
+    def completeCommandResponse(flattened: Boolean)(implicit entityMarshaller: Marshaller[CommandResponse], ctx: RequestContext, problemTerminator: AlmHttpProblemTerminator, executionContext: ExecutionContext, problemMarshaller: Marshaller[Problem]) {
+      if (flattened)
+        self.completeWithFlattenedCommandResponse
+      else
+        self.completeWithCommandResponse
+    }
   }
 }
 
