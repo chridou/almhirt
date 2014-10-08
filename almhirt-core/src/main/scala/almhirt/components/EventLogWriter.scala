@@ -5,8 +5,10 @@ import scala.language.postfixOps
 import scala.concurrent.duration._
 import scalaz.Validation.FlatMap._
 import akka.actor._
+import akka.pattern._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.almfuture.all._
 import almhirt.akkax._
 import almhirt.context.AlmhirtContext
 import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
@@ -19,12 +21,16 @@ object EventLogWriter {
     eventLogToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     warningThreshold: FiniteDuration,
+    circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
+    circuitBreakerStateReportingInterval: Option[FiniteDuration],
     autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
     Props(new EventLogWriterImpl(
       eventLogToResolve,
       resolveSettings,
       warningThreshold,
-      autoConnect))
+      autoConnect,
+      circuitBreakerSettings,
+      circuitBreakerStateReportingInterval))
   }
 
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
@@ -39,9 +45,11 @@ object EventLogWriter {
           eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
           warningThreshold <- section.v[FiniteDuration]("warning-threshold")
           resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-        } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, autoConnect)
+          circuitBreakerSettings <- section.v[AlmCircuitBreaker.AlmCircuitBreakerSettings]("circuit-breaker")
+          circuitBreakerStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-breaker-state-reporting-interval")
+        } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, circuitBreakerSettings, circuitBreakerStateReportingInterval, autoConnect)
       } else {
-        ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if(autoConnect) Some(ctx.eventStream) else None).success
+        ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
     } yield res
   }
@@ -56,14 +64,29 @@ private[almhirt] class EventLogWriterImpl(
   eventLogToResolve: ToResolve,
   resolveSettings: ResolveSettings,
   warningThreshold: FiniteDuration,
-  autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
+  autoConnect: Boolean,
+  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
+  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
+
+  implicit val executor = ctx.futuresContext
 
   override val requestStrategy = ZeroRequestStrategy
 
-  private case object AutoConnect
+  val circuitBreakerParams =
+    AlmCircuitBreaker.AlmCircuitBreakerParams(
+      settings = circuitBreakerSettings,
+      onOpened = Some(() => self ! ActorMessages.CircuitOpened),
+      onHalfOpened = Some(() => self ! ActorMessages.CircuitHalfOpened),
+      onClosed = Some(() => self ! ActorMessages.CircuitClosed),
+      onWarning = Some((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open.")))
 
+  val circuitBreaker = AlmCircuitBreaker(circuitBreakerParams, context.dispatcher, context.system.scheduler)
+
+  private case object AutoConnect
   private case object Resolve
+  private case object DisplayCircuitState
+
   def receiveResolve: Receive = {
     case Resolve ⇒
       context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
@@ -74,43 +97,82 @@ private[almhirt] class EventLogWriterImpl(
         self ! AutoConnect
       else
         request(1)
-      context.become(receiveWaiting(eventlog))
+      context.become(receiveCircuitClosed(eventlog))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
       sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
   }
 
-  def receiveWaiting(eventLog: ActorRef): Receive = {
+  def receiveCircuitClosed(eventLog: ActorRef): Receive = {
     case AutoConnect ⇒
       log.info("Subscribing to event stream.")
       FlowFrom(ctx.eventStream).publishTo(EventLogWriter(self))
       request(1)
 
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
-      eventLog ! EventLog.LogEvent(event, true)
-      context.become(receiveWriting(eventLog, event, Deadline.now))
+      val start = Deadline.now
+      val f = (eventLog ? EventLog.LogEvent(event, true))(circuitBreakerSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
+      circuitBreaker.fused(f).onComplete({
+        case scalaz.Failure(problem) => self ! EventLog.EventNotLogged(event.eventId, problem)
+        case scalaz.Success(rsp) => self ! rsp
+      })
+
+      f.onSuccess(rsp =>
+        if (start.lapExceeds(warningThreshold))
+          log.warning(s"Wrinting event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
 
     case ActorSubscriberMessage.OnNext(unprocessable) ⇒
-      log.warning(s"received unprocessable element $unprocessable")
+      log.warning(s"Received unprocessable element $unprocessable.")
       request(1)
-  }
-
-  def receiveWriting(eventLog: ActorRef, activeEvent: Event, start: Deadline): Receive = {
-    case ActorSubscriberMessage.OnNext(event) ⇒
-      sys.error(s"Only one event may be processed at any time. Currently event with id '${activeEvent.eventId.value}' is processed.")
 
     case EventLog.EventLogged(id) ⇒
-      if (start.lapExceeds(warningThreshold))
-        log.warning(s"Wrinting event '${id.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}")
       request(1)
-      context.become(receiveWaiting(eventLog))
 
     case EventLog.EventNotLogged(id, problem) ⇒
-      log.error(s"Could not log event '${id.value}' after ${start.lap.defaultUnitString}:\n$problem")
+      log.error(s"Could not log event '${id.value}':\n$problem")
       request(1)
-      context.become(receiveWaiting(eventLog))
 
+    case ActorMessages.CircuitOpened =>
+      log.warning("Circuit state chaged to opened")
+      context.become(receiveCircuitOpen(eventLog))
+      self ! DisplayCircuitState
+
+    case DisplayCircuitState =>
+      if (log.isInfoEnabled)
+        log.info(circuitBreaker.state.toString)
+
+  }
+
+  def receiveCircuitOpen(eventLog: ActorRef): Receive = {
+    case ActorSubscriberMessage.OnNext(element) ⇒
+      request(1)
+
+    case EventLog.EventLogged(id) ⇒
+      request(1)
+
+    case EventLog.EventNotLogged(id, problem) ⇒
+      log.error(s"Could not log event '${id.value}':\n$problem")
+      request(1)
+
+    case ActorMessages.CircuitClosed =>
+      if (log.isInfoEnabled)
+        log.info("Circuit state chaged to  closed")
+      context.become(receiveCircuitClosed(eventLog))
+      self ! DisplayCircuitState
+
+    case ActorMessages.CircuitHalfOpened =>
+      if (log.isInfoEnabled)
+        log.info("Circuit state chaged to half opend")
+      context.become(receiveCircuitClosed(eventLog))
+      self ! DisplayCircuitState
+
+    case DisplayCircuitState =>
+      if (log.isInfoEnabled) {
+        log.info(circuitBreaker.state.toString)
+        circuitBreakerStateReportingInterval.foreach(interval =>
+          context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
+      }
   }
 
   override def receive: Receive = receiveResolve
