@@ -32,7 +32,7 @@ abstract class ActorConsumerHttpPublisher[T](
     AlmCircuitBreaker.AlmCircuitBreakerParams(
       settings = circuitBreakerSettings,
       onOpened = Some(() => self ! ActorMessages.CircuitOpened),
-      onHalfOpened = Some(() => log.info("Trying to recover.")),
+      onHalfOpened = Some(() => { ActorMessages.CircuitClosed; log.info("Trying to recover.") }),
       onClosed = Some(() => self ! ActorMessages.CircuitClosed),
       onWarning = Some(n => log.warning(s"$n failures in a row.")))
 
