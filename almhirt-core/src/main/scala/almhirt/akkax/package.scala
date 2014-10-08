@@ -139,7 +139,7 @@ package object akkax {
       for {
         section <- config.v[Config](path)
         maxFailures <- section.v[Int]("max-failures")
-        failuresWarnThreshold <- section.magicOption[Int]("failure-warn-threshold")
+        failuresWarnThreshold <- section.magicOption[Int]("failures-warn-threshold")
         callTimeout <- section.v[FiniteDuration]("call-timeout")
         resetTimeout <- section.magicOption[FiniteDuration]("reset-timeout")
       } yield AlmCircuitBreaker.AlmCircuitBreakerSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout)

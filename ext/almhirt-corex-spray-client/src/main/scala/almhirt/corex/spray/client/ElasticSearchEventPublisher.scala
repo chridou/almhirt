@@ -6,6 +6,7 @@ import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
+import almhirt.akkax._
 import almhirt.http._
 import almhirt.configuration._
 import almhirt.context.AlmhirtContext
@@ -23,8 +24,9 @@ object ElasticSearchEventPublisher {
     index: String,
     fixedTypeName: Option[String],
     ttl: FiniteDuration,
-    autoConnectTo: Option[Publisher[Event]])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): Props =
-    Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl, autoConnectTo))
+    autoConnectTo: Option[Publisher[Event]],
+    circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): Props =
+    Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl, autoConnectTo, circuitBreakerSettings))
 
   def props(elConfigName: Option[String] = None)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
     val path = "almhirt.components.misc.event-sink-hub.event-publishers.http-event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
@@ -38,7 +40,8 @@ object ElasticSearchEventPublisher {
           index <- section.v[String]("index")
           fixedTypeName <- section.magicOption[String]("index")
           ttl <- section.v[FiniteDuration]("ttl")
-        } yield propsRaw(host, index, fixedTypeName, ttl, if (autoConnect) Some(ctx.eventStream) else None)
+          circuitBreakerSettings <- section.v[AlmCircuitBreaker.AlmCircuitBreakerSettings]("circuit-breaker")
+        } yield propsRaw(host, index, fixedTypeName, ttl, if (autoConnect) Some(ctx.eventStream) else None, circuitBreakerSettings)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
@@ -56,14 +59,10 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
   index: String,
   fixedTypeName: Option[String],
   ttl: FiniteDuration,
-  override val autoConnectTo: Option[Publisher[Event]])(implicit override val serializer: HttpSerializer[Event], override val problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts) extends ActorConsumerHttpPublisher[Event] {
-
+  autoConnectTo: Option[Publisher[Event]],
+  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts)
+  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted), MediaTypes.`application/json`, HttpMethods.PUT, circuitBreakerSettings)(serializer, problemDeserializer, implicitly[ClassTag[Event]]) {
   val uriprefix = s"""http://$host/$index"""
-
-  override val contentMediaType: MediaType = MediaTypes.`application/json`
-  override val method: HttpMethod = HttpMethods.PUT
-  override val acceptAsSuccess: Set[StatusCode] = Set(StatusCodes.Accepted)
-  override val entityTag = implicitly[ClassTag[Event]]
 
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext

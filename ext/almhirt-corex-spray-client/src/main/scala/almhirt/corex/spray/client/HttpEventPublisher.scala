@@ -6,6 +6,7 @@ import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
+import almhirt.akkax._
 import almhirt.http._
 import almhirt.configuration._
 import almhirt.almvalidation.kit._
@@ -22,9 +23,10 @@ object HttpEventPublisher {
     endpointUri: String,
     method: HttpMethod,
     contentMediaType: MediaType,
-    addEventId: Boolean, 
-    autoConnectTo: Option[Publisher[Event]])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): Props =
-    Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType, autoConnectTo))
+    addEventId: Boolean,
+    autoConnectTo: Option[Publisher[Event]],
+    circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): Props =
+    Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType, autoConnectTo, circuitBreakerSettings))
 
   def props(httpEventPublisherName: String)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
     implicit val extr = almhirt.httpx.spray.HttpMethodConfigExtractor
@@ -35,14 +37,15 @@ object HttpEventPublisher {
       autoConnect <- section.v[Boolean]("auto-connect")
       res <- if (enabled) {
         for {
-	      endpointUri <- section.v[String]("endpoint-uri")
-	      method <- section.v[HttpMethod]("method")
-	      contentMediaTypeStr <- section.v[String]("content-media-type")
-	      mediaType <- inTryCatch { MediaType.custom(contentMediaTypeStr) }
-	      addEventId <- section.v[Boolean]("add-event-id")
-        } yield propsRaw(endpointUri, method, mediaType, addEventId, if(autoConnect) Some(ctx.eventStream) else None)
+          endpointUri <- section.v[String]("endpoint-uri")
+          method <- section.v[HttpMethod]("method")
+          contentMediaTypeStr <- section.v[String]("content-media-type")
+          mediaType <- inTryCatch { MediaType.custom(contentMediaTypeStr) }
+          addEventId <- section.v[Boolean]("add-event-id")
+          circuitBreakerSettings <- section.v[AlmCircuitBreaker.AlmCircuitBreakerSettings]("circuit-breaker")
+        } yield propsRaw(endpointUri, method, mediaType, addEventId, if (autoConnect) Some(ctx.eventStream) else None, circuitBreakerSettings)
       } else {
-        ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if(autoConnect) Some(ctx.eventStream) else None).success
+        ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
     } yield res
   }
@@ -54,12 +57,11 @@ object HttpEventPublisher {
 private[almhirt] class HttpEventPublisherImpl(
   endpointUri: String,
   addEventId: Boolean,
-  override val method: HttpMethod,
-  override val contentMediaType: MediaType,
-  override val autoConnectTo: Option[Publisher[Event]])(implicit override val serializer: HttpSerializer[Event], override val problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts) extends ActorConsumerHttpPublisher[Event] {
-
-  override val acceptAsSuccess: Set[StatusCode] = Set(StatusCodes.OK, StatusCodes.Accepted)
-  override val entityTag = implicitly[ClassTag[Event]]
+  method: HttpMethod,
+  contentMediaType: MediaType,
+  autoConnectTo: Option[Publisher[Event]],
+  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts)
+  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.OK, StatusCodes.Accepted), contentMediaType, method, circuitBreakerSettings)(serializer, problemDeserializer, implicitly[ClassTag[Event]]) {
 
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext

@@ -19,6 +19,9 @@ object AlmCircuitBreaker {
     onClosed: Option[() => Unit],
     onWarning: Option[Int => Unit])
 
+  def apply(params: AlmCircuitBreaker.AlmCircuitBreakerParams, executionContext: ExecutionContext, scheduler: Scheduler): AlmCircuitBreaker =
+    new AlmCircuitBreakerImpl(params, executionContext, scheduler)
+
   sealed trait State
   final case class Closed(failureCount: Int) extends State
   case object HalfOpen extends State

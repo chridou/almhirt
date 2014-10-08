@@ -22,6 +22,11 @@ object ActorMessages {
   final case class ManyNotResolved(problem: Problem, correlationId: Option[CorrelationId]) extends ResolveManyResponse
 
   final case class UnfoldComponents(factories: Seq[ComponentFactory])
+  
+  
+  sealed trait CircuitBreakerMessage
+  case object CircuitClosed extends CircuitBreakerMessage
+  case object CircuitOpened extends CircuitBreakerMessage
 }
 
 object CreateChildActorHelper {
