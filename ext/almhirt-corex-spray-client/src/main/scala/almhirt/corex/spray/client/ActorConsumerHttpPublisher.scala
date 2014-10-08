@@ -25,7 +25,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
   def createUri(entity: T): Uri
 
-  private case object Processed
+  private final case class Processed(lastProblem: Option[Problem])
   private case object DisplayCircuitState
 
   final override val requestStrategy = ZeroRequestStrategy
@@ -39,6 +39,7 @@ abstract class ActorConsumerHttpPublisher[T](
       onWarning = Some((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open.")))
 
   val circuitBreaker = AlmCircuitBreaker(circuitBreakerParams, context.dispatcher, context.system.scheduler)
+  private[this] var lastProblem: Option[Problem] = None
 
   private case object Start
   def receiveCircuitClosed: Receive = {
@@ -48,18 +49,27 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case ActorSubscriberMessage.OnNext(element) ⇒
       element.castTo[T].fold(
-        fail ⇒ log.warning(s"Received unprocessable item $element"),
+        fail ⇒ {
+          log.warning(s"Received unprocessable item $element")
+          self ! Processed(None)
+        },
         typedElem ⇒ {
-          circuitBreaker.fused(publishOverWire(typedElem)).onFailure(prob ⇒
-            log.error(s"Failed to transmit an element over the wire:\n$prob"))
-          self ! Processed
+          circuitBreaker.fused(publishOverWire(typedElem)).onComplete(
+            prob ⇒ self ! Processed(Some(prob)),
+            _ => self ! Processed(None))
         })
 
-    case Processed ⇒
+    case Processed(lastP) ⇒
+      lastProblem = lastP match {
+        case Some(CircuitBreakerOpenProblem(_)) => lastProblem
+        case _ => lastP
+      }
       request(1)
 
     case ActorMessages.CircuitOpened =>
       log.warning("Circuit state chaged to opened")
+      lastProblem.foreach(problem => log.error(s"Last problem before opening circuit:\n$problem"))
+      lastProblem = None
       context.become(receiveCircuitOpen)
       self ! DisplayCircuitState
 
@@ -72,7 +82,11 @@ abstract class ActorConsumerHttpPublisher[T](
     case ActorSubscriberMessage.OnNext(element) ⇒
       request(1)
 
-    case Processed ⇒
+    case Processed(lastP) ⇒
+      lastProblem = lastP match {
+        case Some(CircuitBreakerOpenProblem(_)) => lastProblem
+        case _ => lastP
+      }
       request(1)
 
     case ActorMessages.CircuitClosed =>
