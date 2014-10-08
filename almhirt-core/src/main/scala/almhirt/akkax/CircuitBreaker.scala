@@ -154,7 +154,7 @@ private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.Alm
   }
 
   private case object InternalClosed extends AtomicInteger with InternalState {
-    private val listener = params.onClosed.map(callback => new Runnable { def run() = callback() })
+    protected val listener = params.onClosed.map(callback => new Runnable { def run() = callback() })
 
     private val warningListener: Option[Int => Runnable] = params.onWarning.map(callback => x => new Runnable { def run() = callback(x) })
 
@@ -184,7 +184,7 @@ private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.Alm
   }
 
   private case object InternalHalfOpen extends AtomicBoolean with InternalState {
-    private val listener = params.onHalfOpened.map(callback => new Runnable { def run() = callback() })
+    protected val listener = params.onHalfOpened.map(callback => new Runnable { def run() = callback() })
 
     override val publicState = HalfOpen
 
@@ -205,7 +205,7 @@ private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.Alm
   }
 
   private case object InternalOpen extends AtomicLong with InternalState {
-    private val listener = params.onOpened.map(callback => new Runnable { def run() = callback() })
+    protected val listener = params.onOpened.map(callback => new Runnable { def run() = callback() })
 
     override val publicState = Open
 
@@ -227,14 +227,14 @@ private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.Alm
       }
     }
 
-    def attemptManualReset(): Unit = transition(InternalOpen, InternalHalfOpen)
+    override def attemptManualReset(): Unit = transition(InternalOpen, InternalHalfOpen)
 
   }
 
 }
 
 private[almhirt] object SameThreadExecutionContext extends ExecutionContext {
-  override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
+  override def execute(runnable: Runnable) { runnable.run() }
   override def reportFailure(t: Throwable): Unit =
     throw new IllegalStateException("exception in sameThreadExecutionContext", t)
 }
