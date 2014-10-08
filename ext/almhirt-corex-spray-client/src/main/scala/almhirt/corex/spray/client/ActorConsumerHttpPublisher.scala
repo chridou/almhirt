@@ -120,5 +120,4 @@ abstract class ActorConsumerHttpPublisher[T](
     super.preStart()
     self ! Start
   }
-
 }
