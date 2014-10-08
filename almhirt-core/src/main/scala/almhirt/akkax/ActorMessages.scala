@@ -24,9 +24,10 @@ object ActorMessages {
   final case class UnfoldComponents(factories: Seq[ComponentFactory])
   
   
-  sealed trait CircuitBreakerMessage
-  case object CircuitClosed extends CircuitBreakerMessage
-  case object CircuitOpened extends CircuitBreakerMessage
+  sealed trait CircuitBreakerStateChangedMessage
+  case object CircuitClosed extends CircuitBreakerStateChangedMessage
+  case object CircuitHalfOpened extends CircuitBreakerStateChangedMessage
+  case object CircuitOpened extends CircuitBreakerStateChangedMessage
 }
 
 object CreateChildActorHelper {

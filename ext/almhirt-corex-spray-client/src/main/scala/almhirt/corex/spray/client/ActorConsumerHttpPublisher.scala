@@ -20,7 +20,8 @@ abstract class ActorConsumerHttpPublisher[T](
   acceptAsSuccess: Set[StatusCode],
   contentMediaType: MediaType,
   method: HttpMethod,
-  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings)(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
+  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
+  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
 
   def createUri(entity: T): Uri
 
@@ -33,7 +34,7 @@ abstract class ActorConsumerHttpPublisher[T](
     AlmCircuitBreaker.AlmCircuitBreakerParams(
       settings = circuitBreakerSettings,
       onOpened = Some(() => self ! ActorMessages.CircuitOpened),
-      onHalfOpened = Some(() => { self ! ActorMessages.CircuitClosed; log.info("Trying to recover.") }),
+      onHalfOpened = Some(() => self ! ActorMessages.CircuitHalfOpened),
       onClosed = Some(() => self ! ActorMessages.CircuitClosed),
       onWarning = Some((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open.")))
 
@@ -49,28 +50,18 @@ abstract class ActorConsumerHttpPublisher[T](
       element.castTo[T].fold(
         fail ⇒ log.warning(s"Received unprocessable item $element"),
         typedElem ⇒ {
-          circuitBreaker.fused(publishOverWire(typedElem)).onComplete { res ⇒
-            res match {
-              case scalaz.Success(_) ⇒
-                () // We are some kind of "Fire&Forget"
-              case scalaz.Failure(prob) ⇒
-                log.error(s"Failed to transmit an element over the wire:\n$prob")
-            }
-            self ! Processed
-          }
+          circuitBreaker.fused(publishOverWire(typedElem)).onFailure(prob ⇒
+            log.error(s"Failed to transmit an element over the wire:\n$prob"))
+          self ! Processed
         })
 
     case Processed ⇒
       request(1)
 
     case ActorMessages.CircuitOpened =>
-      log.warning("Circuit opened")
+      log.warning("Circuit state chaged to opened")
       context.become(receiveCircuitOpen)
       self ! DisplayCircuitState
-
-    case ActorMessages.CircuitClosed =>
-      if (log.isInfoEnabled)
-        log.info("Circuit already closed.")
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled)
@@ -86,20 +77,22 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case ActorMessages.CircuitClosed =>
       if (log.isInfoEnabled)
-        log.info("Circuit closed")
+        log.info("Circuit state chaged to  closed")
+      context.become(receiveCircuitClosed)
+      self ! DisplayCircuitState
+
+    case ActorMessages.CircuitHalfOpened =>
+      if (log.isInfoEnabled)
+        log.info("Circuit state chaged to half opend")
       context.become(receiveCircuitClosed)
       self ! DisplayCircuitState
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled) {
         log.info(circuitBreaker.state.toString)
-        context.system.scheduler.scheduleOnce(30.seconds, self, DisplayCircuitState)
+        circuitBreakerStateReportingInterval.foreach(interval =>
+          context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
-
-    case ActorMessages.CircuitOpened =>
-      if (log.isInfoEnabled)
-        log.info("Circuit already opened.")
-      context.become(receiveCircuitClosed)
   }
 
   def receive: Receive = receiveCircuitClosed
