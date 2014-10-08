@@ -1,7 +1,7 @@
 package almhirt.corex.spray.client
 
 import scala.reflect.ClassTag
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.kit._
@@ -25,6 +25,7 @@ abstract class ActorConsumerHttpPublisher[T](
   def createUri(entity: T): Uri
 
   private case object Processed
+  private case object DisplayCircuitState
 
   final override val requestStrategy = ZeroRequestStrategy
 
@@ -32,9 +33,9 @@ abstract class ActorConsumerHttpPublisher[T](
     AlmCircuitBreaker.AlmCircuitBreakerParams(
       settings = circuitBreakerSettings,
       onOpened = Some(() => self ! ActorMessages.CircuitOpened),
-      onHalfOpened = Some(() => { ActorMessages.CircuitClosed; log.info("Trying to recover.") }),
+      onHalfOpened = Some(() => { self ! ActorMessages.CircuitClosed; log.info("Trying to recover.") }),
       onClosed = Some(() => self ! ActorMessages.CircuitClosed),
-      onWarning = Some(n => log.warning(s"$n failures in a row.")))
+      onWarning = Some((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open.")))
 
   val circuitBreaker = AlmCircuitBreaker(circuitBreakerParams, context.dispatcher, context.system.scheduler)
 
@@ -65,7 +66,15 @@ abstract class ActorConsumerHttpPublisher[T](
     case ActorMessages.CircuitOpened =>
       log.warning("Circuit opened")
       context.become(receiveCircuitOpen)
+      self ! DisplayCircuitState
 
+    case ActorMessages.CircuitClosed =>
+      if (log.isInfoEnabled)
+        log.info("Circuit already closed.")
+
+    case DisplayCircuitState =>
+      if (log.isInfoEnabled)
+        log.info(circuitBreaker.state.toString)
   }
 
   def receiveCircuitOpen: Receive = {
@@ -76,7 +85,20 @@ abstract class ActorConsumerHttpPublisher[T](
       request(1)
 
     case ActorMessages.CircuitClosed =>
-      log.info("Circuit closed")
+      if (log.isInfoEnabled)
+        log.info("Circuit closed")
+      context.become(receiveCircuitClosed)
+      self ! DisplayCircuitState
+
+    case DisplayCircuitState =>
+      if (log.isInfoEnabled) {
+        log.info(circuitBreaker.state.toString)
+        context.system.scheduler.scheduleOnce(30.seconds, self, DisplayCircuitState)
+      }
+
+    case ActorMessages.CircuitOpened =>
+      if (log.isInfoEnabled)
+        log.info("Circuit already opened.")
       context.become(receiveCircuitClosed)
   }
 

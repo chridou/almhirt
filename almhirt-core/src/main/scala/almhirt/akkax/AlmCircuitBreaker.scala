@@ -1,6 +1,6 @@
 package almhirt.akkax
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import almhirt.common._
 import scala.concurrent.ExecutionContext
 import akka.actor.Scheduler
@@ -12,20 +12,28 @@ object AlmCircuitBreaker {
     callTimeout: FiniteDuration,
     resetTimeout: Option[FiniteDuration])
 
+  val defaultSettings = AlmCircuitBreakerSettings(5, Some(3), 10.seconds, Some(5.minutes))
+    
   final case class AlmCircuitBreakerParams(
     settings: AlmCircuitBreakerSettings,
     onOpened: Option[() => Unit],
     onHalfOpened: Option[() => Unit],
     onClosed: Option[() => Unit],
-    onWarning: Option[Int => Unit])
+    onWarning: Option[(Int, Int) => Unit])
 
   def apply(params: AlmCircuitBreaker.AlmCircuitBreakerParams, executionContext: ExecutionContext, scheduler: Scheduler): AlmCircuitBreaker =
     new AlmCircuitBreakerImpl(params, executionContext, scheduler)
 
   sealed trait State
-  final case class Closed(failureCount: Int) extends State
-  case object HalfOpen extends State
-  case object Open extends State
+  final case class Closed(failureCount: Int) extends State {
+    override def toString: String = s"Closed with $failureCount failures"
+  }
+  final case class HalfOpen(recovering: Boolean) extends State {
+    override def toString: String = s"HalfOpen(recovering: $recovering)"
+  }
+  final case class Open(remaining: FiniteDuration) extends State {
+    override def toString: String = s"Open(${remaining.defaultUnitString} left)"
+  }
 }
 
 trait AlmCircuitBreaker {
@@ -39,7 +47,7 @@ trait AlmCircuitBreaker {
  * This is also done to learn more about java concurrency.
  * Consider this stolen from akka.
  */
-private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircuitBreakerParams, executionContext: ExecutionContext, scheduler: Scheduler) extends AbstractAlmCircuitBreaker with AlmCircuitBreaker {
+private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircuitBreakerParams, executionContext: ExecutionContext, scheduler: Scheduler) extends AbstractAlmCircuitBreaker with AlmCircuitBreaker {
   import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean, AtomicLong }
   import akka.util.Unsafe
   import AlmCircuitBreaker._
@@ -159,7 +167,7 @@ private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.Alm
   private case object InternalClosed extends AtomicInteger with InternalState {
     protected val listener = params.onClosed.map(callback => new Runnable { def run() = callback() })
 
-    private val warningListener: Option[Int => Runnable] = params.onWarning.map(callback => x => new Runnable { def run() = callback(x) })
+    private val warningListener: Option[Int => Runnable] = params.onWarning.map(callback => x => new Runnable { def run() = callback(x, maxFailures) })
 
     override def publicState = Closed(get)
 
@@ -189,7 +197,7 @@ private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.Alm
   private case object InternalHalfOpen extends AtomicBoolean with InternalState {
     protected val listener = params.onHalfOpened.map(callback => new Runnable { def run() = callback() })
 
-    override val publicState = HalfOpen
+    override val publicState = HalfOpen(!get)
 
     override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
       if (compareAndSet(true, false)) callThrough(body) else AlmFuture.failed(CircuitBreakerOpenProblem("Trying to recover."))
@@ -210,7 +218,7 @@ private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.Alm
   private case object InternalOpen extends AtomicLong with InternalState {
     protected val listener = params.onOpened.map(callback => new Runnable { def run() = callback() })
 
-    override val publicState = Open
+    override def publicState = Open(remainingDuration())
 
     override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
       AlmFuture.failed(CircuitBreakerOpenProblem())
@@ -218,6 +226,12 @@ private[almhirt] final class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.Alm
     override def callSucceeds() {
     }
 
+    private def remainingDuration(): FiniteDuration = {
+      val diff = System.nanoTime() - get
+      if (diff <= 0L) Duration.Zero
+      else diff.nanos
+    }
+    
     override def callFails() {
     }
 
