@@ -59,12 +59,8 @@ abstract class ActorConsumerHttpPublisher[T](
             _ => self ! Processed(None))
         })
 
-    case Processed(lastP) ⇒
-      lastProblem = lastP match {
-        case Some(CircuitBreakerOpenProblem(_)) => lastProblem
-        case _ => lastP
-      }
-      request(1)
+    case Processed(currentProblem) ⇒
+      handleProcessed(currentProblem)
 
     case ActorMessages.CircuitOpened =>
       log.warning("Circuit state chaged to opened")
@@ -82,12 +78,8 @@ abstract class ActorConsumerHttpPublisher[T](
     case ActorSubscriberMessage.OnNext(element) ⇒
       request(1)
 
-    case Processed(lastP) ⇒
-      lastProblem = lastP match {
-        case Some(CircuitBreakerOpenProblem(_)) => lastProblem
-        case _ => lastP
-      }
-      request(1)
+    case Processed(currentProblem) ⇒
+      handleProcessed(currentProblem)
 
     case ActorMessages.CircuitClosed =>
       if (log.isInfoEnabled)
@@ -110,6 +102,14 @@ abstract class ActorConsumerHttpPublisher[T](
   }
 
   def receive: Receive = receiveCircuitClosed
+
+  private def handleProcessed(currentProblem: Option[Problem]) {
+    lastProblem = currentProblem match {
+      case Some(CircuitBreakerOpenProblem(_)) => lastProblem
+      case _ => currentProblem
+    }
+    request(1)
+  }
 
   private def publishOverWire(entity: T): AlmFuture[(T, FiniteDuration)] = {
     val settings = EntityRequestSettings(createUri(entity), contentMediaType, Seq.empty, method, acceptAsSuccess)
