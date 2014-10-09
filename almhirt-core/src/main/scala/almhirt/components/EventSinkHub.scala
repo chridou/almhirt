@@ -109,7 +109,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
   
   private def reportEventSinkStates(receiver: ActorRef) {
     implicit val executor = ctx.futuresContext
-    val futures = context.children.map(child => 
+    val futures = context.children.filter(child => factories.keySet(child.path.name)).map(child => 
       (child ? ActorMessages.ReportCircuitBreakerState(CorrelationId(child.path.name)))(3.seconds)
       	.mapCastTo[ActorMessages.CurrentCircuitBreakerState].map(rsp => (rsp.id.value, rsp.state)))
       
