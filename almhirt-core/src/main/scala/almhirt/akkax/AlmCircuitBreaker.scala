@@ -46,7 +46,7 @@ object AlmCircuitBreaker {
 
 trait AlmCircuitBreaker {
   def fused[T](body: ⇒ AlmFuture[T]): AlmFuture[T]
-  def reset(): Unit
+  def reset(): Boolean
   def state: AlmCircuitBreaker.State
 }
 
@@ -89,9 +89,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
     currentState.invoke(body)
   }
 
-  override def reset() {
-    attemptReset()
-  }
+  override def reset(): Boolean = attemptReset() 
 
   /**
    * Implements consistent transition between states
@@ -123,7 +121,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
    * Attempts to reset breaker. Works only, if the current state is Open.
    *
    */
-  private def attemptReset(): Unit = currentState.attemptManualReset()
+  private def attemptReset(): Boolean = currentState.attemptManualReset()
 
   override def state: AlmCircuitBreaker.State =
     currentState.publicState
@@ -169,7 +167,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
         executionContext.execute(l))
     }
 
-    def attemptManualReset(): Unit = {}
+    def attemptManualReset(): Boolean = false
   }
 
   private case object InternalClosed extends AtomicInteger with InternalState {
@@ -252,8 +250,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
       }
     }
 
-    override def attemptManualReset(): Unit = swapState(InternalOpen, InternalHalfOpen)
-
+    override def attemptManualReset(): Boolean = swapState(InternalOpen, InternalHalfOpen)
   }
 
 }
