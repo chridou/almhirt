@@ -107,7 +107,10 @@ private[almhirt] class EventLogWriterImpl(
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
       
     case ActorMessages.AttemptResetCircuitBreaker =>
-      circuitBreaker.reset()
+      if(circuitBreaker.reset())
+        log.info("Manual reset attempt successful.")
+      else
+        log.info("Manual reset attempt caused no change.")
   }
 
   def receiveCircuitClosed(eventLog: ActorRef): Receive = {
@@ -152,7 +155,10 @@ private[almhirt] class EventLogWriterImpl(
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
       
     case ActorMessages.AttemptResetCircuitBreaker =>
-      circuitBreaker.reset()
+      if(circuitBreaker.reset())
+        log.info("Manual reset attempt successful.")
+      else
+        log.info("Manual reset attempt caused no change.")
   }
 
   def receiveCircuitOpen(eventLog: ActorRef): Receive = {
@@ -189,7 +195,10 @@ private[almhirt] class EventLogWriterImpl(
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
       
     case ActorMessages.AttemptResetCircuitBreaker =>
-      circuitBreaker.reset()
+      if(circuitBreaker.reset())
+        log.info("Manual reset attempt successful.")
+      else
+        log.info("Manual reset attempt caused no change.")
   }
 
   override def receive: Receive = receiveResolve

@@ -75,9 +75,12 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case ActorMessages.ReportCircuitBreakerState(id) =>
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
-      
+
     case ActorMessages.AttemptResetCircuitBreaker =>
-      circuitBreaker.reset()
+      if (circuitBreaker.reset())
+        log.info("Manual reset attempt successful.")
+      else
+        log.info("Manual reset attempt caused no change.")
   }
 
   def receiveCircuitOpen: Receive = {
@@ -108,9 +111,12 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case ActorMessages.ReportCircuitBreakerState(id) =>
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
-      
+
     case ActorMessages.AttemptResetCircuitBreaker =>
-      circuitBreaker.reset()
+      if (circuitBreaker.reset())
+        log.info("Manual reset attempt successful.")
+      else
+        log.info("Manual reset attempt caused no change.")
   }
 
   def receive: Receive = receiveCircuitClosed
