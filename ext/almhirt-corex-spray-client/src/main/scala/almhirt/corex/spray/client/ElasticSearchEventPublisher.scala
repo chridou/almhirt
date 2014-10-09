@@ -64,7 +64,7 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
   autoConnectTo: Option[Publisher[Event]],
   circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
   circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts)
-  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted), MediaTypes.`application/json`, HttpMethods.PUT, circuitBreakerSettings, circuitBreakerStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]]) {
+  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted, StatusCodes.Created), MediaTypes.`application/json`, HttpMethods.PUT, circuitBreakerSettings, circuitBreakerStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]]) {
   val uriprefix = s"""http://$host/$index"""
 
   implicit override val executionContext = executionContexts.futuresContext
