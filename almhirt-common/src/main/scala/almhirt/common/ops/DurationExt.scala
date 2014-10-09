@@ -28,24 +28,18 @@ trait FiniteDurationExt {
       timeUnitToStringInst.convert(self)
     }
 
-    def timeUnitString(timeUnit: TimeUnit, round: Option[Int]): String = {
+    def timeUnitString(timeUnit: TimeUnit): String = {
       val t = self.toUnit(timeUnit)
-      round match {
-        case None =>
-          s"$t[${timeUnitToString(timeUnit)}]"
-        case Some(p) =>
-          //f"$t%.${p}f[${timeUnitToString(timeUnit)}]"
-          s"$t[${timeUnitToString(timeUnit)}]"
-      }
+      f"$t%.3f[${timeUnitToString(timeUnit)}]"
     }
 
-    def daysString(round: Option[Int]): String = timeUnitString(DAYS, round)
-    def hoursString(round: Option[Int]): String = timeUnitString(HOURS, round)
-    def minutesString(round: Option[Int]): String = timeUnitString(MINUTES, round)
-    def secondsString(round: Option[Int]): String = timeUnitString(SECONDS, round)
-    def millisecondsString(round: Option[Int]): String = timeUnitString(MILLISECONDS, round)
-    def microsecondsString(round: Option[Int]): String = timeUnitString(MICROSECONDS, round)
-    def nanosecondsString(round: Option[Int]): String = timeUnitString(NANOSECONDS, round)
+    def daysString: String = timeUnitString(DAYS)
+    def hoursString: String = timeUnitString(HOURS)
+    def minutesString: String = timeUnitString(MINUTES)
+    def secondsString: String = timeUnitString(SECONDS)
+    def millisecondsString: String = timeUnitString(MILLISECONDS)
+    def microsecondsString: String = timeUnitString(MICROSECONDS)
+    def nanosecondsString: String = timeUnitString(NANOSECONDS)
 
     def exceeds(dur: FiniteDuration): Boolean = self > dur
   }

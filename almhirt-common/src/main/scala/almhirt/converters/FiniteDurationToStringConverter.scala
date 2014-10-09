@@ -9,19 +9,19 @@ object FiniteDurationToStringConverter {
       val nanos = Math.abs(dur.toNanos)
       
       if(nanos < 1000L)
-        dur.timeUnitString(NANOSECONDS, Some(0))
+        dur.timeUnitString(NANOSECONDS)
       else if(nanos < 1000L*1000L)
-        dur.timeUnitString(MICROSECONDS, Some(3))
+        dur.timeUnitString(MICROSECONDS)
       else if(nanos < 1000L*1000L*1000L)
-        dur.timeUnitString(MILLISECONDS, Some(3))
+        dur.timeUnitString(MILLISECONDS)
       else if(nanos < 60L*1000L*1000L*1000L)
-        dur.timeUnitString(SECONDS, Some(2))
+        dur.timeUnitString(SECONDS)
        else if(nanos < 60L*60L*1000L*1000L*1000L)
-        dur.timeUnitString(MINUTES, Some(2))
+        dur.timeUnitString(MINUTES)
        else if(nanos < 24L*60L*60L*1000L*1000L*1000L)
-        dur.timeUnitString(HOURS, Some(2))
+        dur.timeUnitString(HOURS)
        else
-        dur.timeUnitString(DAYS, Some(2))
+        dur.timeUnitString(DAYS)
       
     }
   }
@@ -29,7 +29,7 @@ object FiniteDurationToStringConverter {
   
   val millisecondsConverterInst = new FiniteDurationToStringConverter {
     def convert(dur: FiniteDuration): String = {
-      dur.millisecondsString(None)
+      dur.millisecondsString
     }
   }
   
