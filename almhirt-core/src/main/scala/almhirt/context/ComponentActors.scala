@@ -31,12 +31,11 @@ private[almhirt] object componentactors {
   def appsProps(implicit ctx: AlmhirtContext): Props =
     Props(new AppsSupervisor())
 
-
   class ViewsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
   class EventLogsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
   class MiscSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
   class AppsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
-    
+
   final case class UnfoldFromFactories(factories: ComponentFactories)
 
   class ComponentsSupervisor(ctx: AlmhirtContext) extends Actor with ActorLogging {
@@ -48,6 +47,9 @@ private[almhirt] object componentactors {
     override def receive: Receive = {
       case UnfoldFromFactories(factories) ⇒ {
         log.info("Unfolding components.")
+        factories.buildHerder.foreach(_(ctx).onComplete(
+          problem ⇒ log.error(s"Failed to create herder props:\$problem"),
+          factory ⇒ self ! ActorMessages.CreateChildActor(factory, false, None))(context.dispatcher))
         factories.buildEventLogs(ctx).onComplete(
           problem ⇒ log.error(s"Could not create component factories for event logs:\n$problem"),
           factories ⇒ eventLogs ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
