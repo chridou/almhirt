@@ -134,13 +134,13 @@ private[almhirt] class EventLogWriterImpl(
       request(1)
 
     case ActorMessages.CircuitOpened =>
-      log.warning("Circuit state chaged to opened")
+      log.warning("Circuit opened")
       context.become(receiveCircuitOpen(eventLog))
       self ! DisplayCircuitState
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled)
-        log.info(circuitBreaker.state.toString)
+        log.info(s"Circuit state: s{circuitBreaker.state}")
 
   }
 
@@ -157,19 +157,19 @@ private[almhirt] class EventLogWriterImpl(
 
     case ActorMessages.CircuitClosed =>
       if (log.isInfoEnabled)
-        log.info("Circuit state chaged to  closed")
+        log.info("Circuit closed")
       context.become(receiveCircuitClosed(eventLog))
       self ! DisplayCircuitState
 
     case ActorMessages.CircuitHalfOpened =>
       if (log.isInfoEnabled)
-        log.info("Circuit state chaged to half opend")
+        log.info("Circuit half opend")
       context.become(receiveCircuitClosed(eventLog))
       self ! DisplayCircuitState
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled) {
-        log.info(circuitBreaker.state.toString)
+        log.info(s"Circuit state: s{circuitBreaker.state}")
         circuitBreakerStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }

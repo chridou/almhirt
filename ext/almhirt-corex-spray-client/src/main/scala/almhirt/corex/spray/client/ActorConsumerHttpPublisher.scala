@@ -63,7 +63,7 @@ abstract class ActorConsumerHttpPublisher[T](
       handleProcessed(currentProblem)
 
     case ActorMessages.CircuitOpened =>
-      log.warning("Circuit state chaged to opened")
+      log.warning("Circuit opened")
       lastProblem.foreach(problem => log.error(s"Last problem before opening circuit:\n$problem"))
       lastProblem = None
       context.become(receiveCircuitOpen)
@@ -71,7 +71,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled)
-        log.info(circuitBreaker.state.toString)
+        log.info(s"Circuit state: s{circuitBreaker.state}")
   }
 
   def receiveCircuitOpen: Receive = {
@@ -83,19 +83,19 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case ActorMessages.CircuitClosed =>
       if (log.isInfoEnabled)
-        log.info("Circuit state chaged to  closed")
+        log.info("Circuit closed")
       context.become(receiveCircuitClosed)
       self ! DisplayCircuitState
 
     case ActorMessages.CircuitHalfOpened =>
       if (log.isInfoEnabled)
-        log.info("Circuit state chaged to half opend")
+        log.info("Circuit half opend")
       context.become(receiveCircuitClosed)
       self ! DisplayCircuitState
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled) {
-        log.info(circuitBreaker.state.toString)
+        log.info(s"Circuit state: s{circuitBreaker.state}")
         circuitBreakerStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
