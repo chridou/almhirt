@@ -90,7 +90,7 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
         case (name, (props, filterOpt)) ⇒
           val actor = context.actorOf(props, name)
           context watch actor
-          log.info(s"""Create subrcriber "$name".""")
+          log.info(s"""Create subscriber "$name".""")
           val subscriber = ActorSubscriber[Event](actor)
           filterOpt match {
             case Some(filter) ⇒
