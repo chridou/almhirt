@@ -207,7 +207,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
   private case object InternalHalfOpen extends AtomicBoolean with InternalState {
     protected val listener = params.onHalfOpened.map(callback => new Runnable { def run() = callback() })
 
-    override val publicState = HalfOpen(!get)
+    override def publicState = HalfOpen(!get)
 
     override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
       if (compareAndSet(true, false)) callThrough(body) else AlmFuture.failed(CircuitBreakerOpenProblem("Trying to recover."))
