@@ -66,19 +66,21 @@ package object spray {
                   unstructured.split(".") match {
                     case Array(raw) ⇒
                       AlmMediaSubTypeParts(NoVendor, RawContent(raw))
-                    case Array("vnd", raw) ⇒
-                      AlmMediaSubTypeParts(UnspecifiedVendor, RawContent(raw))
-                    case Array(vendor, raw) ⇒
-                      AlmMediaSubTypeParts(SpecificVendor(vendor), RawContent(raw))
+                    case Array("vnd", raw @ _*) ⇒
+                      AlmMediaSubTypeParts(UnspecifiedVendor, RawContent(raw.mkString(".")))
+                    case Array(vendor, raw @ _*) ⇒
+                      AlmMediaSubTypeParts(SpecificVendor(vendor), RawContent(raw.mkString(".")))
                   }
                 case Array(pre, format) ⇒
-                  pre.split(".") match {
+                  pre.split("\\.") match {
+                    case Array() =>
+                      AlmMediaSubTypeParts(NoVendor, StructuredContent(pre, format))
                     case Array(content) ⇒
                       AlmMediaSubTypeParts(NoVendor, StructuredContent(content, format))
-                    case Array("vnd", content) ⇒
-                      AlmMediaSubTypeParts(UnspecifiedVendor, StructuredContent(content, format))
-                    case Array(vendor, content) ⇒
-                      AlmMediaSubTypeParts(SpecificVendor(vendor), StructuredContent(content, format))
+                    case Array("vnd", content @ _*) ⇒
+                      AlmMediaSubTypeParts(UnspecifiedVendor, StructuredContent(content.mkString("."), format))
+                    case Array(vendor, content @ _*) ⇒
+                      AlmMediaSubTypeParts(SpecificVendor(vendor), StructuredContent(content.mkString("."), format))
                   }
               },
               self.compressible,
@@ -88,7 +90,7 @@ package object spray {
         }
       } catch {
         case scala.util.control.NonFatal(exn) =>
-          throw new Exception(s"""Could not transform "${self.value}" to an AlmMediaType.""", exn)
+          throw new Exception(s"""Could not transform "${self.value}" to an AlmMediaType: ${exn.getMessage()}""", exn)
       }
   }
 
