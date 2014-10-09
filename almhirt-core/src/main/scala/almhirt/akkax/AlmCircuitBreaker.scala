@@ -35,12 +35,12 @@ object AlmCircuitBreaker {
           case Some(wl) => s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
         }
   }
-  final case class HalfOpen(recovering: Boolean) extends State {
+  final case class HalfOpen(ongoingRecoverAttempt: Boolean) extends State {
     override def toString: String =
-      if (recovering)
-        s"HalfOpen(recovering)"
+      if (ongoingRecoverAttempt)
+        s"HalfOpen(attempting  to recover)"
       else
-        "HalfOpen"
+        "HalfOpen(waitimg for recovery attempt)"
   }
   final case class Open(remaining: Option[FiniteDuration]) extends State {
     override def toString: String = 
@@ -93,7 +93,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
     currentState.invoke(body)
   }
 
-  override def reset(): Boolean = attemptReset()
+  override def reset(): Boolean = currentState.attemptManualReset()
 
   /**
    * Implements consistent transition between states
@@ -122,10 +122,10 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
   private def resetBreaker(): Unit = transition(InternalHalfOpen, InternalClosed)
 
   /**
-   * Attempts to reset breaker. Works only, if the current state is Open.
+   * Attempts to reset breaker by transitioning to a half-open state.  This is valid from an Open state only.
    *
    */
-  private def attemptReset(): Boolean = currentState.attemptManualReset()
+  private def attemptReset(): Unit = transition(InternalOpen, InternalHalfOpen)
 
   override def state: AlmCircuitBreaker.State =
     currentState.publicState
