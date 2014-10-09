@@ -252,7 +252,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
       }
     }
 
-    override def attemptManualReset(): Unit = transition(InternalOpen, InternalHalfOpen)
+    override def attemptManualReset(): Unit = swapState(InternalOpen, InternalHalfOpen)
 
   }
 
