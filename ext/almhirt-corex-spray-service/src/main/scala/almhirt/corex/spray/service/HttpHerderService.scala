@@ -127,6 +127,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           </tr>
           { state.map { case (name, state) => createRow(name, state) } }
         </table>
+    	<br>{almhirtContext.getUtcTimestamp.toString}</br>
       </body>
     </html>
   }
