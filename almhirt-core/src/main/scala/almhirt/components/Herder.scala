@@ -67,6 +67,9 @@ private[almhirt] class Pastor(params: Herder.HerderComponentsToResolve, resolveS
         case None =>
           sender() ! EventSinkHubMessage.ReportEventSinkStatesFailed(IllegalOperationProblem("The event sink hub is not configured to be herded."))
       }
+
+    case m: EventSinkHubMessage.AttemptResetComponentCircuit =>
+      eventSinkHub foreach (_ forward m)
   }
 
   def receive = receiveResolve
