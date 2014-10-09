@@ -98,8 +98,9 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateAction(name: String, state: AlmCircuitBreaker.State) = {
       state match {
         case x: AlmCircuitBreaker.Open =>
-          val att = new UnprefixedAttribute("href", s"./attempt-reset/$name", xml.Null)
-          Elem(null, "a", att, TopScope, true, Text("attempt reset"))
+          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-reset/$name", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("attempt reset"))
+          <td>{ anchor }</td>
         case _ =>
           <td>no action</td>
       }
