@@ -55,35 +55,40 @@ package object spray {
 
   implicit class SprayMediaTypeOps(self: MediaType) {
     def toAlmMediaType: AlmMediaType =
-      AlmMediaTypes.find(self.value) match {
-        case Some(am) ⇒ am
-        case None ⇒
-          AlmMediaType(
-            self.mainType,
-            self.subType.split("+") match {
-              case Array(unstructured) ⇒
-                unstructured.split(".") match {
-                  case Array(raw) ⇒
-                    AlmMediaSubTypeParts(NoVendor, RawContent(raw))
-                  case Array("vnd", raw) ⇒
-                    AlmMediaSubTypeParts(UnspecifiedVendor, RawContent(raw))
-                  case Array(vendor, raw) ⇒
-                    AlmMediaSubTypeParts(SpecificVendor(vendor), RawContent(raw))
-                }
-              case Array(pre, format) ⇒
-                pre.split(".") match {
-                  case Array(content) ⇒
-                    AlmMediaSubTypeParts(NoVendor, StructuredContent(content, format))
-                  case Array("vnd", content) ⇒
-                    AlmMediaSubTypeParts(UnspecifiedVendor, StructuredContent(content, format))
-                  case Array(vendor, content) ⇒
-                    AlmMediaSubTypeParts(SpecificVendor(vendor), StructuredContent(content, format))
-                }
-            },
-            self.compressible,
-            if (self.binary) BinaryMedia else TextualMedia(Some(AlmCharacterEncodings.`UTF-8`)),
-            self.fileExtensions,
-            false)
+      try {
+        AlmMediaTypes.find(self.value) match {
+          case Some(am) ⇒ am
+          case None ⇒
+            AlmMediaType(
+              self.mainType,
+              self.subType.split("\\+") match {
+                case Array(unstructured) ⇒
+                  unstructured.split(".") match {
+                    case Array(raw) ⇒
+                      AlmMediaSubTypeParts(NoVendor, RawContent(raw))
+                    case Array("vnd", raw) ⇒
+                      AlmMediaSubTypeParts(UnspecifiedVendor, RawContent(raw))
+                    case Array(vendor, raw) ⇒
+                      AlmMediaSubTypeParts(SpecificVendor(vendor), RawContent(raw))
+                  }
+                case Array(pre, format) ⇒
+                  pre.split(".") match {
+                    case Array(content) ⇒
+                      AlmMediaSubTypeParts(NoVendor, StructuredContent(content, format))
+                    case Array("vnd", content) ⇒
+                      AlmMediaSubTypeParts(UnspecifiedVendor, StructuredContent(content, format))
+                    case Array(vendor, content) ⇒
+                      AlmMediaSubTypeParts(SpecificVendor(vendor), StructuredContent(content, format))
+                  }
+              },
+              self.compressible,
+              if (self.binary) BinaryMedia else TextualMedia(Some(AlmCharacterEncodings.`UTF-8`)),
+              self.fileExtensions,
+              false)
+        }
+      } catch {
+        case scala.util.control.NonFatal(exn) =>
+          throw new Exception(s"""Could not transform "${self.value}" to an AlmMediaType.""", exn)
       }
   }
 
