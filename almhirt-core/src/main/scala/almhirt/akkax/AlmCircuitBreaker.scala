@@ -31,9 +31,9 @@ object AlmCircuitBreaker {
         "Closed"
       else
         warningLevel match {
-        case None => s"Closed(failures: $failureCount, maxFailures: $maxFailures)"
-        case Some(wl)=> s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
-      }
+          case None => s"Closed(failures: $failureCount, maxFailures: $maxFailures)"
+          case Some(wl) => s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
+        }
   }
   final case class HalfOpen(recovering: Boolean) extends State {
     override def toString: String =
@@ -42,8 +42,9 @@ object AlmCircuitBreaker {
       else
         "HalfOpen"
   }
-  final case class Open(remaining: FiniteDuration) extends State {
-    override def toString: String = s"Open(remaining: ${remaining.defaultUnitString})"
+  final case class Open(remaining: Option[FiniteDuration]) extends State {
+    override def toString: String = 
+      s"Open(remaining: ${remaining.map(_.defaultUnitString).getOrElse("∞")})"
   }
 }
 
@@ -92,7 +93,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
     currentState.invoke(body)
   }
 
-  override def reset(): Boolean = attemptReset() 
+  override def reset(): Boolean = attemptReset()
 
   /**
    * Implements consistent transition between states
@@ -235,10 +236,12 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
     override def callSucceeds() {
     }
 
-    private def remainingDuration(): FiniteDuration = {
-      val diff = System.nanoTime() - get
-      if (diff <= 0L) Duration.Zero
-      else diff.nanos
+    private def remainingDuration(): Option[FiniteDuration] = {
+      resetTimeout.map { rt =>
+        val elapsedNanos = System.nanoTime() - get
+        if (elapsedNanos <= 0L) Duration.Zero
+        else rt - elapsedNanos.nanos
+      }
     }
 
     override def callFails() {
