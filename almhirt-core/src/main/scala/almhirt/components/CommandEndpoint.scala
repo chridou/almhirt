@@ -95,6 +95,11 @@ private[almhirt] class CommandEndpointImpl(
           } else {
             UnspecifiedProblem("Unknown cause.")
           }
+        log.warning(s"""	|
+        					|Rejecting command with id "${cmd.commandId.value}" of type "${cmd.getClass().getName()}".
+        					|Current demand is $totalDemand commands.
+        					|Reason:
+        					|$reason""".stripMargin)
         sender() ! CommandNotAccepted(cmd.commandId, reason)
       }
   }
