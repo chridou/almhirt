@@ -87,11 +87,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateItem(state: AlmCircuitBreaker.State) = {
       state match {
         case x: AlmCircuitBreaker.Closed =>
-          <td color="#19E448">{ x.toString }</td>
+          <td style="background-color:#19E448">{ x.toString }</td>
         case x: AlmCircuitBreaker.HalfOpen =>
-          <td color="#EE8C14">{ x.toString }</td>
+          <td style="background-color:#EE8C14">{ x.toString }</td>
         case x: AlmCircuitBreaker.Open =>
-          <td color="#E41B1B">{ x.toString }</td>
+          <td style="background-color:#E41B1B">{ x.toString }</td>
       }
     }
 
@@ -106,7 +106,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
 
     def createRow(name: String, state: AlmCircuitBreaker.State) = {
       <tr>
-        <td>name</td>
+        <td>{name}</td>
         { createStateItem(state) }
         { createStateAction(name, state) }
       </tr>
