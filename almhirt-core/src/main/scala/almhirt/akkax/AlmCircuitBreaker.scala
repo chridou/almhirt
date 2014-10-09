@@ -43,7 +43,7 @@ object AlmCircuitBreaker {
         "HalfOpen(waitimg for recovery attempt)"
   }
   final case class Open(remaining: Option[FiniteDuration]) extends State {
-    override def toString: String = 
+    override def toString: String =
       s"Open(remaining: ${remaining.map(_.defaultUnitString).getOrElse("∞")})"
   }
 }
@@ -121,12 +121,13 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
    */
   private def resetBreaker(): Unit = transition(InternalHalfOpen, InternalClosed)
 
-  /**
-   * Attempts to reset breaker by transitioning to a half-open state.  This is valid from an Open state only.
-   *
-   */
-  private def attemptReset(): Unit = transition(InternalOpen, InternalHalfOpen)
-
+  private def attemptReset(): Boolean =
+    if (swapState(InternalOpen, InternalHalfOpen)) {
+      InternalHalfOpen.enter()
+      true
+    } else
+      false
+  
   override def state: AlmCircuitBreaker.State =
     currentState.publicState
 
@@ -256,7 +257,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
       }
     }
 
-    override def attemptManualReset(): Boolean = swapState(InternalOpen, InternalHalfOpen)
+    override def attemptManualReset(): Boolean = attemptReset()
   }
 
 }
