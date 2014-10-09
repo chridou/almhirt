@@ -30,8 +30,13 @@ trait FiniteDurationExt {
 
     def timeUnitString(timeUnit: TimeUnit, round: Option[Int]): String = {
       val t = self.toUnit(timeUnit)
-      val s = round.map(r => Math.round(t)).getOrElse(t)
-      s"$s[${timeUnitToString(timeUnit)}]"
+      round match {
+        case None =>
+          s"$t[${timeUnitToString(timeUnit)}]"
+        case Some(p) =>
+          //f"$t%.${p}f[${timeUnitToString(timeUnit)}]"
+          s"$t[${timeUnitToString(timeUnit)}]"
+      }
     }
 
     def daysString(round: Option[Int]): String = timeUnitString(DAYS, round)
