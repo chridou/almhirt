@@ -95,16 +95,30 @@ trait AwaitingEntityResponse { self: HttpExternalConnector ⇒
   def evaluateEntityResponse[T: HttpDeserializer](response: HttpResponse, acceptAsSuccess: Set[StatusCode])(implicit problemDeserializer: HttpDeserializer[Problem]): AlmValidation[T] = {
     if (acceptAsSuccess(response.status))
       deserializeEntity[T](response).fold(
-        fail => {
+        fail1 => {
           // Try whether there's a problem in the response
           deserializeProblem(response).fold(
-            alsoFailed => SerializationProblem(s"""The response was accepted as a success but couldn't be deserialized to the target entity so I tried to deserialize to a Problem which also failed.""", cause = Some(alsoFailed)).failure,
-            aProblem => SerializationProblem(s"""The response was accepted as a success but couldn't be deserialized to the target  so I tried to deserialize to a Problem which succeeded.""", cause = Some(aProblem)).failure)
+            fail2 => SerializationProblem(s"""	|
+            									|This is a strange failure(client side).
+            									|1) This response(${response.status}) WAS accepted as a success.
+            									|2) The content was not an entity.
+            									|3) The content was not a problem(which would be strange with a success status...): "${fail1.message}"""".stripMargin, cause = Some(fail2)).failure,
+            aProblem => SerializationProblem(s"""	|
+            										|The response was accepted(${response.status}) as a success but couldn't be deserialized to the entity.
+            										|so I tried to deserialize to a Problem which succeeded.
+            										|The problem received from server side is contained as this problem's cause.""".stripMargin, cause = Some(aProblem)).failure)
         },
         deserializedEntity => deserializedEntity.success)
     else
+      // In case there is no problem contained, we check whether its the entity...
       deserializeProblem(response).fold(
-        fail ⇒ SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
+        fail1 ⇒ deserializeEntity[T](response).fold(
+          fail2 => SerializationProblem(s"""	|
+        		  								|This is a strange failure(client side).
+            									|1) This response(${response.status}) WAS NOT accepted as a success.
+            									|2) The content was not a problem: "${fail1.message}"
+            									|3) The content was not an entity.""".stripMargin, cause = Some(fail2)).failure,
+          succ => succ.success),
         succ ⇒ succ.failure)
   }
 
