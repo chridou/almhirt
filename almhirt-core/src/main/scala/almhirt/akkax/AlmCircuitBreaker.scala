@@ -40,7 +40,7 @@ object AlmCircuitBreaker {
       if (ongoingRecoverAttempt)
         s"HalfOpen(attempting  to recover)"
       else
-        "HalfOpen(waitimg for recovery attempt)"
+        "HalfOpen(waiting for recovery attempt)"
   }
   final case class Open(remaining: Option[FiniteDuration]) extends State {
     override def toString: String =
