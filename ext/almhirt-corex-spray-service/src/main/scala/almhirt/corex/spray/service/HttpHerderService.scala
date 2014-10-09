@@ -72,8 +72,12 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           }
         }
       } ~ pathPrefix("attempt-reset" / Segment) { componentName =>
-        herder ! EventSinkHubMessage.AttemptResetComponentCircuit(componentName)
-        complete(StatusCodes.Accepted, s"attempting to reset $componentName")
+        pathEnd {
+          get {
+            herder ! EventSinkHubMessage.AttemptResetComponentCircuit(componentName)
+            complete(StatusCodes.Accepted, s"attempting to reset $componentName")
+          }
+        }
       }
     }
   }
