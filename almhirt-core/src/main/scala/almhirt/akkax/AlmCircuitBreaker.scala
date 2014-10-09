@@ -25,7 +25,7 @@ object AlmCircuitBreaker {
     new AlmCircuitBreakerImpl(params, executionContext, scheduler)
 
   sealed trait State
-  final case class Closed(failureCount: Int) extends State {
+  final case class Closed(failureCount: Int, maxFailures: Int, warningLevel: Option[Int]) extends State {
     override def toString: String =
       if (failureCount == 0)
         "Closed"
@@ -175,7 +175,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
 
     private val warningListener: Option[Int => Runnable] = params.onWarning.map(callback => x => new Runnable { def run() = callback(x, maxFailures) })
 
-    override def publicState = Closed(get)
+    override def publicState = Closed(get, maxFailures, failuresWarnThreshold)
 
     override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] = callThrough(body)
 
