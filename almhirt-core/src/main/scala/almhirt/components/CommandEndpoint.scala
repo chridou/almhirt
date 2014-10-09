@@ -63,7 +63,7 @@ private[almhirt] class CommandEndpointImpl(
       sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
 
     case ReportDemand =>
-      if (log.isInfoEnabled)
+      if (log.isInfoEnabled && totalDemand < 3)
         log.info(s"Demand: $totalDemand, active: $isActive")
   }
 
@@ -112,7 +112,7 @@ private[almhirt] class CommandEndpointImpl(
       }
 
     case ReportDemand =>
-      if (log.isInfoEnabled)
+      if (log.isInfoEnabled && totalDemand < 3)
         log.info(s"Demand: $totalDemand, active: $isActive")
   }
 

@@ -125,7 +125,7 @@ abstract class ActorConsumerHttpPublisher[T](
     lastProblem = currentProblem match {
       case Some(CircuitBreakerOpenProblem(_)) => lastProblem
       case Some(otherProblem) => 
-        log.error(s"A request failed:\notherProblem")
+        log.error(s"A request failed:\n$otherProblem")
         Some(otherProblem)
       case None => 
         None
