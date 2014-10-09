@@ -28,6 +28,9 @@ object ActorMessages {
   case object CircuitClosed extends CircuitBreakerStateChangedMessage
   case object CircuitHalfOpened extends CircuitBreakerStateChangedMessage
   case object CircuitOpened extends CircuitBreakerStateChangedMessage
+  
+  final case class ReportCircuitBreakerState(id: CorrelationId)
+  final case class CurrentCircuitBreakerState(id: CorrelationId, state: AlmCircuitBreaker.State)
 }
 
 object CreateChildActorHelper {

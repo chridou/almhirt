@@ -72,6 +72,9 @@ abstract class ActorConsumerHttpPublisher[T](
     case DisplayCircuitState =>
       if (log.isInfoEnabled)
         log.info(s"Circuit state: s{circuitBreaker.state}")
+
+    case ActorMessages.ReportCircuitBreakerState(id) =>
+      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
   }
 
   def receiveCircuitOpen: Receive = {
@@ -99,6 +102,9 @@ abstract class ActorConsumerHttpPublisher[T](
         circuitBreakerStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
+
+    case ActorMessages.ReportCircuitBreakerState(id) =>
+      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
   }
 
   def receive: Receive = receiveCircuitClosed

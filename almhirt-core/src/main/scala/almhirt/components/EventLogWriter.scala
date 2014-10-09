@@ -142,6 +142,8 @@ private[almhirt] class EventLogWriterImpl(
       if (log.isInfoEnabled)
         log.info(s"Circuit state: s{circuitBreaker.state}")
 
+    case ActorMessages.ReportCircuitBreakerState(id) =>
+      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
   }
 
   def receiveCircuitOpen(eventLog: ActorRef): Receive = {
@@ -173,6 +175,9 @@ private[almhirt] class EventLogWriterImpl(
         circuitBreakerStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
+
+    case ActorMessages.ReportCircuitBreakerState(id) =>
+      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
   }
 
   override def receive: Receive = receiveResolve
