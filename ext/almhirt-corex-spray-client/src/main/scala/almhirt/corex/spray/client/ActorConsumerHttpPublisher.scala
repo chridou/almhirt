@@ -71,7 +71,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled)
-        log.info(s"Circuit state: s{circuitBreaker.state}")
+        log.info(s"Circuit state: ${circuitBreaker.state}")
 
     case ActorMessages.ReportCircuitBreakerState(id) =>
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
@@ -104,7 +104,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled) {
-        log.info(s"Circuit state: s{circuitBreaker.state}")
+        log.info(s"Circuit state: ${circuitBreaker.state}")
         circuitBreakerStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
