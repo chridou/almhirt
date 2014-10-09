@@ -30,7 +30,10 @@ object AlmCircuitBreaker {
       if (failureCount == 0)
         "Closed"
       else
-        s"Closed(failiures: $failureCount)"
+        warningLevel match {
+        case None => s"Closed(failures: $failureCount, maxFailures: $maxFailures)"
+        case Some(wl)=> s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
+      }
   }
   final case class HalfOpen(recovering: Boolean) extends State {
     override def toString: String =
