@@ -1,6 +1,6 @@
 package almhirt.components
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import akka.actor._
 import scalaz.Validation.FlatMap._
 import almhirt.common._
@@ -40,8 +40,12 @@ private[almhirt] class CommandEndpointImpl(
   autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorPublisher[Command] with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
 
+  private val reportDemandInterval: Option[FiniteDuration] = Some(10.seconds)
+
   private case object AutoConnect
   private case object Resolve
+  private case object ReportDemand
+
   def receiveResolve: Receive = {
     case Resolve ⇒
       context.resolveSingle(commandStatusTrackerToResolve, resolveSettings, None, Some("status-tracker-resolver"))
@@ -57,6 +61,10 @@ private[almhirt] class CommandEndpointImpl(
 
     case cmd: Command ⇒
       sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
+
+    case ReportDemand =>
+      if (log.isInfoEnabled)
+        log.info(s"Demand: $totalDemand, active: $isActive")
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = {
@@ -102,12 +110,19 @@ private[almhirt] class CommandEndpointImpl(
         					|$reason""".stripMargin)
         sender() ! CommandNotAccepted(cmd.commandId, reason)
       }
+
+    case ReportDemand =>
+      if (log.isInfoEnabled)
+        log.info(s"Demand: $totalDemand, active: $isActive")
   }
 
   override def receive: Receive = receiveResolve
 
   override def preStart() {
     self ! Resolve
+    reportDemandInterval.foreach(interval =>
+      context.system.scheduler.schedule(interval, interval, self, ReportDemand)(ctx.futuresContext))
+
   }
 
 }
