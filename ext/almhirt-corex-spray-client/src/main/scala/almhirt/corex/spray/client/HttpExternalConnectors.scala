@@ -169,7 +169,7 @@ trait HttpExternalPublisher { self: HttpExternalConnector with RequestsWithEntit
       response.success
     else
       deserializeProblem(response).fold(
-        fail ⇒ SerializationProblem(s"""The request failed with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
+        fail ⇒ SerializationProblem(s"""The request failed(client side, I received something...) with status code "${response.status}" but I could not deserialize the contained problem.""", cause = Some(fail)).failure,
         succ ⇒ succ.failure)
   }
 }
