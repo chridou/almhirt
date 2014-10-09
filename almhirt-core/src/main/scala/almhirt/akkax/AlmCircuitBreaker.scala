@@ -13,7 +13,7 @@ object AlmCircuitBreaker {
     resetTimeout: Option[FiniteDuration])
 
   val defaultSettings = AlmCircuitBreakerSettings(5, Some(3), 10.seconds, Some(5.minutes))
-    
+
   final case class AlmCircuitBreakerParams(
     settings: AlmCircuitBreakerSettings,
     onOpened: Option[() => Unit],
@@ -26,13 +26,21 @@ object AlmCircuitBreaker {
 
   sealed trait State
   final case class Closed(failureCount: Int) extends State {
-    override def toString: String = s"Closed with $failureCount failures"
+    override def toString: String =
+      if (failureCount == 0)
+        "Closed"
+      else
+        s"Closed(failiures: $failureCount)"
   }
   final case class HalfOpen(recovering: Boolean) extends State {
-    override def toString: String = s"HalfOpen(recovering: $recovering)"
+    override def toString: String =
+      if (recovering)
+        s"HalfOpen(recovering)"
+      else
+        "HalfOpen"
   }
   final case class Open(remaining: FiniteDuration) extends State {
-    override def toString: String = s"Open(${remaining.defaultUnitString} left)"
+    override def toString: String = s"Open(remaining: ${remaining.defaultUnitString})"
   }
 }
 
@@ -231,7 +239,7 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
       if (diff <= 0L) Duration.Zero
       else diff.nanos
     }
-    
+
     override def callFails() {
     }
 
