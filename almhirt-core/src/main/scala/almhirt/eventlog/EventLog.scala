@@ -11,8 +11,8 @@ object EventLog {
 
   final case class LogEvent(event: Event, acknowledge: Boolean) extends EventLogMessage
   sealed trait LogEventResponse extends EventLogMessage { def eventId: EventId }
-  final case class EventLogged(eventId: EventId) extends EventLogMessage
-  final case class EventNotLogged(eventId: EventId, problem: Problem) extends EventLogMessage
+  final case class EventLogged(eventId: EventId) extends LogEventResponse
+  final case class EventNotLogged(eventId: EventId, problem: Problem) extends LogEventResponse
 
   final case class FindEvent(eventId: EventId) extends EventLogMessage
   sealed trait FindEventResponse extends EventLogMessage
