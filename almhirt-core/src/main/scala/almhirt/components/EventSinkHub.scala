@@ -1,16 +1,31 @@
 package almhirt.components
 
-import akka.actor._
+import scala.concurrent.duration._
 import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
+import akka.actor._
+import akka.pattern._
 import almhirt.common._
+import almhirt.almfuture.all._
+import almhirt.tracking.CorrelationId
 import almhirt.context.AlmhirtContext
+import almhirt.akkax._
 import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import org.reactivestreams.Publisher
 import akka.stream.scaladsl2._
 import akka.stream.actor._
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl2.ImplicitFlowMaterializer
+
+object EventSinkHubMessage {
+   case object ReportEventSinkStates
+   sealed trait ReportEventSinkStatesRsp
+   final case class EventSinkStates(states: Map[String, AlmCircuitBreaker.State]) extends ReportEventSinkStatesRsp
+   final case class ReportEventSinkStatesFailed(problem: Problem) extends ReportEventSinkStatesRsp
+   
+   final case class AttemptResetComponentCircuit(name: String)
+}
+
 
 object EventSinkHub {
   /** [Name, (Props, Option[Filter])] */
@@ -41,11 +56,23 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
     case Start ⇒
       createInitialMembers()
       context.become(receiveRunning)
+      
+    case EventSinkHubMessage.ReportEventSinkStates =>
+      reportEventSinkStates(sender())
+      
+    case EventSinkHubMessage.AttemptResetComponentCircuit(name) =>
+      context.child(name).foreach(_ ! ActorMessages.AttemptResetCircuitBreaker)
   }
 
   def receiveRunning: Receive = {
     case Terminated(actor) ⇒
       log.info(s"Member ${actor.path.name} terminated.")
+      
+    case EventSinkHubMessage.ReportEventSinkStates =>
+      reportEventSinkStates(sender())
+      
+    case EventSinkHubMessage.AttemptResetComponentCircuit(name) =>
+      context.child(name).foreach(_ ! ActorMessages.AttemptResetCircuitBreaker)
   }
 
   def receive: Receive = receiveInitialize
@@ -78,6 +105,17 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
     } else {
       log.warning("No members. Nothing will be subscribed")
     }
+  }
+  
+  private def reportEventSinkStates(receiver: ActorRef) {
+    implicit val executor = ctx.futuresContext
+    val futures = context.children.map(child => 
+      (child ? ActorMessages.ReportCircuitBreakerState(CorrelationId(child.path.name)))(3.seconds)
+      	.mapCastTo[ActorMessages.CurrentCircuitBreakerState].map(rsp => (rsp.id.value, rsp.state)))
+      
+    AlmFuture.sequence(futures.toSeq).onComplete(
+       problem => receiver ! EventSinkHubMessage.ReportEventSinkStatesFailed(problem),
+       states => receiver ! EventSinkHubMessage.EventSinkStates(states.toMap))
   }
 
   override def preStart() {

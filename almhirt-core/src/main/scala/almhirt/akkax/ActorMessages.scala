@@ -31,6 +31,8 @@ object ActorMessages {
   
   final case class ReportCircuitBreakerState(id: CorrelationId)
   final case class CurrentCircuitBreakerState(id: CorrelationId, state: AlmCircuitBreaker.State)
+  
+  case object AttemptResetCircuitBreaker
 }
 
 object CreateChildActorHelper {

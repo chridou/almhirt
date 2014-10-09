@@ -102,6 +102,12 @@ private[almhirt] class EventLogWriterImpl(
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
       sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
+
+    case ActorMessages.ReportCircuitBreakerState(id) =>
+      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
+      
+    case ActorMessages.AttemptResetCircuitBreaker =>
+      circuitBreaker.reset()
   }
 
   def receiveCircuitClosed(eventLog: ActorRef): Receive = {
@@ -144,6 +150,9 @@ private[almhirt] class EventLogWriterImpl(
 
     case ActorMessages.ReportCircuitBreakerState(id) =>
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
+      
+    case ActorMessages.AttemptResetCircuitBreaker =>
+      circuitBreaker.reset()
   }
 
   def receiveCircuitOpen(eventLog: ActorRef): Receive = {
@@ -178,6 +187,9 @@ private[almhirt] class EventLogWriterImpl(
 
     case ActorMessages.ReportCircuitBreakerState(id) =>
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
+      
+    case ActorMessages.AttemptResetCircuitBreaker =>
+      circuitBreaker.reset()
   }
 
   override def receive: Receive = receiveResolve

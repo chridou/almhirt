@@ -75,6 +75,9 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case ActorMessages.ReportCircuitBreakerState(id) =>
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
+      
+    case ActorMessages.AttemptResetCircuitBreaker =>
+      circuitBreaker.reset()
   }
 
   def receiveCircuitOpen: Receive = {
@@ -105,6 +108,9 @@ abstract class ActorConsumerHttpPublisher[T](
 
     case ActorMessages.ReportCircuitBreakerState(id) =>
       sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
+      
+    case ActorMessages.AttemptResetCircuitBreaker =>
+      circuitBreaker.reset()
   }
 
   def receive: Receive = receiveCircuitClosed
