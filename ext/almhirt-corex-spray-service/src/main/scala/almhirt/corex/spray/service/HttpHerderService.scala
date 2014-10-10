@@ -84,6 +84,14 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             complete(StatusCodes.Accepted, s"attempting to remove fuse in $componentName")
           }
         }
+      } ~ pathPrefix("attempt-insert-fuse" / Segment) { componentName =>
+        pathEnd {
+          get {
+            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+            herder ! HerderMessage.InsertFuseIntoCircuitBreaker(componentName)
+            complete(StatusCodes.Accepted, s"attempting to insert fuse in $componentName")
+          }
+        }
       } ~ pathPrefix("attempt-destroy-fuse" / Segment) { componentName =>
         pathEnd {
           get {
@@ -119,10 +127,6 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-reset/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
           <td>{ anchor }</td>
-        case x: AlmCircuitBreaker.FuseRemoved =>
-          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-reset/$name", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
-          <td>{ anchor }</td>
         case _ =>
           <td>no action</td>
       }
@@ -141,6 +145,17 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         case x: AlmCircuitBreaker.Closed =>
           val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-remove-fuse/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
+          <td>{ anchor }</td>
+        case _ =>
+          <td>no action</td>
+      }
+    }
+
+    def createStateInsertAction(name: String, state: AlmCircuitBreaker.State) = {
+      state match {
+        case x: AlmCircuitBreaker.FuseRemoved =>
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-insert-fuse/$name", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("insert fuse"))
           <td>{ anchor }</td>
         case _ =>
           <td>no action</td>
@@ -176,6 +191,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         { createStateItem(state) }
         { createStateResetAction(name, state) }
         { createStateRemoveAction(name, state) }
+        { createStateInsertAction(name, state) }
         { createStateDestroyAction(name, state) }
       </tr>
     }
@@ -187,11 +203,9 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       <body>
         <table border="0">
           <tr>
-            <th>Sink</th>
+            <th>Circuit Breaker</th>
             <th>Circuit State</th>
-            <th>Reset</th>
-            <th>Remove Fuse</th>
-            <th>Destroy Fuse</th>
+            <th colspan="4">Actions</th>
           </tr>
           { state.map { case (name, state) => createRow(name, state) } }
         </table>

@@ -32,6 +32,9 @@ private[almhirt] class CircuitBreakerHerdingDog()(implicit override val almhirtC
       
     case HerderMessage.RemoveFuseFromCircuitBreaker(name) =>
       circuitBreakers.find(_._1.path.name == name).foreach(_._2.removeFuse)
+
+    case HerderMessage.InsertFuseIntoCircuitBreaker(name) =>
+      circuitBreakers.find(_._1.path.name == name).foreach(_._2.insertFuse)
       
     case HerderMessage.DestroyFuseInCircuitBreaker(name) =>
       circuitBreakers.find(_._1.path.name == name).foreach(_._2.destroyFuse)
