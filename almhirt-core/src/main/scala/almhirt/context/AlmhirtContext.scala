@@ -9,12 +9,33 @@ import com.typesafe.config._
 
 trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with HasExecutionContexts {
   def config: Config
+  def localActorPaths: ContextActorPaths
+}
+
+trait ContextActorPaths {
+  def herderPath: ActorPath
+  def componentsPath: ActorPath
+  def eventLogsPath: ActorPath
+  def miscPath: ActorPath
+  def appsPath: ActorPath
+}
+
+object ContextActorPaths {
+  def apply(system: ActorSystem): ContextActorPaths = {
+    val address = Address("akka", system.name)
+    val almhirtPath = new RootActorPath(address) / "user" / "almhirt"
+    new ContextActorPaths {
+      val herderPath = almhirtPath / "herder"
+      val componentsPath = almhirtPath / "components"
+    }
+  }
 }
 
 object AlmhirtContextMessages {
   private[almhirt] case object Start
   private[almhirt] case class StreamsCreated(streams: AlmhirtStreams with Stoppable)
   private[almhirt] case class StreamsNotCreated(problem: Problem)
+  private[almhirt] case class HerderCreated(ctx: AlmhirtContext with Stoppable)
   private[almhirt] case class ContextCreated(ctx: AlmhirtContext with Stoppable)
 
   private[almhirt] sealed trait FinishedResponse
@@ -94,6 +115,19 @@ object AlmhirtContext {
               self ! AlmhirtContextMessages.ContextCreated(ctx)
 
             case AlmhirtContextMessages.ContextCreated(ctx) ⇒
+              log.info("Context created. Next: Configure herder")
+              (for {
+                herderProps <- almhirt.herder.Herder.props()(ctx)
+              } yield herderProps).fold(
+                prob => theReceiver ! AlmhirtContextMessages.FailedInitialization(prob),
+                herderProps => {
+                  context.actorOf(herderProps, almhirt.herder.Herder.actorname)
+                  self ! AlmhirtContextMessages.HerderCreated(ctx)
+                })
+              val herder =
+                theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
+
+            case AlmhirtContextMessages.HerderCreated(ctx) ⇒
               log.info("Context created. Next: Configure components")
               val components = context.actorOf(componentactors.componentsProps(ctx), "components")
               components ! componentactors.UnfoldFromFactories(componentFactories)
@@ -112,8 +146,7 @@ object AlmhirtContext {
     }.fold(
       fail ⇒ AlmFuture.failed(fail),
       Function.tupled((almhirtProps, maxInitDur) ⇒ {
-        val contextName = actorName getOrElse (this.actorname)
-        val theAlmhirt = system.actorOf(almhirtProps, contextName)
+        val theAlmhirt = system.actorOf(almhirtProps, this.actorname)
 
         import almhirt.almvalidation.kit._
         import almhirt.almfuture.all._

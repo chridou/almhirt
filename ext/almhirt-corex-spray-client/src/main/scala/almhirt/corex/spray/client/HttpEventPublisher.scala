@@ -10,7 +10,7 @@ import almhirt.akkax._
 import almhirt.http._
 import almhirt.configuration._
 import almhirt.almvalidation.kit._
-import almhirt.context.AlmhirtContext
+import almhirt.context._
 import spray.http._
 import spray.client.pipelining._
 import org.reactivestreams.{ Subscriber, Publisher }
@@ -26,7 +26,7 @@ object HttpEventPublisher {
     addEventId: Boolean,
     autoConnectTo: Option[Publisher[Event]],
     circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-    circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts): Props =
+    circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
     Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType, autoConnectTo, circuitBreakerSettings, circuitBreakerStateReportingInterval))
 
   def props(httpEventPublisherName: String)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
@@ -63,8 +63,9 @@ private[almhirt] class HttpEventPublisherImpl(
   contentMediaType: MediaType,
   autoConnectTo: Option[Publisher[Event]],
   circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts)
-  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.OK, StatusCodes.Accepted), contentMediaType, method, circuitBreakerSettings, circuitBreakerStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]]) {
+  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts, override val almhirtContext: AlmhirtContext)
+  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.OK, StatusCodes.Accepted), contentMediaType, method, circuitBreakerSettings, circuitBreakerStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
+  with HasAlmhirtContext {
 
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext

@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
 import almhirt.almvalidation.kit._
+import almhirt.context._
 import almhirt.akkax._
 import almhirt.http._
 import akka.stream.actor._
@@ -21,7 +22,7 @@ abstract class ActorConsumerHttpPublisher[T](
   contentMediaType: MediaType,
   method: HttpMethod,
   circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
+  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with HasAlmhirtContext with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
 
   def createUri(entity: T): Uri
 
@@ -30,16 +31,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
   final override val requestStrategy = ZeroRequestStrategy
 
-  val circuitBreakerParams =
-    AlmCircuitBreaker.AlmCircuitBreakerParams(
-      settings = circuitBreakerSettings,
-      onOpened = Some(() => self ! ActorMessages.CircuitOpened),
-      onHalfOpened = Some(() => self ! ActorMessages.CircuitHalfOpened),
-      onClosed = Some(() => self ! ActorMessages.CircuitClosed),
-      onWarning = Some((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open.")))
-
-  val circuitBreaker = AlmCircuitBreaker(circuitBreakerParams, context.dispatcher, context.system.scheduler)
-  private[this] var lastProblem: Option[Problem] = None
+  val circuitBreaker = AlmCircuitBreaker(circuitBreakerSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   private case object Start
   def receiveCircuitClosed: Receive = {
@@ -63,24 +55,16 @@ abstract class ActorConsumerHttpPublisher[T](
       handleProcessed(currentProblem)
 
     case ActorMessages.CircuitOpened =>
-      log.warning("Circuit opened")
-      lastProblem.foreach(problem => log.error(s"Last problem before opening circuit:\n$problem"))
-      lastProblem = None
+      context.become(receiveCircuitOpen)
+      self ! DisplayCircuitState
+
+    case m: ActorMessages.CircuitBreakerAllWillFail =>
       context.become(receiveCircuitOpen)
       self ! DisplayCircuitState
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled)
         log.info(s"Circuit state: ${circuitBreaker.state}")
-
-    case ActorMessages.ReportCircuitBreakerState(id) =>
-      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
-
-    case ActorMessages.AttemptResetCircuitBreaker =>
-      if (circuitBreaker.reset())
-        log.info("Manual reset attempt successful.")
-      else
-        log.info("Manual reset attempt caused no change.")
   }
 
   def receiveCircuitOpen: Receive = {
@@ -90,15 +74,7 @@ abstract class ActorConsumerHttpPublisher[T](
     case Processed(currentProblem) ⇒
       handleProcessed(currentProblem)
 
-    case ActorMessages.CircuitClosed =>
-      if (log.isInfoEnabled)
-        log.info("Circuit closed")
-      context.become(receiveCircuitClosed)
-      self ! DisplayCircuitState
-
-    case ActorMessages.CircuitHalfOpened =>
-      if (log.isInfoEnabled)
-        log.info("Circuit half opend")
+    case m: ActorMessages.CircuitBreakerNotAllWillFail =>
       context.become(receiveCircuitClosed)
       self ! DisplayCircuitState
 
@@ -108,27 +84,18 @@ abstract class ActorConsumerHttpPublisher[T](
         circuitBreakerStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
-
-    case ActorMessages.ReportCircuitBreakerState(id) =>
-      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
-
-    case ActorMessages.AttemptResetCircuitBreaker =>
-      if (circuitBreaker.reset())
-        log.info("Manual reset attempt successful.")
-      else
-        log.info("Manual reset attempt caused no change.")
   }
 
   def receive: Receive = receiveCircuitClosed
 
   private def handleProcessed(currentProblem: Option[Problem]) {
-    lastProblem = currentProblem match {
-      case Some(CircuitBreakerOpenProblem(_)) => lastProblem
-      case Some(otherProblem) => 
+    currentProblem match {
+      case Some(CircuitBreakerOpenProblem(_)) =>
+        ()
+      case Some(otherProblem) =>
         log.error(s"A request failed:\n$otherProblem")
-        Some(otherProblem)
-      case None => 
-        None
+      case None =>
+        ()
     }
     request(1)
   }
@@ -140,6 +107,8 @@ abstract class ActorConsumerHttpPublisher[T](
 
   override def preStart() {
     super.preStart()
+    circuitBreaker.defaultActorListeners(self)
+      .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
     self ! Start
   }
 }

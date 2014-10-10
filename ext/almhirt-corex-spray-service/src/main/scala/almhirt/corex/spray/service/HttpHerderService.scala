@@ -58,24 +58,26 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
                 str.trim().isEmpty || str.trim() == "true"
             }
           get { ctx =>
-            val fut = (herder ? EventSinkHubMessage.ReportEventSinkStates)(maxCallDuration).mapCastTo[EventSinkHubMessage.ReportEventSinkStatesRsp].collectV({
-              case EventSinkHubMessage.ReportEventSinkStatesFailed(prob) => scalaz.Failure(prob)
-              case EventSinkHubMessage.EventSinkStates(states) => scalaz.Success(states)
-            })
-            fut.fold(
-              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-              status => if (isUiEnabled) {
-                ctx.complete(StatusCodes.OK, createEventSinkHubUi(status))
-              } else {
-                ctx.complete(StatusCodes.OK, status.map { case (name, state) => s"$name -> $state" }.mkString("\n"))
-              })
+//            val fut = (herder ? EventSinkHubMessage.ReportEventSinkStates)(maxCallDuration).mapCastTo[EventSinkHubMessage.ReportEventSinkStatesRsp].collectV({
+//              case EventSinkHubMessage.ReportEventSinkStatesFailed(prob) => scalaz.Failure(prob)
+//              case EventSinkHubMessage.EventSinkStates(states) => scalaz.Success(states)
+//            })
+//            fut.fold(
+//              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+//              status => if (isUiEnabled) {
+//                ctx.complete(StatusCodes.OK, createEventSinkHubUi(status))
+//              } else {
+//                ctx.complete(StatusCodes.OK, status.map { case (name, state) => s"$name -> $state" }.mkString("\n"))
+//              })
+            ???
           }
         }
       } ~ pathPrefix("attempt-reset" / Segment) { componentName =>
         pathEnd {
           get {
-            herder ! EventSinkHubMessage.AttemptResetComponentCircuit(componentName)
-            complete(StatusCodes.Accepted, s"attempting to reset $componentName")
+//            herder ! EventSinkHubMessage.AttemptResetComponentCircuit(componentName)
+//            complete(StatusCodes.Accepted, s"attempting to reset $componentName")
+            ???
           }
         }
       }

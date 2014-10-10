@@ -11,6 +11,7 @@ import almhirt.almvalidation.kit._
 import almhirt.almfuture.all._
 import almhirt.akkax._
 import almhirt.context.AlmhirtContext
+import almhirt.context.HasAlmhirtContext
 import almhirt.streaming.ActorDevNullSubscriberWithAutoSubscribe
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
@@ -66,22 +67,14 @@ private[almhirt] class EventLogWriterImpl(
   warningThreshold: FiniteDuration,
   autoConnect: Boolean,
   circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {
+  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with HasAlmhirtContext with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
 
-  implicit val executor = ctx.futuresContext
+  implicit val executor = almhirtContext.futuresContext
 
   override val requestStrategy = ZeroRequestStrategy
 
-  val circuitBreakerParams =
-    AlmCircuitBreaker.AlmCircuitBreakerParams(
-      settings = circuitBreakerSettings,
-      onOpened = Some(() => self ! ActorMessages.CircuitOpened),
-      onHalfOpened = Some(() => self ! ActorMessages.CircuitHalfOpened),
-      onClosed = Some(() => self ! ActorMessages.CircuitClosed),
-      onWarning = Some((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open.")))
-
-  val circuitBreaker = AlmCircuitBreaker(circuitBreakerParams, context.dispatcher, context.system.scheduler)
+  val circuitBreaker = AlmCircuitBreaker(circuitBreakerSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   private case object AutoConnect
   private case object Resolve
@@ -102,21 +95,12 @@ private[almhirt] class EventLogWriterImpl(
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
       sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
-
-    case ActorMessages.ReportCircuitBreakerState(id) =>
-      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
-      
-    case ActorMessages.AttemptResetCircuitBreaker =>
-      if(circuitBreaker.reset())
-        log.info("Manual reset attempt successful.")
-      else
-        log.info("Manual reset attempt caused no change.")
   }
 
   def receiveCircuitClosed(eventLog: ActorRef): Receive = {
     case AutoConnect ⇒
       log.info("Subscribing to event stream.")
-      FlowFrom(ctx.eventStream).publishTo(EventLogWriter(self))
+      FlowFrom(almhirtContext.eventStream).publishTo(EventLogWriter(self))
       request(1)
 
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
@@ -142,23 +126,13 @@ private[almhirt] class EventLogWriterImpl(
       log.error(s"Could not log event '${id.value}':\n$problem")
       request(1)
 
-    case ActorMessages.CircuitOpened =>
-      log.warning("Circuit opened")
+    case m: ActorMessages.CircuitBreakerAllWillFail =>
       context.become(receiveCircuitOpen(eventLog))
       self ! DisplayCircuitState
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled)
         log.info(s"Circuit state: ${circuitBreaker.state}")
-
-    case ActorMessages.ReportCircuitBreakerState(id) =>
-      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
-      
-    case ActorMessages.AttemptResetCircuitBreaker =>
-      if(circuitBreaker.reset())
-        log.info("Manual reset attempt successful.")
-      else
-        log.info("Manual reset attempt caused no change.")
   }
 
   def receiveCircuitOpen(eventLog: ActorRef): Receive = {
@@ -172,15 +146,7 @@ private[almhirt] class EventLogWriterImpl(
       log.error(s"Could not log event '${id.value}':\n$problem")
       request(1)
 
-    case ActorMessages.CircuitClosed =>
-      if (log.isInfoEnabled)
-        log.info("Circuit closed")
-      context.become(receiveCircuitClosed(eventLog))
-      self ! DisplayCircuitState
-
-    case ActorMessages.CircuitHalfOpened =>
-      if (log.isInfoEnabled)
-        log.info("Circuit half opend")
+    case m: ActorMessages.CircuitBreakerNotAllWillFail =>
       context.become(receiveCircuitClosed(eventLog))
       self ! DisplayCircuitState
 
@@ -190,20 +156,14 @@ private[almhirt] class EventLogWriterImpl(
         circuitBreakerStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
-
-    case ActorMessages.ReportCircuitBreakerState(id) =>
-      sender() ! ActorMessages.CurrentCircuitBreakerState(id, circuitBreaker.state)
-      
-    case ActorMessages.AttemptResetCircuitBreaker =>
-      if(circuitBreaker.reset())
-        log.info("Manual reset attempt successful.")
-      else
-        log.info("Manual reset attempt caused no change.")
   }
 
   override def receive: Receive = receiveResolve
 
   override def preStart() {
+    circuitBreaker.defaultActorListeners(self)
+      .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
+
     self ! Resolve
   }
 } 

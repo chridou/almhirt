@@ -11,7 +11,6 @@ object ActorMessages {
   final case class ChildActorCreated(actorRef: ActorRef, correlationId: Option[CorrelationId]) extends CreateChildActorRsp
   final case class CreateChildActorFailed(cause: Problem, correlationId: Option[CorrelationId]) extends CreateChildActorRsp
 
-  
   sealed trait ResovleResponse
   sealed trait ResolveSingleResponse extends ResovleResponse
   final case class ResolvedSingle(resolved: ActorRef, correlationId: Option[CorrelationId]) extends ResolveSingleResponse
@@ -22,17 +21,15 @@ object ActorMessages {
   final case class ManyNotResolved(problem: Problem, correlationId: Option[CorrelationId]) extends ResolveManyResponse
 
   final case class UnfoldComponents(factories: Seq[ComponentFactory])
-  
-  
+
   sealed trait CircuitBreakerStateChangedMessage
-  case object CircuitClosed extends CircuitBreakerStateChangedMessage
-  case object CircuitHalfOpened extends CircuitBreakerStateChangedMessage
-  case object CircuitOpened extends CircuitBreakerStateChangedMessage
-  
-  final case class ReportCircuitBreakerState(id: CorrelationId)
-  final case class CurrentCircuitBreakerState(id: CorrelationId, state: AlmCircuitBreaker.State)
-  
-  case object AttemptResetCircuitBreaker
+  sealed trait CircuitBreakerNotAllWillFail extends CircuitBreakerStateChangedMessage
+  sealed trait CircuitBreakerAllWillFail extends CircuitBreakerStateChangedMessage
+  case object CircuitClosed extends CircuitBreakerNotAllWillFail
+  case object CircuitHalfOpened extends CircuitBreakerNotAllWillFail
+  case object CircuitOpened extends CircuitBreakerAllWillFail
+  case object CircuitFuseRemoved extends CircuitBreakerAllWillFail
+  case object CircuitFuseDestroyed extends CircuitBreakerAllWillFail
 }
 
 object CreateChildActorHelper {

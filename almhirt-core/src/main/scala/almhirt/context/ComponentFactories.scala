@@ -4,8 +4,6 @@ import almhirt.common.AlmFuture
 import almhirt.akkax.ComponentFactory
 
 final case class ComponentFactories(
-  /** Build the nexus under  "/user/{almhirt}/components/{herder}". */
-  buildHerder: Option[AlmhirtContext ⇒ AlmFuture[ComponentFactory]],
   /** These are the event logs. They will be placed under "/user/{almhirt}/components/event-logs". */
   buildEventLogs: AlmhirtContext ⇒ AlmFuture[Seq[ComponentFactory]],
   /** These are the views. They will be placed under "/user/{almhirt}/components/views". */
@@ -20,7 +18,6 @@ final case class ComponentFactories(
 object ComponentFactories {
 
   val empty = ComponentFactories(
-    None,
     _ ⇒ AlmFuture.successful(Seq.empty),
     _ ⇒ AlmFuture.successful(Seq.empty),
     _ ⇒ AlmFuture.successful(Seq.empty),

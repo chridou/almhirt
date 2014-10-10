@@ -46,6 +46,15 @@ object AlmCircuitBreaker {
     override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
   }
 
+  implicit class AlmCircuitBreakerOps(self: AlmCircuitBreaker) {
+    def defaultActorListeners(actor: akka.actor.ActorRef): AlmCircuitBreaker =
+      self.onOpened(() => actor ! ActorMessages.CircuitOpened)
+        .onHalfOpened(() => actor ! ActorMessages.CircuitHalfOpened)
+        .onClosed(() => actor ! ActorMessages.CircuitClosed)
+        .onFuseRemoved(() => actor ! ActorMessages.CircuitClosed)
+        .onFuseDestroyed(() => actor ! ActorMessages.CircuitClosed)
+
+  }
 }
 
 trait AlmCircuitBreaker {
