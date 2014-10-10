@@ -59,6 +59,7 @@ object EventLogWriter {
     ActorSubscriber[Event](eventLogWriter)
 
   val actorname = "event-log-writer"
+  def path(root: RootActorPath) = EventSinkHub.path(root) / actorname
 }
 
 private[almhirt] class EventLogWriterImpl(

@@ -32,6 +32,7 @@ object Herder {
     props(Address("akka", "almhirt-system"))
 
   val actorname = "herder"
+  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.almhirt(root) / actorname 
 }
 
 private[almhirt] class Pastor()(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {

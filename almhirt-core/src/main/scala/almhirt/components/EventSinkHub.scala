@@ -40,6 +40,7 @@ object EventSinkHub {
   }
 
   val actorname = "event-sink-hub"
+  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.misc(root) / actorname
 }
 
 private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit ctx: AlmhirtContext) extends ActorSubscriber with ActorLogging with ImplicitFlowMaterializer {

@@ -60,6 +60,7 @@ object CommandStatusTracker {
   }
 
   val actorname = "command-status-tracker"
+  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.misc(root) / actorname
 }
 
 private[almhirt] class MyCommandStatusTracker(

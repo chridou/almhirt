@@ -13,6 +13,8 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
 }
 
 trait ContextActorPaths {
+  def root: RootActorPath
+  def almhirt: ActorPath
   def herder: ActorPath
   def components: ActorPath
   def eventLogs: ActorPath
@@ -22,16 +24,34 @@ trait ContextActorPaths {
 
 object ContextActorPaths {
   def local(system: ActorSystem): ContextActorPaths = {
-    val address = Address("akka", system.name)
-    val almhirtPath = new RootActorPath(address) / "user" / "almhirt"
     new ContextActorPaths {
-      val herder = almhirtPath / "herder"
-      val components = almhirtPath / "components"
-      val eventLogs = components / "event-logs"
-      val misc = components / "misc"
-      val apps = components / "apps"
+      val root = new RootActorPath(Address("akka", system.name))
+      val almhirt = ContextActorPaths.almhirt(root)
+      val herder = ContextActorPaths.herder(root)
+      val components = ContextActorPaths.components(root)
+      val eventLogs = ContextActorPaths.eventLogs(root)
+      val misc = ContextActorPaths.misc(root)
+      val apps = ContextActorPaths.apps(root)
     }
   }
+
+  def almhirt(root: RootActorPath): ActorPath =
+    root / "user" / "almhirt"
+
+  def herder(root: RootActorPath): ActorPath =
+    _root_.almhirt.herder.Herder.path(root)
+
+  def components(root: RootActorPath): ActorPath =
+    almhirt(root) / "components"
+
+  def eventLogs(root: RootActorPath): ActorPath =
+    components(root) / "event-logs"
+
+  def misc(root: RootActorPath): ActorPath =
+    components(root) / "misc"
+
+  def apps(root: RootActorPath): ActorPath =
+    components(root) / "apps"
 }
 
 object AlmhirtContextMessages {

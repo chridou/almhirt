@@ -89,5 +89,5 @@ object AggregateRootEventLog {
   final case class GetAggregateRootEventFailed(eventId: EventId, problem: Problem) extends GetAggregateRootEventResponse
 
   val actorname = "aggregate-event-log"
-  def logicalPath(actorname: String): String = s"/user/almhirt/components/event-logs/$actorname"
+  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.eventLogs(root) / actorname 
 }

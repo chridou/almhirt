@@ -68,5 +68,5 @@ object EventLog {
   final case class FetchEventsFailed(problem: Problem) extends FetchEventsResponse
 
   val actorname = "event-log"
-  def logicalPath(actorname: String): String = s"/user/almhirt/components/event-logs/$actorname"
+  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.eventLogs(root) / actorname 
 }

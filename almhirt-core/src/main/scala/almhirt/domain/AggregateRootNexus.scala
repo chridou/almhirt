@@ -21,6 +21,7 @@ object AggregateRootNexus {
     Props(new AggregateRootNexus(Some(ctx.commandStream), hiveSelector, hiveFactory))
 
   val actorname = "aggregate-root-nexus"
+  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.components(root) / actorname 
 }
 
 /**

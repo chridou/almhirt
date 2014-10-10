@@ -1,8 +1,8 @@
 package almhirt.components
 
 import scala.concurrent.duration._
-import akka.actor._
 import scalaz.Validation.FlatMap._
+import akka.actor._
 import almhirt.common._
 import almhirt.tracking._
 import almhirt.akkax._
@@ -31,6 +31,7 @@ object CommandEndpoint {
     ActorPublisher[Command](commandEndpoint)
 
   val actorname = "command-endpoint"
+  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.misc(root) / actorname
 }
 
 private[almhirt] class CommandEndpointImpl(
