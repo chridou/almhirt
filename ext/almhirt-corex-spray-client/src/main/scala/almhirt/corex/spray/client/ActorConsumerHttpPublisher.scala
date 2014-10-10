@@ -109,6 +109,13 @@ abstract class ActorConsumerHttpPublisher[T](
     super.preStart()
     circuitBreaker.defaultActorListeners(self)
       .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
+      
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitBreaker(self, circuitBreaker)
+
     self ! Start
+  }
+  
+  override def postStop() {
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitBreaker(self)
   }
 }

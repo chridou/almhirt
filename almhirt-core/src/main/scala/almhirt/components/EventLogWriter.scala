@@ -164,6 +164,13 @@ private[almhirt] class EventLogWriterImpl(
     circuitBreaker.defaultActorListeners(self)
       .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
 
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitBreaker(self, circuitBreaker)
+
     self ! Resolve
   }
+
+  override def postStop() {
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitBreaker(self)
+  }
+
 } 

@@ -25,9 +25,6 @@ object Herder {
     val configPath = "almhirt.herder"
     for {
       section <- ctx.config.v[Config](configPath)
-//      resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-//      eventSinkHubPathPart <- section.magicOption[String]("livestock.event-sink-hub")
-//      eventSinkHubToResolve <- inTryCatch { eventSinkHubPathPart.map(pathPart => ResolvePath(ActorPath.fromString(s"${address}/$pathPart"))) }
     } yield propsRaw()
   }
 
@@ -40,27 +37,18 @@ object Herder {
 private[almhirt] class Pastor()(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
   import almhirt.components.{ EventSinkHub, EventSinkHubMessage }
 
-  implicit val executor = almhirtContext.futuresContext
-
-  private object _Start
-
   val circuitBreakerHerdingDog: ActorRef = context.actorOf(Props(new herdingdogs.CircuitBreakerHerdingDog()), herdingdogs.CircuitBreakerHerdingDog.actorname)
-  
-  def receiveInitialize: Receive = {
-    case `_Start` =>
-      log.info("Starting...")
-
-  }
 
   def receiveRunning: Receive = {
     case m: HerderMessage.RegisterCircuitBreaker => circuitBreakerHerdingDog ! m
     case m: HerderMessage.DeregisterCircuitBreaker => circuitBreakerHerdingDog ! m
+    case HerderMessage.ReportCircuitBreakerStates => circuitBreakerHerdingDog forward HerderMessage.ReportCircuitBreakerStates
+    case m: HerderMessage.CircuitBreakerControlMessage => circuitBreakerHerdingDog forward m
   }
 
-  def receive = receiveInitialize
+  def receive = receiveRunning
 
   override def preStart() {
-    self ! _Start
   }
 
 }

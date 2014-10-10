@@ -13,20 +13,23 @@ trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with
 }
 
 trait ContextActorPaths {
-  def herderPath: ActorPath
-  def componentsPath: ActorPath
-  def eventLogsPath: ActorPath
-  def miscPath: ActorPath
-  def appsPath: ActorPath
+  def herder: ActorPath
+  def components: ActorPath
+  def eventLogs: ActorPath
+  def misc: ActorPath
+  def apps: ActorPath
 }
 
 object ContextActorPaths {
-  def apply(system: ActorSystem): ContextActorPaths = {
+  def local(system: ActorSystem): ContextActorPaths = {
     val address = Address("akka", system.name)
     val almhirtPath = new RootActorPath(address) / "user" / "almhirt"
     new ContextActorPaths {
-      val herderPath = almhirtPath / "herder"
-      val componentsPath = almhirtPath / "components"
+      val herder = almhirtPath / "herder"
+      val components = almhirtPath / "components"
+      val eventLogs = components / "event-logs"
+      val misc = components / "misc"
+      val apps = components / "apps"
     }
   }
 }
@@ -106,6 +109,7 @@ object AlmhirtContext {
                 val eventStream = streams.eventStream
                 val commandBroker = streams.commandBroker
                 val commandStream = streams.commandStream
+                val localActorPaths = ContextActorPaths.local(system)
                 def stop() {
                   log.info("Stopping.")
                   //streams.stop()
@@ -197,6 +201,7 @@ object AlmhirtContext {
               val eventStream = streams.eventStream
               val commandBroker = streams.commandBroker
               val commandStream = streams.commandStream
+              val localActorPaths = null
               def stop() {
                 log.debug("Stopping.")
                 //streams.stop()
