@@ -151,19 +151,19 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       state match {
         case x: AlmCircuitBreaker.Open =>
           val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-destroy-fuse/$name", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("destry fuse"))
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.HalfOpen =>
           val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-destroy-fuse/$name", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("destry fuse"))
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.Closed =>
           val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-destroy-fuse/$name", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("destry fuse"))
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.FuseRemoved =>
           val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-destroy-fuse/$name", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("destry fuse"))
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case _ =>
           <td>no action</td>
