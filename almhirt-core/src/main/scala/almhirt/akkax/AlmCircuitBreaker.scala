@@ -112,10 +112,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
     currentState.invoke(body)
   }
 
-  override def attemptClose(): Boolean = currentState.attemptManualReset()
-
-  override def removeFuse(): Boolean = currentState.attemptManualReset()
-
+  override def attemptClose(): Boolean = currentState.attemptManualClose()
+  override def removeFuse(): Boolean = currentState.attemptManualRemoveFuse()
   override def destroyFuse(): Boolean = currentState.attemptManualRemoveFuse()
 
   override def state: AlmCircuitBreaker.State = currentState.publicState
@@ -179,16 +177,9 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
    *
    */
   private def resetBreaker(): Unit = transition(InternalHalfOpen, InternalClosed)
-
-  private def attemptReset(): Boolean =
-    if (swapState(InternalOpen, InternalHalfOpen)) {
-      InternalHalfOpen.enter()
-      true
-    } else
-      false
-
-  private def attemptInsertFuse(): Boolean =
-    if (swapState(InternalFuseRemoved, InternalHalfOpen)) {
+ 
+  private def attemptReset(from: InternalState): Boolean =
+    if (swapState(from, InternalHalfOpen)) {
       InternalHalfOpen.enter()
       true
     } else
@@ -255,7 +246,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
       }
     }
 
-    def attemptManualReset(): Boolean = false
+    def attemptManualClose(): Boolean = false
     def attemptManualDestroyFuse(): Boolean
     def attemptManualRemoveFuse(): Boolean
   }
@@ -306,10 +297,10 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
   }
 
   /** Valid transitions:
-   * -> Closed
-   * -> Opened
-   * -> FuseRemoved
-   * -> Destroyed
+   * HalfOpen -> Closed
+   * HalfOpen -> Opened
+   * HalfOpen -> FuseRemoved
+   * HalfOpen -> Destroyed
    */
   private case object InternalHalfOpen extends AtomicBoolean with InternalState {
     override def publicState = HalfOpen(!get)
@@ -335,9 +326,9 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
   }
 
   /** Valid transitions:
-   * -> HalfOpen
-   * -> FuseRemoved
-   * -> Destroyed
+   * Open -> HalfOpen
+   * Open -> FuseRemoved
+   * Open -> Destroyed
    */
   private case object InternalOpen extends AtomicLong with InternalState {
     private val myResetTimeout: FiniteDuration = resetTimeout getOrElse (Duration.Zero)
@@ -363,21 +354,20 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
       set(System.nanoTime())
       resetTimeout.foreach { rt =>
         scheduler.scheduleOnce(rt) {
-          attemptReset()
+          attemptReset(InternalOpen)
         }(executionContext)
       }
     }
 
-    override def attemptManualReset(): Boolean = attemptReset()
-
+    override def attemptManualClose(): Boolean = attemptReset(InternalOpen)
     override def attemptManualDestroyFuse(): Boolean = attemptDestroyFuse(InternalOpen)
     override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalOpen)
 
   }
 
   /** Valid transitions:
-   * -> HalfOpen
-   * -> Destroyed
+   * FuseRemoved -> HalfOpen
+   * FuseRemoved -> Destroyed
    */
   private case object InternalFuseRemoved extends AtomicLong with InternalState {
     override def publicState = FuseRemoved(forDuration)
@@ -401,11 +391,13 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
       set(System.nanoTime())
     }
 
+    override def attemptManualClose(): Boolean = attemptReset(InternalOpen)
     override def attemptManualDestroyFuse(): Boolean = attemptDestroyFuse(InternalFuseRemoved)
     override def attemptManualRemoveFuse(): Boolean = false
 
   }
 
+  /** No transitions */
   private case object InternalFuseDestroyed extends AtomicLong with InternalState {
     override def publicState = FuseDestroyed(forDuration)
 
@@ -428,7 +420,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
       set(System.nanoTime())
     }
 
-    override def attemptManualReset(): Boolean = false
+    override def attemptManualClose(): Boolean = false
     override def attemptManualDestroyFuse(): Boolean = false
     override def attemptManualRemoveFuse(): Boolean = false
   }
