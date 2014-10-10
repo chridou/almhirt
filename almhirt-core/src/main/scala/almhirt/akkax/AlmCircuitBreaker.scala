@@ -14,15 +14,8 @@ object AlmCircuitBreaker {
 
   val defaultSettings = AlmCircuitBreakerSettings(5, Some(3), 10.seconds, Some(5.minutes))
 
-  final case class AlmCircuitBreakerParams(
-    settings: AlmCircuitBreakerSettings,
-    onOpened: Option[() => Unit],
-    onHalfOpened: Option[() => Unit],
-    onClosed: Option[() => Unit],
-    onWarning: Option[(Int, Int) => Unit])
-
-  def apply(params: AlmCircuitBreaker.AlmCircuitBreakerParams, executionContext: ExecutionContext, scheduler: Scheduler): AlmCircuitBreaker =
-    new AlmCircuitBreakerImpl(params, executionContext, scheduler)
+  def apply(settings: AlmCircuitBreakerSettings, executionContext: ExecutionContext, scheduler: Scheduler): AlmCircuitBreaker =
+    new AlmCircuitBreakerImpl(settings, executionContext, scheduler)
 
   sealed trait State
   final case class Closed(failureCount: Int, maxFailures: Int, warningLevel: Option[Int]) extends State {
@@ -42,16 +35,33 @@ object AlmCircuitBreaker {
       else
         "HalfOpen(waiting for recovery attempt)"
   }
-  final case class Open(remaining: Option[FiniteDuration]) extends State {
+  final case class Open(remaining: FiniteDuration) extends State {
     override def toString: String =
-      s"Open(remaining: ${remaining.map(_.defaultUnitString).getOrElse("∞")})"
+      s"Open(remaining: ${remaining.defaultUnitString})"
   }
+  final case class FuseRemoved(duration: FiniteDuration) extends State {
+    override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
+  }
+  final case class FuseDestroyed(duration: FiniteDuration) extends State {
+    override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
+  }
+
 }
 
 trait AlmCircuitBreaker {
   def fused[T](body: ⇒ AlmFuture[T]): AlmFuture[T]
   def reset(): Boolean
+  def removeFuse(): Boolean
+  def destroyFuse(): Boolean
+  def insertFuse(): Boolean
   def state: AlmCircuitBreaker.State
+
+  def onOpened(listener: () => Unit): AlmCircuitBreaker
+  def onHalfOpened(listener: () => Unit): AlmCircuitBreaker
+  def onClosed(listener: () => Unit): AlmCircuitBreaker
+  def onFuseRemoved(listener: () => Unit): AlmCircuitBreaker
+  def onFuseDestroyed(listener: () => Unit): AlmCircuitBreaker
+  def onWarning(listener: (Int, Int) => Unit): AlmCircuitBreaker
 }
 
 /**
@@ -59,12 +69,13 @@ trait AlmCircuitBreaker {
  * This is also done to learn more about java concurrency.
  * Consider this stolen from akka.
  */
-private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircuitBreakerParams, executionContext: ExecutionContext, scheduler: Scheduler) extends AbstractAlmCircuitBreaker with AlmCircuitBreaker {
+private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCircuitBreakerSettings, executionContext: ExecutionContext, scheduler: Scheduler) extends AbstractAlmCircuitBreaker with AlmCircuitBreaker {
   import java.util.concurrent.atomic.{ AtomicInteger, AtomicBoolean, AtomicLong }
+  import java.util.concurrent.CopyOnWriteArrayList
   import akka.util.Unsafe
   import AlmCircuitBreaker._
 
-  val AlmCircuitBreakerSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout) = params.settings
+  val AlmCircuitBreakerSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout) = settings
 
   @volatile
   private[this] var _currentStateDoNotCallMeDirectly: InternalState = InternalClosed
@@ -95,6 +106,48 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
 
   override def reset(): Boolean = currentState.attemptManualReset()
 
+  override def removeFuse(): Boolean = currentState.attemptManualReset()
+
+  override def destroyFuse(): Boolean = currentState.attemptManualRemoveFuse()
+
+  override def insertFuse(): Boolean = currentState.attemptManualInsertFuse()
+
+  override def state: AlmCircuitBreaker.State = currentState.publicState
+
+  override def onOpened(listener: () => Unit): AlmCircuitBreaker = {
+    InternalOpen addListener new Runnable { def run() { listener() } }
+    this
+  }
+
+  override def onHalfOpened(listener: () => Unit): AlmCircuitBreaker = {
+    InternalHalfOpen addListener new Runnable { def run() { listener() } }
+
+    this
+  }
+
+  override def onClosed(listener: () => Unit): AlmCircuitBreaker = {
+    InternalClosed addListener new Runnable { def run() { listener() } }
+
+    this
+  }
+
+  override def onFuseRemoved(listener: () => Unit): AlmCircuitBreaker = {
+    InternalFuseRemoved addListener new Runnable { def run() { listener() } }
+
+    this
+  }
+
+  override def onFuseDestroyed(listener: () => Unit): AlmCircuitBreaker = {
+    InternalFuseDestroyed addListener new Runnable { def run() { listener() } }
+
+    this
+  }
+
+  override def onWarning(listener: (Int, Int) => Unit): AlmCircuitBreaker = {
+    InternalClosed addWarningListener (currentFailures => new Runnable { def run() { listener(currentFailures, maxFailures) } })
+    this
+  }
+
   /**
    * Implements consistent transition between states
    *
@@ -113,7 +166,11 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
    *
    * @param fromState State we're coming from (Closed or Half-Open)
    */
-  private def tripBreaker(fromState: InternalState): Unit = transition(fromState, InternalOpen)
+  private def tripBreaker(fromState: InternalState): Unit =
+    if (resetTimeout.isDefined)
+      transition(fromState, InternalOpen)
+    else
+      transition(fromState, InternalFuseRemoved)
 
   /**
    * Resets breaker to a closed state.  This is valid from an Half-Open state only.
@@ -127,12 +184,31 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
       true
     } else
       false
-  
-  override def state: AlmCircuitBreaker.State =
-    currentState.publicState
+
+  private def attemptInsertFuse(): Boolean =
+    if (swapState(InternalFuseRemoved, InternalHalfOpen)) {
+      InternalHalfOpen.enter()
+      true
+    } else
+      false
+
+  private def attemptDestroyFuse(from: InternalState): Boolean =
+    if (swapState(from, InternalFuseDestroyed)) {
+      true
+    } else
+      false
+
+  private def attemptRemoveFuse(from: InternalState): Boolean =
+    if (swapState(from, InternalFuseRemoved)) {
+      true
+    } else
+      false
 
   private sealed trait InternalState {
-    protected def listener: Option[Runnable]
+    private val transitionListeners = new CopyOnWriteArrayList[Runnable]
+
+    def addListener(listener: Runnable): Unit = transitionListeners add listener
+
     def publicState: State
     def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T]
 
@@ -162,23 +238,31 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
 
     def enter(): Unit = {
       _enter()
-      notifyTransitionListener
+      notifyTransitionListeners()
     }
 
     protected def _enter(): Unit
 
-    protected def notifyTransitionListener() {
-      listener.foreach(l =>
-        executionContext.execute(l))
+    protected def notifyTransitionListeners() {
+      if (!transitionListeners.isEmpty()) {
+        val iterator = transitionListeners.iterator
+        while (iterator.hasNext) {
+          val listener = iterator.next
+          executionContext.execute(listener)
+        }
+      }
     }
 
     def attemptManualReset(): Boolean = false
+    def attemptManualDestroyFuse(): Boolean
+    def attemptManualRemoveFuse(): Boolean
+    def attemptManualInsertFuse(): Boolean = false
   }
 
   private case object InternalClosed extends AtomicInteger with InternalState {
-    protected val listener = params.onClosed.map(callback => new Runnable { def run() = callback() })
+    private val warningListeners = new CopyOnWriteArrayList[Int => Runnable]
 
-    private val warningListener: Option[Int => Runnable] = params.onWarning.map(callback => x => new Runnable { def run() = callback(x, maxFailures) })
+    def addWarningListener(listener: Int => Runnable): Unit = warningListeners add listener
 
     override def publicState = Closed(get, maxFailures, failuresWarnThreshold)
 
@@ -192,13 +276,23 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
       val currentFailures = incrementAndGet()
       if (currentFailures == maxFailures)
         tripBreaker(InternalClosed)
-      warningListener.flatMap(wListener =>
-        failuresWarnThreshold.map(wt => (wListener, wt))).foreach {
-        case (wListener, wt) =>
-          if (currentFailures == wt)
-            executionContext.execute(wListener(currentFailures))
+      failuresWarnThreshold.foreach(wt =>
+        if (currentFailures == wt)
+          notifyWarningListeners(currentFailures))
+    }
+
+    protected def notifyWarningListeners(failures: Int) {
+      if (!warningListeners.isEmpty()) {
+        val iterator = warningListeners.iterator
+        while (iterator.hasNext) {
+          val listener = iterator.next()(failures)
+          executionContext.execute(listener)
+        }
       }
     }
+
+    override def attemptManualDestroyFuse(): Boolean = attemptDestroyFuse(InternalClosed)
+    override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalClosed)
 
     override def _enter() {
       set(0)
@@ -206,8 +300,6 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
   }
 
   private case object InternalHalfOpen extends AtomicBoolean with InternalState {
-    protected val listener = params.onHalfOpened.map(callback => new Runnable { def run() = callback() })
-
     override def publicState = HalfOpen(!get)
 
     override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
@@ -224,10 +316,14 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
     override def _enter() {
       set(true)
     }
+
+    override def attemptManualDestroyFuse(): Boolean = attemptDestroyFuse(InternalHalfOpen)
+    override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalHalfOpen)
+
   }
 
   private case object InternalOpen extends AtomicLong with InternalState {
-    protected val listener = params.onOpened.map(callback => new Runnable { def run() = callback() })
+    private val myResetTimeout: FiniteDuration = resetTimeout getOrElse (Duration.Zero)
 
     override def publicState = Open(remainingDuration())
 
@@ -237,12 +333,10 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
     override def callSucceeds() {
     }
 
-    private def remainingDuration(): Option[FiniteDuration] = {
-      resetTimeout.map { rt =>
-        val elapsedNanos = System.nanoTime() - get
-        if (elapsedNanos <= 0L) Duration.Zero
-        else rt - elapsedNanos.nanos
-      }
+    private def remainingDuration(): FiniteDuration = {
+      val elapsedNanos = System.nanoTime() - get
+      if (elapsedNanos <= 0L) Duration.Zero
+      else myResetTimeout - elapsedNanos.nanos
     }
 
     override def callFails() {
@@ -258,6 +352,65 @@ private[almhirt] class AlmCircuitBreakerImpl(params: AlmCircuitBreaker.AlmCircui
     }
 
     override def attemptManualReset(): Boolean = attemptReset()
+
+    override def attemptManualDestroyFuse(): Boolean = attemptDestroyFuse(InternalOpen)
+    override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalOpen)
+
+  }
+
+  private case object InternalFuseRemoved extends AtomicLong with InternalState {
+    override def publicState = FuseRemoved(forDuration)
+
+    override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
+      AlmFuture.failed(CircuitBreakerOpenProblem())
+
+    override def callSucceeds() {
+    }
+
+    override def callFails() {
+    }
+
+    private def forDuration(): FiniteDuration = {
+      val elapsedNanos = System.nanoTime() - get
+      if (elapsedNanos <= 0L) Duration.Zero
+      else elapsedNanos.nanos
+    }
+
+    override def _enter() {
+      set(System.nanoTime())
+    }
+
+    override def attemptManualDestroyFuse(): Boolean = attemptDestroyFuse(InternalFuseRemoved)
+    override def attemptManualRemoveFuse(): Boolean = false
+    override def attemptManualInsertFuse(): Boolean = attemptInsertFuse()
+
+  }
+
+  private case object InternalFuseDestroyed extends AtomicLong with InternalState {
+    override def publicState = FuseDestroyed(forDuration)
+
+    override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
+      AlmFuture.failed(CircuitBreakerOpenProblem())
+
+    override def callSucceeds() {
+    }
+
+    override def callFails() {
+    }
+
+    private def forDuration(): FiniteDuration = {
+      val elapsedNanos = System.nanoTime() - get
+      if (elapsedNanos <= 0L) Duration.Zero
+      else elapsedNanos.nanos
+    }
+
+    override def _enter() {
+      set(System.nanoTime())
+    }
+
+    override def attemptManualReset(): Boolean = false
+    override def attemptManualDestroyFuse(): Boolean = false
+    override def attemptManualRemoveFuse(): Boolean = false
   }
 
 }
