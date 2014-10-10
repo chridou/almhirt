@@ -116,11 +116,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateResetAction(name: String, state: AlmCircuitBreaker.State) = {
       state match {
         case x: AlmCircuitBreaker.Open =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-reset/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-reset/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.FuseRemoved =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-reset/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-reset/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
           <td>{ anchor }</td>
         case _ =>
@@ -131,15 +131,15 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateRemoveAction(name: String, state: AlmCircuitBreaker.State) = {
       state match {
         case x: AlmCircuitBreaker.Open =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-remove-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-remove-fuse/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.HalfOpen =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-remove-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-remove-fuse/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.Closed =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-remove-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-remove-fuse/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case _ =>
@@ -150,19 +150,19 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateDestroyAction(name: String, state: AlmCircuitBreaker.State) = {
       state match {
         case x: AlmCircuitBreaker.Open =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-destroy-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-destroy-fuse/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.HalfOpen =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-destroy-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-destroy-fuse/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.Closed =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-destroy-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-destroy-fuse/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: AlmCircuitBreaker.FuseRemoved =>
-          val att = new UnprefixedAttribute("href", s"./event-sink-hub/attempt-destroy-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuit-breakers/attempt-destroy-fuse/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case _ =>
