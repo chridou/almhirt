@@ -15,8 +15,7 @@ object HerderMessage {
   final case class CircuitBreakerStates(states: Map[String, AlmCircuitBreaker.State]) extends CircuitBreakerMessage
 
   sealed trait CircuitBreakerControlMessage extends CircuitBreakerMessage
-  final case class ResetCircuitBreaker(name: String) extends CircuitBreakerControlMessage
+  final case class AttemptCloseCircuitBreaker(name: String) extends CircuitBreakerControlMessage
   final case class RemoveFuseFromCircuitBreaker(name: String) extends CircuitBreakerControlMessage
-  final case class InsertFuseIntoCircuitBreaker(name: String) extends CircuitBreakerControlMessage
   final case class DestroyFuseInCircuitBreaker(name: String) extends CircuitBreakerControlMessage
 }
