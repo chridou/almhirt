@@ -51,9 +51,8 @@ object AlmCircuitBreaker {
       self.onOpened(() => actor ! ActorMessages.CircuitOpened)
         .onHalfOpened(() => actor ! ActorMessages.CircuitHalfOpened)
         .onClosed(() => actor ! ActorMessages.CircuitClosed)
-        .onFuseRemoved(() => actor ! ActorMessages.CircuitClosed)
-        .onFuseDestroyed(() => actor ! ActorMessages.CircuitClosed)
-
+        .onFuseRemoved(() => actor ! ActorMessages.CircuitFuseRemoved)
+        .onFuseDestroyed(() => actor ! ActorMessages.CircuitFuseDestroyed)
   }
 }
 
