@@ -90,7 +90,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
   private def handleProcessed(currentProblem: Option[Problem]) {
     currentProblem match {
-      case Some(CircuitBreakerOpenProblem(_)) =>
+      case Some(CircuitOpenProblem(_)) =>
         ()
       case Some(otherProblem) =>
         log.error(s"A request failed:\n$otherProblem")

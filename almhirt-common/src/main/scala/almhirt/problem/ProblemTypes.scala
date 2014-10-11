@@ -324,10 +324,10 @@ object problemtypes {
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, CommandExecutionFailedProblem)
   }
 
-  case object CircuitBreakerOpenProblem extends ProblemType {
+  case object CircuitOpenProblem extends ProblemType {
     def apply(msg: String = "The circuit breaker is open. Try again later.", args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
-      SingleProblem(msg, CircuitBreakerOpenProblem, args, cause)
-    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, CircuitBreakerOpenProblem)
+      SingleProblem(msg, CircuitOpenProblem, args, cause)
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, CircuitOpenProblem)
   }
   
 }

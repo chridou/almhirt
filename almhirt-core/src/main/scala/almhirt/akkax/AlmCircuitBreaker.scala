@@ -59,6 +59,11 @@ object AlmCircuitBreaker {
 
 trait AlmCircuitBreaker {
   def fused[T](body: ⇒ AlmFuture[T]): AlmFuture[T]
+  
+  /** 
+   *  In case of a fail fast, return the surrogate instead of the standard result defined by the implementation
+   */
+  def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T]
   def attemptClose(): Boolean
   def removeFuse(): Boolean
   def destroyFuse(): Boolean
@@ -84,6 +89,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
   import AlmCircuitBreaker._
 
   val AlmCircuitBreakerSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout) = settings
+  private val defaultSurrogate = AlmFuture.failed(CircuitOpenProblem())
 
   @volatile
   private[this] var _currentStateDoNotCallMeDirectly: InternalState = InternalClosed
@@ -109,9 +115,13 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
     Unsafe.instance.getObjectVolatile(this, AbstractAlmCircuitBreaker.stateOffset).asInstanceOf[InternalState]
 
   override def fused[T](body: ⇒ AlmFuture[T]): AlmFuture[T] = {
-    currentState.invoke(body)
+    currentState.invoke(defaultSurrogate, body)
   }
 
+  override def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T] = {
+    currentState.invoke(surrogate, body)
+  }
+  
   override def attemptClose(): Boolean = currentState.attemptManualClose()
   override def removeFuse(): Boolean = currentState.attemptManualRemoveFuse()
   override def destroyFuse(): Boolean = currentState.attemptManualRemoveFuse()
@@ -155,47 +165,47 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
    * @param toState State being transitioning from
    * @throws IllegalStateException if an invalid transition is attempted
    */
-  private def transition(fromState: InternalState, toState: InternalState): Unit =
-    if (swapState(fromState, toState))
-      toState.enter()
-    else
-      throw new IllegalStateException("Illegal transition attempted from: " + fromState + " to " + toState)
+  private def attemptTransition(fromState: InternalState, toState: InternalState): Boolean = {
+    val r = swapState(fromState, toState)
+    if (r) toState.enter()
+    r
+  }
 
   /**
-   * Trips breaker to an open state.  This is valid from Closed or Half-Open states.
+   * Trips breaker to an open state or a fuse removed state.  This is valid from Closed or Half-Open states.
    *
    * @param fromState State we're coming from (Closed or Half-Open)
    */
   private def tripBreaker(fromState: InternalState): Unit =
     if (resetTimeout.isDefined)
-      transition(fromState, InternalOpen)
+      attemptTransition(fromState, InternalOpen)
     else
-      transition(fromState, InternalFuseRemoved)
+      attemptTransition(fromState, InternalFuseRemoved)
 
   /**
    * Resets breaker to a closed state.  This is valid from an Half-Open state only.
    *
    */
-  private def resetBreaker(): Unit = transition(InternalHalfOpen, InternalClosed)
- 
+  private def resetBreaker(): Unit = attemptTransition(InternalHalfOpen, InternalClosed)
+
+  /**
+   *  Set the breaker to a half opened state. This is valid from
+   *  an open state or a fuse removed state
+   */
   private def attemptReset(from: InternalState): Boolean =
-    if (swapState(from, InternalHalfOpen)) {
-      InternalHalfOpen.enter()
-      true
-    } else
-      false
+    attemptTransition(from, InternalHalfOpen)
 
-  private def attemptDestroyFuse(from: InternalState): Boolean =
-    if (swapState(from, InternalFuseDestroyed)) {
-      true
-    } else
-      false
-
+  /**
+   * This is valid from every state except a fused destroyed state
+   */
   private def attemptRemoveFuse(from: InternalState): Boolean =
-    if (swapState(from, InternalFuseRemoved)) {
-      true
-    } else
-      false
+    attemptTransition(from, InternalFuseRemoved)
+
+  /**
+   * No escape from here.
+   */
+  private def attemptDestroyFuse(from: InternalState): Boolean =
+    attemptTransition(from, InternalFuseDestroyed)
 
   private sealed trait InternalState {
     private val transitionListeners = new CopyOnWriteArrayList[Runnable]
@@ -203,7 +213,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
     def addListener(listener: Runnable): Unit = transitionListeners add listener
 
     def publicState: State
-    def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T]
+    def invoke[T](surrogate: ⇒ AlmFuture[T], body: ⇒ AlmFuture[T]): AlmFuture[T]
 
     /**
      * Shared implementation of call across all states.  Thrown exception or execution of the call beyond the allowed
@@ -251,7 +261,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
     def attemptManualRemoveFuse(): Boolean
   }
 
-  /** Valid transitions:
+  /**
+   * Valid transitions:
    * -> Open
    * -> FuseRemoved
    * -> Destroyed
@@ -263,7 +274,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
 
     override def publicState = Closed(get, maxFailures, failuresWarnThreshold)
 
-    override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] = callThrough(body)
+    override def invoke[T](surrogate: ⇒ AlmFuture[T], body: ⇒ AlmFuture[T]): AlmFuture[T] = callThrough(body)
 
     override def callSucceeds() {
       set(0)
@@ -296,7 +307,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
     }
   }
 
-  /** Valid transitions:
+  /**
+   * Valid transitions:
    * HalfOpen -> Closed
    * HalfOpen -> Opened
    * HalfOpen -> FuseRemoved
@@ -305,8 +317,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
   private case object InternalHalfOpen extends AtomicBoolean with InternalState {
     override def publicState = HalfOpen(!get)
 
-    override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
-      if (compareAndSet(true, false)) callThrough(body) else AlmFuture.failed(CircuitBreakerOpenProblem("Trying to recover."))
+    override def invoke[T](surrogate: ⇒ AlmFuture[T], body: ⇒ AlmFuture[T]): AlmFuture[T] =
+      if (compareAndSet(true, false)) callThrough(body) else surrogate
 
     override def callSucceeds() {
       resetBreaker()
@@ -325,7 +337,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
 
   }
 
-  /** Valid transitions:
+  /**
+   * Valid transitions:
    * Open -> HalfOpen
    * Open -> FuseRemoved
    * Open -> Destroyed
@@ -335,8 +348,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
 
     override def publicState = Open(remainingDuration())
 
-    override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
-      AlmFuture.failed(CircuitBreakerOpenProblem())
+    override def invoke[T](surrogate: ⇒ AlmFuture[T], body: ⇒ AlmFuture[T]): AlmFuture[T] =
+      surrogate
 
     override def callSucceeds() {
     }
@@ -365,15 +378,16 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
 
   }
 
-  /** Valid transitions:
+  /**
+   * Valid transitions:
    * FuseRemoved -> HalfOpen
    * FuseRemoved -> Destroyed
    */
   private case object InternalFuseRemoved extends AtomicLong with InternalState {
     override def publicState = FuseRemoved(forDuration)
 
-    override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
-      AlmFuture.failed(CircuitBreakerOpenProblem())
+    override def invoke[T](surrogate: ⇒ AlmFuture[T], body: ⇒ AlmFuture[T]): AlmFuture[T] =
+      surrogate
 
     override def callSucceeds() {
     }
@@ -401,8 +415,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: AlmCircuitBreaker.AlmCirc
   private case object InternalFuseDestroyed extends AtomicLong with InternalState {
     override def publicState = FuseDestroyed(forDuration)
 
-    override def invoke[T](body: ⇒ AlmFuture[T]): AlmFuture[T] =
-      AlmFuture.failed(CircuitBreakerOpenProblem())
+    override def invoke[T](surrogate: ⇒ AlmFuture[T], body: ⇒ AlmFuture[T]): AlmFuture[T] =
+      surrogate
 
     override def callSucceeds() {
     }

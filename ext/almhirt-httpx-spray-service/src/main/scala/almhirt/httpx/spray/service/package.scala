@@ -22,7 +22,7 @@ package object service {
       case ConstraintViolatedProblem(_) ⇒ StatusCodes.BadRequest
       case BusinessRuleViolatedProblem(_) ⇒ StatusCodes.BadRequest
       case OperationTimedOutProblem(_) ⇒ StatusCodes.InternalServerError
-      case CircuitBreakerOpenProblem(_) ⇒ StatusCodes.ServiceUnavailable
+      case CircuitOpenProblem(_) ⇒ StatusCodes.ServiceUnavailable
       case ExceptionCaughtProblem(p) ⇒
         p.cause match {
           case Some(CauseIsThrowable(HasAThrowable(exn: EscalatedProblemException))) =>

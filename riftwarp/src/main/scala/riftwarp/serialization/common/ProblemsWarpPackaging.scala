@@ -115,7 +115,7 @@ object ProblemTypes {
   val LocaleNotSupportedProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.LocaleNotSupportedProblem.type](almhirt.problem.problemtypes.LocaleNotSupportedProblem)
   val NoSuchElementProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.NoSuchElementProblem.type](almhirt.problem.problemtypes.NoSuchElementProblem)
   val CommandExecutionFailedProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.CommandExecutionFailedProblem.type](almhirt.problem.problemtypes.CommandExecutionFailedProblem)
-  val CircuitBreakerOpenProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.CircuitBreakerOpenProblem.type](almhirt.problem.problemtypes.CircuitBreakerOpenProblem)
+  val CircuitOpenProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.CircuitOpenProblem.type](almhirt.problem.problemtypes.CircuitOpenProblem)
   val RiftWarpSerializationProblemPackaging = createDefaultPackaging[RiftWarpSerializationProblem.type](RiftWarpSerializationProblem)
   val RiftWarpDeserializationProblemPackaging = createDefaultPackaging[RiftWarpDeserializationProblem.type](RiftWarpDeserializationProblem)
 
@@ -158,7 +158,7 @@ object ProblemTypes {
     to.addTyped(LocaleNotSupportedProblemPackaging)
     to.addTyped(NoSuchElementProblemPackaging)
     to.addTyped(CommandExecutionFailedProblemPackaging)
-    to.addTyped(CircuitBreakerOpenProblemPackaging)
+    to.addTyped(CircuitOpenProblemPackaging)
     to.addTyped(RiftWarpSerializationProblemPackaging)
     to.addTyped(RiftWarpDeserializationProblemPackaging)
   }
@@ -202,7 +202,7 @@ object ProblemTypes {
     to.addTyped(LocaleNotSupportedProblemPackaging)
     to.addTyped(NoSuchElementProblemPackaging)
     to.addTyped(CommandExecutionFailedProblemPackaging)
-    to.addTyped(CircuitBreakerOpenProblemPackaging)
+    to.addTyped(CircuitOpenProblemPackaging)
     to.addTyped(RiftWarpSerializationProblemPackaging)
     to.addTyped(RiftWarpDeserializationProblemPackaging)
   }
