@@ -130,7 +130,7 @@ private[almhirt] class EventLogWriterImpl(
       log.error(s"Could not log event '${id.value}':\n$problem")
       request(1)
 
-    case m: ActorMessages.CircuitBreakerAllWillFail =>
+    case m: ActorMessages.CircuitAllWillFail =>
       context.become(receiveCircuitOpen(eventLog))
       self ! DisplayCircuitState
 
@@ -150,7 +150,7 @@ private[almhirt] class EventLogWriterImpl(
       log.error(s"Could not log event '${id.value}':\n$problem")
       request(1)
 
-    case m: ActorMessages.CircuitBreakerNotAllWillFail =>
+    case m: ActorMessages.CircuitNotAllWillFail =>
       context.become(receiveCircuitClosed(eventLog))
       self ! DisplayCircuitState
 

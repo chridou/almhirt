@@ -13,14 +13,7 @@ object AlmCircuitBreaker {
  
 }
 
-trait AlmCircuitBreaker extends AsyncFused with CircuitControl {
-  def fused[T](body: ⇒ AlmFuture[T]): AlmFuture[T]
-  
-  /** 
-   *  In case of a fail fast, return the surrogate instead of the standard result defined by the implementation
-   */
-  def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T]
-}
+trait AlmCircuitBreaker extends FusedCircuit with CircuitControl
 
 /**
  * Circuit breaker implementation. This is in great parts copied from the akka one but adjusted to almhirt's needs.

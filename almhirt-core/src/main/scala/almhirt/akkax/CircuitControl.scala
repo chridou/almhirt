@@ -28,7 +28,7 @@ object CircuitControl {
   }
 }
 
-trait AsyncFused {
+trait FusedCircuit {
   def fused[T](body: ⇒ AlmFuture[T]): AlmFuture[T]
   
   /** 

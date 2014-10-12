@@ -58,7 +58,7 @@ abstract class ActorConsumerHttpPublisher[T](
       context.become(receiveCircuitOpen)
       self ! DisplayCircuitState
 
-    case m: ActorMessages.CircuitBreakerAllWillFail =>
+    case m: ActorMessages.CircuitAllWillFail =>
       context.become(receiveCircuitOpen)
       self ! DisplayCircuitState
 
@@ -74,7 +74,7 @@ abstract class ActorConsumerHttpPublisher[T](
     case Processed(currentProblem) ⇒
       handleProcessed(currentProblem)
 
-    case m: ActorMessages.CircuitBreakerNotAllWillFail =>
+    case m: ActorMessages.CircuitNotAllWillFail =>
       context.become(receiveCircuitClosed)
       self ! DisplayCircuitState
 
