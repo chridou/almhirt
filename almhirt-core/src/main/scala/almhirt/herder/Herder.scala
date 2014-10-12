@@ -38,13 +38,13 @@ object Herder {
 private[almhirt] class Pastor()(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
   import almhirt.components.{ EventSinkHub, EventSinkHubMessage }
 
-  val circuitBreakerHerdingDog: ActorRef = context.actorOf(Props(new herdingdogs.CircuitBreakerHerdingDog()), herdingdogs.CircuitBreakerHerdingDog.actorname)
+  val circuitsHerdingDog: ActorRef = context.actorOf(Props(new herdingdogs.CircuitsHerdingDog()), herdingdogs.CircuitsHerdingDog.actorname)
 
   def receiveRunning: Receive = {
-    case m: HerderMessage.RegisterCircuitBreaker => circuitBreakerHerdingDog ! m
-    case m: HerderMessage.DeregisterCircuitBreaker => circuitBreakerHerdingDog ! m
-    case HerderMessage.ReportCircuitBreakerStates => circuitBreakerHerdingDog forward HerderMessage.ReportCircuitBreakerStates
-    case m: HerderMessage.CircuitBreakerControlMessage => circuitBreakerHerdingDog forward m
+    case m: HerderMessage.RegisterCircuitControl => circuitsHerdingDog ! m
+    case m: HerderMessage.DeregisterCircuitControl => circuitsHerdingDog ! m
+    case HerderMessage.ReportCircuitStates => circuitsHerdingDog forward HerderMessage.ReportCircuitStates
+    case m: HerderMessage.CircuitControlMessage => circuitsHerdingDog forward m
   }
 
   def receive = receiveRunning

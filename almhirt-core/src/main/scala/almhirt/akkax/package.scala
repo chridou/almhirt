@@ -134,17 +134,17 @@ package object akkax {
 
   }
 
-  implicit object AlmCircuitBreakerSettingsConfigExtractor extends ConfigExtractor[AlmCircuitBreaker.AlmCircuitBreakerSettings] {
-    def getValue(config: Config, path: String): AlmValidation[AlmCircuitBreaker.AlmCircuitBreakerSettings] =
+  implicit object AlmCircuitBreakerSettingsConfigExtractor extends ConfigExtractor[CircuitControlSettings] {
+    def getValue(config: Config, path: String): AlmValidation[CircuitControlSettings] =
       for {
         section <- config.v[Config](path)
         maxFailures <- section.v[Int]("max-failures")
         failuresWarnThreshold <- section.magicOption[Int]("failures-warn-threshold")
         callTimeout <- section.v[FiniteDuration]("call-timeout")
         resetTimeout <- section.magicOption[FiniteDuration]("reset-timeout")
-      } yield AlmCircuitBreaker.AlmCircuitBreakerSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout)
+      } yield CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout)
 
-    def tryGetValue(config: Config, path: String): AlmValidation[Option[AlmCircuitBreaker.AlmCircuitBreakerSettings]] =
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[CircuitControlSettings]] =
       config.opt[Config](path).flatMap {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
         case None ⇒ scalaz.Success(None)

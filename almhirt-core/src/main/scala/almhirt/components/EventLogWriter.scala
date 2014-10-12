@@ -22,16 +22,16 @@ object EventLogWriter {
     eventLogToResolve: ToResolve,
     resolveSettings: ResolveSettings,
     warningThreshold: FiniteDuration,
-    circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-    circuitBreakerStateReportingInterval: Option[FiniteDuration],
+    circuitControlSettings: CircuitControlSettings,
+    circuitStateReportingInterval: Option[FiniteDuration],
     autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props = {
     Props(new EventLogWriterImpl(
       eventLogToResolve,
       resolveSettings,
       warningThreshold,
       autoConnect,
-      circuitBreakerSettings,
-      circuitBreakerStateReportingInterval))
+      circuitControlSettings,
+      circuitStateReportingInterval))
   }
 
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
@@ -46,9 +46,9 @@ object EventLogWriter {
           eventLogToResolve <- inTryCatch { ResolvePath(ActorPath.fromString(eventLogPathStr)) }
           warningThreshold <- section.v[FiniteDuration]("warning-threshold")
           resolveSettings <- section.v[ResolveSettings]("resolve-settings")
-          circuitBreakerSettings <- section.v[AlmCircuitBreaker.AlmCircuitBreakerSettings]("circuit-breaker")
-          circuitBreakerStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-breaker-state-reporting-interval")
-        } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, circuitBreakerSettings, circuitBreakerStateReportingInterval, autoConnect)
+          circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
+          circuitStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
+        } yield propsRaw(eventLogToResolve, resolveSettings, warningThreshold, circuitControlSettings, circuitStateReportingInterval, autoConnect)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
@@ -67,15 +67,15 @@ private[almhirt] class EventLogWriterImpl(
   resolveSettings: ResolveSettings,
   warningThreshold: FiniteDuration,
   autoConnect: Boolean,
-  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with HasAlmhirtContext with ActorLogging with ImplicitFlowMaterializer {
+  circuitControlSettings: CircuitControlSettings,
+  circuitStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with HasAlmhirtContext with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
 
   implicit val executor = almhirtContext.futuresContext
 
   override val requestStrategy = ZeroRequestStrategy
 
-  val circuitBreaker = AlmCircuitBreaker(circuitBreakerSettings, almhirtContext.futuresContext, context.system.scheduler)
+  val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   private case object AutoConnect
   private case object Resolve
@@ -87,6 +87,9 @@ private[almhirt] class EventLogWriterImpl(
 
     case ActorMessages.ResolvedSingle(eventlog, _) ⇒
       log.info("Found event log.")
+
+      context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitControl(self, circuitBreaker)
+
       if (autoConnect)
         self ! AutoConnect
       else
@@ -106,7 +109,7 @@ private[almhirt] class EventLogWriterImpl(
 
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
       val start = Deadline.now
-      val f = (eventLog ? EventLog.LogEvent(event, true))(circuitBreakerSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
+      val f = (eventLog ? EventLog.LogEvent(event, true))(circuitControlSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
       circuitBreaker.fused(f).onComplete({
         case scalaz.Failure(problem) => self ! EventLog.EventNotLogged(event.eventId, problem)
         case scalaz.Success(rsp) => self ! rsp
@@ -154,7 +157,7 @@ private[almhirt] class EventLogWriterImpl(
     case DisplayCircuitState =>
       if (log.isInfoEnabled) {
         log.info(s"Circuit state: ${circuitBreaker.state}")
-        circuitBreakerStateReportingInterval.foreach(interval =>
+        circuitStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
   }
@@ -165,13 +168,10 @@ private[almhirt] class EventLogWriterImpl(
     circuitBreaker.defaultActorListeners(self)
       .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
 
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitBreaker(self, circuitBreaker)
-
     self ! Resolve
   }
 
   override def postStop() {
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitBreaker(self)
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitControl(self)
   }
-
 } 

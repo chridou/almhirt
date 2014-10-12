@@ -25,9 +25,9 @@ object HttpEventPublisher {
     contentMediaType: MediaType,
     addEventId: Boolean,
     autoConnectTo: Option[Publisher[Event]],
-    circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-    circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
-    Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType, autoConnectTo, circuitBreakerSettings, circuitBreakerStateReportingInterval))
+    circuitControlSettings: CircuitControlSettings,
+    circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
+    Props(new HttpEventPublisherImpl(endpointUri, addEventId, method, contentMediaType, autoConnectTo, circuitControlSettings, circuitStateReportingInterval))
 
   def props(httpEventPublisherName: String)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
     implicit val extr = almhirt.httpx.spray.HttpMethodConfigExtractor
@@ -43,9 +43,9 @@ object HttpEventPublisher {
           contentMediaTypeStr <- section.v[String]("content-media-type")
           mediaType <- inTryCatch { MediaType.custom(contentMediaTypeStr) }
           addEventId <- section.v[Boolean]("add-event-id")
-          circuitBreakerSettings <- section.v[AlmCircuitBreaker.AlmCircuitBreakerSettings]("circuit-breaker")
-          circuitBreakerStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-breaker-state-reporting-interval")
-        } yield propsRaw(endpointUri, method, mediaType, addEventId, if (autoConnect) Some(ctx.eventStream) else None, circuitBreakerSettings, circuitBreakerStateReportingInterval)
+          circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
+          circuitStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
+        } yield propsRaw(endpointUri, method, mediaType, addEventId, if (autoConnect) Some(ctx.eventStream) else None, circuitControlSettings, circuitStateReportingInterval)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
@@ -62,9 +62,9 @@ private[almhirt] class HttpEventPublisherImpl(
   method: HttpMethod,
   contentMediaType: MediaType,
   autoConnectTo: Option[Publisher[Event]],
-  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts, override val almhirtContext: AlmhirtContext)
-  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.OK, StatusCodes.Accepted), contentMediaType, method, circuitBreakerSettings, circuitBreakerStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
+  circuitControlSettings: CircuitControlSettings,
+  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts, override val almhirtContext: AlmhirtContext)
+  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.OK, StatusCodes.Accepted), contentMediaType, method, circuitControlSettings, circuitStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
   with HasAlmhirtContext {
 
   implicit override val executionContext = executionContexts.futuresContext

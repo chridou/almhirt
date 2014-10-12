@@ -25,9 +25,9 @@ object ElasticSearchEventPublisher {
     fixedTypeName: Option[String],
     ttl: FiniteDuration,
     autoConnectTo: Option[Publisher[Event]],
-    circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-    circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
-    Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl, autoConnectTo, circuitBreakerSettings, circuitBreakerStateReportingInterval))
+  circuitControlSettings: CircuitControlSettings,
+  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
+    Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl, autoConnectTo, circuitControlSettings, circuitStateReportingInterval))
 
   def props(elConfigName: Option[String] = None)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
     val path = "almhirt.components.misc.event-sink-hub.event-publishers.http-event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
@@ -41,9 +41,9 @@ object ElasticSearchEventPublisher {
           index <- section.v[String]("index")
           fixedTypeName <- section.magicOption[String]("index")
           ttl <- section.v[FiniteDuration]("ttl")
-          circuitBreakerSettings <- section.v[AlmCircuitBreaker.AlmCircuitBreakerSettings]("circuit-breaker")
-          circuitBreakerStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-breaker-state-reporting-interval")
-        } yield propsRaw(host, index, fixedTypeName, ttl, if (autoConnect) Some(ctx.eventStream) else None, circuitBreakerSettings, circuitBreakerStateReportingInterval)
+          circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
+          circuitStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
+        } yield propsRaw(host, index, fixedTypeName, ttl, if (autoConnect) Some(ctx.eventStream) else None, circuitControlSettings, circuitStateReportingInterval)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
@@ -62,9 +62,9 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
   fixedTypeName: Option[String],
   ttl: FiniteDuration,
   autoConnectTo: Option[Publisher[Event]],
-  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts, override val almhirtContext: AlmhirtContext)
-  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted, StatusCodes.Created), MediaTypes.`application/json`, HttpMethods.PUT, circuitBreakerSettings, circuitBreakerStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
+  circuitControlSettings: CircuitControlSettings,
+  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts, override val almhirtContext: AlmhirtContext)
+  extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted, StatusCodes.Created), MediaTypes.`application/json`, HttpMethods.PUT, circuitControlSettings, circuitStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
   with HasAlmhirtContext {
   val uriprefix = s"""http://$host/$index"""
 

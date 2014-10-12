@@ -21,8 +21,8 @@ abstract class ActorConsumerHttpPublisher[T](
   acceptAsSuccess: Set[StatusCode],
   contentMediaType: MediaType,
   method: HttpMethod,
-  circuitBreakerSettings: AlmCircuitBreaker.AlmCircuitBreakerSettings,
-  circuitBreakerStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with HasAlmhirtContext with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
+  circuitControlSettings: CircuitControlSettings,
+  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with HasAlmhirtContext with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
 
   def createUri(entity: T): Uri
 
@@ -31,7 +31,7 @@ abstract class ActorConsumerHttpPublisher[T](
 
   final override val requestStrategy = ZeroRequestStrategy
 
-  val circuitBreaker = AlmCircuitBreaker(circuitBreakerSettings, almhirtContext.futuresContext, context.system.scheduler)
+  val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   private case object Start
   def receiveCircuitClosed: Receive = {
@@ -81,7 +81,7 @@ abstract class ActorConsumerHttpPublisher[T](
     case DisplayCircuitState =>
       if (log.isInfoEnabled) {
         log.info(s"Circuit state: ${circuitBreaker.state}")
-        circuitBreakerStateReportingInterval.foreach(interval =>
+        circuitStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
   }
@@ -109,13 +109,13 @@ abstract class ActorConsumerHttpPublisher[T](
     super.preStart()
     circuitBreaker.defaultActorListeners(self)
       .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
-      
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitBreaker(self, circuitBreaker)
+
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitControl(self, circuitBreaker)
 
     self ! Start
   }
-  
+
   override def postStop() {
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitBreaker(self)
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitControl(self)
   }
 }

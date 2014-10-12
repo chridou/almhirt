@@ -1,21 +1,21 @@
 package almhirt.herder
 
 import akka.actor.ActorRef
-import almhirt.akkax.AlmCircuitBreaker
+import almhirt.akkax.{ CircuitControl, CircuitState }
 
 object HerderMessage {
   
   
-  sealed trait CircuitBreakerMessage
+  sealed trait CircuitMessage
   
-  final case class RegisterCircuitBreaker(owner: ActorRef, circuitBreaker: AlmCircuitBreaker) extends CircuitBreakerMessage
-  final case class DeregisterCircuitBreaker(owner: ActorRef) extends CircuitBreakerMessage
+  final case class RegisterCircuitControl(owner: ActorRef, circuitBreaker: CircuitControl) extends CircuitMessage
+  final case class DeregisterCircuitControl(owner: ActorRef) extends CircuitMessage
   
-  final case object ReportCircuitBreakerStates extends CircuitBreakerMessage
-  final case class CircuitBreakerStates(states: Map[String, AlmCircuitBreaker.State]) extends CircuitBreakerMessage
+  final case object ReportCircuitStates extends CircuitMessage
+  final case class CircuitStates(states: Map[String, CircuitState]) extends CircuitMessage
 
-  sealed trait CircuitBreakerControlMessage extends CircuitBreakerMessage
-  final case class AttemptCloseCircuitBreaker(name: String) extends CircuitBreakerControlMessage
-  final case class RemoveFuseFromCircuitBreaker(name: String) extends CircuitBreakerControlMessage
-  final case class DestroyFuseInCircuitBreaker(name: String) extends CircuitBreakerControlMessage
+  sealed trait CircuitControlMessage extends CircuitMessage
+  final case class AttemptCloseCircuit(name: String) extends CircuitControlMessage
+  final case class RemoveFuseFromCircuit(name: String) extends CircuitControlMessage
+  final case class DestroyFuseInCircuit(name: String) extends CircuitControlMessage
 }

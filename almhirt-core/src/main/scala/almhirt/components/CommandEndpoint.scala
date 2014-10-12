@@ -7,12 +7,21 @@ import almhirt.common._
 import almhirt.tracking._
 import almhirt.akkax._
 import almhirt.context.AlmhirtContext
+import almhirt.context.HasAlmhirtContext
 import akka.stream.actor._
 import akka.stream.scaladsl2._
 
 object CommandEndpoint {
-  def propsRaw(commandStatusTrackerToResolve: ToResolve, resolveSettings: ResolveSettings, maxTrackingDuration: FiniteDuration, autoConnect: Boolean)(implicit ctx: AlmhirtContext): Props =
-    Props(new CommandEndpointImpl(commandStatusTrackerToResolve, resolveSettings, maxTrackingDuration, autoConnect))
+  def propsRaw(
+    commandStatusTrackerToResolve: ToResolve,
+    resolveSettings: ResolveSettings,
+    maxTrackingDuration: FiniteDuration,
+    autoConnect: Boolean = false)(implicit ctx: AlmhirtContext): Props =
+    Props(new CommandEndpointImpl(
+      commandStatusTrackerToResolve,
+      resolveSettings,
+      maxTrackingDuration,
+      autoConnect))
 
   def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import almhirt.configuration._
@@ -38,14 +47,11 @@ private[almhirt] class CommandEndpointImpl(
   commandStatusTrackerToResolve: ToResolve,
   resolveSettings: ResolveSettings,
   maxTrackingDuration: FiniteDuration,
-  autoConnect: Boolean)(implicit ctx: AlmhirtContext) extends ActorPublisher[Command] with ActorLogging with ImplicitFlowMaterializer {
+  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with HasAlmhirtContext with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
-
-  private val reportDemandInterval: Option[FiniteDuration] = Some(10.seconds)
 
   private case object AutoConnect
   private case object Resolve
-  private case object ReportDemand
 
   def receiveResolve: Receive = {
     case Resolve ⇒
@@ -62,16 +68,12 @@ private[almhirt] class CommandEndpointImpl(
 
     case cmd: Command ⇒
       sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
-
-    case ReportDemand =>
-      if (log.isInfoEnabled && totalDemand < 3)
-        log.info(s"Demand: $totalDemand, active: $isActive")
   }
 
   def receiveRunning(commandStatusTracker: ActorRef): Receive = {
     case AutoConnect ⇒
       log.info("Connecting to command consumer.")
-      CommandEndpoint(self).subscribe(ctx.commandBroker.newSubscriber)
+      CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
 
     case cmd: Command ⇒
       if (totalDemand > 0 && isActive) {
@@ -111,19 +113,18 @@ private[almhirt] class CommandEndpointImpl(
         					|$reason""".stripMargin)
         sender() ! CommandNotAccepted(cmd.commandId, reason)
       }
-
-    case ReportDemand =>
-      if (log.isInfoEnabled && totalDemand < 3)
-        log.info(s"Demand: $totalDemand, active: $isActive")
   }
 
   override def receive: Receive = receiveResolve
 
-  override def preStart() {
-    self ! Resolve
-    reportDemandInterval.foreach(interval =>
-      context.system.scheduler.schedule(interval, interval, self, ReportDemand)(ctx.futuresContext))
 
+  override def preStart() {
+
+    self ! Resolve
+  }
+
+  override def postStop() {
+   // context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitBreaker(self)
   }
 
 }
