@@ -308,8 +308,8 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
       recovering = false
     }
 
-    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalClosed, InternalFuseDestroyed)
-    override def attemptManualRemoveFuse(): Boolean = attemptTransition(InternalClosed, InternalFuseRemoved)
+    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalHalfOpen, InternalFuseDestroyed)
+    override def attemptManualRemoveFuse(): Boolean = attemptTransition(InternalHalfOpen, InternalFuseRemoved)
 
   }
 
