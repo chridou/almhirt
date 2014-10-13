@@ -25,8 +25,8 @@ object ElasticSearchEventPublisher {
     fixedTypeName: Option[String],
     ttl: FiniteDuration,
     autoConnectTo: Option[Publisher[Event]],
-  circuitControlSettings: CircuitControlSettings,
-  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
+    circuitControlSettings: CircuitControlSettings,
+    circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
     Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl, autoConnectTo, circuitControlSettings, circuitStateReportingInterval))
 
   def props(elConfigName: Option[String] = None)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
@@ -67,6 +67,9 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
   extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted, StatusCodes.Created), MediaTypes.`application/json`, HttpMethods.PUT, circuitControlSettings, circuitStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
   with HasAlmhirtContext {
   val uriprefix = s"""http://$host/$index"""
+
+  override def onFailure(item: Event, problem: Problem): Unit =
+    almhirtContext.tellHerder(almhirt.herder.HerderMessage.MissedEvent(item, MinorSeverity, problem, almhirtContext.getUtcTimestamp))
 
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext

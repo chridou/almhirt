@@ -63,11 +63,9 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
 
   val skip = TraverseWindow.skipStart
 
-  object Severity {
-    val Critical = almhirt.problem.Critical
-    val Major = almhirt.problem.Major
-    val Minor = almhirt.problem.Minor
-  }
+  val CriticalSeverity = almhirt.problem.Critical
+  val MajorSeverity = almhirt.problem.Major
+  val MinorSeverity = almhirt.problem.Minor
 
   val UnspecifiedProblem = almhirt.problem.problemtypes.UnspecifiedProblem
   val MultipleProblems = almhirt.problem.problemtypes.MultipleProblems

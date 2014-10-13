@@ -46,7 +46,21 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
   private val maxCallDuration = httpHerderServiceParams.maxCallDuration
 
   val herderTerminator = pathPrefix("herder") {
-    pathPrefix("circuits") {
+    pathEnd {
+      get { ctx =>
+        val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+        val futCircuits = (herder ? HerderMessage.ReportCircuitStates)(maxCallDuration).mapCastTo[HerderMessage.CircuitStates].map(_.states)
+        val futMissedEvents = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
+        val futHtml =
+          for {
+            circuitStates <- futCircuits
+            missedEvents <- futMissedEvents
+          } yield createStatusReport(circuitStates, missedEvents)
+        futHtml.fold(
+          problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+          html => ctx.complete(StatusCodes.OK, html))
+      }
+    } ~ pathPrefix("circuits") {
       pathEnd {
         parameter('ui.?) { uiEnabledP =>
           val isUiEnabled =
@@ -61,7 +75,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             fut.fold(
               problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
               states => if (isUiEnabled) {
-                ctx.complete(StatusCodes.OK, createEventSinkHubUi(states))
+                ctx.complete(StatusCodes.OK, createCircuitsUi(states))
               } else {
                 ctx.complete(StatusCodes.OK, states.map { case (name, state) => s"$name -> $state" }.mkString("\n"))
               })
@@ -108,7 +122,19 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
   }
 
   import scala.xml._
-  private def createEventSinkHubUi(state: Map[String, CircuitState]) = {
+  private def createCircuitsUi(state: Map[String, CircuitState]) = {
+    <html>
+      <head>
+        <title>Circuits</title>
+      </head>
+      <body>
+        { createCircuitsContent(state, false) }
+        <br>{ almhirtContext.getUtcTimestamp.toString }</br>
+      </body>
+    </html>
+  }
+
+  private def createCircuitsContent(state: Map[String, CircuitState], isReport: Boolean) = {
     def createStateItem(state: CircuitState) = {
       state match {
         case x: CircuitState.Closed =>
@@ -177,66 +203,93 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       }
     }
 
-    def createRow(name: String, state: CircuitState) = {
-      <tr>
-        <td>{ name }</td>
-        { createStateItem(state) }
-        { createStateResetAction(name, state) }
-        { createStateRemoveAction(name, state) }
-        { createStateDestroyAction(name, state) }
-      </tr>
+    def createRow(name: String, state: CircuitState, isReport: Boolean) = {
+      if (isReport)
+        <tr>
+          <td>{ name }</td>
+          { createStateItem(state) }
+          { createStateResetAction(name, state) }
+          { createStateRemoveAction(name, state) }
+          { createStateDestroyAction(name, state) }
+        </tr>
+      else
+        <tr>
+          <td>{ name }</td>
+          { createStateItem(state) }
+        </tr>
     }
 
-    <html>
-      <head>
-        <title>Circuits</title>
-      </head>
-      <body>
-        <table border="0">
-          <tr>
-            <th>Circuit Name</th>
-            <th>Circuit State</th>
-            <th colspan="3">Actions</th>
-          </tr>
-          { state.map { case (name, state) => createRow(name, state) } }
-        </table>
-        <br>{ almhirtContext.getUtcTimestamp.toString }</br>
-      </body>
-    </html>
+    if (isReport)
+      <table border="0">
+        <tr>
+          <th>Circuit Name</th>
+          <th>Circuit State</th>
+        </tr>
+        { state.map { case (name, state) => createRow(name, state, true) } }
+      </table>
+    else
+      <table border="0">
+        <tr>
+          <th>Circuit Name</th>
+          <th>Circuit State</th>
+          <th colspan="3">Actions</th>
+        </tr>
+        { state.map { case (name, state) => createRow(name, state, false) } }
+      </table>
   }
 
   def createMissedEventsReport(missedEvents: Map[String, (almhirt.problem.Severity, Int)]) = {
-    def createSeverityItem(severity: almhirt.problem.Severity) = {
-      severity match {
-        case Severity.Minor => <td style="background-color:#F6EE09">Minor</td>
-        case Severity.Major => <td style="background-color:#F6A309">Major</td>
-        case Severity.Critical => <td style="background-color:#F61D09">Critical</td>
-      }
-    }
     <html>
       <head>
         <title>Missed Events</title>
       </head>
       <body>
-        <table border="1">
-          <tr>
-            <th>Component Name</th>
-            <th>Severity</th>
-            <th>Missed Events</th>
-          </tr>
-          {
-            missedEvents.map {
-              case (name, (severity, count)) =>
-                <tr>
-                  <td>{ name }</td>
-                  { createSeverityItem(severity) }
-                  <td>{ count }</td>
-                </tr>
-            }
-          }
-        </table>
+        { createMissedEventsReportContent(missedEvents) }
         <br>{ almhirtContext.getUtcTimestamp.toString }</br>
       </body>
     </html>
   }
+
+  def createMissedEventsReportContent(missedEvents: Map[String, (almhirt.problem.Severity, Int)]) = {
+    def createSeverityItem(severity: almhirt.problem.Severity) = {
+      severity match {
+        case MinorSeverity => <td style="background-color:#F6EE09">Minor</td>
+        case MajorSeverity => <td style="background-color:#F6A309">Major</td>
+        case CriticalSeverity => <td style="background-color:#F61D09">Critical</td>
+      }
+    }
+    <table border="1">
+      <tr>
+        <th>Component Name</th>
+        <th>Severity</th>
+        <th>Missed Events</th>
+      </tr>
+      {
+        missedEvents.map {
+          case (name, (severity, count)) =>
+            <tr>
+              <td>{ name }</td>
+              { createSeverityItem(severity) }
+              <td>{ count }</td>
+            </tr>
+        }
+      }
+    </table>
+  }
+
+  def createStatusReport(circuitsState: Map[String, CircuitState], missedEvents: Map[String, (almhirt.problem.Severity, Int)]) = {
+    <html>
+      <head>
+        <title>Status Report</title>
+      </head>
+      <body>
+        <h1>Circuits</h1>
+        { createCircuitsContent(circuitsState, true) }
+        <h1>Missed Events</h1>
+        { createMissedEventsReportContent(missedEvents) }
+        <br>{ almhirtContext.getUtcTimestamp.toString }</br>
+      </body>
+    </html>
+  }
+
 }

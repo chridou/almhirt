@@ -67,6 +67,9 @@ private[almhirt] class HttpEventPublisherImpl(
   extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.OK, StatusCodes.Accepted), contentMediaType, method, circuitControlSettings, circuitStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
   with HasAlmhirtContext {
 
+  override def onFailure(item: Event, problem: Problem): Unit =
+    almhirtContext.tellHerder(almhirt.herder.HerderMessage.MissedEvent(item, MinorSeverity, problem, almhirtContext.getUtcTimestamp))
+
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext
 

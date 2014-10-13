@@ -70,6 +70,7 @@ private[almhirt] class EventLogWriterImpl(
   circuitControlSettings: CircuitControlSettings,
   circuitStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with HasAlmhirtContext with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
+  import almhirt.herder.HerderMessage
 
   implicit val executor = almhirtContext.futuresContext
 
@@ -88,7 +89,7 @@ private[almhirt] class EventLogWriterImpl(
     case ActorMessages.ResolvedSingle(eventlog, _) ⇒
       log.info("Found event log.")
 
-      context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitControl(self, circuitBreaker)
+      almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(self, circuitBreaker))
 
       if (autoConnect)
         self ! AutoConnect
@@ -111,7 +112,9 @@ private[almhirt] class EventLogWriterImpl(
       val start = Deadline.now
       val f = (eventLog ? EventLog.LogEvent(event, true))(circuitControlSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
       circuitBreaker.fused(f).onComplete({
-        case scalaz.Failure(problem) => self ! EventLog.EventNotLogged(event.eventId, problem)
+        case scalaz.Failure(problem) =>
+          self ! EventLog.EventNotLogged(event.eventId, problem)
+          almhirtContext.tellHerder(HerderMessage.MissedEvent(event, MajorSeverity, problem, almhirtContext.getUtcTimestamp))
         case scalaz.Success(rsp) => self ! rsp
       })
 
@@ -141,7 +144,8 @@ private[almhirt] class EventLogWriterImpl(
   }
 
   def receiveCircuitOpen(eventLog: ActorRef): Receive = {
-    case ActorSubscriberMessage.OnNext(element) ⇒
+    case ActorSubscriberMessage.OnNext(event: Event) ⇒
+      almhirtContext.tellHerder(HerderMessage.MissedEvent(event, MajorSeverity, CircuitOpenProblem(), almhirtContext.getUtcTimestamp))
       request(1)
 
     case EventLog.EventLogged(id) ⇒
@@ -173,6 +177,6 @@ private[almhirt] class EventLogWriterImpl(
   }
 
   override def postStop() {
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitControl(self)
+    almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(self))
   }
 } 

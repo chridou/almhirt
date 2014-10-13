@@ -24,6 +24,8 @@ abstract class ActorConsumerHttpPublisher[T](
   circuitControlSettings: CircuitControlSettings,
   circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with HasAlmhirtContext with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
 
+  import almhirt.herder.HerderMessage
+
   def createUri(entity: T): Uri
 
   private final case class Processed(lastProblem: Option[Problem])
@@ -32,6 +34,8 @@ abstract class ActorConsumerHttpPublisher[T](
   final override val requestStrategy = ZeroRequestStrategy
 
   val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
+
+  def onFailure(item: T, problem: Problem): Unit = Unit
 
   private case object Start
   def receiveCircuitClosed: Receive = {
@@ -47,7 +51,10 @@ abstract class ActorConsumerHttpPublisher[T](
         },
         typedElem ⇒ {
           circuitBreaker.fused(publishOverWire(typedElem)).onComplete(
-            prob ⇒ self ! Processed(Some(prob)),
+            problem ⇒ {
+              self ! Processed(Some(problem))
+              onFailure(typedElem, problem)
+            },
             _ => self ! Processed(None))
         })
 
@@ -69,6 +76,9 @@ abstract class ActorConsumerHttpPublisher[T](
 
   def receiveCircuitOpen: Receive = {
     case ActorSubscriberMessage.OnNext(element) ⇒
+      element.castTo[T].fold(
+        fail ⇒ log.warning(s"Received unprocessable item $element"),
+        typedElem ⇒ onFailure(typedElem, CircuitOpenProblem()))
       request(1)
 
     case Processed(currentProblem) ⇒
@@ -110,12 +120,12 @@ abstract class ActorConsumerHttpPublisher[T](
     circuitBreaker.defaultActorListeners(self)
       .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
 
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitControl(self, circuitBreaker)
+    almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(self, circuitBreaker))
 
     self ! Start
   }
 
   override def postStop() {
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitControl(self)
+    almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(self))
   }
 }

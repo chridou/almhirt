@@ -10,6 +10,7 @@ import com.typesafe.config._
 trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with HasExecutionContexts {
   def config: Config
   def localActorPaths: ContextActorPaths
+  def tellHerder(what: almhirt.herder.HerderMessage.HerderInputMessage): Unit
 }
 
 trait ContextActorPaths {
@@ -105,6 +106,7 @@ object AlmhirtContext {
         Props(new Actor with ActorLogging {
           implicit val execCtx = futuresExecutor
           var theReceiver: ActorRef = null
+          var tellTheHerder: almhirt.herder.HerderMessage.HerderInputMessage => Unit = x => ()
           def receive: Receive = {
             case AlmhirtContextMessages.Start ⇒
               theReceiver = sender()
@@ -130,6 +132,8 @@ object AlmhirtContext {
                 val commandBroker = streams.commandBroker
                 val commandStream = streams.commandStream
                 val localActorPaths = ContextActorPaths.local(system)
+                def tellHerder(what: almhirt.herder.HerderMessage.HerderInputMessage) { tellTheHerder(what) }
+
                 def stop() {
                   log.info("Stopping.")
                   //streams.stop()
@@ -145,11 +149,11 @@ object AlmhirtContext {
               } yield herderProps).fold(
                 prob => theReceiver ! AlmhirtContextMessages.FailedInitialization(prob),
                 herderProps => {
-                  context.actorOf(herderProps, almhirt.herder.Herder.actorname)
+                  val herder = context.actorOf(herderProps, almhirt.herder.Herder.actorname)
+                  this.tellTheHerder = x => herder ! x
                   self ! AlmhirtContextMessages.HerderCreated(ctx)
                 })
-              val herder =
-                theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
+               theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
 
             case AlmhirtContextMessages.HerderCreated(ctx) ⇒
               log.info("Context created. Next: Configure components")
@@ -222,6 +226,7 @@ object AlmhirtContext {
               val commandBroker = streams.commandBroker
               val commandStream = streams.commandStream
               val localActorPaths = null
+              def tellHerder(what: almhirt.herder.HerderMessage.HerderInputMessage) {}
               def stop() {
                 log.debug("Stopping.")
                 //streams.stop()
