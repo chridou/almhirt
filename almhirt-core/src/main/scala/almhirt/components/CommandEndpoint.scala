@@ -93,7 +93,11 @@ private[almhirt] class CommandEndpointImpl(
       CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
 
     case cmd: Command ⇒
-      sender() ! CommandNotAccepted(cmd.commandId, ServiceBrokenProblem("Command processing is currently broken. Try again later."))
+      dispatchCommandResult(
+        cmd.commandId,
+        fused(checkCommandDispatchable(cmd)),
+        sender(),
+        commandStatusTracker)
 
     case m: ActorMessages.CircuitAllWillFail =>
       log.warning("The circuit was opened!")
@@ -102,11 +106,7 @@ private[almhirt] class CommandEndpointImpl(
 
   def receiveRunningWithOpenCircuit(commandStatusTracker: ActorRef): Receive = {
     case cmd: Command ⇒
-      dispatchCommandResult(
-        cmd.commandId,
-        fused(checkCommandDispatchable(cmd)),
-        sender(),
-        commandStatusTracker)
+      sender() ! CommandNotAccepted(cmd.commandId, ServiceBrokenProblem("Command processing is currently broken. Try again later."))
 
     case m: ActorMessages.CircuitNotAllWillFail =>
       log.info("The circuit was closed!")
