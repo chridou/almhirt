@@ -12,7 +12,7 @@ import almhirt.almvalidation.kit._
 import almhirt.converters.BinaryConverter
 import almhirt.configuration._
 import almhirt.eventlog._
-import almhirt.context.AlmhirtContext
+import almhirt.context._
 import almhirt.akkax._
 import reactivemongo.bson._
 import reactivemongo.api._
@@ -27,13 +27,15 @@ object MongoEventLog {
     serializeEvent: Event ⇒ AlmValidation[BSONDocument],
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
-    readOnlySettings: Option[RetrySettings])(implicit executionContexts: HasExecutionContexts): Props =
+    circuitControlSettings: CircuitControlSettings,
+    readOnlySettings: Option[RetrySettings])(implicit ctx: AlmhirtContext): Props =
     Props(new MongoEventLogImpl(
       db,
       collectionName,
       serializeEvent,
       deserializeEvent,
       writeWarnThreshold,
+      circuitControlSettings,
       readOnlySettings))
 
   def propsWithDb(
@@ -48,6 +50,7 @@ object MongoEventLog {
       section <- ctx.config.v[com.typesafe.config.Config](path)
       collectionName <- section.v[String]("collection-name")
       writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
+      circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
       readOnly <- section.v[Boolean]("read-only")
       readOnlySettings <- if (readOnly) {
         section.v[RetrySettings]("read-only-collection-lookup-retries").map(Some(_))
@@ -60,6 +63,7 @@ object MongoEventLog {
       serializeEvent,
       deserializeEvent,
       writeWarnThreshold,
+      circuitControlSettings,
       readOnlySettings)
   }
 
@@ -90,12 +94,15 @@ private[almhirt] class MongoEventLogImpl(
   serializeEvent: Event ⇒ AlmValidation[BSONDocument],
   deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
   writeWarnThreshold: FiniteDuration,
-  readOnlySettings: Option[RetrySettings])(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging {
+  circuitControlSettings: CircuitControlSettings,
+  readOnlySettings: Option[RetrySettings])(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
 
-  implicit val defaultExecutor = executionContexts.futuresContext
-  val serializationExecutor = executionContexts.futuresContext
+  implicit val defaultExecutor = almhirtContext.futuresContext
+  val serializationExecutor = almhirtContext.futuresContext
+
+  val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   val projectionFilter = BSONDocument("event" -> 1)
 
@@ -146,7 +153,7 @@ private[almhirt] class MongoEventLogImpl(
     } yield start
 
   def commitEvent(event: Event, respondTo: Option[ActorRef]) {
-    storeEvent(event) onComplete (
+    circuitBreaker.fused(storeEvent(event)) onComplete (
       fail ⇒ {
         val msg = s"Could not log event with id ${event.eventId.value}:\n$fail"
         respondTo match {
@@ -250,6 +257,7 @@ private[almhirt] class MongoEventLogImpl(
         })
     case Initialized ⇒
       log.info("Initialized")
+      context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitControl(self, circuitBreaker)
       context.become(receiveEventLogMsg(false))
 
     case InitializeFailed(prob) ⇒
@@ -284,6 +292,7 @@ private[almhirt] class MongoEventLogImpl(
 
     case Initialized ⇒
       log.info("Initialized")
+      context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitControl(self, circuitBreaker)
       context.become(receiveEventLogMsg(true))
 
     case InitializeFailed(prob) ⇒
@@ -343,4 +352,9 @@ private[almhirt] class MongoEventLogImpl(
     super.preStart()
     self ! Initialize
   }
+
+  override def postStop() {
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitControl(self)
+  }
+
 }

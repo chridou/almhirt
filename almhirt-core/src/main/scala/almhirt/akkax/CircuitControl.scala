@@ -30,8 +30,8 @@ object CircuitControl {
 
 trait FusedCircuit {
   def fused[T](body: ⇒ AlmFuture[T]): AlmFuture[T]
-  
-  /** 
+
+  /**
    *  In case of a fail fast, return the surrogate instead of the standard result defined by the implementation
    */
   def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T]
@@ -42,15 +42,15 @@ final case class CircuitControlSettings(
   failuresWarnThreshold: Option[Int],
   callTimeout: FiniteDuration,
   resetTimeout: Option[FiniteDuration])
-  
+
 object CircuitControlSettings {
-   val defaultSettings = CircuitControlSettings(5, Some(3), 10.seconds, Some(5.minutes))
+  val defaultSettings = CircuitControlSettings(5, Some(3), 10.seconds, Some(5.minutes))
 }
 
 sealed trait CircuitState
-sealed trait AllWillFailState extends CircuitState
-sealed trait NotAllWillFailState extends CircuitState
 object CircuitState {
+  sealed trait AllWillFailState extends CircuitState
+  sealed trait NotAllWillFailState extends CircuitState
   final case class Closed(failureCount: Int, maxFailures: Int, warningLevel: Option[Int]) extends NotAllWillFailState {
     override def toString: String =
       if (failureCount == 0)

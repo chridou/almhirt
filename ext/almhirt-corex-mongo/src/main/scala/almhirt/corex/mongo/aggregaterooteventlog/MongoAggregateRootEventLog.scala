@@ -12,7 +12,7 @@ import almhirt.almfuture.all._
 import almhirt.almvalidation.kit._
 import almhirt.converters.BinaryConverter
 import almhirt.configuration._
-import almhirt.context.AlmhirtContext
+import almhirt.context._
 import almhirt.akkax._
 import reactivemongo.bson._
 import reactivemongo.api._
@@ -30,7 +30,8 @@ object MongoAggregateRootEventLog {
     deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
-    readOnlySettings: Option[RetrySettings])(implicit executionContexts: HasExecutionContexts): Props =
+    circuitControlSettings: CircuitControlSettings,
+    readOnlySettings: Option[RetrySettings])(implicit ctx: AlmhirtContext): Props =
     Props(new MongoAggregateRootEventLogImpl(
       db,
       collectionName,
@@ -38,6 +39,7 @@ object MongoAggregateRootEventLog {
       deserializeAggregateRootEvent,
       writeWarnThreshold,
       readWarnThreshold,
+      circuitControlSettings,
       readOnlySettings))
 
   def propsWithDb(
@@ -54,6 +56,7 @@ object MongoAggregateRootEventLog {
       writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
       readWarnThreshold <- section.v[FiniteDuration]("read-warn-threshold")
       readOnly <- section.v[Boolean]("read-only")
+      circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
       readOnlySettings <- if (readOnly) {
         section.v[RetrySettings]("read-only-collection-lookup-retries").map(Some(_))
       } else {
@@ -66,6 +69,7 @@ object MongoAggregateRootEventLog {
       deserializeAggregateRootEvent,
       writeWarnThreshold,
       readWarnThreshold,
+      circuitControlSettings,
       readOnlySettings)
   }
 
@@ -98,11 +102,14 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   deserializeAggregateRootEvent: BSONDocument ⇒ AlmValidation[AggregateRootEvent],
   writeWarnThreshold: FiniteDuration,
   readWarnThreshold: FiniteDuration,
-  readOnlySettings: Option[RetrySettings])(implicit executionContexts: HasExecutionContexts) extends Actor with ActorLogging with almhirt.akkax.AlmActorSupport {
+  circuitControlSettings: CircuitControlSettings,
+  readOnlySettings: Option[RetrySettings])(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext with almhirt.akkax.AlmActorSupport {
   import almhirt.eventlog.AggregateRootEventLog._
 
-  implicit val defaultExecutor = executionContexts.futuresContext
-  val serializationExecutor = executionContexts.futuresContext
+  implicit val defaultExecutor = almhirtContext.futuresContext
+  val serializationExecutor = almhirtContext.futuresContext
+
+  val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   val projectionFilter = BSONDocument("event" -> 1)
 
@@ -162,7 +169,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     } yield start
 
   def commitEvent(event: AggregateRootEvent, respondTo: ActorRef) {
-    storeEvent(event) onComplete (
+    circuitBreaker.fused(storeEvent(event)) onComplete (
       fail ⇒ {
         log.error(s"Could not commit aggregate root event:\n$fail")
         respondTo ! AggregateRootEventNotCommitted(event.eventId, fail)
@@ -252,6 +259,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case Initialized ⇒
       log.info("*** Initialized ***")
+      context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitControl(self, circuitBreaker)
       context.become(receiveAggregateRootEventLogMsg(false))
 
     case InitializeFailed(prob) ⇒
@@ -297,6 +305,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case Initialized ⇒
       log.info("Initialized")
+      context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.RegisterCircuitControl(self, circuitBreaker)
       context.become(receiveAggregateRootEventLogMsg(true))
 
     case InitializeFailed(prob) ⇒
@@ -359,4 +368,9 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     super.preStart()
     self ! Initialize
   }
+
+  override def postStop() {
+    context.actorSelection(almhirtContext.localActorPaths.herder) ! almhirt.herder.HerderMessage.DeregisterCircuitControl(self)
+  }
+
 }

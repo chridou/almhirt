@@ -114,7 +114,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
 
     def createStateResetAction(name: String, state: CircuitState) = {
       state match {
-        case x: CircuitState.Open =>
+        case st: CircuitState.AllWillFailState =>
           val att = new UnprefixedAttribute("href", s"./circuits/attempt-reset/$name", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
           <td>{ anchor }</td>
