@@ -11,6 +11,7 @@ object BuildSettings {
   val buildScalaVersion = "2.11.2"
 
   val akkaVersion = "2.3.+"
+  val akkaStreamsVersion = "0.7"
   val scalatestVersion = "2.2.+"
   val sprayVersion = "1.3.+"
   val reactiveMongoVersion = "0.10.5.akka23-SNAPSHOT"
@@ -57,7 +58,7 @@ object Dependencies {
 	
 	lazy val akka_actor  = "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion % "provided"
 	lazy val akka_agent  = "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion % "provided"
-	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % "0.9" % "provided"
+	lazy val akka_streams  = "com.typesafe.akka" %% "akka-stream-experimental" % BuildSettings.akkaStreamsVersion % "provided"
 
 	lazy val apache_codecs = "commons-codec" % "commons-codec" % "1.+" 
 

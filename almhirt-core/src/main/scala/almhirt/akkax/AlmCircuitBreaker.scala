@@ -6,11 +6,10 @@ import scala.concurrent.ExecutionContext
 import akka.actor.Scheduler
 
 object AlmCircuitBreaker {
- 
+
   def apply(settings: CircuitControlSettings, executionContext: ExecutionContext, scheduler: Scheduler): AlmCircuitBreaker =
     new AlmCircuitBreakerImpl(settings, executionContext, scheduler)
 
- 
 }
 
 trait AlmCircuitBreaker extends FusedCircuit with CircuitControl
@@ -59,12 +58,12 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
   override def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T] = {
     currentState.invoke(surrogate, body)
   }
-  
-  override def attemptClose(): Boolean = currentState.attemptManualClose()
-  override def removeFuse(): Boolean = currentState.attemptManualRemoveFuse()
-  override def destroyFuse(): Boolean = currentState.attemptManualRemoveFuse()
 
-  override def state: CircuitState = currentState.publicState
+  override def attemptClose() { currentState.attemptManualClose() }
+  override def removeFuse() { currentState.attemptManualRemoveFuse() }
+  override def destroyFuse() { currentState.attemptManualRemoveFuse() }
+
+  override def state: AlmFuture[CircuitState] = AlmFuture.successful(currentState.publicState)
 
   override def onOpened(listener: () => Unit): AlmCircuitBreaker = {
     InternalOpen addListener new Runnable { def run() { listener() } }

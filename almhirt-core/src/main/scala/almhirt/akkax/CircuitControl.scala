@@ -4,22 +4,22 @@ import scala.concurrent.duration._
 import almhirt.common._
 
 trait CircuitControl {
-  def attemptClose(): Boolean
-  def removeFuse(): Boolean
-  def destroyFuse(): Boolean
-  def state: CircuitState
+  def attemptClose(): Unit
+  def removeFuse(): Unit
+  def destroyFuse(): Unit
+  def state: AlmFuture[CircuitState]
 
-  def onOpened(listener: () => Unit): AlmCircuitBreaker
-  def onHalfOpened(listener: () => Unit): AlmCircuitBreaker
-  def onClosed(listener: () => Unit): AlmCircuitBreaker
-  def onFuseRemoved(listener: () => Unit): AlmCircuitBreaker
-  def onFuseDestroyed(listener: () => Unit): AlmCircuitBreaker
-  def onWarning(listener: (Int, Int) => Unit): AlmCircuitBreaker
+  def onOpened(listener: () => Unit): CircuitControl
+  def onHalfOpened(listener: () => Unit): CircuitControl
+  def onClosed(listener: () => Unit): CircuitControl
+  def onFuseRemoved(listener: () => Unit): CircuitControl
+  def onFuseDestroyed(listener: () => Unit): CircuitControl
+  def onWarning(listener: (Int, Int) => Unit): CircuitControl
 }
 
 object CircuitControl {
-  implicit class AlmCircuitBreakerOps(self: AlmCircuitBreaker) {
-    def defaultActorListeners(actor: akka.actor.ActorRef): AlmCircuitBreaker =
+  implicit class CircuitControlOps(self: CircuitControl) {
+    def defaultActorListeners(actor: akka.actor.ActorRef): CircuitControl =
       self.onOpened(() => actor ! ActorMessages.CircuitOpened)
         .onHalfOpened(() => actor ! ActorMessages.CircuitHalfOpened)
         .onClosed(() => actor ! ActorMessages.CircuitClosed)
