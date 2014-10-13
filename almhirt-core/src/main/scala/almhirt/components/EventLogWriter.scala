@@ -136,7 +136,8 @@ private[almhirt] class EventLogWriterImpl(
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled)
-        log.info(s"Circuit state: ${circuitBreaker.state}")
+        circuitBreaker.state.onSuccess(s => log.info(s"Circuit state: $s"))
+
   }
 
   def receiveCircuitOpen(eventLog: ActorRef): Receive = {
@@ -156,7 +157,7 @@ private[almhirt] class EventLogWriterImpl(
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled) {
-        log.info(s"Circuit state: ${circuitBreaker.state}")
+        circuitBreaker.state.onSuccess(s => log.info(s"Circuit state: $s"))
         circuitStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
