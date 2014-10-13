@@ -67,28 +67,30 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               })
           }
         }
-      } ~ pathPrefix("attempt-close" / Segment) { componentName =>
-        pathEnd {
-          get {
-            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-            herder ! HerderMessage.AttemptCloseCircuit(componentName)
-            complete(StatusCodes.Accepted, s"attempting to close circuit $componentName")
+      } ~ pathPrefix(Segment) { componentName =>
+        pathPrefix("attempt-reset") {
+          pathEnd {
+            get {
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              herder ! HerderMessage.AttemptCloseCircuit(componentName)
+              complete(StatusCodes.Accepted, s"attempting to close circuit $componentName")
+            }
           }
-        }
-      } ~ pathPrefix("attempt-remove-fuse" / Segment) { componentName =>
-        pathEnd {
-          get {
-            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-            herder ! HerderMessage.RemoveFuseFromCircuit(componentName)
-            complete(StatusCodes.Accepted, s"attempting to remove fuse in circuit $componentName")
+        } ~ pathPrefix("remove-fuse") {
+          pathEnd {
+            get {
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              herder ! HerderMessage.RemoveFuseFromCircuit(componentName)
+              complete(StatusCodes.Accepted, s"attempting to remove fuse in circuit $componentName")
+            }
           }
-        }
-      } ~ pathPrefix("attempt-destroy-fuse" / Segment) { componentName =>
-        pathEnd {
-          get {
-            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-            herder ! HerderMessage.DestroyFuseInCircuit(componentName)
-            complete(StatusCodes.Accepted, s"attempting to destry fuse in circuit $componentName")
+        } ~ pathPrefix("destroy-fuse") {
+          pathEnd {
+            get {
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              herder ! HerderMessage.DestroyFuseInCircuit(componentName)
+              complete(StatusCodes.Accepted, s"attempting to destroy fuse in circuit $componentName")
+            }
           }
         }
       }
@@ -115,7 +117,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateResetAction(name: String, state: CircuitState) = {
       state match {
         case st: CircuitState.AllWillFailState =>
-          val att = new UnprefixedAttribute("href", s"./circuits/attempt-reset/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/$name/attempt-reset", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
           <td>{ anchor }</td>
         case _ =>
@@ -126,15 +128,15 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateRemoveAction(name: String, state: CircuitState) = {
       state match {
         case x: CircuitState.Open =>
-          val att = new UnprefixedAttribute("href", s"./circuits/attempt-remove-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/$name/remove-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.HalfOpen =>
-          val att = new UnprefixedAttribute("href", s"./circuits/attempt-remove-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/$name/remove-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.Closed =>
-          val att = new UnprefixedAttribute("href", s"./circuits/attempt-remove-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/$name/remove-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case _ =>
@@ -145,19 +147,19 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateDestroyAction(name: String, state: CircuitState) = {
       state match {
         case x: CircuitState.Open =>
-          val att = new UnprefixedAttribute("href", s"./circuits/attempt-destroy-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/$name/destroy-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.HalfOpen =>
-          val att = new UnprefixedAttribute("href", s"./circuits/attempt-destroy-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/$name/destroy-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.Closed =>
-          val att = new UnprefixedAttribute("href", s"./circuits/attempt-destroy-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/$name/destroy-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.FuseRemoved =>
-          val att = new UnprefixedAttribute("href", s"./circuits/attempt-destroy-fuse/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/$name/destroy-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case _ =>

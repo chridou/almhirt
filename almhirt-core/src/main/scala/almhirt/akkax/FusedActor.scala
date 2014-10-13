@@ -95,7 +95,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
   def state: CircuitState = currentState.publicState
 
   private object ReportState
-  
+
   private def moveTo(newState: InternalState) {
     currentState = newState
     newState.enter()
@@ -121,13 +121,22 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
       sender() ! currentState.publicState
 
     case InternalFusedActorMessage.AttemptClose =>
-      currentState.attemptManualClose
+      val res = currentState.attemptManualClose
+      circuitControlLoggingAdapter.foreach(log =>
+        if (res) log.info("Manual reset attempt succeeded")
+        else log.warning(s"""Manual reset attempt failed. Current state is ${currentState.publicState}"""))
 
     case InternalFusedActorMessage.RemoveFuse =>
-      currentState.attemptManualRemoveFuse
+      val res = currentState.attemptManualRemoveFuse
+      circuitControlLoggingAdapter.foreach(log =>
+        if (res) log.warning("Manual remove fuse attempt succeeded")
+        else log.warning(s"""Manual remove fuse attempt failed. Current state is ${currentState.publicState}"""))
 
     case InternalFusedActorMessage.DestroyFuse =>
-      currentState.attemptManualDestroyFuse
+      val res = currentState.attemptManualDestroyFuse
+      circuitControlLoggingAdapter.foreach(log =>
+        if (res) log.warning("Manual destroy fuse  attempt succeeded")
+        else log.warning(s"""Manual  destroy fuse. Current state is ${currentState.publicState}"""))
 
     case InternalFusedActorMessage.OnOpened(listener) =>
       InternalOpen addListener new Runnable { def run() { listener() } }
@@ -148,16 +157,17 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
       InternalClosed addWarningListener (currentFailures => new Runnable { def run() { listener(currentFailures, maxFailures) } })
 
     case ReportState =>
-      circuitControlLoggingAdapter.flatMap(log => circuitStateReportingInterval.map((log, _))).foreach{ case(log, interval) =>
-    	 log.info(s"Current circuit state: ${currentState.publicState}")
-    	 currentState match {
-    	   case InternalOpen =>
-    	     context.system.scheduler.scheduleOnce(interval, self, ReportState)(callbackExecutor)
-    	   case InternalHalfOpen =>
-    	     context.system.scheduler.scheduleOnce(interval, self, ReportState)(callbackExecutor)
-    	   case _ =>
-    	     ()
-    	 }
+      circuitControlLoggingAdapter.flatMap(log => circuitStateReportingInterval.map((log, _))).foreach {
+        case (log, interval) =>
+          log.info(s"Current circuit state: ${currentState.publicState}")
+          currentState match {
+            case InternalOpen =>
+              context.system.scheduler.scheduleOnce(interval, self, ReportState)(callbackExecutor)
+            case InternalHalfOpen =>
+              context.system.scheduler.scheduleOnce(interval, self, ReportState)(callbackExecutor)
+            case _ =>
+              ()
+          }
       }
   }
 
@@ -200,16 +210,16 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
       notifyTransitionListeners()
       self ! ReportState
     }
-    
+
     private def sendStateChanged() {
-      if(sendStateChangedEvents)
+      if (sendStateChangedEvents)
         this match {
-        case InternalClosed => self ! ActorMessages.CircuitClosed
-        case InternalHalfOpen => self ! ActorMessages.CircuitHalfOpened
-        case InternalOpen => self ! ActorMessages.CircuitOpened
-        case InternalFuseRemoved => self ! ActorMessages.CircuitFuseRemoved
-        case InternalFuseDestroyed => self ! ActorMessages.CircuitFuseDestroyed
-      }
+          case InternalClosed => self ! ActorMessages.CircuitClosed
+          case InternalHalfOpen => self ! ActorMessages.CircuitHalfOpened
+          case InternalOpen => self ! ActorMessages.CircuitOpened
+          case InternalFuseRemoved => self ! ActorMessages.CircuitFuseRemoved
+          case InternalFuseDestroyed => self ! ActorMessages.CircuitFuseDestroyed
+        }
     }
 
     protected def _enter(): Unit
