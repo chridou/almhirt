@@ -71,12 +71,13 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
   import java.util.concurrent.CopyOnWriteArrayList
   import AlmCircuitBreaker._
 
-  def settings: CircuitControlSettings
-  def callbackExecutorSelector: ExtendedExecutionContextSelector
-  def loggingAdapter: Option[LoggingAdapter] = None
-
-  private val CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout) = settings
-  private val callbackExecutor = callbackExecutorSelector.select(this.almhirtContext, this.context)
+  def circuitControlSettings: CircuitControlSettings
+  def circuitControlCallbackExecutorSelector: ExtendedExecutionContextSelector
+  def circuitControlLoggingAdapter: Option[LoggingAdapter] = None
+  def circuitStateReportingInterval: Option[FiniteDuration]
+  def sendStateChangedEvents: Boolean
+  private val CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout) = circuitControlSettings
+  private val callbackExecutor = circuitControlCallbackExecutorSelector.select(this.almhirtContext, this.context)
   private var currentState: InternalState = InternalClosed
 
   def fused[T](body: => AlmValidation[T]): AlmValidation[T] =
@@ -85,10 +86,10 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
   def fusedWithSurrogate[T](surrogate: ⇒ AlmValidation[T])(body: ⇒ AlmValidation[T]): AlmValidation[T] =
     currentState.invoke(surrogate, body)
 
-  def registerCircuitControl: Unit =
+  def registerCircuitControl(): Unit =
     context.actorSelection(almhirtContext.localActorPaths.herder) ! HerderMessage.RegisterCircuitControl(self, FusedActor.wrap(self)(10.seconds)(almhirtContext.futuresContext))
 
-  def deregisterCircuitControl: Unit =
+  def deregisterCircuitControl(): Unit =
     context.actorSelection(almhirtContext.localActorPaths.herder) ! HerderMessage.DeregisterCircuitControl(self)
 
   def state: CircuitState = currentState.publicState
@@ -103,7 +104,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
       moveTo(newState)
       true
     } else {
-      loggingAdapter.foreach(log =>
+      circuitControlLoggingAdapter.foreach(log =>
         s"""Attempted transition from $oldState to $newState failed. Current state was $currentState.""")
       false
     }
@@ -184,6 +185,17 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
       _enter()
       notifyTransitionListeners()
     }
+    
+    private def sendStateChanged() {
+      if(sendStateChangedEvents)
+        this match {
+        case InternalClosed => self ! ActorMessages.CircuitClosed
+        case InternalHalfOpen => self ! ActorMessages.CircuitHalfOpened
+        case InternalOpen => self ! ActorMessages.CircuitOpened
+        case InternalFuseRemoved => self ! ActorMessages.CircuitFuseRemoved
+        case InternalFuseDestroyed => self ! ActorMessages.CircuitFuseDestroyed
+      }
+    }
 
     protected def _enter(): Unit
 
@@ -195,6 +207,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
           callbackExecutor.execute(listener)
         }
       }
+      sendStateChanged()
     }
 
     def attemptManualClose(): Boolean = false

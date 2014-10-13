@@ -48,8 +48,10 @@ object CircuitControlSettings {
 }
 
 sealed trait CircuitState
+sealed trait AllWillFailState extends CircuitState
+sealed trait NotAllWillFailState extends CircuitState
 object CircuitState {
-  final case class Closed(failureCount: Int, maxFailures: Int, warningLevel: Option[Int]) extends CircuitState {
+  final case class Closed(failureCount: Int, maxFailures: Int, warningLevel: Option[Int]) extends NotAllWillFailState {
     override def toString: String =
       if (failureCount == 0)
         "Closed"
@@ -59,21 +61,21 @@ object CircuitState {
           case Some(wl) => s"Closed(failures: $failureCount, maxFailures: $maxFailures, warn at $wl)"
         }
   }
-  final case class HalfOpen(ongoingRecoverAttempt: Boolean) extends CircuitState {
+  final case class HalfOpen(ongoingRecoverAttempt: Boolean) extends NotAllWillFailState {
     override def toString: String =
       if (ongoingRecoverAttempt)
         s"HalfOpen(attempting  to recover)"
       else
         "HalfOpen(waiting for recovery attempt)"
   }
-  final case class Open(remaining: FiniteDuration) extends CircuitState {
+  final case class Open(remaining: FiniteDuration) extends AllWillFailState {
     override def toString: String =
       s"Open(remaining: ${remaining.defaultUnitString})"
   }
-  final case class FuseRemoved(duration: FiniteDuration) extends CircuitState {
+  final case class FuseRemoved(duration: FiniteDuration) extends AllWillFailState {
     override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
   }
-  final case class FuseDestroyed(duration: FiniteDuration) extends CircuitState {
+  final case class FuseDestroyed(duration: FiniteDuration) extends AllWillFailState {
     override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
   }
 }
