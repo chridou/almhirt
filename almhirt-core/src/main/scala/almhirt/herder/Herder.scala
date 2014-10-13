@@ -39,12 +39,15 @@ private[almhirt] class Pastor()(implicit override val almhirtContext: AlmhirtCon
   import almhirt.components.{ EventSinkHub, EventSinkHubMessage }
 
   val circuitsHerdingDog: ActorRef = context.actorOf(Props(new herdingdogs.CircuitsHerdingDog()), herdingdogs.CircuitsHerdingDog.actorname)
+  val missedEventsHerdingDog: ActorRef = context.actorOf(Props(new herdingdogs.MissedEventsHerdingDog()), herdingdogs.MissedEventsHerdingDog.actorname)
 
   def receiveRunning: Receive = {
     case m: HerderMessage.RegisterCircuitControl => circuitsHerdingDog ! m
     case m: HerderMessage.DeregisterCircuitControl => circuitsHerdingDog ! m
     case HerderMessage.ReportCircuitStates => circuitsHerdingDog forward HerderMessage.ReportCircuitStates
     case m: HerderMessage.CircuitControlMessage => circuitsHerdingDog forward m
+    
+    case m: HerderMessage.EventsMessage => missedEventsHerdingDog forward m
   }
 
   def receive = receiveRunning

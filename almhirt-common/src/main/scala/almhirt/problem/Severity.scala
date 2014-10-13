@@ -27,7 +27,6 @@ sealed trait Severity extends Ordered[Severity] {
       case (_, Major) ⇒ Major
       case (Minor, _) ⇒ Minor
       case (_, Minor) ⇒ Minor
-      case _ ⇒ Warning
     }
   /** Used for comparison */
   def level: Int
@@ -46,15 +45,10 @@ final case object Minor extends Severity {
   val level = 2
   val parseableString = "minor"
 }
-final case object Warning extends Severity {
-  val level = 1
-  val parseableString = "noproblem"
-}
 
 object Severity {
   def fromString(str: String): almhirt.common.AlmValidation[Severity] =
     str.toLowerCase() match {
-      case "noproblem" ⇒ scalaz.Success(Warning)
       case "minor" ⇒ scalaz.Success(Minor)
       case "major" ⇒ scalaz.Success(Major)
       case "critical" ⇒ scalaz.Success(Critical)

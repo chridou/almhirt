@@ -67,7 +67,6 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
     val Critical = almhirt.problem.Critical
     val Major = almhirt.problem.Major
     val Minor = almhirt.problem.Minor
-    val Warning = almhirt.problem.Warning
   }
 
   val UnspecifiedProblem = almhirt.problem.problemtypes.UnspecifiedProblem

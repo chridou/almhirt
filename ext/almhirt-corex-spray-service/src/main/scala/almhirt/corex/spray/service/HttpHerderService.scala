@@ -94,6 +94,16 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           }
         }
       }
+    } ~ pathPrefix("missed-events") {
+      pathEnd {
+        get { ctx =>
+          val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+          val fut = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
+          fut.fold(
+            problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+            missed => ctx.complete(StatusCodes.OK, createMissedEventsReport(missed)))
+        }
+      }
     }
   }
 
@@ -189,6 +199,41 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             <th colspan="3">Actions</th>
           </tr>
           { state.map { case (name, state) => createRow(name, state) } }
+        </table>
+        <br>{ almhirtContext.getUtcTimestamp.toString }</br>
+      </body>
+    </html>
+  }
+
+  def createMissedEventsReport(missedEvents: Map[String, (almhirt.problem.Severity, Int)]) = {
+    def createSeverityItem(severity: almhirt.problem.Severity) = {
+      severity match {
+        case Severity.Minor => <td style="background-color:#F6EE09">Minor</td>
+        case Severity.Major => <td style="background-color:#F6A309">Major</td>
+        case Severity.Critical => <td style="background-color:#F61D09">Critical</td>
+      }
+    }
+    <html>
+      <head>
+        <title>Missed Events</title>
+      </head>
+      <body>
+        <table border="1">
+          <tr>
+            <th>Component Name</th>
+            <th>Severity</th>
+            <th>Missed Events</th>
+          </tr>
+          {
+            missedEvents.map {
+              case (name, (severity, count)) =>
+                <tr>
+                  <td>{ name }</td>
+                  { createSeverityItem(severity) }
+                  <td>{ count }</td>
+                </tr>
+            }
+          }
         </table>
         <br>{ almhirtContext.getUtcTimestamp.toString }</br>
       </body>
