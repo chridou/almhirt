@@ -78,7 +78,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
   def sendStateChangedEvents: Boolean
   private val CircuitControlSettings(maxFailures, failuresWarnThreshold, callTimeout, resetTimeout) = circuitControlSettings
   private val callbackExecutor = circuitControlCallbackExecutorSelector.select(this.almhirtContext, this.context)
-  private var currentState: InternalState = InternalClosed
+  private[this] var currentState: InternalState = InternalClosed
 
   def fused[T](body: => AlmValidation[T]): AlmValidation[T] =
     fusedWithSurrogate(scalaz.Failure(CircuitOpenProblem("The circuit is open.")))(body)
@@ -208,7 +208,8 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
     def enter(): Unit = {
       _enter()
       notifyTransitionListeners()
-      self ! ReportState
+      sendStateChanged()
+       self ! ReportState
     }
 
     private def sendStateChanged() {
@@ -232,15 +233,14 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
           callbackExecutor.execute(listener)
         }
       }
-      sendStateChanged()
-    }
+   }
 
     def attemptManualClose(): Boolean = false
     def attemptManualDestroyFuse(): Boolean
     def attemptManualRemoveFuse(): Boolean
   }
 
-  private case object InternalClosed extends InternalState {
+  private object InternalClosed extends InternalState {
     private val warningListeners = new CopyOnWriteArrayList[Int => Runnable]
 
     private var failureCount = 0
@@ -283,7 +283,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
     }
   }
 
-  private case object InternalHalfOpen extends InternalState {
+  private object InternalHalfOpen extends InternalState {
     private var recovering = false
 
     override def publicState = CircuitState.HalfOpen(recovering)
@@ -313,7 +313,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
 
   }
 
-  private case object InternalOpen extends InternalState {
+  private object InternalOpen extends InternalState {
     private var entered: Long = 0L
     private val myResetTimeout: FiniteDuration = resetTimeout getOrElse (Duration.Zero)
 
@@ -353,7 +353,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
    * FuseRemoved -> HalfOpen
    * FuseRemoved -> Destroyed
    */
-  private case object InternalFuseRemoved extends InternalState {
+  private object InternalFuseRemoved extends InternalState {
     private var enteredNanos = 0L
 
     override def publicState = CircuitState.FuseRemoved(forDuration)
@@ -384,7 +384,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
   }
 
   /** No transitions */
-  private case object InternalFuseDestroyed extends InternalState {
+  private object InternalFuseDestroyed extends InternalState {
     private var enteredNanos = 0L
     override def publicState = CircuitState.FuseDestroyed(forDuration)
 

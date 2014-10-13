@@ -36,15 +36,29 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
         states => pinnedSender ! HerderMessage.CircuitStates(states.toMap))
 
     case HerderMessage.AttemptCloseCircuit(name) =>
-      circuitControls.find(_._1.path.name == name).foreach(_._2.attemptClose)
+      circuitControls.find(_._1.path.name == name) match {
+        case Some(cc) =>
+          cc._2.attemptClose
+          log.info(s"""Sent close request to curcuit control "$name".""")
+        case None => log.warning(s"""There is no circuit control named "$name".""")
+      }
 
     case HerderMessage.RemoveFuseFromCircuit(name) =>
-      circuitControls.find(_._1.path.name == name).foreach(_._2.removeFuse)
+      circuitControls.find(_._1.path.name == name) match {
+        case Some(cc) =>
+          cc._2.removeFuse
+          log.info(s"""Sent remove fuse request to curcuit control "$name".""")
+        case None => log.warning(s"""There is no circuit control named "$name".""")
+      }
 
     case HerderMessage.DestroyFuseInCircuit(name) =>
-      circuitControls.find(_._1.path.name == name).foreach(_._2.destroyFuse)
+      circuitControls.find(_._1.path.name == name) match {
+        case Some(cc) =>
+          cc._2.destroyFuse
+          log.info(s"""Sent destry fuse request to curcuit control "$name".""")
+        case None => log.warning(s"""There is no circuit control named "$name".""")
+      }
   }
 
   override def receive: Receive = receiveRunning
-
 } 
