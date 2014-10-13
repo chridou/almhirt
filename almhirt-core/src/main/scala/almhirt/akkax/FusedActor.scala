@@ -107,7 +107,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
       true
     } else {
       circuitControlLoggingAdapter.foreach(log =>
-        s"""Attempted transition from $oldState to $newState failed. Current state was $currentState.""")
+        log.warning(s"""Attempted transition from $oldState to $newState failed. Current state was $currentState."""))
       false
     }
   }
@@ -135,7 +135,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
     case InternalFusedActorMessage.DestroyFuse =>
       val res = currentState.attemptManualDestroyFuse
       circuitControlLoggingAdapter.foreach(log =>
-        if (res) log.warning("Manual destroy fuse  attempt succeeded")
+        if (res) log.warning("Manual destroy fuse attempt succeeded")
         else log.warning(s"""Manual  destroy fuse. Current state is ${currentState.publicState}"""))
 
     case InternalFusedActorMessage.OnOpened(listener) =>
