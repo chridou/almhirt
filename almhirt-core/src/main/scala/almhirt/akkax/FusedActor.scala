@@ -94,6 +94,8 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
 
   def state: CircuitState = currentState.publicState
 
+  private object ReportState
+  
   private def moveTo(newState: InternalState) {
     currentState = newState
     newState.enter()
@@ -145,6 +147,18 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
     case InternalFusedActorMessage.OnWarning(listener) =>
       InternalClosed addWarningListener (currentFailures => new Runnable { def run() { listener(currentFailures, maxFailures) } })
 
+    case ReportState =>
+      circuitControlLoggingAdapter.flatMap(log => circuitStateReportingInterval.map((log, _))).foreach{ case(log, interval) =>
+    	 log.info(s"Current circuit state: ${currentState.publicState}")
+    	 currentState match {
+    	   case InternalOpen =>
+    	     context.system.scheduler.scheduleOnce(interval, self, ReportState)(callbackExecutor)
+    	   case InternalHalfOpen =>
+    	     context.system.scheduler.scheduleOnce(interval, self, ReportState)(callbackExecutor)
+    	   case _ =>
+    	     ()
+    	 }
+      }
   }
 
   protected implicit class ContextOps(self: ActorContext) {
@@ -184,6 +198,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
     def enter(): Unit = {
       _enter()
       notifyTransitionListeners()
+      self ! ReportState
     }
     
     private def sendStateChanged() {
