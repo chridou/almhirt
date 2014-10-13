@@ -39,7 +39,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
       circuitControls.find(_._1.path.name == name) match {
         case Some(cc) =>
           cc._2.attemptClose
-          log.info(s"""Sent close request to curcuit control "$name".""")
+          log.info(s"""Sent close request to circuit control "$name".""")
         case None => log.warning(s"""There is no circuit control named "$name".""")
       }
 
@@ -47,7 +47,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
       circuitControls.find(_._1.path.name == name) match {
         case Some(cc) =>
           cc._2.removeFuse
-          log.info(s"""Sent remove fuse request to curcuit control "$name".""")
+          log.info(s"""Sent remove fuse request to circuit control "$name".""")
         case None => log.warning(s"""There is no circuit control named "$name".""")
       }
 
@@ -55,7 +55,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
       circuitControls.find(_._1.path.name == name) match {
         case Some(cc) =>
           cc._2.destroyFuse
-          log.info(s"""Sent destry fuse request to curcuit control "$name".""")
+          log.info(s"""Sent destry fuse request to circuit control "$name".""")
         case None => log.warning(s"""There is no circuit control named "$name".""")
       }
   }

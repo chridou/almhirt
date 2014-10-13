@@ -70,26 +70,26 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       } ~ pathPrefix(Segment) { componentName =>
         pathPrefix("attempt-reset") {
           pathEnd {
-            get {
+            get { ctx =>
               val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
               herder ! HerderMessage.AttemptCloseCircuit(componentName)
-              complete(StatusCodes.Accepted, s"attempting to close circuit $componentName")
+              ctx.complete(StatusCodes.Accepted, s"attempting to close circuit $componentName")
             }
           }
         } ~ pathPrefix("remove-fuse") {
           pathEnd {
-            get {
+            get { ctx =>
               val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
               herder ! HerderMessage.RemoveFuseFromCircuit(componentName)
-              complete(StatusCodes.Accepted, s"attempting to remove fuse in circuit $componentName")
+              ctx.complete(StatusCodes.Accepted, s"attempting to remove fuse in circuit $componentName")
             }
           }
         } ~ pathPrefix("destroy-fuse") {
           pathEnd {
-            get {
+            get { ctx =>
               val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
               herder ! HerderMessage.DestroyFuseInCircuit(componentName)
-              complete(StatusCodes.Accepted, s"attempting to destroy fuse in circuit $componentName")
+              ctx.complete(StatusCodes.Accepted, s"attempting to destroy fuse in circuit $componentName")
             }
           }
         }
