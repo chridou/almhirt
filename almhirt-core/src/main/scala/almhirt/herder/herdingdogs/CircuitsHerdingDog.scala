@@ -9,7 +9,7 @@ import almhirt.akkax.CircuitControl
 
 object CircuitsHerdingDog {
 
-  val actorname = "circuit-breaker-herdingdog"
+  val actorname = "circuits-herdingdog"
 }
 
 private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
@@ -55,7 +55,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
       circuitControls.find(_._1.path.name == name) match {
         case Some(cc) =>
           cc._2.destroyFuse
-          log.info(s"""Sent destry fuse request to circuit control "$name".""")
+          log.info(s"""Sent destroy fuse request to circuit control "$name".""")
         case None => log.warning(s"""There is no circuit control named "$name".""")
       }
   }
