@@ -342,7 +342,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
       set(System.nanoTime())
     }
 
-    override def attemptManualClose(): Boolean = attemptReset(InternalOpen)
+    override def attemptManualClose(): Boolean = attemptReset(InternalFuseRemoved)
     override def attemptManualDestroyFuse(): Boolean = attemptDestroyFuse(InternalFuseRemoved)
     override def attemptManualRemoveFuse(): Boolean = false
 
