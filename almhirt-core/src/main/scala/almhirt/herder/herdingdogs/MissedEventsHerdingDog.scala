@@ -21,10 +21,10 @@ private[almhirt] class MissedEventsHerdingDog()(implicit override val almhirtCon
         if ((a._3 compare b._3) == 0) {
           a._1 compare b._1
         } else {
-          a._3 compare b._3
+          b._3 compare a._3
         }
       } else {
-        a._2 compare b._2
+        b._2 compare a._2
       }
   }
 

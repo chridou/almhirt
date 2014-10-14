@@ -248,7 +248,8 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       </head>
       <body>
         { createMissedEventsReportContent(missedEvents) }
-        <br>{ almhirtContext.getUtcTimestamp.toString }</br>
+        <br />
+        { almhirtContext.getUtcTimestamp.toString }
       </body>
     </html>
   }
@@ -256,9 +257,9 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
   def createMissedEventsReportContent(missedEvents: Seq[(String, almhirt.problem.Severity, Int)]) = {
     def createSeverityItem(severity: almhirt.problem.Severity) = {
       severity match {
-        case MinorSeverity => <td style="background-color:#F6EE09">Minor</td>
-        case MajorSeverity => <td style="background-color:#F6A309">Major</td>
-        case CriticalSeverity => <td style="background-color:#F61D09">Critical</td>
+        case almhirt.problem.Minor => <td style="background-color:#F6EE09">Minor</td>
+        case almhirt.problem.Major => <td style="background-color:#F6A309">Major</td>
+        case almhirt.problem.Critical => <td style="background-color:#F61D09">Critical</td>
       }
     }
     <table border="1">
@@ -289,10 +290,12 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <h1>Status</h1>
         <h2>Circuits</h2>
         { createCircuitsContent(circuitsState, true) }
-        <br><a href="./herder/circuits?ui">Circuit control</a></br>
+        <br/>
+        <a href="./herder/circuits?ui">Circuit control</a>
         <h2>Missed Events</h2>
         { createMissedEventsReportContent(missedEvents) }
-        <br>{ almhirtContext.getUtcTimestamp.toString }</br>
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
       </body>
     </html>
   }

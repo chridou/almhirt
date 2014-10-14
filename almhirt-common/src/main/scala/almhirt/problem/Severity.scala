@@ -16,7 +16,7 @@ package almhirt.problem
 
 /* Severity of a problem. 
  * 
- * NoProblem < Minor < Major < Fatal
+ * Minor < Major < Fatal
  */
 sealed trait Severity extends Ordered[Severity] {
   def and(other: Severity): Severity =
@@ -32,14 +32,17 @@ sealed trait Severity extends Ordered[Severity] {
   def compare(that: Severity) = this.level compare (that.level)
   def parseableString: String
 }
+
 final case object Critical extends Severity {
   val level = 3
   val parseableString = "critical"
 }
+
 final case object Major extends Severity {
   val level = 2
   val parseableString = "major"
 }
+
 final case object Minor extends Severity {
   val level = 1
   val parseableString = "minor"
