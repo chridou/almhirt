@@ -270,12 +270,13 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       sys.error(prob.message)
 
     case m: AggregateRootEventLogMessage ⇒
-      log.warning(s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized.""")
-      val problem = ServiceNotAvailableProblem("The event log is not yet initialized")
+      val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized."""
+      log.warning(msg)
+      val problem = ServiceNotAvailableProblem(msg)
       m match {
         case CommitAggregateRootEvent(event) ⇒
           sender ! AggregateRootEventNotCommitted(event.eventId, problem)
-          reportMissedEvent(event, CriticalSeverity, problem)
+          reportMissedEvent(event, MajorSeverity, problem)
         case m: GetAllAggregateRootEvents ⇒
           sender ! GetAggregateRootEventsFailed(problem)
         case GetAggregateRootEvent(eventId) ⇒
@@ -317,12 +318,12 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       sys.error(prob.message)
 
     case m: AggregateRootEventLogMessage ⇒
-      log.warning(s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized.""")
-      val problem = ServiceNotAvailableProblem("The event log is not yet initialized")
+      val msg = s"""Received domain event log message ${m.getClass().getSimpleName()} while uninitialized in read only mode."""
+      log.warning(msg)
+      val problem = ServiceNotAvailableProblem(msg)
       m match {
         case CommitAggregateRootEvent(event) ⇒
           sender ! AggregateRootEventNotCommitted(event.eventId, problem)
-          reportMissedEvent(event, CriticalSeverity, problem)
         case m: GetAllAggregateRootEvents ⇒
           sender ! GetAggregateRootEventsFailed(problem)
         case GetAggregateRootEvent(eventId) ⇒

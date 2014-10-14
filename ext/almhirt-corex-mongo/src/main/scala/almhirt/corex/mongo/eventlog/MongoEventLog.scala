@@ -269,7 +269,6 @@ private[almhirt] class MongoEventLogImpl(
       sys.error(prob.message)
 
     case LogEvent(event, acknowledge) ⇒
-      log.warning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
       reportMissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."))
 
     case m: EventLogMessage ⇒
@@ -308,9 +307,11 @@ private[almhirt] class MongoEventLogImpl(
       sys.error(prob.message)
 
     case LogEvent(event, acknowledge) ⇒
-      log.warning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
-      reportMissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."))
-      
+      if (!acknowledge)
+        log.warning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
+      else
+        sender() ! EventNotLogged(event.eventId, IllegalOperationProblem("The event log is in read only mode."))
+
     case m: EventLogMessage ⇒
       log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
