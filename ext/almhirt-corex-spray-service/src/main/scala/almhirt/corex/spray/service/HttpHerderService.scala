@@ -129,6 +129,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       </head>
       <body>
         { createCircuitsContent(state, false) }
+        <br><a href="../herder">Dashboard</a></br>
         <br>{ almhirtContext.getUtcTimestamp.toString }</br>
       </body>
     </html>
@@ -204,7 +205,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     }
 
     def createRow(name: String, state: CircuitState, isReport: Boolean) = {
-      if (isReport)
+      if (!isReport) {
         <tr>
           <td>{ name }</td>
           { createStateItem(state) }
@@ -212,14 +213,15 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           { createStateRemoveAction(name, state) }
           { createStateDestroyAction(name, state) }
         </tr>
-      else
+      } else {
         <tr>
           <td>{ name }</td>
           { createStateItem(state) }
         </tr>
+      }
     }
 
-    if (isReport)
+    if (isReport) {
       <table border="0">
         <tr>
           <th>Circuit Name</th>
@@ -227,7 +229,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         </tr>
         { state.map { case (name, state) => createRow(name, state, true) } }
       </table>
-    else
+    } else {
       <table border="0">
         <tr>
           <th>Circuit Name</th>
@@ -236,6 +238,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         </tr>
         { state.map { case (name, state) => createRow(name, state, false) } }
       </table>
+    }
   }
 
   def createMissedEventsReport(missedEvents: Map[String, (almhirt.problem.Severity, Int)]) = {
@@ -283,9 +286,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <title>Status Report</title>
       </head>
       <body>
-        <h1>Circuits</h1>
+        <h1>Status</h1>
+        <h2>Circuits</h2>
         { createCircuitsContent(circuitsState, true) }
-        <h1>Missed Events</h1>
+        <br><a href="./herder/circuits?ui">Circuit control</a></br>
+        <h2>Missed Events</h2>
         { createMissedEventsReportContent(missedEvents) }
         <br>{ almhirtContext.getUtcTimestamp.toString }</br>
       </body>
