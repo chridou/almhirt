@@ -23,5 +23,5 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
     almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(cnp.componentName))
 
   def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, problem: Problem)(implicit cnp: ActorComponentNameProvider): Unit =
-    almhirtContext.tellHerder(HerderMessage.MissedEvent(cnp.componentName, event, MajorSeverity, problem, almhirtContext.getUtcTimestamp))
+    almhirtContext.tellHerder(HerderMessage.MissedEvent(cnp.componentName, event, severity, problem, almhirtContext.getUtcTimestamp))
 }

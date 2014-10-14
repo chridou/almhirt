@@ -16,6 +16,6 @@ trait HasAlmhirtContext {
       self.tellHerder(HerderMessage.DeregisterCircuitControl(name))
 
     def reportMissedEvent(name: String, event: Event, severity: almhirt.problem.Severity, problem: Problem) =
-      self.tellHerder(HerderMessage.MissedEvent(name, event, MajorSeverity, problem, almhirtContext.getUtcTimestamp))
+      self.tellHerder(HerderMessage.MissedEvent(name, event, severity, problem, almhirtContext.getUtcTimestamp))
   }
 }
