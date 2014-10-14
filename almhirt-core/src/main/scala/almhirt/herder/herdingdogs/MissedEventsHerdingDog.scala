@@ -21,7 +21,7 @@ private[almhirt] class MissedEventsHerdingDog()(implicit override val almhirtCon
     case HerderMessage.MissedEvent(name, event, severity, problem, timestamp) =>
       missedEvents = missedEvents get name match {
         case None =>
-          log.info(s"""First missing event notification from "${sender().path.name}".""")
+          log.info(s"""First missing event notification from "$name".""")
           missedEvents + (name -> (severity -> 1))
         case Some((oldSeverity, count)) =>
           val newSeverity = oldSeverity and severity
