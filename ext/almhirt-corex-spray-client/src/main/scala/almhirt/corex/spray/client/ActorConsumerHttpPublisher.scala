@@ -22,7 +22,7 @@ abstract class ActorConsumerHttpPublisher[T](
   contentMediaType: MediaType,
   method: HttpMethod,
   circuitControlSettings: CircuitControlSettings,
-  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with HasAlmhirtContext with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
+  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with AlmActor with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
 
   import almhirt.herder.HerderMessage
 
@@ -120,12 +120,12 @@ abstract class ActorConsumerHttpPublisher[T](
     circuitBreaker.defaultActorListeners(self)
       .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
 
-    almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(self, circuitBreaker))
+    registerCircuitControl(circuitBreaker)
 
     self ! Start
   }
 
   override def postStop() {
-    almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(self))
+    deregisterCircuitControl()
   }
 }

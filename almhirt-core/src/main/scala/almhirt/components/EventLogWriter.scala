@@ -68,7 +68,7 @@ private[almhirt] class EventLogWriterImpl(
   warningThreshold: FiniteDuration,
   autoConnect: Boolean,
   circuitControlSettings: CircuitControlSettings,
-  circuitStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with HasAlmhirtContext with ActorLogging with ImplicitFlowMaterializer {
+  circuitStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
   import almhirt.herder.HerderMessage
 
@@ -89,7 +89,7 @@ private[almhirt] class EventLogWriterImpl(
     case ActorMessages.ResolvedSingle(eventlog, _) ⇒
       log.info("Found event log.")
 
-      almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(self, circuitBreaker))
+      registerCircuitControl(circuitBreaker)
 
       if (autoConnect)
         self ! AutoConnect
@@ -114,7 +114,7 @@ private[almhirt] class EventLogWriterImpl(
       circuitBreaker.fused(f).onComplete({
         case scalaz.Failure(problem) =>
           self ! EventLog.EventNotLogged(event.eventId, problem)
-          almhirtContext.tellHerder(HerderMessage.MissedEvent(event, MajorSeverity, problem, almhirtContext.getUtcTimestamp))
+          reportMissedEvent(event, MajorSeverity, problem)
         case scalaz.Success(rsp) => self ! rsp
       })
 
@@ -145,7 +145,7 @@ private[almhirt] class EventLogWriterImpl(
 
   def receiveCircuitOpen(eventLog: ActorRef): Receive = {
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
-      almhirtContext.tellHerder(HerderMessage.MissedEvent(event, MajorSeverity, CircuitOpenProblem(), almhirtContext.getUtcTimestamp))
+      reportMissedEvent(event, MajorSeverity, CircuitOpenProblem())
       request(1)
 
     case EventLog.EventLogged(id) ⇒
@@ -177,6 +177,6 @@ private[almhirt] class EventLogWriterImpl(
   }
 
   override def postStop() {
-    almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(self))
+    deregisterCircuitControl()
   }
 } 

@@ -14,7 +14,7 @@ object BuildSettings {
   val akkaStreamsVersion = "0.7"
   val scalatestVersion = "2.2.+"
   val sprayVersion = "1.3.+"
-  val reactiveMongoVersion = "0.10.5.akka23-SNAPSHOT"
+  val reactiveMongoVersion = "0.10.5.0.akka23"
    
   val buildSettings = Defaults.defaultSettings ++ releaseSettings ++ Seq (
 	organization := buildOrganization,
@@ -66,7 +66,7 @@ object Dependencies {
 	lazy val spray_testkit =  "io.spray" %% "spray-testkit" % BuildSettings.sprayVersion % "test"
 	lazy val spray_client = "io.spray" %% "spray-client" % BuildSettings.sprayVersion % "provided"
 	lazy val spray_httpx = "io.spray" %% "spray-httpx" % BuildSettings.sprayVersion % "provided"
-	
+
   lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.+" % "provided"
 	lazy val typesafe_config = "com.typesafe" % "config" % "1.2.+" % "provided"
 

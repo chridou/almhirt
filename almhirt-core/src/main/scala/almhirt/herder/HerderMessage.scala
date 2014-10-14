@@ -10,8 +10,8 @@ object HerderMessage {
   
   sealed trait CircuitMessage
   
-  final case class RegisterCircuitControl(owner: ActorRef, circuitBreaker: CircuitControl) extends CircuitMessage with HerderInputMessage
-  final case class DeregisterCircuitControl(owner: ActorRef) extends CircuitMessage with HerderInputMessage
+  final case class RegisterCircuitControl(name: String, circuitBreaker: CircuitControl) extends CircuitMessage with HerderInputMessage
+  final case class DeregisterCircuitControl(name: String) extends CircuitMessage with HerderInputMessage
   
   final case object ReportCircuitStates extends CircuitMessage with HerderInputMessage
   final case class CircuitStates(states: Map[String, CircuitState]) extends CircuitMessage
@@ -23,7 +23,7 @@ object HerderMessage {
   
   
   sealed trait EventsMessage
-  final case class MissedEvent(event: Event, severity: almhirt.problem.Severity, problem: Problem, timestamp: LocalDateTime) extends EventsMessage with HerderInputMessage
+  final case class MissedEvent(name: String, event: Event, severity: almhirt.problem.Severity, problem: Problem, timestamp: LocalDateTime) extends EventsMessage with HerderInputMessage
  
   case object ReportMissedEvents extends EventsMessage with HerderInputMessage
   final case class MissedEvents(missed: Map[String, (almhirt.problem.Severity, Int)]) extends EventsMessage

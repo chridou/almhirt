@@ -70,6 +70,22 @@ package object configuration {
   implicit val ConfigConfigExtractorInst = new ConfigConfigExtractor {}
   implicit val ConfigJavaPropertiesExtractorInst = new ConfigJavaPropertiesExtractor {}
 
+  
+  implicit object SeverityConfigExtractor extends ConfigExtractor[almhirt.problem.Severity] {
+    def getValue(config: Config, path: String): AlmValidation[almhirt.problem.Severity] =
+      for {
+        str <- config.v[String](path)
+        severity <- almhirt.problem.Severity.fromString(str)
+      } yield severity
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[almhirt.problem.Severity]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
+      }
+
+  }
+  
   implicit object ExecutionContextConfigExtractor extends ConfigExtractor[ExecutionContextSelector] {
     def getValue(config: Config, path: String): AlmValidation[ExecutionContextSelector] =
       for {
@@ -82,7 +98,6 @@ package object configuration {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
         case None ⇒ scalaz.Success(None)
       }
-
   }
 
   implicit object RetrySettingsConfigExtractor extends ConfigExtractor[RetrySettings] {

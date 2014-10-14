@@ -60,7 +60,7 @@ private[almhirt] class CommandEndpointImpl(
   override val circuitControlSettings: CircuitControlSettings,
   override val circuitStateReportingInterval: Option[FiniteDuration],
   override val circuitControlCallbackExecutorSelector: ExtendedExecutionContextSelector,
-  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with HasAlmhirtContext with SyncFusedActor with ActorLogging with ImplicitFlowMaterializer {
+  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with SyncFusedActor with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
 
   override def circuitControlLoggingAdapter = Some(this.log)
@@ -76,7 +76,7 @@ private[almhirt] class CommandEndpointImpl(
     case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
       log.info("Found command status tracker.")
       if (autoConnect) self ! AutoConnect
-      this.registerCircuitControl()
+      registerCircuitControl()
       context.becomeFused(receiveRunningWithClosedCircuit(commandStatusTracker))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
@@ -169,7 +169,7 @@ private[almhirt] class CommandEndpointImpl(
   }
 
   override def postStop() {
-    this.deregisterCircuitControl()
+    deregisterCircuitControl()
   }
 
 }

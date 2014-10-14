@@ -67,7 +67,7 @@ private[almhirt] object InternalFusedActorMessage {
   final case class OnWarning(listener: (Int, Int) => Unit)
 }
 
-trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
+trait SyncFusedActor { me: AlmActor =>
   import java.util.concurrent.CopyOnWriteArrayList
   import AlmCircuitBreaker._
 
@@ -87,10 +87,7 @@ trait SyncFusedActor { me: Actor with HasAlmhirtContext =>
     currentState.invoke(surrogate, body)
 
   def registerCircuitControl(): Unit =
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! HerderMessage.RegisterCircuitControl(self, FusedActor.wrap(self)(10.seconds)(almhirtContext.futuresContext))
-
-  def deregisterCircuitControl(): Unit =
-    context.actorSelection(almhirtContext.localActorPaths.herder) ! HerderMessage.DeregisterCircuitControl(self)
+    registerCircuitControl(FusedActor.wrap(self)(10.seconds)(almhirtContext.futuresContext))
 
   def state: CircuitState = currentState.publicState
 

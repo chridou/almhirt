@@ -95,7 +95,7 @@ private[almhirt] class MongoEventLogImpl(
   deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
   writeWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
-  readOnlySettings: Option[RetrySettings])(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
+  readOnlySettings: Option[RetrySettings])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
   import almhirt.herder.HerderMessage
@@ -158,7 +158,7 @@ private[almhirt] class MongoEventLogImpl(
       fail ⇒ {
         val msg = s"Could not log event with id ${event.eventId.value}:\n$fail"
 
-        almhirtContext.tellHerder(HerderMessage.MissedEvent(event, MajorSeverity, fail, almhirtContext.getUtcTimestamp))
+        reportMissedEvent(event, MajorSeverity, fail)
 
         respondTo match {
           case Some(r) =>
@@ -261,7 +261,7 @@ private[almhirt] class MongoEventLogImpl(
         })
     case Initialized ⇒
       log.info("Initialized")
-      almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(self, circuitBreaker))
+      registerCircuitControl(circuitBreaker)
       context.become(receiveEventLogMsg(false))
 
     case InitializeFailed(prob) ⇒
@@ -270,7 +270,7 @@ private[almhirt] class MongoEventLogImpl(
 
     case LogEvent(event, acknowledge) ⇒
       log.warning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
-      almhirtContext.tellHerder(HerderMessage.MissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."), almhirtContext.getUtcTimestamp))
+      reportMissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."))
 
     case m: EventLogMessage ⇒
       log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
@@ -300,7 +300,7 @@ private[almhirt] class MongoEventLogImpl(
 
     case Initialized ⇒
       log.info("Initialized")
-      almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(self, circuitBreaker))
+      registerCircuitControl(circuitBreaker)
       context.become(receiveEventLogMsg(true))
 
     case InitializeFailed(prob) ⇒
@@ -309,7 +309,7 @@ private[almhirt] class MongoEventLogImpl(
 
     case LogEvent(event, acknowledge) ⇒
       log.warning(s"""Received event ${event.getClass().getSimpleName()} while uninitialized.""")
-      almhirtContext.tellHerder(HerderMessage.MissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."), almhirtContext.getUtcTimestamp))
+      reportMissedEvent(event, MajorSeverity, ServiceNotAvailableProblem("Uninitialized."))
       
     case m: EventLogMessage ⇒
       log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
@@ -366,7 +366,7 @@ private[almhirt] class MongoEventLogImpl(
   }
 
   override def postStop() {
-    almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(self))
+    deregisterCircuitControl()
   }
 
 }

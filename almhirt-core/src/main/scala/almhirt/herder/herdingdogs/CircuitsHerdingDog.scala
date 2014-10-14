@@ -16,27 +16,27 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
 
   implicit val executor = almhirtContext.futuresContext
 
-  var circuitControls: Map[ActorRef, CircuitControl] = Map.empty
+  var circuitControls: Map[String, CircuitControl] = Map.empty
 
   def receiveRunning: Receive = {
     case HerderMessage.RegisterCircuitControl(owner, cb) =>
-      log.info(s"""Circuit control registered for "${owner.path.name}".""")
+      log.info(s"""Circuit control registered for "${owner}".""")
       circuitControls = circuitControls + (owner -> cb)
 
     case HerderMessage.DeregisterCircuitControl(owner) =>
-      log.info(s"""Circuit control deregistered for "${owner.path.name}".""")
+      log.info(s"""Circuit control deregistered for "${owner}".""")
       circuitControls = circuitControls - owner
 
     case HerderMessage.ReportCircuitStates =>
       val pinnedSender = sender()
-      val futs = circuitControls.map({ case (owner, cb) => cb.state.map(st => (owner.path.name, st)) })
+      val futs = circuitControls.map({ case (owner, cb) => cb.state.map(st => (owner, st)) })
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
         fail => log.error(s"Could not determine circuit states:\n$fail"),
         states => pinnedSender ! HerderMessage.CircuitStates(states.toMap))
 
     case HerderMessage.AttemptCloseCircuit(name) =>
-      circuitControls.find(_._1.path.name == name) match {
+      circuitControls.find(_._1 == name) match {
         case Some(cc) =>
           cc._2.attemptClose
           log.info(s"""Sent close request to circuit control "$name".""")
@@ -44,7 +44,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
       }
 
     case HerderMessage.RemoveFuseFromCircuit(name) =>
-      circuitControls.find(_._1.path.name == name) match {
+      circuitControls.find(_._1 == name) match {
         case Some(cc) =>
           cc._2.removeFuse
           log.info(s"""Sent remove fuse request to circuit control "$name".""")
@@ -52,7 +52,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
       }
 
     case HerderMessage.DestroyFuseInCircuit(name) =>
-      circuitControls.find(_._1.path.name == name) match {
+      circuitControls.find(_._1 == name) match {
         case Some(cc) =>
           cc._2.destroyFuse
           log.info(s"""Sent destroy fuse request to circuit control "$name".""")

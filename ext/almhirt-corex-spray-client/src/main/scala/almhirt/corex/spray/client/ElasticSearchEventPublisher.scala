@@ -26,8 +26,9 @@ object ElasticSearchEventPublisher {
     ttl: FiniteDuration,
     autoConnectTo: Option[Publisher[Event]],
     circuitControlSettings: CircuitControlSettings,
-    circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
-    Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl, autoConnectTo, circuitControlSettings, circuitStateReportingInterval))
+    circuitStateReportingInterval: Option[FiniteDuration],
+    missedEventSeverity: almhirt.problem.Severity)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], almhirtContext: AlmhirtContext): Props =
+    Props(new ElasticSearchEventPublisherImpl(host, index, fixedTypeName, ttl, autoConnectTo, circuitControlSettings, circuitStateReportingInterval, missedEventSeverity))
 
   def props(elConfigName: Option[String] = None)(implicit ctx: AlmhirtContext, serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem]): AlmValidation[Props] = {
     val path = "almhirt.components.misc.event-sink-hub.event-publishers.http-event-publishers.elastic-search-event-publisher" + elConfigName.map("." + _).getOrElse("")
@@ -41,9 +42,10 @@ object ElasticSearchEventPublisher {
           index <- section.v[String]("index")
           fixedTypeName <- section.magicOption[String]("index")
           ttl <- section.v[FiniteDuration]("ttl")
+          missedEventSeverity <- section.v[almhirt.problem.Severity]("missed-event-severity")
           circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
           circuitStateReportingInterval <- section.magicOption[FiniteDuration]("circuit-state-reporting-interval")
-        } yield propsRaw(host, index, fixedTypeName, ttl, if (autoConnect) Some(ctx.eventStream) else None, circuitControlSettings, circuitStateReportingInterval)
+        } yield propsRaw(host, index, fixedTypeName, ttl, if (autoConnect) Some(ctx.eventStream) else None, circuitControlSettings, circuitStateReportingInterval, missedEventSeverity)
       } else {
         ActorDevNullSubscriberWithAutoSubscribe.props[Event](1, if (autoConnect) Some(ctx.eventStream) else None).success
       }
@@ -63,13 +65,14 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
   ttl: FiniteDuration,
   autoConnectTo: Option[Publisher[Event]],
   circuitControlSettings: CircuitControlSettings,
-  circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts, override val almhirtContext: AlmhirtContext)
+  circuitStateReportingInterval: Option[FiniteDuration],
+  missedEventSeverity: almhirt.problem.Severity)(implicit serializer: HttpSerializer[Event], problemDeserializer: HttpDeserializer[Problem], executionContexts: HasExecutionContexts, override val almhirtContext: AlmhirtContext)
   extends ActorConsumerHttpPublisher[Event](autoConnectTo, Set(StatusCodes.Accepted, StatusCodes.Created), MediaTypes.`application/json`, HttpMethods.PUT, circuitControlSettings, circuitStateReportingInterval)(serializer, problemDeserializer, implicitly[ClassTag[Event]])
   with HasAlmhirtContext {
   val uriprefix = s"""http://$host/$index"""
 
   override def onFailure(item: Event, problem: Problem): Unit =
-    almhirtContext.tellHerder(almhirt.herder.HerderMessage.MissedEvent(item, MinorSeverity, problem, almhirtContext.getUtcTimestamp))
+    reportMissedEvent(item, missedEventSeverity, problem)
 
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext

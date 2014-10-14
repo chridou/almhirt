@@ -103,7 +103,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   writeWarnThreshold: FiniteDuration,
   readWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
-  readOnlySettings: Option[RetrySettings])(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext with almhirt.akkax.AlmActorSupport {
+  readOnlySettings: Option[RetrySettings])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging with almhirt.akkax.AlmActorSupport {
 
   import almhirt.eventlog.AggregateRootEventLog._
   import almhirt.herder.HerderMessage
@@ -174,7 +174,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
     circuitBreaker.fused(storeEvent(event)) onComplete (
       fail ⇒ {
         log.error(s"Could not commit aggregate root event:\n$fail")
-        almhirtContext.tellHerder(HerderMessage.MissedEvent(event, CriticalSeverity, fail, almhirtContext.getUtcTimestamp))
+        reportMissedEvent(event, CriticalSeverity, fail)
         respondTo ! AggregateRootEventNotCommitted(event.eventId, fail)
       },
       start ⇒ {
@@ -262,7 +262,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case Initialized ⇒
       log.info("*** Initialized ***")
-      almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(self, circuitBreaker))
+      registerCircuitControl(circuitBreaker)
       context.become(receiveAggregateRootEventLogMsg(false))
 
     case InitializeFailed(prob) ⇒
@@ -275,7 +275,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       m match {
         case CommitAggregateRootEvent(event) ⇒
           sender ! AggregateRootEventNotCommitted(event.eventId, problem)
-          almhirtContext.tellHerder(HerderMessage.MissedEvent(event, CriticalSeverity, problem, almhirtContext.getUtcTimestamp))
+          reportMissedEvent(event, CriticalSeverity, problem)
         case m: GetAllAggregateRootEvents ⇒
           sender ! GetAggregateRootEventsFailed(problem)
         case GetAggregateRootEvent(eventId) ⇒
@@ -309,7 +309,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case Initialized ⇒
       log.info("Initialized")
-      almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(self, circuitBreaker))
+      registerCircuitControl(circuitBreaker)
       context.become(receiveAggregateRootEventLogMsg(true))
 
     case InitializeFailed(prob) ⇒
@@ -322,7 +322,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       m match {
         case CommitAggregateRootEvent(event) ⇒
           sender ! AggregateRootEventNotCommitted(event.eventId, problem)
-          almhirtContext.tellHerder(HerderMessage.MissedEvent(event, CriticalSeverity, problem, almhirtContext.getUtcTimestamp))
+          reportMissedEvent(event, CriticalSeverity, problem)
         case m: GetAllAggregateRootEvents ⇒
           sender ! GetAggregateRootEventsFailed(problem)
         case GetAggregateRootEvent(eventId) ⇒
@@ -375,7 +375,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   }
 
   override def postStop() {
-    almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(self))
+    deregisterCircuitControl()
   }
 
 }
