@@ -4,9 +4,11 @@ import org.joda.time.LocalDateTime
 import akka.actor.ActorRef
 import almhirt.common._
 import almhirt.akkax.{ CircuitControl, CircuitState }
+import almhirt.problem.ProblemCause
 
 object HerderMessage {
   sealed trait HerderInputMessage
+  
   
   sealed trait CircuitMessage
   
@@ -23,8 +25,18 @@ object HerderMessage {
   
   
   sealed trait EventsMessage
+  
   final case class MissedEvent(name: String, event: Event, severity: almhirt.problem.Severity, problem: Problem, timestamp: LocalDateTime) extends EventsMessage with HerderInputMessage
  
   case object ReportMissedEvents extends EventsMessage with HerderInputMessage
   final case class MissedEvents(missed: Seq[(String, almhirt.problem.Severity, Int)]) extends EventsMessage
+  
+  
+  sealed trait FailuresMessage
+  
+  final case class FailureOccured(name: String, failure: ProblemCause, severity: almhirt.problem.Severity, timestamp: LocalDateTime) extends FailuresMessage with HerderInputMessage
+
+  case object ReportFailures extends FailuresMessage with HerderInputMessage
+  final case class ReportedFailures(entries: Seq[(String, FailuresEntry)]) extends EventsMessage
+
 }

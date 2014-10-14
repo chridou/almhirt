@@ -53,6 +53,23 @@ object ProblemCause {
         case CauseIsThrowable(HasAThrowable(exn)) => almhirt.common.ExceptionCaughtProblem(exn)
         case CauseIsThrowable(d: HasAThrowableDescribed) => almhirt.common.UnspecifiedProblem(s"There was a description of an exception:\n$d")
       }
+
+    def unwrap(recursively: Boolean = false): ProblemCause =
+      self match {
+        case CauseIsProblem(problemtypes.ExceptionCaughtProblem(ContainsThrowable(throwable))) ⇒
+          val r = CauseIsThrowable(HasAThrowable(throwable))
+          if (recursively)
+            r.unwrap(recursively)
+          else
+            r
+        case CauseIsThrowable(HasAThrowable(almhirt.common.EscalatedProblemException(p))) ⇒
+          val r = CauseIsProblem(p)
+          if (recursively)
+            r.unwrap(recursively)
+          else
+            r
+        case x => x
+      }
   }
 }
 
