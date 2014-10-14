@@ -241,7 +241,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     }
   }
 
-  def createMissedEventsReport(missedEvents: Map[String, (almhirt.problem.Severity, Int)]) = {
+  def createMissedEventsReport(missedEvents: Seq[(String, almhirt.problem.Severity, Int)]) = {
     <html>
       <head>
         <title>Missed Events</title>
@@ -253,7 +253,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </html>
   }
 
-  def createMissedEventsReportContent(missedEvents: Map[String, (almhirt.problem.Severity, Int)]) = {
+  def createMissedEventsReportContent(missedEvents: Seq[(String, almhirt.problem.Severity, Int)]) = {
     def createSeverityItem(severity: almhirt.problem.Severity) = {
       severity match {
         case MinorSeverity => <td style="background-color:#F6EE09">Minor</td>
@@ -269,7 +269,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       </tr>
       {
         missedEvents.map {
-          case (name, (severity, count)) =>
+          case (name, severity, count) =>
             <tr>
               <td>{ name }</td>
               { createSeverityItem(severity) }
@@ -280,7 +280,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </table>
   }
 
-  def createStatusReport(circuitsState: Map[String, CircuitState], missedEvents: Map[String, (almhirt.problem.Severity, Int)]) = {
+  def createStatusReport(circuitsState: Map[String, CircuitState], missedEvents: Seq[(String, almhirt.problem.Severity, Int)]) = {
     <html>
       <head>
         <title>Status Report</title>

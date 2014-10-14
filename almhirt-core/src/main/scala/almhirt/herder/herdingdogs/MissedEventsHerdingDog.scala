@@ -15,6 +15,19 @@ private[almhirt] class MissedEventsHerdingDog()(implicit override val almhirtCon
 
   implicit val executor = almhirtContext.futuresContext
 
+  implicit object tOrdering extends scala.math.Ordering[(String, almhirt.problem.Severity, Int)] {
+    def compare(a: (String, almhirt.problem.Severity, Int), b: (String, almhirt.problem.Severity, Int)): Int =
+      if ((a._2 compare b._2) == 0) {
+        if ((a._3 compare b._3) == 0) {
+          a._1 compare b._1
+        } else {
+          a._3 compare b._3
+        }
+      } else {
+        a._2 compare b._2
+      }
+  }
+
   var missedEvents: Map[String, (almhirt.problem.Severity, Int)] = Map.empty
 
   def receiveRunning: Receive = {
@@ -33,7 +46,8 @@ private[almhirt] class MissedEventsHerdingDog()(implicit override val almhirtCon
       }
 
     case HerderMessage.ReportMissedEvents =>
-      sender() ! HerderMessage.MissedEvents(missedEvents.map { case (owner, item) => (owner, item) })
+      val missed = missedEvents.map { case (owner, (severity, count)) => (owner, severity, count) }.toSeq.sorted
+      sender() ! HerderMessage.MissedEvents(missed)
   }
 
   override def receive: Receive = receiveRunning

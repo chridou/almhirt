@@ -26,5 +26,5 @@ object HerderMessage {
   final case class MissedEvent(name: String, event: Event, severity: almhirt.problem.Severity, problem: Problem, timestamp: LocalDateTime) extends EventsMessage with HerderInputMessage
  
   case object ReportMissedEvents extends EventsMessage with HerderInputMessage
-  final case class MissedEvents(missed: Map[String, (almhirt.problem.Severity, Int)]) extends EventsMessage
+  final case class MissedEvents(missed: Seq[(String, almhirt.problem.Severity, Int)]) extends EventsMessage
 }
