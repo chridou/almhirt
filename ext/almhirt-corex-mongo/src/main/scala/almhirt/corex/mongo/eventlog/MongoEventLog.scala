@@ -28,7 +28,8 @@ object MongoEventLog {
     deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
     writeWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
-    readOnlySettings: Option[RetrySettings])(implicit ctx: AlmhirtContext): Props =
+    retrySettings: RetrySettings,
+    readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoEventLogImpl(
       db,
       collectionName,
@@ -36,7 +37,8 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       circuitControlSettings,
-      readOnlySettings))
+      retrySettings,
+      readOnly))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
@@ -51,12 +53,8 @@ object MongoEventLog {
       collectionName <- section.v[String]("collection-name")
       writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
       circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
+      retrySettings <- section.v[RetrySettings]("retry-settings")
       readOnly <- section.v[Boolean]("read-only")
-      readOnlySettings <- if (readOnly) {
-        section.v[RetrySettings]("read-only-collection-lookup-retries").map(Some(_))
-      } else {
-        None.success
-      }
     } yield propsRaw(
       db,
       collectionName,
@@ -64,7 +62,8 @@ object MongoEventLog {
       deserializeEvent,
       writeWarnThreshold,
       circuitControlSettings,
-      readOnlySettings)
+      retrySettings,
+      readOnly)
   }
 
   def propsWithConnection(
@@ -95,7 +94,8 @@ private[almhirt] class MongoEventLogImpl(
   deserializeEvent: BSONDocument ⇒ AlmValidation[Event],
   writeWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
-  readOnlySettings: Option[RetrySettings])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging {
+  retrySettings: RetrySettings,
+  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
   import almhirt.herder.HerderMessage
@@ -250,15 +250,29 @@ private[almhirt] class MongoEventLogImpl(
   def uninitializedReadWrite: Receive = {
     case Initialize ⇒
       log.info("Initializing(read/write)")
-      val collection = db(collectionName)
-      (for {
-        idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
-      } yield (idxRes)).toAlmFuture.onComplete(
-        problem ⇒ self ! InitializeFailed(problem),
-        idxRes => {
+
+      val toTry = () => {
+        val collection = db(collectionName)
+        (for {
+          idxRes <- collection.indexesManager.ensure(MIndex(List("timestamp" -> IndexType.Ascending), name = Some("idx_timestamp"), unique = false))
+        } yield (idxRes)).toAlmFuture
+      }
+
+      context.retryWithLogging[Boolean](
+        retryContext = s"Initialize collection $collectionName",
+        toTry = toTry,
+        onSuccess = idxRes => {
           log.info(s"""Index on "timestamp" created: $idxRes""")
           self ! Initialized
-        })
+        },
+        onFinalFailure = (t, n, p) => {
+          val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
+          self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
+        },
+        log = this.log,
+        settings = retrySettings,
+        actorName = Some("initializes-collection"))
+
     case Initialized ⇒
       log.info("Initialized")
       registerCircuitControl(circuitBreaker)
@@ -275,12 +289,12 @@ private[almhirt] class MongoEventLogImpl(
       log.warning(s"""Received event log message ${m.getClass().getSimpleName()} while uninitialized.""")
   }
 
-  def uninitializedReadOnly(collectionLookupRetries: RetrySettings): Receive = {
+  def uninitializedReadOnly: Receive = {
     case Initialize ⇒
       log.info("Initializing(read-only)")
       context.retryWithLogging[Unit](
-        s"Find collection $collectionName",
-        () => db.collectionNames.toAlmFuture.foldV(
+        retryContext = s"Find collection $collectionName",
+        toTry = () => db.collectionNames.toAlmFuture.foldV(
           fail => fail.failure,
           collectionNames => {
             if (collectionNames.contains(collectionName))
@@ -288,14 +302,14 @@ private[almhirt] class MongoEventLogImpl(
             else
               MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
           }),
-        _ => { self ! Initialized },
-        (t, n, p) => {
+        onSuccess = _ => { self ! Initialized },
+        onFinalFailure = (t, n, p) => {
           val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
-          self ! InitializeFailed(UnspecifiedProblem(s""))
+          self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
-        this.log,
-        collectionLookupRetries,
-        Some("looks-for-collection"))
+        log = this.log,
+        settings = retrySettings,
+        actorName = Some("looks-for-collection"))
 
     case Initialized ⇒
       log.info("Initialized")
@@ -354,12 +368,10 @@ private[almhirt] class MongoEventLogImpl(
   }
 
   override def receive =
-    readOnlySettings match {
-      case Some(roSettings) =>
-        uninitializedReadOnly(roSettings)
-      case None =>
-        uninitializedReadWrite
-    }
+    if (readOnly)
+      uninitializedReadOnly
+    else
+      uninitializedReadWrite
 
   override def preStart() {
     super.preStart()

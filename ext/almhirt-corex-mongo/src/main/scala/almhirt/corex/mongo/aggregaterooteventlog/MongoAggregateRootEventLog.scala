@@ -31,7 +31,8 @@ object MongoAggregateRootEventLog {
     writeWarnThreshold: FiniteDuration,
     readWarnThreshold: FiniteDuration,
     circuitControlSettings: CircuitControlSettings,
-    readOnlySettings: Option[RetrySettings])(implicit ctx: AlmhirtContext): Props =
+    retrySettings: RetrySettings,
+    readOnly: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new MongoAggregateRootEventLogImpl(
       db,
       collectionName,
@@ -40,7 +41,8 @@ object MongoAggregateRootEventLog {
       writeWarnThreshold,
       readWarnThreshold,
       circuitControlSettings,
-      readOnlySettings))
+      retrySettings,
+      readOnly))
 
   def propsWithDb(
     db: DB with DBMetaCommands,
@@ -55,13 +57,9 @@ object MongoAggregateRootEventLog {
       collectionName <- section.v[String]("collection-name")
       writeWarnThreshold <- section.v[FiniteDuration]("write-warn-threshold")
       readWarnThreshold <- section.v[FiniteDuration]("read-warn-threshold")
-      readOnly <- section.v[Boolean]("read-only")
       circuitControlSettings <- section.v[CircuitControlSettings]("circuit-control")
-      readOnlySettings <- if (readOnly) {
-        section.v[RetrySettings]("read-only-collection-lookup-retries").map(Some(_))
-      } else {
-        None.success
-      }
+      retrySettings <- section.v[RetrySettings]("retry-settings")
+      readOnly <- section.v[Boolean]("read-only")
     } yield propsRaw(
       db,
       collectionName,
@@ -70,7 +68,8 @@ object MongoAggregateRootEventLog {
       writeWarnThreshold,
       readWarnThreshold,
       circuitControlSettings,
-      readOnlySettings)
+      retrySettings,
+      readOnly)
   }
 
   def propsWithConnection(
@@ -103,7 +102,8 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   writeWarnThreshold: FiniteDuration,
   readWarnThreshold: FiniteDuration,
   circuitControlSettings: CircuitControlSettings,
-  readOnlySettings: Option[RetrySettings])(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging with almhirt.akkax.AlmActorSupport {
+  retrySettings: RetrySettings,
+  readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging with almhirt.akkax.AlmActorSupport {
 
   import almhirt.eventlog.AggregateRootEventLog._
   import almhirt.herder.HerderMessage
@@ -242,7 +242,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   def uninitializedReadWrite: Receive = {
     case Initialize ⇒
       log.info("Initializing(read/write)")
-      (for {
+      val toTry = () => (for {
         collectinNames <- db.collectionNames
         createonRes <- if (collectinNames.contains(collectionName)) {
           log.info(s"""Collection "$collectionName" already exists.""")
@@ -252,18 +252,27 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
           val collection = db(collectionName)
           collection.indexesManager.ensure(MIndex(List("aggid" -> IndexType.Ascending, "version" -> IndexType.Ascending), name = Some("idx_aggid_version"), unique = false))
         }
-      } yield createonRes).toAlmFuture.onComplete(
-        problem ⇒
-          self ! InitializeFailed(problem),
-        createonRes ⇒ {
-          log.info(s"""Index on "aggid, version" created: $createonRes""")
+      } yield createonRes).toAlmFuture
+
+      context.retryWithLogging[Boolean](
+        retryContext = s"Initialize collection $collectionName",
+        toTry = toTry,
+        onSuccess = createRes => {
+          log.info(s"""Index on "aggid, version" created: $createRes""")
           self ! Initialized
-        })
+        },
+        onFinalFailure = (t, n, p) => {
+          val prob = MandatoryDataProblem(s"Initialize collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
+          self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
+        },
+        log = this.log,
+        settings = retrySettings,
+        actorName = Some("initializes-collection"))
 
     case Initialized ⇒
-      log.info("*** Initialized ***")
+      log.info("Initialized")
       registerCircuitControl(circuitBreaker)
-      context.become(receiveAggregateRootEventLogMsg(false))
+      context.become(receiveAggregateRootEventLogMsg)
 
     case InitializeFailed(prob) ⇒
       log.error(s"Initialize failed:\n$prob")
@@ -286,12 +295,12 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       }
   }
 
-  def uninitializedReadOnly(collectionLookupRetries: RetrySettings): Receive = {
+  def uninitializedReadOnly: Receive = {
     case Initialize ⇒
       log.info("Initializing(read-only)")
       context.retryWithLogging[Unit](
-        s"Find collection $collectionName",
-        () => db.collectionNames.toAlmFuture.foldV(
+        retryContext = s"Find collection $collectionName",
+        toTry = () => db.collectionNames.toAlmFuture.foldV(
           fail => fail.failure,
           collectionNames => {
             if (collectionNames.contains(collectionName))
@@ -299,19 +308,19 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
             else
               MandatoryDataProblem(s"""Collection "$collectionName" is not among [${collectionNames.mkString(", ")}] in database "${db.name}".""").failure
           }),
-        _ => { self ! Initialized },
-        (t, n, p) => {
+        onSuccess = _ => { self ! Initialized },
+        onFinalFailure = (t, n, p) => {
           val prob = MandatoryDataProblem(s"Look up collection '$collectionName' finally failed after $n attempts and ${t.defaultUnitString}.", cause = Some(p))
-          self ! InitializeFailed(UnspecifiedProblem(s""))
+          self ! InitializeFailed(PersistenceProblem("Failed to initialize", cause = Some(prob)))
         },
-        this.log,
-        collectionLookupRetries,
-        Some("looks-for-collection"))
+        log = this.log,
+        settings = retrySettings,
+        actorName = Some("looks-for-collection"))
 
     case Initialized ⇒
       log.info("Initialized")
       registerCircuitControl(circuitBreaker)
-      context.become(receiveAggregateRootEventLogMsg(true))
+      context.become(receiveAggregateRootEventLogMsg)
 
     case InitializeFailed(prob) ⇒
       log.error(s"Initialize failed:\n$prob")
@@ -333,7 +342,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       }
   }
 
-  def receiveAggregateRootEventLogMsg(readOnly: Boolean): Receive = {
+  def receiveAggregateRootEventLogMsg: Receive = {
     case CommitAggregateRootEvent(event) ⇒
       if (readOnly)
         sender() ! AggregateRootEventNotCommitted(event.eventId, IllegalOperationProblem("Read only mode is enabled."))
@@ -363,12 +372,10 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   }
 
   override def receive =
-    readOnlySettings match {
-      case Some(roSettings) =>
-        uninitializedReadOnly(roSettings)
-      case None =>
-        uninitializedReadWrite
-    }
+    if (readOnly)
+      uninitializedReadOnly
+    else
+      uninitializedReadWrite
 
   override def preStart() {
     super.preStart()
