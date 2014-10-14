@@ -25,8 +25,7 @@ sealed trait Severity extends Ordered[Severity] {
       case (_, Critical) ⇒ Critical
       case (Major, _) ⇒ Major
       case (_, Major) ⇒ Major
-      case (Minor, _) ⇒ Minor
-      case (_, Minor) ⇒ Minor
+      case _ ⇒ Minor
     }
   /** Used for comparison */
   def level: Int
@@ -34,15 +33,15 @@ sealed trait Severity extends Ordered[Severity] {
   def parseableString: String
 }
 final case object Critical extends Severity {
-  val level = 4
+  val level = 3
   val parseableString = "critical"
 }
 final case object Major extends Severity {
-  val level = 3
+  val level = 2
   val parseableString = "major"
 }
 final case object Minor extends Severity {
-  val level = 2
+  val level = 1
   val parseableString = "minor"
 }
 
