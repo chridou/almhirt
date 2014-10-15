@@ -37,6 +37,9 @@ object HerderMessage {
   final case class FailureOccured(name: String, failure: ProblemCause, severity: almhirt.problem.Severity, timestamp: LocalDateTime) extends FailuresMessage with HerderInputMessage
 
   case object ReportFailures extends FailuresMessage with HerderInputMessage
-  final case class ReportedFailures(entries: Seq[(String, FailuresEntry)]) extends EventsMessage
+  final case class ReportedFailures(entries: Seq[(String, FailuresEntry)]) extends FailuresMessage
+  
+  final case class ReportFailuresFor(name: String) extends FailuresMessage with HerderInputMessage
+  final case class ReportedFailuresFor(name: String, entry: Option[FailuresEntry]) extends FailuresMessage
 
 }

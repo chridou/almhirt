@@ -38,6 +38,13 @@ private[almhirt] class FailuresHerdingDog(ignoreCircuitProblems: Boolean, maxFai
         case None =>
           collectedFailures + (name -> FailuresEntry().add(p, severity, timestamp, maxFailuresForSummary))
       })
+      
+    case HerderMessage.ReportFailures =>
+      val entries = collectedFailures.toSeq
+      sender() ! HerderMessage.ReportedFailures(entries)
+
+    case HerderMessage.ReportFailuresFor(name) =>
+      sender() ! HerderMessage.ReportedFailuresFor(name, collectedFailures get name)
   }
 
   def prepareCause(cause: ProblemCause): Option[ProblemCause] = {

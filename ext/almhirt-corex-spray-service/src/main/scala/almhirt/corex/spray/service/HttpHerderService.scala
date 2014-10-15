@@ -1,12 +1,13 @@
 package almhirt.corex.spray.service
 
+import org.joda.time.LocalDateTime
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import akka.pattern._
 import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.akkax._
-import almhirt.herder.HerderMessage
+import almhirt.herder._
 import almhirt.context.AlmhirtContext
 import almhirt.httpx.spray.service.AlmHttpEndpoint
 import almhirt.context.HasAlmhirtContext
@@ -51,11 +52,13 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
         val futCircuits = (herder ? HerderMessage.ReportCircuitStates)(maxCallDuration).mapCastTo[HerderMessage.CircuitStates].map(_.states)
         val futMissedEvents = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
+        val futFailures = (herder ? HerderMessage.ReportFailures)(maxCallDuration).mapCastTo[HerderMessage.ReportedFailures].map(_.entries)
         val futHtml =
           for {
             circuitStates <- futCircuits
             missedEvents <- futMissedEvents
-          } yield createStatusReport(circuitStates, missedEvents)
+            failures <- futFailures
+          } yield createStatusReport(circuitStates, missedEvents, failures, "./herder")
         futHtml.fold(
           problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
           html => ctx.complete(StatusCodes.OK, html))
@@ -116,6 +119,29 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           fut.fold(
             problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
             missed => ctx.complete(StatusCodes.OK, createMissedEventsReport(missed)))
+        }
+      }
+    } ~ pathPrefix("failures") {
+      pathEnd {
+        get { ctx =>
+          val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+          val fut = (herder ? HerderMessage.ReportFailures)(maxCallDuration).mapCastTo[HerderMessage.ReportedFailures].map(_.entries)
+          fut.fold(
+            problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+            entries => ctx.complete(StatusCodes.OK, createFailuresReport(entries, "../herder")))
+        }
+      } ~ pathPrefix(Segment) { name =>
+        pathEnd {
+          get { ctx =>
+            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+            val fut = (herder ? HerderMessage.ReportFailuresFor(name))(maxCallDuration).mapCastTo[HerderMessage.ReportedFailuresFor]
+            fut.fold(
+              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+              res => res.entry match {
+                case Some(e) => ctx.complete(StatusCodes.OK, createComponentFailuresReport(res.name, e, "../../herder"))
+                case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name $name found."))
+              })
+          }
         }
       }
     }
@@ -230,7 +256,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         { state.map { case (name, state) => createRow(name, state, true) } }
       </table>
     } else {
-      <table border="0">
+      <table border="1">
         <tr>
           <th>Circuit Name</th>
           <th>Circuit State</th>
@@ -248,20 +274,13 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       </head>
       <body>
         { createMissedEventsReportContent(missedEvents) }
-        <br />
+        <br/>
         { almhirtContext.getUtcTimestamp.toString }
       </body>
     </html>
   }
 
   def createMissedEventsReportContent(missedEvents: Seq[(String, almhirt.problem.Severity, Int)]) = {
-    def createSeverityItem(severity: almhirt.problem.Severity) = {
-      severity match {
-        case almhirt.problem.Minor => <td style="background-color:#F6EE09">Minor</td>
-        case almhirt.problem.Major => <td style="background-color:#F6A309">Major</td>
-        case almhirt.problem.Critical => <td style="background-color:#F61D09">Critical</td>
-      }
-    }
     <table border="1">
       <tr>
         <th>Component Name</th>
@@ -281,7 +300,128 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </table>
   }
 
-  def createStatusReport(circuitsState: Map[String, CircuitState], missedEvents: Seq[(String, almhirt.problem.Severity, Int)]) = {
+  def createFailuresReport(entries: Seq[(String, FailuresEntry)], pathToHerder: String) = {
+    <html>
+      <head>
+        <title>Failures</title>
+      </head>
+      <body>
+        { createFailuresReportContent(entries, pathToHerder) }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
+      </body>
+    </html>
+  }
+
+  def createFailuresReportContent(entries: Seq[(String, FailuresEntry)], pathToHerder: String) = {
+    import almhirt.problem._
+
+    def createEntry(name: String, entry: FailuresEntry) = {
+      def createSummaryLine(item: (ProblemCause, Severity, LocalDateTime)) = {
+        <tr>
+          <td>{ item._3.toString }</td>
+          <td>{ createSeverityItem(item._2) }</td>
+          <td>{
+            item._1 match {
+              case CauseIsProblem(p) => p.problemType.toString()
+              case CauseIsThrowable(HasAThrowable(exn)) => exn.getClass().getName()
+              case CauseIsThrowable(HasAThrowableDescribed(className, _, _, _)) => className
+            }
+          }</td>
+        </tr>
+      }
+      <tr>
+        <td>{ name }</td>
+        <td>{ entry.totalFailures }</td>
+        <td>{ createSeverityItem(entry.maxSeverity) }</td>
+        <td>
+          <table border="0">
+            { entry.summaryQueue.map(line => createSummaryLine(line._1, line._2, line._3)) }
+          </table>
+        </td>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/$name", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("details"))
+          <td>{ anchor }</td>
+        }
+      </tr>
+    }
+
+    <table border="1">
+      <tr>
+        <th>Component Name</th>
+        <th>Total</th>
+        <th>Max Severity</th>
+        <th>Last failures</th>
+        <th></th>
+      </tr>
+      {
+        { entries.map { case (name, entry) => createEntry(name, entry) } }
+      }
+    </table>
+  }
+
+  def createComponentFailuresReport(name: String, entry: FailuresEntry, pathToHerder: String) = {
+    import almhirt.problem._
+    def createFailureDetail(failure: ProblemCause) = {
+      failure match {
+        case CauseIsProblem(p) => p.toString
+        case CauseIsThrowable(HasAThrowable(exn)) => exn.toString
+        case CauseIsThrowable(x: HasAThrowableDescribed) => x.toString
+      }
+    }
+    <html>
+      <head>
+        <title>Failures for { name }</title>
+      </head>
+      <body>
+        <span>Total failures: { entry.totalFailures }</span>
+        <br/>
+        <span>Max severity ever: { entry.maxSeverity.toString() }</span>
+        <br/>
+        <table>
+          <tr>
+            <th>Timestamp</th>
+            <th>Severity</th>
+            <th>Failure</th>
+          </tr>
+          {
+            entry.summaryQueue.map {
+              case (cause, severity, timestamp) =>
+                <tr>
+                  <td>{ timestamp.toString }</td>
+                  <td>{ createSeverityItem(severity) }</td>
+                  <td>{ createFailureDetail(cause) }</td>
+                </tr>
+            }
+          }
+        </table>
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/failures", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Failures Report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
+      </body>
+    </html>
+  }
+
+  def createStatusReport(
+    circuitsState: Map[String, CircuitState],
+    missedEvents: Seq[(String, almhirt.problem.Severity, Int)],
+    failures: Seq[(String, FailuresEntry)],
+    pathToHerder: String) = {
     <html>
       <head>
         <title>Status Report</title>
@@ -295,9 +435,20 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <h2>Missed Events</h2>
         { createMissedEventsReportContent(missedEvents) }
         <br/>
+        <h2>Failures</h2>
+        { createFailuresReportContent(failures, pathToHerder) }
+        <br/>
         { almhirtContext.getUtcTimestamp.toString }
       </body>
     </html>
+  }
+
+  def createSeverityItem(severity: almhirt.problem.Severity) = {
+    severity match {
+      case almhirt.problem.Minor => <td style="background-color:#F6EE09">Minor</td>
+      case almhirt.problem.Major => <td style="background-color:#F6A309">Major</td>
+      case almhirt.problem.Critical => <td style="background-color:#F61D09">Critical</td>
+    }
   }
 
 }
