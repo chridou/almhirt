@@ -36,16 +36,16 @@ private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Bool
         (for {
           entry <- collectedFailures.get(name)
           first <- entry.summaryQueue.headOption
-          ignore <- first match {
-            case CircuitOpenProblem(_) => Some(!ignoreConsecutiveCircuitProblems)
-            case _ => None
+          ignore <- first._1 match {
+            case CauseIsProblem(CircuitOpenProblem(_)) => Some(ignoreConsecutiveCircuitProblems)
+            case _ => Some(false)
           }
         } yield ignore).getOrElse(false)
       prepareCause(failure, ignore).foreach(p => collectedFailures get name match {
         case Some(entry) =>
-          collectedFailures + (name -> entry.add(p, severity, timestamp, maxFailuresForSummary))
+          collectedFailures += (name -> entry.add(p, severity, timestamp, maxFailuresForSummary))
         case None =>
-          collectedFailures + (name -> FailuresEntry().add(p, severity, timestamp, maxFailuresForSummary))
+          collectedFailures += (name -> FailuresEntry().add(p, severity, timestamp, maxFailuresForSummary))
       })
 
     case HerderMessage.ReportFailures =>
