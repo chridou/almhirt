@@ -400,7 +400,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               case (cause, severity, timestamp) =>
                 <tr>
                   <td>{ timestamp.toString }</td>
-                  <td>{ createSeverityItem(severity) }</td>
+                  { createSeverityItem(severity) }
                   <td>{ createFailureDetail(cause) }</td>
                 </tr>
             }
