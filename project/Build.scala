@@ -258,6 +258,22 @@ trait RiftWarpAutomaticBuild {
   )
 }
 
+trait SillyDemoAppBuild {
+  import Dependencies._
+  import Resolvers._
+  def sillyDemoAppProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += play2_iteratees,
+	  libraryDependencies += akka_streams,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += logback,
+	  libraryDependencies += akka_testkit,
+	  libraryDependencies += scalatest
+  )
+}
 object AlmHirtBuild extends Build 
 	with CommonBuild 
 	with HttpxSprayBuild
@@ -269,7 +285,8 @@ object AlmHirtBuild extends Build
 	with RiftWarpBuild 
 	with RiftWarpHttpSprayBuild
 	with RiftWarpMongoExtBuild 
-	with RiftWarpAutomaticBuild {
+	with RiftWarpAutomaticBuild
+	with SillyDemoAppBuild{
   lazy val root = Project(
     id = "almhirt",
 		settings = BuildSettings.buildSettings,
@@ -284,7 +301,8 @@ object AlmHirtBuild extends Build
 									corexSprayService, 
 									riftwarp, 
 									riftwarpHttpSpray, 
-									riftwarpMongoProject)	
+									riftwarpMongoProject,
+									sillyDemoApp)	
   lazy val common = commonProject(	name = "almhirt-common",
                        			baseFile = file("almhirt-common"))
 
@@ -317,6 +335,8 @@ object AlmHirtBuild extends Build
 	lazy val riftwarpHttpSpray = riftwarpHttpSprayProject(	name = "riftwarpx-http-spray",
                        			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)
 								
+	
+	lazy val sillyDemoApp = sillyDemoAppProject(	name = "silly-demo-app", baseFile = file("./example/silly-demo-app")) dependsOn(common, core, httpxSpray, corexSprayService)
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
