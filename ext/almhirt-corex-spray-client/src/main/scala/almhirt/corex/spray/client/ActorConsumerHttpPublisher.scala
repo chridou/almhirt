@@ -36,6 +36,7 @@ abstract class ActorConsumerHttpPublisher[T](
   val circuitBreaker = AlmCircuitBreaker(circuitControlSettings, almhirtContext.futuresContext, context.system.scheduler)
 
   def onFailure(item: T, problem: Problem): Unit = Unit
+  def filter(item: T): Boolean = true
 
   private case object Start
   def receiveCircuitClosed: Receive = {
@@ -50,12 +51,16 @@ abstract class ActorConsumerHttpPublisher[T](
           self ! Processed(None)
         },
         typedElem ⇒ {
-          circuitBreaker.fused(publishOverWire(typedElem)).onComplete(
-            problem ⇒ {
-              self ! Processed(Some(problem))
-               onFailure(typedElem, problem)
-            },
-            _ => self ! Processed(None))
+          if (filter(typedElem)) {
+            circuitBreaker.fused(publishOverWire(typedElem)).onComplete(
+              problem ⇒ {
+                self ! Processed(Some(problem))
+                onFailure(typedElem, problem)
+              },
+              _ => self ! Processed(None))
+          } else {
+            self ! Processed(None)
+          }
         })
 
     case Processed(currentProblem) ⇒

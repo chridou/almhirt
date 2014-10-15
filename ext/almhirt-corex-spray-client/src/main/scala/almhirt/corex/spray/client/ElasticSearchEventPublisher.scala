@@ -76,6 +76,8 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
     reportFailure(problem, missedEventSeverity)
   }
 
+  override def filter(item: Event) = !item.header.isLocal
+  
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext
 

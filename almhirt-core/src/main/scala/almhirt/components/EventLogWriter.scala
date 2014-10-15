@@ -110,19 +110,23 @@ private[almhirt] class EventLogWriterImpl(
       request(1)
 
     case ActorSubscriberMessage.OnNext(event: Event) ⇒
-      val start = Deadline.now
-      val f = (eventLog ? EventLog.LogEvent(event, true))(circuitControlSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
-      circuitBreaker.fused(f).onComplete({
-        case scalaz.Failure(problem) =>
-          self ! EventLog.EventNotLogged(event.eventId, problem)
-          reportMissedEvent(event, MajorSeverity, problem)
-          reportMajorFailure(problem)
-        case scalaz.Success(rsp) => self ! rsp
-      })
+      if (!event.header.noLoggingSuggested) {
+        val start = Deadline.now
+        val f = (eventLog ? EventLog.LogEvent(event, true))(circuitControlSettings.callTimeout).mapCastTo[EventLog.LogEventResponse]
+        circuitBreaker.fused(f).onComplete({
+          case scalaz.Failure(problem) =>
+            self ! EventLog.EventNotLogged(event.eventId, problem)
+            reportMissedEvent(event, MajorSeverity, problem)
+            reportMajorFailure(problem)
+          case scalaz.Success(rsp) => self ! rsp
+        })
 
-      f.onSuccess(rsp =>
-        if (start.lapExceeds(warningThreshold))
-          log.warning(s"Wrinting event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
+        f.onSuccess(rsp =>
+          if (start.lapExceeds(warningThreshold))
+            log.warning(s"Wrinting event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
+      } else {
+        request(1)
+      }
 
     case ActorSubscriberMessage.OnNext(unprocessable) ⇒
       log.warning(s"Received unprocessable element $unprocessable.")

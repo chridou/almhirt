@@ -10,16 +10,27 @@ case class EventHeader(id: EventId, timestamp: LocalDateTime, metadata: Map[Stri
 object EventHeader {
   def apply()(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader =
     EventHeader(EventId(ccuad.getUniqueString), ccuad.getUtcTimestamp, Map.empty)
-    
+
   def apply(id: EventId)(implicit ccuad: CanCreateUuidsAndDateTimes): EventHeader =
     EventHeader(id, ccuad.getUtcTimestamp, Map.empty)
-    
+
   def apply(id: EventId, timestamp: LocalDateTime): EventHeader =
     EventHeader(id, timestamp, Map.empty)
-    
+
   implicit class EventHeaderOps(self: EventHeader) {
     def withMetadata(metadata: Map[String, String]): EventHeader =
       self.copy(metadata = metadata)
+    def suggestDoNotLog =
+      self.copy(metadata = self.metadata + ("do-not-log" -> "true"))
+
+    def localEvent =
+      self.copy(metadata = self.metadata + ("local-event" -> "true"))
+
+    def noLoggingSuggested: Boolean =
+      self.metadata.get("do-not-log").map(_.toLowerCase == "true").getOrElse(false)
+
+    def isLocal: Boolean =
+      self.metadata.get("local-event").map(_.toLowerCase == "true").getOrElse(false)
   }
 }
 
