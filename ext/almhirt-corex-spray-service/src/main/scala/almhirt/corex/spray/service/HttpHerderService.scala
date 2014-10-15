@@ -358,6 +358,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <th>Total</th>
         <th>Max Severity</th>
         <th>Last failures</th>
+        <th>more</th>
       </tr>
       {
         { entries.map { case (name, entry) => createEntry(name, entry) } }
