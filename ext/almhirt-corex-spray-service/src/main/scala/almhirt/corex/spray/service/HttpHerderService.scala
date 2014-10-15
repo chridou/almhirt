@@ -338,7 +338,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       <tr>
         <td>{ name }</td>
         <td>{ entry.totalFailures }</td>
-        <td>{ createSeverityItem(entry.maxSeverity) }</td>
+        { createSeverityItem(entry.maxSeverity) }
         <td>
           <table border="0">
             { entry.summaryQueue.map(line => createSummaryLine(line._1, line._2, line._3)) }
