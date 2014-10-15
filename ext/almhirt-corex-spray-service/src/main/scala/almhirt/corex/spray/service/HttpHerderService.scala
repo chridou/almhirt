@@ -377,9 +377,10 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     }
     <html>
       <head>
-        <title>Failures for { name }</title>
+        <title>Reported failures for { name }</title>
       </head>
       <body>
+    	<h1>Reported failures for { name }</h1>
         <span>Total failures: { entry.totalFailures }</span>
         <br/>
         <span>Max severity ever: { entry.maxSeverity.toString() }</span>
@@ -435,7 +436,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <h2>Missed Events</h2>
         { createMissedEventsReportContent(missedEvents) }
         <br/>
-        <h2>Failures</h2>
+        <h2>Reported Failures</h2>
         { createFailuresReportContent(failures, pathToHerder) }
         <br/>
         { almhirtContext.getUtcTimestamp.toString }
