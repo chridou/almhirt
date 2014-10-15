@@ -358,7 +358,6 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <th>Total</th>
         <th>Max Severity</th>
         <th>Last failures</th>
-        <th></th>
       </tr>
       {
         { entries.map { case (name, entry) => createEntry(name, entry) } }
@@ -371,11 +370,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createFailureDetail(failure: ProblemCause) = {
       <span>
         {
-          failure match {
+          (failure match {
             case CauseIsProblem(p) => p.toString
             case CauseIsThrowable(HasAThrowable(exn)) => exn.toString
             case CauseIsThrowable(x: HasAThrowableDescribed) => x.toString
-          }
+          }).split("\\r?\\n").map(line => <span>{ line }<br/></span>)
         }
       </span>
     }
