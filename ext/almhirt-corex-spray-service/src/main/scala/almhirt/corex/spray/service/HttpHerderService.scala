@@ -369,18 +369,22 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
   def createComponentFailuresReport(name: String, entry: FailuresEntry, pathToHerder: String) = {
     import almhirt.problem._
     def createFailureDetail(failure: ProblemCause) = {
-      failure match {
-        case CauseIsProblem(p) => p.toString
-        case CauseIsThrowable(HasAThrowable(exn)) => exn.toString
-        case CauseIsThrowable(x: HasAThrowableDescribed) => x.toString
-      }
+      <span>
+        {
+          failure match {
+            case CauseIsProblem(p) => p.toString
+            case CauseIsThrowable(HasAThrowable(exn)) => exn.toString
+            case CauseIsThrowable(x: HasAThrowableDescribed) => x.toString
+          }
+        }
+      </span>
     }
     <html>
       <head>
         <title>Reported failures for { name }</title>
       </head>
       <body>
-    	<h1>Reported failures for { name }</h1>
+        <h1>Reported failures for { name }</h1>
         <span>Total failures: { entry.totalFailures }</span>
         <br/>
         <span>Max severity ever: { entry.maxSeverity.toString() }</span>
