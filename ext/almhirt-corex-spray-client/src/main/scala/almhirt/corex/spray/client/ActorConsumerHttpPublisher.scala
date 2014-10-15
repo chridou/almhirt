@@ -53,7 +53,7 @@ abstract class ActorConsumerHttpPublisher[T](
           circuitBreaker.fused(publishOverWire(typedElem)).onComplete(
             problem ⇒ {
               self ! Processed(Some(problem))
-              onFailure(typedElem, problem)
+               onFailure(typedElem, problem)
             },
             _ => self ! Processed(None))
         })

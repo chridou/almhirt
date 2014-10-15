@@ -82,6 +82,7 @@ private[almhirt] class CommandEndpointImpl(
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
       sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
+      reportCriticalFailure(problem)
 
     case cmd: Command ⇒
       sender() ! CommandNotAccepted(cmd.commandId, ServiceNotAvailableProblem("Command endpoint not ready! Try again later."))
@@ -150,10 +151,12 @@ private[almhirt] class CommandEndpointImpl(
           commandStatusTracker ! TrackCommand(
             commandId = dispatchableCmd.commandId,
             callback = _.fold(
-              fail ⇒
+              fail ⇒ {
                 fail match {
                   case OperationTimedOutProblem(p) ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, p)
                   case _ ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, fail)
+                }
+                reportMinorFailure(fail)
                 },
               receiver ! TrackedCommandResult(dispatchableCmd.commandId, _)),
             deadline = maxTrackingDuration.fromNow)

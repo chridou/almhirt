@@ -159,6 +159,7 @@ private[almhirt] class MongoEventLogImpl(
         val msg = s"Could not log event with id ${event.eventId.value}:\n$fail"
 
         reportMissedEvent(event, MajorSeverity, fail)
+        reportMajorFailure(fail)
 
         respondTo match {
           case Some(r) =>
@@ -280,6 +281,7 @@ private[almhirt] class MongoEventLogImpl(
 
     case InitializeFailed(prob) ⇒
       log.error(s"Initialize failed:\n$prob")
+      reportCriticalFailure(prob)
       sys.error(prob.message)
 
     case LogEvent(event, acknowledge) ⇒
@@ -318,6 +320,7 @@ private[almhirt] class MongoEventLogImpl(
 
     case InitializeFailed(prob) ⇒
       log.error(s"Initialize failed:\n$prob")
+      reportCriticalFailure(prob)
       sys.error(prob.message)
 
     case LogEvent(event, acknowledge) ⇒
@@ -359,6 +362,7 @@ private[almhirt] class MongoEventLogImpl(
         problem ⇒ {
           pinnedSender ! FindEventFailed(eventId, problem)
           log.error(problem.toString())
+          reportMajorFailure(problem)
         },
         eventOpt ⇒ pinnedSender ! FoundEvent(eventId, eventOpt))
 

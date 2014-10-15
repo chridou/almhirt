@@ -71,8 +71,10 @@ private[almhirt] class ElasticSearchEventPublisherImpl(
   with HasAlmhirtContext {
   val uriprefix = s"""http://$host/$index"""
 
-  override def onFailure(item: Event, problem: Problem): Unit =
+  override def onFailure(item: Event, problem: Problem): Unit = {
     reportMissedEvent(item, missedEventSeverity, problem)
+    reportFailure(problem, missedEventSeverity)
+  }
 
   implicit override val executionContext = executionContexts.futuresContext
   override val serializationExecutionContext = executionContexts.futuresContext

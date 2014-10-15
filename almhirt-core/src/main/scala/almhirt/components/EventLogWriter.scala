@@ -100,6 +100,7 @@ private[almhirt] class EventLogWriterImpl(
     case ActorMessages.SingleNotResolved(problem, _) ⇒
       log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
       sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
+      reportCriticalFailure(problem)
   }
 
   def receiveCircuitClosed(eventLog: ActorRef): Receive = {
@@ -115,6 +116,7 @@ private[almhirt] class EventLogWriterImpl(
         case scalaz.Failure(problem) =>
           self ! EventLog.EventNotLogged(event.eventId, problem)
           reportMissedEvent(event, MajorSeverity, problem)
+          reportMajorFailure(problem)
         case scalaz.Success(rsp) => self ! rsp
       })
 
@@ -131,6 +133,7 @@ private[almhirt] class EventLogWriterImpl(
 
     case EventLog.EventNotLogged(id, problem) ⇒
       log.error(s"Could not log event '${id.value}':\n$problem")
+      reportMajorFailure(problem)
       request(1)
 
     case m: ActorMessages.CircuitAllWillFail =>
@@ -153,6 +156,7 @@ private[almhirt] class EventLogWriterImpl(
 
     case EventLog.EventNotLogged(id, problem) ⇒
       log.error(s"Could not log event '${id.value}':\n$problem")
+      reportMajorFailure(problem)
       request(1)
 
     case m: ActorMessages.CircuitNotAllWillFail =>

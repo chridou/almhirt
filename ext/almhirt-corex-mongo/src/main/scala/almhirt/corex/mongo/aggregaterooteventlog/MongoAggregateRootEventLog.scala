@@ -175,6 +175,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
       fail ⇒ {
         log.error(s"Could not commit aggregate root event:\n$fail")
         reportMissedEvent(event, CriticalSeverity, fail)
+        reportMajorFailure(fail)
         respondTo ! AggregateRootEventNotCommitted(event.eventId, fail)
       },
       start ⇒ {
@@ -276,6 +277,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case InitializeFailed(prob) ⇒
       log.error(s"Initialize failed:\n$prob")
+      reportCriticalFailure(prob)
       sys.error(prob.message)
 
     case m: AggregateRootEventLogMessage ⇒
@@ -324,6 +326,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
     case InitializeFailed(prob) ⇒
       log.error(s"Initialize failed:\n$prob")
+      reportCriticalFailure(prob)
       sys.error(prob.message)
 
     case m: AggregateRootEventLogMessage ⇒
@@ -344,8 +347,11 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
 
   def receiveAggregateRootEventLogMsg: Receive = {
     case CommitAggregateRootEvent(event) ⇒
-      if (readOnly)
-        sender() ! AggregateRootEventNotCommitted(event.eventId, IllegalOperationProblem("Read only mode is enabled."))
+      if (readOnly) {
+        val problem = IllegalOperationProblem("Read only mode is enabled.")
+        sender() ! AggregateRootEventNotCommitted(event.eventId, problem)
+        reportMinorFailure(problem)
+      }
       commitEvent(event, sender())
 
     case m: AggregateRootEventLogQueryManyMessage ⇒
@@ -367,6 +373,7 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
         eventOpt ⇒ FetchedAggregateRootEvent(eventId, eventOpt),
         problem ⇒ {
           log.error(problem.toString())
+          reportMajorFailure(problem)
           GetAggregateRootEventFailed(eventId, problem)
         })(sender())
   }
