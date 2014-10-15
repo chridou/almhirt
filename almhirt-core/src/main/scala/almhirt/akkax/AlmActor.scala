@@ -6,35 +6,33 @@ import almhirt.context.HasAlmhirtContext
 import almhirt.herder.HerderMessage
 import almhirt.problem.ProblemCause
 
+
 trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
-  trait ActorComponentNameProvider {
-    def componentName: String
+
+  private object DefaultComponentIdProvider extends ActorComponentIdProvider {
+    def componentId = ComponentId(AppName("almhirt"), ComponentName(self.path.name))
   }
 
-  private object DefaultComponentNameProvider extends ActorComponentNameProvider {
-    def componentName = self.path.name
-  }
+  implicit def componentNameProvider: ActorComponentIdProvider = DefaultComponentIdProvider
 
-  implicit def componentNameProvider: ActorComponentNameProvider = DefaultComponentNameProvider
+  def registerCircuitControl(curcuitControl: CircuitControl)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(cnp.componentId, curcuitControl))
 
-  def registerCircuitControl(curcuitControl: CircuitControl)(implicit cnp: ActorComponentNameProvider): Unit =
-    almhirtContext.tellHerder(HerderMessage.RegisterCircuitControl(cnp.componentName, curcuitControl))
+  def deregisterCircuitControl()(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(cnp.componentId))
 
-  def deregisterCircuitControl()(implicit cnp: ActorComponentNameProvider): Unit =
-    almhirtContext.tellHerder(HerderMessage.DeregisterCircuitControl(cnp.componentName))
+  def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, problem: Problem)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessage.MissedEvent(cnp.componentId, event, severity, problem, almhirtContext.getUtcTimestamp))
 
-  def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, problem: Problem)(implicit cnp: ActorComponentNameProvider): Unit =
-    almhirtContext.tellHerder(HerderMessage.MissedEvent(cnp.componentName, event, severity, problem, almhirtContext.getUtcTimestamp))
+  def reportFailure(failure: ProblemCause, severity: almhirt.problem.Severity)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessage.FailureOccured(cnp.componentId, failure, severity, almhirtContext.getUtcTimestamp))
 
-  def reportFailure(failure: ProblemCause, severity: almhirt.problem.Severity)(implicit cnp: ActorComponentNameProvider): Unit =
-    almhirtContext.tellHerder(HerderMessage.FailureOccured(cnp.componentName, failure, severity, almhirtContext.getUtcTimestamp))
+  def reportMinorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessage.FailureOccured(cnp.componentId, failure, MinorSeverity, almhirtContext.getUtcTimestamp))
 
-  def reportMinorFailure(failure: ProblemCause)(implicit cnp: ActorComponentNameProvider): Unit =
-    almhirtContext.tellHerder(HerderMessage.FailureOccured(cnp.componentName, failure, MinorSeverity, almhirtContext.getUtcTimestamp))
+  def reportMajorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessage.FailureOccured(cnp.componentId, failure, MajorSeverity, almhirtContext.getUtcTimestamp))
 
-  def reportMajorFailure(failure: ProblemCause)(implicit cnp: ActorComponentNameProvider): Unit =
-    almhirtContext.tellHerder(HerderMessage.FailureOccured(cnp.componentName, failure, MajorSeverity, almhirtContext.getUtcTimestamp))
-
-  def reportCriticalFailure(failure: ProblemCause)(implicit cnp: ActorComponentNameProvider): Unit =
-    almhirtContext.tellHerder(HerderMessage.FailureOccured(cnp.componentName, failure, CriticalSeverity, almhirtContext.getUtcTimestamp))
+  def reportCriticalFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessage.FailureOccured(cnp.componentId, failure, CriticalSeverity, almhirtContext.getUtcTimestamp))
 }

@@ -2,20 +2,20 @@ package almhirt.context
 
 import akka.actor.ActorRef
 import almhirt.common._
-import almhirt.akkax.CircuitControl
+import almhirt.akkax.{ CircuitControl, ComponentId }
 import almhirt.herder.HerderMessage
 
 trait HasAlmhirtContext {
   implicit def almhirtContext: AlmhirtContext
 
   implicit class AlmhirtContextOps(self: AlmhirtContext) {
-    def registerCircuitControl(name: String, curcuitControl: CircuitControl) =
-      self.tellHerder(HerderMessage.RegisterCircuitControl(name, curcuitControl))
+    def registerCircuitControl(id: ComponentId, curcuitControl: CircuitControl) =
+      self.tellHerder(HerderMessage.RegisterCircuitControl(id, curcuitControl))
 
-    def deregisterCircuitControl(name: String) =
-      self.tellHerder(HerderMessage.DeregisterCircuitControl(name))
+    def deregisterCircuitControl(id: ComponentId) =
+      self.tellHerder(HerderMessage.DeregisterCircuitControl(id))
 
-    def reportMissedEvent(name: String, event: Event, severity: almhirt.problem.Severity, problem: Problem) =
-      self.tellHerder(HerderMessage.MissedEvent(name, event, severity, problem, almhirtContext.getUtcTimestamp))
+    def reportMissedEvent(id: ComponentId, event: Event, severity: almhirt.problem.Severity, problem: Problem) =
+      self.tellHerder(HerderMessage.MissedEvent(id, event, severity, problem, almhirtContext.getUtcTimestamp))
   }
 }

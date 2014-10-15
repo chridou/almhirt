@@ -47,108 +47,115 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
   private val maxCallDuration = httpHerderServiceParams.maxCallDuration
 
   val herderTerminator = pathPrefix("herder") {
-    pathEnd {
-      get { ctx =>
-        val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-        val futCircuits = (herder ? HerderMessage.ReportCircuitStates)(maxCallDuration).mapCastTo[HerderMessage.CircuitStates].map(_.states)
-        val futMissedEvents = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
-        val futFailures = (herder ? HerderMessage.ReportFailures)(maxCallDuration).mapCastTo[HerderMessage.ReportedFailures].map(_.entries)
-        val futHtml =
-          for {
-            circuitStates <- futCircuits
-            missedEvents <- futMissedEvents
-            failures <- futFailures
-          } yield createStatusReport(circuitStates, missedEvents, failures, "./herder")
-        futHtml.fold(
-          problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-          html => ctx.complete(StatusCodes.OK, html))
-      }
-    } ~ pathPrefix("circuits") {
+    pathPrefix("ui") {
       pathEnd {
-        parameter('ui.?) { uiEnabledP =>
-          val isUiEnabled =
-            uiEnabledP match {
-              case None => false
-              case Some(str) =>
-                str.trim().isEmpty || str.trim() == "true"
-            }
-          get { ctx =>
-            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-            val fut = (herder ? HerderMessage.ReportCircuitStates)(maxCallDuration).mapCastTo[HerderMessage.CircuitStates].map(_.states)
-            fut.fold(
-              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-              states => if (isUiEnabled) {
-                ctx.complete(StatusCodes.OK, createCircuitsUi(states))
-              } else {
-                ctx.complete(StatusCodes.OK, states.map { case (name, state) => s"$name -> $state" }.mkString("\n"))
-              })
-          }
-        }
-      } ~ pathPrefix(Segment) { componentName =>
-        pathPrefix("attempt-reset") {
-          pathEnd {
-            get { ctx =>
-              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-              herder ! HerderMessage.AttemptCloseCircuit(componentName)
-              ctx.complete(StatusCodes.Accepted, s"attempting to close circuit $componentName")
-            }
-          }
-        } ~ pathPrefix("remove-fuse") {
-          pathEnd {
-            get { ctx =>
-              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-              herder ! HerderMessage.RemoveFuseFromCircuit(componentName)
-              ctx.complete(StatusCodes.Accepted, s"attempting to remove fuse in circuit $componentName")
-            }
-          }
-        } ~ pathPrefix("destroy-fuse") {
-          pathEnd {
-            get { ctx =>
-              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-              herder ! HerderMessage.DestroyFuseInCircuit(componentName)
-              ctx.complete(StatusCodes.Accepted, s"attempting to destroy fuse in circuit $componentName")
-            }
-          }
+        get { ctx =>
+          ctx.complete("Cool app!")
         }
       }
-    } ~ pathPrefix("missed-events") {
+    } ~
       pathEnd {
         get { ctx =>
           val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-          val fut = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
-          fut.fold(
+          val futCircuits = (herder ? HerderMessage.ReportCircuitStates)(maxCallDuration).mapCastTo[HerderMessage.CircuitStates].map(_.states)
+          val futMissedEvents = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
+          val futFailures = (herder ? HerderMessage.ReportFailures)(maxCallDuration).mapCastTo[HerderMessage.ReportedFailures].map(_.entries)
+          val futHtml =
+            for {
+              circuitStates <- futCircuits
+              missedEvents <- futMissedEvents
+              failures <- futFailures
+            } yield createStatusReport(circuitStates, missedEvents, failures, "./herder")
+          futHtml.fold(
             problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-            missed => ctx.complete(StatusCodes.OK, createMissedEventsReport(missed)))
+            html => ctx.complete(StatusCodes.OK, html))
         }
-      }
-    } ~ pathPrefix("failures") {
-      pathEnd {
-        get { ctx =>
-          val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-          val fut = (herder ? HerderMessage.ReportFailures)(maxCallDuration).mapCastTo[HerderMessage.ReportedFailures].map(_.entries)
-          fut.fold(
-            problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-            entries => ctx.complete(StatusCodes.OK, createFailuresReport(entries, "../herder")))
+      } ~ pathPrefix("circuits") {
+        pathEnd {
+          parameter('ui.?) { uiEnabledP =>
+            val isUiEnabled =
+              uiEnabledP match {
+                case None => false
+                case Some(str) =>
+                  str.trim().isEmpty || str.trim() == "true"
+              }
+            get { ctx =>
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              val fut = (herder ? HerderMessage.ReportCircuitStates)(maxCallDuration).mapCastTo[HerderMessage.CircuitStates].map(_.states)
+              fut.fold(
+                problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+                states => if (isUiEnabled) {
+                  ctx.complete(StatusCodes.OK, createCircuitsUi(states))
+                } else {
+                  ctx.complete(StatusCodes.OK, states.map { case (name, state) => s"$name -> $state" }.mkString("\n"))
+                })
+            }
+          }
+        } ~ pathPrefix(Segment / Segment) { (appName, componentName) =>
+          pathPrefix("attempt-reset") {
+            pathEnd {
+              get { ctx =>
+                val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                herder ! HerderMessage.AttemptCloseCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
+                ctx.complete(StatusCodes.Accepted, s"attempting to close circuit $componentName")
+              }
+            }
+          } ~ pathPrefix("remove-fuse") {
+            pathEnd {
+              get { ctx =>
+                val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                herder ! HerderMessage.RemoveFuseFromCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
+                ctx.complete(StatusCodes.Accepted, s"attempting to remove fuse in circuit $componentName")
+              }
+            }
+          } ~ pathPrefix("destroy-fuse") {
+            pathEnd {
+              get { ctx =>
+                val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                herder ! HerderMessage.DestroyFuseInCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
+                ctx.complete(StatusCodes.Accepted, s"attempting to destroy fuse in circuit $componentName")
+              }
+            }
+          }
         }
-      } ~ pathPrefix(Segment) { name =>
+      } ~ pathPrefix("missed-events") {
         pathEnd {
           get { ctx =>
             val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-            val fut = (herder ? HerderMessage.ReportFailuresFor(name))(maxCallDuration).mapCastTo[HerderMessage.ReportedFailuresFor]
+            val fut = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
             fut.fold(
               problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-              res => res.entry match {
-                case Some(e) => ctx.complete(StatusCodes.OK, createComponentFailuresReport(res.name, e, "../../herder"))
-                case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name $name found."))
-              })
+              missed => ctx.complete(StatusCodes.OK, createMissedEventsReport(missed)))
+          }
+        }
+      } ~ pathPrefix("failures") {
+        pathEnd {
+          get { ctx =>
+            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+            val fut = (herder ? HerderMessage.ReportFailures)(maxCallDuration).mapCastTo[HerderMessage.ReportedFailures].map(_.entries)
+            fut.fold(
+              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+              entries => ctx.complete(StatusCodes.OK, createFailuresReport(entries, "../herder")))
+          }
+        } ~ pathPrefix(Segment / Segment) { (appName, componentName) =>
+          pathEnd {
+            get { ctx =>
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              val fut = (herder ? HerderMessage.ReportFailuresFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[HerderMessage.ReportedFailuresFor]
+              fut.fold(
+                problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+                res => res.entry match {
+                  case Some(e) => ctx.complete(StatusCodes.OK, createComponentFailuresReport(res.id, e, "../../herder"))
+                  case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name ($appName/$componentName) found."))
+                })
+            }
           }
         }
       }
-    }
   }
 
   import scala.xml._
-  private def createCircuitsUi(state: Map[String, CircuitState]) = {
+  private def createCircuitsUi(state: Map[ComponentId, CircuitState]) = {
     <html>
       <head>
         <title>Circuits</title>
@@ -161,7 +168,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </html>
   }
 
-  private def createCircuitsContent(state: Map[String, CircuitState], isReport: Boolean) = {
+  private def createCircuitsContent(state: Map[ComponentId, CircuitState], isReport: Boolean) = {
     def createStateItem(state: CircuitState) = {
       state match {
         case x: CircuitState.Closed =>
@@ -177,10 +184,10 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       }
     }
 
-    def createStateResetAction(name: String, state: CircuitState) = {
+    def createStateResetAction(component: ComponentId, state: CircuitState) = {
       state match {
         case st: CircuitState.AllWillFailState =>
-          val att = new UnprefixedAttribute("href", s"./circuits/$name/attempt-reset", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/attempt-reset", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
           <td>{ anchor }</td>
         case _ =>
@@ -188,18 +195,18 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       }
     }
 
-    def createStateRemoveAction(name: String, state: CircuitState) = {
+    def createStateRemoveAction(component: ComponentId, state: CircuitState) = {
       state match {
         case x: CircuitState.Open =>
-          val att = new UnprefixedAttribute("href", s"./circuits/$name/remove-fuse", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/remove-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.HalfOpen =>
-          val att = new UnprefixedAttribute("href", s"./circuits/$name/remove-fuse", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/remove-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.Closed =>
-          val att = new UnprefixedAttribute("href", s"./circuits/$name/remove-fuse", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/remove-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
         case _ =>
@@ -207,22 +214,22 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       }
     }
 
-    def createStateDestroyAction(name: String, state: CircuitState) = {
+    def createStateDestroyAction(component: ComponentId, state: CircuitState) = {
       state match {
         case x: CircuitState.Open =>
-          val att = new UnprefixedAttribute("href", s"./circuits/$name/destroy-fuse", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.HalfOpen =>
-          val att = new UnprefixedAttribute("href", s"./circuits/$name/destroy-fuse", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.Closed =>
-          val att = new UnprefixedAttribute("href", s"./circuits/$name/destroy-fuse", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case x: CircuitState.FuseRemoved =>
-          val att = new UnprefixedAttribute("href", s"./circuits/$name/destroy-fuse", xml.Null)
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
           <td>{ anchor }</td>
         case _ =>
@@ -230,18 +237,20 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       }
     }
 
-    def createRow(name: String, state: CircuitState, isReport: Boolean) = {
+    def createRow(component: ComponentId, state: CircuitState, isReport: Boolean) = {
       if (!isReport) {
         <tr>
-          <td>{ name }</td>
+          <td>{ component.app.value }</td>
+          <td>{ component.component.value }</td>
           { createStateItem(state) }
-          { createStateResetAction(name, state) }
-          { createStateRemoveAction(name, state) }
-          { createStateDestroyAction(name, state) }
+          { createStateResetAction(component, state) }
+          { createStateRemoveAction(component, state) }
+          { createStateDestroyAction(component, state) }
         </tr>
       } else {
         <tr>
-          <td>{ name }</td>
+          <td>{ component.app.value }</td>
+          <td>{ component.component.value }</td>
           { createStateItem(state) }
         </tr>
       }
@@ -250,24 +259,25 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     if (isReport) {
       <table border="0">
         <tr>
-          <th>Circuit Name</th>
+          <th>App</th>
+          <th>Component</th>
           <th>Circuit State</th>
         </tr>
-        { state.map { case (name, state) => createRow(name, state, true) } }
+        { state.map { case (component, state) => createRow(component, state, true) } }
       </table>
     } else {
       <table border="1">
         <tr>
-          <th>Circuit Name</th>
-          <th>Circuit State</th>
+          <th>App</th>
+          <th>Component</th>
           <th colspan="3">Actions</th>
         </tr>
-        { state.map { case (name, state) => createRow(name, state, false) } }
+        { state.map { case (component, state) => createRow(component, state, false) } }
       </table>
     }
   }
 
-  def createMissedEventsReport(missedEvents: Seq[(String, almhirt.problem.Severity, Int)]) = {
+  def createMissedEventsReport(missedEvents: Seq[(ComponentId, almhirt.problem.Severity, Int)]) = {
     <html>
       <head>
         <title>Missed Events</title>
@@ -280,18 +290,20 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </html>
   }
 
-  def createMissedEventsReportContent(missedEvents: Seq[(String, almhirt.problem.Severity, Int)]) = {
+  def createMissedEventsReportContent(missedEvents: Seq[(ComponentId, almhirt.problem.Severity, Int)]) = {
     <table border="1">
       <tr>
-        <th>Component Name</th>
+        <th>App</th>
+        <th>Component</th>
         <th>Severity</th>
         <th>Missed Events</th>
       </tr>
       {
         missedEvents.map {
-          case (name, severity, count) =>
+          case (component, severity, count) =>
             <tr>
-              <td>{ name }</td>
+              <td>{ component.app.value }</td>
+              <td>{ component.component.value }</td>
               { createSeverityItem(severity) }
               <td>{ count }</td>
             </tr>
@@ -300,7 +312,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </table>
   }
 
-  def createFailuresReport(entries: Seq[(String, FailuresEntry)], pathToHerder: String) = {
+  def createFailuresReport(entries: Seq[(ComponentId, FailuresEntry)], pathToHerder: String) = {
     <html>
       <head>
         <title>Failures</title>
@@ -318,10 +330,10 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </html>
   }
 
-  def createFailuresReportContent(entries: Seq[(String, FailuresEntry)], pathToHerder: String) = {
+  def createFailuresReportContent(entries: Seq[(ComponentId, FailuresEntry)], pathToHerder: String) = {
     import almhirt.problem._
 
-    def createEntry(name: String, entry: FailuresEntry) = {
+    def createEntry(component: ComponentId, entry: FailuresEntry) = {
       def createSummaryLine(item: (ProblemCause, Severity, LocalDateTime)) = {
         <tr>
           <td>{ item._3.toString }</td>
@@ -335,8 +347,10 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           }</td>
         </tr>
       }
+
       <tr>
-        <td>{ name }</td>
+        <td>{ component.app.value }</td>
+        <td>{ component.component.value }</td>
         <td>{ entry.totalFailures }</td>
         { createSeverityItem(entry.maxSeverity) }
         <td>
@@ -345,7 +359,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           </table>
         </td>
         {
-          val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/$name", xml.Null)
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("details"))
           <td>{ anchor }</td>
         }
@@ -354,7 +368,8 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
 
     <table border="1">
       <tr>
-        <th>Component Name</th>
+        <th>App</th>
+        <th>Component</th>
         <th>Total</th>
         <th>Max Severity</th>
         <th>Last failures</th>
@@ -366,7 +381,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </table>
   }
 
-  def createComponentFailuresReport(name: String, entry: FailuresEntry, pathToHerder: String) = {
+  def createComponentFailuresReport(component: ComponentId, entry: FailuresEntry, pathToHerder: String) = {
     import almhirt.problem._
     def createFailureDetail(failure: ProblemCause) = {
       <span>
@@ -381,10 +396,10 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     }
     <html>
       <head>
-        <title>Reported failures for { name }</title>
+        <title>Reported failures for { component }</title>
       </head>
       <body>
-        <h1>Reported failures for { name }</h1>
+        <h1>Reported failures for { component }</h1>
         <span>Total failures: { entry.totalFailures }</span>
         <br/>
         <span>Max severity ever: { entry.maxSeverity.toString() }</span>
@@ -423,9 +438,9 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
   }
 
   def createStatusReport(
-    circuitsState: Map[String, CircuitState],
-    missedEvents: Seq[(String, almhirt.problem.Severity, Int)],
-    failures: Seq[(String, FailuresEntry)],
+    circuitsState: Map[ComponentId, CircuitState],
+    missedEvents: Seq[(ComponentId, almhirt.problem.Severity, Int)],
+    failures: Seq[(ComponentId, FailuresEntry)],
     pathToHerder: String) = {
     <html>
       <head>

@@ -3,6 +3,7 @@ package almhirt.herder.herdingdogs
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.context._
+import almhirt.akkax.ComponentId
 import almhirt.common._
 import almhirt.problem.ProblemCause
 import almhirt.problem.CauseIsProblem
@@ -28,32 +29,32 @@ private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Bool
 
   implicit val executor = almhirtContext.futuresContext
 
-  var collectedFailures: Map[String, FailuresEntry] = Map.empty
+  var collectedFailures: Map[ComponentId, FailuresEntry] = Map.empty
 
   def receiveRunning: Receive = {
-    case HerderMessage.FailureOccured(name, failure, severity, timestamp) =>
+    case HerderMessage.FailureOccured(componentId, failure, severity, timestamp) =>
       val ignore =
         (for {
-          entry <- collectedFailures.get(name)
+          entry <- collectedFailures.get(componentId)
           first <- entry.summaryQueue.headOption
           ignore <- first._1 match {
             case CauseIsProblem(CircuitOpenProblem(_)) => Some(ignoreConsecutiveCircuitProblems)
             case _ => Some(false)
           }
         } yield ignore).getOrElse(false)
-      prepareCause(failure, ignore).foreach(p => collectedFailures get name match {
+      prepareCause(failure, ignore).foreach(p => collectedFailures get componentId match {
         case Some(entry) =>
-          collectedFailures += (name -> entry.add(p, severity, timestamp, maxFailuresForSummary))
+          collectedFailures += (componentId -> entry.add(p, severity, timestamp, maxFailuresForSummary))
         case None =>
-          collectedFailures += (name -> FailuresEntry().add(p, severity, timestamp, maxFailuresForSummary))
+          collectedFailures += (componentId -> FailuresEntry().add(p, severity, timestamp, maxFailuresForSummary))
       })
 
     case HerderMessage.ReportFailures =>
       val entries = collectedFailures.toSeq
       sender() ! HerderMessage.ReportedFailures(entries)
 
-    case HerderMessage.ReportFailuresFor(name) =>
-      sender() ! HerderMessage.ReportedFailuresFor(name, collectedFailures get name)
+    case HerderMessage.ReportFailuresFor(componentId) =>
+      sender() ! HerderMessage.ReportedFailuresFor(componentId, collectedFailures get componentId)
   }
 
   def prepareCause(cause: ProblemCause, ignoreCircuitProblems: Boolean): Option[ProblemCause] = {
