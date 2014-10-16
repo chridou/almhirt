@@ -106,7 +106,6 @@ private[almhirt] class MongoAggregateRootEventLogImpl(
   readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging with almhirt.akkax.AlmActorSupport {
 
   import almhirt.eventlog.AggregateRootEventLog._
-  import almhirt.herder.HerderMessage
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext

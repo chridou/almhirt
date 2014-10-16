@@ -26,13 +26,14 @@ object FailuresHerdingDog {
 }
 
 private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Boolean, maxFailuresForSummary: Int, unwrapFailures: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
-
+  import HerderMessages.FailureMessages._
+  
   implicit val executor = almhirtContext.futuresContext
 
   var collectedFailures: Map[ComponentId, FailuresEntry] = Map.empty
 
   def receiveRunning: Receive = {
-    case HerderMessage.FailureOccured(componentId, failure, severity, timestamp) =>
+    case FailureOccured(componentId, failure, severity, timestamp) =>
       val ignore =
         (for {
           entry <- collectedFailures.get(componentId)
@@ -49,12 +50,12 @@ private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Bool
           collectedFailures += (componentId -> FailuresEntry().add(p, severity, timestamp, maxFailuresForSummary))
       })
 
-    case HerderMessage.ReportFailures =>
+    case ReportFailures =>
       val entries = collectedFailures.toSeq
-      sender() ! HerderMessage.ReportedFailures(entries)
+      sender() ! ReportedFailures(entries)
 
-    case HerderMessage.ReportFailuresFor(componentId) =>
-      sender() ! HerderMessage.ReportedFailuresFor(componentId, collectedFailures get componentId)
+    case ReportFailuresFor(componentId) =>
+      sender() ! ReportedFailuresFor(componentId, collectedFailures get componentId)
   }
 
   def prepareCause(cause: ProblemCause, ignoreCircuitProblems: Boolean): Option[ProblemCause] = {

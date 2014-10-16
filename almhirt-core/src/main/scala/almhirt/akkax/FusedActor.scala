@@ -7,7 +7,6 @@ import akka.event.LoggingAdapter
 import akka.actor._
 import akka.pattern._
 import almhirt.context.HasAlmhirtContext
-import almhirt.herder.HerderMessage
 
 object FusedActor {
   def wrap(fusedActor: ActorRef)(timeout: FiniteDuration)(implicit executor: ExecutionContext): CircuitControl =

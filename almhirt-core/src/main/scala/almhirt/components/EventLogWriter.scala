@@ -70,7 +70,6 @@ private[almhirt] class EventLogWriterImpl(
   circuitControlSettings: CircuitControlSettings,
   circuitStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
-  import almhirt.herder.HerderMessage
 
   implicit val executor = almhirtContext.futuresContext
 

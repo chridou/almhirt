@@ -24,8 +24,6 @@ abstract class ActorConsumerHttpPublisher[T](
   circuitControlSettings: CircuitControlSettings,
   circuitStateReportingInterval: Option[FiniteDuration])(implicit serializer: HttpSerializer[T], problemDeserializer: HttpDeserializer[Problem], entityTag: ClassTag[T]) extends ActorSubscriber with ActorLogging with AlmActor with HttpExternalConnector with RequestsWithEntity with HttpExternalPublisher with ImplicitFlowMaterializer {
 
-  import almhirt.herder.HerderMessage
-
   def createUri(entity: T): Uri
 
   private final case class Processed(lastProblem: Option[Problem])

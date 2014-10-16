@@ -4,7 +4,7 @@ import akka.actor._
 import almhirt.common._
 import almhirt.context._
 import almhirt.akkax.ComponentId
-import almhirt.herder.HerderMessage
+import almhirt.herder.HerderMessages
 import akka.actor.ActorRef
 
 object MissedEventsHerdingDog {
@@ -13,6 +13,7 @@ object MissedEventsHerdingDog {
 }
 
 private[almhirt] class MissedEventsHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
+  import HerderMessages.EventMessages._
 
   implicit val executor = almhirtContext.futuresContext
 
@@ -36,7 +37,7 @@ private[almhirt] class MissedEventsHerdingDog()(implicit override val almhirtCon
   var missedEvents: Map[ComponentId, (almhirt.problem.Severity, Int)] = Map.empty
 
   def receiveRunning: Receive = {
-    case HerderMessage.MissedEvent(componentId, event, severity, problem, timestamp) =>
+    case MissedEvent(componentId, event, severity, problem, timestamp) =>
       missedEvents = missedEvents get componentId match {
         case None =>
           log.info(s"""First missing event notification from "$componentId" with severity $severity.""")
@@ -50,9 +51,9 @@ private[almhirt] class MissedEventsHerdingDog()(implicit override val almhirtCon
           missedEvents + (componentId -> (newSeverity -> (count + 1)))
       }
 
-    case HerderMessage.ReportMissedEvents =>
+    case ReportMissedEvents =>
       val missed = missedEvents.map { case (componentId, (severity, count)) => (componentId, severity, count) }.toSeq.sorted
-      sender() ! HerderMessage.MissedEvents(missed)
+      sender() ! MissedEvents(missed)
   }
 
   override def receive: Receive = receiveRunning

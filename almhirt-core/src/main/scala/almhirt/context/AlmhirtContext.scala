@@ -10,7 +10,7 @@ import com.typesafe.config._
 trait AlmhirtContext extends CanCreateUuidsAndDateTimes with AlmhirtStreams with HasExecutionContexts {
   def config: Config
   def localActorPaths: ContextActorPaths
-  def tellHerder(what: almhirt.herder.HerderMessage.HerderInputMessage): Unit
+  def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage): Unit
 }
 
 trait ContextActorPaths {
@@ -106,7 +106,7 @@ object AlmhirtContext {
         Props(new Actor with ActorLogging {
           implicit val execCtx = futuresExecutor
           var theReceiver: ActorRef = null
-          var tellTheHerder: almhirt.herder.HerderMessage.HerderInputMessage => Unit = x => ()
+          var tellTheHerder: almhirt.herder.HerderMessages.HerderNotificicationMessage => Unit = x => ()
           def receive: Receive = {
             case AlmhirtContextMessages.Start ⇒
               theReceiver = sender()
@@ -132,7 +132,7 @@ object AlmhirtContext {
                 val commandBroker = streams.commandBroker
                 val commandStream = streams.commandStream
                 val localActorPaths = ContextActorPaths.local(system)
-                def tellHerder(what: almhirt.herder.HerderMessage.HerderInputMessage) { tellTheHerder(what) }
+                def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) { tellTheHerder(what) }
 
                 def stop() {
                   log.info("Stopping.")
@@ -226,7 +226,7 @@ object AlmhirtContext {
               val commandBroker = streams.commandBroker
               val commandStream = streams.commandStream
               val localActorPaths = null
-              def tellHerder(what: almhirt.herder.HerderMessage.HerderInputMessage) {}
+              def tellHerder(what: almhirt.herder.HerderMessages.HerderNotificicationMessage) {}
               def stop() {
                 log.debug("Stopping.")
                 //streams.stop()

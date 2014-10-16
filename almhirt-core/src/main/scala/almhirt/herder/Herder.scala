@@ -40,14 +40,11 @@ private[almhirt] class Pastor(failuresHerdingDogProps: Props)(implicit override 
   val failuresHerdingDog: ActorRef = context.actorOf(failuresHerdingDogProps, FailuresHerdingDog.actorname)
 
   def receiveRunning: Receive = {
-    case m: HerderMessage.RegisterCircuitControl => circuitsHerdingDog ! m
-    case m: HerderMessage.DeregisterCircuitControl => circuitsHerdingDog ! m
-    case HerderMessage.ReportCircuitStates => circuitsHerdingDog forward HerderMessage.ReportCircuitStates
-    case m: HerderMessage.CircuitControlMessage => circuitsHerdingDog forward m
+    case m: HerderMessages.CircuitMessages.CircuitMessage => circuitsHerdingDog forward m
     
-    case m: HerderMessage.EventsMessage => missedEventsHerdingDog forward m
+    case m: HerderMessages.EventMessages.EventsMessage => missedEventsHerdingDog forward m
     
-    case m: HerderMessage.FailuresMessage => failuresHerdingDog forward m
+    case m: HerderMessages.FailureMessages.FailuresMessage => failuresHerdingDog forward m
   }
 
   def receive = receiveRunning

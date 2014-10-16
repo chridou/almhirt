@@ -98,7 +98,6 @@ private[almhirt] class MongoEventLogImpl(
   readOnly: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with ActorLogging {
   import EventLog._
   import almhirt.corex.mongo.BsonConverter._
-  import almhirt.herder.HerderMessage
 
   implicit val defaultExecutor = almhirtContext.futuresContext
   val serializationExecutor = almhirtContext.futuresContext

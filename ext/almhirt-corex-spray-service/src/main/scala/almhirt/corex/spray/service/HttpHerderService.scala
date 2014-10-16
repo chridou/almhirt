@@ -8,6 +8,7 @@ import almhirt.common._
 import almhirt.almfuture.all._
 import almhirt.akkax._
 import almhirt.herder._
+import almhirt.herder.HerderMessages._
 import almhirt.context.AlmhirtContext
 import almhirt.httpx.spray.service.AlmHttpEndpoint
 import almhirt.context.HasAlmhirtContext
@@ -57,9 +58,9 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       pathEnd {
         get { ctx =>
           val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-          val futCircuits = (herder ? HerderMessage.ReportCircuitStates)(maxCallDuration).mapCastTo[HerderMessage.CircuitStates].map(_.states)
-          val futMissedEvents = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
-          val futFailures = (herder ? HerderMessage.ReportFailures)(maxCallDuration).mapCastTo[HerderMessage.ReportedFailures].map(_.entries)
+          val futCircuits = (herder ? CircuitMessages.ReportCircuitStates)(maxCallDuration).mapCastTo[CircuitMessages.CircuitStates].map(_.states)
+          val futMissedEvents = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missed)
+          val futFailures = (herder ? FailureMessages.ReportFailures)(maxCallDuration).mapCastTo[FailureMessages.ReportedFailures].map(_.entries)
           val futHtml =
             for {
               circuitStates <- futCircuits
@@ -81,7 +82,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               }
             get { ctx =>
               val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-              val fut = (herder ? HerderMessage.ReportCircuitStates)(maxCallDuration).mapCastTo[HerderMessage.CircuitStates].map(_.states)
+              val fut = (herder ? CircuitMessages.ReportCircuitStates)(maxCallDuration).mapCastTo[CircuitMessages.CircuitStates].map(_.states)
               fut.fold(
                 problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
                 states => if (isUiEnabled) {
@@ -96,7 +97,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             pathEnd {
               get { ctx =>
                 val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-                herder ! HerderMessage.AttemptCloseCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
+                herder ! CircuitMessages.AttemptCloseCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
                 ctx.complete(StatusCodes.Accepted, s"attempting to close circuit $componentName")
               }
             }
@@ -104,7 +105,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             pathEnd {
               get { ctx =>
                 val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-                herder ! HerderMessage.RemoveFuseFromCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
+                herder ! CircuitMessages.RemoveFuseFromCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
                 ctx.complete(StatusCodes.Accepted, s"attempting to remove fuse in circuit $componentName")
               }
             }
@@ -112,7 +113,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             pathEnd {
               get { ctx =>
                 val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-                herder ! HerderMessage.DestroyFuseInCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
+                herder ! CircuitMessages.DestroyFuseInCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
                 ctx.complete(StatusCodes.Accepted, s"attempting to destroy fuse in circuit $componentName")
               }
             }
@@ -122,7 +123,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         pathEnd {
           get { ctx =>
             val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-            val fut = (herder ? HerderMessage.ReportMissedEvents)(maxCallDuration).mapCastTo[HerderMessage.MissedEvents].map(_.missed)
+            val fut = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missed)
             fut.fold(
               problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
               missed => ctx.complete(StatusCodes.OK, createMissedEventsReport(missed)))
@@ -132,7 +133,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         pathEnd {
           get { ctx =>
             val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-            val fut = (herder ? HerderMessage.ReportFailures)(maxCallDuration).mapCastTo[HerderMessage.ReportedFailures].map(_.entries)
+            val fut = (herder ? FailureMessages.ReportFailures)(maxCallDuration).mapCastTo[FailureMessages.ReportedFailures].map(_.entries)
             fut.fold(
               problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
               entries => ctx.complete(StatusCodes.OK, createFailuresReport(entries, "../herder")))
@@ -141,7 +142,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           pathEnd {
             get { ctx =>
               val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-              val fut = (herder ? HerderMessage.ReportFailuresFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[HerderMessage.ReportedFailuresFor]
+              val fut = (herder ? FailureMessages.ReportFailuresFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[FailureMessages.ReportedFailuresFor]
               fut.fold(
                 problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
                 res => res.entry match {

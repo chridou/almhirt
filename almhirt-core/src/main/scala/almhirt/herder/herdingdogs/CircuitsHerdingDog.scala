@@ -3,7 +3,7 @@ package almhirt.herder.herdingdogs
 import akka.actor._
 import almhirt.common._
 import almhirt.context._
-import almhirt.herder.HerderMessage
+import almhirt.herder.HerderMessages
 import akka.actor.ActorRef
 import almhirt.akkax.{ CircuitControl, ComponentId }
 
@@ -13,29 +13,30 @@ object CircuitsHerdingDog {
 }
 
 private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
+  import HerderMessages.CircuitMessages._
 
   implicit val executor = almhirtContext.futuresContext
 
   var circuitControls: Map[ComponentId, CircuitControl] = Map.empty
 
   def receiveRunning: Receive = {
-    case HerderMessage.RegisterCircuitControl(ownerId, cb) =>
+    case RegisterCircuitControl(ownerId, cb) =>
       log.info(s"""Circuit control registered for "${ownerId}".""")
       circuitControls = circuitControls + (ownerId -> cb)
 
-    case HerderMessage.DeregisterCircuitControl(ownerId) =>
+    case DeregisterCircuitControl(ownerId) =>
       log.info(s"""Circuit control deregistered for "${ownerId}".""")
       circuitControls = circuitControls - ownerId
 
-    case HerderMessage.ReportCircuitStates =>
+    case ReportCircuitStates =>
       val pinnedSender = sender()
       val futs = circuitControls.map({ case (ownerId, cb) => cb.state.map(st => (ownerId, st)) })
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
         fail => log.error(s"Could not determine circuit states:\n$fail"),
-        states => pinnedSender ! HerderMessage.CircuitStates(states.toSeq.sortBy(_._1)))
+        states => pinnedSender ! CircuitStates(states.toSeq.sortBy(_._1)))
 
-    case HerderMessage.AttemptCloseCircuit(ownerId) =>
+    case AttemptCloseCircuit(ownerId) =>
       circuitControls.find(_._1 == ownerId) match {
         case Some(cc) =>
           cc._2.attemptClose
@@ -43,7 +44,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
         case None => log.warning(s"""There is no circuit control named "$ownerId".""")
       }
 
-    case HerderMessage.RemoveFuseFromCircuit(ownerId) =>
+    case RemoveFuseFromCircuit(ownerId) =>
       circuitControls.find(_._1 == ownerId) match {
         case Some(cc) =>
           cc._2.removeFuse
@@ -51,7 +52,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
         case None => log.warning(s"""There is no circuit control named "$ownerId".""")
       }
 
-    case HerderMessage.DestroyFuseInCircuit(ownerId) =>
+    case DestroyFuseInCircuit(ownerId) =>
       circuitControls.find(_._1 == ownerId) match {
         case Some(cc) =>
           cc._2.destroyFuse
