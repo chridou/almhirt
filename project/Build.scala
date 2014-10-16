@@ -265,10 +265,19 @@ trait SillyDemoAppBuild {
   	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
 	  libraryDependencies += jodatime,
 	  libraryDependencies += jodaconvert,
-	  libraryDependencies += scalaz,
 	  libraryDependencies += play2_iteratees,
-	  libraryDependencies += akka_streams,
-	  libraryDependencies += akka_actor,
+
+	  libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.1.+",
+
+	  libraryDependencies += "com.typesafe.akka" %% "akka-actor" % BuildSettings.akkaVersion,
+	  libraryDependencies += "com.typesafe.akka" %% "akka-agent" % BuildSettings.akkaVersion,
+	  libraryDependencies += "com.typesafe.akka" %% "akka-stream-experimental" % BuildSettings.akkaStreamsVersion,
+
+
+    libraryDependencies += "io.spray" %% "spray-can" % BuildSettings.sprayVersion,
+    libraryDependencies += "io.spray" %% "spray-routing" % BuildSettings.sprayVersion,
+    libraryDependencies += "io.spray" %% "spray-client" % BuildSettings.sprayVersion,
+
 	  libraryDependencies += logback,
 	  libraryDependencies += akka_testkit,
 	  libraryDependencies += scalatest
@@ -336,7 +345,7 @@ object AlmHirtBuild extends Build
                        			baseFile = file("./ext/riftwarpx-http-spray")) dependsOn(common, riftwarp, httpxSpray)
 								
 	
-	lazy val sillyDemoApp = sillyDemoAppProject(	name = "silly-demo-app", baseFile = file("./example/silly-demo-app")) dependsOn(common, core, httpxSpray, corexSprayService)
+	lazy val sillyDemoApp = sillyDemoAppProject(	name = "silly-demo-app", baseFile = file("./example/silly-demo-app")) dependsOn(common, core, httpxSpray, corexSprayService, riftwarp)
 /*
   lazy val riftwarpAutomatic = riftwarpAutomaticProject(	name = "riftwarp-automatic",
                        			baseFile = file("./ext/riftwarp-automatic")) dependsOn(common, riftwarp)
