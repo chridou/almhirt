@@ -158,6 +158,22 @@ trait CoreBuild {
   )
 }
 
+trait DashboardBuild {
+  import Dependencies._
+  import Resolvers._
+  def dashboardProject(name: String, baseFile: java.io.File) = 
+  	Project(id = name, base = baseFile, settings = BuildSettings.buildSettings).settings(
+	  libraryDependencies += jodatime,
+	  libraryDependencies += jodaconvert,
+	  libraryDependencies += scalaz,
+	  libraryDependencies += akka_streams,
+	  libraryDependencies += akka_actor,
+	  libraryDependencies += logback,
+	  libraryDependencies += akka_testkit,
+	  libraryDependencies += scalatest
+  )
+}
+
 trait CorexMongoBuild {
   import Dependencies._
   import Resolvers._
@@ -289,6 +305,7 @@ object AlmHirtBuild extends Build
 	with CorexSprayClientBuild
 	with HttpxSprayServiceBuild
 	with CoreBuild 
+	with DashboardBuild 
 	with CorexMongoBuild 
 	with CorexSprayServiceBuild 
 	with RiftWarpBuild 
@@ -306,6 +323,7 @@ object AlmHirtBuild extends Build
 									corexSprayClient, 
 									httpxSprayService, 
 									core, 
+									dashboard, 
 									mongoExtensions, 
 									corexSprayService, 
 									riftwarp, 
@@ -328,6 +346,8 @@ object AlmHirtBuild extends Build
 		baseFile = file("almhirt-core")) dependsOn(	common % "compile; test->compile; test->test"/*, 
 																								corexRiftwarp % "test",
 																								riftwarp % "test->test"*/)
+
+  lazy val dashboard = dashboardProject(	name = "almhirt-dashboard", baseFile = file(".ext/almhirt-dashboard")) dependsOn(common, core, httpxSprayService)
 
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
                        			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(core, riftwarp % "test->test", riftwarpMongoProject % "test")
