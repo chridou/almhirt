@@ -347,7 +347,7 @@ object AlmHirtBuild extends Build
 																								corexRiftwarp % "test",
 																								riftwarp % "test->test"*/)
 
-  lazy val dashboard = dashboardProject(	name = "almhirt-dashboard", baseFile = file(".ext/almhirt-dashboard")) dependsOn(common, core, httpxSprayService)
+  lazy val dashboard = dashboardProject(	name = "almhirt-dashboard", baseFile = file("./ext/almhirt-dashboard")) dependsOn(common, core, httpxSprayService)
 
   lazy val mongoExtensions = corexMongoProject(	name = "almhirt-corex-mongo",
                        			baseFile = file("./ext/almhirt-corex-mongo")) dependsOn(core, riftwarp % "test->test", riftwarpMongoProject % "test")
