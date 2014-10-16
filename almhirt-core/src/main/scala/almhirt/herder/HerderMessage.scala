@@ -16,7 +16,7 @@ object HerderMessage {
   final case class DeregisterCircuitControl(id: ComponentId) extends CircuitMessage with HerderInputMessage
   
   final case object ReportCircuitStates extends CircuitMessage with HerderInputMessage
-  final case class CircuitStates(states: Map[ComponentId, CircuitState]) extends CircuitMessage
+  final case class CircuitStates(states: Seq[(ComponentId, CircuitState)]) extends CircuitMessage
 
   sealed trait CircuitControlMessage extends CircuitMessage with HerderInputMessage
   final case class AttemptCloseCircuit(id: ComponentId) extends CircuitControlMessage

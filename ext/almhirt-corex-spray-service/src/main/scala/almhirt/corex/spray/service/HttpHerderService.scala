@@ -155,7 +155,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
   }
 
   import scala.xml._
-  private def createCircuitsUi(state: Map[ComponentId, CircuitState]) = {
+  private def createCircuitsUi(state: Seq[(ComponentId, CircuitState)]) = {
     <html>
       <head>
         <title>Circuits</title>
@@ -168,7 +168,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </html>
   }
 
-  private def createCircuitsContent(state: Map[ComponentId, CircuitState], isReport: Boolean) = {
+  private def createCircuitsContent(state: Seq[(ComponentId, CircuitState)], isReport: Boolean) = {
     def createStateItem(state: CircuitState) = {
       state match {
         case x: CircuitState.Closed =>
@@ -438,7 +438,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
   }
 
   def createStatusReport(
-    circuitsState: Map[ComponentId, CircuitState],
+    circuitsState: Seq[(ComponentId, CircuitState)],
     missedEvents: Seq[(ComponentId, almhirt.problem.Severity, Int)],
     failures: Seq[(ComponentId, FailuresEntry)],
     pathToHerder: String) = {

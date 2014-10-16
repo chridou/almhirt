@@ -33,7 +33,7 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
       val statesF = AlmFuture.sequence(futs.toSeq)
       statesF.onComplete(
         fail => log.error(s"Could not determine circuit states:\n$fail"),
-        states => pinnedSender ! HerderMessage.CircuitStates(states.toMap))
+        states => pinnedSender ! HerderMessage.CircuitStates(states.toSeq.sortBy(_._1)))
 
     case HerderMessage.AttemptCloseCircuit(ownerId) =>
       circuitControls.find(_._1 == ownerId) match {
