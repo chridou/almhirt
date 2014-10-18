@@ -272,7 +272,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     }
 
     if (isReport) {
-      <table border="0">
+      <table border="1">
         <tr>
           <th>App</th>
           <th>Component</th>
@@ -298,14 +298,14 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <title>Missed Events</title>
       </head>
       <body>
-        { createMissedEventsReportContent(missedEvents, pathToHerder) }
+        { createMissedEventsReportContent(missedEvents, false, pathToHerder) }
         <br/>
         { almhirtContext.getUtcTimestamp.toString }
       </body>
     </html>
   }
 
-  def createMissedEventsReportContent(missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])], pathToHerder: String) = {
+  def createMissedEventsReportContent(missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])], abridged: Boolean, pathToHerder: String) = {
     def createHistoryLine(item: MissedEventsEntry) = {
       <tr>
         <td>{ item._4.toString() }</td>
@@ -327,7 +327,12 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <th>Component</th>
         <th>Missed Events</th>
         <th>Max Severity</th>
-        <th>Last 3 missed events</th>
+        {
+          if (!abridged)
+            <th>Last 3 missed events</th>
+          else
+            <th>Last missed event</th>
+        }
         <th>more</th>
       </tr>
       {
@@ -337,37 +342,47 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
               <td>{ app.value }</td>
               <td>{ component.value }</td>
               <td>{ history.occurencesCount }</td>
-              <td>{ history.maxSeverity.map(_.toString()).getOrElse("-") }</td>
+              <td>{ history.maxSeverity.map(createSeverityItem).getOrElse(<span>-</span>) }</td>
+              {
+                <td>
+                  <table border="0">
+                    { history.lastOccurences.take(if (abridged) 1 else 3).map(createHistoryLine) }
+                  </table>
+                </td>
+              }
               <td>
-                <table border="0">
-                  { history.lastOccurences.take(3).map(createHistoryLine) }
-                </table>
-              </td>
-              <td>
                 {
-                  val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/1", xml.Null)
-                  val anchor = Elem(null, "a", att, TopScope, true, Text("last"))
-                  <span>{ anchor }</span><br/>
-                }
-                {
-                  val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/5", xml.Null)
-                  val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
-                  <span>{ anchor }</span><br/>
-                }
-                {
-                  val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/20", xml.Null)
-                  val anchor = Elem(null, "a", att, TopScope, true, Text("last 20"))
-                  <span>{ anchor }</span><br/>
-                }
-                {
-                  val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/50", xml.Null)
-                  val anchor = Elem(null, "a", att, TopScope, true, Text("last 50"))
-                  <span>{ anchor }</span><br/>
-                }
-                {
-                  val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/100", xml.Null)
-                  val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
-                  <span>{ anchor }</span><br/>
+                  if (!abridged) {
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/1", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last"))
+                      <span>{ anchor }</span><br/>
+                    }
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/5", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                      <span>{ anchor }</span><br/>
+                    }
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/20", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last 20"))
+                      <span>{ anchor }</span><br/>
+                    }
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/50", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last 50"))
+                      <span>{ anchor }</span><br/>
+                    }
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/100", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
+                      <span>{ anchor }</span><br/>
+                    }
+                  } else {
+                    val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${app.value}/${component.value}/5", xml.Null)
+                    val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                    <span>{ anchor }</span>
+                  }
                 }
               </td>
             </tr>
@@ -442,7 +457,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <title>Failures</title>
       </head>
       <body>
-        { createFailuresReportContent(entries, pathToHerder) }
+        { createFailuresReportContent(entries, false, pathToHerder) }
         <br/>
         {
           val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
@@ -454,7 +469,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </html>
   }
 
-  def createFailuresReportContent(entries: Seq[(ComponentId, BadThingsHistory[FailuresEntry])], pathToHerder: String) = {
+  def createFailuresReportContent(entries: Seq[(ComponentId, BadThingsHistory[FailuresEntry])], abridged: Boolean, pathToHerder: String) = {
     import almhirt.problem._
 
     def createEntry(component: ComponentId, entry: BadThingsHistory[FailuresEntry]) = {
@@ -479,34 +494,42 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <td>{ entry.maxSeverity.map(createSeverityItem).getOrElse(<span>-</span>) }</td>
         <td>
           <table border="0">
-            { entry.lastOccurences.take(3).map(line => createSummaryLine(line._1, line._2, line._3)) }
+            { entry.lastOccurences.take(if (abridged) 1 else 3).map(line => createSummaryLine(line._1, line._2, line._3)) }
           </table>
         </td>
         <td>
           {
-            val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/1", xml.Null)
-            val anchor = Elem(null, "a", att, TopScope, true, Text("last"))
-            <span>{ anchor }</span><br/>
-          }
-          {
-            val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/5", xml.Null)
-            val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
-            <span>{ anchor }</span><br/>
-          }
-          {
-            val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/20", xml.Null)
-            val anchor = Elem(null, "a", att, TopScope, true, Text("last 20"))
-            <span>{ anchor }</span><br/>
-          }
-          {
-            val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/50", xml.Null)
-            val anchor = Elem(null, "a", att, TopScope, true, Text("last 50"))
-            <span>{ anchor }</span><br/>
-          }
-          {
-            val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/100", xml.Null)
-            val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
-            <span>{ anchor }</span><br/>
+            if (!abridged) {
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/1", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last"))
+                <span>{ anchor }</span><br/>
+              }
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/5", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                <span>{ anchor }</span><br/>
+              }
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/20", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last 20"))
+                <span>{ anchor }</span><br/>
+              }
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/50", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last 50"))
+                <span>{ anchor }</span><br/>
+              }
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/100", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
+                <span>{ anchor }</span><br/>
+              }
+            } else {
+              val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${component.app.value}/${component.component.value}/5", xml.Null)
+              val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+              <span>{ anchor }</span>
+            }
           }
         </td>
       </tr>
@@ -518,7 +541,12 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <th>Component</th>
         <th>Total</th>
         <th>Max Severity</th>
-        <th>Last 3 failures</th>
+        {
+          if (!abridged)
+            <th>Last 3 failures</th>
+          else
+            <th>Last failure</th>
+        }
         <th>more</th>
       </tr>
       {
@@ -588,10 +616,10 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <br/>
         <a href="./herder/circuits?ui">Circuit control</a>
         <h2>Missed Events</h2>
-        { createMissedEventsReportContent(missedEvents, pathToHerder) }
+        { createMissedEventsReportContent(missedEvents, true, pathToHerder) }
         <br/>
         <h2>Reported Failures</h2>
-        { createFailuresReportContent(failures, pathToHerder) }
+        { createFailuresReportContent(failures, true, pathToHerder) }
         <br/>
         { almhirtContext.getUtcTimestamp.toString }
       </body>
