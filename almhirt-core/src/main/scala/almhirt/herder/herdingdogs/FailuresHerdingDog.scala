@@ -1,5 +1,6 @@
 package almhirt.herder.herdingdogs
 
+import org.joda.time.LocalDateTime
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.context._
@@ -8,6 +9,8 @@ import almhirt.common._
 import almhirt.problem.ProblemCause
 import almhirt.problem.CauseIsProblem
 import almhirt.herder._
+import almhirt.akkax.ComponentId
+import almhirt.problem.Severity
 
 object FailuresHerdingDog {
   import com.typesafe.config.Config
@@ -17,45 +20,45 @@ object FailuresHerdingDog {
     for {
       section <- ctx.config.v[Config](configPath)
       ignoreConsecutiveCircuitProblems <- section.v[Boolean]("ignore-consecutive-circuit-problems")
-      maxFailuresForSummary <- section.v[Int]("max-failures-for-summary")
+      historySize <- section.v[Int]("history-size")
       unwrapFailures <- section.v[Boolean]("unwrap-failures")
-    } yield Props(new FailuresHerdingDog(ignoreConsecutiveCircuitProblems, maxFailuresForSummary, unwrapFailures))
+    } yield Props(new FailuresHerdingDog(ignoreConsecutiveCircuitProblems, historySize, unwrapFailures))
   }
 
   val actorname = "failures-herdingdog"
 }
 
-private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Boolean, maxFailuresForSummary: Int, unwrapFailures: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
+private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Boolean, historySize: Int, unwrapFailures: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
   import HerderMessages.FailureMessages._
-  
+
   implicit val executor = almhirtContext.futuresContext
 
-  var collectedFailures: Map[ComponentId, FailuresEntry] = Map.empty
+  implicit object GetSev extends GetsSeverity[FailuresEntry] {
+    def get(from: FailuresEntry): Severity = from._2
+  }
+
+  val history = new MutableBadThingsHistories[ComponentId, FailuresEntry](historySize)
 
   def receiveRunning: Receive = {
     case FailureOccured(componentId, failure, severity, timestamp) =>
       val ignore =
         (for {
-          entry <- collectedFailures.get(componentId)
-          first <- entry.summaryQueue.headOption
+          badThing <- history.get(componentId)
+          first <- badThing.latestOccurencesQueue
           ignore <- first._1 match {
             case CauseIsProblem(CircuitOpenProblem(_)) => Some(ignoreConsecutiveCircuitProblems)
             case _ => Some(false)
           }
         } yield ignore).getOrElse(false)
-      prepareCause(failure, ignore).foreach(p => collectedFailures get componentId match {
-        case Some(entry) =>
-          collectedFailures += (componentId -> entry.add(p, severity, timestamp, maxFailuresForSummary))
-        case None =>
-          collectedFailures += (componentId -> FailuresEntry().add(p, severity, timestamp, maxFailuresForSummary))
-      })
+        
+      prepareCause(failure, ignore).foreach(p => history.add(componentId, (p, severity, timestamp)))
 
     case ReportFailures =>
-      val entries = collectedFailures.toSeq
+      val entries = history.all
       sender() ! ReportedFailures(entries)
 
     case ReportFailuresFor(componentId) =>
-      sender() ! ReportedFailuresFor(componentId, collectedFailures get componentId)
+      sender() ! ReportedFailuresFor(componentId, history getImmutable componentId)
   }
 
   def prepareCause(cause: ProblemCause, ignoreCircuitProblems: Boolean): Option[ProblemCause] = {

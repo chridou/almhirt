@@ -12,8 +12,8 @@ import almhirt.components.EventSinkHubMessage
 import almhirt.herder.herdingdogs._
 
 object Herder {
-  def propsRaw(failuresHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
-    Props(new Pastor(failuresHerdingDogProps))
+  def propsRaw(failuresHerdingDogProps: Props, missedEventsHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
+    Props(new Pastor(failuresHerdingDogProps, missedEventsHerdingDogProps))
 
   def props(address: Address)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import com.typesafe.config.Config
@@ -22,7 +22,8 @@ object Herder {
     for {
       section <- ctx.config.v[Config](configPath)
       failuresHerdingDogProps <- FailuresHerdingDog.props
-    } yield propsRaw(failuresHerdingDogProps)
+      missedEventsHerdingDogProps <- MissedEventsHerdingDog.props
+    } yield propsRaw(failuresHerdingDogProps, missedEventsHerdingDogProps)
   }
 
   def props()(implicit ctx: AlmhirtContext): AlmValidation[Props] =
@@ -32,11 +33,11 @@ object Herder {
   def path(root: RootActorPath) = almhirt.context.ContextActorPaths.almhirt(root) / actorname 
 }
 
-private[almhirt] class Pastor(failuresHerdingDogProps: Props)(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
+private[almhirt] class Pastor(failuresHerdingDogProps: Props, missedEventsHerdingDogProps: Props)(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
   import almhirt.components.{ EventSinkHub, EventSinkHubMessage }
 
   val circuitsHerdingDog: ActorRef = context.actorOf(Props(new CircuitsHerdingDog()), CircuitsHerdingDog.actorname)
-  val missedEventsHerdingDog: ActorRef = context.actorOf(Props(new MissedEventsHerdingDog()), MissedEventsHerdingDog.actorname)
+  val missedEventsHerdingDog: ActorRef = context.actorOf(missedEventsHerdingDogProps, MissedEventsHerdingDog.actorname)
   val failuresHerdingDog: ActorRef = context.actorOf(failuresHerdingDogProps, FailuresHerdingDog.actorname)
 
   def receiveRunning: Receive = {

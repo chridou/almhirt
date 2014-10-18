@@ -27,10 +27,14 @@ object HerderMessages {
   object EventMessages {
     sealed trait EventsMessage
 
-    final case class MissedEvent(id: ComponentId, event: Event, severity: almhirt.problem.Severity, problem: Problem, timestamp: LocalDateTime) extends EventsMessage with HerderNotificicationMessage
+    final case class MissedEvent(id: ComponentId, event: Event, severity: almhirt.problem.Severity, reason: ProblemCause, timestamp: LocalDateTime) extends EventsMessage with HerderNotificicationMessage
 
     case object ReportMissedEvents extends EventsMessage
-    final case class MissedEvents(missed: Seq[(ComponentId, almhirt.problem.Severity, Int)]) extends EventsMessage
+    final case class MissedEvents(missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])]) extends EventsMessage
+
+    final case class ReportMissedEventsFor(id: ComponentId) extends EventsMessage 
+    final case class ReportedMissedEventsFor(id: ComponentId, missedEvents: Option[BadThingsHistory[MissedEventsEntry]]) extends EventsMessage
+  
   }
 
   object FailureMessages {
@@ -39,10 +43,10 @@ object HerderMessages {
     final case class FailureOccured(id: ComponentId, failure: ProblemCause, severity: almhirt.problem.Severity, timestamp: LocalDateTime) extends FailuresMessage with HerderNotificicationMessage
 
     case object ReportFailures extends FailuresMessage
-    final case class ReportedFailures(entries: Seq[(ComponentId, FailuresEntry)]) extends FailuresMessage
+    final case class ReportedFailures(failures: Seq[(ComponentId, BadThingsHistory[FailuresEntry])]) extends FailuresMessage
 
     final case class ReportFailuresFor(id: ComponentId) extends FailuresMessage 
-    final case class ReportedFailuresFor(id: ComponentId, entry: Option[FailuresEntry]) extends FailuresMessage
+    final case class ReportedFailuresFor(id: ComponentId, entry: Option[BadThingsHistory[FailuresEntry]]) extends FailuresMessage
   }
 
 }

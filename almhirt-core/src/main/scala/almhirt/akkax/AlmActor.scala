@@ -21,11 +21,11 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   def deregisterCircuitControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.CircuitMessages.DeregisterCircuitControl(cnp.componentId))
 
-  def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, problem: Problem)(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.EventMessages.MissedEvent(cnp.componentId, event, severity, problem, almhirtContext.getUtcTimestamp))
+  def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessages.EventMessages.MissedEvent(cnp.componentId, event, severity, cause, almhirtContext.getUtcTimestamp))
 
-  def reportFailure(failure: ProblemCause, severity: almhirt.problem.Severity)(implicit cnp: ActorComponentIdProvider): Unit =
-    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, severity, almhirtContext.getUtcTimestamp))
+  def reportFailure(cause: ProblemCause, severity: almhirt.problem.Severity)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, cause, severity, almhirtContext.getUtcTimestamp))
 
   def reportMinorFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, MinorSeverity, almhirtContext.getUtcTimestamp))

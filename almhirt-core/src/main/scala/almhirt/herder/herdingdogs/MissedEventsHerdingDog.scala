@@ -1,59 +1,52 @@
 package almhirt.herder.herdingdogs
 
+import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
 import almhirt.context._
 import almhirt.akkax.ComponentId
-import almhirt.herder.HerderMessages
+import almhirt.herder._
+import almhirt.problem.{ Severity }
+
 import akka.actor.ActorRef
 
 object MissedEventsHerdingDog {
-  val actorname = "missed-events-herdingdog"
+  import com.typesafe.config.Config
+  def props(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
+    import almhirt.configuration._
+    val configPath = "almhirt.herder.herding-dogs.missed-events"
+    for {
+      section <- ctx.config.v[Config](configPath)
+      historySize <- section.v[Int]("history-size")
+      unwrapFailures <- section.v[Boolean]("unwrap-failures")
+    } yield Props(new MissedEventsHerdingDog(historySize, unwrapFailures))
+  }
 
+  val actorname = "missed-events-herdingdog"
 }
 
-private[almhirt] class MissedEventsHerdingDog()(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
+private[almhirt] class MissedEventsHerdingDog(historySize: Int, unwrapFailures: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
   import HerderMessages.EventMessages._
 
   implicit val executor = almhirtContext.futuresContext
 
-  implicit object tOrdering extends scala.math.Ordering[(ComponentId, almhirt.problem.Severity, Int)] {
-    def compare(a: (ComponentId, almhirt.problem.Severity, Int), b: (ComponentId, almhirt.problem.Severity, Int)): Int =
-      if (a._1.app == b._1.app) {
-        if (a._2 == b._2) {
-          if (a._3 == b._3) {
-            a._1.component compare b._1.component
-          } else {
-            b._3 compare a._3
-          }
-        } else {
-          b._2 compare a._2
-        }
-      } else {
-        a._1.app compare b._1.app
-      }
+  implicit object GetSev extends GetsSeverity[MissedEventsEntry] {
+    def get(from: MissedEventsEntry): Severity = from._3
   }
 
-  var missedEvents: Map[ComponentId, (almhirt.problem.Severity, Int)] = Map.empty
+  val history = new MutableBadThingsHistories[ComponentId, MissedEventsEntry](historySize)
 
   def receiveRunning: Receive = {
-    case MissedEvent(componentId, event, severity, problem, timestamp) =>
-      missedEvents = missedEvents get componentId match {
-        case None =>
-          log.info(s"""First missing event notification from "$componentId" with severity $severity.""")
-          missedEvents + (componentId -> (severity -> 1))
-        case Some((oldSeverity, count)) =>
-          if (severity > oldSeverity) {
-            log.info(s"Severity increased for $componentId from $oldSeverity to $severity.")
-          }
-          val newSeverity = oldSeverity and severity
-
-          missedEvents + (componentId -> (newSeverity -> (count + 1)))
-      }
+    case MissedEvent(componentId, event, severity, cause, timestamp) =>
+      history.add(componentId, (event, if (unwrapFailures) cause.unwrap() else cause, severity, timestamp))
 
     case ReportMissedEvents =>
-      val missed = missedEvents.map { case (componentId, (severity, count)) => (componentId, severity, count) }.toSeq.sorted
+      val missed = history.all.sorted
       sender() ! MissedEvents(missed)
+      
+    case ReportMissedEventsFor(componentId) =>
+      sender() ! ReportedMissedEventsFor(componentId, history getImmutable componentId)
+      
   }
 
   override def receive: Receive = receiveRunning

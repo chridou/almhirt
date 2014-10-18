@@ -6,48 +6,62 @@ import almhirt.collections.CircularBuffer
 
 trait GetsSeverity[T] { def get(from: T): Severity }
 
-final case class BadThings[T](occurencesCount: Int, maxSeverity: Option[Severity], lastOccurences: Vector[T])
+final case class BadThingsHistory[T](occurencesCount: Int, maxSeverity: Option[Severity], lastOccurences: Vector[T])
 
-class MutableBadThings[T: ClassTag](val maxQueueSize: Int)(implicit getsSeverity: GetsSeverity[T]) {
+class MutableBadThingsHistory[T: ClassTag](val maxQueueSize: Int)(implicit getsSeverity: GetsSeverity[T]) {
   private var occurencesCount: Int = 0
   private var maxSeverity: Option[Severity] = None
-  private val lastOccurencesQueue = new CircularBuffer[T](maxQueueSize) 
-  
+  private var lastOccurencesQueue = new CircularBuffer[T](maxQueueSize)
+
   def add(what: T) {
     occurencesCount += 1
     lastOccurencesQueue.push(what)
     val severity = getsSeverity.get(what)
-    maxSeverity.map(_ and severity).getOrElse(severity)
+    maxSeverity = Some(maxSeverity.map(_ and severity).getOrElse(severity))
   }
-  
+
   def clear() {
     occurencesCount = 0
     maxSeverity = None
     lastOccurencesQueue.clear
   }
-  
-  def immutable: BadThings[T] = BadThings(occurencesCount, maxSeverity, lastOccurencesQueue.toVector)
+
+  def resize(newSize: Int) {
+    lastOccurencesQueue = lastOccurencesQueue.resize(newSize)
+  }
+
+  def immutable: BadThingsHistory[T] = BadThingsHistory(occurencesCount, maxSeverity, lastOccurencesQueue.toVector)
+
+  def oldestOccurencesQueue: Option[T] =
+    lastOccurencesQueue.headOption
+
+  def latestOccurencesQueue: Option[T] =
+    lastOccurencesQueue.lastOption
+
 }
 
-class MutableBadThingsContainer[K, T : GetsSeverity : ClassTag](val maxQueueSize: Int) {
-  private val entries = new scala.collection.mutable.HashMap[K, MutableBadThings[T]]()
-  
+class MutableBadThingsHistories[K, T: GetsSeverity: ClassTag](val maxQueueSize: Int) {
+  private val entries = new scala.collection.mutable.HashMap[K, MutableBadThingsHistory[T]]()
+
   def add(key: K, what: T) {
     entries get key match {
-      case Some(entry) => 
+      case Some(entry) =>
         entry.add(what)
       case None =>
-        val newEntry = new MutableBadThings[T](maxQueueSize)
+        val newEntry = new MutableBadThingsHistory[T](maxQueueSize)
         newEntry.add(what)
         entries.put(key, newEntry)
     }
   }
-  
+
   def get(key: K) = entries get key
-  
-  def all: Vector[(K, BadThings[T])] = entries.map(x => (x._1, x._2.immutable)).toVector
-  
+  def getImmutable(key: K) = (entries get key).map(_.immutable)
+  def all: Vector[(K, BadThingsHistory[T])] = entries.map(x => (x._1, x._2.immutable)).toVector
+
   def clear(key: K) { get(key).foreach(_.clear()) }
-  
+  def resize(key: K, newSize: Int) { get(key).foreach(_.resize(newSize)) }
+
   def clearAll() { entries.clear() }
+  def resizeAll(newSize: Int) { entries.values.foreach(_.resize(newSize)) }
+
 }
