@@ -13,11 +13,13 @@ import almhirt.akkax.AlmCircuitBreaker
 import almhirt.akkax.CircuitControlSettings
 
 case class CrazyShawnEvent(header: EventHeader, message: String) extends Event
+case class CrazyShawnCommand(header: CommandHeader, message: String) extends Command
 
 class CrazyShawn(implicit override val almhirtContext: AlmhirtContext) extends CrazySheepActor {
   implicit val executionContext = almhirtContext.futuresContext
 
   private case class DoSomething(event: Event)
+  private case object RejectCommand
 
   val rnd = new scala.util.Random()
 
@@ -54,6 +56,10 @@ class CrazyShawn(implicit override val almhirtContext: AlmhirtContext) extends C
   var badSent = 0
 
   def receive: Receive = {
+    case RejectCommand =>
+      val cmd = CrazyShawnCommand(CommandHeader(), s"$count")
+      reportRejectedCommand(cmd, getSeverity, UnspecifiedProblem("Huh?"))
+    
     case DoSomething(event: Event) =>
       val res = if (mayBeGoodLeft > 0) {
         mayBeGoodLeft -= 1
@@ -72,6 +78,7 @@ class CrazyShawn(implicit override val almhirtContext: AlmhirtContext) extends C
       circuitBreaker.fused(res).onFailure({ problem =>
         reportMissedEvent(event, getSeverity, problem)
         reportFailure(problem, getSeverity)
+        self ! RejectCommand
       })
       count += 1
       val nextevent = getEvent(s"mähähä-$count")

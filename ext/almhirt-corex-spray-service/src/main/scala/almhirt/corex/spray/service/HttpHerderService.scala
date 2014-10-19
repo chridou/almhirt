@@ -60,14 +60,16 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         get { ctx =>
           val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
           val futCircuits = (herder ? CircuitMessages.ReportCircuitStates)(maxCallDuration).mapCastTo[CircuitMessages.CircuitStates].map(_.states)
-          val futMissedEvents = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missedEvents)
           val futFailures = (herder ? FailureMessages.ReportFailures)(maxCallDuration).mapCastTo[FailureMessages.ReportedFailures].map(_.failures)
+          val futRejectedCommands = (herder ? CommandMessages.ReportRejectedCommands)(maxCallDuration).mapCastTo[CommandMessages.RejectedCommands].map(_.rejectedCommands)
+          val futMissedEvents = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missedEvents)
           val futHtml =
             for {
               circuitStates <- futCircuits
-              missedEvents <- futMissedEvents
               failures <- futFailures
-            } yield createStatusReport(circuitStates, missedEvents, failures, "./herder")
+              rejectedCommands <- futRejectedCommands
+              missedEvents <- futMissedEvents
+            } yield createStatusReport(circuitStates, failures, rejectedCommands, missedEvents, "./herder")
           futHtml.fold(
             problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
             html => ctx.complete(StatusCodes.OK, html))
@@ -120,29 +122,6 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             }
           }
         }
-      } ~ pathPrefix("missed-events") {
-        pathEnd {
-          get { ctx =>
-            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-            val fut = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missedEvents)
-            fut.fold(
-              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-              missed => ctx.complete(StatusCodes.OK, createMissedEventsReport(missed, "../herder")))
-          }
-        } ~ pathPrefix(Segment / Segment / IntNumber) { (appName, componentName, num) =>
-          pathEnd {
-            get { ctx =>
-              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-              val fut = (herder ? EventMessages.ReportMissedEventsFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[EventMessages.ReportedMissedEventsFor]
-              fut.fold(
-                problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
-                res => res.missedEvents match {
-                  case Some(e) => ctx.complete(StatusCodes.OK, createComponentMissedEventsReport(res.id, e, num, "../../../herder"))
-                  case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name ($appName/$componentName) found."))
-                })
-            }
-          }
-        }
       } ~ pathPrefix("failures") {
         pathEnd {
           get { ctx =>
@@ -161,6 +140,52 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
                 problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
                 res => res.entry match {
                   case Some(e) => ctx.complete(StatusCodes.OK, createComponentFailuresReport(res.id, e, num, "../../../herder"))
+                  case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name ($appName/$componentName) found."))
+                })
+            }
+          }
+        }
+      } ~ pathPrefix("rejected-commands") {
+        pathEnd {
+          get { ctx =>
+            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+            val fut = (herder ? CommandMessages.ReportRejectedCommands)(maxCallDuration).mapCastTo[CommandMessages.RejectedCommands].map(_.rejectedCommands)
+            fut.fold(
+              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+              rejected => ctx.complete(StatusCodes.OK, createRejectedCommandsReport(rejected, "../herder")))
+          }
+        } ~ pathPrefix(Segment / Segment / IntNumber) { (appName, componentName, num) =>
+          pathEnd {
+            get { ctx =>
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              val fut = (herder ? CommandMessages.ReportRejectedCommandsFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[CommandMessages.ReportedRejectedCommandsFor]
+              fut.fold(
+                problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+                res => res.rejectedCommands match {
+                  case Some(e) => ctx.complete(StatusCodes.OK, createComponentRejectedCommandsReport(res.id, e, num, "../../../herder"))
+                  case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name ($appName/$componentName) found."))
+                })
+            }
+          }
+        }
+      } ~ pathPrefix("missed-events") {
+        pathEnd {
+          get { ctx =>
+            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+            val fut = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missedEvents)
+            fut.fold(
+              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+              missed => ctx.complete(StatusCodes.OK, createMissedEventsReport(missed, "../herder")))
+          }
+        } ~ pathPrefix(Segment / Segment / IntNumber) { (appName, componentName, num) =>
+          pathEnd {
+            get { ctx =>
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              val fut = (herder ? EventMessages.ReportMissedEventsFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[EventMessages.ReportedMissedEventsFor]
+              fut.fold(
+                problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+                res => res.missedEvents match {
+                  case Some(e) => ctx.complete(StatusCodes.OK, createComponentMissedEventsReport(res.id, e, num, "../../../herder"))
                   case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name ($appName/$componentName) found."))
                 })
             }
@@ -290,6 +315,314 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         { state.map { case (component, state) => createRow(component, state, false) } }
       </table>
     }
+  }
+
+  def createFailuresReport(entries: Seq[(ComponentId, BadThingsHistory[FailuresEntry])], pathToHerder: String) = {
+    <html>
+      <head>
+        <title>Failures</title>
+      </head>
+      <body>
+        { createFailuresReportContent(entries, false, pathToHerder) }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
+      </body>
+    </html>
+  }
+
+  def createFailuresReportContent(entries: Seq[(ComponentId, BadThingsHistory[FailuresEntry])], abridged: Boolean, pathToHerder: String) = {
+    import almhirt.problem._
+
+    def createEntry(component: ComponentId, entry: BadThingsHistory[FailuresEntry]) = {
+      def createSummaryLine(item: (ProblemCause, Severity, LocalDateTime)) = {
+        <tr>
+          <td>{ item._3.toString }</td>
+          <td>{ createSeverityItem(item._2) }</td>
+          <td>{
+            item._1 match {
+              case CauseIsProblem(p) => p.problemType.toString()
+              case CauseIsThrowable(HasAThrowable(exn)) => exn.getClass().getName()
+              case CauseIsThrowable(HasAThrowableDescribed(className, _, _, _)) => className
+            }
+          }</td>
+        </tr>
+      }
+
+      <tr>
+        <td>{ component.app.value }</td>
+        <td>{ component.component.value }</td>
+        <td>{ entry.occurencesCount }</td>
+        <td>{ entry.maxSeverity.map(createSeverityItem).getOrElse(<span>-</span>) }</td>
+        <td>
+          <table border="0">
+            { entry.lastOccurences.take(if (abridged) 1 else 3).map(line => createSummaryLine(line._1, line._2, line._3)) }
+          </table>
+        </td>
+        <td>
+          {
+            if (!abridged) {
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/1", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last"))
+                <span>{ anchor }</span><br/>
+              }
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/5", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                <span>{ anchor }</span><br/>
+              }
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/20", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last 20"))
+                <span>{ anchor }</span><br/>
+              }
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/50", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last 50"))
+                <span>{ anchor }</span><br/>
+              }
+              {
+                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/100", xml.Null)
+                val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
+                <span>{ anchor }</span><br/>
+              }
+            } else {
+              val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${component.app.value}/${component.component.value}/5", xml.Null)
+              val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+              <span>{ anchor }</span>
+            }
+          }
+        </td>
+      </tr>
+    }
+
+    <table border="1">
+      <tr>
+        <th>App</th>
+        <th>Component</th>
+        <th>Total</th>
+        <th>Max Severity</th>
+        {
+          if (!abridged)
+            <th>Last 3 failures</th>
+          else
+            <th>Last failure</th>
+        }
+        <th>more</th>
+      </tr>
+      {
+        { entries.map { case (name, entry) => createEntry(name, entry) } }
+      }
+    </table>
+  }
+
+  def createComponentFailuresReport(component: ComponentId, entry: BadThingsHistory[FailuresEntry], maxItems: Int, pathToHerder: String) = {
+    <html>
+      <head>
+        <title>Reported failures for { component }</title>
+      </head>
+      <body>
+        <h1>Reported failures for { component }</h1>
+        <span>Total failures: { entry.occurencesCount }</span>
+        <br/>
+        <span>Max severity ever: { entry.maxSeverity.map(_.toString()).getOrElse("-") }</span>
+        <br/>
+        <table border="1">
+          <tr>
+            <th>Timestamp</th>
+            <th>Severity</th>
+            <th>Failure</th>
+          </tr>
+          {
+            val items = entry.lastOccurences
+            items.drop(Math.max(items.size - maxItems, 0)).map {
+              case (cause, severity, timestamp) =>
+                <tr>
+                  <td>{ timestamp.toString }</td>
+                  <td>{ createSeverityItem(severity) }</td>
+                  <td>{ createFailureDetail(cause) }</td>
+                </tr>
+            }
+          }
+        </table>
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/failures", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Failures Report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
+      </body>
+    </html>
+  }
+
+  def createRejectedCommandsReport(rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])], pathToHerder: String) = {
+    <html>
+      <head>
+        <title>Rejected Commands</title>
+      </head>
+      <body>
+        { createRejectedCommandsContent(rejectedCommands, false, pathToHerder) }
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
+      </body>
+    </html>
+  }
+
+  def createRejectedCommandsContent(rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])], abridged: Boolean, pathToHerder: String) = {
+    def createHistoryLine(item: RejectedCommandsEntry) = {
+      <tr>
+        <td>{ item._4.toString() }</td>
+        <td>{ s"${item._1.getClass().getSimpleName().toString}(${item._1.commandId.value})" }</td>
+        <td>{ createSeverityItem(item._3) }</td>
+        <td>{
+          item._2 match {
+            case CauseIsProblem(p) => p.problemType.toString()
+            case CauseIsThrowable(HasAThrowable(exn)) => exn.getClass().getName()
+            case CauseIsThrowable(HasAThrowableDescribed(className, _, _, _)) => className
+          }
+        }</td>
+      </tr>
+    }
+
+    <table border="1">
+      <tr>
+        <th>App</th>
+        <th>Component</th>
+        <th>Rejected Commands</th>
+        <th>Max Severity</th>
+        {
+          if (!abridged)
+            <th>Last 3 rejected commands</th>
+          else
+            <th>Last rejected command</th>
+        }
+        <th>more</th>
+      </tr>
+      {
+        rejectedCommands.map {
+          case (ComponentId(app, component), history) =>
+            <tr>
+              <td>{ app.value }</td>
+              <td>{ component.value }</td>
+              <td>{ history.occurencesCount }</td>
+              <td>{ history.maxSeverity.map(createSeverityItem).getOrElse(<span>-</span>) }</td>
+              {
+                <td>
+                  <table border="0">
+                    { history.lastOccurences.take(if (abridged) 1 else 3).map(createHistoryLine) }
+                  </table>
+                </td>
+              }
+              <td>
+                {
+                  if (!abridged) {
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/rejected-commands/${app.value}/${component.value}/1", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last"))
+                      <span>{ anchor }</span><br/>
+                    }
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/rejected-commands/${app.value}/${component.value}/5", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                      <span>{ anchor }</span><br/>
+                    }
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/rejected-commands/${app.value}/${component.value}/20", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last 20"))
+                      <span>{ anchor }</span><br/>
+                    }
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/rejected-commands/${app.value}/${component.value}/50", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last 50"))
+                      <span>{ anchor }</span><br/>
+                    }
+                    {
+                      val att = new UnprefixedAttribute("href", s"$pathToHerder/rejected-commands/${app.value}/${component.value}/100", xml.Null)
+                      val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
+                      <span>{ anchor }</span><br/>
+                    }
+                  } else {
+                    val att = new UnprefixedAttribute("href", s"$pathToHerder/rejected-commands/${app.value}/${component.value}/5", xml.Null)
+                    val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                    <span>{ anchor }</span>
+                  }
+                }
+              </td>
+            </tr>
+        }
+      }
+    </table>
+  }
+
+  def createComponentRejectedCommandsReport(component: ComponentId, rejectedCommands: BadThingsHistory[RejectedCommandsEntry], maxItems: Int, pathToHerder: String) = {
+    <html>
+      <head>
+        <title>Reported missed events for { component }</title>
+      </head>
+      <body>
+        <h1>Reported rejected commands for { component }</h1>
+        <span>Total rejected commands: { rejectedCommands.occurencesCount }</span>
+        <br/>
+        <span>Max severity ever: { rejectedCommands.maxSeverity.map(_.toString()).getOrElse("-") }</span>
+        <br/>
+        <table border="1">
+          <tr>
+            <th>Timestamp</th>
+            <th>Severity</th>
+            <th>Event</th>
+            <th>Failure</th>
+          </tr>
+          {
+            val items = rejectedCommands.lastOccurences
+            items.drop(Math.max(items.size - maxItems, 0)).map {
+              case (command, cause, severity, timestamp) =>
+                <tr>
+                  <td>{ timestamp.toString }</td>
+                  <td>{ createSeverityItem(severity) }</td>
+                  <td>
+                    {
+                      command match {
+                        case c: AggregateRootCommand =>
+                          <span>{ s"${command.getClass().getName().toString}(${command.commandId.value})" }</span>
+                          <br/>
+                          <span>{ s"Aggregate root id: ${c.aggId.value}" }</span>
+                          <br/>
+                          <span>{ s"Aggregate root version: ${c.aggVersion.value}" }</span>
+                        case c =>
+                          <span>{ s"${command.getClass().getName().toString}(${command.commandId.value})" }</span>
+                      }
+                    }
+                  </td>
+                  <td>{ createFailureDetail(cause) }</td>
+                </tr>
+            }
+          }
+        </table>
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Missed events report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
+      </body>
+    </html>
   }
 
   def createMissedEventsReport(missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])], pathToHerder: String) = {
@@ -451,159 +784,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </html>
   }
 
-  def createFailuresReport(entries: Seq[(ComponentId, BadThingsHistory[FailuresEntry])], pathToHerder: String) = {
-    <html>
-      <head>
-        <title>Failures</title>
-      </head>
-      <body>
-        { createFailuresReportContent(entries, false, pathToHerder) }
-        <br/>
-        {
-          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
-          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
-        }
-        <br/>
-        { almhirtContext.getUtcTimestamp.toString }
-      </body>
-    </html>
-  }
-
-  def createFailuresReportContent(entries: Seq[(ComponentId, BadThingsHistory[FailuresEntry])], abridged: Boolean, pathToHerder: String) = {
-    import almhirt.problem._
-
-    def createEntry(component: ComponentId, entry: BadThingsHistory[FailuresEntry]) = {
-      def createSummaryLine(item: (ProblemCause, Severity, LocalDateTime)) = {
-        <tr>
-          <td>{ item._3.toString }</td>
-          <td>{ createSeverityItem(item._2) }</td>
-          <td>{
-            item._1 match {
-              case CauseIsProblem(p) => p.problemType.toString()
-              case CauseIsThrowable(HasAThrowable(exn)) => exn.getClass().getName()
-              case CauseIsThrowable(HasAThrowableDescribed(className, _, _, _)) => className
-            }
-          }</td>
-        </tr>
-      }
-
-      <tr>
-        <td>{ component.app.value }</td>
-        <td>{ component.component.value }</td>
-        <td>{ entry.occurencesCount }</td>
-        <td>{ entry.maxSeverity.map(createSeverityItem).getOrElse(<span>-</span>) }</td>
-        <td>
-          <table border="0">
-            { entry.lastOccurences.take(if (abridged) 1 else 3).map(line => createSummaryLine(line._1, line._2, line._3)) }
-          </table>
-        </td>
-        <td>
-          {
-            if (!abridged) {
-              {
-                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/1", xml.Null)
-                val anchor = Elem(null, "a", att, TopScope, true, Text("last"))
-                <span>{ anchor }</span><br/>
-              }
-              {
-                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/5", xml.Null)
-                val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
-                <span>{ anchor }</span><br/>
-              }
-              {
-                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/20", xml.Null)
-                val anchor = Elem(null, "a", att, TopScope, true, Text("last 20"))
-                <span>{ anchor }</span><br/>
-              }
-              {
-                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/50", xml.Null)
-                val anchor = Elem(null, "a", att, TopScope, true, Text("last 50"))
-                <span>{ anchor }</span><br/>
-              }
-              {
-                val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/100", xml.Null)
-                val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
-                <span>{ anchor }</span><br/>
-              }
-            } else {
-              val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${component.app.value}/${component.component.value}/5", xml.Null)
-              val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
-              <span>{ anchor }</span>
-            }
-          }
-        </td>
-      </tr>
-    }
-
-    <table border="1">
-      <tr>
-        <th>App</th>
-        <th>Component</th>
-        <th>Total</th>
-        <th>Max Severity</th>
-        {
-          if (!abridged)
-            <th>Last 3 failures</th>
-          else
-            <th>Last failure</th>
-        }
-        <th>more</th>
-      </tr>
-      {
-        { entries.map { case (name, entry) => createEntry(name, entry) } }
-      }
-    </table>
-  }
-
-  def createComponentFailuresReport(component: ComponentId, entry: BadThingsHistory[FailuresEntry], maxItems: Int, pathToHerder: String) = {
-    <html>
-      <head>
-        <title>Reported failures for { component }</title>
-      </head>
-      <body>
-        <h1>Reported failures for { component }</h1>
-        <span>Total failures: { entry.occurencesCount }</span>
-        <br/>
-        <span>Max severity ever: { entry.maxSeverity.map(_.toString()).getOrElse("-") }</span>
-        <br/>
-        <table border="1">
-          <tr>
-            <th>Timestamp</th>
-            <th>Severity</th>
-            <th>Failure</th>
-          </tr>
-          {
-            val items = entry.lastOccurences
-            items.drop(Math.max(items.size - maxItems, 0)).map {
-              case (cause, severity, timestamp) =>
-                <tr>
-                  <td>{ timestamp.toString }</td>
-                  <td>{ createSeverityItem(severity) }</td>
-                  <td>{ createFailureDetail(cause) }</td>
-                </tr>
-            }
-          }
-        </table>
-        <br/>
-        {
-          val att = new UnprefixedAttribute("href", s"$pathToHerder/failures", xml.Null)
-          Elem(null, "a", att, TopScope, true, Text("Failures Report"))
-        }
-        <br/>
-        {
-          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
-          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
-        }
-        <br/>
-        { almhirtContext.getUtcTimestamp.toString }
-      </body>
-    </html>
-  }
-
   def createStatusReport(
     circuitsState: Seq[(ComponentId, CircuitState)],
-    missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])],
     failures: Seq[(ComponentId, BadThingsHistory[FailuresEntry])],
+    rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])],
+    missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])],
     pathToHerder: String) = {
     <html>
       <head>
@@ -611,15 +796,27 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       </head>
       <body>
         <h1>Status</h1>
-        <h2>Circuits</h2>
-        { createCircuitsContent(circuitsState, true) }
-        <br/>
-        <a href="./herder/circuits?ui">Circuit control</a>
-        <h2>Missed Events</h2>
-        { createMissedEventsReportContent(missedEvents, true, pathToHerder) }
-        <br/>
-        <h2>Reported Failures</h2>
-        { createFailuresReportContent(failures, true, pathToHerder) }
+        <table border="1">
+          <tr>
+            <th>
+              <h2>Circuits</h2><br/><a href="./herder/circuits?ui">Circuit control</a>
+            </th>
+            <th><h2>Reported Failures</h2></th>
+          </tr>
+          <tr>
+            <td>{ createCircuitsContent(circuitsState, true) }</td>
+            <td>{ createFailuresReportContent(failures, true, pathToHerder) }</td>
+          </tr>
+          <tr>
+            <th><h2>Rejected Commands</h2></th>
+            <th><h2>Missed Events</h2></th>
+          </tr>
+          <tr>
+            <td>{ createRejectedCommandsContent(rejectedCommands, true, pathToHerder) }</td>
+            <td>{ createMissedEventsReportContent(missedEvents, true, pathToHerder) }</td>
+          </tr>
+          <br/>
+        </table>
         <br/>
         { almhirtContext.getUtcTimestamp.toString }
       </body>

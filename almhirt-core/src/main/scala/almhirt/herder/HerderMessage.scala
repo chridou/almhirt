@@ -37,6 +37,19 @@ object HerderMessages {
   
   }
 
+  object CommandMessages {
+    sealed trait CommandsMessage
+
+    final case class RejectedCommand(id: ComponentId, command: Command, severity: almhirt.problem.Severity, reason: ProblemCause, timestamp: LocalDateTime) extends CommandsMessage with HerderNotificicationMessage
+
+    case object ReportRejectedCommands extends CommandsMessage
+    final case class RejectedCommands(rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])]) extends CommandsMessage
+
+    final case class ReportRejectedCommandsFor(id: ComponentId) extends CommandsMessage 
+    final case class ReportedRejectedCommandsFor(id: ComponentId, rejectedCommands: Option[BadThingsHistory[RejectedCommandsEntry]]) extends CommandsMessage
+  
+  }
+
   object FailureMessages {
     sealed trait FailuresMessage
 

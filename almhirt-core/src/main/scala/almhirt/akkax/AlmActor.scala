@@ -6,7 +6,6 @@ import almhirt.context.HasAlmhirtContext
 import almhirt.herder.HerderMessages
 import almhirt.problem.ProblemCause
 
-
 trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
 
   private object DefaultComponentIdProvider extends ActorComponentIdProvider {
@@ -20,6 +19,9 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
 
   def deregisterCircuitControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.CircuitMessages.DeregisterCircuitControl(cnp.componentId))
+
+  def reportRejectedCommand(command: Command, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
+    almhirtContext.tellHerder(HerderMessages.CommandMessages.RejectedCommand(cnp.componentId, command, severity, cause, almhirtContext.getUtcTimestamp))
 
   def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.EventMessages.MissedEvent(cnp.componentId, event, severity, cause, almhirtContext.getUtcTimestamp))
