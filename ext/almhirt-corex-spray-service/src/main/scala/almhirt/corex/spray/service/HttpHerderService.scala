@@ -430,7 +430,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
                 }
               </span>
             } else {
-              val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events/${component.app.value}/${component.component.value}/5", xml.Null)
+              val att = new UnprefixedAttribute("href", s"$pathToHerder/failures/${component.app.value}/${component.component.value}/5", xml.Null)
               val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
               <span>{ anchor }</span>
             }
