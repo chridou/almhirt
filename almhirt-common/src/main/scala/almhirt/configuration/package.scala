@@ -35,6 +35,18 @@ package object configuration {
           }
         })
 
+    def magicDefault[T](defaultMarker: String, default: T)(path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[T] =
+      ConfigStringExtractorInst.getValue(self, path).fold(
+        problem => {
+          self.value[T](path)
+        },
+        mayBeMagicDefault => {
+          if (mayBeMagicDefault.toLowerCase() == defaultMarker)
+            scalaz.Success(default)
+          else
+            self.value[T](path)
+        })
+
     final def v[T](path: String)(implicit configExtractor: ConfigExtractor[T]): AlmValidation[T] =
       value[T](path)(configExtractor)
 
@@ -70,7 +82,6 @@ package object configuration {
   implicit val ConfigConfigExtractorInst = new ConfigConfigExtractor {}
   implicit val ConfigJavaPropertiesExtractorInst = new ConfigJavaPropertiesExtractor {}
 
-  
   implicit object SeverityConfigExtractor extends ConfigExtractor[almhirt.problem.Severity] {
     def getValue(config: Config, path: String): AlmValidation[almhirt.problem.Severity] =
       for {
@@ -85,7 +96,7 @@ package object configuration {
       }
 
   }
-  
+
   implicit object ExecutionContextConfigExtractor extends ConfigExtractor[ExecutionContextSelector] {
     def getValue(config: Config, path: String): AlmValidation[ExecutionContextSelector] =
       for {
