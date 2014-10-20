@@ -19,6 +19,7 @@ trait ContextActorPaths {
   def herder: ActorPath
   def components: ActorPath
   def eventLogs: ActorPath
+  def views: ActorPath
   def misc: ActorPath
   def apps: ActorPath
 }
@@ -31,6 +32,7 @@ object ContextActorPaths {
       val herder = ContextActorPaths.herder(root)
       val components = ContextActorPaths.components(root)
       val eventLogs = ContextActorPaths.eventLogs(root)
+      val views = ContextActorPaths.views(root)
       val misc = ContextActorPaths.misc(root)
       val apps = ContextActorPaths.apps(root)
     }
@@ -48,6 +50,9 @@ object ContextActorPaths {
   def eventLogs(root: RootActorPath): ActorPath =
     components(root) / "event-logs"
 
+  def views(root: RootActorPath): ActorPath =
+    components(root) / "views"
+    
   def misc(root: RootActorPath): ActorPath =
     components(root) / "misc"
 
