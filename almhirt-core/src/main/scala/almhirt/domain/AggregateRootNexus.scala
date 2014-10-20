@@ -21,7 +21,7 @@ object AggregateRootNexus {
     Props(new AggregateRootNexus(Some(ctx.commandStream), hiveSelector, hiveFactory))
 
   val actorname = "aggregate-root-nexus"
-  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.components(root) / actorname 
+  def path(root: RootActorPath) = almhirt.context.ContextActorPaths.components(root) / actorname
 }
 
 /**
@@ -42,7 +42,7 @@ private[almhirt] class AggregateRootNexus(
   def receiveInitialize: Receive = {
     case Start ⇒
       commandsPublisher.foreach(cmdPub ⇒
-        FlowFrom[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.publishTo(ActorSubscriber[AggregateRootCommand](self)))
+        Source[Command](cmdPub).collect { case e: AggregateRootCommand ⇒ e }.connect(Sink(ActorSubscriber[AggregateRootCommand](self))).run())
 
       createInitialHives()
       request(1)
@@ -87,14 +87,15 @@ private[almhirt] class AggregateRootNexus(
   def receive: Receive = receiveInitialize
 
   private def createInitialHives() {
-    val fanout = FlowFrom[AggregateRootCommand](ActorPublisher[AggregateRootCommand](self)).toFanoutPublisher(1, AlmMath.nextPowerOf2(hiveSelector.size))
+    //val fanout = FlowFrom[AggregateRootCommand](ActorPublisher[AggregateRootCommand](self)).toFanoutPublisher(1, AlmMath.nextPowerOf2(hiveSelector.size))
+    val fanout = Source(ActorPublisher[AggregateRootCommand](self)).runWith(PublisherDrain.withFanout[AggregateRootCommand](1, AlmMath.nextPowerOf2(hiveSelector.size)))
     hiveSelector.foreach {
       case (descriptor, f) ⇒
         val props = hiveFactory.props(descriptor).resultOrEscalate
         val actor = context.actorOf(props, s"hive-${descriptor.value}")
         context watch actor
         val consumer = ActorSubscriber[AggregateRootCommand](actor)
-        FlowFrom(fanout).filter(cmd ⇒ f(cmd)).publishTo(consumer)
+        Source(fanout).filter(cmd ⇒ f(cmd)).connect(Sink(consumer)).run()
     }
   }
 

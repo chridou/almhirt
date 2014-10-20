@@ -9,6 +9,7 @@ import org.reactivestreams.{ Subscriber, Subscription, Publisher }
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber }
 import almhirt.common._
 import almhirt.almfuture.all._
+import akka.stream.scaladsl2.PublisherDrain
 
 trait CanDispatchEvents {
   def eventBroker: StreamBroker[Event]
@@ -28,7 +29,7 @@ trait AlmhirtStreams extends EventStream with CommandStream with CanDispatchEven
 object AlmhirtStreams {
   import akka.stream.scaladsl2._
   import akka.stream.OverflowStrategy
-  
+
   def apply(supervisorName: String)(maxDur: FiniteDuration)(implicit actorRefFactory: ActorRefFactory): AlmFuture[AlmhirtStreams with Stoppable] =
     create(
       supervisorName,
@@ -131,34 +132,37 @@ object AlmhirtStreams {
             val eventShipperActor = context.actorOf(StreamShipper.props(), "event-broker")
             val (eventShipperIn, eventShipperOut, stopEventShipper) = StreamShipper[Event](eventShipperActor)
 
-            val eventPub =
+            val eventsDrain = PublisherDrain.withFanout[Event](initialFanoutEvents, maxFanoutEvents)
+            val eventFlow =
               if (eventBufferSize > 0)
-                cheat(FlowFrom[Event](eventShipperOut).buffer(eventBufferSize, OverflowStrategy.backpressure), initialFanoutEvents, maxFanoutEvents, "eventPub")(context)
+                Flow[Event].buffer(eventBufferSize, OverflowStrategy.backpressure)
               else
-                cheat(FlowFrom[Event](eventShipperOut), initialFanoutEvents, maxFanoutEvents, "eventPub")(context)
+                Flow[Event]
+            val eventsPub = eventFlow.runWith(PublisherTap(eventShipperOut), eventsDrain)
 
             if (soakEvents)
-              FlowFrom(eventPub).withSink(BlackholeSink).run()
+              PublisherTap(eventsPub).foreach(_ => ())
 
             // commands
 
             val commandShipperActor = actorRefFactory.actorOf(StreamShipper.props(), "command-broker")
             val (commandShipperIn, commandShipperOut, stopCommandShipper) = StreamShipper[Command](commandShipperActor)
-
-            val commandPub =
+            val commandsDrain = PublisherDrain.withFanout[Command](initialFanoutCommands, maxFanoutCommands)
+            val commandFlow =
               if (commandBufferSize > 0)
-                cheat(FlowFrom[Command](commandShipperOut).buffer(eventBufferSize, OverflowStrategy.backpressure), initialFanoutCommands, maxFanoutCommands, "commandPub")(context)
+                Flow[Command].buffer(commandBufferSize, OverflowStrategy.backpressure)
               else
-                cheat(FlowFrom[Command](commandShipperOut), initialFanoutCommands, maxFanoutCommands, "commandPub")(context)
+                Flow[Command]
+            val commandsPub = commandFlow.runWith(PublisherTap(commandShipperOut), commandsDrain)
 
             if (soakCommands)
-              FlowFrom(commandPub).withSink(BlackholeSink).run()
+              PublisherTap(commandsPub).foreach(_ => ())
 
             new AlmhirtStreams with Stoppable {
               override val eventBroker = eventShipperIn
-              override val eventStream = eventPub
+              override val eventStream = eventsPub
               override val commandBroker = commandShipperIn
-              override val commandStream = commandPub
+              override val commandStream = commandsPub
               def stop() {
                 context.stop(self)
               }
@@ -176,20 +180,6 @@ object AlmhirtStreams {
 
     (supervisor ? "get_streams")(maxDur).mapCastTo[AlmhirtStreams with Stoppable]
   }
-
-  private def cheat[T](f: FlowWithSource[T, T], initialFanout: Int, maxFanout: Int, name: String)(factory: ActorRefFactory): Publisher[T] = {
-    implicit val ctx = factory.dispatcher
-    val actor = factory.actorOf(Props(new Actor with ImplicitFlowMaterializer {
-      def receive: Receive = {
-        case "!" ⇒
-          sender() ! (f.toFanoutPublisher(initialFanout, maxFanout))
-      }
-    }), name)
-
-    (actor ? "!")(1.second).mapCastTo[Publisher[T]].awaitResultOrEscalate(1.second)
-
-  }
-
 }
 
 

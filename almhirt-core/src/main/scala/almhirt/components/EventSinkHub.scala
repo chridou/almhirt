@@ -20,10 +20,9 @@ import akka.stream.scaladsl2.ImplicitFlowMaterializer
 object EventSinkHubMessage {
 }
 
-
 object EventSinkHub {
   /** [Name, (Props, Option[Filter])] */
-  type EventSinkHubMemberFactories = Map[String, (Props, Option[ProcessorFlow[Event, Event]])]
+  type EventSinkHubMemberFactories = Map[String, (Props, Option[Flow[Event, Event]])]
 
   def propsRaw(factories: EventSinkHub.EventSinkHubMemberFactories, buffersize: Option[Int], withBlackHoleIfEmpty: Boolean)(implicit ctx: AlmhirtContext): Props =
     Props(new EventSinksSupervisorImpl(factories, buffersize, withBlackHoleIfEmpty))
@@ -62,13 +61,15 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
 
   private def createInitialMembers() {
     if (!factories.isEmpty) {
-      val fanout =
+      val drain = PublisherDrain.withFanout[Event](1, AlmMath.nextPowerOf2(factories.size))
+      val flow =
         buffersize match {
           case Some(bfs) if bfs > 0 ⇒
-            FlowFrom[Event](ctx.eventStream).buffer(bfs, OverflowStrategy.backpressure).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
+            Flow[Event].buffer(bfs, OverflowStrategy.backpressure)
           case None ⇒
-            FlowFrom[Event](ctx.eventStream).toFanoutPublisher(1, AlmMath.nextPowerOf2(factories.size))
+            Flow[Event]
         }
+      val eventsPub = flow.runWith(PublisherTap(ctx.eventStream), drain)
       factories.foreach {
         case (name, (props, filterOpt)) ⇒
           val actor = context.actorOf(props, name)
@@ -77,14 +78,14 @@ private[almhirt] class EventSinksSupervisorImpl(factories: EventSinkHub.EventSin
           val subscriber = ActorSubscriber[Event](actor)
           filterOpt match {
             case Some(filter) ⇒
-              filter.withSource(PublisherSource(fanout)).publishTo(subscriber)
+              Source(eventsPub).connect(filter).connect(Sink(subscriber)).run()
             case None ⇒
-              FlowFrom(fanout).publishTo(subscriber)
+              Source(eventsPub).connect(Sink(subscriber)).run()
           }
       }
     } else if (factories.isEmpty && withBlackHoleIfEmpty) {
       log.warning("No members, but I created a black hole!")
-      FlowFrom[Event](ctx.eventStream).withSink(BlackholeSink)
+      Source(ctx.eventStream).foreach(_ => ())
     } else {
       log.warning("No members. Nothing will be subscribed")
     }

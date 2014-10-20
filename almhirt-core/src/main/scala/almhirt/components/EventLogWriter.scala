@@ -1,8 +1,8 @@
 package almhirt.components
 
-import scalaz._, Scalaz._
 import scala.language.postfixOps
 import scala.concurrent.duration._
+import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import akka.pattern._
@@ -105,7 +105,7 @@ private[almhirt] class EventLogWriterImpl(
   def receiveCircuitClosed(eventLog: ActorRef): Receive = {
     case AutoConnect ⇒
       log.info("Subscribing to event stream.")
-      FlowFrom(almhirtContext.eventStream).publishTo(EventLogWriter(self))
+      Source(almhirtContext.eventStream).connect(SubscriberDrain(EventLogWriter(self))).run()
       request(1)
 
     case ActorSubscriberMessage.OnNext(event: Event) ⇒

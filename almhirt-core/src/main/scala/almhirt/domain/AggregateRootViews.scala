@@ -3,7 +3,7 @@ package almhirt.domain
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.concurrent.duration._
-import scalaz._, Scalaz._
+import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
@@ -13,7 +13,7 @@ import almhirt.akkax._
 import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Publisher
-import akka.stream.scaladsl2.ImplicitFlowMaterializer
+import akka.stream.scaladsl2._
 
 object AggregateRootViews {
 
@@ -53,7 +53,7 @@ object AggregateRootViews {
   def subscribeTo[E <: Event](
     publisher: Publisher[Event],
     views: ActorRef)(implicit mat: FlowMaterializer, tag: scala.reflect.ClassTag[E]) {
-    FlowFrom(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).publishTo(ActorSubscriber[E](views))
+    Source(publisher).filter(p ⇒ tag.runtimeClass.isInstance(p)).map(_.asInstanceOf[E]).connect(Sink(ActorSubscriber[E](views))).run()
   }
 
   def connectedActor[E <: Event](publisher: Publisher[Event])(

@@ -3,8 +3,7 @@ package almhirt.streaming
 import scala.language.postfixOps
 import scala.concurrent.duration._
 import akka.actor._
-import akka.stream.scaladsl.{ Flow }
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.scaladsl2._
 import almhirt.common._
 import akka.testkit._
 import org.scalatest._
@@ -32,7 +31,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamSubscriber = ActorSubscriber[Long](actorDelegatingSubscriber)
         streamOutput.subscribe(streamSubscriber)
         within(1 second) {
-          Flow(List(1L)).produceTo(broker.newSubscriber)
+          Source(List(1L)).connect(Sink(broker.newSubscriber)).run()
           consumerProbeEvent.expectMsg(1L)
         }
       }
@@ -44,7 +43,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamSubscriber = ActorSubscriber[Long](actorDelegatingSubscriber)
         streamOutput.subscribe(streamSubscriber)
         within(1 second) {
-          Flow(List(1L, 2L)).produceTo(broker.newSubscriber)
+          Source(List(1L, 2L)).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN(2)
           res should equal(List(1L, 2L))
         }
@@ -59,7 +58,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.subscribe(streamSubscriber)
         val start = Deadline.now
         within(1 second) {
-          Flow(1L to n).produceTo(broker.newSubscriber)
+          Source(1L to n).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN(n.toInt)
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -76,7 +75,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.subscribe(streamSubscriber)
         val start = Deadline.now
         within(10 second) {
-          Flow(1L to n).produceTo(broker.newSubscriber)
+          Source(1L to n).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN(n.toInt, 10.seconds.dilated)
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -91,8 +90,8 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val streamSubscriber = ActorSubscriber[Long](actorDelegatingSubscriber)
         streamOutput.subscribe(streamSubscriber)
         within(1 second) {
-          Flow(List(1L)).produceTo(broker.newSubscriber)
-          Flow(List(2L)).produceTo(broker.newSubscriber)
+          Source(List(1L)).connect(Sink(broker.newSubscriber)).run()
+          Source(List(2L)).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN(2)
           res.toSet should equal(Set(1L, 2L))
         }
@@ -106,8 +105,8 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.subscribe(streamSubscriber)
         val start = Deadline.now
         within(1 second) {
-          Flow(1L to nMsgSome).produceTo(broker.newSubscriber)
-          Flow((nMsgSome + 1L) to (2L * nMsgSome)).produceTo(broker.newSubscriber)
+          Source(1L to nMsgSome).connect(Sink(broker.newSubscriber)).run()
+          Source((nMsgSome + 1L) to (2L * nMsgSome)).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN((2 * nMsgSome).toInt, 4.seconds.dilated)
           val time = start.lap
           info(s"Dispatched ${2 * nMsgSome} in ${start.lap.defaultUnitString}((${(2 * nMsgSome * 1000).toDouble / time.toMillis}/s)).")
@@ -123,8 +122,8 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.subscribe(streamSubscriber)
         val start = Deadline.now
         within(10 seconds) {
-          Flow(1L to nMsgBig).produceTo(broker.newSubscriber)
-          Flow((nMsgBig + 1L) to (2L * nMsgBig)).produceTo(broker.newSubscriber)
+          Source(1L to nMsgBig).connect(Sink(broker.newSubscriber)).run()
+          Source((nMsgBig + 1L) to (2L * nMsgBig)).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN((2 * nMsgBig).toInt, 10.seconds.dilated)
           val time = start.lap
           info(s"Dispatched ${2 * nMsgBig} in ${start.lap.defaultUnitString}((${(2 * nMsgBig * 1000).toDouble / time.toMillis}/s)).")
@@ -143,7 +142,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomePublishers)
         val start = Deadline.now
         within(1 second) {
-          groups.foreach(x ⇒ Flow(x._2).produceTo(broker.newSubscriber))
+          groups.foreach(x ⇒ Source(x._2).connect(Sink(broker.newSubscriber)).run())
           val res = consumerProbeEvent.receiveN((n).toInt)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -162,7 +161,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgSomePublishers)
         val start = Deadline.now
         within(10 second) {
-          groups.foreach(x ⇒ Flow(x._2).produceTo(broker.newSubscriber))
+          groups.foreach(x ⇒ Source(x._2).connect(Sink(broker.newSubscriber)).run())
           val res = consumerProbeEvent.receiveN((n).toInt, 10.seconds.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -181,7 +180,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val groups = items.toSeq.groupBy(x ⇒ x % nMsgBigPublishers)
         val start = Deadline.now
         within(10 second) {
-          groups.foreach(x ⇒ Flow(x._2).produceTo(broker.newSubscriber))
+          groups.foreach(x ⇒ Source(x._2).connect(Sink(broker.newSubscriber)).run())
           val res = consumerProbeEvent.receiveN((n).toInt, 10.seconds.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -364,7 +363,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         streamOutput.subscribe(streamSubscriber)
         within(1 second) {
           ActorStillage.create(List(1L), s"stillage-$testId").signContract(broker)
-          Flow(List(2L)).produceTo(broker.newSubscriber)
+          Source(List(2L)).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN(2)
           res.toSet should equal(Set(1L, 2L))
         }
@@ -379,7 +378,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val start = Deadline.now
         within(10 seconds) {
           ActorStillage.create(1L to nMsgSome, s"stillage-$testId").signContract(broker)
-          Flow((nMsgSome + 1L) to (2L * nMsgSome)).produceTo(broker.newSubscriber)
+          Source((nMsgSome + 1L) to (2L * nMsgSome)).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN((2 * nMsgSome).toInt, 10.seconds.dilated)
           val time = start.lap
           info(s"Dispatched ${2 * nMsgSome} in ${start.lap.defaultUnitString}((${(2 * nMsgSome * 1000).toDouble / time.toMillis}/s)).")
@@ -396,7 +395,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         val start = Deadline.now
         within(10 seconds) {
           ActorStillage.create(1L to nMsgBig, s"stillage-$testId").signContract(broker)
-          Flow((nMsgBig + 1L) to (2L * nMsgBig)).produceTo(broker.newSubscriber)
+          Source((nMsgBig + 1L) to (2L * nMsgBig)).connect(Sink(broker.newSubscriber)).run()
           val res = consumerProbeEvent.receiveN((2 * nMsgBig).toInt, 10.second.dilated)
           val time = start.lap
           info(s"Dispatched ${2 * nMsgBig} in ${start.lap.defaultUnitString}((${(2 * nMsgBig * 1000).toDouble / time.toMillis}/s)).")
@@ -419,7 +418,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
             if (x._1 % 2 == 0) {
               ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
             } else {
-              Flow(x._2).produceTo(broker.newSubscriber)
+              Source(x._2).connect(Sink(broker.newSubscriber)).run()
             })
           val res = consumerProbeEvent.receiveN((n).toInt)
           val time = start.lap
@@ -441,7 +440,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         within(10 seconds) {
           groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
-            else Flow(x._2).produceTo(broker.newSubscriber))
+            else Source(x._2).connect(Sink(broker.newSubscriber)).run())
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -462,7 +461,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         within(10.seconds) {
           groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
-            else Flow(x._2).produceTo(broker.newSubscriber))
+            else Source(x._2).connect(Sink(broker.newSubscriber)).run())
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -482,7 +481,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
         within(10.seconds) {
           groups.foreach(x ⇒
             if (x._1 % 2 == 0) ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker)
-            else Flow(x._2).produceTo(broker.newSubscriber))
+            else Source(x._2).connect(Sink(broker.newSubscriber)).run())
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
           val time = start.lap
           info(s"Dispatched ${n} in ${start.lap.defaultUnitString}((${(n * 1000).toDouble / time.toMillis}/s)).")
@@ -507,7 +506,7 @@ class StreamShipperTests(_system: ActorSystem) extends TestKit(_system) with fix
             if (x._1 % 2 == 0)
               system.scheduler.scheduleOnce(scale)(ActorStillage.create(x._2, s"stillage-$testId-${x._1}").signContract(broker))
             else
-              system.scheduler.scheduleOnce(scale)(Flow(x._2).produceTo(broker.newSubscriber))
+              system.scheduler.scheduleOnce(scale)(Source(x._2).connect(Sink(broker.newSubscriber)).run())
           }
           val res = consumerProbeEvent.receiveN((n).toInt, 10.second.dilated)
           val time = start.lap

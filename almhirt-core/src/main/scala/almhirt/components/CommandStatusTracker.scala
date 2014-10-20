@@ -2,7 +2,7 @@ package almhirt.components
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scalaz._, Scalaz._
+import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
@@ -117,7 +117,7 @@ private[almhirt] class MyCommandStatusTracker(
   def running(): Receive = {
     case AutoConnect ⇒
       log.info("Subscribing to event stream.")
-      FlowFrom(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.publishTo(CommandStatusTracker(self))
+      Source(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.connect(SubscriberDrain(CommandStatusTracker(self))).run()
       request(1)
 
     case TrackCommand(commandId, callback, deadline) ⇒
@@ -167,7 +167,7 @@ private[almhirt] class MyCommandStatusTracker(
       AlmFuture.compute {
         timedOut.foreach {
           case (commandId, timedOutEntryIds) ⇒
-            val activeSubscriptionsForCommand = currentSubscriptions.get(commandId) | Map.empty
+            val activeSubscriptionsForCommand = currentSubscriptions.get(commandId) getOrElse Map.empty
             activeSubscriptionsForCommand.view
               .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
               .foreach {
