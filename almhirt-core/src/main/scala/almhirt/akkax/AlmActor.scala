@@ -1,10 +1,12 @@
 package almhirt.akkax
 
+import scala.language.implicitConversions 
 import akka.actor.Actor
 import almhirt.common._
 import almhirt.context.HasAlmhirtContext
 import almhirt.herder.HerderMessages
 import almhirt.problem.ProblemCause
+import almhirt.tracking.CommandRepresentation
 
 trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
 
@@ -13,6 +15,9 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   }
 
   implicit def componentNameProvider: ActorComponentIdProvider = DefaultComponentIdProvider
+  
+  implicit def CommandToCommandRepresentation(cmd: Command): CommandRepresentation = CommandRepresentation.FullCommand(cmd)
+  implicit def CommandIdToCommandRepresentation(id: CommandId): CommandRepresentation = CommandRepresentation.CommandIdOnly(id)
 
   def registerCircuitControl(curcuitControl: CircuitControl)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.CircuitMessages.RegisterCircuitControl(cnp.componentId, curcuitControl))
@@ -20,7 +25,7 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
   def deregisterCircuitControl()(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.CircuitMessages.DeregisterCircuitControl(cnp.componentId))
 
-  def reportRejectedCommand(command: Command, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
+  def reportRejectedCommand(command: CommandRepresentation, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.CommandMessages.RejectedCommand(cnp.componentId, command, severity, cause, almhirtContext.getUtcTimestamp))
 
   def reportMissedEvent(event: Event, severity: almhirt.problem.Severity, cause: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =

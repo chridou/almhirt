@@ -5,6 +5,7 @@ import akka.actor.ActorRef
 import almhirt.common._
 import almhirt.akkax.{ CircuitControl, CircuitState, ComponentId }
 import almhirt.problem.ProblemCause
+import almhirt.tracking.CommandRepresentation
 
 object HerderMessages {
   sealed trait HerderNotificicationMessage
@@ -40,7 +41,7 @@ object HerderMessages {
   object CommandMessages {
     sealed trait CommandsMessage
 
-    final case class RejectedCommand(id: ComponentId, command: Command, severity: almhirt.problem.Severity, reason: ProblemCause, timestamp: LocalDateTime) extends CommandsMessage with HerderNotificicationMessage
+    final case class RejectedCommand(id: ComponentId, command: CommandRepresentation, severity: almhirt.problem.Severity, reason: ProblemCause, timestamp: LocalDateTime) extends CommandsMessage with HerderNotificicationMessage
 
     case object ReportRejectedCommands extends CommandsMessage
     final case class RejectedCommands(rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])]) extends CommandsMessage

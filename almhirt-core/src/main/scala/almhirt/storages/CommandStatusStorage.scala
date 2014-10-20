@@ -34,21 +34,23 @@ private[almhirt] class AStupidInMemoryCommandStatusStorage(maxEntries: Int) exte
 
   override def receive: Receive = {
     case StoreCommandStatus(status) ⇒
-      if (maxEntries > 0) {
-        if (entries.size < maxEntries) {
-          entries = entries :+ status
-        } else {
-          entries = entries.tail :+ status
-        }
-      }
-      sender() ! CommandStatusStored(status.commandId)
+//      if (maxEntries > 0) {
+//        if (entries.size < maxEntries) {
+//          entries = entries :+ status
+//        } else {
+//          entries = entries.tail :+ status
+//        }
+//      }
+//      sender() ! CommandStatusStored(status.commandId)
+    ???
 
     case FetchCommandStatus(commandId) ⇒
-      entries.find(_.commandId == commandId) match {
-        case Some(status) ⇒
-          sender() ! CommandStatusFetched(status)
-        case None ⇒
-          sender() ! CommandStatusNotFetched(commandId, NotFoundProblem(s"""No status for command "${commandId.value}"."""))
-      }
+//      entries.find(_.commandId == commandId) match {
+//        case Some(status) ⇒
+//          sender() ! CommandStatusFetched(status)
+//        case None ⇒
+//          sender() ! CommandStatusNotFetched(commandId, NotFoundProblem(s"""No status for command "${commandId.value}"."""))
+//      }
+    ???
   }
 }

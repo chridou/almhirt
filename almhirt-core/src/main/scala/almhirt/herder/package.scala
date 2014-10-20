@@ -4,11 +4,12 @@ import org.joda.time.LocalDateTime
 import almhirt.common.{ Event, Command }
 import almhirt.akkax.ComponentId
 import almhirt.problem.{ ProblemCause, Severity }
+import almhirt.tracking.CommandRepresentation
 
 package object herder {
   type FailuresEntry = (ProblemCause, Severity, LocalDateTime)
   type MissedEventsEntry = (Event, ProblemCause, Severity, LocalDateTime)
-  type RejectedCommandsEntry = (Command, ProblemCause, Severity, LocalDateTime)
+  type RejectedCommandsEntry = (CommandRepresentation, ProblemCause, Severity, LocalDateTime)
 
   implicit object MissedEventsOrdering extends scala.math.Ordering[(ComponentId, BadThingsHistory[MissedEventsEntry])] {
     def compare(a: (ComponentId, BadThingsHistory[MissedEventsEntry]), b: (ComponentId, BadThingsHistory[MissedEventsEntry])): Int =

@@ -95,7 +95,7 @@ private[almhirt] class CommandEndpointImpl(
 
     case cmd: Command ⇒
       dispatchCommandResult(
-        cmd.commandId,
+        cmd,
         fused(checkCommandDispatchable(cmd)),
         sender(),
         commandStatusTracker)
@@ -136,15 +136,17 @@ private[almhirt] class CommandEndpointImpl(
       reason.failure
     }
 
-  private def dispatchCommandResult(cmdId: CommandId, result: AlmValidation[Command], receiver: ActorRef, commandStatusTracker: ActorRef) {
+  private def dispatchCommandResult(cmd: Command, result: AlmValidation[Command], receiver: ActorRef, commandStatusTracker: ActorRef) {
     result.fold(
       problem => {
         log.warning(s"""	|
-        					|Rejecting command with id "${cmdId.value}".
+        					|Rejecting command with id "${cmd.commandId.value}".
         					|Current demand is $totalDemand commands.
         					|Reason:
         					|$problem""".stripMargin)
-        receiver ! CommandNotAccepted(cmdId, problem)
+        receiver ! CommandNotAccepted(cmd.commandId, problem)
+        reportMinorFailure(problem)
+        reportRejectedCommand(cmd, MinorSeverity, problem)
       },
       dispatchableCmd => {
         if (dispatchableCmd.isTrackable) {
@@ -157,7 +159,8 @@ private[almhirt] class CommandEndpointImpl(
                   case _ ⇒ receiver ! TrackingFailed(dispatchableCmd.commandId, fail)
                 }
                 reportMinorFailure(fail)
-                },
+                reportRejectedCommand(cmd, MinorSeverity, fail)
+              },
               receiver ! TrackedCommandResult(dispatchableCmd.commandId, _)),
             deadline = maxTrackingDuration.fromNow)
         } else {

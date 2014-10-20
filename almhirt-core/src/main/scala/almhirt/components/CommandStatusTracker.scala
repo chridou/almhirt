@@ -6,11 +6,12 @@ import scalaz._, Scalaz._
 import scalaz.Validation.FlatMap._
 import akka.actor._
 import almhirt.common._
-import almhirt.tracking.{ CommandStatus, CommandStatusChanged, CommandResult}
+import almhirt.tracking.{ CommandStatus, CommandStatusChanged, CommandResult }
 import almhirt.context.AlmhirtContext
 import akka.stream.actor._
 import org.reactivestreams.Subscriber
 import akka.stream.scaladsl2._
+import almhirt.akkax.AlmActor
 
 object CommandStatusTracker {
   sealed trait CommandStatusTrackerMessage
@@ -67,8 +68,9 @@ private[almhirt] class MyCommandStatusTracker(
   targetCacheSize: Int,
   shrinkCacheAt: Int,
   checkTimeoutInterval: FiniteDuration,
-  autoConnect: Boolean)(implicit ctx: AlmhirtContext)
-  extends ActorSubscriber
+  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext)
+  extends AlmActor
+  with ActorSubscriber
   with ActorLogging
   with ImplicitFlowMaterializer {
   import CommandStatusTracker._
@@ -115,7 +117,7 @@ private[almhirt] class MyCommandStatusTracker(
   def running(): Receive = {
     case AutoConnect ⇒
       log.info("Subscribing to event stream.")
-      FlowFrom(ctx.eventStream).collect { case e: CommandStatusChanged ⇒ e }.publishTo(CommandStatusTracker(self))
+      FlowFrom(almhirtContext.eventStream).collect { case e: CommandStatusChanged ⇒ e }.publishTo(CommandStatusTracker(self))
       request(1)
 
     case TrackCommand(commandId, callback, deadline) ⇒
@@ -168,7 +170,12 @@ private[almhirt] class MyCommandStatusTracker(
             val activeSubscriptionsForCommand = currentSubscriptions.get(commandId) | Map.empty
             activeSubscriptionsForCommand.view
               .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
-              .foreach { case (id, entry) ⇒ entry.callback(OperationTimedOutProblem("The tracking timed out.").failure) }
+              .foreach {
+                case (id, entry) ⇒ {
+                  entry.callback(OperationTimedOutProblem("The tracking timed out.").failure)
+                  reportMinorFailure(OperationTimedOutProblem("Tracking timed out."))
+                }
+              }
         }
       }
       trackingSubscriptions = trackingSubscriptions.map {
