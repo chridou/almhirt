@@ -19,13 +19,14 @@ object RejectedCommandsHerdingDog {
       section <- ctx.config.v[Config](configPath)
       historySize <- section.v[Int]("history-size")
       unwrapFailures <- section.v[Boolean]("unwrap-failures")
-    } yield Props(new RejectedCommandsHerdingDog(historySize, unwrapFailures))
+      downgradeCommandRepresentation <- section.v[Boolean]("downgrade-command-representations")
+    } yield Props(new RejectedCommandsHerdingDog(historySize, unwrapFailures, downgradeCommandRepresentation))
   }
 
   val actorname = "rejected-commands-herdingdog"
 }
 
-private[almhirt] class RejectedCommandsHerdingDog(historySize: Int, unwrapFailures: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
+private[almhirt] class RejectedCommandsHerdingDog(historySize: Int, unwrapFailures: Boolean, downgradeCommandRepresentation: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends Actor with HasAlmhirtContext with ActorLogging {
   import HerderMessages.CommandMessages._
 
   implicit val executor = almhirtContext.futuresContext
@@ -37,8 +38,8 @@ private[almhirt] class RejectedCommandsHerdingDog(historySize: Int, unwrapFailur
   val history = new MutableBadThingsHistories[ComponentId, RejectedCommandsEntry](historySize)
 
   def receiveRunning: Receive = {
-    case RejectedCommand(componentId, command, severity, cause, timestamp) =>
-      history.add(componentId, (command, if (unwrapFailures) cause.unwrap() else cause, severity, timestamp))
+    case RejectedCommand(componentId, commandRepr, severity, cause, timestamp) =>
+      history.add(componentId, (if(downgradeCommandRepresentation) commandRepr.downgradeToIdAndType else commandRepr, if (unwrapFailures) cause.unwrap() else cause, severity, timestamp))
 
     case ReportRejectedCommands =>
       val missed = history.all.sorted
