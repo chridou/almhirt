@@ -1,6 +1,8 @@
 package almhirt.akkax
 
+import scala.reflect.ClassTag
 import scala.concurrent.duration._
+import akka.actor.ActorRef
 import almhirt.common._
 
 trait CircuitControl {
@@ -35,7 +37,13 @@ trait FusedCircuit {
    *  In case of a fail fast, return the surrogate instead of the standard result defined by the implementation
    */
   def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T]
+  
+  def ask[T: ClassTag](actor:ActorRef, message: Any): AlmFuture[T]
+  
+  def askWithSurrogate[T: ClassTag](surrogate: ⇒ AlmFuture[T])(actor:ActorRef, message: Any): AlmFuture[T]
+  
 }
+
 
 final case class CircuitControlSettings(
   maxFailures: Int,

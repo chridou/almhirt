@@ -1,9 +1,11 @@
 package almhirt.akkax
 
+import scala.reflect.ClassTag
 import scala.concurrent.duration._
 import almhirt.common._
+import almhirt.almfuture.all._
 import scala.concurrent.ExecutionContext
-import akka.actor.Scheduler
+import akka.actor.{ ActorRef, Scheduler }
 
 object AlmCircuitBreaker {
 
@@ -57,6 +59,15 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
   override def fusedWithSurrogate[T](surrogate: ⇒ AlmFuture[T])(body: ⇒ AlmFuture[T]): AlmFuture[T] = {
     currentState.invoke(surrogate, body)
+  }
+
+  def ask[T: ClassTag](actor: ActorRef, message: Any): AlmFuture[T] = 
+    askWithSurrogate(defaultSurrogate)(actor, message)
+
+  def askWithSurrogate[T: ClassTag](surrogate: ⇒ AlmFuture[T])(actor: ActorRef, message: Any): AlmFuture[T] = {
+    implicit val ctx = executionContext
+    val f = akka.pattern.ask(actor, message)(settings.callTimeout)
+    fusedWithSurrogate[T](surrogate)(f.mapCastTo[T])
   }
 
   override def attemptClose() { currentState.attemptManualClose() }
