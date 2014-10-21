@@ -1219,11 +1219,14 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             <td>{ createRejectedCommandsContent(rejectedCommands, true, pathToHerder) }</td>
             <td>{ createMissedEventsReportContent(missedEvents, true, pathToHerder) }</td>
           </tr>
-          <tr colspan="2">
-            <h2>Information</h2><br/>
-            <td>{ createInformationReportContent(information, true, pathToHerder) }</td>
+          <tr>
+            <th colspan="2">
+              <h2>Information</h2><br/><a href="./herder/information">Information report</a>
+            </th>
           </tr>
-          <br/>
+          <tr>
+            <td colspan="2">{ createInformationReportContent(information, true, pathToHerder) }</td>
+          </tr>
         </table>
         <br/>
         { almhirtContext.getUtcTimestamp.toString }
