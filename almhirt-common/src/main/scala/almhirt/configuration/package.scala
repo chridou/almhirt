@@ -82,6 +82,20 @@ package object configuration {
   implicit val ConfigConfigExtractorInst = new ConfigConfigExtractor {}
   implicit val ConfigJavaPropertiesExtractorInst = new ConfigJavaPropertiesExtractor {}
 
+  implicit object ImportanceConfigExtractor extends ConfigExtractor[Importance] {
+    def getValue(config: Config, path: String): AlmValidation[Importance] =
+      for {
+        str <- config.v[String](path)
+        importance <- Importance.fromString(str)
+      } yield importance
+
+    def tryGetValue(config: Config, path: String): AlmValidation[Option[Importance]] =
+      config.opt[Config](path).flatMap {
+        case Some(_) ⇒ getValue(config, path).map(Some(_))
+        case None ⇒ scalaz.Success(None)
+      }
+  }
+
   implicit object SeverityConfigExtractor extends ConfigExtractor[almhirt.problem.Severity] {
     def getValue(config: Config, path: String): AlmValidation[almhirt.problem.Severity] =
       for {
@@ -94,9 +108,8 @@ package object configuration {
         case Some(_) ⇒ getValue(config, path).map(Some(_))
         case None ⇒ scalaz.Success(None)
       }
-
   }
-
+  
   implicit object ExecutionContextConfigExtractor extends ConfigExtractor[ExecutionContextSelector] {
     def getValue(config: Config, path: String): AlmValidation[ExecutionContextSelector] =
       for {

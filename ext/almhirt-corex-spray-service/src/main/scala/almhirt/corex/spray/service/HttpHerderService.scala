@@ -63,13 +63,15 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           val futFailures = (herder ? FailureMessages.ReportFailures)(maxCallDuration).mapCastTo[FailureMessages.ReportedFailures].map(_.failures)
           val futRejectedCommands = (herder ? CommandMessages.ReportRejectedCommands)(maxCallDuration).mapCastTo[CommandMessages.RejectedCommands].map(_.rejectedCommands)
           val futMissedEvents = (herder ? EventMessages.ReportMissedEvents)(maxCallDuration).mapCastTo[EventMessages.MissedEvents].map(_.missedEvents)
+          val futInfos = (herder ? InformationMessages.ReportInformation)(maxCallDuration).mapCastTo[InformationMessages.ReportedInformation].map(_.information)
           val futHtml =
             for {
               circuitStates <- futCircuits
               failures <- futFailures
               rejectedCommands <- futRejectedCommands
               missedEvents <- futMissedEvents
-            } yield createStatusReport(circuitStates, failures, rejectedCommands, missedEvents, "./herder")
+              information <- futInfos
+            } yield createStatusReport(circuitStates, failures, rejectedCommands, missedEvents, information, "./herder")
           futHtml.fold(
             problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
             html => ctx.complete(StatusCodes.OK, html))
@@ -186,6 +188,29 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
                 problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
                 res => res.missedEvents match {
                   case Some(e) => ctx.complete(StatusCodes.OK, createComponentMissedEventsReport(res.id, e, num, "../../../../herder"))
+                  case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name ($appName/$componentName) found."))
+                })
+            }
+          }
+        }
+      } ~ pathPrefix("information") {
+        pathEnd {
+          get { ctx =>
+            val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+            val fut = (herder ? InformationMessages.ReportInformation)(maxCallDuration).mapCastTo[InformationMessages.ReportedInformation].map(_.information)
+            fut.fold(
+              problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+              information => ctx.complete(StatusCodes.OK, createInformationReport(information, "../herder")))
+          }
+        } ~ pathPrefix(Segment / Segment / IntNumber) { (appName, componentName, num) =>
+          pathEnd {
+            get { ctx =>
+              val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+              val fut = (herder ? InformationMessages.ReportInformationFor(ComponentId(AppName(appName), ComponentName(componentName))))(maxCallDuration).mapCastTo[InformationMessages.ReportedInformationFor]
+              fut.fold(
+                problem => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, problem),
+                res => res.entry match {
+                  case Some(e) => ctx.complete(StatusCodes.OK, createComponentInformationReport(res.id, e, num, "../../../../herder"))
                   case None => implicitly[AlmHttpProblemTerminator].terminateProblem(ctx, NotFoundProblem(s"No component with name ($appName/$componentName) found."))
                 })
             }
@@ -340,6 +365,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         }
         <br/>
         {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
+        }
+        <br/>
+        {
           val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
           Elem(null, "a", att, TopScope, true, Text("Dashboard"))
         }
@@ -359,6 +389,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         {
           val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events", xml.Null)
           Elem(null, "a", att, TopScope, true, Text("Missed events report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
         }
         <br/>
         {
@@ -528,6 +563,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         }
         <br/>
         {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
+        }
+        <br/>
+        {
           val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
           Elem(null, "a", att, TopScope, true, Text("Dashboard"))
         }
@@ -547,6 +587,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         {
           val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events", xml.Null)
           Elem(null, "a", att, TopScope, true, Text("Missed events report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
         }
         <br/>
         {
@@ -731,6 +776,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         }
         <br/>
         {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
+        }
+        <br/>
+        {
           val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
           Elem(null, "a", att, TopScope, true, Text("Dashboard"))
         }
@@ -750,6 +800,11 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         {
           val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events", xml.Null)
           Elem(null, "a", att, TopScope, true, Text("Missed events report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
         }
         <br/>
         {
@@ -922,11 +977,220 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     </html>
   }
 
+  // INFORMATION
+
+  def createInformationReport(information: Seq[(ComponentId, ImportantThingsHistory[InformationEntry])], pathToHerder: String) = {
+    <html>
+      <head>
+        <title>Information</title>
+      </head>
+      <body>
+        <h1>Information Report</h1>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/failures", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Failures report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/rejected-commands", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Rejected commands report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Missed events report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        { createInformationReportContent(information, false, pathToHerder) }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/failures", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Failures report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/rejected-commands", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Rejected commands report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/missed-events", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Missed events report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
+      </body>
+    </html>
+  }
+
+  def createInformationReportContent(information: Seq[(ComponentId, ImportantThingsHistory[InformationEntry])], abridged: Boolean, pathToHerder: String) = {
+    def createHistoryLine(item: InformationEntry) = {
+      <tr>
+        <td>{ item._3.toString() }</td>
+        <td>{ createImportanceItem(item._2) }</td>
+        <td>{ item._1.split("\\r?\\n").map(line => <span>{ line }<br/></span>) }</td>
+      </tr>
+    }
+
+    <table border="1">
+      <tr>
+        <th>App</th>
+        <th>Component</th>
+        <th>Infos</th>
+        <th>Max Importance</th>
+        {
+          if (!abridged)
+            <th>Last 3 infos</th>
+          else
+            <th>Last info</th>
+        }
+        <th>more</th>
+      </tr>
+      {
+        information.map {
+          case (ComponentId(app, component), history) =>
+            <tr>
+              <td>{ app.value }</td>
+              <td>{ component.value }</td>
+              <td>{ history.occurencesCount }</td>
+              <td>{ history.maxImportance.map(createImportanceItem).getOrElse(<span>-</span>) }</td>
+              {
+                <td>
+                  <table border="0">
+                    { history.lastOccurences.take(if (abridged) 1 else 3).map(createHistoryLine) }
+                  </table>
+                </td>
+              }
+              <td>
+                {
+                  if (!abridged) {
+                    <span>
+                      {
+                        val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/1", xml.Null)
+                        val anchor = Elem(null, "a", att, TopScope, true, Text("last"))
+                        <span>{ anchor }</span><br/>
+                      }
+                      {
+                        val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/5", xml.Null)
+                        val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                        <span>{ anchor }</span><br/>
+                      }
+                      {
+                        val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/20", xml.Null)
+                        val anchor = Elem(null, "a", att, TopScope, true, Text("last 20"))
+                        <span>{ anchor }</span><br/>
+                      }
+                      {
+                        val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/50", xml.Null)
+                        val anchor = Elem(null, "a", att, TopScope, true, Text("last 50"))
+                        <span>{ anchor }</span><br/>
+                      }
+                      {
+                        val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/100", xml.Null)
+                        val anchor = Elem(null, "a", att, TopScope, true, Text("last 100"))
+                        <span>{ anchor }</span><br/>
+                      }
+                    </span>
+                  } else {
+                    val att = new UnprefixedAttribute("href", s"$pathToHerder/information/${app.value}/${component.value}/5", xml.Null)
+                    val anchor = Elem(null, "a", att, TopScope, true, Text("last 5"))
+                    <span>{ anchor }</span>
+                  }
+                }
+              </td>
+            </tr>
+        }
+      }
+    </table>
+  }
+
+  def createComponentInformationReport(component: ComponentId, entry: ImportantThingsHistory[InformationEntry], maxItems: Int, pathToHerder: String) = {
+    <html>
+      <head>
+        <title>Reported informations for { component }</title>
+      </head>
+      <body>
+        <h1>Reportedinformation for { component }</h1>
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        <br/>
+        <span>Total messages: { entry.occurencesCount }</span>
+        <br/>
+        <span>Max importance: { entry.maxImportance.map(_.toString()).getOrElse("-") }</span>
+        <br/>
+        <table border="1">
+          <tr>
+            <th>Timestamp</th>
+            <th>Importance</th>
+            <th>Message</th>
+          </tr>
+          {
+            val items = entry.lastOccurences
+            items.drop(Math.max(items.size - maxItems, 0)).map {
+              case (message, importance, timestamp) =>
+                <tr>
+                  <td>{ timestamp.toString }</td>
+                  <td>{ createImportanceItem(importance) }</td>
+                  <td>
+                    { message.split("\\r?\\n").map(line => <span>{ line }<br/></span>) }
+                  </td>
+                </tr>
+            }
+          }
+        </table>
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder/information", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Information report"))
+        }
+        <br/>
+        {
+          val att = new UnprefixedAttribute("href", s"$pathToHerder", xml.Null)
+          Elem(null, "a", att, TopScope, true, Text("Dashboard"))
+        }
+        <br/>
+        { almhirtContext.getUtcTimestamp.toString }
+      </body>
+    </html>
+  }
+
+  // INFORMATION
+
   def createStatusReport(
     circuitsState: Seq[(ComponentId, CircuitState)],
     failures: Seq[(ComponentId, BadThingsHistory[FailuresEntry])],
     rejectedCommands: Seq[(ComponentId, BadThingsHistory[RejectedCommandsEntry])],
     missedEvents: Seq[(ComponentId, BadThingsHistory[MissedEventsEntry])],
+    information: Seq[(ComponentId, ImportantThingsHistory[InformationEntry])],
     pathToHerder: String) = {
     <html>
       <head>
@@ -955,6 +1219,10 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
             <td>{ createRejectedCommandsContent(rejectedCommands, true, pathToHerder) }</td>
             <td>{ createMissedEventsReportContent(missedEvents, true, pathToHerder) }</td>
           </tr>
+          <tr colspan="2">
+            <h2>Information</h2><br/>
+            <td>{ createInformationReportContent(information, true, pathToHerder) }</td>
+          </tr>
           <br/>
         </table>
         <br/>
@@ -968,6 +1236,15 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
       case almhirt.problem.Minor => <span style="background-color:#F6EE09">Minor</span>
       case almhirt.problem.Major => <span style="background-color:#F6A309">Major</span>
       case almhirt.problem.Critical => <span style="background-color:#F61D09">Critical</span>
+    }
+  }
+
+  def createImportanceItem(importance: Importance) = {
+    importance match {
+      case Importance.NotWorthMentioning => <span style="background-color:#F6EE09">NotWorthMentioning</span>
+      case Importance.Mentionable => <span style="background-color:#F6EE09">Mentionable</span>
+      case Importance.Important => <span style="background-color:#F6A309">Important</span>
+      case Importance.VeryImportant => <span style="background-color:#F61D09">VeryImportant</span>
     }
   }
 

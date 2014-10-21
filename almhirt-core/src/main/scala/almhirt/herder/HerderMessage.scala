@@ -63,4 +63,16 @@ object HerderMessages {
     final case class ReportedFailuresFor(id: ComponentId, entry: Option[BadThingsHistory[FailuresEntry]]) extends FailuresMessage
   }
 
+  object InformationMessages {
+    sealed trait InformationMessage
+    
+    final case class Information(id: ComponentId, message: String, importance: Importance, timestamp: LocalDateTime) extends InformationMessage with HerderNotificicationMessage
+ 
+    case object ReportInformation extends InformationMessage
+    final case class ReportedInformation(information: Seq[(ComponentId, ImportantThingsHistory[InformationEntry])]) extends InformationMessage
+
+    final case class ReportInformationFor(id: ComponentId) extends InformationMessage 
+    final case class ReportedInformationFor(id: ComponentId, entry: Option[ImportantThingsHistory[InformationEntry]]) extends InformationMessage
+    
+  }
 }

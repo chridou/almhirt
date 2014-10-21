@@ -42,4 +42,22 @@ trait AlmActor extends Actor with HasAlmhirtContext with AlmActorSupport {
 
   def reportCriticalFailure(failure: ProblemCause)(implicit cnp: ActorComponentIdProvider): Unit =
     almhirtContext.tellHerder(HerderMessages.FailureMessages.FailureOccured(cnp.componentId, failure, CriticalSeverity, almhirtContext.getUtcTimestamp))
+    
+  def inform(message: String, importance: Importance)(implicit cnp: ActorComponentIdProvider): Unit = {
+    almhirtContext.tellHerder(HerderMessages.InformationMessages.Information(cnp.componentId, message, importance, almhirtContext.getUtcTimestamp))
+  }
+  
+  def informNotWorthMentioning(message: String)(implicit cnp: ActorComponentIdProvider): Unit = 
+    inform(message, Importance.NotWorthMentioning)(cnp)
+  
+  def informMentionable(message: String)(implicit cnp: ActorComponentIdProvider): Unit = 
+    inform(message, Importance.Mentionable)(cnp)
+  
+  def informImportant(message: String)(implicit cnp: ActorComponentIdProvider): Unit = 
+    inform(message, Importance.Important)(cnp)
+  
+  def informVeryImportant(message: String)(implicit cnp: ActorComponentIdProvider): Unit = 
+    inform(message, Importance.VeryImportant)(cnp)
+  
+  
 }

@@ -60,7 +60,7 @@ private[almhirt] class CommandEndpointImpl(
   override val circuitControlSettings: CircuitControlSettings,
   override val circuitStateReportingInterval: Option[FiniteDuration],
   override val circuitControlCallbackExecutorSelector: ExtendedExecutionContextSelector,
-  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with SyncFusedActor with ActorLogging with ImplicitFlowMaterializer {
+  autoConnect: Boolean)(implicit override val almhirtContext: AlmhirtContext) extends ActorPublisher[Command] with AlmActor with AlmActorLogging with SyncFusedActor with ActorLogging with ImplicitFlowMaterializer {
   import CommandStatusTracker._
 
   override def circuitControlLoggingAdapter = Some(this.log)
@@ -74,13 +74,13 @@ private[almhirt] class CommandEndpointImpl(
       context.resolveSingle(commandStatusTrackerToResolve, resolveSettings, None, Some("status-tracker-resolver"))
 
     case ActorMessages.ResolvedSingle(commandStatusTracker, _) ⇒
-      log.info("Found command status tracker.")
+      logInfo("Found command status tracker.")
       if (autoConnect) self ! AutoConnect
       registerCircuitControl()
       context.becomeFused(receiveRunningWithClosedCircuit(commandStatusTracker))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
-      log.error(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
+      logError(s"Could not resolve command status tracker @ ${commandStatusTrackerToResolve}:\n$problem")
       sys.error(s"Could not resolve command status tracker log @ ${commandStatusTrackerToResolve}.")
       reportCriticalFailure(problem)
 
@@ -90,7 +90,7 @@ private[almhirt] class CommandEndpointImpl(
 
   def receiveRunningWithClosedCircuit(commandStatusTracker: ActorRef): Receive = {
     case AutoConnect ⇒
-      log.info("Connecting to command consumer.")
+      logInfo("Connecting to command consumer.")
       CommandEndpoint(self).subscribe(almhirtContext.commandBroker.newSubscriber)
 
     case cmd: Command ⇒
@@ -101,7 +101,7 @@ private[almhirt] class CommandEndpointImpl(
         commandStatusTracker)
 
     case m: ActorMessages.CircuitAllWillFail =>
-      log.warning("The circuit was opened!")
+      logWarning("The circuit was opened!")
       context.becomeFused(receiveRunningWithOpenCircuit(commandStatusTracker))
   }
 
@@ -110,7 +110,7 @@ private[almhirt] class CommandEndpointImpl(
       sender() ! CommandNotAccepted(cmd.commandId, ServiceBrokenProblem("Command processing is currently broken. Try again later."))
 
     case m: ActorMessages.CircuitNotAllWillFail =>
-      log.info("The circuit was closed!")
+      logInfo("The circuit was closed!")
       context.becomeFused(receiveRunningWithClosedCircuit(commandStatusTracker))
 
   }
@@ -139,7 +139,7 @@ private[almhirt] class CommandEndpointImpl(
   private def dispatchCommandResult(cmd: Command, result: AlmValidation[Command], receiver: ActorRef, commandStatusTracker: ActorRef) {
     result.fold(
       problem => {
-        log.warning(s"""	|
+        logWarning(s"""	|
         					|Rejecting command with id "${cmd.commandId.value}".
         					|Current demand is $totalDemand commands.
         					|Reason:

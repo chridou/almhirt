@@ -12,8 +12,8 @@ import almhirt.components.EventSinkHubMessage
 import almhirt.herder.herdingdogs._
 
 object Herder {
-  def propsRaw(failuresHerdingDogProps: Props, rejectedCommandsHerdingDogProps: Props, missedEventsHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
-    Props(new Pastor(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps))
+  def propsRaw(failuresHerdingDogProps: Props, rejectedCommandsHerdingDogProps: Props, missedEventsHerdingDogProps: Props, informationHerdingDogProps: Props)(implicit ctx: AlmhirtContext): Props =
+    Props(new Pastor(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps, informationHerdingDogProps))
 
   def props(address: Address)(implicit ctx: AlmhirtContext): AlmValidation[Props] = {
     import com.typesafe.config.Config
@@ -24,7 +24,8 @@ object Herder {
       failuresHerdingDogProps <- FailuresHerdingDog.props
       rejectedCommandsHerdingDogProps <- RejectedCommandsHerdingDog.props
       missedEventsHerdingDogProps <- MissedEventsHerdingDog.props
-    } yield propsRaw(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps)
+      informationHerdingDogProps <- InformationHerdingDog.props
+    } yield propsRaw(failuresHerdingDogProps, rejectedCommandsHerdingDogProps, missedEventsHerdingDogProps, informationHerdingDogProps)
   }
 
   def props()(implicit ctx: AlmhirtContext): AlmValidation[Props] =
@@ -37,13 +38,15 @@ object Herder {
 private[almhirt] class Pastor(
   failuresHerdingDogProps: Props,
   rejectedCommandsHerdingDogProps: Props,
-  missedEventsHerdingDogProps: Props)(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
+  missedEventsHerdingDogProps: Props,
+  informationHerdingDogProps: Props)(implicit override val almhirtContext: AlmhirtContext) extends Actor with ActorLogging with HasAlmhirtContext {
   import almhirt.components.{ EventSinkHub, EventSinkHubMessage }
 
   val circuitsHerdingDog: ActorRef = context.actorOf(Props(new CircuitsHerdingDog()), CircuitsHerdingDog.actorname)
   val failuresHerdingDog: ActorRef = context.actorOf(failuresHerdingDogProps, FailuresHerdingDog.actorname)
   val rejectedCommandsHerdingDog: ActorRef = context.actorOf(rejectedCommandsHerdingDogProps, RejectedCommandsHerdingDog.actorname)
   val missedEventsHerdingDog: ActorRef = context.actorOf(missedEventsHerdingDogProps, MissedEventsHerdingDog.actorname)
+  val informationHerdingDog: ActorRef = context.actorOf(informationHerdingDogProps, InformationHerdingDog.actorname)
 
   def receiveRunning: Receive = {
     case m: HerderMessages.CircuitMessages.CircuitMessage => circuitsHerdingDog forward m
@@ -53,7 +56,8 @@ private[almhirt] class Pastor(
     case m: HerderMessages.CommandMessages.CommandsMessage => rejectedCommandsHerdingDog forward m
 
     case m: HerderMessages.EventMessages.EventsMessage => missedEventsHerdingDog forward m
-    
+
+    case m: HerderMessages.InformationMessages.InformationMessage => informationHerdingDog forward m
   }
 
   def receive = receiveRunning

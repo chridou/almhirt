@@ -75,14 +75,14 @@ private[almhirt] class AggregateRootHive(
   override val droneFactory: AggregateRootDroneFactory,
   override val eventsBroker: StreamBroker[Event],
   enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit override val almhirtContext: AlmhirtContext)
-  extends AlmActor with ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
+  extends AlmActor with AlmActorLogging with ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
 
   override val requestStrategy = ZeroRequestStrategy
   override val enqueudEventsThrottlingThreshold = commandBuffersize * enqueudEventsThrottlingThresholdFactor
 
 }
 
-private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] { me: AlmActor with ActorLogging with ActorSubscriber ⇒
+private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] { me: AlmActor with AlmActorLogging with ActorLogging with ActorSubscriber ⇒
   import AggregateRootHive._
   import AggregateRootHiveInternals._
 
@@ -125,13 +125,13 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       context.resolveMany(actorsToResolve, resolveSettings, None, Some("resolver"))
 
     case ActorMessages.ManyResolved(dependencies, _) ⇒
-      log.info("Found dependencies.")
+      logInfo("Found dependencies.")
       signContract(eventsBroker)
 
       context.become(receiveInitialize(dependencies("aggregateeventlog"), dependencies.get("snapshotstorage")))
 
     case ActorMessages.ManyNotResolved(problem, _) ⇒
-      log.error(s"Failed to resolve dependencies:\n$problem")
+      logError(s"Failed to resolve dependencies:\n$problem")
       reportCriticalFailure(problem)
       sys.error(s"Failed to resolve dependencies.")
   }
@@ -147,7 +147,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
   private def requestCommands() {
     if (bufferedEvents.size > enqueudEventsThrottlingThreshold) {
-      log.warning(s"to many events: ${bufferedEvents.size}")
+      logWarning(s"to many events: ${bufferedEvents.size}")
     }
     if (remainingRequestCapacity > 0 && bufferedEvents.size <= enqueudEventsThrottlingThreshold) {
       request(remainingRequestCapacity)
@@ -226,14 +226,14 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case ActorSubscriberMessage.OnComplete ⇒
       if (log.isDebugEnabled)
-        log.debug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+        logDebug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
 
     case OnBrokerProblem(problem) ⇒
       reportCriticalFailure(problem)
       throw new Exception(s"The broker reported a problem:\n$problem")
 
     case OnContractExpired ⇒
-      log.info(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
+      logInfo(s"Contract with broker expired. There are ${bufferedEvents.size} events still to deliver.")
   }
 
   override def receive: Receive = receiveResolve
@@ -247,7 +247,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
     super.preRestart(reason, message)
     cancelContract()
     reportCriticalFailure(reason)
-    log.info(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+    logInfo(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 
   override def postRestart(reason: Throwable) {
@@ -258,7 +258,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   override def postStop() {
     super.postStop()
     cancelContract()
-    log.info(s"Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
+    logInfo(s"Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 
 }

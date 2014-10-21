@@ -68,7 +68,7 @@ private[almhirt] class EventLogWriterImpl(
   warningThreshold: FiniteDuration,
   autoConnect: Boolean,
   circuitControlSettings: CircuitControlSettings,
-  circuitStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with ActorLogging with ImplicitFlowMaterializer {
+  circuitStateReportingInterval: Option[FiniteDuration])(implicit override val almhirtContext: AlmhirtContext) extends ActorSubscriber with AlmActor with AlmActorLogging with ActorLogging with ImplicitFlowMaterializer {
   import almhirt.eventlog.EventLog
 
   implicit val executor = almhirtContext.futuresContext
@@ -86,7 +86,7 @@ private[almhirt] class EventLogWriterImpl(
       context.resolveSingle(eventLogToResolve, resolveSettings, None, Some("event-log-resolver"))
 
     case ActorMessages.ResolvedSingle(eventlog, _) ⇒
-      log.info("Found event log.")
+      logInfo("Found event log.")
 
       registerCircuitControl(circuitBreaker)
 
@@ -97,14 +97,14 @@ private[almhirt] class EventLogWriterImpl(
       context.become(receiveCircuitClosed(eventlog))
 
     case ActorMessages.SingleNotResolved(problem, _) ⇒
-      log.error(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
+      logError(s"Could not resolve event log @ ${eventLogToResolve}:\n$problem")
       sys.error(s"Could not resolve event log @ ${eventLogToResolve}.")
       reportCriticalFailure(problem)
   }
 
   def receiveCircuitClosed(eventLog: ActorRef): Receive = {
     case AutoConnect ⇒
-      log.info("Subscribing to event stream.")
+      logInfo("Subscribing to event stream.")
       Source(almhirtContext.eventStream).connect(SubscriberDrain(EventLogWriter(self))).run()
       request(1)
 
@@ -122,7 +122,7 @@ private[almhirt] class EventLogWriterImpl(
 
         f.onSuccess(rsp =>
           if (start.lapExceeds(warningThreshold))
-            log.warning(s"Wrinting event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
+            logWarning(s"Wrinting event '${event.eventId.value}' took longer than ${warningThreshold.defaultUnitString}: ${start.lap.defaultUnitString}"))
       } else {
         request(1)
       }
@@ -135,7 +135,7 @@ private[almhirt] class EventLogWriterImpl(
       request(1)
 
     case EventLog.EventNotLogged(id, problem) ⇒
-      log.error(s"Could not log event '${id.value}':\n$problem")
+      logError(s"Could not log event '${id.value}':\n$problem")
       reportMajorFailure(problem)
       request(1)
 
@@ -158,7 +158,7 @@ private[almhirt] class EventLogWriterImpl(
       request(1)
 
     case EventLog.EventNotLogged(id, problem) ⇒
-      log.error(s"Could not log event '${id.value}':\n$problem")
+      logError(s"Could not log event '${id.value}':\n$problem")
       reportMajorFailure(problem)
       request(1)
 
@@ -168,7 +168,7 @@ private[almhirt] class EventLogWriterImpl(
 
     case DisplayCircuitState =>
       if (log.isInfoEnabled) {
-        circuitBreaker.state.onSuccess(s => log.info(s"Circuit state: $s"))
+        circuitBreaker.state.onSuccess(s => logInfo(s"Circuit state: $s"))
         circuitStateReportingInterval.foreach(interval =>
           context.system.scheduler.scheduleOnce(interval, self, DisplayCircuitState))
       }
@@ -178,7 +178,7 @@ private[almhirt] class EventLogWriterImpl(
 
   override def preStart() {
     circuitBreaker.defaultActorListeners(self)
-      .onWarning((n, max) => log.warning(s"$n failures in a row. $max will cause the circuit to open."))
+      .onWarning((n, max) => logWarning(s"$n failures in a row. $max will cause the circuit to open."))
 
     self ! Resolve
   }
