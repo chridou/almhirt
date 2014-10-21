@@ -23,8 +23,8 @@ object AggregateRootHive {
     resolveSettings: ResolveSettings,
     commandBuffersize: Int,
     droneFactory: AggregateRootDroneFactory,
-    eventsBroker: StreamBroker[Event],
-    enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit ccuad: CanCreateUuidsAndDateTimes, futuresContext: ExecutionContext): Props =
+    otherThanContextEventBroker: Option[StreamBroker[Event]],
+    enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit ctx: AlmhirtContext): Props =
     Props(new AggregateRootHive(
       hiveDescriptor,
       aggregateEventLogToResolve,
@@ -32,7 +32,7 @@ object AggregateRootHive {
       resolveSettings,
       commandBuffersize,
       droneFactory,
-      eventsBroker,
+      otherThanContextEventBroker.getOrElse(ctx.eventBroker),
       enqueudEventsThrottlingThresholdFactor))
 
   def props(
@@ -58,8 +58,8 @@ object AggregateRootHive {
       resolveSettings,
       commandBuffersize,
       droneFactory,
-      ctx.eventBroker,
-      enqueudEventsThrottlingThresholdFactor)(ctx, ctx.futuresContext)
+      Some(ctx.eventBroker),
+      enqueudEventsThrottlingThresholdFactor)
   }
 }
 
@@ -74,15 +74,15 @@ private[almhirt] class AggregateRootHive(
   override val commandBuffersize: Int,
   override val droneFactory: AggregateRootDroneFactory,
   override val eventsBroker: StreamBroker[Event],
-  enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit override val ccuad: CanCreateUuidsAndDateTimes, override val futuresContext: ExecutionContext)
-  extends ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
+  enqueudEventsThrottlingThresholdFactor: Int = 2)(implicit override val almhirtContext: AlmhirtContext)
+  extends AlmActor with ActorContractor[Event] with ActorLogging with ActorSubscriber with AggregateRootHiveSkeleton {
 
   override val requestStrategy = ZeroRequestStrategy
   override val enqueudEventsThrottlingThreshold = commandBuffersize * enqueudEventsThrottlingThresholdFactor
 
 }
 
-private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] { me: ActorLogging with ActorSubscriber ⇒
+private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] { me: AlmActor with ActorLogging with ActorSubscriber ⇒
   import AggregateRootHive._
   import AggregateRootHiveInternals._
 
@@ -104,10 +104,9 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   def hiveDescriptor: HiveDescriptor
   def commandBuffersize: Int
   def droneFactory: AggregateRootDroneFactory
-  implicit def futuresContext: ExecutionContext
+  implicit val futuresContext: ExecutionContext = almhirtContext.futuresContext
   def eventsBroker: StreamBroker[Event]
   def enqueudEventsThrottlingThreshold: Int
-  implicit def ccuad: CanCreateUuidsAndDateTimes
 
   private var numReceivedInternal = 0
   private var numSucceededInternal = 0
@@ -133,6 +132,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
 
     case ActorMessages.ManyNotResolved(problem, _) ⇒
       log.error(s"Failed to resolve dependencies:\n$problem")
+      reportCriticalFailure(problem)
       sys.error(s"Failed to resolve dependencies.")
   }
 
@@ -186,8 +186,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
             case scalaz.Success(props) ⇒
               context.actorOf(props, aggregateCommand.aggId.value)
             //context watch drone
-            case scalaz.Failure(problem) ⇒
+            case scalaz.Failure(problem) ⇒ {
+              reportCriticalFailure(problem)
               throw new Exception(s"Could not create a drone for command ${aggregateCommand.header}:\n$problem")
+            }
           }
       }
       drone ! aggregateCommand
@@ -204,8 +206,10 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         case AggregateRootDroneInternalMessages.CommandExecuted(command) ⇒
           CommandSuccessfullyExecuted(command)
         case AggregateRootDroneInternalMessages.CommandNotExecuted(command, problem) ⇒
+          reportRejectedCommand(command, MinorSeverity, problem)
           CommandExecutionFailed(command, problem)
         case AggregateRootDroneInternalMessages.Busy(command) ⇒
+          reportRejectedCommand(command, MinorSeverity, CollisionProblem("Command can not be executed since another command is being executed."))
           CommandExecutionFailed(command, CollisionProblem("Command can not be executed since another command is being executed."))
       }
       enqueueEvent(event)
@@ -216,6 +220,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
       requestCommands()
 
     case ActorSubscriberMessage.OnNext(something) ⇒
+      reportMinorFailure(ArgumentProblem(s"Received something I cannot handle: $something"))
       log.warning(s"Received something I cannot handle: $something")
       receivedInvalidCommand()
 
@@ -224,6 +229,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
         log.debug(s"Aggregate command stream completed after receiving $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
 
     case OnBrokerProblem(problem) ⇒
+      reportCriticalFailure(problem)
       throw new Exception(s"The broker reported a problem:\n$problem")
 
     case OnContractExpired ⇒
@@ -240,6 +246,7 @@ private[almhirt] trait AggregateRootHiveSkeleton extends ActorContractor[Event] 
   override def preRestart(reason: Throwable, message: Option[Any]) {
     super.preRestart(reason, message)
     cancelContract()
+    reportCriticalFailure(reason)
     log.info(s"[Restart]: Received $numReceived commands. $numSucceeded succeeded, $numFailed failed.")
   }
 

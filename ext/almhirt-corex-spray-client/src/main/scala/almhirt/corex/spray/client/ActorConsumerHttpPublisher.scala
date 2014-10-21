@@ -39,7 +39,7 @@ abstract class ActorConsumerHttpPublisher[T](
   private case object Start
   def receiveCircuitClosed: Receive = {
     case Start =>
-      autoConnectTo.foreach(pub => FlowFrom[Event](pub).publishTo(ActorSubscriber[Event](self)))
+      autoConnectTo.foreach(pub => Source[Event](pub).connect(Sink(ActorSubscriber[Event](self))).run())
       request(1)
 
     case ActorSubscriberMessage.OnNext(element) ⇒

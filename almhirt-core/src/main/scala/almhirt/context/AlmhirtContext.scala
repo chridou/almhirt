@@ -196,10 +196,10 @@ object AlmhirtContext {
   val componentsActorname = "components"
 
   object TestContext {
-    def noComponentsDefaultGlobalDispatcher(contextName: String)(implicit system: ActorSystem, maxDur: scala.concurrent.duration.FiniteDuration): AlmFuture[AlmhirtContext with Stoppable] =
-      noComponentsDefaultGlobalDispatcher(contextName, CanCreateUuidsAndDateTimes())
+    def noComponentsDefaultGlobalDispatcher(contextName: String, maxDur: scala.concurrent.duration.FiniteDuration)(implicit system: ActorSystem): AlmFuture[AlmhirtContext with Stoppable] =
+      noComponentsDefaultGlobalDispatcher(contextName, CanCreateUuidsAndDateTimes(), maxDur)
 
-    def noComponentsDefaultGlobalDispatcher(contextName: String, ccuad: CanCreateUuidsAndDateTimes)(implicit system: ActorSystem, maxDur: scala.concurrent.duration.FiniteDuration): AlmFuture[AlmhirtContext with Stoppable] = {
+    def noComponentsDefaultGlobalDispatcher(contextName: String, ccuad: CanCreateUuidsAndDateTimes, maxDur: scala.concurrent.duration.FiniteDuration)(implicit system: ActorSystem): AlmFuture[AlmhirtContext with Stoppable] = {
       val futuresExecutor = system.dispatchers.defaultGlobalDispatcher
       val crunchersExecutor = system.dispatchers.defaultGlobalDispatcher
       val blockersExecutor = system.dispatchers.defaultGlobalDispatcher

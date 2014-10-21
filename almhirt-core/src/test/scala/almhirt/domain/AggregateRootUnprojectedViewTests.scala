@@ -102,12 +102,12 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
           val FixtureParam(testId, directView, drone, droneProbe, eventlog, streams) = fixture
           val probe = TestProbe()
           within(1 second) {
-            val flow = FlowFrom(List[Event](
+            val flow = Source(List[Event](
               UserCreated(EventHeader(), theId, 0L, "hans", "meier"),
               UserLastnameChanged(EventHeader(), theId, 1L, "müller"),
               UserDied(EventHeader(), theId, 2L)))
             val eventsSubscriber = streams.eventBroker.newSubscriber()
-            flow.publishTo(eventsSubscriber)
+            flow.connect(Sink(eventsSubscriber)).run()
 
             probe.expectNoMsg(100 millis)
             probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
@@ -122,12 +122,12 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
             probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
             probe.expectMsgType[UserState]
 
-            val flow = FlowFrom(List[Event](
+            val flow = Source(List[Event](
               UserCreated(EventHeader(), theId, 0L, "hans", "meier"),
               UserLastnameChanged(EventHeader(), theId, 1L, "müller"),
               UserDied(EventHeader(), theId, 2L)))
             val eventsSubscriber = streams.eventBroker.newSubscriber()
-            flow.publishTo(eventsSubscriber)
+            flow.connect(Sink(eventsSubscriber)).run()
 
             probe.expectNoMsg(100 millis)
             probe.send(directView, AggregateRootViewMessages.GetAggregateRootProjection)
@@ -263,7 +263,7 @@ class AggregateRootUnprojectedViewTests(_system: ActorSystem)
 
     val viewActor = system.actorOf(viewProps, s"view-$testId")
 
-    FlowFrom(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.withSink(ForeachSink(event ⇒ viewActor ! AggregateRootViewMessages.ApplyAggregateRootEvent(event)))
+    Source(streams.eventStream).collect { case e: AggregateRootEvent ⇒ e }.foreach(event ⇒ viewActor ! AggregateRootViewMessages.ApplyAggregateRootEvent(event))
 
     try {
       withFixture(test.toNoArgTest(FixtureParam(testId, viewActor, droneActor, droneProbe, eventlogActor, streams)))

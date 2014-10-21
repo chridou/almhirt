@@ -100,10 +100,10 @@ class EventStreamTests(_system: ActorSystem) extends TestKit(_system) with fixtu
         val events = (1 to n).map(i ⇒ TestEvent(i.toString): Event).toVector
         val subscriber = DelegatingEventSubscriber[Event](probe2.ref)
         val start = Deadline.now
-        within(6 seconds) {
+        within(15 seconds) {
           streams.eventStream.subscribe(subscriber)
           Stillage(events).signContract(streams.eventBroker)
-          val res = probe2.receiveN(n, 5 seconds)
+          val res = probe2.receiveN(n, 15 seconds)
           val time = start.lap
           info(s"Dispatched $n in ${start.lap.defaultUnitString}((${(nMsgBig * 3 * 1000).toDouble / time.toMillis}/s)).")
           res should equal(events)

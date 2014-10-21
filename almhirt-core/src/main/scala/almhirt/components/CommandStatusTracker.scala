@@ -163,20 +163,26 @@ private[almhirt] class MyCommandStatusTracker(
       }
 
     case RemoveTimedOut(timedOut) ⇒
-      val currentSubscriptions = trackingSubscriptions
+      val currentSubscriptions = trackingSubscriptions.toMap
       AlmFuture.compute {
         timedOut.foreach {
           case (commandId, timedOutEntryIds) ⇒
-            val activeSubscriptionsForCommand = currentSubscriptions.get(commandId) getOrElse Map.empty
-            activeSubscriptionsForCommand.view
-              .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
-              .foreach {
-                case (id, entry) ⇒ {
-                  entry.callback(OperationTimedOutProblem("The tracking timed out.").failure)
-                  reportMinorFailure(OperationTimedOutProblem("Tracking timed out."))
-                }
-              }
+            currentSubscriptions.get(commandId) match {
+              case Some(activeSubscriptionsForCommand) =>
+                activeSubscriptionsForCommand.view
+                  .filter { case (id, entry) ⇒ timedOutEntryIds.contains(id) }
+                  .foreach {
+                    case (id, entry) ⇒ {
+                      entry.callback(OperationTimedOutProblem("The tracking timed out.").failure)
+                      reportMinorFailure(OperationTimedOutProblem("Tracking timed out."))
+                    }
+                  }
+              case None =>
+                ()
+            }
         }
+      }.onFailure { p =>
+        reportMajorFailure(p)
       }
       trackingSubscriptions = trackingSubscriptions.map {
         case (commandId, entries) ⇒
