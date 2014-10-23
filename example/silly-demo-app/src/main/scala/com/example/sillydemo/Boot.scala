@@ -33,6 +33,16 @@ object Boot {
       context <- AlmhirtContext(system = system, actorName = None, componentFactories = createComponentFactories())
       stopHttp <- openHttpHerderService(ResolvePath(context.localActorPaths.apps / "herder-service"), context)(system)
     } yield {
+      system.log.info("""	|
+    		  				| This is a simple demo for the ugly dashboard.
+    		  				| You will have to press F5 many times ;-)
+    		  				| 
+    		  				| Open localhost:8080/herder in your browser.
+    		  				|
+    		  				| This application will destroy itself after using it!
+    		  				|
+    		  				| Unfortunately CTRL-C is needed to really stop me....
+    		  				|""".stripMargin)
       val stop = new Stoppable {
         def stop() {
           stopHttp.stop
