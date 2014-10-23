@@ -1,5 +1,6 @@
 package almhirt.context
 
+import scala.concurrent.duration._
 import akka.actor._
 import almhirt.common._
 import almhirt.akkax._
@@ -17,19 +18,19 @@ private[almhirt] object componentactors {
   import almhirt.akkax.{ ActorMessages, ComponentFactory }
 
   def componentsProps(implicit ctx: AlmhirtContext): Props =
-    Props(new ComponentsSupervisor(ctx))
+    Props(new ComponentsSupervisor)
 
   def viewsProps(implicit ctx: AlmhirtContext): Props =
-    Props(new ViewsSupervisor())
+    Props(new ViewsSupervisor)
 
   def eventLogsProps(implicit ctx: AlmhirtContext): Props =
     Props(new EventLogsSupervisor())
 
   def miscProps(implicit ctx: AlmhirtContext): Props =
-    Props(new MiscSupervisor())
+    Props(new MiscSupervisor)
 
   def appsProps(implicit ctx: AlmhirtContext): Props =
-    Props(new AppsSupervisor())
+    Props(new AppsSupervisor)
 
   class ViewsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
   class EventLogsSupervisor()(implicit override val almhirtContext: AlmhirtContext) extends SimpleUnfolder
@@ -38,29 +39,45 @@ private[almhirt] object componentactors {
 
   final case class UnfoldFromFactories(factories: ComponentFactories)
 
-  class ComponentsSupervisor(ctx: AlmhirtContext) extends Actor with ActorLogging {
-    val eventLogs = context.actorOf(eventLogsProps(ctx), "event-logs")
-    val views = context.actorOf(viewsProps(ctx), "views")
-    val misc = context.actorOf(miscProps(ctx), "misc")
-    val apps = context.actorOf(appsProps(ctx), "apps")
+  class ComponentsSupervisor(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
+
+    val eventLogs = context.actorOf(eventLogsProps(almhirtContext), "event-logs")
+    val views = context.actorOf(viewsProps(almhirtContext), "views")
+    val misc = context.actorOf(miscProps(almhirtContext), "misc")
+    val apps = context.actorOf(appsProps(almhirtContext), "apps")
 
     override def receive: Receive = {
       case UnfoldFromFactories(factories) ⇒ {
         log.info("Unfolding components.")
-        factories.buildEventLogs(ctx).onComplete(
-          problem ⇒ log.error(s"Could not create component factories for event logs:\n$problem"),
-          factories ⇒ eventLogs ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
-        factories.buildViews(ctx).onComplete(
-          problem ⇒ log.error(s"Could not create component factories for views:\n$problem"),
-          factories ⇒ views ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
-        factories.buildMisc(ctx).onComplete(
-          problem ⇒ log.error(s"Could not create component factories for misc:\n$problem"),
-          factories ⇒ misc ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
-        factories.buildApps(ctx).onComplete(
-          problem ⇒ log.error(s"Could not create component factories for apps:\n$problem"),
-          factories ⇒ apps ! ActorMessages.CreateChildActors(factories, false, None))(ctx.futuresContext)
-        factories.buildNexus.foreach(_(ctx).onComplete(
-          problem ⇒ log.error(s"Failed to create nexus props:\$problem"),
+        factories.buildEventLogs(almhirtContext).onComplete(
+          problem ⇒ {
+            logError(s"Could not create component factories for event logs:\n$problem")
+            reportCriticalFailure(problem)
+          },
+          factories ⇒ eventLogs ! ActorMessages.CreateChildActors(factories, false, None))(almhirtContext.futuresContext)
+        factories.buildViews(almhirtContext).onComplete(
+          problem ⇒ {
+            logError(s"Could not create component factories for views:\n$problem")
+            reportCriticalFailure(problem)
+          },
+          factories ⇒ views ! ActorMessages.CreateChildActors(factories, false, None))(almhirtContext.futuresContext)
+        factories.buildMisc(almhirtContext).onComplete(
+          problem ⇒ {
+            logError(s"Could not create component factories for misc:\n$problem")
+            reportCriticalFailure(problem)
+          },
+          factories ⇒ misc ! ActorMessages.CreateChildActors(factories, false, None))(almhirtContext.futuresContext)
+        factories.buildApps(almhirtContext).onComplete(
+          problem ⇒ {
+            logError(s"Could not create component factories for apps:\n$problem")
+            reportCriticalFailure(problem)
+          },
+          factories ⇒ apps ! ActorMessages.CreateChildActors(factories, false, None))(almhirtContext.futuresContext)
+        factories.buildNexus.foreach(_(almhirtContext).onComplete(
+          problem ⇒ {
+            logError(s"Failed to create nexus props:\$problem")
+            reportCriticalFailure(problem)
+          },
           factory ⇒ self ! ActorMessages.CreateChildActor(factory, false, None))(context.dispatcher))
       }
 
@@ -79,21 +96,30 @@ private[almhirt] object componentactors {
     }
   }
 
-  trait SimpleUnfolder extends Actor with ActorLogging with HasAlmhirtContext with almhirt.akkax.AlmActorSupport {
+  private[almhirt] abstract class SimpleUnfolder(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
+    import akka.actor.SupervisorStrategy._
+    override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
+      case exn =>
+        logError("Stopping a child", exn)
+        reportCriticalFailure(exn)
+        Stop
+    }
+
     override def receive: Receive = {
       case ActorMessages.CreateChildActors(factories, returnActorRefs, correlationId) ⇒
-        log.info(s"Creating:\n${factories.map(_.name.getOrElse("<<<no name>>>")).mkString(", ")}")
+        logInfo(s"Creating:\n${factories.map(_.name.getOrElse("<<<no name>>>")).mkString(", ")}")
         factories.foreach { factory ⇒ self ! ActorMessages.CreateChildActor(factory, returnActorRefs, correlationId) }
 
       case ActorMessages.CreateChildActor(componentFactory, returnActorRef, correlationId) ⇒
         context.childFrom(componentFactory).fold(
           problem ⇒ {
-            log.error(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
+            logError(s"""	|Failed to create "${componentFactory.name.getOrElse("<<<no name>>>")}":
             				|$problem""".stripMargin)
+            reportCriticalFailure(problem)
             sender() ! ActorMessages.CreateChildActorFailed(problem, correlationId)
           },
           actorRef ⇒ {
-            log.info(s"Created ${actorRef.path} @ ${actorRef.path} ")
+            logInfo(s"Created ${actorRef.path} @ ${actorRef.path} ")
             if (returnActorRef)
               sender() ! ActorMessages.ChildActorCreated(actorRef, correlationId)
           })
