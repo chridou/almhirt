@@ -108,10 +108,15 @@ object AlmhirtContext {
             system.dispatcher
           }
 
-        Props(new Actor with ActorLogging {
+        import almhirt.akkax._
+        Props(new AlmActor with AlmActorLogging with ActorLogging {
           implicit val execCtx = futuresExecutor
           var theReceiver: ActorRef = null
           var tellTheHerder: almhirt.herder.HerderMessages.HerderNotificicationMessage => Unit = x => ()
+          
+          var _ctx: AlmhirtContext = null
+          override def almhirtContext = _ctx
+          
           def receive: Receive = {
             case AlmhirtContextMessages.Start ⇒
               theReceiver = sender()
@@ -145,6 +150,7 @@ object AlmhirtContext {
                   context.stop(self)
                 }
               }
+              _ctx = ctx
               self ! AlmhirtContextMessages.ContextCreated(ctx)
 
             case AlmhirtContextMessages.ContextCreated(ctx) ⇒
@@ -161,13 +167,13 @@ object AlmhirtContext {
                theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
 
             case AlmhirtContextMessages.HerderCreated(ctx) ⇒
-              log.info("Context created. Next: Configure components")
+              logInfo("Herder created. Core system configured. Will now go on with the components...")
+              theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
               val components = context.actorOf(componentactors.componentsProps(ctx), "components")
               components ! componentactors.UnfoldFromFactories(componentFactories)
-              theReceiver ! AlmhirtContextMessages.FinishedInitialization(ctx)
 
             case AlmhirtContextMessages.StreamsNotCreated(prob) ⇒
-              log.error(s"Could not create streams:\n$prob")
+              logError(s"Could not create streams:\n$prob")
               theReceiver ! AlmhirtContextMessages.FailedInitialization(prob)
           }
         })

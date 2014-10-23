@@ -334,9 +334,12 @@ object problemtypes {
     def apply(msg: String = "Configuring something failed.", args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
       SingleProblem(msg, CircuitOpenProblem, args, cause)
       
-    def component(cause: ProblemCause, componentName: String): SingleProblem =
+    def in(cause: ProblemCause, componentName: String): SingleProblem =
      ConfigurationProblem(s"""Configuration of "$componentName" failed.""", cause = Some(cause))
-      
+
+    def in(componentName: String)(implicit problem: Problem): SingleProblem =
+     ConfigurationProblem(s"""Configuration of "$componentName" failed.""", cause = Some(problem))
+     
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ConfigurationProblem)
   }
   
