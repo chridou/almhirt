@@ -40,6 +40,13 @@ private[almhirt] object componentactors {
   final case class UnfoldFromFactories(factories: ComponentFactories)
 
   class ComponentsSupervisor(implicit override val almhirtContext: AlmhirtContext) extends AlmActor with AlmActorLogging with ActorLogging {
+    import akka.actor.SupervisorStrategy._
+    override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
+      case exn =>
+        logError("Stopping a child", exn)
+        reportCriticalFailure(exn)
+        Stop
+    }
 
     val eventLogs = context.actorOf(eventLogsProps(almhirtContext), "event-logs")
     val views = context.actorOf(viewsProps(almhirtContext), "views")
