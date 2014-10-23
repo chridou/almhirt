@@ -116,6 +116,7 @@ object ProblemTypes {
   val NoSuchElementProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.NoSuchElementProblem.type](almhirt.problem.problemtypes.NoSuchElementProblem)
   val CommandExecutionFailedProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.CommandExecutionFailedProblem.type](almhirt.problem.problemtypes.CommandExecutionFailedProblem)
   val CircuitOpenProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.CircuitOpenProblem.type](almhirt.problem.problemtypes.CircuitOpenProblem)
+  val ConfigurationProblemPackaging = createDefaultPackaging[almhirt.problem.problemtypes.ConfigurationProblem.type](almhirt.problem.problemtypes.ConfigurationProblem)
   val RiftWarpSerializationProblemPackaging = createDefaultPackaging[RiftWarpSerializationProblem.type](RiftWarpSerializationProblem)
   val RiftWarpDeserializationProblemPackaging = createDefaultPackaging[RiftWarpDeserializationProblem.type](RiftWarpDeserializationProblem)
 
@@ -159,6 +160,7 @@ object ProblemTypes {
     to.addTyped(NoSuchElementProblemPackaging)
     to.addTyped(CommandExecutionFailedProblemPackaging)
     to.addTyped(CircuitOpenProblemPackaging)
+    to.addTyped(ConfigurationProblemPackaging)
     to.addTyped(RiftWarpSerializationProblemPackaging)
     to.addTyped(RiftWarpDeserializationProblemPackaging)
   }
@@ -203,6 +205,7 @@ object ProblemTypes {
     to.addTyped(NoSuchElementProblemPackaging)
     to.addTyped(CommandExecutionFailedProblemPackaging)
     to.addTyped(CircuitOpenProblemPackaging)
+    to.addTyped(ConfigurationProblemPackaging)
     to.addTyped(RiftWarpSerializationProblemPackaging)
     to.addTyped(RiftWarpDeserializationProblemPackaging)
   }

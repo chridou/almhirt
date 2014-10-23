@@ -197,7 +197,7 @@ object problemtypes {
   }
 
   /**
-   * The application couldn't be started properly
+   * The application/component couldn't be started properly
    */
   case object StartupProblem extends ProblemType {
     def apply(msg: String, args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
@@ -328,6 +328,16 @@ object problemtypes {
     def apply(msg: String = "The circuit breaker is open. Try again later.", args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
       SingleProblem(msg, CircuitOpenProblem, args, cause)
     def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, CircuitOpenProblem)
+  }
+  
+  case object ConfigurationProblem extends ProblemType {
+    def apply(msg: String = "Configuring something failed.", args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
+      SingleProblem(msg, CircuitOpenProblem, args, cause)
+      
+    def component(cause: ProblemCause, componentName: String): SingleProblem =
+     ConfigurationProblem(s"""Configuration of "$componentName" failed.""", cause = Some(cause))
+      
+    def unapply(problem: SingleProblem): Option[SingleProblem] = SingleProblem.unapplyAgainst(problem, ConfigurationProblem)
   }
   
 }

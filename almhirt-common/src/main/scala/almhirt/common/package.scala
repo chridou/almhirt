@@ -105,4 +105,5 @@ package object common extends ops.DeadlineExt with ops.FiniteDurationExt {
   val NoSuchElementProblem = almhirt.problem.problemtypes.NoSuchElementProblem
   val CommandExecutionFailedProblem = almhirt.problem.problemtypes.CommandExecutionFailedProblem
   val CircuitOpenProblem = almhirt.problem.problemtypes.CircuitOpenProblem
+  val ConfigurationProblem = almhirt.problem.problemtypes.ConfigurationProblem
 }
