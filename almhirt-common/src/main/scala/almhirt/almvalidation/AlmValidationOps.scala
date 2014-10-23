@@ -176,15 +176,19 @@ trait AlmValidationOps5[P <: Problem, T] extends Ops[Validation[P, T]] {
   /** Returns a problem in a Some */
   def toProblemOption(): Option[Problem] =
     self fold (prob ⇒ Some(prob), _ ⇒ None)
-  
+
   def constrained(cond: T ⇒ Boolean, msg: T ⇒ String = _ ⇒ "A constraint has was violated."): AlmValidation[T] =
     self.fold(
-     fail ⇒ fail.failure,
-     succ ⇒ if(cond(succ)) succ.success else ConstraintViolatedProblem(msg(succ)).failure
-    )
-    
+      fail ⇒ fail.failure,
+      succ ⇒ if (cond(succ)) succ.success else ConstraintViolatedProblem(msg(succ)).failure)
+
+  @deprecated(message = "Use failureDidNotConfigure", since = "0.7.1")
   def didNotConfigure(component: String): AlmValidation[T] =
     self.leftMap(implicit p => ConfigurationProblem.in(component))
+
+  def failureDidNotConfigure(component: String): AlmValidation[T] =
+    self.leftMap(implicit p => ConfigurationProblem.in(component))
+
 }
 
 trait AlmValidationOps6[T, U] extends Ops[T ⇒ Option[U]] {

@@ -334,7 +334,7 @@ object problemtypes {
     def apply(msg: String = "Configuring something failed.", args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
       SingleProblem(msg, ConfigurationProblem, args, cause)
       
-    def in(cause: ProblemCause, componentName: String): SingleProblem =
+    def occuredIn(cause: ProblemCause, componentName: String): SingleProblem =
      ConfigurationProblem(s"""Configuration of "$componentName" failed.""", cause = Some(cause))
 
     def in(componentName: String)(implicit problem: Problem): SingleProblem =
