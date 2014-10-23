@@ -332,7 +332,7 @@ object problemtypes {
   
   case object ConfigurationProblem extends ProblemType {
     def apply(msg: String = "Configuring something failed.", args: Map[String, Any] = Map.empty, cause: Option[ProblemCause] = None): SingleProblem =
-      SingleProblem(msg, CircuitOpenProblem, args, cause)
+      SingleProblem(msg, ConfigurationProblem, args, cause)
       
     def in(cause: ProblemCause, componentName: String): SingleProblem =
      ConfigurationProblem(s"""Configuration of "$componentName" failed.""", cause = Some(cause))
