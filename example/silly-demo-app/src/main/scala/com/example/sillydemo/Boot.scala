@@ -5,7 +5,7 @@ import scalaz.Validation.FlatMap._
 import akka.actor._
 import akka.pattern._
 import almhirt.common._
-import almhirt.context.AlmhirtContext
+import almhirt.context._
 import almhirt.context.ComponentFactories
 import almhirt.akkax.ComponentFactory
 import almhirt.configuration._
@@ -21,6 +21,7 @@ import almhirt.httpx.spray.marshalling.MarshallingContentTypesProvider
 import almhirt.corex.spray.service.HttpHerderService
 import almhirt.context.HasAlmhirtContext
 import com.typesafe.config.Config
+import almhirt.context.ComponentFactoryBuilderEntry
 
 object Boot {
   def bootContext(system: ActorSystem): AlmFuture[(AlmhirtContext, Stoppable)] = {
@@ -44,23 +45,23 @@ object Boot {
 
   private def createComponentFactories(): ComponentFactories = {
     ComponentFactories(
-      _ ⇒ AlmFuture.successful(Seq.empty),
-      _ ⇒ AlmFuture.successful(Seq.empty),
-      _ ⇒ AlmFuture.successful(Seq.empty),
+      Seq.empty,
+      Seq.empty,
+      Seq.empty,
       buildApps = createApps(),
       buildNexus = None)
   }
 
-  private def createApps(): AlmhirtContext => AlmFuture[Seq[ComponentFactory]] = {
+  private def createApps(): Seq[ComponentFactoryBuilderEntry] = {
     val rw = RiftWarp()
     val problemAlmMediaTypesProvider = AlmMediaTypesProvider.registeredDefaults[almhirt.common.Problem]("Problem").withGenericTargets
     val pSerializer = WarpHttpSerializer[Problem](rw)
     val mctp = MarshallingContentTypesProvider[Problem]()
     val problemMarshaller = ContentTypeBoundMarshallerFactory[Problem](mctp, DefaultMarshallingInstances.ProblemMarshallingInst).marshaller(pSerializer)
 
-    (ctx: AlmhirtContext) => {
-      AlmFuture.completed {
-        val sillyAppServiceFactoryV = HttpHerderService.paramsFactory(ctx).map(paramsFactory =>
+    val entry1 = { (ctx: AlmhirtContext) =>
+      {
+        HttpHerderService.paramsFactory(ctx).map(paramsFactory =>
           Props(new {
             override val almhirtContext = ctx
             override val httpHerderServiceParams = paramsFactory(problemMarshaller)
@@ -68,15 +69,13 @@ object Boot {
             def receive = runRoute(route)
             override val actorRefFactory = this.context
           })).map(props => ComponentFactory(props, s"herder-service"))
-
-        val crazySheepFactory = ComponentFactory(Props(new CrazySheepApp()(ctx)), "crazy-sheep")
-        val freakyDogsFactory = ComponentFactory(Props(new FreakyDogsApp()(ctx)), "freaky-dogs")
-
-        sillyAppServiceFactoryV.fold(
-          fail => scalaz.Failure(fail),
-          sillyAppServiceFactory => scalaz.Success(Seq(crazySheepFactory, freakyDogsFactory, sillyAppServiceFactory)))
       }
-    }
+    }.toCriticalEntry
+
+    val crazySheepFactory = { (ctx: AlmhirtContext) => ComponentFactory(Props(new CrazySheepApp()(ctx)), "crazy-sheep") }.toCriticalEntry
+    val freakyDogsFactory = { (ctx: AlmhirtContext) => ComponentFactory(Props(new FreakyDogsApp()(ctx)), "freaky-dogs") }.toCriticalEntry
+
+    Seq(entry1, crazySheepFactory, freakyDogsFactory)
   }
 
   private def openHttpHerderService(serviceToResolve: ToResolve, ctx: AlmhirtContext)(implicit system: ActorSystem): AlmFuture[Stoppable] = {

@@ -4,6 +4,7 @@ import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 import akka.actor.{ Props, ActorRef, ActorRefFactory, ActorContext }
 import almhirt.common._
+import almhirt.context._
 
 /**
  * creator is the Actor that created createdActor and localActorRefFactory is the creator's ActorContext
