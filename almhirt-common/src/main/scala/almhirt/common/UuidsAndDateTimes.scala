@@ -26,12 +26,12 @@ object CanCreateUuidsAndDateTimes {
   }
 
   def timeShifted(timeShift: FiniteDuration): CanCreateUuidsAndDateTimes = {
-    val timeshiftMillis = timeShift.toMillis.toInt
+    val timeshiftSeconds = timeShift.toSeconds.toInt
     new CanCreateUuidsAndDateTimes {
       override def getUuid(): java.util.UUID = java.util.UUID.randomUUID()
       override def getUniqueString(): String = almhirt.converters.MiscConverters.uuidToBase64String(java.util.UUID.randomUUID())
-      override def getDateTime(): DateTime = new DateTime(DateTimeZone.UTC).plusMillis(timeshiftMillis)
-      override def getUtcTimestamp(): LocalDateTime = new LocalDateTime(DateTimeZone.UTC).plusMillis(timeshiftMillis)
+      override def getDateTime(): DateTime = new DateTime(DateTimeZone.UTC).plusSeconds(timeshiftSeconds)
+      override def getUtcTimestamp(): LocalDateTime = new LocalDateTime(DateTimeZone.UTC).plusSeconds(timeshiftSeconds)
     }
   }
 
