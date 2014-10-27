@@ -76,7 +76,7 @@ object AlmhirtContextMessages {
 object AlmhirtContext {
   type ComponentFactory = AlmhirtContext ⇒ AlmFuture[Props]
 
-  def apply(system: ActorSystem, actorName: Option[String], componentFactories: ComponentFactories): AlmFuture[AlmhirtContext with Stoppable] = {
+  def apply(system: ActorSystem, actorName: Option[String], componentFactories: ComponentFactories, specificCcuad: Option[CanCreateUuidsAndDateTimes] = None): AlmFuture[AlmhirtContext with Stoppable] = {
     import almhirt.configuration._
 
     val propsV =
@@ -127,7 +127,7 @@ object AlmhirtContext {
 
             case AlmhirtContextMessages.StreamsCreated(streams) ⇒
               log.info("Created streams. Next: Create context")
-              val ccuad = CanCreateUuidsAndDateTimes()
+              val ccuad = specificCcuad getOrElse CanCreateUuidsAndDateTimes()
               val ctx = new AlmhirtContext with Stoppable {
                 val config = system.settings.config
                 val futuresContext = futuresExecutor
