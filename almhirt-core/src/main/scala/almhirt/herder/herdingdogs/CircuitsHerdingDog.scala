@@ -60,11 +60,11 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
         case None => log.warning(s"""There is no circuit control named "$ownerId".""")
       }
 
-    case CircumverateCircuit(ownerId) =>
+    case CircumventCircuit(ownerId) =>
       circuitControls.find(_._1 == ownerId) match {
         case Some(cc) =>
-          cc._2.circumverate
-          log.info(s"""Sent circumverate request to circuit control "$ownerId".""")
+          cc._2.circumvent
+          log.info(s"""Sent circumvent request to circuit control "$ownerId".""")
         case None => log.warning(s"""There is no circuit control named "$ownerId".""")
       }
   

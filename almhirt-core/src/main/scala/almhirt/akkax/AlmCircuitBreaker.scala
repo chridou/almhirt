@@ -73,7 +73,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
   override def attemptClose() { currentState.attemptManualClose() }
   override def removeFuse() { currentState.attemptManualRemoveFuse() }
   override def destroy() { currentState.attemptManualDestroy() }
-  override def circumverate() { currentState.manualCircumverate() }
+  override def circumvent() { currentState.manualCircumvent() }
 
   override def state: AlmFuture[CircuitState] = AlmFuture.successful(currentState.publicState)
 
@@ -102,8 +102,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
     this
   }
 
-  override def onCircumverated(listener: () => Unit): AlmCircuitBreaker = {
-    InternalCircumverated addListener new Runnable { def run() { listener() } }
+  override def onCircumvented(listener: () => Unit): AlmCircuitBreaker = {
+    InternalCircumvented addListener new Runnable { def run() { listener() } }
     this
   }
   
@@ -155,8 +155,8 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
   private def attemptRemoveFuse(from: InternalState): Boolean =
     attemptTransition(from, InternalFuseRemoved)
 
-  private def attemptCircumverate(from: InternalState): Boolean =
-    attemptTransition(from, InternalCircumverated)
+  private def attemptCircumvent(from: InternalState): Boolean =
+    attemptTransition(from, InternalCircumvented)
     
   /**
    * No escape from here.
@@ -216,7 +216,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
     def attemptManualClose(): Boolean = false
     def attemptManualDestroy(): Boolean
     def attemptManualRemoveFuse(): Boolean
-    def manualCircumverate(): Boolean
+    def manualCircumvent(): Boolean
   }
 
   /**
@@ -259,7 +259,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
     override def attemptManualDestroy(): Boolean = attemptDestroy(InternalClosed)
     override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalClosed)
-    override def manualCircumverate(): Boolean = attemptCircumverate(InternalClosed)
+    override def manualCircumvent(): Boolean = attemptCircumvent(InternalClosed)
 
     override def _enter() {
       set(0)
@@ -293,7 +293,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
 
     override def attemptManualDestroy(): Boolean = attemptDestroy(InternalHalfOpen)
     override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalHalfOpen)
-    override def manualCircumverate(): Boolean = attemptCircumverate(InternalHalfOpen)
+    override def manualCircumvent(): Boolean = attemptCircumvent(InternalHalfOpen)
 
   }
 
@@ -335,7 +335,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
     override def attemptManualClose(): Boolean = attemptReset(InternalOpen)
     override def attemptManualDestroy(): Boolean = attemptDestroy(InternalOpen)
     override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalOpen)
-    override def manualCircumverate(): Boolean = attemptCircumverate(InternalOpen)
+    override def manualCircumvent(): Boolean = attemptCircumvent(InternalOpen)
 
   }
 
@@ -369,7 +369,7 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
     override def attemptManualClose(): Boolean = attemptReset(InternalFuseRemoved)
     override def attemptManualDestroy(): Boolean = attemptDestroy(InternalFuseRemoved)
     override def attemptManualRemoveFuse(): Boolean = false
-    override def manualCircumverate(): Boolean = attemptCircumverate(InternalFuseRemoved)
+    override def manualCircumvent(): Boolean = attemptCircumvent(InternalFuseRemoved)
 
   }
 
@@ -399,12 +399,12 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
     override def attemptManualClose(): Boolean = false
     override def attemptManualDestroy(): Boolean = false
     override def attemptManualRemoveFuse(): Boolean = false
-    override def manualCircumverate(): Boolean = false
+    override def manualCircumvent(): Boolean = false
   }
 
   /** No transitions */
-  private case object InternalCircumverated extends AtomicLong with InternalState {
-    override def publicState = CircuitState.Circumverated(forDuration)
+  private case object InternalCircumvented extends AtomicLong with InternalState {
+    override def publicState = CircuitState.Circumvented(forDuration)
 
     override def invoke[T](surrogate: ⇒ AlmFuture[T], body: ⇒ AlmFuture[T]): AlmFuture[T] =
       body
@@ -425,10 +425,10 @@ private[almhirt] class AlmCircuitBreakerImpl(settings: CircuitControlSettings, e
       set(System.nanoTime())
     }
 
-    override def attemptManualClose(): Boolean = attemptReset(InternalCircumverated)
-    override def attemptManualDestroy(): Boolean = attemptDestroy(InternalCircumverated)
-    override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalCircumverated)
-    override def manualCircumverate(): Boolean = false
+    override def attemptManualClose(): Boolean = attemptReset(InternalCircumvented)
+    override def attemptManualDestroy(): Boolean = attemptDestroy(InternalCircumvented)
+    override def attemptManualRemoveFuse(): Boolean = attemptRemoveFuse(InternalCircumvented)
+    override def manualCircumvent(): Boolean = false
   }
 
 }

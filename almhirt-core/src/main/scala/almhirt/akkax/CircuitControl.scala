@@ -9,7 +9,7 @@ trait CircuitControl {
   def attemptClose(): Unit
   def removeFuse(): Unit
   def destroy(): Unit
-  def circumverate(): Unit
+  def circumvent(): Unit
   def state: AlmFuture[CircuitState]
 
   def onOpened(listener: () => Unit): CircuitControl
@@ -17,7 +17,7 @@ trait CircuitControl {
   def onClosed(listener: () => Unit): CircuitControl
   def onFuseRemoved(listener: () => Unit): CircuitControl
   def onDestroyed(listener: () => Unit): CircuitControl
-  def onCircumverated(listener: () => Unit): CircuitControl
+  def onCircumvented(listener: () => Unit): CircuitControl
   def onWarning(listener: (Int, Int) => Unit): CircuitControl
 }
 
@@ -29,7 +29,7 @@ object CircuitControl {
         .onClosed(() => actor ! ActorMessages.CircuitClosed)
         .onFuseRemoved(() => actor ! ActorMessages.CircuitFuseRemoved)
         .onDestroyed(() => actor ! ActorMessages.CircuitDestroyed)
-        .onCircumverated(() => actor ! ActorMessages.CircuitCircumverated)
+        .onCircumvented(() => actor ! ActorMessages.CircuitCircumvented)
   }
 }
 
@@ -89,7 +89,7 @@ object CircuitState {
   final case class Destroyed(duration: FiniteDuration) extends AllWillFailState {
     override def toString: String = s"Destroyed(${duration.defaultUnitString})"
   }
-  final case class Circumverated(duration: FiniteDuration) extends NotAllWillFailState {
-    override def toString: String = s"Circumverated(${duration.defaultUnitString})"
+  final case class Circumvented(duration: FiniteDuration) extends NotAllWillFailState {
+    override def toString: String = s"Circumvented(${duration.defaultUnitString})"
   }
 }

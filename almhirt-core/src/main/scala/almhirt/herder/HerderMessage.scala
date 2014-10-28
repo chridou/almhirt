@@ -23,7 +23,7 @@ object HerderMessages {
     final case class AttemptCloseCircuit(id: ComponentId) extends CircuitControlMessage
     final case class RemoveFuseFromCircuit(id: ComponentId) extends CircuitControlMessage
     final case class DestroyCircuit(id: ComponentId) extends CircuitControlMessage
-    final case class CircumverateCircuit(id: ComponentId) extends CircuitControlMessage
+    final case class CircumventCircuit(id: ComponentId) extends CircuitControlMessage
   }
 
   object EventMessages {
