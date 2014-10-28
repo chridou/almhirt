@@ -31,11 +31,12 @@ class MutableImportantThingsHistory[T: ClassTag](val maxQueueSize: Int)(implicit
   }
 
   def immutable: ImportantThingsHistory[T] = ImportantThingsHistory(occurencesCount, maxImportance, lastOccurencesQueue.toVector)
+  def immutableReversed: ImportantThingsHistory[T] = ImportantThingsHistory(occurencesCount, maxImportance, lastOccurencesQueue.toVector.reverse)
 
-  def oldestOccurencesQueue: Option[T] =
+  def oldestOccurence: Option[T] =
     lastOccurencesQueue.headOption
 
-  def latestOccurencesQueue: Option[T] =
+  def latestOccurence: Option[T] =
     lastOccurencesQueue.lastOption
 
 }
@@ -56,6 +57,7 @@ class MutableImportantThingsHistories[K, T: GetsImportance: ClassTag](val maxQue
 
   def get(key: K) = entries get key
   def getImmutable(key: K) = (entries get key).map(_.immutable)
+  def getImmutableReversed(key: K) = (entries get key).map(_.immutableReversed)
   def all: Vector[(K, ImportantThingsHistory[T])] = entries.map(x => (x._1, x._2.immutable)).toVector
 
   def clear(key: K) { get(key).foreach(_.clear()) }

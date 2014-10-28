@@ -31,11 +31,12 @@ class MutableBadThingsHistory[T: ClassTag](val maxQueueSize: Int)(implicit getsS
   }
 
   def immutable: BadThingsHistory[T] = BadThingsHistory(occurencesCount, maxSeverity, lastOccurencesQueue.toVector)
+  def immutableReversed: BadThingsHistory[T] = BadThingsHistory(occurencesCount, maxSeverity, lastOccurencesQueue.toVector.reverse)
 
-  def oldestOccurencesQueue: Option[T] =
+  def oldestOccurence: Option[T] =
     lastOccurencesQueue.headOption
 
-  def latestOccurencesQueue: Option[T] =
+  def latestOccurence: Option[T] =
     lastOccurencesQueue.lastOption
 
 }
@@ -56,6 +57,7 @@ class MutableBadThingsHistories[K, T: GetsSeverity: ClassTag](val maxQueueSize: 
 
   def get(key: K) = entries get key
   def getImmutable(key: K) = (entries get key).map(_.immutable)
+  def getImmutableReversed(key: K) = (entries get key).map(_.immutableReversed)
   def all: Vector[(K, BadThingsHistory[T])] = entries.map(x => (x._1, x._2.immutable)).toVector
 
   def clear(key: K) { get(key).foreach(_.clear()) }

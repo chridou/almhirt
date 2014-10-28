@@ -44,7 +44,7 @@ private[almhirt] class InformationHerdingDog(historySize: Int)(implicit override
       sender() ! ReportedInformation(ifos)
       
     case ReportInformationFor(componentId) =>
-      sender() ! ReportedInformationFor(componentId, history getImmutable componentId)
+      sender() ! ReportedInformationFor(componentId, history getImmutableReversed componentId)
       
   }
 

@@ -45,7 +45,7 @@ private[almhirt] class MissedEventsHerdingDog(historySize: Int, unwrapFailures: 
       sender() ! MissedEvents(missed)
       
     case ReportMissedEventsFor(componentId) =>
-      sender() ! ReportedMissedEventsFor(componentId, history getImmutable componentId)
+      sender() ! ReportedMissedEventsFor(componentId, history getImmutableReversed componentId)
       
   }
 

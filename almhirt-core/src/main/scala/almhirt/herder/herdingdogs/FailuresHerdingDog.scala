@@ -44,7 +44,7 @@ private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Bool
       val ignore =
         (for {
           badThing <- history.get(componentId)
-          first <- badThing.latestOccurencesQueue
+          first <- badThing.latestOccurence
           ignore <- first._1 match {
             case CauseIsProblem(CircuitOpenProblem(_)) => Some(ignoreConsecutiveCircuitProblems)
             case _ => Some(false)
@@ -58,7 +58,7 @@ private[almhirt] class FailuresHerdingDog(ignoreConsecutiveCircuitProblems: Bool
       sender() ! ReportedFailures(entries)
 
     case ReportFailuresFor(componentId) =>
-      sender() ! ReportedFailuresFor(componentId, history getImmutable componentId)
+      sender() ! ReportedFailuresFor(componentId, history getImmutableReversed componentId)
   }
 
   def prepareCause(cause: ProblemCause, ignoreCircuitProblems: Boolean): Option[ProblemCause] = {

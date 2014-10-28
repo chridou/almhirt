@@ -46,7 +46,7 @@ private[almhirt] class RejectedCommandsHerdingDog(historySize: Int, unwrapFailur
       sender() ! RejectedCommands(missed)
       
     case ReportRejectedCommandsFor(componentId) =>
-      sender() ! ReportedRejectedCommandsFor(componentId, history getImmutable componentId)
+      sender() ! ReportedRejectedCommandsFor(componentId, history getImmutableReversed componentId)
       
   }
 
