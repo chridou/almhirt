@@ -114,12 +114,20 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
                 ctx.complete(StatusCodes.Accepted, s"attempting to remove fuse in circuit $componentName")
               }
             }
-          } ~ pathPrefix("destroy-fuse") {
+          } ~ pathPrefix("destroy") {
             pathEnd {
               get { ctx =>
                 val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
-                herder ! CircuitMessages.DestroyFuseInCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
-                ctx.complete(StatusCodes.Accepted, s"attempting to destroy fuse in circuit $componentName")
+                herder ! CircuitMessages.DestroyCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
+                ctx.complete(StatusCodes.Accepted, s"attempting to destroy circuit $componentName")
+              }
+            }
+          } ~ pathPrefix("circumverate") {
+            pathEnd {
+              get { ctx =>
+                val herder = context.actorSelection(almhirtContext.localActorPaths.herder)
+                herder ! CircuitMessages.CircumverateCircuit(ComponentId(AppName(appName), ComponentName(componentName)))
+                ctx.complete(StatusCodes.Accepted, s"attempting to circumverate circuit $componentName")
               }
             }
           }
@@ -244,13 +252,21 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           <td style="background-color:#E41B1B">{ x.toString }</td>
         case x: CircuitState.FuseRemoved =>
           <td style="background-color:#E41B1B">{ x.toString }</td>
-        case x: CircuitState.FuseDestroyed =>
+        case x: CircuitState.Circumverated =>
+          <td style="background-color:#EE8C14">{ x.toString }</td>
+        case x: CircuitState.Destroyed =>
           <td style="background-color:#E41B1B">{ x.toString }</td>
       }
     }
 
     def createStateResetAction(component: ComponentId, state: CircuitState) = {
       state match {
+        case st: CircuitState.Destroyed =>
+          <td>no action</td>
+        case st: CircuitState.Circumverated =>
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/attempt-reset", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
+          <td>{ anchor }</td>
         case st: CircuitState.AllWillFailState =>
           val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/attempt-reset", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("reset"))
@@ -263,6 +279,10 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateRemoveAction(component: ComponentId, state: CircuitState) = {
       state match {
         case x: CircuitState.Open =>
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/remove-fuse", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
+          <td>{ anchor }</td>
+        case x: CircuitState.Circumverated =>
           val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/remove-fuse", xml.Null)
           val anchor = Elem(null, "a", att, TopScope, true, Text("remove fuse"))
           <td>{ anchor }</td>
@@ -282,23 +302,40 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
     def createStateDestroyAction(component: ComponentId, state: CircuitState) = {
       state match {
         case x: CircuitState.Open =>
-          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy-fuse", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy"))
+          <td>{ anchor }</td>
+        case x: CircuitState.Circumverated =>
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy"))
           <td>{ anchor }</td>
         case x: CircuitState.HalfOpen =>
-          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy-fuse", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy"))
           <td>{ anchor }</td>
         case x: CircuitState.Closed =>
-          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy-fuse", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy"))
           <td>{ anchor }</td>
         case x: CircuitState.FuseRemoved =>
-          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy-fuse", xml.Null)
-          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy fuse"))
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/destroy", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("destroy"))
           <td>{ anchor }</td>
         case _ =>
           <td>no action</td>
+      }
+    }
+
+    def createStateCircumverateAction(component: ComponentId, state: CircuitState) = {
+      state match {
+        case x: CircuitState.Destroyed =>
+          <td>no action</td>
+        case x: CircuitState.Circumverated =>
+          <td>no action</td>
+        case x =>
+          val att = new UnprefixedAttribute("href", s"./circuits/${component.app.value}/${component.component.value}/circumverate", xml.Null)
+          val anchor = Elem(null, "a", att, TopScope, true, Text("circumverate"))
+          <td>{ anchor }</td>
       }
     }
 
@@ -310,6 +347,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
           { createStateItem(state) }
           { createStateResetAction(component, state) }
           { createStateRemoveAction(component, state) }
+          { createStateCircumverateAction(component, state) }
           { createStateDestroyAction(component, state) }
         </tr>
       } else {
@@ -335,7 +373,7 @@ trait HttpHerderService extends Directives { me: Actor with AlmHttpEndpoint with
         <tr>
           <th>App</th>
           <th>Component</th>
-          <th colspan="3">Actions</th>
+          <th colspan="4">Actions</th>
         </tr>
         { state.map { case (component, state) => createRow(component, state, false) } }
       </table>

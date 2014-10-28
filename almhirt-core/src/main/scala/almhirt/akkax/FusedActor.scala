@@ -16,7 +16,9 @@ object FusedActor {
 
       def removeFuse() { fusedActor ! InternalFusedActorMessage.RemoveFuse }
 
-      def destroyFuse() { fusedActor ! InternalFusedActorMessage.DestroyFuse }
+      def destroy() { fusedActor ! InternalFusedActorMessage.Destroy }
+
+      def circumverate() { fusedActor ! InternalFusedActorMessage.Circumverate }
 
       def state: AlmFuture[CircuitState] =
         (fusedActor ? InternalFusedActorMessage.ReportState)(timeout).mapCastTo[CircuitState]
@@ -41,8 +43,13 @@ object FusedActor {
         this
       }
 
-      def onFuseDestroyed(listener: () => Unit): CircuitControl = {
-        fusedActor ! InternalFusedActorMessage.OnFuseDestroyed(listener)
+      def onDestroyed(listener: () => Unit): CircuitControl = {
+        fusedActor ! InternalFusedActorMessage.OnDestroyed(listener)
+        this
+      }
+
+      def onCircumverated(listener: () => Unit): CircuitControl = {
+        fusedActor ! InternalFusedActorMessage.OnCircumverated(listener)
         this
       }
 
@@ -57,12 +64,14 @@ private[almhirt] object InternalFusedActorMessage {
   case object ReportState
   case object AttemptClose
   case object RemoveFuse
-  case object DestroyFuse
+  case object Destroy
+  case object Circumverate
   final case class OnOpened(listener: () => Unit)
   final case class OnHalfOpened(listener: () => Unit)
   final case class OnClosed(listener: () => Unit)
   final case class OnFuseRemoved(listener: () => Unit)
-  final case class OnFuseDestroyed(listener: () => Unit)
+  final case class OnDestroyed(listener: () => Unit)
+  final case class OnCircumverated(listener: () => Unit)
   final case class OnWarning(listener: (Int, Int) => Unit)
 }
 
@@ -128,11 +137,17 @@ trait SyncFusedActor { me: AlmActor =>
         if (res) log.warning("Manual remove fuse attempt succeeded")
         else log.warning(s"""Manual remove fuse attempt failed. Current state is ${currentState.publicState}"""))
 
-    case InternalFusedActorMessage.DestroyFuse =>
+    case InternalFusedActorMessage.Destroy =>
       val res = currentState.attemptManualDestroyFuse
       circuitControlLoggingAdapter.foreach(log =>
-        if (res) log.warning("Manual destroy fuse attempt succeeded")
-        else log.warning(s"""Manual  destroy fuse. Current state is ${currentState.publicState}"""))
+        if (res) log.warning("Manual destroy attempt succeeded")
+        else log.warning(s"""Manual  destroy failed. Current state is ${currentState.publicState}"""))
+
+    case InternalFusedActorMessage.Circumverate =>
+      val res = currentState.manualCircumverate
+      circuitControlLoggingAdapter.foreach(log =>
+        if (res) log.warning("Manual circumverate attempt succeeded")
+        else log.warning(s"""Manual  circumverate failed. Current state is ${currentState.publicState}"""))
 
     case InternalFusedActorMessage.OnOpened(listener) =>
       InternalOpen addListener new Runnable { def run() { listener() } }
@@ -146,8 +161,11 @@ trait SyncFusedActor { me: AlmActor =>
     case InternalFusedActorMessage.OnFuseRemoved(listener) =>
       InternalFuseRemoved addListener new Runnable { def run() { listener() } }
 
-    case InternalFusedActorMessage.OnFuseDestroyed(listener) =>
-      InternalFuseDestroyed addListener new Runnable { def run() { listener() } }
+    case InternalFusedActorMessage.OnDestroyed(listener) =>
+      InternalDestroyed addListener new Runnable { def run() { listener() } }
+
+    case InternalFusedActorMessage.OnCircumverated(listener) =>
+      InternalCircumverated addListener new Runnable { def run() { listener() } }
 
     case InternalFusedActorMessage.OnWarning(listener) =>
       InternalClosed addWarningListener (currentFailures => new Runnable { def run() { listener(currentFailures, maxFailures) } })
@@ -205,7 +223,7 @@ trait SyncFusedActor { me: AlmActor =>
       _enter()
       notifyTransitionListeners()
       sendStateChanged()
-       self ! ReportState
+      self ! ReportState
     }
 
     private def sendStateChanged() {
@@ -215,7 +233,8 @@ trait SyncFusedActor { me: AlmActor =>
           case InternalHalfOpen => self ! ActorMessages.CircuitHalfOpened
           case InternalOpen => self ! ActorMessages.CircuitOpened
           case InternalFuseRemoved => self ! ActorMessages.CircuitFuseRemoved
-          case InternalFuseDestroyed => self ! ActorMessages.CircuitFuseDestroyed
+          case InternalDestroyed => self ! ActorMessages.CircuitDestroyed
+          case InternalCircumverated => self ! ActorMessages.CircuitCircumverated
         }
     }
 
@@ -229,11 +248,12 @@ trait SyncFusedActor { me: AlmActor =>
           callbackExecutor.execute(listener)
         }
       }
-   }
+    }
 
     def attemptManualClose(): Boolean = false
     def attemptManualDestroyFuse(): Boolean
     def attemptManualRemoveFuse(): Boolean
+    def manualCircumverate(): Boolean
   }
 
   private object InternalClosed extends InternalState {
@@ -271,8 +291,9 @@ trait SyncFusedActor { me: AlmActor =>
       }
     }
 
-    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalClosed, InternalFuseDestroyed)
+    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalClosed, InternalDestroyed)
     override def attemptManualRemoveFuse(): Boolean = attemptTransition(InternalClosed, InternalFuseRemoved)
+    override def manualCircumverate(): Boolean = attemptTransition(InternalClosed, InternalCircumverated)
 
     override def _enter() {
       failureCount = 0
@@ -304,8 +325,9 @@ trait SyncFusedActor { me: AlmActor =>
       recovering = false
     }
 
-    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalHalfOpen, InternalFuseDestroyed)
+    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalHalfOpen, InternalDestroyed)
     override def attemptManualRemoveFuse(): Boolean = attemptTransition(InternalHalfOpen, InternalFuseRemoved)
+    override def manualCircumverate(): Boolean = attemptTransition(InternalHalfOpen, InternalCircumverated)
 
   }
 
@@ -340,8 +362,9 @@ trait SyncFusedActor { me: AlmActor =>
     }
 
     override def attemptManualClose(): Boolean = attemptTransition(InternalOpen, InternalHalfOpen)
-    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalOpen, InternalFuseDestroyed)
+    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalOpen, InternalDestroyed)
     override def attemptManualRemoveFuse(): Boolean = attemptTransition(InternalOpen, InternalFuseRemoved)
+    override def manualCircumverate(): Boolean = attemptTransition(InternalOpen, InternalCircumverated)
 
   }
   /**
@@ -374,15 +397,16 @@ trait SyncFusedActor { me: AlmActor =>
     }
 
     override def attemptManualClose(): Boolean = attemptTransition(InternalFuseRemoved, InternalHalfOpen)
-    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalFuseRemoved, InternalFuseDestroyed)
+    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalFuseRemoved, InternalDestroyed)
     override def attemptManualRemoveFuse(): Boolean = false
+    override def manualCircumverate(): Boolean = attemptTransition(InternalFuseRemoved, InternalCircumverated)
 
   }
 
   /** No transitions */
-  private object InternalFuseDestroyed extends InternalState {
+  private object InternalDestroyed extends InternalState {
     private var enteredNanos = 0L
-    override def publicState = CircuitState.FuseDestroyed(forDuration)
+    override def publicState = CircuitState.Destroyed(forDuration)
 
     def invoke[T](surrogate: ⇒ AlmValidation[T], body: ⇒ AlmValidation[T]): AlmValidation[T] =
       surrogate
@@ -406,6 +430,37 @@ trait SyncFusedActor { me: AlmActor =>
     override def attemptManualClose(): Boolean = false
     override def attemptManualDestroyFuse(): Boolean = false
     override def attemptManualRemoveFuse(): Boolean = false
+    override def manualCircumverate(): Boolean = false
+  }
+
+  /** No transitions */
+  private object InternalCircumverated extends InternalState {
+    private var enteredNanos = 0L
+    override def publicState = CircuitState.Circumverated(forDuration)
+
+    def invoke[T](surrogate: ⇒ AlmValidation[T], body: ⇒ AlmValidation[T]): AlmValidation[T] =
+      body
+
+    override def callSucceeds() {
+    }
+
+    override def callFails() {
+    }
+
+    private def forDuration(): FiniteDuration = {
+      val elapsedNanos = System.nanoTime() - enteredNanos
+      if (elapsedNanos <= 0L) Duration.Zero
+      else elapsedNanos.nanos
+    }
+
+    override def _enter() {
+      enteredNanos = System.nanoTime()
+    }
+
+    override def attemptManualClose(): Boolean = attemptTransition(InternalCircumverated, InternalHalfOpen)
+    override def attemptManualDestroyFuse(): Boolean = attemptTransition(InternalCircumverated, InternalDestroyed)
+    override def attemptManualRemoveFuse(): Boolean = attemptTransition(InternalCircumverated, InternalFuseRemoved)
+    override def manualCircumverate(): Boolean = false
   }
 
 }

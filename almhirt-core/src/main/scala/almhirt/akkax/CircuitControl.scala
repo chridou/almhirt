@@ -8,14 +8,16 @@ import almhirt.common._
 trait CircuitControl {
   def attemptClose(): Unit
   def removeFuse(): Unit
-  def destroyFuse(): Unit
+  def destroy(): Unit
+  def circumverate(): Unit
   def state: AlmFuture[CircuitState]
 
   def onOpened(listener: () => Unit): CircuitControl
   def onHalfOpened(listener: () => Unit): CircuitControl
   def onClosed(listener: () => Unit): CircuitControl
   def onFuseRemoved(listener: () => Unit): CircuitControl
-  def onFuseDestroyed(listener: () => Unit): CircuitControl
+  def onDestroyed(listener: () => Unit): CircuitControl
+  def onCircumverated(listener: () => Unit): CircuitControl
   def onWarning(listener: (Int, Int) => Unit): CircuitControl
 }
 
@@ -26,7 +28,8 @@ object CircuitControl {
         .onHalfOpened(() => actor ! ActorMessages.CircuitHalfOpened)
         .onClosed(() => actor ! ActorMessages.CircuitClosed)
         .onFuseRemoved(() => actor ! ActorMessages.CircuitFuseRemoved)
-        .onFuseDestroyed(() => actor ! ActorMessages.CircuitFuseDestroyed)
+        .onDestroyed(() => actor ! ActorMessages.CircuitDestroyed)
+        .onCircumverated(() => actor ! ActorMessages.CircuitCircumverated)
   }
 }
 
@@ -83,7 +86,10 @@ object CircuitState {
   final case class FuseRemoved(duration: FiniteDuration) extends AllWillFailState {
     override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
   }
-  final case class FuseDestroyed(duration: FiniteDuration) extends AllWillFailState {
-    override def toString: String = s"FuseRemoved(${duration.defaultUnitString})"
+  final case class Destroyed(duration: FiniteDuration) extends AllWillFailState {
+    override def toString: String = s"Destroyed(${duration.defaultUnitString})"
+  }
+  final case class Circumverated(duration: FiniteDuration) extends NotAllWillFailState {
+    override def toString: String = s"Circumverated(${duration.defaultUnitString})"
   }
 }

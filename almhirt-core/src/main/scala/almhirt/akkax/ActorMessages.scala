@@ -29,7 +29,8 @@ object ActorMessages {
   case object CircuitHalfOpened extends CircuitNotAllWillFail
   case object CircuitOpened extends CircuitAllWillFail
   case object CircuitFuseRemoved extends CircuitAllWillFail
-  case object CircuitFuseDestroyed extends CircuitAllWillFail
+  case object CircuitDestroyed extends CircuitAllWillFail
+  case object CircuitCircumverated extends CircuitNotAllWillFail
 }
 
 object CreateChildActorHelper {

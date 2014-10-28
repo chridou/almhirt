@@ -52,13 +52,22 @@ private[almhirt] class CircuitsHerdingDog()(implicit override val almhirtContext
         case None => log.warning(s"""There is no circuit control named "$ownerId".""")
       }
 
-    case DestroyFuseInCircuit(ownerId) =>
+    case DestroyCircuit(ownerId) =>
       circuitControls.find(_._1 == ownerId) match {
         case Some(cc) =>
-          cc._2.destroyFuse
-          log.info(s"""Sent destroy fuse request to circuit control "$ownerId".""")
+          cc._2.destroy
+          log.info(s"""Sent destroy request to circuit control "$ownerId".""")
         case None => log.warning(s"""There is no circuit control named "$ownerId".""")
       }
+
+    case CircumverateCircuit(ownerId) =>
+      circuitControls.find(_._1 == ownerId) match {
+        case Some(cc) =>
+          cc._2.circumverate
+          log.info(s"""Sent circumverate request to circuit control "$ownerId".""")
+        case None => log.warning(s"""There is no circuit control named "$ownerId".""")
+      }
+  
   }
 
   override def receive: Receive = receiveRunning
